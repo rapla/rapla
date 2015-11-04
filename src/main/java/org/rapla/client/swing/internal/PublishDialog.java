@@ -29,16 +29,19 @@ import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.client.swing.PublishExtension;
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.logger.Logger;
 
 /**
  */
@@ -51,9 +54,9 @@ public class PublishDialog extends RaplaGUIComponent
     private final DialogUiFactory dialogUiFactory;
 
 
-    public PublishDialog(RaplaContext sm, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException
+    public PublishDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         if ( !isModifyPreferencesAllowed() ) {

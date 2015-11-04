@@ -28,6 +28,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -37,6 +38,7 @@ import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -44,9 +46,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides = UserOptionPanel.class,id="userOption")
@@ -67,11 +71,14 @@ public class UserOption extends RaplaGUIComponent
     private final RaplaImages raplaImages;
 
     private final DialogUiFactory dialogUiFactory;
+
+    private final IOInterface ioInterface;
 	@Inject
-    public UserOption(RaplaContext sm, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        super(sm);
+    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) {
+        super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.ioInterface = ioInterface;
     }
 
     
@@ -105,7 +112,7 @@ public class UserOption extends RaplaGUIComponent
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),createPopupContext(getComponent(), null), raplaImages, dialogUiFactory);
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),createPopupContext(getComponent(), null), raplaImages, dialogUiFactory);
         User user = getUser();
 		passwordChangeAction.changeObject(user);
         changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));
@@ -161,11 +168,11 @@ public class UserOption extends RaplaGUIComponent
 				
 				Allocatable person = user.getPerson();
 				JTextField inputSurname = new JTextField();
-				addCopyPaste(inputSurname);
+				addCopyPaste(inputSurname, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 				JTextField inputFirstname = new JTextField();
-				addCopyPaste(inputFirstname);
+				addCopyPaste(inputFirstname, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 				JTextField inputTitle= new JTextField();
-				addCopyPaste(inputTitle);
+				addCopyPaste(inputTitle, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 				// Person connected?
 				if ( person != null)
 				{
@@ -249,8 +256,8 @@ public class UserOption extends RaplaGUIComponent
 			content.add(codeField);
 			validate.setText(getString("code_validate"));
 			content.add(validate);
-			addCopyPaste(emailField);
-			addCopyPaste(codeField);
+			addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+			addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 			dlg = dialogUiFactory.create(getComponent(),true,content,new String[] {getString("save"),getString("abort")});
 			validate.setAction(new EmailChangeActionA(dlg));
 			validate.setEnabled(false);

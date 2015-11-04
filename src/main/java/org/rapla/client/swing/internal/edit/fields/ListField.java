@@ -29,8 +29,11 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
-import org.rapla.framework.RaplaContext;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class ListField<T> extends AbstractEditField implements ActionListener,FocusListener, MultiEditField, SetGetField<T>, SetGetCollectionField<T> {
 	JPanel panel;
@@ -42,20 +45,20 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 	final String multipleValuesOutput = TextField.getOutputForMultipleValues();
 	boolean includeNothingSelected;
 
-	public ListField(RaplaContext context, Collection<T> v)
+	public ListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Collection<T> v)
 	{
-		this(context, false);
+	    this(facade, i18n, raplaLocale, logger, false);
 		setVector(v);
 	}
 
-	public ListField(RaplaContext sm,  boolean includeNothingSelected)
+	public ListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,  boolean includeNothingSelected)
 	{
-		super(sm);
+		super(facade, i18n, raplaLocale, logger);
 		this.includeNothingSelected = includeNothingSelected;
 		setFieldName(fieldName);
 		panel = new JPanel();
 		panel.setOpaque(false);
-		field = new RaplaListComboBox(sm);
+		field = new RaplaListComboBox(raplaLocale);
 		field.addActionListener(this);
 		panel.setLayout(new BorderLayout());
 		panel.add(field, BorderLayout.WEST);

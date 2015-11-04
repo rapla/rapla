@@ -53,12 +53,23 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.common.PeriodChooser;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.MonthChooser;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.swing.toolkit.WeekdayChooser;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.calendar.RaplaTime;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.undo.CommandHistory;
@@ -72,19 +83,11 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationHelper;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.PeriodChooser;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.MonthChooser;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.client.swing.toolkit.WeekdayChooser;
+import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.common.FutureResult;
 
 /** GUI for editing a single Appointment. */
@@ -127,13 +130,16 @@ public class AppointmentController extends RaplaGUIComponent
 
     private final DialogUiFactory dialogUiFactory;
 
-	public AppointmentController(RaplaContext sm, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+    private final IOInterface ioInterface;
+
+	public AppointmentController(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, IOInterface ioInterface)
 			throws RaplaException {
-		super(sm);
+		super(facade, i18n, raplaLocale, logger);
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
+        this.ioInterface = ioInterface;
 		panel.setLayout(new BorderLayout());
 		panel.add(repeatingType, BorderLayout.NORTH);
 		repeatingType.setLayout(new BoxLayout(repeatingType, BoxLayout.X_AXIS));
@@ -339,10 +345,10 @@ public class AppointmentController extends RaplaGUIComponent
 		}
 
 		public void initialize() {
-			startDate = createRaplaCalendar(dateRenderer);
-			endDate = createRaplaCalendar(dateRenderer);
-			startTime = createRaplaTime();
-			endTime = createRaplaTime();
+			startDate = createRaplaCalendar(dateRenderer, ioInterface);
+			endDate = createRaplaCalendar(dateRenderer, ioInterface);
+			startTime = createRaplaTime(ioInterface);
+			endTime = createRaplaTime(ioInterface);
 			content.add(startLabel, "0,0,r,f");
 			startLabel.setText(getString("start_date"));
 			startTimeLabel.setText(getString("time_at"));
@@ -589,15 +595,15 @@ public class AppointmentController extends RaplaGUIComponent
 
 		RaplaNumber interval = new RaplaNumber(null, RaplaNumber.ONE, null,	false);
 		{
-			addCopyPaste( interval.getNumberField());
+			addCopyPaste( interval.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		}
 		RaplaNumber weekdayInMonth = new RaplaNumber(null, RaplaNumber.ONE,	new Integer(5), false);
 		{
-			addCopyPaste( weekdayInMonth.getNumberField());
+			addCopyPaste( weekdayInMonth.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		}
 		RaplaNumber dayInMonth = new RaplaNumber(null, RaplaNumber.ONE,	new Integer(31), false);
 		{
-			addCopyPaste( dayInMonth.getNumberField());
+			addCopyPaste( dayInMonth.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		}
 
 		WeekdayChooser weekdayChooser = new WeekdayChooser();
@@ -614,7 +620,7 @@ public class AppointmentController extends RaplaGUIComponent
 		JComboBox dayChooser;
 		RaplaNumber days = new RaplaNumber(null, new Integer(2), null, false);
 		{
-			addCopyPaste( days.getNumberField());
+			addCopyPaste( days.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		}
 
 		JLabel startDateLabel = new JLabel();
@@ -627,7 +633,7 @@ public class AppointmentController extends RaplaGUIComponent
 		JPanel numberPanel = new JPanel();
 		RaplaNumber number = new RaplaNumber(null, RaplaNumber.ONE, null, false);
 		{
-			addCopyPaste( number.getNumberField());
+			addCopyPaste( number.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		}
 		JPanel endDatePeriodPanel = new JPanel();
 		PeriodChooser endDatePeriod;
@@ -639,8 +645,8 @@ public class AppointmentController extends RaplaGUIComponent
 		private boolean listenerEnabled = true;
 
 		public RepeatingEditor() throws RaplaException {
-			startDatePeriod = new PeriodChooser(getContext(), PeriodChooser.START_ONLY);
-			endDatePeriod = new PeriodChooser(getContext(),	PeriodChooser.END_ONLY);
+			startDatePeriod = new PeriodChooser(getI18n(), getClientFacade(), PeriodChooser.START_ONLY);
+			endDatePeriod = new PeriodChooser(getI18n(), getClientFacade(), PeriodChooser.END_ONLY);
 			// Create a TableLayout for the frame
 			double pre = TableLayout.PREFERRED;
 			double fill = TableLayout.FILL;
@@ -698,14 +704,14 @@ public class AppointmentController extends RaplaGUIComponent
 
 			// StartTime
 			startTimeLabel.setText(getString("start_time"));
-			startTime = createRaplaTime();
+			startTime = createRaplaTime(ioInterface);
 			startTime.addDateChangeListener(this);
 			oneDayEventCheckBox.setText(getString("all-day"));
 
 			oneDayEventCheckBox.addActionListener(this);
 			// EndTime duration
 			endTimeLabel.setText(getString("end_time"));
-			endTime = createRaplaTime();
+			endTime = createRaplaTime(ioInterface);
 			endTime.addDateChangeListener(this);
 			@SuppressWarnings("unchecked")
 			JComboBox jComboBox = new JComboBox(new String[] {
@@ -727,12 +733,12 @@ public class AppointmentController extends RaplaGUIComponent
 			// start-date (with period-box)
 			startDatePeriod.addActionListener(this);
 			startDateLabel.setText(getString("repeating.start_date"));
-			startDate = createRaplaCalendar(dateRenderer);
+			startDate = createRaplaCalendar(dateRenderer, ioInterface);
 			startDate.addDateChangeListener(this);
 
 			// end-date (with period-box)/n-times/forever
 			endDatePeriod.addActionListener(this);
-			endDate = createRaplaCalendar(dateRenderer);
+			endDate = createRaplaCalendar(dateRenderer, ioInterface);
 			endDate.addDateChangeListener(this);
 
 			@SuppressWarnings("unchecked")
@@ -1202,7 +1208,7 @@ public class AppointmentController extends RaplaGUIComponent
 			addButton.setIcon(raplaImages.getIconFromKey("icon.arrow_right"));
 			removeButton.setText(getString("remove"));
 			removeButton.setIcon(raplaImages.getIconFromKey("icon.arrow_left"));
-			exceptionDate = createRaplaCalendar(dateRenderer);
+			exceptionDate = createRaplaCalendar(dateRenderer, ioInterface);
 			/*
 			 * this.add(new JLabel(getString("appointment.exception.general") +
 			 * " "),"0,1"); this.add(new JScrollPane(generalExceptions

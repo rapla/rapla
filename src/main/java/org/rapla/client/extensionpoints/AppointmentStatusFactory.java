@@ -1,9 +1,8 @@
 package org.rapla.client.extensionpoints;
 
 import org.rapla.client.ReservationEdit;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
@@ -13,5 +12,5 @@ import org.rapla.inject.InjectionContext;
   * */
 @ExtensionPoint(context = InjectionContext.swing,id = "appointmentstatus")
 public interface AppointmentStatusFactory<T> {
-	RaplaWidget<T> createStatus(RaplaContext context, ReservationEdit reservationEdit) throws RaplaException;
+	RaplaWidget<T> createStatus(ReservationEdit reservationEdit) throws RaplaException;
 }

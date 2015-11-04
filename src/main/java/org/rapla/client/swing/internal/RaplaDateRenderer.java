@@ -14,16 +14,19 @@
 package org.rapla.client.swing.internal;
 import java.awt.Color;
 
+import javax.inject.Inject;
+
+import org.rapla.RaplaResources;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
 import org.rapla.entities.domain.Period;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
 
 @DefaultImplementation(of=DateRenderer.class,context = { InjectionContext.swing,InjectionContext.server})
 public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
@@ -32,8 +35,8 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     protected PeriodModel periodModel;
 
     @Inject
-    public RaplaDateRenderer(RaplaContext sm) {
-        super(sm);
+    public RaplaDateRenderer(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(facade, i18n, raplaLocale, logger);
         periodModel = getPeriodModel();
     }
 

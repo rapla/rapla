@@ -18,14 +18,20 @@ import java.awt.Font;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.calendar.RaplaNumber;
-import org.rapla.framework.RaplaContext;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class LongField extends AbstractEditField implements ChangeListener, FocusListener, MultiEditField, SetGetField<Long>{
 	JPanel panel = new JPanel();
@@ -35,23 +41,23 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 
 	JLabel multipleValuesLabel = new JLabel();
 	
-	public LongField(RaplaContext context, String fieldName) {
-		this(context, (Long)null);
+	private LongField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, String fieldName) {
+		this(facade, i18n, raplaLocale, logger, ioInterface, (Long)null);
 		setFieldName(fieldName);
 	}
 
-	public LongField(RaplaContext context) {
-        this(context,  (Long)null);
+	private LongField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface) {
+        this(facade, i18n, raplaLocale, logger, ioInterface, (Long)null);
     }
 
 	
-	public LongField(RaplaContext context, Long minimum)
+	private LongField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, Long minimum)
 	{
-		super(context);
+		super(facade, i18n, raplaLocale, logger);
 		panel.setLayout(new BorderLayout());
 		panel.setOpaque(false);
 		field = new RaplaNumber(minimum, minimum, null, minimum == null);
-		addCopyPaste(field.getNumberField());
+		addCopyPaste(field.getNumberField(), i18n, raplaLocale, ioInterface, logger);
 		field.setColumns(8);
 		field.addChangeListener(this);
 		panel.add(field, BorderLayout.WEST);
@@ -131,4 +137,40 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 		multipleValuesLabel.setText(TextField.getOutputForMultipleValues());
 		multipleValuesLabel.setFont(multipleValuesLabel.getFont().deriveFont(Font.ITALIC));
 	}
+	
+    @Singleton
+    public static final class LongFieldFactory
+    {
+
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final IOInterface ioInterface;
+
+        @Inject
+        public LongFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+        {
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
+            this.ioInterface = ioInterface;
+        }
+
+        public LongField create(Long minimum)
+        {
+            return new LongField(facade, i18n, raplaLocale, logger, ioInterface, minimum);
+        }
+
+        public LongField create(String fieldName)
+        {
+            return new LongField(facade, i18n, raplaLocale, logger, ioInterface, fieldName);
+        }
+
+        public LongField create()
+        {
+            return new LongField(facade, i18n, raplaLocale, logger, ioInterface);
+        }
+    }
 }

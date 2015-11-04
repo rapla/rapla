@@ -51,6 +51,7 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -80,11 +81,12 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.StorageOperator;
@@ -111,8 +113,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     Font bigFont =  normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
     
     @Inject
-    public TreeFactoryImpl(RaplaContext sm, PermissionController permissionController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
-        super(sm);
+    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
+        super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;

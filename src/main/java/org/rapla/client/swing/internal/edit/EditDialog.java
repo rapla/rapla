@@ -25,6 +25,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.internal.SaveUndo;
@@ -43,11 +44,13 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable
 {
@@ -60,9 +63,9 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 
-    public EditDialog(RaplaContext sm, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+    public EditDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.ui = ui;
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;

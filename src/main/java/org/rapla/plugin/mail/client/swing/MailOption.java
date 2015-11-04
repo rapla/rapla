@@ -12,26 +12,42 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.client.swing;
 
-import org.rapla.components.calendar.RaplaNumber;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.*;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.edit.fields.TextField;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.mail.MailConfigService;
-import org.rapla.plugin.mail.MailPlugin;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.components.calendar.RaplaNumber;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.mail.MailConfigService;
+import org.rapla.plugin.mail.MailPlugin;
 
 
 @Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)
@@ -53,12 +69,16 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 	MailConfigService configService;
 	Configuration config;
     private final DialogUiFactory dialogUiFactory;
+    private final TextFieldFactory textFieldFactory;
+    private final IOInterface ioInterface;
 	@Inject
-    public MailOption(RaplaContext sm,MailConfigService mailConfigService, DialogUiFactory dialogUiFactory)   
+    public MailOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,MailConfigService mailConfigService, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)   
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.configService = mailConfigService;
         this.dialogUiFactory = dialogUiFactory;
+        this.textFieldFactory = textFieldFactory;
+        this.ioInterface = ioInterface;
     }
 
 	@Override public void setPreferences(Preferences preferences)
@@ -74,7 +94,7 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
     protected void createPanel() throws RaplaException {
 
 		externalConfigEnabled = configService.isExternalConfigEnabled();
-        mailServer = new TextField(getContext());
+        mailServer = textFieldFactory.create();
     	smtpPortField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
     	defaultSender = new JTextField();
     	username = new JTextField();
@@ -85,9 +105,9 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
     	
     	content = new JPanel();
     	//addCopyPaste( mailServer);
-        addCopyPaste( defaultSender);
-        addCopyPaste(username);
-        addCopyPaste(password);
+        addCopyPaste( defaultSender, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+        addCopyPaste(username, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+        addCopyPaste(password, getI18n(), getRaplaLocale(), ioInterface, getLogger());
         double[][] sizes = new double[][] {
             {5,TableLayout.PREFERRED, 5,TableLayout.FILL,5}
             ,{TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED}

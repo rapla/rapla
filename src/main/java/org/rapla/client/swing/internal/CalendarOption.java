@@ -27,22 +27,26 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.extensionpoints.UserOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendarview.WeekdayMapper;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
 
@@ -87,13 +91,13 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
     RaplaNumber daysInWeekview;
 
     @Inject
-    public CalendarOption(RaplaContext sm) {
-        super( sm);
+    public CalendarOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface) {
+        super(facade, i18n, raplaLocale, logger);
         daysInWeekview = new RaplaNumber(7, 3, 35, false);
         mapper = new WeekdayMapper(getLocale());
-        worktimeStart = createRaplaTime();
+        worktimeStart = createRaplaTime(ioInterface);
         worktimeStart.setRowsPerHour( 1 );
-        worktimeEnd = createRaplaTime();
+        worktimeEnd = createRaplaTime(ioInterface);
         worktimeEnd.setRowsPerHour( 1 );
         double pre = TableLayout.PREFERRED;
         double fill = TableLayout.FILL;

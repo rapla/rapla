@@ -15,14 +15,17 @@ package org.rapla.client.internal;
 
 import java.util.Iterator;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.DependencyException;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.storage.StorageOperator;
 
 class DependencyInfoUI extends HTMLInfo<DependencyException> {
-    public DependencyInfoUI(RaplaContext sm){
-        super(sm);
+    public DependencyInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger){
+        super(i18n, raplaLocale, facade, logger);
     }
 
     @Override

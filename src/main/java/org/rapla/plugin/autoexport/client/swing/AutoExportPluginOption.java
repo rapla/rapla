@@ -8,13 +8,16 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.DefaultPluginOption;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 
@@ -23,9 +26,9 @@ public class AutoExportPluginOption extends DefaultPluginOption
 {
     JCheckBox booleanField = new JCheckBox();
     @Inject
-    public AutoExportPluginOption( RaplaContext sm )
+    public AutoExportPluginOption( ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger )
     {
-        super( sm );
+        super(facade, i18n, raplaLocale, logger);
     }
 
     protected JPanel createPanel() throws RaplaException {

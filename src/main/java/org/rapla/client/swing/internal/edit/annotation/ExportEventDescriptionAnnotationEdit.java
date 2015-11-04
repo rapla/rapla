@@ -6,15 +6,20 @@ import java.util.Collections;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
-import org.rapla.entities.Annotatable;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.Annotatable;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 
@@ -23,10 +28,14 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
 {
     protected String annotationName = DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT;
     protected String DEFAULT_VALUE = "";
+    private final IOInterface service;
+    private final TextFieldFactory textFieldFactory;
     
     @Inject
-    public ExportEventDescriptionAnnotationEdit(RaplaContext context) {
-        super(context);
+    public ExportEventDescriptionAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, TextFieldFactory textFieldFactory) {
+        super(facade, i18n, raplaLocale, logger);
+        this.service = service;
+        this.textFieldFactory = textFieldFactory;
     }
 
     @Override
@@ -42,7 +51,7 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        TextField field = new TextField(getContext(),getString(annotationName));
+        TextField field = textFieldFactory.create(getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( annotation);
@@ -51,7 +60,7 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
         {
             field.setValue( DEFAULT_VALUE);
         }
-        addCopyPaste(field.getComponent());
+        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service, getLogger());
         return Collections.singleton(field);
     }
 

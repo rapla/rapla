@@ -19,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -29,7 +30,9 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
 import org.rapla.client.swing.internal.edit.fields.ListField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -38,6 +41,7 @@ import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -47,8 +51,11 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class AttributeDefaultConstraints extends AbstractEditField
     implements ActionListener
@@ -102,30 +109,30 @@ public class AttributeDefaultConstraints extends AbstractEditField
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public AttributeDefaultConstraints(RaplaContext context, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException
+    public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaException
     {
-        super( context );
+        super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
-        annotationEdit = new AnnotationEditUI(context, attributeExtensionSet);
-        key = new TextField(context);
-        name = new MultiLanguageField(context, raplaImages, dialogUiFactory);
+        annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, attributeExtensionSet);
+        key = textFieldFactory.create();
+        name = multiLanguageFieldFactory.create();
         Collection<DynamicType> typeList = new ArrayList<DynamicType>(
                 Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)));
         typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
-        dynamicTypeSelect = new ListField<DynamicType>(context,true );
+        dynamicTypeSelect = new ListField<DynamicType>(facade, i18n, raplaLocale, logger, true);
         dynamicTypeSelect.setVector( typeList );
         rootCategory = getQuery().getSuperCategory();
 
-        categorySelect = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        categorySelect = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory);
-        defaultSelectText = new TextField(context);
-        addCopyPaste( defaultSelectNumber.getNumberField());
+        defaultSelectCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        defaultSelectText = textFieldFactory.create();
+        addCopyPaste( defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
         //addCopyPaste( expectedRows.getNumberField());
         //addCopyPaste( expectedColumns.getNumberField());
 
         defaultSelectBoolean = booleanFieldFactory.create();
-        defaultSelectDate = createRaplaCalendar(dateRenderer);
+        defaultSelectDate = createRaplaCalendar(dateRenderer, ioInterface);
         defaultSelectDate.setNullValuePossible( true);
         defaultSelectDate.setDate( null);
         multiSelect = booleanFieldFactory.create();

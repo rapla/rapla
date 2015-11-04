@@ -7,22 +7,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEdit;
-import org.rapla.entities.Annotatable;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.internal.edit.AbstractEditUI;
+import org.rapla.entities.Annotatable;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class AnnotationEditUI extends AbstractEditUI<Annotatable>
 {
     Set<? extends AnnotationEdit> annotationExtensions;
     Map<AnnotationEdit,Collection<? extends EditField>> fieldMap = new HashMap<AnnotationEdit,Collection<? extends EditField>>();
     
-    public AnnotationEditUI(RaplaContext context, Set<? extends AnnotationEdit> annotationExtensions) {
-        super(context);
+    public AnnotationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<? extends AnnotationEdit> annotationExtensions) {
+        super(facade, i18n, raplaLocale, logger);
         this.annotationExtensions = annotationExtensions;
     }
     

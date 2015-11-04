@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.inject.Inject;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
@@ -32,6 +31,7 @@ import javax.swing.JToolBar;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
@@ -43,6 +43,7 @@ import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -50,9 +51,11 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
 import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
@@ -72,8 +75,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     class SaveAction extends RaplaAction
     {
 
-        public SaveAction(RaplaContext sm)  {
-            super(sm);
+        public SaveAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)  {
+            super(facade, i18n, raplaLocale, logger);
             final String name = getString("save") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
@@ -88,13 +91,13 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     class PublishAction extends RaplaAction
     {
         PublishDialog publishDialog;
-        public PublishAction(RaplaContext sm) throws RaplaException {
-            super(sm);
+        public PublishAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
+            super(facade, i18n, raplaLocale, logger);
             final String name = getString("publish") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
             putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
-            publishDialog = new PublishDialog(getContext(), extensionFactories, raplaImages, dialogUiFactory);
+            publishDialog = new PublishDialog(facade, i18n, raplaLocale, logger, extensionFactories, raplaImages, dialogUiFactory);
             
         }
 
@@ -126,9 +129,9 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     
     class DeleteAction extends RaplaAction
     {
-        public DeleteAction(RaplaContext sm)
+        public DeleteAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
         {
-            super(sm);
+            super(facade, i18n, raplaLocale, logger);
             final String name = getString("delete");
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
@@ -161,6 +164,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     private final RaplaImages raplaImages;
 
     private final DialogUiFactory dialogUiFactory;
+
+    private final IOInterface ioInterface;
     
     class FileEntry implements Comparable<FileEntry>
     {
@@ -214,17 +219,18 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
     }
     
-    public SavedCalendarView(RaplaContext context, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(context);
+    public SavedCalendarView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.extensionFactories = extensionFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.ioInterface = ioInterface;
         // I18nBundle i18n = getI18n();
-        saveAction = new SaveAction(context);
-        publishAction = new PublishAction(context);
-        deleteAction = new DeleteAction( context);
+        saveAction = new SaveAction(facade, i18n, raplaLocale, logger);
+        publishAction = new PublishAction(facade, i18n, raplaLocale, logger);
+        deleteAction = new DeleteAction( facade, i18n, raplaLocale, logger);
         this.model = model;
         this.calendarContainer = calendarContainer;
         this.resourceSelection = resourceSelection;
@@ -484,7 +490,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
    
         JPanel panel = new JPanel();
         final JTextField textField = new JTextField(20);
-        addCopyPaste( textField);
+        addCopyPaste( textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
         String dateString; 	
     	if( model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW) 
     	 || model.getViewId().equals(AppointmentTableViewFactory.TABLE_VIEW)) 
@@ -499,7 +505,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(new JLabel(getString("file.enter_name") +":"), "0,0");
         panel.add(textField, "2,0");
-        addCopyPaste( textField);
+        addCopyPaste( textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
         panel.add(saveSelectedDateField, "2,2");
         
         final String entry = model.getOption(CalendarModel.SAVE_SELECTED_DATE);

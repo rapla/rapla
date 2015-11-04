@@ -1,22 +1,26 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
+import javax.inject.Inject;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.*;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
-
-import javax.inject.Inject;
 
 @Extension(provides = PluginOptionPanel.class,id= EventTimeCalculatorPlugin.PLUGIN_ID)
 public class EventTimeCalculatorAdminOption extends EventTimeCalculatorUserOption implements  PluginOptionPanel
 {
     @Inject
-    public EventTimeCalculatorAdminOption(RaplaContext context, EventTimeCalculatorResources i18n, ClientFacade facade) throws RaplaException
+    public EventTimeCalculatorAdminOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorResources eventTimei18n) throws RaplaException
     {
-        super(context, i18n, facade);
+        super(facade, i18n, raplaLocale, logger, eventTimei18n);
     }
 
     @Override protected TypedComponentRole<RaplaConfiguration> getConfigEntry()

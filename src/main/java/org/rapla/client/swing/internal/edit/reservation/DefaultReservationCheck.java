@@ -20,6 +20,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -32,8 +33,10 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides = EventCheck.class,id="defaultcheck")
@@ -44,8 +47,8 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-    public DefaultReservationCheck(RaplaContext context, AppointmentFormater appointmentFormater, CalendarModel model, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        super(context);
+    public DefaultReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, CalendarModel model, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
         this.model = model;
         this.raplaImages = raplaImages;

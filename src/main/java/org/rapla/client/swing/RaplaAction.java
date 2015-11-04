@@ -18,14 +18,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.rapla.framework.RaplaContext;
+import org.rapla.RaplaResources;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public abstract class RaplaAction extends RaplaGUIComponent implements Action {
     private Map<String,Object> values = new HashMap<String,Object>();
     private ArrayList<PropertyChangeListener> listenerList = new ArrayList<PropertyChangeListener>();
 
-    public RaplaAction(RaplaContext sm) {
-        super( sm );
+    public RaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    {
+        super(facade, i18n, raplaLocale, logger);
         setEnabled(true);
     }
 

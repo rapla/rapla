@@ -37,6 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionField.PermissionFieldFactory;
@@ -46,8 +47,10 @@ import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 /**
  *  @author Christopher Kohlhaas
  */
@@ -65,8 +68,8 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 	Permission.AccessLevel defaultAccessLevel = null;
 	
 	List<Permission> notAllList = new ArrayList<Permission>();
-	public PermissionListField(RaplaContext context, String fieldName, RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory) throws RaplaException {
-		super(context);
+	public PermissionListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName, RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory) throws RaplaException {
+		super(facade, i18n, raplaLocale, logger);
 		this.permissionField = permissionFieldFactory.create();
 		super.setFieldName(fieldName);
 		jPanel.setLayout(new BorderLayout());
@@ -350,23 +353,28 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     @Singleton
     public static class PermissionListFieldFactory
     {
-
-        private final RaplaContext context;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
         private final RaplaListEditFactory raplaListEditFactory;
         private final PermissionFieldFactory permissionFieldFactory;
 
         @Inject
-        public PermissionListFieldFactory(RaplaContext context, RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory)
+        public PermissionListFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory)
         {
             super();
-            this.context = context;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
             this.raplaListEditFactory = raplaListEditFactory;
             this.permissionFieldFactory = permissionFieldFactory;
         }
 
         public PermissionListField create(final String fieldName)
         {
-            return new PermissionListField(context, fieldName, raplaListEditFactory, permissionFieldFactory);
+            return new PermissionListField(facade, i18n, raplaLocale, logger, fieldName, raplaListEditFactory, permissionFieldFactory);
         }
     }
 	

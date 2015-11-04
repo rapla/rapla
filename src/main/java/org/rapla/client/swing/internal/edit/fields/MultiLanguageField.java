@@ -19,6 +19,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Collection;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -31,15 +33,21 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.MultiLanguageName;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
-public class MultiLanguageField extends AbstractEditField implements ChangeListener, ActionListener,CellEditorListener, SetGetField<MultiLanguageName> {
+public class MultiLanguageField extends AbstractEditField implements ChangeListener, ActionListener, CellEditorListener, SetGetField<MultiLanguageName>
+{
     JPanel panel = new JPanel();
     TextField textField;
     RaplaButton button = new RaplaButton(RaplaButton.SMALL);
@@ -48,77 +56,93 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
     String[] availableLanguages;
     private final DialogUiFactory dialogUiFactory;
+    private final IOInterface ioInterface;
 
-    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, String fieldName) 
+    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+            IOInterface ioInterface, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory, String fieldName)
     {
-        this(context, raplaImages, dialogUiFactory);
+        this(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory);
         setFieldName(fieldName);
     }
 
-    public MultiLanguageField(RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) 
+    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+            IOInterface ioInterface, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory)
     {
-        super( context);
+        super(facade, i18n, raplaLocale, logger);
+        this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
-        textField = new TextField(context, "name");
+        textField = textFieldFactory.create("name");
         availableLanguages = getRaplaLocale().getAvailableLanguages().toArray(new String[0]);
-        panel.setLayout( new BorderLayout() );
-        panel.add( textField.getComponent(), BorderLayout.CENTER );
-        panel.add( button, BorderLayout.EAST );
-        button.addActionListener( this );
-        button.setIcon( raplaImages.getIconFromKey("icon.language-select") );
-        textField.addChangeListener( this );
+        panel.setLayout(new BorderLayout());
+        panel.add(textField.getComponent(), BorderLayout.CENTER);
+        panel.add(button, BorderLayout.EAST);
+        button.addActionListener(this);
+        button.setIcon(raplaImages.getIconFromKey("icon.language-select"));
+        textField.addChangeListener(this);
     }
 
-    public void requestFocus() {
+    public void requestFocus()
+    {
         textField.getComponent().requestFocus();
     }
-    
+
     public void selectAll()
     {
-    	textField.selectAll();
+        textField.selectAll();
     }
 
-    public void stateChanged(ChangeEvent e) {
-        if (name != null) {
-            name.setName(getI18n().getLang(),textField.getValue());
+    public void stateChanged(ChangeEvent e)
+    {
+        if (name != null)
+        {
+            name.setName(getI18n().getLang(), textField.getValue());
             fireContentChanged();
         }
     }
 
-    public void actionPerformed(ActionEvent evt) {
-        editorDialog = new MultiLanguageEditorDialog( button );
-        editorDialog.addCellEditorListener( this );
-        editorDialog.setEditorValue( name );
-        try {
-			editorDialog.show();
-		} catch (RaplaException ex) {
-			showException( ex, getComponent(), dialogUiFactory);
-		}
+    public void actionPerformed(ActionEvent evt)
+    {
+        editorDialog = new MultiLanguageEditorDialog(button);
+        editorDialog.addCellEditorListener(this);
+        editorDialog.setEditorValue(name);
+        try
+        {
+            editorDialog.show();
+        }
+        catch (RaplaException ex)
+        {
+            showException(ex, getComponent(), dialogUiFactory);
+        }
     }
 
-    public void editingStopped(ChangeEvent e) {
+    public void editingStopped(ChangeEvent e)
+    {
         setValue((MultiLanguageName) editorDialog.getEditorValue());
         fireContentChanged();
     }
 
-    public void editingCanceled(ChangeEvent e) {
+    public void editingCanceled(ChangeEvent e)
+    {
     }
 
-    public MultiLanguageName getValue() {
+    public MultiLanguageName getValue()
+    {
         return this.name;
     }
 
-    public void setValue(MultiLanguageName object) {
+    public void setValue(MultiLanguageName object)
+    {
         this.name = object;
         textField.setValue(name.getName(getI18n().getLang()));
     }
 
-    
-    public JComponent getComponent() {
+    public JComponent getComponent()
+    {
         return panel;
     }
 
-    class MultiLanguageEditorDialog extends AbstractCellEditor {
+    class MultiLanguageEditorDialog extends AbstractCellEditor
+    {
         private static final long serialVersionUID = 1L;
 
         JTable table = new JTable();
@@ -126,88 +150,145 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         JPanel comp = new JPanel();
         MultiLanguageName editorValue;
         Component owner;
-        MultiLanguageEditorDialog(JComponent owner) {
+
+        MultiLanguageEditorDialog(JComponent owner)
+        {
             this.owner = owner;
             table.setPreferredScrollableViewportSize(new Dimension(300, 200));
             comp.setLayout(new BorderLayout());
-            comp.add(label,BorderLayout.NORTH);
-            comp.add(new JScrollPane(table),BorderLayout.CENTER);
+            comp.add(label, BorderLayout.NORTH);
+            comp.add(new JScrollPane(table), BorderLayout.CENTER);
         }
 
-        public void setEditorValue(Object value) {
-            this.editorValue = (MultiLanguageName)value;
+        public void setEditorValue(Object value)
+        {
+            this.editorValue = (MultiLanguageName) value;
             table.setModel(new TranslationTableModel(editorValue));
             table.getColumnModel().getColumn(0).setPreferredWidth(30);
             table.getColumnModel().getColumn(1).setPreferredWidth(200);
             label.setText(getI18n().format("translation.format", editorValue));
         }
 
-        public Object getEditorValue() {
+        public Object getEditorValue()
+        {
             return editorValue;
         }
 
-        public Object getCellEditorValue() {
+        public Object getCellEditorValue()
+        {
             return getEditorValue();
         }
 
-        public void show() throws RaplaException {
-            DialogUI dlg = dialogUiFactory.create(owner,true,comp,new String[] { getString("ok"),getString("cancel")});
+        public void show() throws RaplaException
+        {
+            DialogUI dlg = dialogUiFactory.create(owner, true, comp, new String[] { getString("ok"), getString("cancel") });
             dlg.setTitle(getString("translation"));
             // Workaround for Bug ID  4480264 on developer.java.sun.com
-            if (table.getRowCount() > 0 ) {
+            if (table.getRowCount() > 0)
+            {
                 table.editCellAt(0, 0);
                 table.editCellAt(0, 1);
             }
             dlg.start();
-            if (dlg.getSelectedIndex() == 0) {
-                for (int i=0;i<availableLanguages.length;i++) {
-                    String value = (String)table.getValueAt(i,1);
+            if (dlg.getSelectedIndex() == 0)
+            {
+                for (int i = 0; i < availableLanguages.length; i++)
+                {
+                    String value = (String) table.getValueAt(i, 1);
                     if (value != null)
-                        editorValue.setName(availableLanguages[i],value);
+                        editorValue.setName(availableLanguages[i], value);
                 }
-                if (table.isEditing()) {
-                    if (table.getEditingColumn() == 1) {
+                if (table.isEditing())
+                {
+                    if (table.getEditingColumn() == 1)
+                    {
                         JTextField textField = (JTextField) table.getEditorComponent();
-                        addCopyPaste( textField);
+                        addCopyPaste(textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
                         int row = table.getEditingRow();
                         String value = textField.getText();
-                        editorValue.setName(availableLanguages[row],value);
+                        editorValue.setName(availableLanguages[row], value);
                     }
-            }
+                }
                 fireEditingStopped();
-            } else {
+            }
+            else
+            {
                 fireEditingCanceled();
             }
         }
     }
 
-    class TranslationTableModel extends DefaultTableModel {
+    class TranslationTableModel extends DefaultTableModel
+    {
         private static final long serialVersionUID = 1L;
 
-        public TranslationTableModel(MultiLanguageName name) {
+        public TranslationTableModel(MultiLanguageName name)
+        {
             super();
             addColumn(getString("language"));
             addColumn(getString("translation"));
             Collection<String> trans = name.getAvailableLanguages();
-            for (int i=0;i<availableLanguages.length;i++) {
+            for (int i = 0; i < availableLanguages.length; i++)
+            {
                 String lang = availableLanguages[i];
                 String[] row = new String[2];
                 row[0] = lang;
-                row[1] = trans.contains(lang) ? name.getName(lang): "";
+                row[1] = trans.contains(lang) ? name.getName(lang) : "";
                 addRow(row);
             }
         }
 
-        public boolean isCellEditable(int row, int col) {
+        public boolean isCellEditable(int row, int col)
+        {
             //Note that the data/cell address is constant,
             //no matter where the cell appears onscreen.
-            if (col < 1) {
+            if (col < 1)
+            {
                 return false;
-            } else {
+            }
+            else
+            {
                 return true;
             }
         }
     }
 
-}
+    @Singleton
+    public static class MultiLanguageFieldFactory
+    {
 
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final RaplaImages raplaImages;
+        private final DialogUiFactory dialogUiFactory;
+        private final TextFieldFactory textFieldFactory;
+        private final IOInterface ioInterface;
+
+        @Inject
+        public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+                DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
+        {
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
+            this.raplaImages = raplaImages;
+            this.dialogUiFactory = dialogUiFactory;
+            this.textFieldFactory = textFieldFactory;
+            this.ioInterface = ioInterface;
+        }
+
+        public MultiLanguageField create()
+        {
+            return new MultiLanguageField(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory);
+        }
+
+        public MultiLanguageField create(String fieldName)
+        {
+            return new MultiLanguageField(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory, fieldName);
+        }
+    }
+
+}

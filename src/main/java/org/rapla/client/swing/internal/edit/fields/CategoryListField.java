@@ -14,14 +14,17 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import java.util.Vector;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class CategoryListField extends ListField<Category>  {
     Category rootCategory;
 
-    public CategoryListField(RaplaContext context,Category rootCategory) {
-        super(context, true);
+    public CategoryListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,Category rootCategory) {
+        super(facade, i18n, raplaLocale, logger, true);
         this.rootCategory = rootCategory;
 
         Category[] obj = rootCategory.getCategories();

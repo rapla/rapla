@@ -7,10 +7,14 @@ import javax.swing.JTextField;
 
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
@@ -34,11 +38,11 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
     EventTimeCalculatorResources eventTimei18n;
 
 
-    public EventTimeCalculatorOption(RaplaContext sm, boolean adminOptions, EventTimeCalculatorResources i18n) throws RaplaContextException
+    public EventTimeCalculatorOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean adminOptions, EventTimeCalculatorResources eventTimei18n) throws RaplaContextException
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.adminOptions = adminOptions;
-        this.eventTimei18n = i18n;
+        this.eventTimei18n = eventTimei18n;
     }
 
     /**

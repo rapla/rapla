@@ -15,16 +15,19 @@ package org.rapla.client.swing.internal.edit.reservation;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.framework.RaplaContext;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 /** Provides AppointmentListener handling.*/
 public class AbstractAppointmentEditor extends RaplaGUIComponent {
     ArrayList<AppointmentListener> listenerList = new ArrayList<AppointmentListener>();
 
-    public AbstractAppointmentEditor(RaplaContext sm) {
-        super(sm);
+    public AbstractAppointmentEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(facade, i18n, raplaLocale, logger);
     }
     
     public void addAppointmentListener(AppointmentListener listener) {

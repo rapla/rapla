@@ -20,13 +20,16 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides = UserOptionPanel.class,id="warningOption")
@@ -37,8 +40,8 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     JCheckBox showConflictWarningsField = new JCheckBox();
 
     @Inject
-    public WarningsOption(RaplaContext sm) {
-        super( sm);
+    public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(facade, i18n, raplaLocale, logger);
         showConflictWarningsField.setText("");        
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre}}));

@@ -15,6 +15,7 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
@@ -22,8 +23,10 @@ import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class PasswordChangeAction extends RaplaAction {
@@ -33,8 +36,8 @@ public class PasswordChangeAction extends RaplaAction {
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 
-    public PasswordChangeAction(RaplaContext context,PopupContext popupContext, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        super( context);
+    public PasswordChangeAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -88,7 +91,7 @@ public class PasswordChangeAction extends RaplaAction {
         
         public void start() throws RaplaException
         {
-            ui = new PasswordChangeUI(getContext(),showOld);
+            ui = new PasswordChangeUI(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), showOld);
             dlg = dialogUiFactory.create(popupContext,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));

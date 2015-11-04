@@ -32,14 +32,17 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeModel;
 
-import org.rapla.entities.Category;
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class RaplaRightsReport extends RaplaGUIComponent implements
@@ -71,8 +74,8 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
     private final DialogUiFactory dialogUiFactory;
 
 	@Inject
-	public RaplaRightsReport(RaplaContext context, TreeFactory treeFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
-		super(context);
+	public RaplaRightsReport(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
+		super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
 

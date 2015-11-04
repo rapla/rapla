@@ -26,16 +26,19 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.logger.Logger;
 
 
 public class ExportServiceList extends RaplaGUIComponent  {
@@ -48,13 +51,13 @@ public class ExportServiceList extends RaplaGUIComponent  {
      * @throws RaplaException
      */
     @Inject
-    public ExportServiceList(RaplaContext sm, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(sm);
+    public ExportServiceList(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         boolean applet =(getService(StartupEnvironment.class)).getStartupMode() == StartupEnvironment.APPLET;
         if (printInterface.supportsPostscriptExport() && !applet) {
-            PSExportService exportService = new PSExportService(getContext(), printInterface);
+            PSExportService exportService = new PSExportService(facade, i18n, raplaLocale, logger, printInterface);
             addService("psexport",exportService);
         }
     }

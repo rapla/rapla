@@ -15,40 +15,40 @@ package org.rapla.client.swing.gui.edit.test;
 import java.awt.Component;
 import java.util.Collections;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.RaplaDateRenderer;
+import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.PermissionField.PermissionFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.PermissionListField;
+import org.rapla.client.swing.internal.view.InfoFactoryImpl;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.iolayer.DefaultIO;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.internal.RaplaDateRenderer;
-import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
-import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.PermissionField.PermissionFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.PermissionListField;
-import org.rapla.client.swing.internal.view.InfoFactoryImpl;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.i18n.server.ServerBundleManager;
-import org.rapla.components.iolayer.DefaultIO;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.images.RaplaImages;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public final class PermissionEditTest extends GUITestCase
 {
@@ -63,7 +63,6 @@ public final class PermissionEditTest extends GUITestCase
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
         final Logger logger = getLogger();
-        final RaplaContext context = clientService.getContext();
         final ServerBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -74,13 +73,14 @@ public final class PermissionEditTest extends GUITestCase
         final RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
-        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages, dialogUiFactory);
-        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
-        DateRenderer dateRenderer = new RaplaDateRenderer(context);
+        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
+        TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), permissionController, infoFactory, raplaImages);
+        DateRenderer dateRenderer = new RaplaDateRenderer(getFacade(), i18n, getRaplaLocale(), getLogger());
         RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages);
-        DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, dateRenderer);
-        PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory, dateFieldFactory);
-        PermissionListField editor = new PermissionListField(clientService.getContext(),"permissions", raplaListEditFactory, permissionFieldFactory);
+        DateFieldFactory dateFieldFactory = new DateFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), dateRenderer, ioInterface);
+        LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
+        PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dateRenderer, dialogUiFactory, dateFieldFactory, longFieldFactory);
+        PermissionListField editor = new PermissionListField(getFacade(), i18n, getRaplaLocale(), getLogger(),"permissions", raplaListEditFactory, permissionFieldFactory);
         Allocatable a = clientService.getFacade().getAllocatables(null)[0];
         Allocatable r = clientService.getFacade().edit( a );
         Permission p1 = r.newPermission();

@@ -16,29 +16,31 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
-public class AllocatableListField extends ListField<Allocatable>  {
-	DynamicType dynamicTypeConstraint;
+public class AllocatableListField extends ListField<Allocatable>
+{
+    DynamicType dynamicTypeConstraint;
 
-    public AllocatableListField(RaplaContext context, DynamicType dynamicTypeConstraint) throws RaplaException{
-        super( context, true);
+    public AllocatableListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DynamicType dynamicTypeConstraint)
+            throws RaplaException
+    {
+        super(facade, i18n, raplaLocale, logger, true);
         this.dynamicTypeConstraint = dynamicTypeConstraint;
-  		ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
-  		ClassificationFilter[] filters = new ClassificationFilter[] {filter};
-  		Allocatable[] allocatables = getQuery().getAllocatables(filters);
-  		Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(getLocale()));
-        list.addAll( Arrays.asList( allocatables));
+        ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
+        ClassificationFilter[] filters = new ClassificationFilter[] { filter };
+        Allocatable[] allocatables = getQuery().getAllocatables(filters);
+        Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(getLocale()));
+        list.addAll(Arrays.asList(allocatables));
         setVector(list);
     }
-     
-
- 	
 
 }
-

@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -34,6 +35,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -61,9 +63,9 @@ public class AppointmentAction extends RaplaAction {
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
     
-	public AppointmentAction(RaplaContext context,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
+	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
     {
-        super( context);
+        super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
         this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;

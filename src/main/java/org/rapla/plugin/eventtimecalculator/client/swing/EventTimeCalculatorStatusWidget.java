@@ -7,13 +7,17 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
@@ -35,8 +39,8 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
     /**
      * creates the panel for the GUI in window "reservation".
      */
-    public EventTimeCalculatorStatusWidget(final RaplaContext context, final ReservationEdit reservationEdit, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources) throws RaplaException {
-        super(context);
+    public EventTimeCalculatorStatusWidget(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ReservationEdit reservationEdit, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.factory = factory;
         //this.config = config;
         eventTimei18n = resources;

@@ -13,14 +13,17 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
@@ -60,9 +63,9 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	final Export2iCalResources i18nIcal;
 
 	@Inject
-    public Export2iCalUserOption(RaplaContext sm,ICalConfigService configService, Export2iCalResources i18nIcal) throws RaplaContextException
+    public Export2iCalUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalConfigService configService, Export2iCalResources i18nIcal) throws RaplaContextException
 	{
-		super(sm);
+		super(facade, i18n, raplaLocale, logger);
 		this.configService = configService;
 		this.i18nIcal = i18nIcal;
 	}

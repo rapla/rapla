@@ -43,6 +43,7 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -50,8 +51,10 @@ import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
 import org.rapla.components.util.Tools;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public abstract class AbstractSelectField<T> extends AbstractEditField implements MultiEditField, SetGetField<T>, SetGetCollectionField<T>
@@ -73,12 +76,12 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         return selectButton;
     }
 
-    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
-       this( context, treeFactory, raplaImages, dialogUiFactory, null);
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
+       this( facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, null);
     }
     
-    public AbstractSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, T defaultValue) {
-        super( context);
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, T defaultValue) {
+        super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
         useDefault = defaultValue != null;

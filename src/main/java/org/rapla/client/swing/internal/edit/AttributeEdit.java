@@ -25,6 +25,7 @@ import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
@@ -34,8 +35,10 @@ import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class AttributeEdit extends RaplaGUIComponent
     implements
@@ -50,11 +53,9 @@ public class AttributeEdit extends RaplaGUIComponent
     DefaultListModel model = new DefaultListModel();
     private final DialogUiFactory dialogUiFactory;
 
-
-
     @Inject
-    public AttributeEdit(RaplaContext context, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super( context);
+    public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
 
         // 1.
         //Set<AnnotationEditAttributeExtension> attributeExtensionSet = context.lookup(AnnotationEditExtensionWrapper.class).getAttributeExtensions();

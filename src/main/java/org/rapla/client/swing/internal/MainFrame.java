@@ -28,6 +28,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -38,11 +39,13 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
 
 
 
@@ -59,8 +62,8 @@ public class MainFrame extends RaplaGUIComponent
     private final FrameControllerList frameControllerList;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-    public MainFrame(RaplaContext sm, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(sm);
+    public MainFrame(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactory dialogUiFactory) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
         this.frameControllerList = frameControllerList;

@@ -16,6 +16,7 @@ import java.awt.Dimension;
 import java.util.Date;
 import java.util.List;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
@@ -25,7 +26,10 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class CalendarAction extends RaplaAction {
@@ -36,9 +40,9 @@ public class CalendarAction extends RaplaAction {
     private final MultiCalendarViewFactory multiCalendarViewFactory;
     private final DialogUiFactory dialogUiFactory;
 
-    public CalendarAction(RaplaContext sm, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactory dialogUiFactory)
+    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactory dialogUiFactory)
     {
-        super( sm);
+        super(facade, i18n, raplaLocale, logger);
         this.multiCalendarViewFactory = multiCalendarViewFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.model = (CalendarSelectionModel)selectionModel.clone();

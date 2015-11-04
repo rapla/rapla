@@ -12,13 +12,17 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.components.layout.TableLayout;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 
 class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
@@ -28,11 +32,13 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 	final JCheckBox checkbox;
     final JTextField icalURL;
     private final RaplaImages raplaImages;
+    private final IOInterface ioInterface;
 	 
-	public IcalPublishExtension(RaplaContext context, CalendarSelectionModel model, RaplaImages raplaImages) {
-		super(context);
+	public IcalPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, RaplaImages raplaImages, IOInterface ioInterface) {
+		super(facade, i18n, raplaLocale, logger);
 		this.model = model;
         this.raplaImages = raplaImages;
+        this.ioInterface = ioInterface;
 
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED       }}));
@@ -59,7 +65,7 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 	
 	JPanel createStatus( final JTextField urlLabel)  
     {
-        addCopyPaste(urlLabel);
+        addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface, getLogger());
         final RaplaButton copyButton = new RaplaButton();
         JPanel status = new JPanel()
         {
@@ -87,7 +93,7 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
             public void actionPerformed(ActionEvent e) {
             	urlLabel.requestFocus();
             	urlLabel.selectAll();
-                copy(urlLabel,e);
+                copy(urlLabel,e, ioInterface, getRaplaLocale());
             }
 
         });

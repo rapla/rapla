@@ -44,7 +44,15 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.ReservationController;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.edit.RaplaListEdit;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.undo.CommandHistory;
@@ -57,15 +65,12 @@ import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.ReservationController;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.RaplaListEdit;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 /** Default GUI for editing multiple appointments.*/
@@ -96,16 +101,16 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, IOInterface ioInterface)
 			throws RaplaException {
-		super(sm);
+		super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
         this.reservationController = reservationController;
 
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        appointmentController = new AppointmentController(sm, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
+        appointmentController = new AppointmentController(facade, i18n, raplaLocale, logger, commandHistory, raplaImages, dateRenderer, dialogUiFactory, ioInterface);
         listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener);
         listEdit.getToolbar().add( freeButtonNext);
         freeButtonNext.setText(getString("appointment.search_free"));
@@ -589,33 +594,41 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     @Singleton
     public static class AppointmentListEditFactory
     {
-
-        private final RaplaContext sm;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
         private final AppointmentFormater appointmentFormater;
         private final ReservationController reservationController;
         private final RaplaImages raplaImages;
         private final DateRenderer dateRenderer;
         private final DialogUiFactory dialogUiFactory;
+        private final IOInterface ioInterface;
 
         @Inject
-        public AppointmentListEditFactory(RaplaContext sm, AppointmentFormater appointmentFormater, ReservationController reservationController,
-                RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+        public AppointmentListEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaContext sm,
+                AppointmentFormater appointmentFormater, ReservationController reservationController, RaplaImages raplaImages, DateRenderer dateRenderer,
+                DialogUiFactory dialogUiFactory, IOInterface ioInterface)
         {
             super();
-            this.sm = sm;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
             this.appointmentFormater = appointmentFormater;
             this.reservationController = reservationController;
             this.raplaImages = raplaImages;
             this.dateRenderer = dateRenderer;
             this.dialogUiFactory = dialogUiFactory;
+            this.ioInterface = ioInterface;
         }
 
         public AppointmentListEdit create(CommandHistory commandHistory)
         {
-            return new AppointmentListEdit(sm, appointmentFormater, reservationController, commandHistory, raplaImages, dateRenderer, dialogUiFactory);
+            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, reservationController, commandHistory, raplaImages,
+                    dateRenderer, dialogUiFactory, ioInterface);
         }
-	}
-
+    }
 	
 }
 

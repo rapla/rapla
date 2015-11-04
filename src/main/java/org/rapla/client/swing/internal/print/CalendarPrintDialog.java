@@ -57,6 +57,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 
 
@@ -164,10 +166,16 @@ public class CalendarPrintDialog extends DialogUI
 
     private final Provider<ErrorDialog> errorDialogProvider;
 
+    private final RaplaLocale raplaLocale;
+
+    private final Logger logger;
+
     @Inject
-    public CalendarPrintDialog(RaplaContext context,Frame owner, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactory dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
+    public CalendarPrintDialog(RaplaContext context,Frame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactory dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
         super(i18n, raplaImages, bundleManager, frameList, owner);
         this.context = context;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
         this.i18n = i18n;
         this.printTool = printInterface;
         this.dialogUiFactory = dialogUiFactory;
@@ -189,7 +197,7 @@ public class CalendarPrintDialog extends DialogUI
         SwingViewFactory factory = factoryMap.get( model.getViewId());
         RaplaDefaultContext contextWithPrintInfo = new RaplaDefaultContext(context);
         contextWithPrintInfo.put(SwingViewFactory.PRINT_CONTEXT, new Boolean(true));
-        currentView = factory.createSwingView( contextWithPrintInfo, model, false);
+        currentView = factory.createSwingView( model, false);
         if ( currentView instanceof Printable)
         {
             printable = (Printable)currentView;
@@ -203,7 +211,7 @@ public class CalendarPrintDialog extends DialogUI
         content.setLayout(new BorderLayout());
         titlePanel.add(titleLabel);
         titlePanel.add(titleEdit);
-        new RaplaGUIComponent( context).addCopyPaste(titleEdit);
+        RaplaGUIComponent.addCopyPaste(titleEdit, i18n, raplaLocale, printTool, logger);
 
         if ( currentView instanceof MultiCalendarPrint)
         {

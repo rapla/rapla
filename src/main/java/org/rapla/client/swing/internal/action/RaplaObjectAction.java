@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.swing.EditController;
@@ -41,9 +42,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -70,12 +71,12 @@ public class RaplaObjectAction extends RaplaAction {
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
 
-    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) {
-        this(sm, null, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) {
+        this(facade, i18n, raplaLocale, logger, null, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
     }
 
-    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)  {
-        super( sm);
+    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)  {
+        super(facade, i18n, raplaLocale, logger);
         this.editController = editController;
         this.popupContext = popupContext;
         this.infoFactory = infoFactory;

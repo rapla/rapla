@@ -40,6 +40,7 @@ import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -53,7 +54,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -86,19 +86,19 @@ public class UserEditUI  extends AbstractEditUI<User> {
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, GroupListField groupField, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
-        super(context);
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         List<EditField> fields = new ArrayList<EditField>();
-        usernameField = new TextField(context,getString("username"));
+        usernameField = textFieldFactory.create(getString("username"));
         fields.add(usernameField);
-        personSelect = new PersonSelectField(context);
+        personSelect = new PersonSelectField(facade, i18n, raplaLocale, logger);
         fields.add(personSelect);
-        nameField = new TextField(context,getString("name"));
+        nameField = textFieldFactory.create(getString("name"));
         fields.add(nameField);
-        emailField = new TextField(context,getString("email"));
+        emailField = textFieldFactory.create(getString("email"));
         fields.add(emailField);
         adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, getString("admin"),getUser());
         fields.add(adminField);
@@ -165,8 +165,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
          * @param sm
          * @throws RaplaException
          */
-        public PersonSelectField(RaplaContext sm) throws RaplaException {
-            super(sm);
+        public PersonSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
+            super(facade, i18n, raplaLocale, logger);
             setFieldName( getString("person"));
             final Category rootCategory = getQuery().getUserGroupsCategory();
             if ( rootCategory == null )

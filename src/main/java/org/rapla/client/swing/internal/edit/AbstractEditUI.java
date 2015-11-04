@@ -31,7 +31,6 @@ import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
 import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -49,11 +48,6 @@ implements
     protected List<EditField> fields = Collections.emptyList();
 
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
-    
-    public AbstractEditUI(RaplaContext context) 
-    {
-        super(context);
-    }
     
     public AbstractEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {

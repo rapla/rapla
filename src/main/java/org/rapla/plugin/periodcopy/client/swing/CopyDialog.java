@@ -31,6 +31,7 @@ import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -41,6 +42,7 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -48,9 +50,11 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 
 /** sample UseCase that only displays the text of the configuration and
@@ -80,14 +84,14 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     
     @SuppressWarnings("unchecked")
     @Inject
-	public CopyDialog(RaplaContext sm, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(sm);
+	public CopyDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory, IOInterface ioInterface) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.periodCopyI18n = periodCopyI18n;
         this.model = model;
         locale = getRaplaLocale();
-        sourceBegin = createRaplaCalendar(dateRenderer);
-        sourceEnd = createRaplaCalendar(dateRenderer);
-        destBegin = createRaplaCalendar(dateRenderer);
+        sourceBegin = createRaplaCalendar(dateRenderer, ioInterface);
+        sourceEnd = createRaplaCalendar(dateRenderer, ioInterface);
+        destBegin = createRaplaCalendar(dateRenderer, ioInterface);
         
         
         Period[] periods = getQuery().getPeriods();

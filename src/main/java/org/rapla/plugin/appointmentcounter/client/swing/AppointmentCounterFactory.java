@@ -10,6 +10,7 @@ import javax.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
 import org.rapla.components.util.DateTools;
@@ -17,8 +18,11 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -28,24 +32,34 @@ import org.rapla.inject.Extension;
 @Singleton
 public class AppointmentCounterFactory implements AppointmentStatusFactory 
 {
-	@Inject
-	public AppointmentCounterFactory()
-	{
-	}
+    private final ClientFacade facade;
+    private final RaplaResources i18n;
+    private final RaplaLocale raplaLocale;
+    private final Logger logger;
 
-	public RaplaWidget createStatus(RaplaContext context, ReservationEdit reservationEdit) throws RaplaException
+	@Inject
+	public AppointmentCounterFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
 	{
-		return new AppointmentCounter(context, reservationEdit);
+	    super();
+	    this.facade = facade;
+	    this.i18n = i18n;
+	    this.raplaLocale = raplaLocale;
+	    this.logger = logger;
 	}
 	
-	class AppointmentCounter extends RaplaGUIComponent implements RaplaWidget
+	public RaplaWidget createStatus(ReservationEdit reservationEdit) throws RaplaException
+	{
+		return new AppointmentCounter(facade, i18n, raplaLocale, logger, reservationEdit);
+	}
+	
+    class AppointmentCounter extends RaplaGUIComponent implements RaplaWidget
 	{
 		JLabel statusBar = new JLabel();
 		
 		   
 		ReservationEdit reservationEdit;
-		public AppointmentCounter(final RaplaContext context, final ReservationEdit reservationEdit) {
-			super(context);
+		public AppointmentCounter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ReservationEdit reservationEdit) {
+			super(facade, i18n, raplaLocale, logger);
 
 			Font font = statusBar.getFont().deriveFont( (float)9.0);
 			statusBar.setFont( font ); 

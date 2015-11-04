@@ -33,12 +33,15 @@ import javax.swing.JScrollPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
@@ -51,8 +54,10 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 /****************************************************************
  * This is the base-class for all Classification-Panels         *
@@ -77,11 +82,11 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     
-	public ClassificationField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory)  {
-		super(context);
+	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
+		super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-		editUI = new ClassificationEditUI(context, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
+		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override
@@ -185,7 +190,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			dynamicType = null;
 		oldDynamicType = dynamicType;
 
-		RaplaListComboBox jComboBox = new RaplaListComboBox(getContext(),types);
+		RaplaListComboBox jComboBox = new RaplaListComboBox(getRaplaLocale(),types);
 		typeSelector = jComboBox;
 		typeSelector.setEnabled( types.length > 1);
 		if (dynamicType != null)
@@ -312,29 +317,39 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	@Singleton
 	public static class ClassificationFieldFactory{
 	    
-	    private final RaplaContext context;
 	    private final TreeFactory treeFactory;
 	    private final RaplaImages raplaImages;
 	    private final DateFieldFactory dateFieldFactory;
 	    private final DialogUiFactory dialogUiFactory;
         private final BooleanFieldFactory booleanFieldFactory;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final TextFieldFactory textFieldFactory;
+        private final LongFieldFactory longFieldFactory;
 	    
 	    @Inject
-        public ClassificationFieldFactory(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
-                DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory)
+        public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
+                DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)
         {
             super();
-            this.context = context;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
             this.treeFactory = treeFactory;
             this.raplaImages = raplaImages;
             this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
             this.booleanFieldFactory = booleanFieldFactory;
+            this.textFieldFactory = textFieldFactory;
+            this.longFieldFactory = longFieldFactory;
         }
 
         public ClassificationField create()
 	    {
-	        return new ClassificationField(context, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
+	        return new ClassificationField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 	    }
 	}
 }

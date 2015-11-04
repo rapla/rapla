@@ -5,17 +5,20 @@ import java.util.Collections;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
-import org.rapla.entities.Annotatable;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.AnnotationEditExtension;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.entities.Annotatable;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides = AnnotationEditAttributeExtension.class, id = "categorization")
@@ -26,9 +29,9 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
     private final BooleanFieldFactory booleanFieldFactory;
 
     @Inject
-    public CategorizationAnnotationEdit(RaplaContext context, BooleanFieldFactory booleanFieldFactory)
+    public CategorizationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory)
     {
-        super(context);
+        super(facade, i18n, raplaLocale, logger);
         this.booleanFieldFactory = booleanFieldFactory;
     }
 

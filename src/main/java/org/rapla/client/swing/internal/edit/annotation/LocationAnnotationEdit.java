@@ -5,6 +5,7 @@ import java.util.Collections;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -13,8 +14,10 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="location")
@@ -25,8 +28,8 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
     private final BooleanFieldFactory booleanFieldFactory;
 
     @Inject
-    public LocationAnnotationEdit(RaplaContext context, BooleanFieldFactory booleanFieldFactory) {
-        super(context);
+    public LocationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.booleanFieldFactory = booleanFieldFactory;
     }
 

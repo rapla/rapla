@@ -2,37 +2,46 @@ package org.rapla.plugin.autoexport.client.swing;
 
 import java.beans.PropertyChangeListener;
 
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.PublishExtension;
-import org.rapla.client.swing.images.RaplaImages;
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.swing.PublishExtension;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportResources;
 
-import javax.inject.Inject;
-
 @Extension(provides=PublishExtensionFactory.class,id="html")
-public class HTMLPublicExtensionFactory extends RaplaComponent implements PublishExtensionFactory
+public class HTMLPublicExtensionFactory implements PublishExtensionFactory
 {
-	private final RaplaResources i18n;
+    private final ClientFacade facade;
+    private final RaplaResources i18n;
+    private final RaplaLocale raplaLocale;
+    private final Logger logger;
     private final AutoExportResources autoExportI18n;
     private final RaplaImages raplaImages;
+    private final IOInterface ioInterface;
 
     @Inject
-	public HTMLPublicExtensionFactory(RaplaContext context, AutoExportResources autoExportI18n, RaplaResources i18n, RaplaImages raplaImages) {
-		super(context);
-		this.autoExportI18n = autoExportI18n;
-		this.i18n = i18n;
+	public HTMLPublicExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AutoExportResources autoExportI18n, RaplaImages raplaImages, IOInterface ioInterface) {
+		this.facade = facade;
+        this.i18n = i18n;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
+        this.autoExportI18n = autoExportI18n;
         this.raplaImages = raplaImages;
+        this.ioInterface = ioInterface;
 	}
 
 	public PublishExtension creatExtension(CalendarSelectionModel model,PropertyChangeListener revalidateCallback) throws RaplaException 
 	{
-		return new HTMLPublishExtension(getContext(), model, autoExportI18n, i18n, raplaImages);
+		return new HTMLPublishExtension(facade, i18n, raplaLocale, logger, model, autoExportI18n, raplaImages, ioInterface);
 	}
 
 }

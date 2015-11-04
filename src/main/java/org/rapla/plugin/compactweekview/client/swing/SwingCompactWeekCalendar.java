@@ -29,6 +29,7 @@ import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -45,6 +46,7 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SwingCompactWeekView;
 import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -52,8 +54,10 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -63,8 +67,8 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
-    public SwingCompactWeekCalendar(RaplaContext sm,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException {
-        super( sm, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
+    public SwingCompactWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface) throws RaplaException {
+        super( facade, i18n, raplaLocale, logger, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface);
     }
     
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
@@ -115,7 +119,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 
     
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController) {
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController) {
             
             @Override
             public void selectionChanged(Date start, Date end) {

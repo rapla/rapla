@@ -21,15 +21,18 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.TreeAllocatableSelection;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.TreeAllocatableSelection;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
@@ -43,8 +46,8 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
     NotificationResources notificationI18n;
 
     @Inject
-    public NotificationOption(RaplaContext sm, NotificationResources notificationI18n, TreeAllocatableSelection selection) {
-        super( sm);
+    public NotificationOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, NotificationResources notificationI18n, TreeAllocatableSelection selection) {
+        super(facade, i18n, raplaLocale, logger);
         this.notificationI18n = notificationI18n;
         this.selection = selection;
         selection.setAddDialogTitle(notificationI18n.getString("subscribe_notification"));

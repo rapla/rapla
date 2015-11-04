@@ -82,6 +82,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
@@ -90,6 +91,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
+import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MenuFactoryImpl;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.CalendarAction;
@@ -129,10 +131,12 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 /**
  * <p>
@@ -198,12 +202,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final MultiCalendarViewFactory multiCalendarViewFactory;
     private final DialogUiFactory dialogUiFactory;
 
-    public AllocatableSelection(RaplaContext context, boolean addCalendarButton, CommandHistory commandHistory, TreeFactory treeFactory,
-            CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater, PermissionController permissionController, MenuFactory menuFactory,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory,
-            MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory)
+    public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean addCalendarButton,
+            CommandHistory commandHistory, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
+            PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
+            DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory,
+            BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory)
     {
-        super(context);
+        super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
         // Undo Command History
         this.commandHistory = commandHistory;
@@ -294,7 +299,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         content.setDividerLocation(0.3);
 
         calendarModel = originalModel.clone();
-        filter = new FilterEditButton(context, treeFactory, calendarModel, listener, raplaImages, dateFieldFactory, booleanFieldFactory, dialogUiFactory, true);
+        filter = filterEditButtonFactory.create(true);
         leftPanel.add(filter.getButton(), "4,0,r,f");
         //		filterAction = new FilterAction(getContext(), getComponent(), null);
         //		filterAction.setFilter(calendarModel);
@@ -2121,7 +2126,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             if (command.indexOf("calendar") >= 0)
             {
                 JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
-                CalendarAction calendarAction = new CalendarAction(getContext(), getComponent(), calendarModel, raplaImages, multiCalendarViewFactory, dialogUiFactory);
+                CalendarAction calendarAction = new CalendarAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), getComponent(), calendarModel,
+                        raplaImages, multiCalendarViewFactory, dialogUiFactory);
                 calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
                 Collection<Appointment> appointments = Arrays.asList(AllocatableSelection.this.appointments);
                 calendarAction.setStart(findFirstStart(appointments));
@@ -2287,7 +2293,10 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     public static class AllocatableSelectionFactory
     {
 
-        private final RaplaContext context;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
         private final AppointmentFormater appointmentFormater;
         private final PermissionController permissionController;
         private final TreeFactory treeFactory;
@@ -2299,15 +2308,20 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final DateFieldFactory dateFieldFactory;
         private final MultiCalendarViewFactory multiCalendarViewFactory;
         private final BooleanFieldFactory booleanFieldFactory;
+        private final FilterEditButtonFactory filterEditButtonFactory;
 
         @Inject
-        public AllocatableSelectionFactory(RaplaContext context, AppointmentFormater appointmentFormater, PermissionController permissionController,
-                TreeFactory treeFactory, CalendarSelectionModel model, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory,
-                RaplaImages raplaImages, DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory,
-                BooleanFieldFactory booleanFieldFactory)
+        public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+                AppointmentFormater appointmentFormater, PermissionController permissionController, TreeFactory treeFactory, CalendarSelectionModel model,
+                MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
+                DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
+                FilterEditButtonFactory filterEditButtonFactory)
         {
             super();
-            this.context = context;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
             this.appointmentFormater = appointmentFormater;
             this.multiCalendarViewFactory = multiCalendarViewFactory;
             this.permissionController = permissionController;
@@ -2319,12 +2333,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             this.dialogUiFactory = dialogUiFactory;
             this.dateFieldFactory = dateFieldFactory;
             this.booleanFieldFactory = booleanFieldFactory;
+            this.filterEditButtonFactory = filterEditButtonFactory;
         }
 
         public AllocatableSelection create(boolean addCalendarButton, CommandHistory commandHistory)
         {
-            return new AllocatableSelection(context, addCalendarButton, commandHistory, treeFactory, model, appointmentFormater, permissionController,
-                    menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory, booleanFieldFactory);
+            return new AllocatableSelection(facade, i18n, raplaLocale, logger, addCalendarButton, commandHistory, treeFactory, model, appointmentFormater,
+                    permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
+                    booleanFieldFactory, filterEditButtonFactory);
         }
     }
 }

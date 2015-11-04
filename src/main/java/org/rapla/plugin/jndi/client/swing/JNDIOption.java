@@ -39,15 +39,18 @@ import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
@@ -77,14 +80,16 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     private final DialogUiFactory dialogUiFactory;
     private final Provider<GroupListField> groupListFieldProvider;
     private final RaplaResources raplaResources;
+    private final IOInterface ioInterface;
 
     @Inject
-    public JNDIOption(RaplaContext sm, RaplaResources raplaResources, JNDIConfig config, DialogUiFactory dialogUiFactory, Provider<GroupListField>groupListFieldProvider) {
-        super(sm);
+    public JNDIOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactory dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
+        super(facade, i18n, raplaLocale, logger);
         this.raplaResources = raplaResources;
         this.configService = config;
         this.dialogUiFactory = dialogUiFactory;
         this.groupListFieldProvider = groupListFieldProvider;
+        this.ioInterface = ioInterface;
     }
 
     protected JPanel createPanel() throws RaplaException {
@@ -105,7 +110,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 			}
 		});
 		
-    	addCopyPaste( connectionPassword );
+		addCopyPaste( connectionPassword, getI18n(), getRaplaLocale(), ioInterface, getLogger() );
     	connectionURL = newTextField();
     	contextFactory= newTextField();
     	userPassword = newTextField();
@@ -185,7 +190,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 
     private JTextField newTextField() {
         final JTextField jTextField = new JTextField();
-        addCopyPaste( jTextField);
+        addCopyPaste( jTextField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
         return jTextField;
     }
 

@@ -552,13 +552,15 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     private void startLoginInThread()  {
         final Semaphore loginMutex = new Semaphore(1);
         try {
-        	final RaplaContext context = getContext();
 			final Logger logger = getLogger();
+			final RaplaContext context = getContext();
 			final DialogUiFactory dialogUiFactory = inject(DialogUiFactory.class);
 			final RaplaImages raplaImages = inject(RaplaImages.class);
             final LanguageChooser languageChooser = inject(LanguageChooser.class);
-            
-            final LoginDialog dlg = LoginDialog.create(context, languageChooser.getComponent(), frameControllerList);
+            ServerBundleManager localeSelector = (ServerBundleManager)context.lookup( BundleManager.class );
+            StartupEnvironment env = lookup(StartupEnvironment.class);
+            RaplaLocale raplaLocale = lookup(RaplaLocale.class);
+            final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent(), frameControllerList);
             
             Action languageChanged = new AbstractAction()
             {
@@ -575,7 +577,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                         {
                             defaultLanguageChoosen = false;
                             getLogger().debug("Language changing to " + lang);
-                            ServerBundleManager localeSelector = (ServerBundleManager)context.lookup( BundleManager.class );
                             localeSelector.setLanguage(lang);
                             getLogger().info("Language changed " + localeSelector.getLocale().getLanguage() );
                         }
@@ -634,7 +635,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
             };
             loginAction.putValue(Action.NAME,i18n.getString("login"));
             exitAction.putValue(Action.NAME, i18n.getString("exit"));
-            RaplaImages inject = getContext().lookup(RaplaImages.class);
+            RaplaImages inject = context.lookup(RaplaImages.class);
             dlg.setIconImage(inject.getIconFromKey("icon.rapla_small").getImage());
             dlg.setLoginAction( loginAction);
             dlg.setExitAction( exitAction );

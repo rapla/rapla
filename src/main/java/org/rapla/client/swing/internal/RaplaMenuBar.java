@@ -70,12 +70,14 @@ import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.dbrm.RestartServer;
 
@@ -92,7 +94,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
 
 
-    @Inject public RaplaMenuBar(RaplaContext context,
+    @Inject public RaplaMenuBar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             PrintAction printAction,
             Set<AdminMenuExtension> adminMenuExt,
             Set<EditMenuExtension> editMenuExt,
@@ -111,7 +113,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     )
             throws RaplaException
     {
-        super(context);
+        super(facade, i18n, raplaLocale, logger);
         this.editController = editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -179,7 +181,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (clientService.canSwitchBack())
         {
             JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction(new ActionWrapper(new UserAction(getContext(), null, clientService, editController, raplaImages, dialogUiFactory).setSwitchToUser()));
+            switchBack.setAction(new ActionWrapper(new UserAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), null, clientService, editController, raplaImages, dialogUiFactory).setSwitchToUser()));
             adminMenu.add(switchBack);
         }
 
@@ -187,13 +189,13 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (server && isAdmin())
         {
             JMenuItem restartServer = new JMenuItem();
-            restartServer.setAction(new ActionWrapper(new RestartServerAction(getContext(), restartServerService, raplaImages)));
+            restartServer.setAction(new ActionWrapper(new RestartServerAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), restartServerService, raplaImages)));
             adminMenu.add(restartServer);
         }
 
         Listener listener = new Listener();
         JMenuItem restart = new JMenuItem();
-        restart.setAction(new ActionWrapper(new RestartRaplaAction(getContext(), clientService, raplaImages)));
+        restart.setAction(new ActionWrapper(new RestartRaplaAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), clientService, raplaImages)));
         systemMenu.add(restart);
 
         systemMenu.setMnemonic('F');
@@ -243,20 +245,20 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         {
-            SaveableToggleAction action = new SaveableToggleAction(context, "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
+            SaveableToggleAction action = new SaveableToggleAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
             action.setEnabled(modifyPreferencesAllowed);
         }
         {
-            SaveableToggleAction action = new SaveableToggleAction(context, CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
+            SaveableToggleAction action = new SaveableToggleAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
                     CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
             action.setEnabled(modifyPreferencesAllowed);
         }
         {
-            SaveableToggleAction action = new SaveableToggleAction(context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
+            SaveableToggleAction action = new SaveableToggleAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
                     CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");

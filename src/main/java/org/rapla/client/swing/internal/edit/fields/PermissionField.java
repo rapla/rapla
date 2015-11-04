@@ -36,9 +36,11 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
@@ -46,8 +48,10 @@ import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class PermissionField extends AbstractEditField implements  ChangeListener, ActionListener {
     SetGetField<Category> groupSelect;
@@ -73,8 +77,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory) throws RaplaException {
-        super( context);
+	public PermissionField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
 
@@ -92,7 +96,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
              {pre,5,pre,5,pre}} // Rows
                                           ));
 
-        userSelect = new UserListField( context );
+        userSelect = new UserListField( facade, i18n, raplaLocale, logger );
         userLabel = new JLabel(getString("user") + ":");
         userPanel.add( userLabel, "0,0,l,f" );
         userPanel.add( userSelect.getComponent(),"2,0,l,f" );
@@ -101,11 +105,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(getContext(), treeFactory, raplaImages, dialogUiFactory, rootCategory);
+                CategorySelectField field= new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {
-                CategoryListField field = new CategoryListField(getContext(), rootCategory);
+                CategoryListField field = new CategoryListField(facade, i18n, raplaLocale, logger, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             }
@@ -132,7 +136,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         startDate = dateFieldFactory.create();
         reservationPanel.add( startDate.getComponent() , "4,0,l,f" );
 
-        minAdvance = new LongField(context,new Long(0) );
+        minAdvance = longFieldFactory.create(new Long(0) );
         reservationPanel.add( minAdvance.getComponent() , "4,0,l,f" );
 
         reservationPanel.add( new JLabel( getString("end_date") + ":" ), "0,2,l,f" );
@@ -143,11 +147,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         endDate = dateFieldFactory.create();
         reservationPanel.add( endDate.getComponent() , "4,2,l,f" );
 
-        maxAdvance = new LongField(context, new Long(1) );
+        maxAdvance = longFieldFactory.create(new Long(1) );
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(getString("permission.access") + ":"), "0,4,f,f" );
-        accessField = new ListField<Permission.AccessLevel>(context, permissionLevels );
+        accessField = new ListField<Permission.AccessLevel>(facade, i18n, raplaLocale, logger, permissionLevels );
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
@@ -359,8 +363,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     class UserListField extends ListField<User> {
 
-        public UserListField(RaplaContext sm) throws RaplaException{
-            super(sm,true);
+        public UserListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException{
+            super(facade, i18n, raplaLocale, logger, true);
             User[] users = getQuery().getUsers();
             List<User> asList = new ArrayList<User>(Arrays.asList(users ));
             Collections.sort( asList, new NamedComparator<User>( getLocale()));
@@ -400,26 +404,34 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     @Singleton
     public static class PermissionFieldFactory
     {
-        private final RaplaContext context;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
         private final TreeFactory treeFactory;
         private final RaplaImages raplaImages;
         private final DialogUiFactory dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
+        private final LongFieldFactory longFieldFactory;
 
         @Inject
-        public PermissionFieldFactory(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
-                DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory)
+        public PermissionFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+                RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory)
         {
-            this.context = context;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
             this.treeFactory = treeFactory;
             this.raplaImages = raplaImages;
             this.dialogUiFactory = dialogUiFactory;
             this.dateFieldFactory = dateFieldFactory;
+            this.longFieldFactory = longFieldFactory;
         }
 
         public PermissionField create()
         {
-            return new PermissionField(context, treeFactory, raplaImages, dialogUiFactory, dateFieldFactory);
+            return new PermissionField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, dateFieldFactory, longFieldFactory);
         }
     }
 

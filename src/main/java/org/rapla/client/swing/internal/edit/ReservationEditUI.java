@@ -23,12 +23,14 @@ import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
@@ -50,6 +52,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -63,18 +67,19 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     private final PermissionController permissionController;
 
     @Inject
-    public ReservationEditUI(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
+    public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
             DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException
+            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException
     {
-        super(context);
+        super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
 
-        allocatableSelection = new AllocatableSelection(context, false, new CommandHistory(), treeFactory, originalModel, appointmentFormater,
-                permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory, booleanFieldFactory)
+        allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
+                appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
+                booleanFieldFactory, filterEditButtonFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };

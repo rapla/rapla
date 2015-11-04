@@ -49,6 +49,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.ActionMapUIResource;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -81,8 +82,9 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit
 {
@@ -152,12 +154,13 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final PermissionController permissionController;
 
     @Inject
-    public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
-            ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
-            AllocatableSelectionFactory allocatableSelectionFactory, PermissionController permissionController) throws RaplaException
+    public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
+            RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
+            AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
+            PermissionController permissionController, FrameControllerList frameControllerList) throws RaplaException
     {
-        super( sm);
+        super(facade, i18n, raplaLocale, logger);
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
@@ -180,7 +183,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
         */
 
-        frame = new RaplaFrame(sm.lookup(FrameControllerList.class));
+        frame = new RaplaFrame(frameControllerList);
         mainContent.setLayout( tableLayout );
         mainContent.add(reservationInfo.getComponent(),"0,0");
         mainContent.add(appointmentEdit.getComponent(),"0,1");
@@ -484,7 +487,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         
         for (AppointmentStatusFactory factory: statusFactories)
         {
-        	RaplaWidget statusWidget = factory.createStatus(getContext(), this);
+        	RaplaWidget statusWidget = factory.createStatus(this);
         	status.add((Component) statusWidget.getComponent());
         }
 

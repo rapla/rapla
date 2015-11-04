@@ -14,24 +14,27 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import javax.swing.tree.TreeModel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.Category;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class CategorySelectField extends AbstractSelectField<Category>
 {
     Category rootCategory;
 
-    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, Category rootCategory){
-       this( context, treeFactory, raplaImages, dialogUiFactory, rootCategory, null);
+    public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, Category rootCategory){
+       this( facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory, null);
     }
     
-    public CategorySelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, Category rootCategory, Category defaultCategory)
+    public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, Category rootCategory, Category defaultCategory)
     {
-        super( context, treeFactory,raplaImages, dialogUiFactory, defaultCategory);
+        super( facade, i18n, raplaLocale, logger, treeFactory,raplaImages, dialogUiFactory, defaultCategory);
         this.rootCategory = rootCategory;
     }
     

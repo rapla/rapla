@@ -5,16 +5,21 @@ import java.util.Collections;
 
 import javax.inject.Inject;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.swing.EditField;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.edit.fields.LongField;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.edit.fields.LongField;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditAttributeExtension.class, id="expectedrows")
@@ -22,10 +27,14 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
 {
     protected String annotationName = AttributeAnnotations.KEY_EXPECTED_ROWS;
     protected Long DEFAULT_VALUE = new Long(1);
+    private final IOInterface service;
+    private final LongFieldFactory longFieldFactory;
     
     @Inject
-    public ExpectedRowsAnnotationEdit(RaplaContext context) {
-        super(context);
+    public ExpectedRowsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, LongFieldFactory longFieldFactory) {
+        super(facade, i18n, raplaLocale, logger);
+        this.service = service;
+        this.longFieldFactory = longFieldFactory;
     }
 
     @Override
@@ -41,7 +50,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        LongField field = new LongField(getContext(),getString(annotationName));
+        LongField field = longFieldFactory.create(getString(annotationName));
         if ( annotation != null)
         {
             field.setValue( Integer.parseInt(annotation));
@@ -50,7 +59,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
         {
             field.setValue( DEFAULT_VALUE);
         }
-        addCopyPaste(field.getComponent());
+        addCopyPaste(field.getComponent(), getI18n(), getRaplaLocale(), service, getLogger());
         return Collections.singleton(field);
     }
 

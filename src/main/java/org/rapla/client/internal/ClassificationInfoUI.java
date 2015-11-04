@@ -25,14 +25,10 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
-    public ClassificationInfoUI(RaplaContext sm) {
-        super(sm);
-    }
     
     public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger)
     {

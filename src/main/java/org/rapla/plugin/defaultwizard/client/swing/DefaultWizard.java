@@ -13,11 +13,34 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client.swing;
 
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.swing.MenuElement;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
@@ -25,26 +48,10 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.PopupContext;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
-import java.util.List;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
@@ -58,8 +65,8 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-	public DefaultWizard(RaplaContext sm, PermissionController permissionController, CalendarModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
-        super(sm);
+	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, CalendarModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
+        super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         this.model = model;
         this.editController = editController;

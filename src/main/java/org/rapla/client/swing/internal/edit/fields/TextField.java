@@ -24,6 +24,8 @@ import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JColorChooser;
@@ -34,202 +36,270 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
-import org.rapla.framework.RaplaContext;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
-public class TextField extends AbstractEditField implements ActionListener,FocusListener,KeyListener, MultiEditField, SetGetField<String> {
+public class TextField extends AbstractEditField implements ActionListener, FocusListener, KeyListener, MultiEditField, SetGetField<String>
+{
     JTextComponent field;
     JComponent colorPanel;
     JScrollPane scrollPane;
-    JButton colorChooserBtn ;
+    JButton colorChooserBtn;
     JPanel color;
     Object oldValue;
     Color currentColor;
-    
-	boolean multipleValues = false; // indicator, shows if multiple different
-	// values are shown in this field
+
+    boolean multipleValues = false; // indicator, shows if multiple different
+    // values are shown in this field
     public final static int DEFAULT_LENGTH = 30;
-	
-    public TextField(RaplaContext context) 
+
+    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
     {
-        this( context,"", 1, TextField.DEFAULT_LENGTH);
+        this(facade, i18n, raplaLocale, logger, ioInterface, "", 1, TextField.DEFAULT_LENGTH);
     }
-    
-    public TextField(RaplaContext context,String fieldName) 
+
+    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, String fieldName)
     {
-        this( context,fieldName, 1, TextField.DEFAULT_LENGTH);
+        this(facade, i18n, raplaLocale, logger, ioInterface, fieldName, 1, TextField.DEFAULT_LENGTH);
     }
-        
-    public TextField(RaplaContext sm,String fieldName, int rows, int columns) 
+
+    private TextField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, String fieldName, int rows, int columns)
     {
-        super( sm);
-        setFieldName( fieldName );
-        if ( rows > 1 ) {
-        	JTextArea area = new JTextArea();
+        super(facade, i18n, raplaLocale, logger);
+        setFieldName(fieldName);
+        if (rows > 1)
+        {
+            JTextArea area = new JTextArea();
             field = area;
-            scrollPane = new JScrollPane( field, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-            area.setColumns( columns);
-            area.setRows( rows );
-            area.setLineWrap( true);
-        } else {
-            field = new JTextField( columns);
+            scrollPane = new JScrollPane(field, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            area.setColumns(columns);
+            area.setRows(rows);
+            area.setLineWrap(true);
         }
-        addCopyPaste( field);
+        else
+        {
+            field = new JTextField(columns);
+        }
+        addCopyPaste(field, i18n, raplaLocale, ioInterface, logger);
         field.addFocusListener(this);
         field.addKeyListener(this);
         setValue("");
     }
 
-    public void setColorPanel(boolean show) {
-        if (!show )
+    public void setColorPanel(boolean show)
+    {
+        if (!show)
         {
             colorPanel = null;
             return;
         }
         colorPanel = new JPanel();
         color = new JPanel();
-        color.setPreferredSize(new Dimension(20,20));
-        
-        color.setBorder( BorderFactory.createEtchedBorder());
+        color.setPreferredSize(new Dimension(20, 20));
+
+        color.setBorder(BorderFactory.createEtchedBorder());
         colorPanel.setLayout(new BorderLayout());
-        colorPanel.add( field, BorderLayout.CENTER);
-        colorPanel.add( color, BorderLayout.WEST);
+        colorPanel.add(field, BorderLayout.CENTER);
+        colorPanel.add(color, BorderLayout.WEST);
         colorChooserBtn = new JButton();
-        if ( field instanceof JTextField)
+        if (field instanceof JTextField)
         {
-        	((JTextField) field).setColumns( 7);
+            ((JTextField) field).setColumns(7);
         }
         else
         {
-        	((JTextArea) field).setColumns( 7);
-         }
-        colorPanel.add( colorChooserBtn, BorderLayout.EAST);
-        colorChooserBtn.setText( getString("change") );
-        colorChooserBtn.addActionListener( new ActionListener() {
+            ((JTextArea) field).setColumns(7);
+        }
+        colorPanel.add(colorChooserBtn, BorderLayout.EAST);
+        colorChooserBtn.setText(getString("change"));
+        colorChooserBtn.addActionListener(new ActionListener()
+        {
 
-        	public void actionPerformed(ActionEvent e) {
-        		currentColor = JColorChooser.showDialog(
-        				colorPanel,
-                         "Choose Background Color",
-                          currentColor);
-                color.setBackground( currentColor );
-                if ( currentColor != null) {
-                	field.setText( AWTColorUtil.getHexForColor( currentColor ));
+            public void actionPerformed(ActionEvent e)
+            {
+                currentColor = JColorChooser.showDialog(colorPanel, "Choose Background Color", currentColor);
+                color.setBackground(currentColor);
+                if (currentColor != null)
+                {
+                    field.setText(AWTColorUtil.getHexForColor(currentColor));
                 }
                 fireContentChanged();
-        	}
+            }
 
         });
     }
 
-    public String getValue() {
+    public String getValue()
+    {
         return field.getText().trim();
     }
-    
-    public void setValue(String string) {
+
+    public void setValue(String string)
+    {
         if (string == null)
             string = "";
         field.setText(string);
-        oldValue =  string;
-        
-        
-        if ( colorPanel != null) {
-        	try
-        	{
-        		currentColor =  AWTColorUtil.getColorForHex( string);
-        	}
-        	catch (NumberFormatException ex)
-        	{
-        		currentColor = null;
-        	}
-        	color.setBackground( currentColor );
+        oldValue = string;
+
+        if (colorPanel != null)
+        {
+            try
+            {
+                currentColor = AWTColorUtil.getColorForHex(string);
+            }
+            catch (NumberFormatException ex)
+            {
+                currentColor = null;
+            }
+            color.setBackground(currentColor);
         }
     }
-    public JComponent getComponent() {
-    	if ( colorPanel!= null)
-    	{
-    		return colorPanel;
-    	}
-    	if ( scrollPane != null ) {
+
+    public JComponent getComponent()
+    {
+        if (colorPanel != null)
+        {
+            return colorPanel;
+        }
+        if (scrollPane != null)
+        {
             return scrollPane;
-        } else {
+        }
+        else
+        {
             return field;
         }
     }
-    
+
     public void selectAll()
     {
-    	field.selectAll();
+        field.selectAll();
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed(ActionEvent evt)
+    {
         if (field.getText().equals(oldValue))
             return;
         oldValue = field.getText();
         fireContentChanged();
     }
 
-    public void focusLost(FocusEvent evt) {
-    
-    	if (field.getText().equals(oldValue))
-            return;
-    	// checks if entry was executed
-		if (field.getText().equals("") && multipleValues)
-			// no set place holder for multiple values
-			setFieldForMultipleValues();
-		else
-			// yes: reset flag, because there is just one common entry
-			multipleValues = false;
-    	oldValue = field.getText();
-        fireContentChanged();
-    }
+    public void focusLost(FocusEvent evt)
+    {
 
-    public void focusGained(FocusEvent evt) {
-    		Component focusedComponent = evt.getComponent(); 
-    		Component  parent = focusedComponent.getParent();
-    		if(parent instanceof JPanel) {
-    			((JPanel)parent).scrollRectToVisible(focusedComponent.getBounds(null)); 
-    		}
-    		
-    		// if the place holder shown for different values, the place holder
-    		// should be deleted
-    		if (multipleValues) {
-    			setValue("");
-    			// set font PLAIN (place holder is shown italic)
-    			field.setFont(field.getFont().deriveFont(Font.PLAIN));
-    		}
-    }
-
-    public void keyPressed(KeyEvent evt) {}
-    public void keyTyped(KeyEvent evt) {}
-    public void keyReleased(KeyEvent evt) {
         if (field.getText().equals(oldValue))
             return;
-        
-     // reset flag, because there is just one common entry
-     		if (multipleValues) {
-     			multipleValues = false;
-
-     		}
+        // checks if entry was executed
+        if (field.getText().equals("") && multipleValues)
+            // no set place holder for multiple values
+            setFieldForMultipleValues();
+        else
+            // yes: reset flag, because there is just one common entry
+            multipleValues = false;
         oldValue = field.getText();
         fireContentChanged();
     }
 
+    public void focusGained(FocusEvent evt)
+    {
+        Component focusedComponent = evt.getComponent();
+        Component parent = focusedComponent.getParent();
+        if (parent instanceof JPanel)
+        {
+            ((JPanel) parent).scrollRectToVisible(focusedComponent.getBounds(null));
+        }
 
-	public void setFieldForMultipleValues() {
-		// set a place holder for multiple different values (italic)
-		field.setFont(field.getFont().deriveFont(Font.ITALIC));
-		field.setText(TextField.getOutputForMultipleValues());
-		multipleValues = true;
-	}
+        // if the place holder shown for different values, the place holder
+        // should be deleted
+        if (multipleValues)
+        {
+            setValue("");
+            // set font PLAIN (place holder is shown italic)
+            field.setFont(field.getFont().deriveFont(Font.PLAIN));
+        }
+    }
 
-	public boolean hasMultipleValues() {
-		return multipleValues;
-	}
+    public void keyPressed(KeyEvent evt)
+    {
+    }
 
-	static public String getOutputForMultipleValues() {
-		// place holder for mulitple different values
-		return "<multiple Values>";
-	}
+    public void keyTyped(KeyEvent evt)
+    {
+    }
+
+    public void keyReleased(KeyEvent evt)
+    {
+        if (field.getText().equals(oldValue))
+            return;
+
+        // reset flag, because there is just one common entry
+        if (multipleValues)
+        {
+            multipleValues = false;
+
+        }
+        oldValue = field.getText();
+        fireContentChanged();
+    }
+
+    public void setFieldForMultipleValues()
+    {
+        // set a place holder for multiple different values (italic)
+        field.setFont(field.getFont().deriveFont(Font.ITALIC));
+        field.setText(TextField.getOutputForMultipleValues());
+        multipleValues = true;
+    }
+
+    public boolean hasMultipleValues()
+    {
+        return multipleValues;
+    }
+
+    static public String getOutputForMultipleValues()
+    {
+        // place holder for mulitple different values
+        return "<multiple Values>";
+    }
+
+    @Singleton
+    public static class TextFieldFactory
+    {
+
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final IOInterface ioInterface;
+
+        @Inject
+        public TextFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+        {
+            super();
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
+            this.ioInterface = ioInterface;
+        }
+
+        public TextField create(String fieldName)
+        {
+            return new TextField(facade, i18n, raplaLocale, logger, ioInterface, fieldName);
+        }
+
+        public TextField create(String fieldName, int rows, int columns)
+        {
+            return new TextField(facade, i18n, raplaLocale, logger, ioInterface, fieldName, rows, columns);
+        }
+
+        public TextField create()
+        {
+            return new TextField(facade, i18n, raplaLocale, logger, ioInterface);
+        }
+
+    }
 }
-

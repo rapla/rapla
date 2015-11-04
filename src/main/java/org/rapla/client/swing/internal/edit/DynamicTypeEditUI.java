@@ -29,20 +29,22 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
@@ -54,8 +56,11 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 
@@ -100,18 +105,18 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public DynamicTypeEditUI(RaplaContext context, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactory dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory) throws RaplaException {
-        super(context);
+    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactory dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
-        annotationEdit = new AnnotationEditUI(context, annotationExtensions);
+        annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, annotationExtensions);
         {
         	@SuppressWarnings("unchecked")
         	JComboBox jComboBox = new JComboBox(new String[] {getString("color.automated"),getString("color.manual"),getString("color.no")});
         	colorChooser = jComboBox;
         }
       
-        name = new MultiLanguageField(context,raplaImages, dialogUiFactory, "name");
-        elementKey = new TextField(context,"elementKey");
+        name = multiLanguageFieldFactory.create("name");
+        elementKey = textFieldFactory.create("elementKey");
         this.attributeEdit = attributeEdit;
         nameLabel.setText(getString("dynamictype.name") + ":");
         elementKeyLabel.setText(getString("elementkey") + ":");
@@ -137,7 +142,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             {PRE,5,TableLayout.FILL}
             ,{PRE,5,PRE,5,PRE, 5, PRE,5, PRE,5,PRE}
         }));
-        addCopyPaste( annotationText);
+        addCopyPaste( annotationText, i18n, raplaLocale, ioInterface, logger);
         //addCopyPaste(annotationTreeText);
         annotationPanel.add(annotationLabel,"0,0");
         annotationPanel.add(annotationText ,"2,0");

@@ -29,22 +29,26 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.common.PeriodChooser;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.calendar.RaplaCalendar;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.PeriodModel;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.common.PeriodChooser;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidget
 {
@@ -83,16 +87,16 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
     JPanel periodPanel;
 
     @Inject
-    public IntervalChooserPanel(RaplaContext sm, CalendarModel model, DateRenderer dateRenderer) throws RaplaException
+    public IntervalChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws RaplaException
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.model = model;
 
-        periodChooser = new PeriodChooser(getContext(), PeriodChooser.START_AND_END);
+        periodChooser = new PeriodChooser(i18n, facade, PeriodChooser.START_AND_END);
         periodChooser.setWeekOfPeriodVisible(false);
 
-        startDateSelection = createRaplaCalendar(dateRenderer);
-        endDateSelection = createRaplaCalendar(dateRenderer);
+        startDateSelection = createRaplaCalendar(dateRenderer, ioInterface);
+        endDateSelection = createRaplaCalendar(dateRenderer, ioInterface);
         //prevButton.setText("<");
         //nextButton.setText(">");
         double pre = TableLayout.PREFERRED;

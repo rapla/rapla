@@ -9,15 +9,18 @@ import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
-import org.rapla.entities.Annotatable;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.ListField;
+import org.rapla.entities.Annotatable;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="conflictcreation")
@@ -27,8 +30,8 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
     private final String annotationName = DynamicTypeAnnotations.KEY_CONFLICTS;
 
     @Inject
-    public ConflictCreationAnnotationEdit(RaplaContext context) {
-        super(context);
+    public ConflictCreationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(facade, i18n, raplaLocale, logger);
     }
 
     @Override
@@ -47,7 +50,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
         }
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList( new String[] {DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES}); 
-        ListField<String> field = new ListField<String>(getContext(), collection);
+        ListField<String> field = new ListField<String>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
         field.setFieldName( getString(annotationName));
         
         if (annotation  == null)

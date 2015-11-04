@@ -15,17 +15,20 @@ package org.rapla.client.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class UserInfoUI extends HTMLInfo<User> {
 	ClassificationInfoUI<Allocatable> classificationInfo;
-    public UserInfoUI(RaplaContext sm) {
-        super(sm);
-        classificationInfo = new ClassificationInfoUI<Allocatable>(sm);
+    public UserInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(i18n, raplaLocale, facade, logger);
+        classificationInfo = new ClassificationInfoUI<Allocatable>(i18n, raplaLocale, facade, logger);
     }
 
     @Override

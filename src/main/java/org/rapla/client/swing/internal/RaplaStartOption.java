@@ -12,31 +12,39 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.extensionpoints.SystemOptionPanel;
-import org.rapla.client.internal.CountryChooser;
-import org.rapla.client.internal.LanguageChooser;
-import org.rapla.components.calendar.RaplaNumber;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.LocaleTools;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.UpdateModule;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.export2ical.ICalTimezones;
-import org.rapla.storage.RemoteLocaleService;
-
-import javax.inject.Inject;
-import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Locale;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.SystemOptionPanel;
+import org.rapla.client.internal.CountryChooser;
+import org.rapla.client.internal.LanguageChooser;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.components.calendar.RaplaNumber;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.LocaleTools;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.UpdateModule;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.export2ical.ICalTimezones;
+import org.rapla.storage.RemoteLocaleService;
 
 
 @Extension(provides = SystemOptionPanel.class, id="startOption")
@@ -59,13 +67,13 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 
 
     @Inject
-    public RaplaStartOption(RaplaContext context, ICalTimezones timezoneService, RemoteLocaleService localeService) throws RaplaException {
-        super(context);
+    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre}}));
         this.timezoneService = timezoneService;      
         calendarName = new JTextField();
-        addCopyPaste(calendarName);
+        addCopyPaste(calendarName, i18n, raplaLocale, ioInterface, logger);
         calendarName.setColumns(20);
         panel.add(new JLabel(getString("custom_applicationame")), "0,0");
         panel.add(calendarName, "2,0");
@@ -78,8 +86,6 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 		panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
 
-        RaplaLocale raplaLocale = getRaplaLocale();
-        RaplaResources i18n = getI18n();
         languageChooser = new LanguageChooser(getLogger(),i18n,raplaLocale);
         panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
         panel.add( languageChooser.getComponent(), "2,4");
@@ -106,7 +112,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add( new JLabel(getString("seconds")),"4,10"  );
         panel.add( seconds,"2,10");
         panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,10"  );
-        addCopyPaste( seconds.getNumberField());
+        addCopyPaste( seconds.getNumberField(), i18n, raplaLocale, ioInterface, logger);
     }
 
     public JComponent getComponent() {

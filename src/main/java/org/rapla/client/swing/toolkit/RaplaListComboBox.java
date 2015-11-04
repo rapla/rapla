@@ -2,33 +2,30 @@ package org.rapla.client.swing.toolkit;
 
 import javax.swing.JComboBox;
 
+import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.entities.Named;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 
 public final class RaplaListComboBox extends JComboBox {
     private static final long serialVersionUID = 1L;
     // copied the coe from tree table
     String cachedSearchKey = "";
     
-    RaplaContext context;
-    public RaplaListComboBox(RaplaContext context)  {
-        init(context);
+    public RaplaListComboBox(RaplaLocale raplaLocale)  {
+        init(raplaLocale);
     }
     
     @SuppressWarnings("unchecked")
-    public RaplaListComboBox(RaplaContext context,Object[] named)  {
+    public RaplaListComboBox(RaplaLocale raplaLocale,Object[] named)  {
         super(named);
-        init(context);
+        init(raplaLocale);
     }
 
     @SuppressWarnings("unchecked")
-    public void init(RaplaContext context) {
-        this.context = context;
+    public void init(RaplaLocale raplaLocale) {
         try {
-            setRenderer(new NamedListCellRenderer(context.lookup(RaplaLocale.class).getLocale()));
+            setRenderer(new NamedListCellRenderer(raplaLocale.getLocale()));
         } catch (RaplaContextException e) {
             throw new IllegalStateException(e);
         }

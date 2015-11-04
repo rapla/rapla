@@ -11,7 +11,8 @@ import java.util.HashSet;
 import java.util.TreeSet;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
@@ -19,6 +20,16 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -31,18 +42,9 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.MenuContext;
-import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.setowner.SetOwnerResources;
 
@@ -57,12 +59,12 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-    public SetOwnerMenuFactory( SetOwnerResources setOwnerI18n, RaplaResources i18n, ClientFacade facade, TreeFactory treeFactory, RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+    public SetOwnerMenuFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, SetOwnerResources setOwnerI18n, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
         this.setOwnerI18n = setOwnerI18n;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        old = new RaplaGUIComponent(context);
+        old = new RaplaGUIComponent(facade, i18n, raplaLocale, logger);
         this.i18n = i18n;
         this.facade = facade;
         this.treeFactory = treeFactory;

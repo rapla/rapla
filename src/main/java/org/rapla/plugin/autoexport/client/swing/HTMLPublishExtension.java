@@ -14,15 +14,18 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 
@@ -40,20 +43,22 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
 	 private final RaplaImages raplaImages;
+    private final IOInterface ioInterface;
 
 
-	 public HTMLPublishExtension(RaplaContext context,CalendarSelectionModel model, AutoExportResources autoExportI18n, RaplaResources raplaResources, RaplaImages raplaImages) throws RaplaContextException
+	 public HTMLPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model, AutoExportResources autoExportI18n, RaplaImages raplaImages, IOInterface ioInterface) throws RaplaContextException
 	 {
-		super(context);
+		super(facade, i18n, raplaLocale, logger);
 		this.autoExportI18n = autoExportI18n ;
-		 i18n = raplaResources;
+        this.ioInterface = ioInterface;
+        this.i18n = i18n;
     	this.model = model;
         this.raplaImages = raplaImages;
     	
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED  }}));
 	   	titleField = new JTextField(20);
-        addCopyPaste(titleField);
+        addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
         showNavField = new JCheckBox();
         saveSelectedDateField = new JCheckBox();
@@ -117,7 +122,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 
 	JPanel createStatus( final JTextField urlLabel)  
 	{
-		addCopyPaste(urlLabel);
+		addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		final RaplaButton copyButton = new RaplaButton();
 		JPanel status = new JPanel()
 		{
@@ -146,7 +151,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		    public void actionPerformed(ActionEvent e) {
 		    	urlLabel.requestFocus();
 		    	urlLabel.selectAll();
-		        copy(urlLabel,e);
+		        copy(urlLabel,e, ioInterface, getRaplaLocale());
 		    }
 		
 		});

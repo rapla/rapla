@@ -38,16 +38,19 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-import org.rapla.entities.NamedComparator;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.NamedComparator;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class TreeAllocatableSelection extends RaplaGUIComponent implements ChangeListener {
     JPanel content= new JPanel();
@@ -63,8 +66,8 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-	public TreeAllocatableSelection(RaplaContext sm, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        super( sm);
+	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;

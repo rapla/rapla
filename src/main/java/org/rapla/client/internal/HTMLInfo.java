@@ -26,17 +26,12 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 public abstract class HTMLInfo<T>  extends RaplaComponent {
     
-    public HTMLInfo(RaplaContext context)  {
-        super(context);
-    }
-
     public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
         super( facade, i18n, raplaLocale, logger);
 //        this.i18n = i18n;

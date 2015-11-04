@@ -12,15 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action.user;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.EditController;
 import org.rapla.client.PopupContext;
+import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class UserAction extends RaplaAction {
     Object object;
@@ -33,8 +36,8 @@ public class UserAction extends RaplaAction {
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 
-    public UserAction(RaplaContext sm,PopupContext popupContext, ClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        super(sm);
+    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, ClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
         this.service = service;
         this.editController = editController;
@@ -130,8 +133,10 @@ public class UserAction extends RaplaAction {
         }
     }
 
-    public void changePassword(User user,boolean showOld) throws RaplaException{
-        new PasswordChangeAction(getContext(),popupContext, raplaImages, dialogUiFactory).changePassword( user, showOld);
+    public void changePassword(User user, boolean showOld) throws RaplaException
+    {
+        new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, raplaImages, dialogUiFactory).changePassword(user,
+                showOld);
     }
 
 }

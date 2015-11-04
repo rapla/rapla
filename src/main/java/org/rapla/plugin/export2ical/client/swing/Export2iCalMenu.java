@@ -11,14 +11,18 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -40,8 +44,8 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
     private final DialogUiFactory dialogUiFactory;
 
 	@Inject
-	public Export2iCalMenu(RaplaContext sm,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
-		super(sm);
+	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
+		super(facade, i18n, raplaLocale, logger);
 		this.exportService = exportService;
 		this.i18nIcal = i18nIcal;
         this.calendarModel = calendarModel;

@@ -34,6 +34,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.images.RaplaImages;
@@ -53,19 +55,21 @@ public class EditControllerImpl<W> implements
 	private final ReservationController reservationController;
 	private final RaplaResources i18n;
 	private final ClientFacade facade;
-	private final RaplaContext context;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final RaplaLocale raplaLocale;
+    private final Logger logger; 
 
 	@Inject
-	public EditControllerImpl(Map<String,Provider<EditComponent>> editUiProviders, ReservationController controller, RaplaResources i18n, ClientFacade facade,
-			RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+    public EditControllerImpl(Map<String, Provider<EditComponent>> editUiProviders, ReservationController controller, RaplaResources i18n, ClientFacade facade,
+            RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
 	{
 		this.editUiProviders = editUiProviders;
 		this.reservationController = controller;
 		this.i18n = i18n;
 		this.facade = facade;
-		this.context = context;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
 	}
@@ -236,7 +240,7 @@ public class EditControllerImpl<W> implements
     	Collection<T> toEdit = facade.edit(list);
     	if (toEdit.size() > 0) {
         	EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)createUI(toEdit.iterator().next());
-        	EditDialog<T> gui = new EditDialog<T>(context, ui, this, reservationController, raplaImages, dialogUiFactory);
+        	EditDialog<T> gui = new EditDialog<T>(facade, i18n, raplaLocale, logger, ui, this, reservationController, raplaImages, dialogUiFactory);
             gui.start(toEdit, title, popupContext, createNew, callback);
         }
     }

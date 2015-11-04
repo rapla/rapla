@@ -41,6 +41,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
@@ -59,6 +60,7 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.NamedComparator;
@@ -66,8 +68,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.DateChooserPanel;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
@@ -98,12 +102,13 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final DialogUiFactory dialogUiFactory;
     protected final PermissionController permissionController;
 
-    public AbstractRaplaSwingCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories,
-            MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController)
-                    throws RaplaException
+    public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
+            final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
+            CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
+            PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
-        super( sm);
+        super(facade, i18n, raplaLocale, logger);
         this.model = model;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
@@ -146,7 +151,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
             container.add( view.getComponent(), BorderLayout.CENTER);
         }
 
-        dateChooser = new DateChooserPanel(getContext(), model, dateRenderer);
+        dateChooser = new DateChooserPanel(facade, i18n, raplaLocale, logger, model, dateRenderer, ioInterface);
         dateChooser.addDateChangeListener(this);
         dateChooser.setIncrementSize( getIncrementSize() );
     }
@@ -163,7 +168,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      * @throws RaplaException  
      */
     protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
     }
 
     public JComponent getDateSelection()   {

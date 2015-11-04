@@ -28,6 +28,9 @@ import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
+import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
@@ -43,16 +46,16 @@ import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SelectionHandler.SelectionStrategy;
 import org.rapla.components.calendarview.swing.SwingWeekView;
 import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.RaplaResources;
-import org.rapla.client.PopupContext;
-import org.rapla.client.ReservationController;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -62,12 +65,12 @@ import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
 
 public class SwingDayResourceCalendar extends SwingDayCalendar
 {
-    public SwingDayResourceCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories,
-            MenuFactory menuFactory, RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,
-            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException
+    public SwingDayResourceCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories,
+            MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,
+            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
-        super(sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
+        super(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
+                infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface);
     }    
   
    
@@ -154,7 +157,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController) {
+    	return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()

@@ -18,6 +18,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.Icon;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
@@ -26,11 +27,13 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.TableViewPlugin;
@@ -38,7 +41,7 @@ import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummar
 import org.rapla.plugin.tableview.internal.TableConfig;
 
 @Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
-public class ReservationTableViewFactory extends RaplaComponent implements SwingViewFactory
+public class ReservationTableViewFactory implements SwingViewFactory
 {
     private final Set<ReservationSummaryExtension> reservationSummaryExtensions;
     private final TableConfig.TableConfigLoader tableConfigLoader;
@@ -49,14 +52,22 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
     private final IntervalChooserPanel dateChooser;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
+    private final Logger logger;
+    private final RaplaLocale raplaLocale;
+    private final RaplaResources i18n;
+    private final ClientFacade facade;
+    private final IOInterface ioInterface;
 
     @Inject
-    public ReservationTableViewFactory(RaplaContext context, Set<ReservationSummaryExtension> reservationSummaryExtensions,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory,
-            PermissionController permissionController)
+    public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
+            IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface)
     {
-        super(context);
+        this.facade = facade;
+        this.i18n = i18n;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
         this.reservationSummaryExtensions = reservationSummaryExtensions;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
@@ -66,14 +77,15 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
         this.dateChooser = dateChooser;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
+        this.ioInterface = ioInterface;
     }
 
     public final static String TABLE_VIEW = "table";
 
-    public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingReservationTableView(context, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory, reservationController,
-                infoFactory, raplaImages, dateChooser, dialogUiFactory, permissionController);
+        return new SwingReservationTableView(facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory,
+                reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, permissionController, ioInterface);
     }
 
     public String getViewId()
@@ -83,7 +95,7 @@ public class ReservationTableViewFactory extends RaplaComponent implements Swing
 
     public String getName()
     {
-        return getString("reservations");
+        return i18n.getString("reservations");
     }
 
     Icon icon;

@@ -14,8 +14,12 @@ package org.rapla.client.swing.internal.view;
 
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
@@ -43,8 +47,8 @@ final public class LicenseInfoUI
     private final Provider<LicenseUI> licenseUiProvider;
 
     @Inject
-    public LicenseInfoUI(RaplaContext context, DialogUiFactory dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaException  {
-        super( context);
+    public LicenseInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactory dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaException  {
+        super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
         this.licenseUiProvider = licenseUiProvider;
         license = new HTMLView();

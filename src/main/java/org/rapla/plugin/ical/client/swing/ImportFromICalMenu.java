@@ -36,6 +36,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -51,9 +52,11 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
@@ -77,9 +80,9 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 	@Inject
-	public ImportFromICalMenu(RaplaContext context, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaContextException
+	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaContextException
 	{
-		super(context);
+		super(facade, i18n, raplaLocale, logger);
 		this.importService = importService;
 		this.i18n = icalImportResources;
         this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
@@ -143,7 +146,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 
 		final String urlText = i18n.getString("enter_url");
 		final JTextField urlField = new JTextField(urlText);
-		addCopyPaste(urlField);
+		addCopyPaste(urlField, getI18n(), getRaplaLocale(), io, getLogger());
 		panel1.add(urlField, "2,0");
 
 		final JTextField fileField = new JTextField(i18n.getString("click_for_file"));

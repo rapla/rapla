@@ -1,11 +1,61 @@
 package org.rapla.plugin.tableview.client.swing;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import javax.inject.Inject;
+import javax.swing.BoxLayout;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
-import org.rapla.client.swing.*;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.common.InternMenus;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.MenuInterface;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -15,15 +65,9 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.common.InternMenus;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.MenuInterface;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaPopupMenu;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
@@ -31,23 +75,6 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableModel;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.awt.print.PrinterException;
-import java.text.MessageFormat;
-import java.util.*;
-import java.util.List;
 
 @Extension(id="ReservationTableView", provides=SwingCalendarView.class)
 public class SwingReservationTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
@@ -75,20 +102,23 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     private final DialogUiFactory dialogUiFactory;
 
     private final PermissionController permissionController;
+
+    private final IOInterface ioInterface;
     
     @Inject
-    public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
+    public SwingReservationTableView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
             final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
             final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory,
-            PermissionController permissionController) throws RaplaException
+            PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
-        super( context );
+        super(facade, i18n, raplaLocale, logger);
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
+        this.ioInterface = ioInterface;
         cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -132,7 +162,6 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
 
         List<RaplaTableColumn<Reservation,TableColumn>> reservationColumnConfigured = tableConfigLoader.loadColumns("events");
-        final RaplaResources i18n = getI18n();
         reservationTableModel = new ReservationTableModel( getLocale(), i18n, reservationColumnConfigured );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
@@ -192,7 +221,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             } catch (RaplaException ex) {
                 showException(ex, getComponent(), dialogUiFactory);
             }
-	        copy(table, evt);            
+	        copy(table, evt, ioInterface, getRaplaLocale());            
 		}
         
         public boolean isCut() {

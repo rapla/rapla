@@ -58,7 +58,6 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -76,16 +75,10 @@ import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public class RaplaGUIComponent extends RaplaComponent
 {
 
-    public RaplaGUIComponent(RaplaContext context)  {
-        super(context);
-    }
-    
     public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade, i18n, raplaLocale, logger);
     }
-
-
 
     public void showException(Throwable ex,PopupContext popupContext, DialogUiFactory dialogUiFactory) {
         showException(ex, SwingPopupContext.extractParent(popupContext), dialogUiFactory);
@@ -112,7 +105,7 @@ public class RaplaGUIComponent extends RaplaComponent
 	    final ReservationController reservationController = getReservationController();
 	    final InfoFactory<Component, DialogUI> infoFactory = getInfoFactory();
         final RaplaImages raplaImages = getService(RaplaImages.class);
-        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+        return new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
 	}
 	
 
@@ -219,10 +212,10 @@ public class RaplaGUIComponent extends RaplaComponent
 	}
 
 
-    public RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer) {
+    public RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer, IOInterface service) {
         RaplaCalendar cal = new RaplaCalendar( getI18n().getLocale(),getRaplaLocale().getTimeZone());
         cal.setDateRenderer(dateRenderer);
-        addCopyPaste(cal.getDateField());
+        addCopyPaste(cal.getDateField(), getI18n(), getRaplaLocale(), service, getLogger());
         return cal;
     }
 
@@ -305,12 +298,12 @@ public class RaplaGUIComponent extends RaplaComponent
     }
 
 
-    public RaplaTime createRaplaTime() {
+    public RaplaTime createRaplaTime(IOInterface service) {
         RaplaTime cal = new RaplaTime( getI18n().getLocale(), getRaplaLocale().getTimeZone());
         cal.setTimeRenderer( getTimeRenderer() );
         int rowsPerHour =getCalendarOptions().getRowsPerHour() ;
         cal.setRowsPerHour( rowsPerHour );
-        addCopyPaste(cal.getTimeField());
+        addCopyPaste(cal.getTimeField(), getI18n(), getRaplaLocale(), service, getLogger());
         return cal;
     }
     
@@ -341,16 +334,16 @@ public class RaplaGUIComponent extends RaplaComponent
         return  getService(ClientService.MAIN_COMPONENT);
     }
     
-    public void addCopyPaste(final JComponent component) {
+    public static void addCopyPaste(final JComponent component, RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service, final Logger logger) {
         ActionListener pasteListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                paste(component, e);
+                paste(component, e, service, logger);
             }
         };
         ActionListener copyListener = new ActionListener()
         {
             public void actionPerformed(ActionEvent e) {
-            	copy(component, e);
+            	copy(component, e, service, raplaLocale);
             }
         };
     	final JPopupMenu menu = new JPopupMenu();
@@ -358,14 +351,14 @@ public class RaplaGUIComponent extends RaplaComponent
             final JMenuItem copyItem = new JMenuItem();
            
 			copyItem.addActionListener( copyListener);
-            copyItem.setText(getString("copy"));
+            copyItem.setText(i18n.getString("copy"));
             
             menu.add(copyItem);
         }
         {
             final JMenuItem pasteItem = new JMenuItem();
         	pasteItem.addActionListener( pasteListener);
-            pasteItem.setText(getString("paste"));
+            pasteItem.setText(i18n.getString("paste"));
             menu.add(pasteItem);
         }
 
@@ -388,24 +381,15 @@ public class RaplaGUIComponent extends RaplaComponent
         }
         );
         
-		component.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
-        component.registerKeyboardAction(pasteListener,getString("paste"),PASTE_STROKE,JComponent.WHEN_FOCUSED);
+		component.registerKeyboardAction(copyListener,i18n.getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
+        component.registerKeyboardAction(pasteListener,i18n.getString("paste"),PASTE_STROKE,JComponent.WHEN_FOCUSED);
     }
 
     public static KeyStroke COPY_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_C,ActionEvent.CTRL_MASK,false);
     public static KeyStroke CUT_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_X,ActionEvent.CTRL_MASK,false);
     public static KeyStroke PASTE_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_V,ActionEvent.CTRL_MASK,false);
   
-    private IOInterface getIOService() 
-    {
-        try {
-            return getService( IOInterface.class);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-	protected void copy(final JComponent component, ActionEvent e) {
+	protected static void copy(final JComponent component, ActionEvent e, final IOInterface service, final RaplaLocale raplaLocale) {
 		final Transferable transferable;
 		if ( component instanceof JTextComponent)
 		{
@@ -415,7 +399,7 @@ public class RaplaGUIComponent extends RaplaComponent
 		else if ( component instanceof JTable)
 		{
 			JTable table = (JTable)component;
-			transferable = getSelectedContent(table);
+			transferable = getSelectedContent(table, raplaLocale);
 		}
 		else
 		{
@@ -426,7 +410,6 @@ public class RaplaGUIComponent extends RaplaComponent
 		{
 			try
 			{
-				final IOInterface service = getIOService();
 			    if (service != null) {
 			        service.setContents(transferable, null);
 			    } 
@@ -456,7 +439,7 @@ public class RaplaGUIComponent extends RaplaComponent
       private static final String CELL_BREAK = "\t"; 
     
 	
-	 private StringSelection getSelectedContent(JTable table) { 
+	 private static StringSelection getSelectedContent(JTable table, final RaplaLocale raplaLocale) { 
          int numCols=table.getSelectedColumnCount(); 
          int[] rowsSelected=table.getSelectedRows(); 
          int[] colsSelected=table.getSelectedColumns(); 
@@ -481,7 +464,7 @@ public class RaplaGUIComponent extends RaplaComponent
         		 if ( isDate)
         		 {
         			 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        			 format.setTimeZone( getRaplaLocale().getTimeZone());
+        			 format.setTimeZone( raplaLocale.getTimeZone());
         			 if ( value instanceof java.util.Date)
         			 {
         				 String timestamp = format.format(   (java.util.Date)value);
@@ -514,16 +497,15 @@ public class RaplaGUIComponent extends RaplaComponent
 	 } 
 	 	
 	 
-	 private String escape(Object cell) { 
+	 private static String escape(Object cell) { 
          return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " "); 
 	 }
 	 /** Code End	 */ 
 
 	
-	protected void paste(final JComponent component, ActionEvent e) {
+	protected static void paste(final JComponent component, ActionEvent e, final IOInterface service, Logger logger) {
 		try
 		{
-			final IOInterface service = getIOService();
 	        if (service != null) {
 	            final Transferable transferable = service.getContents( null);
 	            Object transferData;
@@ -565,7 +547,8 @@ public class RaplaGUIComponent extends RaplaComponent
 						transferData = transferable.getTransferData(DataFlavor.stringFlavor);
 						((JTextComponent)component).replaceSelection( transferData.toString());
 					} catch (Exception e1) {
-						getLogger().error( e1.getMessage(),e1);
+					    if(logger!=null)
+					        logger.error( e1.getMessage(),e1);
 					}
             	}
         	}	        

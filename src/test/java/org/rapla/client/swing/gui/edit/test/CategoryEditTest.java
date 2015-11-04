@@ -15,17 +15,16 @@ package org.rapla.client.swing.gui.edit.test;
 import java.awt.Component;
 import java.util.Collections;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.Logger;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.CategoryEditUI;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -38,10 +37,12 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.Logger;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public final class CategoryEditTest extends GUITestCase
 {
@@ -56,7 +57,6 @@ public final class CategoryEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         ClientService clientService = getClientService();
-        RaplaContext context = null;
         final Logger logger = getLogger();
         final ServerBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -68,9 +68,12 @@ public final class CategoryEditTest extends GUITestCase
         RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
-        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(context, appointmentFormater, ioInterface, permissionController, i18n, raplaLocale, facade, logger, raplaImages, dialogUiFactory);
-        TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
-        CategoryEditUI editor = new CategoryEditUI( context, treeFactory, raplaImages, dialogUiFactory);
+        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
+        TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), permissionController, infoFactory, raplaImages);
+        TextFieldFactory textField = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
+        MultiLanguageFieldFactory multiLAnguageFieldFactoy = new MultiLanguageFieldFactory(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, textField, ioInterface);
+        TextFieldFactory longFieldFactory = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
+        CategoryEditUI editor = new CategoryEditUI( getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, multiLAnguageFieldFactoy, longFieldFactory);
         editor.setObjects( Collections.singletonList(clientService.getFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
         getLogger().info("Category edit started");

@@ -24,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -39,8 +40,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -57,8 +59,8 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 
     @SuppressWarnings("unchecked")
     @Inject
-    public AllocatableEditUI(RaplaContext context, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
-        super(context);
+    public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions"));

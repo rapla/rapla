@@ -16,17 +16,21 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.client.swing.DefaultPluginOption;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
@@ -52,11 +56,13 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 	private JTextArea txtEMailRessourceAttribute;
     private JComboBox cbDefaultParticipationsStatusRessourceAttribute;
     private ICalConfigService configService;
+    private final IOInterface ioInterface;
 
 	@Inject
-    public Export2iCalAdminOption(RaplaContext sm, ICalConfigService configService){
-		super(sm);
+    public Export2iCalAdminOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalConfigService configService, IOInterface ioInterface){
+		super(facade, i18n, raplaLocale, logger);
 		this.configService = configService;
+        this.ioInterface = ioInterface;
 	}
 
 	protected JPanel createPanel() throws RaplaException {
@@ -64,8 +70,7 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 		chkUseLastModifiedIntervall = new JCheckBox("do not deliver new calendar");
 		chkExportAttendees = new JCheckBox("export attendees of vevent");
         txtEMailRessourceAttribute = new JTextArea(Export2iCalPlugin.DEFAULT_attendee_resource_attribute);
-        RaplaGUIComponent copyPasteWrapper = new RaplaGUIComponent( getContext());
-        copyPasteWrapper.addCopyPaste(txtEMailRessourceAttribute);
+        RaplaGUIComponent.addCopyPaste(txtEMailRessourceAttribute, getI18n(), getRaplaLocale(), ioInterface, getLogger());
         txtEMailRessourceAttribute.setToolTipText("Define the key of the attribute containing the email address");
         @SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(new Object [] {

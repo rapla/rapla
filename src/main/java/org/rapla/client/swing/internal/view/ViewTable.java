@@ -26,6 +26,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.internal.HTMLInfo;
 import org.rapla.client.internal.LinkController;
 import org.rapla.client.swing.InfoFactory;
@@ -38,8 +39,10 @@ import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.RaplaObject;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 /**Information of the entity-classes displayed in an HTML-Component */
 public class ViewTable<T> extends RaplaGUIComponent
@@ -70,8 +73,8 @@ public class ViewTable<T> extends RaplaGUIComponent
     private final IOInterface ioInterface;
     private final DialogUiFactory dialogUiFactory;
 
-    public ViewTable(RaplaContext sm, InfoFactory<Component, DialogUI> infoFactory, IOInterface ioInterface, DialogUiFactory dialogUiFactory) {
-        super( sm);
+    public ViewTable(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory<Component, DialogUI> infoFactory, IOInterface ioInterface, DialogUiFactory dialogUiFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.infoFactory = infoFactory;
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;

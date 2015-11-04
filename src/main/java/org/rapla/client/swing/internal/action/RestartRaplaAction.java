@@ -11,18 +11,22 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.facade.ClientFacade;
 
 
 public class RestartRaplaAction extends RaplaAction{
     private final ClientService clientService;
 
-    public RestartRaplaAction(RaplaContext sm, ClientService clientService, RaplaImages raplaImages)  
+    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClientService clientService, RaplaImages raplaImages)  
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.clientService = clientService;
         boolean logoutAvailable = clientService.isLogoutAvailable();
         String string = getString("restart_client");

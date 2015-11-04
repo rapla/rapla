@@ -17,21 +17,24 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 {
 	DynamicType dynamicTypeConstraint;
-    public AllocatableSelectField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DynamicType dynamicTypeConstraint, DialogUiFactory dialogUiFactory){
-       super( context, treeFactory, raplaImages, dialogUiFactory);
+    public AllocatableSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DynamicType dynamicTypeConstraint, DialogUiFactory dialogUiFactory){
+       super( facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory);
        this.dynamicTypeConstraint = dynamicTypeConstraint;
     }
     

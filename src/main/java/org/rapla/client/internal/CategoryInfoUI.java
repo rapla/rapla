@@ -12,13 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class CategoryInfoUI extends HTMLInfo<Category> {
-    public CategoryInfoUI(RaplaContext sm){
-        super(sm);
+    public CategoryInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger){
+        super(i18n, raplaLocale, facade, logger);
     }
 
     public String createHTMLAndFillLinks(Category category,LinkController controller) throws RaplaException{

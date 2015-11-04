@@ -1,29 +1,46 @@
 package org.rapla.plugin.tableview.internal;
 
+import java.awt.BorderLayout;
+import java.awt.LayoutManager;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.*;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
-import java.util.List;
-import java.util.Map.Entry;
 
 /**
  *
@@ -38,25 +55,22 @@ import java.util.Map.Entry;
     private JComboBox typeSelection;
     private Sorting sorting;
 
-    private final RaplaContext context;
     private final RaplaResources i18n;
     private final Logger logger;
     private final RaplaLocale raplaLocale;
     private Preferences preferences;
     private final TableConfig.TableConfigLoader tableConfigLoader;
-    private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final MultiLanguageFieldFactory multiLanguageFieldFactory;
 
-    @Inject public TableviewOption(RaplaContext context, RaplaResources i18n, Logger logger, RaplaLocale raplaLocale,
-            TableConfig.TableConfigLoader tableConfigLoader, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+    @Inject
+    public TableviewOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader,
+            MultiLanguageFieldFactory multiLanguageFieldFactory)
     {
-        this.context = context;
         this.i18n = i18n;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.tableConfigLoader = tableConfigLoader;
-        this.raplaImages = raplaImages;
-        this.dialogUiFactory = dialogUiFactory;
+        this.multiLanguageFieldFactory = multiLanguageFieldFactory;
     }
 
     public void setPreferences(Preferences preferences)
@@ -138,7 +152,7 @@ import java.util.Map.Entry;
         rows.clear();
         for (TableColumnConfig slot : tablerows)
         {
-            TableRow row = new TableRow(slot, context, raplaImages, dialogUiFactory);
+            TableRow row = new TableRow(slot, multiLanguageFieldFactory);
             rows.add(row);
         }
         for (Entry<String, ViewDefinition> entry : tableConfig.getViewMap().entrySet())
@@ -205,9 +219,9 @@ import java.util.Map.Entry;
         private final JTextField typeField = new JTextField();
         private final MultiLanguageField nameField;
 
-        private TableRow(TableColumnConfig slot, RaplaContext context, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+        private TableRow(TableColumnConfig slot, MultiLanguageFieldFactory multiLanguageFieldFactory)
         {
-            nameField = new MultiLanguageField(context, raplaImages, dialogUiFactory);
+            nameField = multiLanguageFieldFactory.create();
             typeField.setText(slot.getType());
             typeField.setEditable(false);
             nameField.setValue(slot.getName());

@@ -23,6 +23,7 @@ import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
@@ -47,6 +48,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.storage.StorageOperator;
 
 public class TemplateEdit extends RaplaGUIComponent 
@@ -61,14 +64,13 @@ public class TemplateEdit extends RaplaGUIComponent
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
     
-    private TemplateEdit(RaplaContext context, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
-        super(context);
+    private TemplateEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
-        I18nBundle i18n = getI18n();
-        allocatableEdit = new AllocatableEditUI(context, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory, permissionController)
+        allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory, permissionController)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();
@@ -300,7 +302,10 @@ public class TemplateEdit extends RaplaGUIComponent
     @Singleton
     public static class TemplateEditFactory
     {
-        private final RaplaContext context;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
         private final CalendarSelectionModel calendarSelectionModel;
         private final RaplaImages raplaImages;
         private final DialogUiFactory dialogUiFactory;
@@ -311,11 +316,15 @@ public class TemplateEdit extends RaplaGUIComponent
         private final PermissionController permissionController;
 
         @Inject
-        public TemplateEditFactory(RaplaContext context, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages,
-                DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
+        public TemplateEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+                CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
+                ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
                 RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController)
         {
-            this.context = context;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
             this.calendarSelectionModel = calendarSelectionModel;
             this.raplaImages = raplaImages;
             this.dialogUiFactory = dialogUiFactory;
@@ -328,8 +337,8 @@ public class TemplateEdit extends RaplaGUIComponent
 
         public TemplateEdit create()
         {
-            return new TemplateEdit(context, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory, permissionListFieldFactory,
-                    raplaListEditFactory, booleanFieldFactory, permissionController);
+            return new TemplateEdit(facade, i18n, raplaLocale, logger, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory,
+                    permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory, permissionController);
         }
     }
 

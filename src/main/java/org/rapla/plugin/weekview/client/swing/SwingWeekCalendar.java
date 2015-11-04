@@ -41,13 +41,16 @@ import org.rapla.components.calendar.DateRendererAdapter;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SwingWeekView;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 
@@ -55,15 +58,14 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 {
     
-    private final RaplaResources resources;
-
-    public SwingWeekCalendar(RaplaContext context, CalendarModel model, boolean editable, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
-            RaplaResources resources, final Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel,
-            RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException
+    public SwingWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, final Provider<DateRenderer> dateRendererProvider,
+            CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
+            PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
-        super(context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
-        this.resources = resources;
+        super(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface);
     }
 
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
@@ -102,7 +104,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             @Override
             public void rebuild(Builder b) {
                 // update week
-                weekTitle.setText(resources.calendarweek( getStartDate()));
+                weekTitle.setText(getI18n().calendarweek( getStartDate()));
                 super.rebuild(b);
             }
         };

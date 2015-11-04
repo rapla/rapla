@@ -30,30 +30,36 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class SwingDayCalendar extends SwingWeekCalendar
 {
-    public SwingDayCalendar(RaplaContext sm, CalendarModel model, boolean editable, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
-            RaplaResources resources, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException
+    public SwingDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
+            final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
+            CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
+            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
+            PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
-        super(sm, model, editable, objectMenuFactories, menuFactory, resources, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
+        super(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface);
     }
 
     @Override
-    protected int getDays( CalendarOptions calendarOptions) {
+    protected int getDays(CalendarOptions calendarOptions)
+    {
         return 1;
     }
 
-    public int getIncrementSize() {
+    public int getIncrementSize()
+    {
         return Calendar.DAY_OF_YEAR;
     }
 

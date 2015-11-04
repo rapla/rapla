@@ -28,6 +28,7 @@ import javax.inject.Inject;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -35,9 +36,11 @@ import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
@@ -54,9 +57,9 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     private final DialogUiFactory dialogUiFactory;
 
 	@Inject
-	public CSVExportMenu(RaplaContext context, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+	public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
     {
-        super( context );
+        super(facade, i18n, raplaLocale, logger);
 		this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;

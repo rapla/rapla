@@ -30,6 +30,7 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -41,15 +42,15 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     JLabel multipleValuesLabel = new JLabel();
     
-    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer,String fieldName) {
-        this( facade, i18n, raplaLocale, logger, dateRenderer);
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer, IOInterface ioInterface,String fieldName) {
+        this( facade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
         setFieldName(fieldName);
     }
     
-    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer) {
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer, IOInterface ioInterface) {
         super( facade, i18n, raplaLocale, logger);
         panel = new JPanel();
-        field = createRaplaCalendar(dateRenderer);
+        field = createRaplaCalendar(dateRenderer, ioInterface);
         panel.setLayout(new BorderLayout());
         panel.add(field,BorderLayout.WEST);
         panel.add( multipleValuesLabel, BorderLayout.CENTER);
@@ -121,26 +122,28 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final DateRenderer dateRenderer;
+        private final IOInterface ioInterface;
 	    @Inject
         public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                DateRenderer dateRenderer)
+                DateRenderer dateRenderer, IOInterface ioInterface)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.dateRenderer = dateRenderer;
+            this.ioInterface = ioInterface;
 
         }
 
 	    public DateField create(String fieldName)
 	    {
-	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer, fieldName);
+	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer, ioInterface, fieldName);
 	    }
 	    
 	    public DateField create()
 	    {
-	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer);
+	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
 	    }
 	}
 }

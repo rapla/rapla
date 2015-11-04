@@ -17,9 +17,12 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.util.Locale;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 
@@ -28,8 +31,8 @@ public class PSExportService extends RaplaGUIComponent implements ExportService 
     IOInterface printInterface;
 
 
-    public PSExportService(RaplaContext sm, IOInterface printInterface){
-        super(sm);
+    public PSExportService(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface){
+        super(facade, i18n, raplaLocale, logger);
         this.printInterface = printInterface;
     }
 

@@ -31,22 +31,23 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 
 @Extension(provides = SwingViewFactory.class, id = WeekviewPlugin.DAY_VIEW)
-public class DayViewFactory extends RaplaComponent implements SwingViewFactory
+public class DayViewFactory implements SwingViewFactory
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final MenuFactory menuFactory;
     private final Provider<DateRenderer> dateRendererProvider;
-    private final RaplaResources resouces;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
@@ -55,17 +56,24 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
     private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
+    private final ClientFacade facade;
+    private final RaplaResources i18n;
+    private final RaplaLocale raplaLocale;
+    private final Logger logger;
+    private final IOInterface ioInterface;
 
     @Inject
-    public DayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, RaplaResources resouces,
-            Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
+    public DayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
+            MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
-            DialogUiFactory dialogUiFactory, PermissionController permissionController)
+            DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface)
     {
-        super(context);
+        this.facade = facade;
+        this.i18n = i18n;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
         this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
-        this.resouces = resouces;
         this.dateRendererProvider = dateRendererProvider;
         this.calendarSelectionModel = calendarSelectionModel;
         this.clipboard = clipboard;
@@ -75,12 +83,14 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
+        this.ioInterface = ioInterface;
     }
 
-    public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingDayCalendar(context, model, editable, objectMenuFactories, menuFactory, resouces, dateRendererProvider, calendarSelectionModel,
-                clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
+        return new SwingDayCalendar(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider,
+                calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController,
+                ioInterface);
     }
 
     public String getViewId()
@@ -90,7 +100,7 @@ public class DayViewFactory extends RaplaComponent implements SwingViewFactory
 
     public String getName()
     {
-        return getString(WeekviewPlugin.DAY_VIEW);
+        return i18n.getString(WeekviewPlugin.DAY_VIEW);
     }
 
     Icon icon;

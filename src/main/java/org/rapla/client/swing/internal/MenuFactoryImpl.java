@@ -28,6 +28,7 @@ import javax.swing.Action;
 import javax.swing.JMenuItem;
 import javax.swing.MenuElement;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -69,6 +70,8 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
@@ -95,8 +98,8 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public MenuFactoryImpl(RaplaContext sm, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        super(sm);
+    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+        super(facade, i18n, raplaLocale, logger);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = permissionController;
@@ -448,7 +451,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
         menu.insertAfterId( new RaplaSeparator("sep1"), afterId);
         menu.insertAfterId( new RaplaSeparator("sep2"), afterId);
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getContext(),popupContext, raplaImages, dialogUiFactory);
+        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),popupContext, raplaImages, dialogUiFactory);
         passwordChangeAction.changeObject( obj );
         menu.insertAfterId( new JMenuItem( new ActionWrapper(passwordChangeAction) ), "sep2");
 
@@ -496,20 +499,18 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     }
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext) {
-        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+        RaplaObjectAction action = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
         return action;
     }
 
 
     private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext) {
-        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+        DynamicTypeAction action = new DynamicTypeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
         return action;
     }
 
-
-
     private UserAction newUserAction(PopupContext popupContext) {
-        UserAction action = new UserAction(getContext(),popupContext, service, editController, raplaImages, dialogUiFactory);
+        UserAction action = new UserAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, service, editController, raplaImages, dialogUiFactory);
         return action;
     }
 

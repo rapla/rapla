@@ -6,12 +6,17 @@ import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.*;
-import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
@@ -33,12 +38,12 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
 
     EventTimeCalculatorResources eventTimei18n;
     @Inject
-	public EventTimeCalculatorUserOption(RaplaContext context, EventTimeCalculatorResources i18n, ClientFacade facade) throws RaplaException
+	public EventTimeCalculatorUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorResources eventTimei18n) throws RaplaException
     {
-        super(context);
+        super(facade, i18n, raplaLocale, logger);
         this.config = facade.getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
-        eventTimei18n = i18n;
-        optionPanel = new EventTimeCalculatorOption(context, false, i18n);
+        this.eventTimei18n = eventTimei18n;
+        optionPanel = new EventTimeCalculatorOption(facade, i18n, raplaLocale, logger, false, eventTimei18n);
         panel = optionPanel.createPanel();
     }
 

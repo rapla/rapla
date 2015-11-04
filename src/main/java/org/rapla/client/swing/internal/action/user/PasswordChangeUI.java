@@ -23,9 +23,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 
-import org.rapla.framework.RaplaContext;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class PasswordChangeUI extends RaplaGUIComponent
@@ -46,12 +49,12 @@ public class PasswordChangeUI extends RaplaGUIComponent
     JPasswordField tf2 = new JPasswordField(10);
     JPasswordField tf3 = new JPasswordField(10);
 
-    public PasswordChangeUI(RaplaContext sm) {
-        this(sm,true);
+    public PasswordChangeUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        this(facade, i18n, raplaLocale, logger, true);
     }
 
-    public PasswordChangeUI(RaplaContext sm,boolean askForOldPassword) {
-        super( sm);
+    public PasswordChangeUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,boolean askForOldPassword) {
+        super(facade, i18n, raplaLocale, logger);
         superPanel.setLayout(new BoxLayout(superPanel, BoxLayout.Y_AXIS));
         panel2.add(new JLabel(getString("password_change_info")));
         panel.setLayout(gridLayout1);

@@ -16,11 +16,10 @@ package org.rapla.client.swing.extensionpoints;
 
 import javax.swing.Icon;
 
+import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.facade.CalendarModel;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
@@ -29,7 +28,7 @@ public interface SwingViewFactory
 {
     public TypedComponentRole<Boolean> PRINT_CONTEXT = new TypedComponentRole<Boolean>("org.rapla.PrintContext");
     // instance scope
-    public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException;
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException;
     public String getViewId();
     /** return the key that is responsible for placing the view in the correct position in the drop down selection menu*/
     public String getMenuSortKey();

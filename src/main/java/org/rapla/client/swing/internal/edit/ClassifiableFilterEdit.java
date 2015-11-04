@@ -44,6 +44,7 @@ import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -58,8 +59,10 @@ import org.rapla.client.swing.internal.edit.fields.CategorySelectField;
 import org.rapla.client.swing.internal.edit.fields.DateField;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -74,8 +77,11 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClassifiableFilter;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class ClassifiableFilterEdit extends RaplaGUIComponent
@@ -98,14 +104,18 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     private final DialogUiFactory dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
     private final BooleanFieldFactory booleanFieldFactory;
+    private final TextFieldFactory textFieldFactory;
+    private final LongFieldFactory longFieldFactory;
     
-    public ClassifiableFilterEdit(RaplaContext context, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory)  {
-        super( context);
+    public ClassifiableFilterEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
+        super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dateFieldFactory = dateFieldFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.booleanFieldFactory = booleanFieldFactory;
+        this.textFieldFactory = textFieldFactory;
+        this.longFieldFactory = longFieldFactory;
         content.setBackground(UIManager.getColor("List.background"));
         scrollPane = new JScrollPane(content
                                      ,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS
@@ -249,7 +259,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
             checkBox.addActionListener(this);
             checkBox.setSelected( true );
             content.add( checkBox , "0," + (row + 1) + ",l,t");
-            filterEdit[i] = new ClassificationEdit(getContext(), treeFactory, raplaImages, dialogUiFactory, scrollPane, dateFieldFactory, booleanFieldFactory);
+            filterEdit[i] = new ClassificationEdit(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, scrollPane, dateFieldFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
             final ClassificationEdit edit = filterEdit[i];
             content.add( edit.getNewComponent() , "2," + (row + 1));
             content.add( edit.getRulesComponent() , "0," + (row + 2) + ",2,"+ (row + 2));
@@ -389,15 +399,19 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
     private final DialogUiFactory dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
     private final BooleanFieldFactory booleanFieldFactory;
+    private final TextFieldFactory textFieldFactory;
+    private final LongFieldFactory longFieldFactory;
     
-    ClassificationEdit(RaplaContext sm,TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,JScrollPane pane, DateFieldFactory dateFieldFactory, BooleanFieldFactory booleanFieldFactory){
-        super(sm );
+    ClassificationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,JScrollPane pane, DateFieldFactory dateFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory){
+        super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.pane = pane;
         this.dateFieldFactory = dateFieldFactory;
         this.booleanFieldFactory = booleanFieldFactory;
+        this.textFieldFactory = textFieldFactory;
+        this.longFieldFactory = longFieldFactory;
         ruleListPanel.setOpaque( false );
         ruleListPanel.setLayout(new BoxLayout(ruleListPanel,BoxLayout.Y_AXIS));
         newPanel.setOpaque( false );
@@ -828,7 +842,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             {
                 operatorComponent = new JLabel("");
                 DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-                AllocatableSelectField newField = new AllocatableSelectField(context, treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory);
+                AllocatableSelectField newField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory);
                 field = newField;
                 test = newField;
                
@@ -839,18 +853,18 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                 Category rootCategory = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
                 if (rootCategory.getDepth() > 2) {
                     Category defaultCategory = (Category) attribute.defaultValue();
-                    CategorySelectField newField = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
+                    CategorySelectField newField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
 					field = newField;
 					test = newField;
                 } else {
-                    CategoryListField newField = new CategoryListField(context,rootCategory);
+                    CategoryListField newField = new CategoryListField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), rootCategory);
 					field = newField;
 					test = newField;
                 }
             }
             else if (type.equals(AttributeType.STRING))
             {
-                TextField newField = new TextField(context);
+                TextField newField = textFieldFactory.create();
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")
@@ -864,7 +878,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             }
             else if (type.equals(AttributeType.INT))
             {
-                LongField newField = new LongField(context);
+                LongField newField = longFieldFactory.create();
 				field = newField;
 				test = newField;
                 @SuppressWarnings("unchecked")

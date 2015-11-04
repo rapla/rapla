@@ -28,19 +28,22 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaTime;
+import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.client.swing.DefaultPluginOption;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
@@ -53,6 +56,7 @@ public class TimeslotOption extends DefaultPluginOption
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
     private final RaplaImages raplaImages;
+    private final IOInterface ioInterface;
 	
     class TimeslotRow
     {
@@ -62,7 +66,7 @@ public class TimeslotOption extends DefaultPluginOption
 
     	public TimeslotRow(Timeslot slot) 
     	{
-    	    addCopyPaste( textfield);
+    	    addCopyPaste( textfield, getI18n(), getRaplaLocale(), ioInterface, getLogger());
     		textfield.setText( slot.getName());
     		int minuteOfDay = slot.getMinuteOfDay();
     		int hour = minuteOfDay /60;
@@ -84,11 +88,12 @@ public class TimeslotOption extends DefaultPluginOption
     }
 
 	@Inject
-    public TimeslotOption(RaplaContext sm, TimeslotProvider timeslotProvider, RaplaImages raplaImages) 
+    public TimeslotOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TimeslotProvider timeslotProvider, RaplaImages raplaImages, IOInterface ioInterface) 
     {
-        super(sm);
+        super(facade, i18n, raplaLocale, logger);
         this.timeslotProvider = timeslotProvider;
         this.raplaImages = raplaImages;
+        this.ioInterface = ioInterface;
     }
 
     List<TimeslotRow> rows = new ArrayList<TimeslotOption.TimeslotRow>();

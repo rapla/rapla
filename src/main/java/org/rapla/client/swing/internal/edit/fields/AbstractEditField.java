@@ -22,7 +22,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -38,10 +37,6 @@ public abstract class AbstractEditField extends RaplaGUIComponent
     String fieldName;
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
 
-    public AbstractEditField(RaplaContext context) {
-        super(context);
-    }
-    
     public AbstractEditField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade, i18n, raplaLocale, logger);

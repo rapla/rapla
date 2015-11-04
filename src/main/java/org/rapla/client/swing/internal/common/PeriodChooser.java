@@ -27,7 +27,6 @@ import org.rapla.entities.domain.Period;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class PeriodChooser extends JComboBox implements Disposable
@@ -47,15 +46,15 @@ public class PeriodChooser extends JComboBox implements Disposable
     private boolean listenersEnabled = true;
     private boolean isWeekOfPeriodVisible = true;
 
-    public PeriodChooser( RaplaContext context) throws RaplaException {
-        this(context,START_AND_END);
+    public PeriodChooser( RaplaResources i18n, ClientFacade clientFacade) throws RaplaException {
+        this(i18n, clientFacade,START_AND_END);
     }
 
-    public PeriodChooser(RaplaContext context,int visiblePeriods) throws RaplaException {
+    public PeriodChooser(RaplaResources i18n, ClientFacade clientFacade,int visiblePeriods) throws RaplaException {
         //      super(RaplaButton.SMALL);
         this.visiblePeriods = visiblePeriods;
-        i18n = context.lookup(RaplaResources.class);
-        setPeriodModel(  context.lookup(ClientFacade.class) .getPeriodModel());
+        this.i18n = i18n;
+        setPeriodModel(clientFacade.getPeriodModel());
     }
 
 

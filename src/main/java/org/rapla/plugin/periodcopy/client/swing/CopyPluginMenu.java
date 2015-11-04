@@ -25,20 +25,23 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.swing.JMenuItem;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.internal.SaveUndo;
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ReservationStartComparator;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationStartComparator;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 
@@ -48,20 +51,20 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 	RaplaMenuItem item;
 	String id = "copy_events";
 	final String label ;
-    private final PeriodCopyResources i18n;
+    private final PeriodCopyResources periodCopyI18n;
     private final Provider<CopyDialog> copyDialogProvider;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 	@Inject
-    public CopyPluginMenu(RaplaContext sm, PeriodCopyResources i18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
-        super(sm);
+    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
+        super(facade, i18n, raplaLocale, logger);
         //menu.insert( new RaplaSeparator("info_end"));
-        this.i18n = i18n;
+        this.periodCopyI18n = periodCopyI18n;
         this.copyDialogProvider = copyDialogProvider;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
 
-        label =i18n.getString(id) ;
+        label =periodCopyI18n.getString(id) ;
 		item = new RaplaMenuItem(id);
 
 //      ResourceBundle bundle = ResourceBundle.getBundle( "org.rapla.plugin.periodcopy.PeriodCopy");

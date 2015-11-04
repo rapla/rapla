@@ -26,7 +26,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -38,21 +37,19 @@ import org.rapla.inject.InjectionContext;
 public class ReservationControllerSwingImpl extends ReservationControllerImpl
 {
     private final InfoFactory<Component, DialogUI> infoFactory;
-    private final RaplaContext context;
     private final RaplaGUIComponent wrapper;
     private final RaplaImages images;
     private final Set<Provider<EventCheck>> checkers;
     private final DialogUiFactory dialogUiFactory;
     
     @Inject
-    public ReservationControllerSwingImpl(RaplaContext context,ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
+    public ReservationControllerSwingImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
             AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactory dialogUiFactory)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard, permissionController);
         this.infoFactory = infoFactory;
-        this.context = context;
         this.dialogUiFactory = dialogUiFactory;
-        this.wrapper = new RaplaGUIComponent(context);
+        this.wrapper = new RaplaGUIComponent(facade, i18n, raplaLocale, logger);
         this.images = images;
         this.checkers = checkers;
     }

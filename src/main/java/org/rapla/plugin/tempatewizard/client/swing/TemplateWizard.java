@@ -32,6 +32,7 @@ import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.swing.MenuElement;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -53,9 +54,9 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
@@ -72,8 +73,8 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
 	@Inject
-    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException{
-        super(context);
+    public TemplateWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException{
+        super(facade, i18n, raplaLocale, logger);
         this.model = model;
         this.editController = editController;
         this.raplaImages = raplaImages;

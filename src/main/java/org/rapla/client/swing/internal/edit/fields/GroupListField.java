@@ -24,14 +24,17 @@ import javax.swing.JToolBar;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.entities.Category;
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class GroupListField extends AbstractEditField implements ChangeListener, ActionListener, EditFieldWithLayout {
@@ -52,13 +55,13 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
      * @throws RaplaException
      */
     @Inject
-    public GroupListField(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(context);
+    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+        super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
     	final Category rootCategory = getQuery().getUserGroupsCategory();
         if ( rootCategory == null )
             return;
-        newCategory = new CategorySelectField(context, treeFactory, raplaImages, dialogUiFactory, rootCategory );
+        newCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory );
         newCategory.setUseNull( false);
         newCategory.setMultipleSelectionPossible( true);
         toolbar.add( newButton  );
