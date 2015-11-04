@@ -78,7 +78,7 @@ public final class PermissionEditTest extends GUITestCase
         TreeFactory treeFactory = new TreeFactoryImpl(context, permissionController, infoFactory, raplaImages);
         DateRenderer dateRenderer = new RaplaDateRenderer(context);
         RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages);
-        DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
+        DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, dateRenderer);
         PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(context, treeFactory, raplaImages, dateRenderer, dialogUiFactory, dateFieldFactory);
         PermissionListField editor = new PermissionListField(clientService.getContext(),"permissions", raplaListEditFactory, permissionFieldFactory);
         Allocatable a = clientService.getFacade().getAllocatables(null)[0];

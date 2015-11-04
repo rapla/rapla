@@ -26,22 +26,14 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
-import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
@@ -60,7 +52,6 @@ public class RaplaComponent
 {
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
 	//private final ClientServiceManager serviceManager;
-	protected PermissionController permissionController;
     private TypedComponentRole<I18nBundle> childBundleName;
     private Logger logger;
     RaplaLocale raplaLocale;
@@ -102,16 +93,9 @@ public class RaplaComponent
         {
             serviceExcption(Logger.class, ex);
         }
-        try{
-            permissionController = context.lookup(PermissionController.class);
-        }
-        catch (RaplaContextException ex)
-        {
-            serviceExcption(PermissionController.class, ex);
-        }
     }
     
-    public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController) {
+    public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
 //        try {
 //            logger = context.lookupDeprecated(Logger.class );
 //        } catch (RaplaContextException e) {
@@ -121,7 +105,6 @@ public class RaplaComponent
         this.i18n = i18n;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
-        this.permissionController = permissionController;
     }
     
     public EntityResolver getEntityResolver() 
@@ -144,45 +127,6 @@ public class RaplaComponent
         return false;
     }
 
-    /** returns if the session user is a registerer */
-    final public boolean isRegisterer(DynamicType type) {
-        if (isAdmin())
-        {
-            return true;
-        }
-        User user;
-        try {
-            //Category registererGroup = getQuery().getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
-            user = getUser();
-            if ( type == null)
-            {
-                for (DynamicType type1: getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
-                {
-                    if (permissionController.canCreate( type1, user))
-                    {
-                        return true;
-                    }
-                }
-                for (DynamicType type1: getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
-                {
-                    if (permissionController.canCreate( type1, user))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                boolean result = permissionController.canCreate( type, user);
-                return result;
-            }
-        } catch (RaplaException ex) {
-            return false;
-        }
-
-    }
-    
     final public boolean isModifyPreferencesAllowed() {
         try {
             User user = getUser();
@@ -229,323 +173,6 @@ public class RaplaComponent
         } catch (RaplaException ex) {
         }
         return false;
-    }
-
-    /** returns if the user has allocation rights for one or more resource */
-    final public boolean canUserAllocateSomething(User user) throws RaplaException {
-        Allocatable[] allocatables =getQuery().getAllocatables();
-        if ( user.isAdmin() )
-            return true;
-        if (!canCreateReservation(user))
-        {
-        	return false;
-        }
-        for ( Allocatable a:allocatables) {
-            if (permissionController.hasPermissionToAllocate(user, a))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    final public boolean canCreateReservation(User user) 
-    {
-        try {
-            for (DynamicType type1: getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
-            {
-                if (permissionController.canCreate( type1, user))
-                {
-                    return true;
-                }
-            }
-        } catch (RaplaException e) {
-            return false;
-        }
-		return false;
-    }
-    
-    
-    final public boolean canCreateReservation()  {
-    	try {
-            User user = getUser();
-            return canCreateReservation( user);
-        } catch (RaplaException ex) {
-            return false;
-        }
-    }
-
-    protected boolean canAllocate(CalendarModel model) 
-	{
-		//Date start, Date end,
-		Collection<Allocatable> allocatables = model.getMarkedAllocatables();
-		boolean canAllocate = true;
-		Date start = getStartDate( model); 
-		Date end = getEndDate( model, start); 
-        for (Allocatable allo:allocatables)
-        {
-        	if (!canAllocate( start, end, allo))
-        	{
-        		canAllocate = false;
-        	}
-        }
-		return canAllocate;
-	}
-    
-    protected Date getStartDate(CalendarModel model) {
-		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-		Date startDate = null;
-    	if ( markedIntervals.size() > 0)
-    	{
-    		TimeInterval first = markedIntervals.iterator().next();
-    		startDate = first.getStart();
-    	}
-    	if ( startDate != null)
-    	{
-    		return startDate;
-    	}
-    	
-		Date selectedDate = model.getSelectedDate();
-        if ( selectedDate == null)
-        {
-            selectedDate = model.getStartDate();
-        }
-		if ( selectedDate == null)
-		{
-			selectedDate = getQuery().today();
-		}
-		Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * getCalendarOptions().getWorktimeStartMinutes());
-		startDate = getRaplaLocale().toDate(selectedDate,time);
-		return startDate;
-	}
-	
-	 protected Date getEndDate( CalendarModel model,Date startDate) {
-		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-		Date endDate = null;
-    	if ( markedIntervals.size() > 0)
-    	{
-    		TimeInterval first = markedIntervals.iterator().next();
-    		endDate = first.getEnd();
-    	}
-    	if ( endDate != null)
-    	{
-    		return endDate;
-    	}
-		return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
-	}
-    
-    protected boolean canAllocate(Date start, Date end, Allocatable allocatables) {
-        if ( allocatables == null) {
-            return true;
-        }
-        try {
-            User user = getUser();
-			Date today = getQuery().today();
-			return permissionController.canAllocate(allocatables, user, start, end, today );
-        } catch (RaplaException ex) {
-            return false;
-        }
-    }
-    
-    /** returns if the current user is allowed to modify the object. */
-    final public boolean canModify(Object object) {
-        try {
-            User user = getUser();
-            EntityResolver entityResolver = getEntityResolver();
-            return canModify(object, user, entityResolver, permissionController);
-        } catch (RaplaException ex) {
-            return false;
-        }
-    }
-    
-    final public boolean canRead(User user, Reservation reservation, PermissionController permissionController) {
-        EntityResolver entityResolver = getEntityResolver();
-        return canRead(reservation, user, entityResolver, permissionController);
-    }
-    
-    static public boolean canModify(Conflict conflict,User user, EntityResolver resolver, PermissionController permissionController) {
-        Allocatable allocatable = conflict.getAllocatable();
-        if (user == null || user.isAdmin())
-        {
-            return true;
-        }
-        if (permissionController.canRead(allocatable, user))
-        {
-            if (canModifyEvent(conflict.getReservation1(),user, resolver, permissionController))
-            {
-                return true;
-            }
-            if (canModifyEvent(conflict.getReservation2(),user, resolver, permissionController))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static public boolean canModifyEvent(String reservationId,User user, EntityResolver resolver, PermissionController permissionController) 
-    {
-        Reservation reservation =  resolver.tryResolve(reservationId, Reservation.class);
-        boolean canModify = reservation != null && canModify(reservation, user, resolver, permissionController);
-        return canModify;
-    }
-
-    final public boolean canAdmin(Object object) {
-        try {
-            User user = getUser();
-            EntityResolver entityResolver = getEntityResolver();
-            return canAdmin(object, user , entityResolver, permissionController);
-        } catch (RaplaException ex) {
-            return false;
-        }
-    }
-
-    static public boolean canModify(Object object, User user, EntityResolver resolver, PermissionController permissionController) {
-        if (object == null || !(object instanceof RaplaObject))
-        {
-            return false;
-        }
-        if ( user == null)
-        {
-            return false;
-        }
-        if (user.isAdmin())
-            return true;
-        if (object instanceof Ownable) {
-            Ownable ownable = (Ownable) object;
-            User owner = ownable.getOwner();
-			if  ( owner != null && user.equals(owner))
-            {
-                return true;
-            }
-			if ( owner == null && object instanceof Classifiable)
-			{
-			    if (permissionController.canCreate( (Classifiable)object, user))
-			    {
-			        return true;
-			    }
-			}
-        }
-        if (object instanceof PermissionContainer) {
-            PermissionContainer permissionContainer = (PermissionContainer) object;
-            if (permissionController.canModify(permissionContainer, user))
-            {
-                return true;
-            }
-        }
-        if ( object instanceof Annotatable && canWriteTemplate((Annotatable) object, user, resolver, permissionController))
-        {
-            return true;
-        }
-        return false;
-    }
-    
-    public static boolean canWriteTemplate(Annotatable entity, User user, EntityResolver resolver, PermissionController permissionController) {
-        String templateId = ((Annotatable)entity).getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
-        if ( templateId != null)
-        {
-            Allocatable template = resolver.tryResolve( templateId, Allocatable.class);
-            if ( template != null)
-            {
-                if (canModify( template, user, resolver, permissionController));
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    
-    public static boolean canReadTemplate(Annotatable entity, User user, EntityResolver resolver, PermissionController permissionController) {
-        String templateId = ((Annotatable)entity).getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
-        if ( templateId != null)
-        {
-            Allocatable template = resolver.tryResolve( templateId, Allocatable.class);
-            if ( template != null)
-            {
-                if (canRead( template, user, resolver, permissionController));
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    static public boolean canAdmin(Object object, User user, EntityResolver resolver, PermissionController permissionController) {
-        if ( !canModify(object, user,resolver, permissionController))
-        {
-            return false;
-        }
-        if (user.isAdmin())
-            return true;
-        if (object instanceof Ownable) {
-            Ownable ownable = (Ownable) object;
-            User owner = ownable.getOwner();
-            if  ( owner != null && user.equals(owner))
-            {
-                return true;
-            }
-            if ( owner == null && object instanceof Allocatable)
-            {
-                if (permissionController.canCreate( (Allocatable)object, user))
-                {
-                    return true;
-                }
-            }
-        }
-        if (object instanceof PermissionContainer) {
-            PermissionContainer permissionContainer = (PermissionContainer) object;
-            if (permissionController.canAdmin(permissionContainer, user))
-            {
-                return true;
-            }
-        }
-        if ( object instanceof Annotatable && canWriteTemplate((Annotatable)object, user, resolver, permissionController))
-        {
-            return true;
-        }
-        return false;
-    }
-    
-    static public boolean canRead(Appointment appointment,User user, EntityResolver resolver, PermissionController permissionController)
-    {
-    	Reservation  reservation = appointment.getReservation();
-    	boolean result = canRead(reservation, user,resolver, permissionController);
-		return result;
-    }
-    
-    static public boolean canRead(Reservation reservation,User user, EntityResolver resolver, PermissionController permissionController)
-    {
-    	if ( user == null)
-    	{
-    		return true;
-    	}
-    	if ( canModify(reservation, user,resolver, permissionController))
-        {
-     	   return true;
-        }
-    	if ( canReadTemplate(reservation, user, resolver, permissionController))
-    	{
-    	    return true;
-    	}
-	    if (permissionController.canRead(reservation, user))
-    	{
-    		return true;
-    	}
-    	return false;
-    }
-    
-    static public boolean canRead(Allocatable allocatable, User user, EntityResolver resolver, PermissionController permissionController) {
-       if ( canModify(allocatable, user, resolver, permissionController))
-       {
-    	   return true;
-       }
-       if (permissionController.canRead(allocatable, user))
-       {
-           return true;
-       }
-       return false;
     }
 
     public CalendarOptions getCalendarOptions() {
@@ -771,6 +398,60 @@ public class RaplaComponent
 		}
 	}
 
+	protected Date getStartDate(CalendarModel model)
+	{
+	    final ClientFacade clientFacade = getClientFacade();
+        final RaplaLocale raplaLocale2 = getRaplaLocale();
+        return getStartDate(model, clientFacade, raplaLocale2);
+	}
+    
+    public static Date getStartDate(CalendarModel model, ClientFacade clientFacade, RaplaLocale raplaLocale) {
+        Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+        Date startDate = null;
+        if ( markedIntervals.size() > 0)
+        {
+            TimeInterval first = markedIntervals.iterator().next();
+            startDate = first.getStart();
+        }
+        if ( startDate != null)
+        {
+            return startDate;
+        }
+        
+        Date selectedDate = model.getSelectedDate();
+        if ( selectedDate == null)
+        {
+            selectedDate = model.getStartDate();
+        }
+        if ( selectedDate == null)
+        {
+            selectedDate = clientFacade.today();
+        }
+        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(clientFacade.getUser(), clientFacade);
+        Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
+        startDate = raplaLocale.toDate(selectedDate,time);
+        return startDate;
+    }
+    
+    protected Date getEndDate(CalendarModel model, Date startDate)
+    {
+        return calcEndDate(model, startDate);
+    }
 
-	
+    public static Date calcEndDate(CalendarModel model, Date startDate)
+    {
+        Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+        Date endDate = null;
+        if (markedIntervals.size() > 0)
+        {
+            TimeInterval first = markedIntervals.iterator().next();
+            endDate = first.getEnd();
+        }
+        if (endDate != null)
+        {
+            return endDate;
+        }
+        return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+
+    }
 }

@@ -12,54 +12,65 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import org.rapla.RaplaResources;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.ParseDateException;
-import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.*;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.entities.domain.*;
-import org.rapla.entities.domain.PermissionContainer.Util;
-import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.*;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.gwtjsonrpc.common.ResultImpl;
-import org.rapla.gwtjsonrpc.common.VoidResult;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.plugin.mail.MailPlugin;
-import org.rapla.plugin.mail.server.MailInterface;
-import org.rapla.server.AuthenticationStore;
-import org.rapla.server.RemoteSession;
-import org.rapla.storage.*;
-import org.rapla.storage.UpdateResult.Change;
-import org.rapla.storage.UpdateResult.Remove;
-import org.rapla.storage.dbrm.RemoteStorage;
-import org.rapla.storage.impl.EntityStore;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.Ownable;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.PermissionContainer.Util;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.server.AuthenticationStore;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageUpdateListener;
+import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Change;
+import org.rapla.storage.UpdateResult.Remove;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -350,7 +361,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
             else if (obj instanceof Conflict)
             {
                 Conflict conflict = (Conflict) obj;
-                if (!RaplaComponent.canModify(conflict, user, operator, permissionController))
+                if (!permissionController.canModify(conflict, user, operator))
                 {
                     clientStore = false;
                 }

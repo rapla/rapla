@@ -181,8 +181,8 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
 	        DateRenderer dateRenderer = new RaplaDateRenderer(context);
-            DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
-            BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, i18n, raplaLocale, logger, permissionController);
+            DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, dateRenderer);
+            BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, i18n, raplaLocale, logger);
             ClassifiableFilterEdit ui = new ClassifiableFilterEdit( context, treeFactory, isResourceOnly, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
 			ui.setFilter( model);
    	}

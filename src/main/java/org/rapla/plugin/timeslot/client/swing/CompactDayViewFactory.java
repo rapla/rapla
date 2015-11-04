@@ -31,6 +31,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
@@ -51,11 +52,13 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
     @Inject
     public CompactDayViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
+            DialogUiFactory dialogUiFactory, PermissionController permissionController)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -68,12 +71,13 @@ public class CompactDayViewFactory extends RaplaComponent implements SwingViewFa
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactDayCalendar(context, model, editable, objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, timeslotProvider,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
     }
 
     public String getViewId()

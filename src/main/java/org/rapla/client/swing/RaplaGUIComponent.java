@@ -80,9 +80,9 @@ public class RaplaGUIComponent extends RaplaComponent
         super(context);
     }
     
-    public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController)
+    public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
-        super(facade, i18n, raplaLocale, logger, permissionController);
+        super(facade, i18n, raplaLocale, logger);
     }
 
 
@@ -108,10 +108,11 @@ public class RaplaGUIComponent extends RaplaComponent
 	public AppointmentAction createAppointmentAction(Component component, Point p, DialogUiFactory dialogUiFactory)
 	{
 	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
+	    final PermissionController permissionController = getService(PermissionController.class);
 	    final ReservationController reservationController = getReservationController();
 	    final InfoFactory<Component, DialogUI> infoFactory = getInfoFactory();
         final RaplaImages raplaImages = getService(RaplaImages.class);
-        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages, dialogUiFactory);
+        return new AppointmentAction(getContext(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
 	}
 	
 

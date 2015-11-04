@@ -64,6 +64,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
@@ -88,8 +89,9 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
-	public ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
+	private ResourceSelection(RaplaContext context, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
         super(context);
 
         this.model = model;
@@ -100,6 +102,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -255,8 +258,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                )
             {
             	
-                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory, raplaImages, dialogUiFactory);
-                if (editAction.canModify( focusedObject))
+                RaplaObjectAction editAction = new RaplaObjectAction( getContext(), createPopupContext(getComponent(),null), editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+                if (permissionController.canModify( focusedObject, getClientFacade()))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);
                     editAction.actionPerformed();
@@ -358,11 +361,12 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         private final DateFieldFactory dateFieldFactory;
         private final DialogUiFactory dialogUiFactory;
         private final BooleanFieldFactory booleanFieldFactory;
+        private final PermissionController permissionController;
 
         @Inject
         public ResourceSelectionFactory(RaplaContext context, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory,
                 EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
-                DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory)
+                DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController)
         {
             this.context = context;
             this.model = model;
@@ -374,11 +378,12 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
             this.booleanFieldFactory = booleanFieldFactory;
+            this.permissionController = permissionController;
         }
 
         public ResourceSelection create(MultiCalendarView view)
         {
-            return new ResourceSelection(context, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory);
+            return new ResourceSelection(context, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, permissionController);
         }
     }
    

@@ -26,7 +26,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -66,7 +65,7 @@ public class RaplaICalExport implements ICalExport
         for ( String id:appointmentIds)
         {
         	Appointment app = operator.resolve(id, Appointment.class);
-            boolean canRead = RaplaComponent.canRead(app, user, facade.getOperator(), permissionController);
+            boolean canRead = permissionController.canRead(app, user, facade.getOperator());
             if (canRead)
             {
                 appointments.add(app);

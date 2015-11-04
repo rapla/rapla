@@ -19,6 +19,7 @@ import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -37,12 +38,13 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     private final ReservationInfoEditFactory reservationInfoEditFactory;
     private final AppointmentListEditFactory appointmentListEditFactory;
     private final AllocatableSelectionFactory allocatableSelectionFactory;
+    private final PermissionController permissionController;
 
     @Inject
     public ReservationEditFactoryImpl(Set<AppointmentStatusFactory> list, RaplaContext context, ReservationController reservationController,
             InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
             ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
-            AllocatableSelectionFactory allocatableSelectionFactory)
+            AllocatableSelectionFactory allocatableSelectionFactory, PermissionController permissionController)
     {
         this.list = list;
         this.context = context;
@@ -53,12 +55,13 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
         this.reservationInfoEditFactory = reservationInfoEditFactory;
         this.appointmentListEditFactory = appointmentListEditFactory;
         this.allocatableSelectionFactory = allocatableSelectionFactory;
+        this.permissionController = permissionController;
     }
 
     public ReservationEdit create(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
     {
         ReservationEditImpl edit = new ReservationEditImpl(context, list, reservationController, infoFactory, raplaImages, dialogUiFactory,
-                reservationInfoEditFactory, appointmentListEditFactory, allocatableSelectionFactory);
+                reservationInfoEditFactory, appointmentListEditFactory, allocatableSelectionFactory, permissionController);
         edit.editReservation(reservation, appointmentBlock);
         return edit;
     }

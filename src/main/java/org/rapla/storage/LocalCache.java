@@ -409,8 +409,8 @@ public class LocalCache implements EntityResolver
         EntityResolver cache = this;
         if ( user != null)
         {
-            ((ConflictImpl)conflict).setAppointment1Editable( RaplaComponent.canModifyEvent(conflict.getReservation1(), user, cache, permissionController));
-            ((ConflictImpl)conflict).setAppointment2Editable( RaplaComponent.canModifyEvent(conflict.getReservation2(), user, cache, permissionController));
+            ((ConflictImpl)conflict).setAppointment1Editable( permissionController.canModifyEvent(conflict.getReservation1(), user, cache));
+            ((ConflictImpl)conflict).setAppointment2Editable( permissionController.canModifyEvent(conflict.getReservation2(), user, cache));
         }
     }
 

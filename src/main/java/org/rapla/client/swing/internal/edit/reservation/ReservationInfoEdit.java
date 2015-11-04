@@ -64,6 +64,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 /**
@@ -199,7 +200,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     }
 
     private void updatePermissionFieldVisiblity() {
-        boolean canAdmin = canAdmin((Reservation)classifiable);
+        final ClientFacade clientFacade = getClientFacade();
+        boolean canAdmin = permissionController.canAdmin((Reservation)classifiable, clientFacade);
         permissionListField.getComponent().setVisible( selectedView == TabSelected.Info && canAdmin);
     }
 

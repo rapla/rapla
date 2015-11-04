@@ -65,6 +65,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
@@ -77,7 +78,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 {
     public void addReservationWizards( MenuInterface menu, MenuContext context, String afterId ) throws RaplaException
     {
-        if (canCreateReservation())
+        if (permissionController.canCreateReservation(getClientFacade()))
         {
         	addNewMenus(menu,  afterId);		        
         }
@@ -195,7 +196,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
               if (permissionController.canAllocate( alloc, user, start, end, today))
                   canAllocate = true;
           }
-          boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && canUserAllocateSomething( getUser()));
+          boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && permissionController.canUserAllocateSomething( getUser(), getClientFacade()));
 		return canAllocateSelected;
 	}
     
@@ -214,7 +215,8 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         final PopupContext popupContext = context.getPopupContext();
         Object focusedObject = context.getFocusedObject();
      
-		if (canUserAllocateSomething( user) )
+		final ClientFacade clientFacade = getClientFacade();
+        if (permissionController.canUserAllocateSomething( user, clientFacade) )
 		{
      	    if ( addNewReservationMenu)
             {
@@ -242,7 +244,7 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
 
             
         boolean allocatableNodeContext = allocatableType || focusedObject instanceof Allocatable  || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT;
-        if ( isRegisterer(type) || isAdmin()) {
+        if ( permissionController.isRegisterer(type, clientFacade) || isAdmin()) {
             if ( allocatableNodeContext)
             {
                 menu.addSeparator();
@@ -494,13 +496,13 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     }
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext) {
-        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory);
+        RaplaObjectAction action = new RaplaObjectAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
         return action;
     }
 
 
     private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext) {
-        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory);
+        DynamicTypeAction action = new DynamicTypeAction(getContext(), popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
         return action;
     }
 
@@ -516,9 +518,10 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private List<Entity<?>> getEditableObjects(Collection<?> list) {
         Iterator<?> it = list.iterator();
         ArrayList<Entity<?>> editableObjects = new ArrayList<Entity<?>>();
+        final ClientFacade clientFacade = getClientFacade();
         while (it.hasNext()) {
             Object o = it.next();
-            if (canModify(o) )
+            if (permissionController.canModify(o, clientFacade) )
                 editableObjects.add((Entity<?>)o);
         }
         return editableObjects;
@@ -528,9 +531,10 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
         Iterator<?> it = list.iterator();
         Category superCategory = getQuery().getSuperCategory();
         ArrayList<Entity<?>> deletableObjects = new ArrayList<Entity<?>>();
+        final ClientFacade clientFacade = getClientFacade();
         while (it.hasNext()) {
             Object o = it.next();
-			if (canAdmin(o) && !o.equals( superCategory) )
+			if (permissionController.canAdmin(o, clientFacade) && !o.equals( superCategory) )
                 deletableObjects.add((Entity<?>)o);
         }
         return deletableObjects;

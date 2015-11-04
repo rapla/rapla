@@ -24,8 +24,10 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -88,10 +90,12 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		boolean canCreateReservation = eventTypes.size() > 0;
 		MenuElement element;
 		String newEventText = getString("new_reservation");
+		final ClientFacade clientFacade = getClientFacade();
+		final RaplaLocale raplaLocale = getRaplaLocale();
         if ( eventTypes.size() == 1)
 		{
 		    RaplaMenuItem item = new RaplaMenuItem( getId());
-            item.setEnabled( canAllocate(model) && canCreateReservation);
+            item.setEnabled( permissionController.canAllocate(model, clientFacade, raplaLocale) && canCreateReservation);
             DynamicType type = eventTypes.get(0);
             String name = type.getName( getLocale());
             if ( newEventText.endsWith( name))
@@ -111,7 +115,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( canAllocate(model) && canCreateReservation);
+			item.setEnabled( permissionController.canAllocate(model, clientFacade, raplaLocale) && canCreateReservation);
 			item.setText(newEventText);
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			for ( DynamicType type:eventTypes)

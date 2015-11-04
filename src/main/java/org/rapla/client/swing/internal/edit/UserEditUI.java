@@ -31,20 +31,6 @@ import javax.swing.event.ChangeListener;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-import org.rapla.entities.Category;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
@@ -58,6 +44,19 @@ import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 /****************************************************************
@@ -87,7 +86,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, GroupListField groupField, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController) throws RaplaException {
+    public UserEditUI(RaplaContext context, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, GroupListField groupField, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
         super(context);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
@@ -101,7 +100,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(nameField);
         emailField = new TextField(context,getString("email"));
         fields.add(emailField);
-        adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, permissionController,getString("admin"),getUser());
+        adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, getString("admin"),getUser());
         fields.add(adminField);
         this.groupField = groupField;
         fields.add(this.groupField);
@@ -110,8 +109,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
     
     class AdminBooleanField extends BooleanField implements ChangeListener {
         User user;
-        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, String fieldName, User user)  {
-            super(facade, i18n, raplaLocale, logger, permissionController, fieldName);
+        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName, User user)  {
+            super(facade, i18n, raplaLocale, logger, fieldName);
             this.user = user;
         }
         

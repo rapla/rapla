@@ -31,9 +31,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.internal.AppointmentInfoUI;
+import org.rapla.client.internal.RaplaColors;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.Builder;
@@ -49,7 +49,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.permission.PermissionController;
@@ -73,8 +72,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.internal.AppointmentInfoUI;
-import org.rapla.client.internal.RaplaColors;
 
 public abstract class RaplaBuilder 
     implements
@@ -571,12 +568,12 @@ public abstract class RaplaBuilder
 
 	protected boolean isAnonymous(User user,Appointment appointment) {
 		EntityResolver entityResolver = getEntityResolver();
-        return !RaplaComponent.canRead(appointment, user, entityResolver, permissionController);
+        return !permissionController.canRead(appointment, user, entityResolver);
 	}
 
     private boolean isMovable(Reservation reservation) {
         EntityResolver entityResolver = getEntityResolver();
-        return selectedReservations.contains( reservation ) && RaplaComponent.canModify(reservation, editingUser, entityResolver, permissionController);
+        return selectedReservations.contains( reservation ) && permissionController.canModify(reservation, editingUser, entityResolver);
     }
 
     public boolean isConflictsSelected() {

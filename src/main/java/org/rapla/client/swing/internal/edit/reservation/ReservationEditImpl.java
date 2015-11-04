@@ -77,6 +77,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
@@ -147,18 +149,20 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
     @Inject
     public ReservationEditImpl(RaplaContext sm, Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController,
             InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
             ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
-            AllocatableSelectionFactory allocatableSelectionFactory) throws RaplaException
+            AllocatableSelectionFactory allocatableSelectionFactory, PermissionController permissionController) throws RaplaException
     {
         super( sm);
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
         this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
@@ -406,8 +410,9 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         getPrivateReservationController().addReservationEdit(this);
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
-        deleteButton.setEnabled( canAdmin( reservation ));
-        if ( !canModify( reservation) ) 
+        final ClientFacade clientFacade = getClientFacade();
+        deleteButton.setEnabled( permissionController.canAdmin( reservation, clientFacade ));
+        if ( !permissionController.canModify( reservation, clientFacade) ) 
         {
             disableComponentAndAllChildren(appointmentEdit.getComponent());
             disableComponentAndAllChildren(reservationInfo.getComponent());

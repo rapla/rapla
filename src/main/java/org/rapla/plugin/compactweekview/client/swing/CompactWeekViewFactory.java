@@ -32,6 +32,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 
@@ -52,12 +53,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
     @Inject
     public CompactWeekViewFactory(RaplaContext context, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, 
-            DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+            DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController)
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -70,12 +72,13 @@ public class CompactWeekViewFactory extends RaplaComponent implements SwingViewF
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
     }
 
     public SwingCalendarView createSwingView(RaplaContext context, CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactWeekCalendar(context, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController);
     }
 
     public String getViewId()

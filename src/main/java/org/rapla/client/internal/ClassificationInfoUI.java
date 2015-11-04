@@ -19,7 +19,6 @@ import java.util.Locale;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -35,9 +34,9 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         super(sm);
     }
     
-    public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, PermissionController permissionController)
+    public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger)
     {
-        super(i18n, raplaLocale, facade, logger, permissionController);
+        super(i18n, raplaLocale, facade, logger);
     }
 
     public void insertClassificationTitle( Classifiable classifiable, StringBuffer buf ) {

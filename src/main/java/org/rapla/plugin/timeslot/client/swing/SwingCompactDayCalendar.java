@@ -50,6 +50,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
@@ -69,11 +70,11 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 	
     public SwingCompactDayCalendar(RaplaContext sm, CalendarModel settings, boolean editable, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory)
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController)
                     throws RaplaException
     {
         super(sm, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard, reservationController, infoFactory,
-                raplaImages, dateRenderer, dialogUiFactory);
+                raplaImages, dateRenderer, dialogUiFactory, permissionController);
         this.timeslotProvider = timeslotProvider;
     }
     
@@ -149,7 +150,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory,raplaImages, dialogUiFactory) {
+        return  new RaplaCalendarViewListener(getContext(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory,raplaImages, dialogUiFactory, permissionController) {
         	@Override
         	protected Collection<Allocatable> getMarkedAllocatables() 
         	{

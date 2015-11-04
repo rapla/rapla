@@ -8,10 +8,13 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -70,11 +73,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     private final RaplaImages raplaImages;
 
     private final DialogUiFactory dialogUiFactory;
+
+    private final PermissionController permissionController;
     
     @Inject
     public SwingReservationTableView(RaplaContext context, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
             final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
-            final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory) throws RaplaException
+            final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory,
+            PermissionController permissionController) throws RaplaException
     {
         super( context );
         this.tableConfigLoader = tableConfigLoader;
@@ -82,6 +88,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
         cutListener.setCut(true);
         table = new JTable() {
             private static final long serialVersionUID = 1L;
@@ -269,10 +276,12 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 		Point p  = null;
 		try {
 			updateMenu(editMenu,newMenu, p);
-			boolean canUserAllocateSomething = canUserAllocateSomething(getUser());
+			final User user = getUser();
+            final ClientFacade clientFacade = getClientFacade();
+            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(user, clientFacade);
 			boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
 			newMenu.setEnabled(enableNewMenu);
-			editMenu.setEnabled(canUserAllocateSomething(getUser()));
+			editMenu.setEnabled(permissionController.canUserAllocateSomething(user, clientFacade));
 		} catch (RaplaException ex) {
 			showException (ex,getComponent(), dialogUiFactory);
 		}
@@ -354,7 +363,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 	            RaplaMenu newMenu = new RaplaMenu("EDIT_BEGIN");
 	            newMenu.setText(getString("new"));
 	            menu.add(newMenu);
-	            boolean canUserAllocateSomething = canUserAllocateSomething(getUser());
+	            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser(), getClientFacade());
 	            updateMenu(menu,newMenu, p);
 	            boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
 	            newMenu.setEnabled(enableNewMenu);
@@ -382,7 +391,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             if (me.getClickCount() > 1  && selectedEvents.size() == 1 )
             {
                 Reservation reservation = selectedEvents.get( 0);
-                if (!canModify( reservation ))
+                if (!permissionController.canModify( reservation, getClientFacade() ))
                 {
                     return;
                 }

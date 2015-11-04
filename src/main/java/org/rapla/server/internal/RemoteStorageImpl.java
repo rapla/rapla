@@ -1,14 +1,31 @@
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.*;
+import org.rapla.entities.DependencyException;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -19,7 +36,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
@@ -33,13 +49,14 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
-import org.rapla.storage.*;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.PreferencePatch;
+import org.rapla.storage.RaplaNewVersionException;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
+import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.*;
 
 @DefaultImplementation(of =RemoteStorage.class,context = InjectionContext.server)
 public class RemoteStorageImpl implements RemoteStorage
@@ -208,7 +225,7 @@ public class RemoteStorageImpl implements RemoteStorage
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)
     {
         ReservationImpl reservation = (ReservationImpl) entity;
-        boolean reservationVisible = RaplaComponent.canRead(reservation, sessionUser, operator, permissionController);
+        boolean reservationVisible = permissionController.canRead(reservation, sessionUser, operator);
         // check if the user is allowed to read the reservation info
         if (!reservationVisible)
         {

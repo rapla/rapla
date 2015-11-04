@@ -24,7 +24,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -38,8 +37,8 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         super(context);
     }
 
-    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, PermissionController permissionController) {
-        super( facade, i18n, raplaLocale, logger, permissionController);
+    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
+        super( facade, i18n, raplaLocale, logger);
 //        this.i18n = i18n;
 //        this.raplaLocale = raplaLacale;
     }

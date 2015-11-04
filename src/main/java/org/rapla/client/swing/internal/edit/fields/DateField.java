@@ -30,7 +30,6 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -42,13 +41,13 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     JLabel multipleValuesLabel = new JLabel();
     
-    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, DateRenderer dateRenderer,String fieldName) {
-        this( facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer,String fieldName) {
+        this( facade, i18n, raplaLocale, logger, dateRenderer);
         setFieldName(fieldName);
     }
     
-    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, DateRenderer dateRenderer) {
-        super( facade, i18n, raplaLocale, logger, permissionController);
+    private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer) {
+        super( facade, i18n, raplaLocale, logger);
         panel = new JPanel();
         field = createRaplaCalendar(dateRenderer);
         panel.setLayout(new BorderLayout());
@@ -121,29 +120,27 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
         private final Logger logger;
-        private final PermissionController permissionController;
         private final DateRenderer dateRenderer;
 	    @Inject
-        public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController,
+        public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 DateRenderer dateRenderer)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
             this.logger = logger;
-            this.permissionController = permissionController;
             this.dateRenderer = dateRenderer;
 
         }
 
 	    public DateField create(String fieldName)
 	    {
-	        return new DateField(facade, i18n, raplaLocale, logger, permissionController, dateRenderer, fieldName);
+	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer, fieldName);
 	    }
 	    
 	    public DateField create()
 	    {
-	        return new DateField(facade, i18n, raplaLocale, logger, permissionController, dateRenderer);
+	        return new DateField(facade, i18n, raplaLocale, logger, dateRenderer);
 	    }
 	}
 }

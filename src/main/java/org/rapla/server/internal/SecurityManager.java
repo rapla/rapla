@@ -151,7 +151,7 @@ public class SecurityManager
         if (!permitted && entity instanceof Conflict)
         {
             Conflict conflict = (Conflict) entity;
-            if (RaplaComponent.canModify(conflict, user, operator, permissionController))
+            if (permissionController.canModify(conflict, user, operator))
             {
                 permitted = true;
             }
@@ -159,7 +159,7 @@ public class SecurityManager
 
         if (!permitted && entity instanceof Annotatable)
         {
-            permitted = RaplaComponent.canWriteTemplate(( Annotatable)entity, user, operator, permissionController );
+            permitted = permissionController.canWriteTemplate(( Annotatable)entity, user, operator );
         }
         
         if (!permitted)

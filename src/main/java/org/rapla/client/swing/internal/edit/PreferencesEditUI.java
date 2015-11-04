@@ -43,21 +43,20 @@ import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.extensionpoints.UserOptionPanel;
-import org.rapla.entities.Named;
-import org.rapla.entities.NamedComparator;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.OptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.Named;
+import org.rapla.entities.NamedComparator;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.configuration.Preferences")
@@ -87,9 +86,9 @@ public class PreferencesEditUI extends RaplaGUIComponent
     @Inject
     public PreferencesEditUI(RaplaContext context, TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel,
             Set<Provider<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
-            RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, DialogUiFactory dialogUiFactory)
+            RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactory dialogUiFactory)
     {
-        super(facade, i18n, raplaLocale, logger, permissionController);
+        super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.userOptionPanel = userOptionPanel;
         this.systemOptionPanel = systemOptionPanel;

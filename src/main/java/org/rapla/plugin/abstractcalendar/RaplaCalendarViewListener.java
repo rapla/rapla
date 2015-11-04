@@ -20,8 +20,10 @@ import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
@@ -55,9 +57,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
     public RaplaCalendarViewListener(RaplaContext context, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
     {
         super(context);
         this.model = model;
@@ -70,6 +73,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
     }
 
     protected CalendarModel getModel()
@@ -109,7 +113,8 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
             MenuContext context = new MenuContext(getContext(), focusedObject);
             menuFactory.addReservationWizards(menu, context, null);
 
-            if (canCreateReservation())
+            final ClientFacade clientFacade = getClientFacade();
+            if (permissionController.canCreateReservation(clientFacade))
             {
                 //	        	 User user = getUserFromRequest();
                 //	 	        Date today = getQuery().today();
@@ -121,7 +126,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
                 //	 	        }
                 //	 	       canAllocate || (selectedAllocatables.size() == 0 &&
 
-                if (canUserAllocateSomething(getUser()))
+                if (permissionController.canUserAllocateSomething(getUser(), clientFacade))
                 {
                     ReservationEdit[] editWindows = reservationController.getEditWindows();
                     if (editWindows.length > 0)
@@ -183,7 +188,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         try
         {
-            if (!canModify(b.getReservation()))
+            if (!permissionController.canModify(b.getReservation(), getClientFacade()))
                 return;
             final AppointmentBlock appointmentBlock = b.getAppointmentBlock();
             reservationController.edit(appointmentBlock);
@@ -315,7 +320,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
+        AppointmentAction action = new AppointmentAction(getContext(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
         menu.add(action);
         return action;
     }

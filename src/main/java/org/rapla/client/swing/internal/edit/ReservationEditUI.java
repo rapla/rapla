@@ -47,6 +47,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
@@ -59,6 +60,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     ClassificationField<Reservation> classificationField;
     PermissionListField permissionListField;
     AllocatableSelection allocatableSelection;
+    private final PermissionController permissionController;
 
     @Inject
     public ReservationEditUI(RaplaContext context, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
@@ -67,6 +69,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
             DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException
     {
         super(context);
+        this.permissionController = permissionController;
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
 
@@ -158,9 +161,10 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         classificationField.mapFrom( objectList);
         permissionListField.mapFrom( objectList);
         boolean canAdmin = true;
+        final ClientFacade clientFacade = getClientFacade();
         for ( Reservation event:objectList)
         {
-            if ( !canAdmin( event))
+            if ( !permissionController.canAdmin( event, clientFacade))
             {
                 canAdmin = false;
             }

@@ -26,7 +26,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
@@ -68,7 +67,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
         for ( Reservation r:reservations)
         {
             EntityResolver entityResolver = getEntityResolver();
-            if ( RaplaComponent.canRead(r, user, entityResolver, permissionController))
+            if ( permissionController.canRead(r, user, entityResolver))
             {
                 result.add((ReservationImpl) r);
             }
@@ -81,7 +80,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
 	public ReservationImpl get(@QueryParam("user") User user, @QueryParam("id") String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        if (!RaplaComponent.canRead(event, user, getEntityResolver(), permissionController ))
+        if (!permissionController.canRead(event, user, getEntityResolver()))
         {
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
@@ -91,7 +90,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
 	@PUT
     public ReservationImpl update(@QueryParam("user") User user, ReservationImpl event) throws RaplaException
     {
-        if (!RaplaComponent.canModify(event, user, getEntityResolver(), permissionController))
+        if (!permissionController.canModify(event, user, getEntityResolver()))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }

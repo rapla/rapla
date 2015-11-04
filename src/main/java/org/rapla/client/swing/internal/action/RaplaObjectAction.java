@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.edit.reservation.sample.gwt.subviews.InfoView;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
@@ -35,13 +34,16 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -66,18 +68,20 @@ public class RaplaObjectAction extends RaplaAction {
     private final InfoFactory<Component, DialogUI> infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
-    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
-        this(sm, null, editController, infoFactory, raplaImages, dialogUiFactory);
+    public RaplaObjectAction(RaplaContext sm, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) {
+        this(sm, null, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
     }
 
-    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
+    public RaplaObjectAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)  {
         super( sm);
         this.editController = editController;
         this.popupContext = popupContext;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
     }
     
     protected PopupContext getPopupContext()
@@ -152,16 +156,17 @@ public class RaplaObjectAction extends RaplaAction {
 
     protected void update() {
         boolean enabled = true;
+        final ClientFacade clientFacade = getClientFacade();
         if (type == EDIT || type == DELETE) {
-            enabled = canModify(object);
+            enabled = permissionController.canModify(object, clientFacade);
 
         } else if (type == NEW ) {
-            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && isRegisterer(null)) || isAdmin();
+            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && permissionController.isRegisterer(null, clientFacade)) || isAdmin();
         } else if (type == EDIT_SELECTION || type == DELETE_SELECTION) {
             if (objectList != null && objectList.size() > 0 ) {
                 Iterator<Entity<?>> it = objectList.iterator();
                 while (it.hasNext()) {
-                    if (!canModify(it.next())){
+                    if (!permissionController.canModify(it.next(), clientFacade)){
                         enabled = false;
                         break;
                     }

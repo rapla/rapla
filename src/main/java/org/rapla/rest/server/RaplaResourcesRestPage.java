@@ -25,7 +25,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
@@ -54,7 +53,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
 		List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
 		for (Allocatable r : resources) {
-			if (RaplaComponent.canRead(r, user, getEntityResolver(), permissionController)) {
+			if (permissionController.canRead(r, user, getEntityResolver())) {
 				result.add((AllocatableImpl) r);
 			}
 		}
@@ -65,7 +64,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 	@Path("{id}")
 	public AllocatableImpl get(@QueryParam("user") User user, @PathParam("id") String id) throws RaplaException {
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
-		if (!RaplaComponent.canRead(resource, user, getEntityResolver(), permissionController)) {
+		if (!permissionController.canRead(resource, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't read  " + resource);
 		}
 		return resource;
@@ -73,7 +72,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 
 	@PUT
 	public AllocatableImpl update(@QueryParam("user") User user, AllocatableImpl resource) throws RaplaException {
-		if (!RaplaComponent.canModify(resource, user, getEntityResolver(), permissionController)) {
+		if (!permissionController.canModify(resource, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
 		resource.setResolver(operator);

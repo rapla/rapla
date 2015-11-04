@@ -58,10 +58,12 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -105,10 +107,12 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
     private final DialogUiFactory dialogUiFactory;
 
-    public SwingAppointmentTableView(RaplaContext context, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
+    private final PermissionController permissionController;
+
+    SwingAppointmentTableView(RaplaContext context, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
             CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
-            RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory) throws RaplaException
+            RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException
     {
         super(context);
         this.objectMenuFactories = objectMenuFactories;
@@ -119,6 +123,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
         cutListener.setCut(true);
         table = new JTable()
         {
@@ -298,8 +303,10 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         try
         {
             updateMenu(editMenu, newMenu, p);
-            newMenu.setEnabled(newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething(getUser()));
-            editMenu.setEnabled(canUserAllocateSomething(getUser()));
+            final ClientFacade clientFacade = getClientFacade();
+            final User user = getUser();
+            newMenu.setEnabled(newMenu.getMenuComponentCount() > 0 && permissionController.canUserAllocateSomething(user, clientFacade));
+            editMenu.setEnabled(permissionController.canUserAllocateSomething(user, clientFacade));
         }
         catch (RaplaException ex)
         {
@@ -363,7 +370,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 menu.add(newMenu);
                 updateMenu(menu, newMenu, p);
 
-                newMenu.setEnabled(newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething(getUser()));
+                newMenu.setEnabled(newMenu.getMenuComponentCount() > 0 && permissionController.canUserAllocateSomething(getUser(), getClientFacade()));
                 menu.show(table, p.x, p.y);
             }
             catch (RaplaException ex)
@@ -395,7 +402,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 AppointmentBlock block = selectedEvents.get(0);
                 Appointment appointment = block.getAppointment();
                 Reservation reservation = appointment.getReservation();
-                if (!canModify(reservation))
+                if (!permissionController.canModify(reservation, getClientFacade()))
                 {
                     return;
                 }
@@ -479,18 +486,18 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         if (appointmentBlock != null)
         {
             {
-                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
+                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
                 action.setDelete(appointmentBlock);
                 menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
             }
             {
-                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
+                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
                 action.setView(appointmentBlock);
                 menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
             }
 
             {
-                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
+                AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
                 action.setEdit(appointmentBlock);
                 menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
             }
@@ -498,7 +505,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         else if (selection != null && selection.size() > 0)
         {
-            AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
+            AppointmentAction action = new AppointmentAction(getContext(), popupContext, calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
             action.setDeleteSelection(selection);
             menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), afterId);
         }

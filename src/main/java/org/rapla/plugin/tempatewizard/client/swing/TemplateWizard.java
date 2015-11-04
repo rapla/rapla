@@ -48,11 +48,14 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
@@ -67,13 +70,15 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     private final EditController editController;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 	@Inject
-    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException{
+    public TemplateWizard(RaplaContext context, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException{
         super(context);
         this.model = model;
         this.editController = editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
@@ -121,17 +126,19 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     }
 
     public MenuElement getMenuElement() {
-		boolean canCreateReservation = canCreateReservation();
+		final ClientFacade clientFacade = getClientFacade();
+        boolean canCreateReservation = permissionController.canCreateReservation(clientFacade);
 		MenuElement element;
 		if (templateNames.size() == 0)
 		{
 			return null;
 		}
-		if ( templateNames.size() == 1)
+		final RaplaLocale raplaLocale = getRaplaLocale();
+        if ( templateNames.size() == 1)
 		{
 			Allocatable template = templateNames.iterator().next();
 			RaplaMenuItem item = new TemplateMenuItem( getId(), template);
-            item.setEnabled( canAllocate(model) && canCreateReservation);
+            item.setEnabled( permissionController.canAllocate(model, clientFacade, raplaLocale) && canCreateReservation);
 			final String templateName = template.getName(getLocale());
 			item.setText( getI18n().format("new_reservation.format", templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
@@ -141,11 +148,11 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( canAllocate(model) && canCreateReservation);
+			item.setEnabled( permissionController.canAllocate(model, clientFacade, raplaLocale) && canCreateReservation);
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			@SuppressWarnings("unchecked")
-            Comparator<String> collator = (Comparator<String>) (Comparator)Collator.getInstance(getRaplaLocale().getLocale());
+            Comparator<String> collator = (Comparator<String>) (Comparator)Collator.getInstance(raplaLocale.getLocale());
 			Map<String,Collection<Allocatable>> templateMap = new HashMap<String,Collection<Allocatable>>();
 			
 			Set<String> templateSet = new TreeSet<String>(collator);

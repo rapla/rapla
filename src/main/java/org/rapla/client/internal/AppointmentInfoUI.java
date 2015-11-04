@@ -33,7 +33,7 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
     @Inject
     public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
     {
-        super( i18n, raplaLocale, facade, logger, permissionController);
+        super( i18n, raplaLocale, facade, logger);
         parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater, permissionController);
         this.appointmentFormater = appointmentFormater;
     }

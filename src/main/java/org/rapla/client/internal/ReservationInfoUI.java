@@ -40,7 +40,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     @Inject
     public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
     {
-        super(i18n, raplaLocale, facade, logger, permissionController);
+        super(i18n, raplaLocale, facade, logger);
         this.appointmentFormater = appointmentFormater;
         this.permissionController = permissionController;
     }

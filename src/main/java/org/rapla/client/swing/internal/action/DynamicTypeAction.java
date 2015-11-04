@@ -19,14 +19,18 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class DynamicTypeAction extends  RaplaObjectAction {
 	String classificationType;
-    public DynamicTypeAction(RaplaContext sm,PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
-        super(sm, popupContext, editController, infoFactory, raplaImages, dialogUiFactory);
+
+    public DynamicTypeAction(RaplaContext sm, PopupContext popupContext, EditController editController, InfoFactory<Component, DialogUI> infoFactory,
+            RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
+    {
+        super(sm, popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
     }
 
     public DynamicTypeAction setNewClassificationType(String classificationType) {
