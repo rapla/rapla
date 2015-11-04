@@ -59,42 +59,6 @@ public class RaplaComponent
     ClientFacade facade;
     private RaplaContext context;
     
-    protected RaplaComponent(RaplaContext context) 
-    {
-        this.context = context;
-        try
-        {
-            this.facade = context.lookup(ClientFacade.class);
-        }
-        catch (RaplaContextException ex)
-        {
-            serviceExcption(ClientFacade.class, ex);
-        }
-        try
-        {
-            this.i18n =context.lookup(RaplaResources.class);
-        }
-        catch (RaplaContextException ex)
-        {
-            serviceExcption(RaplaResources.class.getName(), ex);
-        }
-        try
-        {
-            this.raplaLocale = context.lookup( RaplaLocale.class);
-        }
-        catch (RaplaContextException ex)
-        {
-            serviceExcption(RaplaLocale.class, ex);
-        }
-        try{
-            logger = context.lookup(Logger.class);
-        }
-        catch (RaplaContextException ex)
-        {
-            serviceExcption(Logger.class, ex);
-        }
-    }
-    
     public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
 //        try {
 //            logger = context.lookupDeprecated(Logger.class );
@@ -254,7 +218,7 @@ public class RaplaComponent
     }
     
     @Deprecated
-    public RaplaContext getContext() {
+    private RaplaContext getContext() {
         return context;
     }
 

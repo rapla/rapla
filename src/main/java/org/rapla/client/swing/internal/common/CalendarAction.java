@@ -39,12 +39,14 @@ public class CalendarAction extends RaplaAction {
     Date start;
     private final MultiCalendarViewFactory multiCalendarViewFactory;
     private final DialogUiFactory dialogUiFactory;
+    private final FrameControllerList frameControllerList;
 
-    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactory dialogUiFactory)
+    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactory dialogUiFactory, FrameControllerList frameControllerList)
     {
         super(facade, i18n, raplaLocale, logger);
         this.multiCalendarViewFactory = multiCalendarViewFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.frameControllerList = frameControllerList;
         this.model = (CalendarSelectionModel)selectionModel.clone();
         this.parent = parent;
         putValue(NAME,getString("calendar"));
@@ -63,7 +65,7 @@ public class CalendarAction extends RaplaAction {
 
     public void actionPerformed() {
         try {
-            RaplaFrame frame = new RaplaFrame(getContext().lookup(FrameControllerList.class));
+            RaplaFrame frame = new RaplaFrame(frameControllerList);
             Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
             frame.setSize(new Dimension(
                                         Math.min(dimension.width,800)

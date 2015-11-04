@@ -43,6 +43,7 @@ import org.rapla.client.swing.internal.edit.fields.PermissionListField.Permissio
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
@@ -70,7 +71,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
             DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException
+            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
@@ -79,7 +80,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
                 appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
-                booleanFieldFactory, filterEditButtonFactory)
+                booleanFieldFactory, filterEditButtonFactory, frameControllerList)
         {
             public boolean isRestrictionVisible() {return false;}
         };

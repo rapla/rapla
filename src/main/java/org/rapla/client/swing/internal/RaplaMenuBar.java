@@ -453,8 +453,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                         getLogger().warn("Permission to system properties denied!");
                     }
 
-                    final RaplaResources i18n = getContext().lookup(RaplaResources.class);
-                    String mainText = i18n.infoText(javaversion);
+                    String mainText = getI18n().infoText(javaversion);
                     StringBuffer completeText = new StringBuffer();
                     completeText.append(mainText);
                     URL librariesURL = null;

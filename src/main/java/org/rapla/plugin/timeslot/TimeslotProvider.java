@@ -13,22 +13,21 @@ import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
 @Singleton
-public class TimeslotProvider extends RaplaComponent {
+public class TimeslotProvider {
 	
 	private ArrayList<Timeslot> timeslots;
+    private final RaplaLocale raplaLocale;
 
 	@Inject
-	public TimeslotProvider(RaplaContext context, ClientFacade facade) throws RaplaException // ParseDateException
+	public TimeslotProvider(RaplaLocale raplaLocale, ClientFacade facade) throws RaplaException // ParseDateException
 	{
-		super(context);
-		try
+		this.raplaLocale = raplaLocale;
+        try
 		{
 		    final RaplaConfiguration config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, null);
 		    update(config);
@@ -51,6 +50,11 @@ public class TimeslotProvider extends RaplaComponent {
 //		timeslots.add(new Timeslot("6. Stunde", 12 * 60 + 15 ));
 //		timeslots.add(new Timeslot("Nachmittag", 13 * 60 + 0 ));
 	}
+	
+	private RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
+    }
 
 	public void update(Configuration config) throws ParseDateException {
 		ArrayList<Timeslot> timeslots = parseConfig(config, getRaplaLocale());

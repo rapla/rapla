@@ -32,6 +32,7 @@ import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -61,12 +62,13 @@ public class MonthViewFactory implements SwingViewFactory
     private final RaplaLocale raplaLocale;
     private final Logger logger;
     private final IOInterface ioInterface;
+    private final AppointmentFormater appointmentFormater;
 
     @Inject
     public MonthViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
             Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
-            IOInterface ioInterface)
+            IOInterface ioInterface, AppointmentFormater appointmentFormater)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -84,12 +86,13 @@ public class MonthViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
         this.ioInterface = ioInterface;
+        this.appointmentFormater = appointmentFormater;
     }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingMonthCalendar(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
     }
 
     public String getViewId()

@@ -78,7 +78,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -837,7 +836,6 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             // used for static testing of the field type 
             @SuppressWarnings("unused")
             SetGetField test;
-            RaplaContext context = getContext();
             if (type.equals(AttributeType.ALLOCATABLE))
             {
                 operatorComponent = new JLabel("");

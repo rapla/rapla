@@ -119,7 +119,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         {
             RaplaPopupMenu menu = new RaplaPopupMenu();
             Object focusedObject = null;
-            MenuContext context = new MenuContext(getContext(), focusedObject);
+            MenuContext context = new MenuContext(null, focusedObject);
             menuFactory.addReservationWizards(menu, context, null);
 
             final ClientFacade clientFacade = getClientFacade();
@@ -313,7 +313,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         while (it.hasNext())
         {
             ObjectMenuFactory objectMenuFact = it.next();
-            MenuContext menuContext = new MenuContext(getContext(), appointment);
+            MenuContext menuContext = new MenuContext(null, appointment);
             menuContext.put(SELECTED_DATE, start);
 
             RaplaMenuItem[] items = objectMenuFact.create(menuContext, appointment);

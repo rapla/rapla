@@ -52,7 +52,6 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -398,7 +397,6 @@ public class AttributeDefaultConstraints extends AbstractEditField
 
     private void showAnnotationDialog() throws RaplaException
     {
-        RaplaContext context = getContext();
         boolean modal = false;
         if (dialog != null)
         {

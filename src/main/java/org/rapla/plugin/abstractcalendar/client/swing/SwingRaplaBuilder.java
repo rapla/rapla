@@ -17,25 +17,24 @@ package org.rapla.plugin.abstractcalendar.client.swing;
 import java.util.Date;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.calendarview.Block;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 public class SwingRaplaBuilder extends RaplaBuilder
 {
     RaplaImages images;
     
-    public SwingRaplaBuilder(RaplaContext context) throws RaplaContextException 
+    public SwingRaplaBuilder(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController, RaplaImages raplaImages) throws RaplaContextException 
     {
-        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaResources.class), context.lookup(Logger.class),context.lookup( AppointmentFormater.class), context.lookup(PermissionController.class));
-        this.images= context.lookup( RaplaImages.class);
+        super(raplaLocale, clientFacade, i18n, logger, appointmentFormater, permissionController);
+        this.images= raplaImages;
     }
 
     /**

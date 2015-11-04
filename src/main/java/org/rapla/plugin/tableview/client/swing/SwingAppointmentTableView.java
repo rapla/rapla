@@ -431,7 +431,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             focusedObject = selectedEvents.get(0);
         }
 
-        MenuContext menuContext = new MenuContext(getContext(), focusedObject, new SwingPopupContext(getComponent(), p));
+        MenuContext menuContext = new MenuContext(null, focusedObject, new SwingPopupContext(getComponent(), p));
         menuContext.put(RaplaCalendarViewListener.SELECTED_DATE, focusedObject != null ? new Date(focusedObject.getStart()) : new Date());
         {
             menuContext.setSelectedObjects(selectedEvents);

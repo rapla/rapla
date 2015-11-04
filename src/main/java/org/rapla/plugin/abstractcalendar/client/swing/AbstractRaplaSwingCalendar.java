@@ -65,6 +65,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -101,12 +102,13 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final RaplaImages raplaImages;
     protected final DialogUiFactory dialogUiFactory;
     protected final PermissionController permissionController;
+    protected final AppointmentFormater appointmentFormater;
 
     public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
             InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
-            PermissionController permissionController, IOInterface ioInterface) throws RaplaException
+            PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
@@ -120,6 +122,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
+        this.appointmentFormater = appointmentFormater;
 
         boolean printable = isPrintContext();
         view = createView( !printable);
@@ -157,7 +160,9 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     }
 
 	protected boolean isPrintContext() {
-		return getContext().has(SwingViewFactory.PRINT_CONTEXT) && getService( SwingViewFactory.PRINT_CONTEXT);
+	    return false;
+	    // TODO
+		//return getContext().has(SwingViewFactory.PRINT_CONTEXT) && getService( SwingViewFactory.PRINT_CONTEXT);
 	}
 
     abstract protected AbstractSwingCalendar createView(boolean showScrollPane) throws RaplaException;
@@ -240,8 +245,8 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
    
     protected RaplaBuilder createBuilder() throws RaplaException
     {
-        RaplaBuilder builder = new SwingRaplaBuilder(getContext());
-        Date startDate = getStartDate() ;
+        RaplaBuilder builder = new SwingRaplaBuilder(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater, permissionController, raplaImages);
+        Date startDate = getStartDate();
 		Date endDate = getEndDate();
 		builder.setFromModel( model, startDate, endDate );
 		builder.setRepeatingVisible( view.isEditable());
