@@ -91,7 +91,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
     private final PermissionController permissionController;
 
     @Inject public UpdateDataManagerImpl(Logger logger, ClientFacade facade, CachableStorageOperator operator, SecurityManager securityManager,
-            Provider<AuthenticationStore> authenticationStore, PermissionController permissionController) throws RaplaException
+             PermissionController permissionController) throws RaplaException
     {
         this.logger = logger;
         this.facade = facade;

@@ -15,7 +15,10 @@ package org.rapla.server;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
+@ExtensionPoint(id="org.rapla.Authentication",context = InjectionContext.server)
 public interface AuthenticationStore {
     /** returns, if the user can be authenticated. */
     boolean authenticate(String username, String password) throws RaplaException;

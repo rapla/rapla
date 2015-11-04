@@ -92,7 +92,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
 //        DefaultListCellRenderer renderer = new DefaultListCellRenderer()
 //        {
 //            @Override
-//            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+//            public ServerComponent getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
 //            
 //                if ( value != null)
 //                {

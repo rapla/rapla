@@ -7,7 +7,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 
-@WebService
 @RemoteJsonMethod
 public interface ArchiverService
 {

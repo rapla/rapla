@@ -1101,7 +1101,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
 
 
     /**
-     * Gracefully shut down active use of the public methods of this Component.
+     * Gracefully shut down active use of the public methods of this ServerComponent.
      */
     public void dispose() 
     {

@@ -57,7 +57,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
 
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
@@ -71,24 +70,13 @@ public class ContainerImpl implements Disposable
     private List<ComponentHandler> m_componentHandler = Collections.synchronizedList(new ArrayList<ComponentHandler>());
     private Map<String, RoleEntry> m_roleMap = Collections.synchronizedMap(new LinkedHashMap<String, RoleEntry>());
     private Logger logger;
-    private Class webserviceAnnotation;
     //protected CommandScheduler commandQueue;
-    protected final Provider<RemoteServiceCaller> remoteServiceCaller;
     private Map<String, Object> singletonMap = new ConcurrentHashMap<>();
     private Map<Class, Semaphore> instanciating = new ConcurrentHashMap<>();
 
-    public ContainerImpl(Logger logger, final Provider<RemoteServiceCaller> remoteServiceCaller)
+    public ContainerImpl(Logger logger)
     {
         this.logger = logger;
-        this.remoteServiceCaller = remoteServiceCaller;
-        try
-        {
-            webserviceAnnotation = Class.forName("javax.jws.WebService");
-        }
-        catch (Exception ex)
-        {
-            logger.warn("javax.jws.WebService class not found. Assuming Android env");
-        }
         addContainerProvidedComponentInstance(Logger.class, logger);
         addContainerProvidedComponent(PermissionController.class, PermissionController.class);
     }
@@ -255,11 +243,6 @@ public class ContainerImpl implements Disposable
 
     private <T> T myLookup(Class<T> clazz, int depth) throws RaplaContextException
     {
-        if (isWebservice(clazz))
-        {
-            T proxy = (T) remoteServiceCaller.get().getRemoteMethod(clazz);
-            return proxy;
-        }
         String role = clazz.getName();
         ComponentHandler handler = getHandler(role);
         if (handler != null)
@@ -619,13 +602,6 @@ public class ContainerImpl implements Disposable
 
     @SuppressWarnings("unchecked") protected boolean isWebservice(Class type)
     {
-        if (webserviceAnnotation != null)
-        {
-            if (type.isAnnotationPresent(webserviceAnnotation))
-            {
-                return true;
-            }
-        }
         boolean assignableFrom = type.isAnnotationPresent( RemoteJsonMethod.class );
 //        boolean assignableFrom = RemoteJsonService.class.isAssignableFrom(type);
         return assignableFrom;
@@ -1066,8 +1042,27 @@ public class ContainerImpl implements Disposable
             }
             catch (ClassNotFoundException e1)
             {
-                logger.warn("Found interfaceName definition but no class for " + module);
-                continue;
+                final int i = module.lastIndexOf(".");
+                if ( i >=0)
+                {
+                    StringBuilder builder = new StringBuilder(module);
+                    final StringBuilder innerClass = builder.replace(i, i+1, "$");
+                    try
+                    {
+                        final String className = innerClass.toString();
+                        interfaceClass = Class.forName(className);
+                    }
+                    catch (ClassNotFoundException e2)
+                    {
+                        logger.warn("Found interfaceName definition but no class for " + module);
+                        continue;
+                    }
+                }
+                else
+                {
+                    logger.warn("Found interfaceName definition but no class for " + module);
+                    continue;
+                }
             }
             addImplementations(interfaceClass);
         }
@@ -1184,25 +1179,23 @@ public class ContainerImpl implements Disposable
                     final boolean implementing = isImplementing(interfaceClass, defaultImplementations);
                     if (implementing)
                     {
-                        if (isRemoteMethod)
-                        {
-                            String id = remoteJsonMethodAnnotation.path();
-                            if (id == null || id.isEmpty())
-                            {
-                                id = interfaceName;
-                            }
-                            addRequestComponent(interfaceClass, clazz, id);
-                        }
-                        else
-                        {
-                            addContainerProvidedComponent(interfaceClass, clazz, (Configuration) null);
-                        }
+                        addContainerProvidedComponent(interfaceClass, clazz, (Configuration) null);
                         getLogger().info("Found implementation for " + interfaceName + " : " + implementationClassName);
-
                         foundDefaultImpl = true;
                         // not necessary in current impl
                         //src.println("binder.bind(" + interfaceName + ".class).to(" + implementationClassName + ".class).in(Singleton.class);");
                     }
+                    if (isRemoteMethod && implementationClassName.endsWith("JavaJsonProxy"))
+                    {
+                        String id = remoteJsonMethodAnnotation.path();
+                        if (id == null || id.isEmpty())
+                        {
+                            id = interfaceName;
+                        }
+                        addRequestComponent(interfaceClass, clazz, id);
+                    }
+
+
 
                 }
                 catch (Throwable e)

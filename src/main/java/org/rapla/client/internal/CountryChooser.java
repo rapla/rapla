@@ -32,6 +32,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.storage.RemoteLocaleService;
 
 final public class CountryChooser implements RaplaWidget
@@ -50,7 +51,8 @@ final public class CountryChooser implements RaplaWidget
         Collection<String> languages = raplaLocale.getAvailableLanguages();
         try
         {
-            countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages)).get();
+            final FutureResult<Map<String, Set<String>>> countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages));
+            this.countries = countries.get();
         }
         catch (Exception e)
         {

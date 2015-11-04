@@ -6,6 +6,11 @@ public class RaplaConnectException extends RaplaException {
 
     private static final long serialVersionUID = 1L;
 
+    public RaplaConnectException()
+    {
+        super("Connect Exception");
+    }
+
     public RaplaConnectException(String text) {
         super(text, null);
     }

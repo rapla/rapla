@@ -14,23 +14,18 @@ package org.rapla;
 
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.*;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.gwtjsonrpc.client.impl.EntryPointFactory;
 import org.rapla.inject.InjectionContext;
-import org.rapla.storage.StorageOperator;
+import org.rapla.rest.client.BasicRaplaHTTPConnector;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
-import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
-import org.rapla.storage.dbrm.RemoteServiceCallerImpl;
 
-import javax.inject.Provider;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
@@ -92,27 +87,21 @@ public class RaplaClient extends ContainerImpl
 
     public RaplaClient(  StartupEnvironment env) throws Exception
     {
-        this(env, new SimpleProvider<RemoteServiceCaller>());
-
-
-    }
-    
-    protected RaplaClient(StartupEnvironment env,  Provider<RemoteServiceCaller> caller) throws Exception{
-        super(env.getBootstrapLogger(), caller);
+        super(env.getBootstrapLogger());
+        URL downloadURL = env.getDownloadURL();
+        BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
+        {
+            @Override public String getEntryPoint(String interfaceName, String relativePath)
+            {
+                String url = downloadURL.toExternalForm()  + "rapla/json/" +((relativePath != null) ? relativePath: interfaceName);
+                return url;
+            }
+        });
         addContainerProvidedComponentInstance(StartupEnvironment.class, env);
         loadFromServiceList();
-        URL downloadURL = env.getDownloadURL();
+
         remoteConnectionInfo.setServerURL(downloadURL.toURI().toString());
      	addContainerProvidedComponentInstance(RemoteConnectionInfo.class, remoteConnectionInfo);
-        if ( caller instanceof SimpleProvider )
-        {
-            SimpleProvider<RemoteServiceCaller> simpleProvider = (SimpleProvider<RemoteServiceCaller>) caller;
-            if ( simpleProvider.get() == null)
-            {
-                RemoteServiceCaller instanciate = inject(RemoteServiceCallerImpl.class);
-                simpleProvider.setValue(instanciate);
-            }
-        }
         initialize();
     }
 

@@ -18,7 +18,6 @@ import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.Date;
 
-@DefaultImplementation(of=TokenHandler.class,context = InjectionContext.server)
 @Singleton
 public class TokenHandler
 {

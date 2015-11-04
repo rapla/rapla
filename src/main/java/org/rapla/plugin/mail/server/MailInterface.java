@@ -1,5 +1,6 @@
 package org.rapla.plugin.mail.server;
 
+import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.MailException;
 
 public interface MailInterface {
@@ -16,4 +17,6 @@ public interface MailInterface {
          ,String mailBody
          )
         throws MailException;
+
+
 }

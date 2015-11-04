@@ -14,6 +14,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.storage.ImportExportManager;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -22,7 +23,7 @@ import javax.inject.Provider;
 public class ArchiverServiceTask  implements ServerExtension
 {
     @Inject
-	public ArchiverServiceTask( final Provider<ArchiverService> archiverProvider, CommandScheduler timer, Logger logger, ClientFacade facade)
+	public ArchiverServiceTask(  CommandScheduler timer, Logger logger, ClientFacade facade, ImportExportManager importExportManager)
             throws RaplaException
     {
         final RaplaConfiguration config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());
@@ -33,17 +34,16 @@ public class ArchiverServiceTask  implements ServerExtension
             Command removeTask = new Command() {
             	public void execute() throws RaplaException {
 
-            		ArchiverServiceImpl task = (ArchiverServiceImpl)archiverProvider.get();
 
             		try 
             		{
-            			if ( export && task.isExportEnabled())
+            			if ( export && ArchiverServiceImpl.isExportEnabled(facade))
             			{
-            				task.backupNow();
+            				importExportManager.doExport();
             			}
             			if ( days != -20 )
                         {
-                            task.delete( days );
+                            ArchiverServiceImpl.delete(days,facade,logger);
                         }
 					} 
             		catch (RaplaException e) {

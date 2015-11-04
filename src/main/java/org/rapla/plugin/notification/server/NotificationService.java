@@ -39,6 +39,7 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.MailToUserInterface;
+import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.extensionpoints.ServerExtension;
@@ -52,7 +53,7 @@ public class NotificationService
     ServerExtension
 {
     ClientFacade clientFacade;
-    Provider<MailToUserInterface> mailToUserInterface;
+    Provider<MailToUserImpl> mailToUserInterface;
     protected CommandScheduler mailQueue;
     AppointmentFormater appointmentFormater;
     NotificationResources notificationI18n;
@@ -60,9 +61,8 @@ public class NotificationService
 
     Logger logger;
 
-
     @Inject
-    public NotificationService(ClientFacade facade,Set<CalendarPlugin> plugins,RaplaResources   i18nBundle,NotificationResources   notificationI18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserInterface> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
+    public NotificationService(ClientFacade facade,RaplaResources   i18nBundle,NotificationResources   notificationI18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
     {
         this.notificationI18n = notificationI18n;
         this.clientFacade = facade;

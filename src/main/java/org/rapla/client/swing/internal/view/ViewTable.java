@@ -41,7 +41,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
-/**Information of the entity-classes displayed in an HTML-Component */
+/**Information of the entity-classes displayed in an HTML-ServerComponent */
 public class ViewTable<T> extends RaplaGUIComponent
     implements
         HyperlinkListener

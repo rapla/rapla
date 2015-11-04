@@ -15,14 +15,24 @@ package org.rapla.server;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.server.RequestScoped;
+import org.rapla.server.internal.RaplaAuthentificationService;
+import org.rapla.server.internal.TokenHandler;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/
 
-public interface RemoteSession 
+@RequestScoped
+public interface RemoteSession
 {
-	boolean isAuthentified();
-	User getUser() throws RaplaContextException;
-	Logger getLogger();
-	//String getAccessToken();
+
+    public Logger getLogger();
+    public User getUser() throws RaplaContextException;
+
+    public boolean isAuthentified();
+
+    public void logout();
 }

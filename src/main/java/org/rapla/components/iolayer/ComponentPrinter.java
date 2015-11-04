@@ -22,7 +22,7 @@ import java.awt.print.PrinterException;
 
 import javax.swing.RepaintManager;
 
-/** Use this to print an awt-Component on one page.
+/** Use this to print an awt-ServerComponent on one page.
  */ 
 public class ComponentPrinter implements Printable
 {

@@ -32,7 +32,7 @@ public class UserTest extends ServletTestBase {
     protected void setUp() throws Exception {
         super.setUp();
         // start the client service
-        adminFacade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
+        adminFacade = null;
         adminFacade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
 
@@ -49,7 +49,7 @@ public class UserTest extends ServletTestBase {
             throw ex;
             
         }
-        testFacade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
+        testFacade = null;
         boolean canLogin = testFacade.login("homer","duffs".toCharArray());
         assertTrue( "Can't login", canLogin );
     }

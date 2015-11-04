@@ -20,6 +20,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.mail.server.MailInterface;
+import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.mail.server.RaplaMailToUserOnLocalhost;
 import org.rapla.server.ServerService;
 import org.rapla.server.internal.ServerServiceImpl;
@@ -43,7 +44,7 @@ public class MailPluginTest extends ServletTestBase {
         //ServerServiceContainer container = getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
         raplaServer = this.getContainer();
         // start the client service
-        facade1 =  getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
+        facade1 =  null;
         facade1.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
     }
@@ -59,10 +60,11 @@ public class MailPluginTest extends ServletTestBase {
     
     public void test() throws Exception 
     {
-        MockMailer mailMock = (MockMailer) raplaServer.lookupDeprecated(MailInterface.class, null);
+        MockMailer mailMock = (MockMailer) null;
         final ClientFacade facade = getContext().lookup(ClientFacade.class);
         Logger logger = getContext().lookup(Logger.class);
-    	MailToUserInterface mail = new RaplaMailToUserOnLocalhost(mailMock, facade, logger);
+
+        MailToUserImpl mail = new MailToUserImpl(mailMock, facade, logger);
         mail.sendMail( "homer","Subject", "MyBody");
 
         Thread.sleep( 1000);

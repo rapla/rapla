@@ -13,7 +13,6 @@ import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 
@@ -26,7 +25,7 @@ public class ImportExportManagerContainer extends ContainerImpl{
 
     public ImportExportManagerContainer(Logger logger, RaplaJNDIContext jndi) throws RaplaException 
     {
-        super(logger, new SimpleProvider<RemoteServiceCaller>());
+        super(logger);
         shutdownCommand = (Runnable) jndi.lookup("rapla_shutdown_command", false);
         ServerContainerContext backendContext = ServerStarter.createBackendContext(logger, jndi);
         String fileDatasource = backendContext.getFileDatasource();

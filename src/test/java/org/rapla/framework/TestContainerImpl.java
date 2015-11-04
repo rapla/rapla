@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -31,7 +30,7 @@ public class TestContainerImpl
                 super.write(logLevel, message, cause);
             }
         };
-        container = new ContainerImpl(logger, new SimpleProvider<RemoteServiceCaller>());
+        container = new ContainerImpl(logger);
     }
 
     @Test public void testProviderProvider() throws RaplaContextException

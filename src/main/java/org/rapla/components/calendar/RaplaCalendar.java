@@ -95,7 +95,7 @@ public final class RaplaCalendar extends RaplaComboBox {
     }
 
 
-    /* Use this to get the CalendarMenu Component. The calendar menu will be created lazily.*/
+    /* Use this to get the CalendarMenu ServerComponent. The calendar menu will be created lazily.*/
     public JComponent getPopupComponent() {
         if (m_calendarMenu == null) {
             m_calendarMenu = new CalendarMenu(m_model);
@@ -168,7 +168,7 @@ public final class RaplaCalendar extends RaplaComboBox {
     }
 
     /** you can choose, if weekdays should be displayed in the right corner of the DateField.
-        Default is true. This method simply calls setWeekdaysVisble on the DateField Component.
+        Default is true. This method simply calls setWeekdaysVisble on the DateField ServerComponent.
         If a DateRender is installed the weekday will be rendered with the DateRenderer.
         This includes a tooltip that shows up on the DateRenderer.
         @see DateField

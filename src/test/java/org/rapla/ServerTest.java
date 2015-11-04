@@ -53,7 +53,6 @@ import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.StorageOperator;
 
 public class ServerTest extends ServletTestBase {
-	ServerService raplaServer;
 
 	protected ClientFacade facade1;
 	protected ClientFacade facade2;
@@ -79,12 +78,9 @@ public class ServerTest extends ServletTestBase {
 		// start the server
 
 		ServerServiceImpl container = getContainer();
-		raplaServer = container;
 		// start the client service
-		facade1 = container.lookupDeprecated(ClientFacade.class, "remote-facade");
 		facade1.login("homer", "duffs".toCharArray());
 		
-		facade2 = container.lookupDeprecated(ClientFacade.class, "remote-facade-2");
 		facade2.login("homer", "duffs".toCharArray());
 		locale = Locale.getDefault();
 	}
@@ -202,7 +198,7 @@ public class ServerTest extends ServletTestBase {
 		removeAnAttribute();
 		// Wait for the update
 		{
-			ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
+			ClientFacade facade2 = null;
 			facade2.login("homer", "duffs".toCharArray());
 			facade2.getUser("test-user");
 			facade2.logout();
@@ -221,7 +217,7 @@ public class ServerTest extends ServletTestBase {
 		assertEquals(5, facade1.getAllocatables().length);
 		assertEquals(2, allocatable.getClassification().getAttributes().length);
 
-		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
+		ClientFacade facade2 = null;
 		facade2.login("homer", "duffs".toCharArray());
 		// we check if the store affectes the second client.
 		assertEquals(5, facade2.getAllocatables().length);
@@ -282,7 +278,7 @@ public class ServerTest extends ServletTestBase {
 	}
 
 	public void testChangeLogin() throws RaplaException {
-		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
+		ClientFacade facade2 = null;
 		facade2.login("monty", "burns".toCharArray());
 
 		// boolean canChangePassword = facade2.canChangePassword();
@@ -359,7 +355,7 @@ public class ServerTest extends ServletTestBase {
 		prefs.putEntry(TEST_CONF, conf);
 		facade1.store(prefs);
 
-		ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, null);
+		ClientFacade facade = null;
 		User user = facade.getUser("homer");
 		Preferences storedPrefs = facade.getPreferences(user);
 		assertNotNull(storedPrefs);
@@ -436,7 +432,7 @@ public class ServerTest extends ServletTestBase {
 			facade1.logout();
 		}
 		{
-			ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
+			ClientFacade facade2 = null;
 			facade2.login("homer", "duffs".toCharArray());
 
 			Reservation[] res = facade2.getReservationsForAllocatable(null,
@@ -458,7 +454,7 @@ public class ServerTest extends ServletTestBase {
 				"my-group");
 		assertTrue(Arrays.asList(groups).contains(myGroup));
 		user.removeGroup(myGroup);
-		ClientFacade facade2 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
+		ClientFacade facade2 = null;
 		facade2.login("homer", "duffs".toCharArray());
 		Allocatable testResource = facade2.edit(facade2.getAllocatables()[0]);
 		assertTrue(permissionController.canAllocate(testResource, facade2.getUser("monty"), null,
@@ -534,7 +530,7 @@ public class ServerTest extends ServletTestBase {
 
 		String reservationName = "bowling";
 		{
-			ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, null);
+			ClientFacade facade = null;
 			String description = getDescriptionOfReservation(facade,
 					reservationName);
 			assertTrue(description.contains("\n"));
@@ -552,7 +548,7 @@ public class ServerTest extends ServletTestBase {
 	{
 		// first test creation on server
 		{
-			ClientFacade facade = getContainer().lookupDeprecated(ClientFacade.class, null);
+			ClientFacade facade = null;
 			DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
 			Classification classification = dynamicType.newClassification();
 			Allocatable task = facade.newAllocatable(classification, null);

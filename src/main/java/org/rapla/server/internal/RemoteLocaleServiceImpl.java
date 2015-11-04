@@ -1,6 +1,5 @@
 package org.rapla.server.internal;
 
-import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
@@ -19,28 +18,32 @@ import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 @DefaultImplementation(of = RemoteLocaleService.class, context = InjectionContext.server)
 public class RemoteLocaleServiceImpl implements RemoteLocaleService
 {
     private final ServerBundleManager bundleManager;
     private final RaplaLocale raplaLocale;
-    private final RemoteSession session;
+    private  RemoteSession session;
     private final Logger logger;
     private final StorageOperator operator;
     private final ResourceBundleList resourceBundleList;
+
+
     @Inject
-    public RemoteLocaleServiceImpl(BundleManager bundleManager, RaplaLocale raplaLocale, RemoteSession session, Logger logger, StorageOperator operator,ResourceBundleList resourceBundleList)
+    public RemoteLocaleServiceImpl(BundleManager bundleManager, RaplaLocale raplaLocale, Logger logger, StorageOperator operator,ResourceBundleList resourceBundleList, RemoteSession session)
     {
         this.resourceBundleList = resourceBundleList;
-        // bad
         this.bundleManager = (ServerBundleManager) bundleManager;
         this.raplaLocale = raplaLocale;
         this.operator = operator;
         this.session = session;
         this.logger = logger;
     }
+
 
     @Override public FutureResult<LocalePackage> locale(String id, String localeString)
     {

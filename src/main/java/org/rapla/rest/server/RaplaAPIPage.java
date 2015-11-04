@@ -12,11 +12,12 @@ import org.rapla.gwtjsonrpc.common.JSONParserWrapper;
 import org.rapla.gwtjsonrpc.server.JsonServlet;
 import org.rapla.gwtjsonrpc.server.RPCServletUtils;
 import org.rapla.inject.Extension;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
+import org.rapla.server.internal.dagger.WebMethodProvider;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -32,17 +33,19 @@ import java.util.Map;
 @Singleton
 public class RaplaAPIPage implements RaplaPageExtension
 {
-    final ServerServiceContainer serverContainer;
+    //final ServerServiceContainer serverContainer;
+    WebMethodProvider webservices;
     Logger logger;
 
     @Inject
-    public RaplaAPIPage(Logger logger,ServerServiceContainer serverContainer ) throws RaplaContextException {
+    public RaplaAPIPage(Logger logger, WebMethodProvider webservices) throws RaplaContextException {
         this.logger = logger;
-        this.serverContainer = serverContainer;
+        this.webservices = webservices;
+      //  this.serverContainer = serverContainer;
     }
     
     Map<String,JsonServlet> servletMap = new HashMap<String, JsonServlet>();
-    private JsonServlet getJsonServlet(HttpServletRequest request,String serviceAndMethodName) throws RaplaException {
+    private JsonServlet getJsonServlet(HttpServletRequest request,HttpServletResponse response,String serviceAndMethodName) throws RaplaException {
         if  ( serviceAndMethodName == null || serviceAndMethodName.length() == 0) {
             throw new RaplaException("Servicename missing in url");
         }
@@ -67,7 +70,8 @@ public class RaplaAPIPage implements RaplaPageExtension
             try
             {
                 // security check, we need to be sure a webservice with the name is provide before we load the class
-                if (!serverContainer.hasWebservice(interfaceName))
+                final Provider<Object> objectProvider = getService(request, response, interfaceName);
+                if (objectProvider == null)
                 {
                     throw new RaplaException("Webservice " + interfaceName + " not configured or initialized.");
                 }
@@ -89,6 +93,16 @@ public class RaplaAPIPage implements RaplaPageExtension
         return servlet;
     }
 
+    private Provider<Object> getService(HttpServletRequest request, HttpServletResponse response, String interfaceName)
+    {
+        return webservices.find(request, response, interfaceName);
+    }
+
+    private <T> Provider<T> getService(HttpServletRequest request, HttpServletResponse response, Class<T> interfaceClass)
+    {
+        return webservices.find(request, response, interfaceClass);
+    }
+
     public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
     {
         String id = request.getParameter("id");
@@ -96,7 +110,7 @@ public class RaplaAPIPage implements RaplaPageExtension
         JsonServlet servlet;
         try
         {
-            servlet = getJsonServlet( request, serviceAndMethodName );
+            servlet = getJsonServlet( request, response,serviceAndMethodName );
         }
         catch (RaplaException ex)
         {
@@ -109,7 +123,8 @@ public class RaplaAPIPage implements RaplaPageExtension
         Object impl;
         try
         {
-            impl = serverContainer.createWebservice(role, request);
+            final Provider<?> service = getService(request, response, role);
+            impl = service.get();
         }
         catch (RaplaSecurityException ex)
         {

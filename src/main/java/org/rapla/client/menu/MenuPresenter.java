@@ -121,7 +121,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
 //                }
 //                
 //                @Override
-//                public void insertAfterId(Component component, String id)
+//                public void insertAfterId(ServerComponent component, String id)
 //                {
 //                    
 //                }

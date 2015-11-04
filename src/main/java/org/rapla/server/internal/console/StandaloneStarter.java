@@ -1,16 +1,18 @@
 package org.rapla.server.internal.console;
 
-import java.net.URL;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.entities.User;
-import org.rapla.framework.*;
+import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.*;
-import org.rapla.storage.dbrm.RemoteServiceCaller;
+
+import java.net.URL;
 
 public class StandaloneStarter extends GUIStarter
 {
@@ -74,15 +76,7 @@ public class StandaloneStarter extends GUIStarter
         {
             throw new RaplaException("Can't find user with username " + reconnectUser);
         }
-        final RemoteSessionImpl standaloneSession = new RemoteSessionImpl(logger, user);
-        SimpleProvider<RemoteServiceCaller> provider = new SimpleProvider<RemoteServiceCaller>();
-        provider.setValue( new RemoteServiceCaller() {
-            @Override
-            public <T> T getRemoteMethod(Class<T> a) throws RaplaContextException {
-                return server.getRemoteMethod(a, standaloneSession);
-            }
-        });
-        client = new RaplaClientServiceImpl( env, provider);
+        client = new RaplaClientServiceImpl( env);
         startGUI( client,connectInfo);
     }
 

@@ -138,7 +138,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     }
 
     /* (non-Javadoc)
-     * @see org.rapla.client.swing.gui.view.IInfoUIFactory#showInfoDialog(java.lang.Object, java.awt.Component, java.awt.Point)
+     * @see org.rapla.client.swing.gui.view.IInfoUIFactory#showInfoDialog(java.lang.Object, java.awt.ServerComponent, java.awt.Point)
      */
     public <T> void showInfoDialog( T object, PopupContext popupContext )
         throws RaplaException
@@ -205,7 +205,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     }
 
     /* (non-Javadoc)
-     * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.Component)
+     * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.ServerComponent)
      */
     public DialogUI createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getContext(), this, ioInterface, dialogUiFactory);

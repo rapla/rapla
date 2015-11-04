@@ -43,7 +43,6 @@ public class PermissionTest extends ServletTestBase {
         super.setUp();
         // start the server
         // start the client service
-        adminFacade =  getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
         adminFacade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
         try
@@ -70,7 +69,6 @@ public class PermissionTest extends ServletTestBase {
             throw ex;
         }
         // Wait for update;
-        testFacade = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade-2");
         boolean canLogin = testFacade.login("test","".toCharArray());
         assertTrue( "Can't login", canLogin );
     }

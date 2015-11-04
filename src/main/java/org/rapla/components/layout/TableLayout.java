@@ -2081,7 +2081,7 @@ public void invalidateLayout (Container target)
     // The following inner class is used to bind components to their constraints
     protected class Entry extends TableLayoutConstraints
     {
-        /** Component bound by the constraints */
+        /** ServerComponent bound by the constraints */
         protected Component component;
         
         /** Does the component occupy a single cell */
@@ -2107,7 +2107,7 @@ public void invalidateLayout (Container target)
         /**
          * Determines whether or not two entries are equal.
          *
-         * @param object    object being compared to; must be a Component if it
+         * @param object    object being compared to; must be a ServerComponent if it
          *                  is equal to this TableLayoutConstraints.
          *
          * @return    True, if the entries refer to the same component object.

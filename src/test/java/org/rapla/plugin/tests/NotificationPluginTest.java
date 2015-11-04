@@ -53,7 +53,7 @@ public class NotificationPluginTest extends ServletTestBase
         raplaServer = getContainer();
 
         // start the client service
-        facade1 = getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
+        facade1 = null;
         facade1.login( "homer", "duffs".toCharArray() );
         locale = Locale.getDefault();
     }
@@ -115,7 +115,7 @@ public class NotificationPluginTest extends ServletTestBase
 
         System.out.println(r.getLastChanged());
 
-        MockMailer mailMock = (MockMailer) raplaServer.lookupDeprecated(MailInterface.class, null);
+        MockMailer mailMock = (MockMailer) null;
         for ( int i=0;i<1000;i++ )
         {
         	if (mailMock.getMailBody()!= null)
@@ -166,7 +166,7 @@ public class NotificationPluginTest extends ServletTestBase
         facade1.store( r );
         facade1.remove( r );
 
-        MockMailer mailMock = (MockMailer) raplaServer.lookupDeprecated( MailInterface.class, null );
+        MockMailer mailMock = (MockMailer) null;
         for ( int i=0;i<1000;i++ )
         {
         	if (mailMock.getMailBody()!= null)

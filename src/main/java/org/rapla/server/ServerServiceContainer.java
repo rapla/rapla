@@ -12,12 +12,10 @@ public interface ServerServiceContainer
     // main servlet
 	RaplaPageGenerator getWebpage(String page);
 
-    // abstract rest page
-	public User getUser(HttpServletRequest request) throws RaplaException;
     // json servlet
-    <T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;
+    //<T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;
     //
-    boolean hasWebservice(String interfaceName);
+    //boolean hasWebservice(String interfaceName);
 
 	
 }
