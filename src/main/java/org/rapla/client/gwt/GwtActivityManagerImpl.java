@@ -8,10 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 
 import org.rapla.client.ActivityManager;
-import org.rapla.client.Application;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;

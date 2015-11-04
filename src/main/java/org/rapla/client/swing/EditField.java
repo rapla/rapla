@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
-import javax.swing.*;
+import javax.swing.JComponent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.client.swing.toolkit.RaplaWidget;

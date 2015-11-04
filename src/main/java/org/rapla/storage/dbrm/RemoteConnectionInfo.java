@@ -1,10 +1,9 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.ConnectInfo;
-import org.rapla.inject.DefaultImplementation;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.rapla.ConnectInfo;
 
 @Singleton
 public class RemoteConnectionInfo

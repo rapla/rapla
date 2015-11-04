@@ -1,8 +1,6 @@
 package org.rapla.client.edit.reservation.sample.gwt;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.inject.Inject;
 

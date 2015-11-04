@@ -24,10 +24,10 @@ import javax.swing.JComponent;
 import javax.swing.JList;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 final public class LanguageChooser implements RaplaWidget
 {

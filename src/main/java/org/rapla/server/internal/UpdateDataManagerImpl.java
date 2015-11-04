@@ -27,7 +27,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.rapla.components.util.DateTools;
@@ -64,7 +63,6 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.server.AuthenticationStore;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;

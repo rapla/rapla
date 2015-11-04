@@ -16,11 +16,6 @@ import org.rapla.entities.User;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.server.RequestScoped;
-import org.rapla.server.internal.RaplaAuthentificationService;
-import org.rapla.server.internal.TokenHandler;
-
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/

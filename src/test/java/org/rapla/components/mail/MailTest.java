@@ -1,10 +1,10 @@
 package org.rapla.components.mail;
 
 
-import junit.framework.TestCase;
-
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.server.MailapiClient;
+
+import junit.framework.TestCase;
 
 public class MailTest extends TestCase
 {

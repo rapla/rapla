@@ -1,19 +1,13 @@
 package org.rapla.client.gwt;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 
 import org.rapla.client.gwt.view.RaplaPopups;
-import org.rapla.framework.RaplaException;
-import org.rapla.gwtjsonrpc.client.ExceptionDeserializer;
-import org.rapla.gwtjsonrpc.client.impl.AbstractJsonProxy;
-import org.rapla.gwtjsonrpc.client.impl.EntryPointFactory;
+import org.rapla.jsonrpc.client.gwt.AbstractJsonProxy;
 import org.rapla.storage.dbrm.LoginTokens;
-import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;

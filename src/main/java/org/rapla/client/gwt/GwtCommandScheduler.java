@@ -1,8 +1,8 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -10,8 +10,9 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.Scheduler.RepeatingCommand;
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 
 @DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
 @Singleton

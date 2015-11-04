@@ -1,11 +1,9 @@
 package org.rapla.plugin.archiver;
 
-import javax.jws.WebService;
-
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.gwtjsonrpc.RemoteJsonMethod;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
 
 @RemoteJsonMethod
 public interface ArchiverService

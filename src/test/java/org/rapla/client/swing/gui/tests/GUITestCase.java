@@ -18,8 +18,6 @@ import java.util.concurrent.Semaphore;
 import javax.swing.JComponent;
 
 import org.rapla.RaplaTestCase;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ErrorDialog;
@@ -27,6 +25,8 @@ import org.rapla.client.swing.toolkit.FrameController;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.FrameControllerListener;
 import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.framework.RaplaContext;
+import org.rapla.framework.RaplaException;
 
 public abstract class GUITestCase extends RaplaTestCase {
     

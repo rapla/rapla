@@ -18,11 +18,7 @@ import org.rapla.MockMailer;
 import org.rapla.ServletTestBase;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.mail.MailToUserInterface;
-import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.mail.server.MailToUserImpl;
-import org.rapla.plugin.mail.server.RaplaMailToUserOnLocalhost;
-import org.rapla.server.ServerService;
 import org.rapla.server.internal.ServerServiceImpl;
 
 /** listens for allocation changes */

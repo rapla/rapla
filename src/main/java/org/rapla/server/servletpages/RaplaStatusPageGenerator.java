@@ -3,16 +3,17 @@
  */
 package org.rapla.server.servletpages;
 
-import org.rapla.RaplaResources;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
+import java.io.IOException;
 
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import org.rapla.RaplaResources;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="server")
 public class RaplaStatusPageGenerator implements RaplaPageExtension {

@@ -3,7 +3,6 @@ package org.rapla.client;
 import java.util.Collection;
 import java.util.Date;
 
-import org.rapla.client.PopupContext;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;

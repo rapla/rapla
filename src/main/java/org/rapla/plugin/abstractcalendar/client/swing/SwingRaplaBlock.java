@@ -38,6 +38,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.event.MouseInputListener;
 
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.SwingBlock;
 import org.rapla.entities.Named;
@@ -45,8 +47,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 
 public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock

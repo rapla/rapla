@@ -12,13 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.base.CalendarPlugin;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.User;
@@ -38,7 +45,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;

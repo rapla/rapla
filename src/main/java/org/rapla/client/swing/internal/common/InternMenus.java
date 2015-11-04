@@ -1,8 +1,8 @@
 package org.rapla.client.swing.internal.common;
 
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenubar;
+import org.rapla.framework.TypedComponentRole;
 
 public interface InternMenus
 {

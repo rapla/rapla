@@ -1,8 +1,14 @@
 package org.rapla.entities.dynamictype.internal;
 
-import junit.framework.TestCase;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
@@ -16,7 +22,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.storage.LocalCache;
 
-import java.util.*;
+import junit.framework.TestCase;
 
 public class ParsedTextTest extends TestCase
 {

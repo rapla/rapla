@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;

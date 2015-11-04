@@ -1,5 +1,9 @@
 package org.rapla;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -17,10 +21,6 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteStorage;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 public class CommunicatorTest extends ServletTestBase
 {

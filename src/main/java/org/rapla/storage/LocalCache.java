@@ -44,7 +44,6 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 
 public class LocalCache implements EntityResolver

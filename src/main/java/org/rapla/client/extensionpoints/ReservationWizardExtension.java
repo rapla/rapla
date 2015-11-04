@@ -1,7 +1,7 @@
 package org.rapla.client.extensionpoints;
 
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 

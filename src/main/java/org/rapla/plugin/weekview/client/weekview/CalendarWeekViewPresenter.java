@@ -8,12 +8,12 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.StartActivityEvent;
 import org.rapla.client.menu.MenuPresenter;
-import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -25,11 +25,11 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.PopupContext;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
+import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
 
 import com.google.web.bindery.event.shared.EventBus;
 

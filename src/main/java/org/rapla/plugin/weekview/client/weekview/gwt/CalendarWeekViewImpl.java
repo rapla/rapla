@@ -4,20 +4,20 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.rapla.client.PopupContext;
 import org.rapla.client.base.AbstractView;
-import org.rapla.client.menu.gwt.ContextCreator;
 import org.rapla.client.gwt.view.WeekviewGWT;
 import org.rapla.client.gwt.view.WeekviewGWT.Callback;
-import org.rapla.plugin.weekview.client.weekview.CalendarWeekView;
-import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
-import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.RowSlot;
+import org.rapla.client.menu.gwt.ContextCreator;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.PopupContext;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
+import org.rapla.plugin.weekview.client.weekview.CalendarWeekView;
+import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
+import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.RowSlot;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;

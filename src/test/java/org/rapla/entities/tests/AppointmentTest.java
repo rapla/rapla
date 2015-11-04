@@ -21,10 +21,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -32,6 +28,10 @@ import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
 public class AppointmentTest extends TestCase {
     TimeZone zone = DateTools.getTimeZone(); //this is GMT

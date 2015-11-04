@@ -23,7 +23,6 @@ import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.RaplaBlockContext;
 
 

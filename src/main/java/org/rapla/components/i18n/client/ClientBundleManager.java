@@ -11,9 +11,9 @@ import org.gwtbootstrap3.client.ui.form.validator.MessageFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.storage.RemoteLocaleService;
 
 @DefaultImplementation(of=BundleManager.class,context= InjectionContext.gwt)

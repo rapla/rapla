@@ -1,10 +1,6 @@
 package org.rapla.server;
 
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaException;
 import org.rapla.server.servletpages.RaplaPageGenerator;
-
-import javax.servlet.http.HttpServletRequest;
 
 public interface ServerServiceContainer
 {

@@ -28,7 +28,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 /** displays a wizard dialog with four buttons and a HTML help.

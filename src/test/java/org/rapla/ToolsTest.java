@@ -12,9 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import junit.framework.TestCase;
-
 import org.rapla.components.util.Tools;
+
+import junit.framework.TestCase;
 
 
 public class ToolsTest extends TestCase {

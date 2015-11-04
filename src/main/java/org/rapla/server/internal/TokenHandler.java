@@ -1,9 +1,13 @@
 package org.rapla.server.internal;
 
+import java.util.Collection;
+import java.util.Date;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.rest.server.token.SignedToken;
 import org.rapla.rest.server.token.TokenInvalidException;
 import org.rapla.rest.server.token.ValidToken;
@@ -12,11 +16,6 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteStorage;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Collection;
-import java.util.Date;
 
 @Singleton
 public class TokenHandler

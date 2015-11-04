@@ -12,14 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
+import javax.inject.Inject;
+
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
 
 @DefaultImplementation(of = MailToUserInterface.class, context = InjectionContext.server)
 public class RaplaMailToUserOnLocalhost implements MailToUserInterface

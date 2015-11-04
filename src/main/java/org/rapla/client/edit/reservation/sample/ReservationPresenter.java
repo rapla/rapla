@@ -1,6 +1,11 @@
 package org.rapla.client.edit.reservation.sample;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+
+import javax.inject.Inject;
+
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.StopActivityEvent;
@@ -18,10 +23,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import com.google.web.bindery.event.shared.EventBus;
 
 public class ReservationPresenter implements ReservationController, Presenter
 {

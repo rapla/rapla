@@ -13,11 +13,9 @@
 package org.rapla.components.xmlbundle.tests;
 import java.util.MissingResourceException;
 
-import javax.swing.Icon;
+import org.rapla.components.xmlbundle.I18nBundle;
 
 import junit.framework.TestCase;
-
-import org.rapla.components.xmlbundle.I18nBundle;
 
 public abstract class AbstractI18nTest extends TestCase {
     abstract public I18nBundle getI18n();

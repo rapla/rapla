@@ -12,26 +12,28 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.HTMLView;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import java.awt.Component;
+import java.awt.Dimension;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.swing.*;
+import javax.swing.JComponent;
+import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-import java.awt.*;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.HTMLView;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.xmlbundle.LocaleChangeEvent;
+import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 final public class LicenseInfoUI
     extends

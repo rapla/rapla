@@ -12,15 +12,40 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.*;
-import org.rapla.entities.domain.*;
+import org.rapla.entities.Entity;
+import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.UniqueKeyException;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.entities.dynamictype.*;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
@@ -28,8 +53,6 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
-
-import java.util.*;
 
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {

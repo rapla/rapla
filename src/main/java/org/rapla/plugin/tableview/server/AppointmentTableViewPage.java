@@ -13,14 +13,11 @@
 package org.rapla.plugin.tableview.server;
 
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.swing.table.TableColumn;
 
-import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;

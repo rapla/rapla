@@ -40,14 +40,14 @@ import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import org.rapla.components.calendar.NavButton;
-import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.calendar.NavButton;
+import org.rapla.components.calendar.RaplaArrowButton;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.xmlbundle.I18nBundle;
 
 final public class RaplaListEdit<T> implements
         RaplaWidget

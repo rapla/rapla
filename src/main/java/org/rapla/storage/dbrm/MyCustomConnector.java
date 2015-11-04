@@ -1,19 +1,20 @@
 package org.rapla.storage.dbrm;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Executor;
+
+import javax.inject.Inject;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.gwtjsonrpc.common.FutureResult;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.rest.client.*;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.Executor;
+import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
+import org.rapla.jsonrpc.common.FutureResult;
 
 @DefaultImplementation(of=BasicRaplaHTTPConnector.CustomConnector.class,context = InjectionContext.client)
 public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnector
@@ -78,7 +79,7 @@ public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnecto
 
     @Override public Exception getConnectError(IOException ex)
     {
-        return new org.rapla.rest.client.RaplaConnectException(errorString + ex.getMessage());
+        return new RaplaConnectException(errorString + ex.getMessage());
     }
 
     @Override public Executor getScheduler()

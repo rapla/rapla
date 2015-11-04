@@ -11,13 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl.server;
-import javax.inject.Inject;
-
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.plugin.ical.ImportFromICalResources;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.ImportExportManager;

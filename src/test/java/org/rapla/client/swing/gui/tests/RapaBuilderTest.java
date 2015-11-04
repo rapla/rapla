@@ -16,14 +16,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 
 public final class RapaBuilderTest extends RaplaTestCase

@@ -16,10 +16,6 @@ import javax.inject.Singleton;
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.QueryModule;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -27,9 +23,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.server.RaplaKeyStorage;
-import org.rapla.server.RemoteMethodFactory;
-import org.rapla.server.RemoteSession;
-import org.rapla.storage.RaplaSecurityException;
 
 /**
  * This class provides functionality to encrypt URL parameters to secure the resource export.

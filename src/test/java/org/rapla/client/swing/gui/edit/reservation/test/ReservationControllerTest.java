@@ -20,12 +20,12 @@ import java.util.concurrent.Semaphore;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.client.ClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -35,10 +35,10 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.storage.StorageOperator;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public final class ReservationControllerTest extends GUITestCase {
 	public ReservationControllerTest(String name) {

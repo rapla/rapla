@@ -17,9 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.ServerTest;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
@@ -34,6 +31,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class SQLOperatorRemoteTest extends ServerTest {
 

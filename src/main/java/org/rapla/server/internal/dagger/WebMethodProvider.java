@@ -1,7 +1,5 @@
 package org.rapla.server.internal.dagger;
 
-import org.rapla.dagger.DaggerWebserviceComponent;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;

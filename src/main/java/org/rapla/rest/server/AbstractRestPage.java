@@ -1,5 +1,10 @@
 package org.rapla.rest.server;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -10,13 +15,8 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.server.JsonServlet;
+import org.rapla.jsonrpc.server.JsonServlet;
 import org.rapla.storage.StorageOperator;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 public abstract class AbstractRestPage 
 {

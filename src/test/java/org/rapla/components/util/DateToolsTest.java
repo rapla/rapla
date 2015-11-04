@@ -2,10 +2,10 @@ package org.rapla.components.util;
 
 import java.util.Date;
 
-import junit.framework.TestCase;
-
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.entities.tests.Day;
+
+import junit.framework.TestCase;
 
 public class DateToolsTest extends TestCase
 {

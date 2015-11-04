@@ -3,9 +3,6 @@
  */
 package org.rapla.server.servletpages;
 
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Collection;
@@ -14,6 +11,9 @@ import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaapplet")
 public class RaplaAppletPageGenerator implements RaplaPageExtension

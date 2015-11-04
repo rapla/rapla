@@ -2,9 +2,9 @@ package org.rapla.rest.client;
 
 import java.net.URL;
 
-import junit.framework.TestCase;
-
 import org.rapla.ServletTestBase;
+
+import junit.framework.TestCase;
 
 public class RestAPITest extends ServletTestBase {
 

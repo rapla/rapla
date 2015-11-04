@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.rapla.ServletTestBase;
-import org.rapla.rest.client.HTTPConnector;
+import org.rapla.jsonrpc.client.swing.HTTPConnector;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 
 public class PageGeneratorTest extends ServletTestBase {

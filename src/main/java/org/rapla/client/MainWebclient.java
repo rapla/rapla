@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
+import java.net.URL;
+import java.net.URLDecoder;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
@@ -20,9 +23,6 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-
-import java.net.URL;
-import java.net.URLDecoder;
 
 
 public class MainWebclient  

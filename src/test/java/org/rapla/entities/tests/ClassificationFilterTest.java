@@ -14,9 +14,6 @@ package org.rapla.entities.tests;
 import java.util.Collections;
 import java.util.Iterator;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -34,6 +31,9 @@ import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class ClassificationFilterTest extends RaplaTestCase {
     ModificationModule modificationMod;

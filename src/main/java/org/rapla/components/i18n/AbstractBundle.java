@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.i18n;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
-
 import java.util.Collection;
 import java.util.Locale;
 import java.util.MissingResourceException;
+
+import org.rapla.components.util.DateTools;
+import org.rapla.components.xmlbundle.I18nBundle;
 
 public class AbstractBundle implements I18nBundle
 {

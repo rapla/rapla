@@ -19,6 +19,8 @@ import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Unit;
@@ -26,8 +28,6 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
 public class ApplicationViewImpl implements ApplicationView<IsWidget>

@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Named;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 public interface OptionPanel extends RaplaWidget, Named {
     void setPreferences(Preferences preferences);

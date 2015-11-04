@@ -1,8 +1,8 @@
 package org.rapla.client.extensionpoints;
 
-import org.rapla.entities.RaplaObject;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.entities.RaplaObject;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 

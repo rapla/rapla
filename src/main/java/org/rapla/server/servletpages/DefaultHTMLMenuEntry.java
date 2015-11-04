@@ -4,9 +4,6 @@ import java.io.PrintWriter;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-
 public class DefaultHTMLMenuEntry  implements RaplaMenuGenerator
 {
     protected String name;

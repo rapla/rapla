@@ -3,18 +3,36 @@
  */
 package org.rapla.entities.dynamictype.internal;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
-import org.rapla.entities.*;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.MultiLanguageNamed;
+import org.rapla.entities.Named;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.dynamictype.*;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ConstraintIds;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-
-import java.io.Serializable;
-import java.util.*;
 
 /** 
  * Enables text replacement of variables like {name} {email} with corresponding attribute values

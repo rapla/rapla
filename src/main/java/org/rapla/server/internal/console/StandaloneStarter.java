@@ -1,5 +1,7 @@
 package org.rapla.server.internal.console;
 
+import java.net.URL;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
@@ -8,11 +10,11 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.*;
-
-import java.net.URL;
+import org.rapla.server.internal.RaplaJNDIContext;
+import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
+import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerStarter;
 
 public class StandaloneStarter extends GUIStarter
 {

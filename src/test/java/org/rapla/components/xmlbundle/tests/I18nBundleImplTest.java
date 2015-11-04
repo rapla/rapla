@@ -12,15 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Locale;
+
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 
-import java.util.Locale;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 
 public class I18nBundleImplTest extends AbstractI18nTest {

@@ -11,10 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile.tests;
+import org.rapla.storage.tests.AbstractOperatorTest;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.rapla.storage.tests.AbstractOperatorTest;
 
 public class FileOperatorTest extends AbstractOperatorTest {
 

@@ -11,10 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
-import java.util.*;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.RaplaType;
@@ -39,6 +40,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class LocalCacheTest extends RaplaTestCase {
     Locale locale;

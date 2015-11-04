@@ -6,7 +6,6 @@ import java.util.Map;
 import javax.inject.Provider;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -21,7 +20,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;

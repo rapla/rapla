@@ -18,7 +18,6 @@ import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.jndi.JNDIPlugin;
-import org.rapla.server.AuthenticationStore;
 import org.rapla.server.internal.UpdateDataManagerImpl;
 
 public class JNDIServerPlugin  {

@@ -12,13 +12,14 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.framework.logger.internal;
 
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 @Singleton
 @DefaultImplementation(of = org.rapla.framework.logger.Logger.class,context = InjectionContext.gwt)

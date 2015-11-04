@@ -16,6 +16,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import javax.inject.Inject;
+
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
+import org.rapla.entities.domain.RepeatingType;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.ResultImpl;
+import org.rapla.plugin.ical.ICalImport;
+import org.rapla.server.RemoteSession;
+import org.rapla.server.TimeZoneConverter;
+import org.rapla.storage.impl.AbstractCachableOperator;
+
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
@@ -33,35 +58,6 @@ import net.fortuna.ical4j.model.WeekDayList;
 import net.fortuna.ical4j.model.property.DateProperty;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.util.CompatibilityHints;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.RepeatingType;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.plugin.export2ical.ICalConfigService;
-import org.rapla.plugin.ical.ICalImport;
-import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.gwtjsonrpc.common.ResultImpl;
-import org.rapla.server.RemoteMethodFactory;
-import org.rapla.server.RemoteSession;
-import org.rapla.server.TimeZoneConverter;
-import org.rapla.storage.impl.AbstractCachableOperator;
-
-import javax.inject.Inject;
 
 @DefaultImplementation(of=ICalImport.class,context = InjectionContext.server)
 public class RaplaICalImport implements ICalImport {

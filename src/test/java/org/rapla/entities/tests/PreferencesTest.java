@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -25,6 +22,9 @@ import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class PreferencesTest extends RaplaTestCase {
     CategoryImpl areas;

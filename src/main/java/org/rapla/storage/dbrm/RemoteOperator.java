@@ -61,20 +61,17 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.common.AsyncCallback;
-import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.gwtjsonrpc.common.ResultImpl;
-import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.common.AsyncCallback;
+import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.ResultImpl;
+import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
@@ -82,6 +79,7 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteStorage.BindingMap;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService

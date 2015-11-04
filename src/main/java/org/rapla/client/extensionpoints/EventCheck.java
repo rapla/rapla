@@ -2,9 +2,9 @@ package org.rapla.client.extensionpoints;
 
 import java.util.Collection;
 
+import org.rapla.client.PopupContext;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.PopupContext;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 

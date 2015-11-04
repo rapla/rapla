@@ -19,9 +19,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -48,6 +45,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class ClientFacadeTest extends RaplaTestCase {
     ClientFacade facade;

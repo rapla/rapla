@@ -20,7 +20,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;

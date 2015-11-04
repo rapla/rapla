@@ -1,7 +1,7 @@
 package org.rapla.plugin.mail;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.gwtjsonrpc.RemoteJsonMethod;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
 @RemoteJsonMethod
 public interface MailToUserInterface 
 {

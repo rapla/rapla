@@ -11,16 +11,15 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
 
 public class SaveableToggleAction extends RaplaAction {
 	

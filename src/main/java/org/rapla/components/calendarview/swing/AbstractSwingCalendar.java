@@ -21,7 +21,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Locale;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;

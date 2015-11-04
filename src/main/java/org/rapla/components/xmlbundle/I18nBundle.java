@@ -12,14 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle;
 
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
-
-import java.util.Collection;
 import java.util.Locale;
 import java.util.MissingResourceException;
 
-import javax.swing.ImageIcon;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
 /**The interface provides access to a resourcebundle that
    can be defined in XML or as an java-object.

@@ -12,8 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.sql.DataSource;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -28,7 +36,6 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
@@ -42,10 +49,8 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.sql.DataSource;
-import java.util.*;
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
 
 public class ServerServiceImpl implements StorageUpdateListener, ServerServiceContainer

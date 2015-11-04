@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -21,11 +26,6 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();

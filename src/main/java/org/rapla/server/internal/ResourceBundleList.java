@@ -1,11 +1,17 @@
 package org.rapla.server.internal;
 
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.xmlbundle.I18nBundle;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.xmlbundle.I18nBundle;
 
 @Singleton public class ResourceBundleList
 {

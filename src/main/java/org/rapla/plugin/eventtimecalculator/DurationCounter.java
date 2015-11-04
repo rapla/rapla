@@ -12,8 +12,6 @@ import javax.swing.table.TableModel;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;

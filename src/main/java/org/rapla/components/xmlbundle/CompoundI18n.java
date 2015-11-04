@@ -12,13 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.MissingResourceException;
-
-import javax.swing.ImageIcon;
 /** Allows the combination of two resource-bundles.
     First the inner bundle will be searched.
     If the requested resource was not found the

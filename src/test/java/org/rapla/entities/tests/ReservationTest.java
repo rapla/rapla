@@ -14,9 +14,6 @@ package org.rapla.entities.tests;
 import java.util.Calendar;
 import java.util.Date;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
@@ -27,6 +24,9 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class ReservationTest extends RaplaTestCase {
     Reservation reserv1;

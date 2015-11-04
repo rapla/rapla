@@ -14,9 +14,6 @@ package org.rapla.client.swing.gui.tests;
 import java.util.Collection;
 import java.util.Collections;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.client.ClientService;
 import org.rapla.entities.Entity;
@@ -30,6 +27,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class DataUpdateTest extends RaplaTestCase {
     ClientFacade facade;

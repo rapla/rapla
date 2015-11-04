@@ -27,20 +27,19 @@ import javax.inject.Singleton;
 import javax.swing.JComponent;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.PopupContext;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 

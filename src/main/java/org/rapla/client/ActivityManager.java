@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
 import org.rapla.client.event.StartActivityEvent;

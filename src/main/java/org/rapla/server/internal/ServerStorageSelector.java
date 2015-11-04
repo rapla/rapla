@@ -1,5 +1,12 @@
 package org.rapla.server.internal;
 
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
@@ -7,20 +14,11 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
-import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-import java.util.Map;
 
 
 @Singleton

@@ -1,16 +1,17 @@
 package org.rapla.framework;
 
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.Map;
-import java.util.Set;
 
 public class TestContainerImpl
 {

@@ -1,5 +1,13 @@
 package org.rapla.plugin.tests;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
+
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -13,14 +21,6 @@ import org.rapla.plugin.ical.server.RaplaICalImport;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
 
 public class ICalImportTest extends RaplaTestCase{
 

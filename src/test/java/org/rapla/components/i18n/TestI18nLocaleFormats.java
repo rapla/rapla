@@ -1,13 +1,11 @@
 package org.rapla.components.i18n;
 
-import java.io.File;
 import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.rapla.components.i18n.server.ServerBundleManager;
-import org.rapla.components.util.LocaleTools;
 
 public class TestI18nLocaleFormats
 {

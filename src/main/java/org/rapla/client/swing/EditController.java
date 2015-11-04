@@ -1,10 +1,10 @@
 package org.rapla.client.swing;
 
+import java.util.List;
+
 import org.rapla.client.PopupContext;
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
-
-import java.util.List;
 
 public interface EditController
 {

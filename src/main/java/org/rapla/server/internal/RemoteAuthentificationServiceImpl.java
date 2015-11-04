@@ -1,23 +1,24 @@
 package org.rapla.server.internal;
 
+import java.util.Set;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.common.FutureResult;
-import org.rapla.gwtjsonrpc.common.ResultImpl;
-import org.rapla.gwtjsonrpc.common.VoidResult;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.ResultImpl;
+import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
-
-import javax.inject.Inject;
-import java.util.Set;
 
 @DefaultImplementation(of = RemoteAuthentificationService.class, context = InjectionContext.server)
 public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationService implements RemoteAuthentificationService

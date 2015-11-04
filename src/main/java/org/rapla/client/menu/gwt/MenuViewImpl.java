@@ -1,23 +1,24 @@
 package org.rapla.client.menu.gwt;
 
-import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.PopupPanel;
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.rapla.client.PopupContext;
 import org.rapla.client.base.AbstractView;
+import org.rapla.client.gwt.GwtPopupContext;
+import org.rapla.client.gwt.components.MenuPopup;
 import org.rapla.client.menu.MenuView;
 import org.rapla.client.menu.data.MenuCallback;
 import org.rapla.client.menu.data.MenuEntry;
 import org.rapla.client.menu.data.Point;
-import org.rapla.client.gwt.GwtPopupContext;
-import org.rapla.client.gwt.components.MenuPopup;
 import org.rapla.framework.RaplaException;
-import org.rapla.client.PopupContext;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import java.util.List;
-
-import javax.inject.Inject;
+import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.PopupPanel;
 
 @DefaultImplementation(of =MenuView.class, context = InjectionContext.gwt)
 public class MenuViewImpl extends AbstractView<MenuView.Presenter> implements MenuView<IsWidget>

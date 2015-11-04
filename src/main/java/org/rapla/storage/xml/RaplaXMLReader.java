@@ -39,7 +39,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;

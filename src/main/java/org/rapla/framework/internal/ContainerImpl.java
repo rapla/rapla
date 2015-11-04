@@ -52,11 +52,11 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.RemoteJsonMethod;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
 
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service

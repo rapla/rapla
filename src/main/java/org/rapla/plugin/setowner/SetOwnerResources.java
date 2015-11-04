@@ -1,12 +1,10 @@
 package org.rapla.plugin.setowner;
 
+import javax.inject.Inject;
+
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.framework.TypedComponentRole;
-
-import javax.inject.Inject;
 
 public class SetOwnerResources extends AbstractBundle
 {

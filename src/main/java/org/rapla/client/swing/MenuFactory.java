@@ -11,8 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
-import org.rapla.framework.RaplaException;
 import org.rapla.client.swing.toolkit.MenuInterface;
+import org.rapla.framework.RaplaException;
 
 public interface MenuFactory
 {

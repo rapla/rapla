@@ -9,13 +9,13 @@ import javax.inject.Inject;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.StartActivityEvent;
-import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 
 import com.google.web.bindery.event.shared.EventBus;
 

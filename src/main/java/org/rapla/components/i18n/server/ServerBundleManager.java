@@ -1,5 +1,23 @@
 package org.rapla.components.i18n.server;
 
+import java.net.URL;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
@@ -9,12 +27,6 @@ import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.net.URL;
-import java.text.MessageFormat;
-import java.util.*;
 
 @DefaultImplementation(of=BundleManager.class,context = { InjectionContext.server, InjectionContext.swing})
 @Singleton

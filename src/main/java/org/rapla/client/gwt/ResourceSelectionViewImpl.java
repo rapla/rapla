@@ -12,10 +12,10 @@ import org.rapla.client.gwt.components.TreeComponent;
 import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
-
-import com.google.gwt.user.client.ui.IsWidget;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import com.google.gwt.user.client.ui.IsWidget;
 
 @DefaultImplementation(of = ResourceSelectionView.class, context = InjectionContext.gwt)
 public class ResourceSelectionViewImpl extends AbstractView<Presenter>implements ResourceSelectionView<IsWidget>

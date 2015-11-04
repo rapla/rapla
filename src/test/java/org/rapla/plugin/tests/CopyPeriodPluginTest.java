@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tests;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
+
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.RaplaTestCase;
 import org.rapla.client.swing.images.RaplaImages;
@@ -32,15 +38,10 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.client.impl.ser.SimpleProvider;
+import org.rapla.jsonrpc.client.gwt.internal.impl.ser.SimpleProvider;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
-
-import javax.inject.Provider;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest extends RaplaTestCase {

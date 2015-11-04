@@ -20,7 +20,6 @@ import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 

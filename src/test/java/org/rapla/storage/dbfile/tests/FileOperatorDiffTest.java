@@ -16,13 +16,13 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 
 public class FileOperatorDiffTest extends RaplaTestCase {

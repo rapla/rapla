@@ -29,7 +29,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
@@ -47,8 +46,6 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
-import org.rapla.server.ServerService;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.StorageOperator;
 

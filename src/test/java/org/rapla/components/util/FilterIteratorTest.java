@@ -15,9 +15,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import junit.framework.TestCase;
-
 import org.rapla.components.util.iterator.FilterIterable;
+
+import junit.framework.TestCase;
 
 public class FilterIteratorTest extends TestCase {
 

@@ -19,9 +19,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Set;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.domain.Allocatable;
@@ -36,6 +33,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class SQLOperatorTest extends AbstractOperatorTest {
 

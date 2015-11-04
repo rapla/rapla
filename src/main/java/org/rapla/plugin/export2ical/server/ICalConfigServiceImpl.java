@@ -1,21 +1,19 @@
 package org.rapla.plugin.export2ical.server;
 
+import javax.inject.Inject;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
-import org.rapla.server.RemoteMethodFactory;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
 
 @DefaultImplementation(of =ICalConfigService.class,context = InjectionContext.server)
 public class ICalConfigServiceImpl implements ICalConfigService {

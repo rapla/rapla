@@ -1,9 +1,11 @@
 package org.rapla.server.internal.console;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import javax.sql.DataSource;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
@@ -15,9 +17,6 @@ import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 public class ImportExportManagerContainer extends ContainerImpl{
 

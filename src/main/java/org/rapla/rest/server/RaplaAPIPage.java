@@ -1,20 +1,8 @@
 package org.rapla.rest.server;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.RemoteJsonMethod;
-import org.rapla.gwtjsonrpc.common.JSONParserWrapper;
-import org.rapla.gwtjsonrpc.server.JsonServlet;
-import org.rapla.gwtjsonrpc.server.RPCServletUtils;
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
-import org.rapla.server.internal.dagger.WebMethodProvider;
-import org.rapla.storage.RaplaSecurityException;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -23,9 +11,23 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
+import org.rapla.jsonrpc.server.JsonServlet;
+import org.rapla.jsonrpc.server.internal.RPCServletUtils;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
+import org.rapla.server.internal.dagger.WebMethodProvider;
+import org.rapla.storage.RaplaSecurityException;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 
 

@@ -14,14 +14,14 @@ package org.rapla.client;
 
 import java.util.Map;
 
+import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 /** This service starts and manages the rapla-gui-client.
  */

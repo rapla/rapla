@@ -1,5 +1,21 @@
 package org.rapla.rest.server;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.jws.WebParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
@@ -11,14 +27,8 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.RemoteJsonMethod;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.jws.WebParam;
-import javax.ws.rs.*;
-import java.util.*;
 
 @Path("resources")
 @Singleton

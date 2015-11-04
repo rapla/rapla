@@ -1,5 +1,8 @@
 package org.rapla.server.internal;
 
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
@@ -7,9 +10,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.server.RequestScoped;
 import org.rapla.server.RemoteSession;
-
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
 
 @RequestScoped
 @DefaultImplementation(of=RemoteSession.class,context = InjectionContext.server)

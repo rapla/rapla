@@ -11,12 +11,12 @@ import org.rapla.RaplaResources;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.StartActivityEvent;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.plugin.tableview.client.CalendarTableView;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.plugin.tableview.client.CalendarTableView;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;

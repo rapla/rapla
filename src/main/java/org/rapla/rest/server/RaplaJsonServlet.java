@@ -1,9 +1,5 @@
 package org.rapla.rest.server;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-
 import java.io.IOException;
 
 import javax.servlet.ServletContext;
@@ -12,12 +8,14 @@ import javax.ws.rs.core.MediaType;
 
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.server.ActiveCall;
-import org.rapla.gwtjsonrpc.server.JsonServlet;
-import org.rapla.gwtjsonrpc.server.NoPublicServiceMethodsException;
+import org.rapla.jsonrpc.server.JsonServlet;
+import org.rapla.jsonrpc.server.internal.ActiveCall;
 import org.rapla.storage.RaplaSecurityException;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 
 class RaplaJsonServlet extends JsonServlet
 {

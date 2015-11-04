@@ -12,6 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -27,10 +31,6 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
 
 @DefaultImplementation(of = MailConfigService.class, context = InjectionContext.server)
 public class RaplaConfigServiceImpl implements MailConfigService

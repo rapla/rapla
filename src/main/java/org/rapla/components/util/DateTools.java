@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
-import javax.inject.Singleton;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;

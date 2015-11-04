@@ -12,18 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class ErrorDialogTest extends GUITestCase {
 

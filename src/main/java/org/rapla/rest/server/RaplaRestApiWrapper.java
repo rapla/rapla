@@ -1,5 +1,26 @@
 package org.rapla.rest.server;
 
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
@@ -7,21 +28,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
-import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.*;
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
 
 /**
  * Wrapper for all REST pages, which listen under the rest @Path.

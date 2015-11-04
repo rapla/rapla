@@ -14,6 +14,20 @@ package org.rapla;
 import java.awt.Component;
 import java.util.Date;
 
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.RaplaDateRenderer;
+import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
+import org.rapla.client.swing.internal.view.InfoFactoryImpl;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
@@ -33,24 +47,9 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.RaplaDateRenderer;
-import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
-import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.internal.view.InfoFactoryImpl;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 
 
 public class DynamicTypeTest extends RaplaTestCase {

@@ -1,6 +1,5 @@
 package org.rapla.plugin.eventtimecalculator;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;

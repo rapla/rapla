@@ -11,18 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
-import java.util.Calendar;
-import java.util.Locale;
+import org.rapla.framework.DefaultConfiguration;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.ConsoleLogger;
 
 public class RaplaLocaleTest extends TestCase {
     DefaultConfiguration config;

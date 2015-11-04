@@ -12,14 +12,14 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.internal.edit.reservation;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.client.ClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.client.swing.gui.tests.GUITestCase;
+import org.rapla.entities.domain.Reservation;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public final class ReservationEditTest extends GUITestCase{
 	

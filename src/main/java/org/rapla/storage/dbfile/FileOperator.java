@@ -25,9 +25,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
-import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
@@ -36,7 +34,6 @@ import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;

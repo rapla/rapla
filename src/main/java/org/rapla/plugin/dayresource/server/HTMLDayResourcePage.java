@@ -1,5 +1,11 @@
 package org.rapla.plugin.dayresource.server;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
@@ -20,11 +26,6 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.rapla.plugin.weekview.server.HTMLDayViewPage;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-
-import javax.inject.Inject;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 @Extension(provides = HTMLViewPage.class,id= DayResourcePlugin.DAY_RESOURCE_VIEW)
 public class HTMLDayResourcePage extends HTMLDayViewPage

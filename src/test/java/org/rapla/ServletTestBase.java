@@ -1,13 +1,14 @@
 package org.rapla;
 
-import junit.framework.TestCase;
+import java.io.File;
+
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.MainServlet;
 import org.rapla.server.internal.ServerServiceImpl;
 
-import java.io.File;
+import junit.framework.TestCase;
 
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase extends TestCase

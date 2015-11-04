@@ -39,21 +39,6 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
-import org.rapla.components.util.TimeInterval;
-import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.components.util.undo.CommandUndo;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -66,6 +51,20 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget {

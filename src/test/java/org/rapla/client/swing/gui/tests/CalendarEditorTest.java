@@ -14,11 +14,11 @@
 package org.rapla.client.swing.gui.tests;
 import java.util.Date;
 
+import org.rapla.client.swing.internal.CalendarEditor;
+import org.rapla.facade.CalendarSelectionModel;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.client.swing.internal.CalendarEditor;
 
 
 public final class CalendarEditorTest extends GUITestCase

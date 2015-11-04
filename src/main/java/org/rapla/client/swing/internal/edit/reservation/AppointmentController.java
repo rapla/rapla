@@ -88,7 +88,7 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.FutureResult;
 
 /** GUI for editing a single Appointment. */
 public class AppointmentController extends RaplaGUIComponent

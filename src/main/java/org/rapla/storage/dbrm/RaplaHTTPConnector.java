@@ -1,25 +1,37 @@
 package org.rapla.storage.dbrm;
 
-import com.google.gson.*;
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.gwtjsonrpc.common.*;
-import org.rapla.rest.client.HTTPJsonConnector;
-import org.rapla.storage.RemoteLocaleService;
-
 import java.io.FileNotFoundException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import org.rapla.components.util.Command;
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.jsonrpc.client.swing.HTTPJsonConnector;
+import org.rapla.jsonrpc.common.AsyncCallback;
+import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.ResultImpl;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 public class RaplaHTTPConnector extends HTTPJsonConnector 
 {
@@ -313,49 +325,49 @@ public class RaplaHTTPConnector extends HTTPJsonConnector
                 JsonElement resultElement = resultMessage.get("result");
                 Class resultType;
                 Object resultObject;
-                ResultType resultTypeAnnotation = method.getAnnotation(ResultType.class);
-                if ( resultTypeAnnotation != null)
-                {
-                    resultType = resultTypeAnnotation.value();
-                    Class container = resultTypeAnnotation.container();
-                    if ( List.class.equals(container) )
-                    {
-                        if ( !resultElement.isJsonArray())
-                        {
-                            throw new RaplaException("Array expected as json result");
-                        }
-                        resultObject = deserializeReturnList(resultType, resultElement.getAsJsonArray());
-                    }
-                    else if ( Set.class.equals(container) )
-                    {
-                        if ( !resultElement.isJsonArray())
-                        {
-                           throw new RaplaException("Array expected as json result");
-                        }
-                        resultObject = deserializeReturnSet(resultType, resultElement.getAsJsonArray());
-                    }
-                    else if ( Map.class.equals( container) )
-                    {
-                        if ( !resultElement.isJsonObject())
-                        {
-                            throw new RaplaException("JsonObject expected as json result");
-                        }
-                        resultObject = deserializeReturnMap(resultType, resultElement.getAsJsonObject());
-                    }
-                    else if ( Object.class.equals( container) )
-                    {
-                        resultObject = deserializeReturnValue(resultType, resultElement);
-                    }
-                    else
-                    {
-                        throw new RaplaException("Array expected as json result");
-                    }
-                }
-                else
-                {
+//                ResultType resultTypeAnnotation = method.getAnnotation(ResultType.class);
+//                if ( resultTypeAnnotation != null)
+//                {
+//                    resultType = resultTypeAnnotation.value();
+//                    Class container = resultTypeAnnotation.container();
+//                    if ( List.class.equals(container) )
+//                    {
+//                        if ( !resultElement.isJsonArray())
+//                        {
+//                            throw new RaplaException("Array expected as json result");
+//                        }
+//                        resultObject = deserializeReturnList(resultType, resultElement.getAsJsonArray());
+//                    }
+//                    else if ( Set.class.equals(container) )
+//                    {
+//                        if ( !resultElement.isJsonArray())
+//                        {
+//                           throw new RaplaException("Array expected as json result");
+//                        }
+//                        resultObject = deserializeReturnSet(resultType, resultElement.getAsJsonArray());
+//                    }
+//                    else if ( Map.class.equals( container) )
+//                    {
+//                        if ( !resultElement.isJsonObject())
+//                        {
+//                            throw new RaplaException("JsonObject expected as json result");
+//                        }
+//                        resultObject = deserializeReturnMap(resultType, resultElement.getAsJsonObject());
+//                    }
+//                    else if ( Object.class.equals( container) )
+//                    {
+//                        resultObject = deserializeReturnValue(resultType, resultElement);
+//                    }
+//                    else
+//                    {
+//                        throw new RaplaException("Array expected as json result");
+//                    }
+//                }
+//                else
+//                {
                     resultType = method.getReturnType();
                     resultObject = deserializeReturnValue(resultType, resultElement);
-                }
+//                }
                 return resultObject;
             }
         };

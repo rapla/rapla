@@ -11,10 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
+import org.rapla.entities.domain.Allocatable;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.rapla.entities.domain.Allocatable;
 
 public class RaplaDemoTest extends RaplaTestCase {
 

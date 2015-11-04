@@ -11,12 +11,16 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
-import org.rapla.components.util.DateTools;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+
+import org.rapla.components.util.DateTools;
 
 /** Some entities (especially dynamic-types and attributes)
     can have multiple names to allow easier reuse of created schemas or

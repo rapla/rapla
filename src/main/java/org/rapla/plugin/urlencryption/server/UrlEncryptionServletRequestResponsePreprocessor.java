@@ -20,7 +20,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
-import org.rapla.plugin.urlencryption.UrlEncryptionResources;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 /**

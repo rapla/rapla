@@ -28,9 +28,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.plugin.notification.NotificationPlugin;
-import org.rapla.server.ServerService;
 import org.rapla.server.internal.ServerServiceImpl;
 
 /** listens for allocation changes */

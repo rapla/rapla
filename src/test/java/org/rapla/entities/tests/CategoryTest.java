@@ -11,9 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
@@ -23,6 +20,9 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.RaplaException;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 public class CategoryTest extends RaplaTestCase {
     CategoryImpl areas;

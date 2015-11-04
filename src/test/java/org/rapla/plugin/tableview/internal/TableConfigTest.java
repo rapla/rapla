@@ -1,8 +1,15 @@
 package org.rapla.plugin.tableview.internal;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import junit.framework.TestCase;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.MultiLanguageName;
@@ -12,15 +19,10 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import junit.framework.TestCase;
 
 public class TableConfigTest extends TestCase
 {

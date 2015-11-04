@@ -18,6 +18,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
@@ -38,8 +40,6 @@ import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-
-import javax.inject.Inject;
 
 @Extension(provides = HTMLViewPage.class, id = TimeslotPlugin.WEEK_TIMESLOT)
 public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTMLViewPage

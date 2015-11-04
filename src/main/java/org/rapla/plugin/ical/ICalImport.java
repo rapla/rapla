@@ -2,8 +2,8 @@ package org.rapla.plugin.ical;
 
 import javax.jws.WebService;
 
-import org.rapla.gwtjsonrpc.RemoteJsonMethod;
-import org.rapla.gwtjsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
 
 @WebService
 @RemoteJsonMethod

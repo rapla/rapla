@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.rapla.rest.client.HTTPJsonConnector;
+import org.rapla.jsonrpc.client.swing.HTTPJsonConnector;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
