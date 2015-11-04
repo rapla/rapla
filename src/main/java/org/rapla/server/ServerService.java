@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
-import org.rapla.framework.SimpleProvider;
 import org.rapla.framework.TypedComponentRole;
 
 /** Encapsulates a StorageOperator. This service is responsible for

@@ -19,7 +19,7 @@ import dagger.Component;
 public class Rapla implements EntryPoint
 {
 
-    @Component(modules = {DaggerGwtModule.class/*, DaggerStaticModule.class*/})
+    @Component(modules = {org.rapla.dagger.DaggerGwtModule.class/*, DaggerStaticModule.class*/})
     @Singleton
     public interface RaplaGwtInjectionStart
     {

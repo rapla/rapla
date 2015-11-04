@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 
 @Singleton public class WebMethodProvider
 {
-    DaggerWebserviceComponent.ServiceList list;
+    org.rapla.dagger.DaggerWebserviceComponent.ServiceList list;
 
     @Inject public WebMethodProvider()
     {
@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse;
         return tProvider;
     }
 
-    void setList(DaggerWebserviceComponent.ServiceList list)
+    void setList(org.rapla.dagger.DaggerWebserviceComponent.ServiceList list)
     {
         this.list = list;
     }
