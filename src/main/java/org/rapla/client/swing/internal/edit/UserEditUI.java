@@ -122,7 +122,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
 	        	try {
 					if(!isOneAdmin()) 
 					{
-						showWarning(getString("error.no_admin"), getComponent());
+						showWarning(getString("error.no_admin"), getComponent(),dialogUiFactory);
 						setValue(true);
 					}
 				} 

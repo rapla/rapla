@@ -53,7 +53,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -84,7 +83,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
     /** called during initialization to create the info component 
      */
     @Inject
-    public PreferencesEditUI(RaplaContext context, TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel,
+    public PreferencesEditUI( TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel,
             Set<Provider<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
             RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactory dialogUiFactory)
     {

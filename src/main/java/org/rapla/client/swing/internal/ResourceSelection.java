@@ -96,10 +96,11 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
-
-	private ResourceSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
+    private final RaplaMenuBarContainer menuBar;
+	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
 
+        this.menuBar = menuBar;
         this.model = model;
         this.view = view;
         this.treeFactory = treeFactory;
@@ -120,7 +121,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         content.add(buttonsPanel, BorderLayout.NORTH);
         
         buttonsPanel.setLayout( new BorderLayout());
-        filterEdit = filterEditButtonFactory.create(true);
+        filterEdit = filterEditButtonFactory.create(model,true,listener);
         buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
         
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
@@ -329,8 +330,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
    
     
     public void updateMenu() throws RaplaException {
-        RaplaMenu editMenu = getService(InternMenus.EDIT_MENU_ROLE);
-        RaplaMenu newMenu = getService(InternMenus.NEW_MENU_ROLE);
+        RaplaMenu editMenu = menuBar.getEditMenu();
+        RaplaMenu newMenu = menuBar.getNewMenu();
 
         editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
         newMenu.removeAll();
@@ -375,13 +376,14 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         private final TextFieldFactory textFieldFactory;
         private final LongFieldFactory longFieldFactory;
         private final FilterEditButtonFactory filterEditButtonFactory;
+        private final RaplaMenuBarContainer menuBar;
 
         @Inject
         public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
                 TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory,
                 RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
                 PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory,
-                FilterEditButtonFactory filterEditButtonFactory)
+                FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
         {
             this.facade = facade;
             this.i18n = i18n;
@@ -400,11 +402,12 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             this.textFieldFactory = textFieldFactory;
             this.longFieldFactory = longFieldFactory;
             this.filterEditButtonFactory = filterEditButtonFactory;
+            this.menuBar = menuBar;
         }
 
         public ResourceSelection create(MultiCalendarView view)
         {
-            return new ResourceSelection(facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages,
+            return new ResourceSelection(menuBar,facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages,
                     dateFieldFactory, dialogUiFactory, booleanFieldFactory, permissionController, textFieldFactory, longFieldFactory, filterEditButtonFactory);
         }
     }

@@ -12,16 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.archiver.client.swing;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -35,12 +25,18 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.storage.dbrm.RestartServer;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Locale;
 
 @Extension(provides = PluginOptionPanel.class,id=ArchiverService.PLUGIN_ID)
 public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
@@ -55,7 +51,6 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 	ArchiverService archiver;
     Preferences preferences;
     Logger logger;
-    RaplaContext context;
     RestartServer restartServer;
     private final DialogUiFactory dialogUiFactory;
     private final RaplaResources i18n;

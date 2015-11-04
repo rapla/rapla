@@ -83,7 +83,7 @@ public class DataUpdateTest extends RaplaTestCase {
     	
     	facade.store( newResource );
      	
-    	final CalendarSelectionModel model = clientService.getContext().lookup( CalendarSelectionModel.class);
+    	final CalendarSelectionModel model = getContext().lookup( CalendarSelectionModel.class);
     	ClassificationFilter filter = dynamicType.newClassificationFilter();
     	filter.addIsRule("newkey", "filter");
     	model.setAllocatableFilter( new ClassificationFilter[] {filter});

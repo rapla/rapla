@@ -16,6 +16,7 @@ import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
@@ -26,6 +27,7 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
@@ -42,6 +44,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
 
+@Singleton
 @Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
 public class AppointmentTableViewFactory implements SwingViewFactory
 {
@@ -61,13 +64,13 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     private final RaplaLocale raplaLocale;
     private final Logger logger;
     private final IOInterface ioInterface;
+    private final RaplaMenuBarContainer menuBar;
 
     @Inject
     public AppointmentTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-            Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
-            RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface
-            )
+            Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
+            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
+            RaplaMenuBarContainer menuBar)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -85,13 +88,14 @@ public class AppointmentTableViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
         this.ioInterface = ioInterface;
+        this.menuBar = menuBar;
     }
 
     public final static String TABLE_VIEW = "table_appointments";
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {
-        return new SwingAppointmentTableView(facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory,
+        return new SwingAppointmentTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory,
                 calendarSelectionModel, reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, permissionController, ioInterface);
     }
 

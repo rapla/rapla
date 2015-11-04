@@ -50,7 +50,6 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -452,7 +451,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private void writeData( OutputStream out, LocalCache cache,String version, boolean includeIds ) throws IOException, RaplaException
     {
-        RaplaContext outputContext = new IOContext().createOutputContext( logger, raplaLocale, i18n , cache.getSuperCategoryProvider(), includeIds );
+        RaplaDefaultContext outputContext = new IOContext().createOutputContext( logger, raplaLocale, i18n , cache.getSuperCategoryProvider(), includeIds );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding( encoding );
         if ( version != null)

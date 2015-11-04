@@ -12,30 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
-import javax.swing.MenuElement;
-import javax.swing.SwingUtilities;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
@@ -55,6 +31,7 @@ import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.edit.TemplateEdit;
 import org.rapla.client.swing.internal.edit.TemplateEdit.TemplateEditFactory;
 import org.rapla.client.swing.internal.print.PrintAction;
+import org.rapla.client.swing.internal.view.LicenseInfoUI;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -63,6 +40,7 @@ import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.swing.toolkit.RaplaMenubar;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
@@ -76,11 +54,39 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.dbrm.RestartServer;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Set;
+
+@Singleton
 public class RaplaMenuBar extends RaplaGUIComponent
 {
     final JMenuItem exit;
@@ -91,10 +97,9 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final TemplateEditFactory templateEditFactory;
+    Provider<LicenseInfoUI> licenseInfoUIProvider;
 
-
-
-    @Inject public RaplaMenuBar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             PrintAction printAction,
             Set<AdminMenuExtension> adminMenuExt,
             Set<EditMenuExtension> editMenuExt,
@@ -108,49 +113,33 @@ public class RaplaMenuBar extends RaplaGUIComponent
             RestartServer restartServerService,
             RaplaImages raplaImages, 
             DialogUiFactory dialogUiFactory,
-            TemplateEditFactory templateEditFactory
-
+            TemplateEditFactory templateEditFactory,
+            Provider<LicenseInfoUI> licenseInfoUIProvider
     )
             throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.licenseInfoUIProvider = licenseInfoUIProvider;
         this.editController = editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.templateEditFactory = templateEditFactory;
-        RaplaMenu systemMenu = getService(InternMenus.FILE_MENU_ROLE);
-        systemMenu.setText(getString("file"));
 
-        RaplaMenu editMenu = getService(InternMenus.EDIT_MENU_ROLE);
-        editMenu.setText(getString("edit"));
 
-        RaplaMenu exportMenu = getService(InternMenus.EXPORT_MENU_ROLE);
-        exportMenu.setText(getString("export"));
-
-        RaplaMenu importMenu = getService(InternMenus.IMPORT_MENU_ROLE);
-        importMenu.setText(getString("import"));
-
-        JMenuItem newMenu = getService(InternMenus.NEW_MENU_ROLE);
-        newMenu.setText(getString("new"));
-
-        JMenuItem calendarSettings = getService(InternMenus.CALENDAR_SETTINGS);
-        calendarSettings.setText(getString("calendar"));
-
-        RaplaMenu extraMenu = getService(InternMenus.EXTRA_MENU_ROLE);
-        extraMenu.setText(getString("help"));
-
-        RaplaMenu adminMenu = getService(InternMenus.ADMIN_MENU_ROLE);
-        adminMenu.setText(getString("admin"));
-
-        RaplaMenu viewMenu = getService(InternMenus.VIEW_MENU_ROLE);
-        viewMenu.setText(getString("view"));
-
-        viewMenu.add(new RaplaSeparator("view_save"));
+        RaplaMenu calendarSettings = menuBarContainer.getSettingsMenu();
+        RaplaMenu editMenu = menuBarContainer.getEditMenu();
+        RaplaMenu viewMenu = menuBarContainer.getViewMenu();
+        RaplaMenu newMenu = menuBarContainer.getNewMenu();
+        RaplaMenu systemMenu = menuBarContainer.getSystemMenu();
+        RaplaMenu adminMenu = menuBarContainer.getAdminMenu();
+        RaplaMenu extraMenu = menuBarContainer.getExtraMenu();
+        RaplaMenu importMenu = menuBarContainer.getImportMenu();
+        RaplaMenu exportMenu = menuBarContainer.getExportMenu();
 
         if (getUser().isAdmin())
-        {
-            addPluginExtensions(adminMenuExt, adminMenu);
-        }
+    {
+        addPluginExtensions(adminMenuExt, adminMenu);
+    }
         addPluginExtensions(importMenuExt, importMenu);
         addPluginExtensions(exportMenuExt, exportMenu);
         addPluginExtensions(helpMenuExt, extraMenu);
@@ -324,6 +313,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     {
         return getModification().getTemplate() != null;
     }
+
 
     class Listener implements ActionListener, CommandHistoryChangedListener, ModificationListener
     {
@@ -533,7 +523,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     /**
      * the action to perform when someone clicks on the license entry in the
-     * help section of the menu bar
+     * help section of the menu menubar
      *
      * this method is a modified version of the existing method createInfoAction()
      */
@@ -559,9 +549,9 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     licenseText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
                     // we look up the text was originally meant for the welcome field
                     // and put it into a new instance of RaplaWidget
-                    RaplaWidget welcomeField = getService(ClientService.WELCOME_FIELD);
+                    RaplaWidget welcomeField = licenseInfoUIProvider.get();
                     // the following creates the dialog that pops up, when we click
-                    // on the license entry within the help section of the menu bar
+                    // on the license entry within the help section of the menu menubar
                     // we call the create Method of the DialogUI class and give it all necessary things
                     DialogUI dialog = dialogUiFactory.create(getMainComponent(), true, new JScrollPane((Component) welcomeField.getComponent()),
                             new String[] { getString("ok") });

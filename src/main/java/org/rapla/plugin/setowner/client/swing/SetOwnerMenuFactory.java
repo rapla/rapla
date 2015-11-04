@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.TreeSet;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.ImageIcon;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -48,6 +49,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.setowner.SetOwnerResources;
 
+@Singleton
 @Extension(provides = ObjectMenuFactory.class, id="setowner")
 public class SetOwnerMenuFactory implements ObjectMenuFactory
 {

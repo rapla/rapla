@@ -18,29 +18,24 @@ import java.awt.print.Printable;
 import java.util.Locale;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 
-
-
-public class PSExportService extends RaplaGUIComponent implements ExportService {
+public class PSExportService  implements ExportService {
     public final static String EXPORT_DIR = PSExportService.class.getName() + ".dir";
-    IOInterface printInterface;
+    private final IOInterface printInterface;
+    private final RaplaResources i18n;
 
+    private String dir;
 
-    public PSExportService(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface){
-        super(facade, i18n, raplaLocale, logger);
+    public PSExportService(IOInterface printInterface, RaplaResources i18n){
         this.printInterface = printInterface;
+        this.i18n = i18n;
     }
 
 
     public boolean export(Printable printable,PageFormat pageFormat,Component parentComponent) throws Exception
     {
-        String dir = (String) getSessionMap().get(EXPORT_DIR);
-		String file = printInterface.saveAsFileShowDialog
+        String file = printInterface.saveAsFileShowDialog
         (
                    dir
                    ,printable
@@ -50,7 +45,7 @@ public class PSExportService extends RaplaGUIComponent implements ExportService 
                                                         );
         if (file != null)
         {
-            getSessionMap().put(EXPORT_DIR,file);
+            dir = file;
             return true;
         }
         else
@@ -60,6 +55,6 @@ public class PSExportService extends RaplaGUIComponent implements ExportService 
     }
 
     public String getName(Locale locale) {
-        return getI18n().getString("weekview.print.postscript");
+        return i18n.getString("weekview.print.postscript");
     }
 }

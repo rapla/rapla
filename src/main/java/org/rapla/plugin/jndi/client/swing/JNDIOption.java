@@ -175,7 +175,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                 } 
                 catch (RaplaSecurityException ex)
                 {
-                    showWarning(ex.getMessage(), getComponent());
+                    showWarning(ex.getMessage(), getComponent(), dialogUiFactory);
                 }
                 catch (Exception ex)
                 {

@@ -26,8 +26,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -42,10 +40,6 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     int index = 0;
     protected boolean onlyAllocationInfo;
     
-    public HTMLRaplaBuilder(RaplaContext context) throws RaplaContextException {
-        super(context.lookup(RaplaLocale.class),context.lookup(ClientFacade.class),context.lookup(RaplaResources.class), context.lookup(Logger.class),context.lookup( AppointmentFormater.class), context.lookup(PermissionController.class));
-    }
-
     @Inject
     public HTMLRaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController) {
         super(raplaLocale, clientFacade, i18n, logger, appointmentFormater, permissionController);

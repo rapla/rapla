@@ -26,6 +26,7 @@ class RaplaJsonServlet extends JsonServlet
         this.logger = logger;
     }
 
+    @Override
     protected JsonElement getParams(Throwable failure)
     {
         JsonArray params = null;
@@ -34,12 +35,12 @@ class RaplaJsonServlet extends JsonServlet
             for (String dep : ((DependencyException) failure).getDependencies()) {
                 params.add(new JsonPrimitive(dep));
             }
-
         }
         return params;
     };
 
 
+    @Override
     protected void debug(String childLoggerName, String out )
     {
 
@@ -75,10 +76,10 @@ class RaplaJsonServlet extends JsonServlet
             return;
         super.writeResponse(servletContext, call, out);
     }
-    
+
+    @Override
     protected  void error(String message,Throwable ex)
     {
-        Logger logger = null;
         logger.error(message, ex);
     }
 

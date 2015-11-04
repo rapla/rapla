@@ -1500,7 +1500,7 @@ public class AppointmentController extends RaplaGUIComponent
 			}
 			else
 			{
-				showWarning("No free appointment found", getMainComponent());
+				showWarning("No free appointment found", getMainComponent(),dialogUiFactory);
 			}
 		} 
 		catch (Exception ex)

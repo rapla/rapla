@@ -53,7 +53,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		ClientService clientService = getClientService();
 		Reservation[] reservations = clientService.getFacade()
 				.getReservationsForAllocatable(null, null, null, null);
-		final ReservationController c = clientService.getContext().lookup(ReservationController.class);
+		final ReservationController c = getContext().lookup(ReservationController.class);
 		final Reservation reservation = reservations[0];
 		c.edit(reservation);
 		getLogger().info("ReservationController started");
@@ -62,7 +62,7 @@ public final class ReservationControllerTest extends GUITestCase {
 	public void testMove() throws Exception {
 		final ClientService clientService = getClientService();
 		Reservation[] reservations = clientService.getFacade().getReservationsForAllocatable(null, null, null, null);
-		final ReservationController c =  clientService.getContext().lookup(ReservationController.class);
+		final ReservationController c =  getContext().lookup(ReservationController.class);
 		final Reservation reservation = reservations[0];
 		Appointment[] appointments = reservation.getAppointments();
 		final Appointment appointment = appointments[0];
@@ -123,7 +123,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		ClientService clientService = getClientService();
 		Reservation[] reservations = clientService.getFacade()
 				.getReservationsForAllocatable(null, null, null, null);
-		ReservationController c = clientService.getContext().lookup(ReservationController.class);
+		ReservationController c = getContext().lookup(ReservationController.class);
 		c.edit(reservations[0]);
 		getLogger().info("ReservationController started");
 		ReservationEdit editor = c.getEditWindows()[0];

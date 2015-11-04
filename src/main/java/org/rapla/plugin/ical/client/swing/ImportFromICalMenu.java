@@ -80,7 +80,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 	@Inject
-	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaContextException
+	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources,RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaContextException
 	{
 		super(facade, i18n, raplaLocale, logger);
 		this.importService = importService;
@@ -89,7 +89,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
         this.io = io;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-		item = new JMenuItem(i18n.getString("ical.import"));
+		item = new JMenuItem(iCalResources.getString("ical.import"));
 		item.setIcon(raplaImages.getIconFromKey("icon.import"));
 		item.addActionListener(this);
 	}

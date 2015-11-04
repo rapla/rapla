@@ -12,12 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.awt.Component;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.storage.RemoteLocaleService;
 
 import javax.inject.Inject;
 import javax.swing.Action;
@@ -25,28 +26,23 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.storage.RemoteLocaleService;
+import java.awt.Component;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 final public class CountryChooser implements RaplaWidget
 {
     JComboBox jComboBox;
     String language;
-    RaplaContext context;
     Logger logger;
     Map<String,Set<String>> countries;
     
     @Inject
     public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaException {
         this.logger = logger;
-        this.context = context;
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
         try

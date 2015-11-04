@@ -385,6 +385,11 @@ public class DialogUI extends JDialog
             this.frameList = frameList;
         }
 
+        public RaplaImages getImages()
+        {
+            return images;
+        }
+
         public DialogUI create(Component owner, boolean modal, JComponent content, String[] options) throws RaplaException
         {
             DialogUI dlg;

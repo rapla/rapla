@@ -74,8 +74,15 @@ import org.rapla.storage.dbrm.WrongRaplaVersionException;
  */
 public class RaplaGUIComponent extends RaplaComponent
 {
+    private static Component mainComponent;
 
-    public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+	@Deprecated
+	public static void setMainComponent(Component mainComponent)
+	{
+		RaplaGUIComponent.mainComponent = mainComponent;
+	}
+
+	public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade, i18n, raplaLocale, logger);
     }
@@ -90,25 +97,9 @@ public class RaplaGUIComponent extends RaplaComponent
 	*/
 	public void showException(Throwable ex,Component owner, DialogUiFactory dialogUiFactory) {
 		Logger logger = getLogger();
-        showException(ex, owner, getI18n(), getImages(), logger, dialogUiFactory );
+        showException(ex, owner, getI18n(), dialogUiFactory.getImages(), logger, dialogUiFactory );
 	}
 	
-	/**
-	 * only used for backwards compatibility
-	 * 
-	 */
-	@Deprecated 
-	public AppointmentAction createAppointmentAction(Component component, Point p, DialogUiFactory dialogUiFactory)
-	{
-	    final CalendarSelectionModel model = getService(CalendarSelectionModel.class);
-	    final PermissionController permissionController = getService(PermissionController.class);
-	    final ReservationController reservationController = getReservationController();
-	    final InfoFactory<Component, DialogUI> infoFactory = getInfoFactory();
-        final RaplaImages raplaImages = getService(RaplaImages.class);
-        return new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),createPopupContext(component, p), model, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
-	}
-	
-
 	public void showError(Exception ex,PopupContext context, DialogUiFactory dialogUiFactory) {
 	    Component owner= null;
 	    if ( context instanceof SwingPopupContext)
@@ -124,7 +115,6 @@ public class RaplaGUIComponent extends RaplaComponent
         return new SwingPopupContext(parent, p);
     }
 
-	
 	static public void showException(Throwable ex, Component owner,
 			RaplaResources i18n, RaplaImages raplaImages, Logger logger, DialogUiFactory dialogUiFactory) {
 		if ( ex instanceof RaplaConnectException)
@@ -196,10 +186,9 @@ public class RaplaGUIComponent extends RaplaComponent
     }
 
 	 /** Creates a new ErrorDialog with the specified owner and displays the waring */
-    public void showWarning(String warning,Component owner) {
+    public void showWarning(String warning,Component owner, DialogUiFactory dialogUiFactory) {
     	Logger logger = getLogger();
-    	final DialogUiFactory dialogUiFactory = getService(DialogUiFactory.class);
-		showWarning(warning, owner,getI18n(), getImages(), logger, dialogUiFactory);
+    	showWarning(warning, owner,getI18n(), dialogUiFactory.getImages(), logger, dialogUiFactory);
     }
 
 	public static void showWarning(String warning, Component owner,	RaplaResources i18n, RaplaImages raplaImages, Logger logger, DialogUiFactory dialogUiFactory) {
@@ -217,11 +206,6 @@ public class RaplaGUIComponent extends RaplaComponent
         cal.setDateRenderer(dateRenderer);
         addCopyPaste(cal.getDateField(), getI18n(), getRaplaLocale(), service, getLogger());
         return cal;
-    }
-
-    /** lookupDeprecated DateRenderer from the serviceManager */
-    final private DateRenderer getDateRenderer() {
-        return  getService(DateRenderer.class);
     }
 
     static Color NON_WORKTIME = new Color(0xcc, 0xcc, 0xcc);
@@ -307,31 +291,8 @@ public class RaplaGUIComponent extends RaplaComponent
         return cal;
     }
     
-
-    public Map<Object,Object> getSessionMap() {
-        return  getService( ClientService.SESSION_MAP);
-    }
-
-    private InfoFactory<Component, DialogUI> getInfoFactory() {
-        return getService( InfoFactory.class );
-    }
-    
-    /** calls getI18n().getIcon(key) */
-    final private ImageIcon getIcon(String key) {
-        return getImages().getIconFromKey( key);
-    }
-    
-    final private RaplaImages getImages()
-    {
-        return getService( RaplaImages.class);
-    }
-    
-    private ReservationController getReservationController() {
-        return getService( ReservationController.class );
-    }
-
     public Component getMainComponent() {
-        return  getService(ClientService.MAIN_COMPONENT);
+        return  mainComponent;
     }
     
     public static void addCopyPaste(final JComponent component, RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service, final Logger logger) {

@@ -55,6 +55,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
@@ -72,6 +73,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     final ResourceSelection resourceSelection; 
     JToolBar toolbar = new JToolBar();
     private final Set<PublishExtensionFactory> extensionFactories;
+    private final StartupEnvironment environment;
     class SaveAction extends RaplaAction
     {
 
@@ -97,7 +99,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
             putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
-            publishDialog = new PublishDialog(facade, i18n, raplaLocale, logger, extensionFactories, raplaImages, dialogUiFactory);
+            publishDialog = new PublishDialog(environment,facade, i18n, raplaLocale, logger, extensionFactories, raplaImages, dialogUiFactory);
             
         }
 
@@ -219,10 +221,12 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
     }
     
-    public SavedCalendarView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) throws RaplaException {
+    public SavedCalendarView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory<Component, DialogUI> infoFactory,
+            RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.extensionFactories = extensionFactories;
+        this.environment = environment;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -252,7 +256,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         
         save.setAction(new ActionWrapper(saveAction));
         publish.setAction(new ActionWrapper(publishAction));
-        RaplaMenu settingsMenu = getService(InternMenus.CALENDAR_SETTINGS);
+        RaplaMenu settingsMenu = bar.getSettingsMenu();
         settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(saveAction)), null);
         if ( publishAction.hasPublishActions())
         {
@@ -568,7 +572,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 String filename = textField.getText().trim();
                 if (filename.length() == 0)
                 {
-                    showWarning(getString("error.no_name"), parentComponent);
+                    showWarning(getString("error.no_name"), parentComponent,dialogUiFactory);
                     return;
                 }
                 dlg.close();

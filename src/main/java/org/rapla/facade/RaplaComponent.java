@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -36,13 +30,18 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 /**
     Base class for most components. Eases
@@ -57,8 +56,7 @@ public class RaplaComponent
     RaplaLocale raplaLocale;
     RaplaResources i18n;
     ClientFacade facade;
-    private RaplaContext context;
-    
+
     public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
 //        try {
 //            logger = context.lookupDeprecated(Logger.class );
@@ -192,34 +190,8 @@ public class RaplaComponent
         return logger;
     }
 
-    /** lookupDeprecated the service in the serviceManager under the specified key:
-        serviceManager.lookupDeprecated(role).
-        @throws IllegalStateException if GUIComponent wasn't serviced. No service method called
-        @throws UnsupportedOperationException if service not available.
-     */
-    protected <T> T getService(Class<T> role) {
-        try {
-            return getContext().lookup( role);
-        } catch (RaplaContextException e) {
-             throw serviceExcption(role, e); 
-        }
-    }
-
     protected UnsupportedOperationException serviceExcption(Object role, RaplaContextException e) {
         return new UnsupportedOperationException("Service not supported in this context: " + role, e);
-    }
-//   
-    protected <T> T getService(TypedComponentRole<T> role) {
-        try {
-            return getContext().lookup(role);
-        } catch (RaplaContextException e) {
-            throw serviceExcption(role, e); 
-        }
-    }
-    
-    @Deprecated
-    private RaplaContext getContext() {
-        return context;
     }
 
     /** lookupDeprecated RaplaLocale from the context */

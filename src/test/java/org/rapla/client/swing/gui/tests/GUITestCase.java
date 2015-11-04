@@ -36,7 +36,7 @@ public abstract class GUITestCase extends RaplaTestCase {
     }
     
     protected <T> T getService(Class<T> role) throws RaplaException {
-           return getClientService().getContext().lookup( role);
+           return getContext().lookup( role);
     }
 
     protected PopupContext createPopupContext()
@@ -48,14 +48,14 @@ public abstract class GUITestCase extends RaplaTestCase {
     {
         return null;
     }
-    
+
     public void interactiveTest(String methodName) {
         try {
             setUp();
             ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
             try {
                 this.getClass().getMethod(methodName, new Class[] {}).invoke(this,new Object[] {});
-                waitUntilLastFrameClosed( getClientService().getContext().lookup(FrameControllerList.class) );
+                waitUntilLastFrameClosed( getContext().lookup(FrameControllerList.class) );
                 System.exit(0);
             } catch (Exception ex) {
                 getLogger().error(ex.getMessage(), ex);
@@ -104,7 +104,7 @@ public abstract class GUITestCase extends RaplaTestCase {
         Use this method for testing new GUI-Components.
      */
     public void testComponent(JComponent component,int x,int y) throws Exception{
-        FrameControllerList frameControllerList = getClientService().getContext().lookup(FrameControllerList.class);
+        FrameControllerList frameControllerList = getContext().lookup(FrameControllerList.class);
         RaplaFrame frame = new RaplaFrame(frameControllerList);
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(component, BorderLayout.CENTER);

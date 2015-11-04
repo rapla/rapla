@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 
 import org.rapla.RaplaResources;
@@ -64,6 +65,7 @@ import org.rapla.inject.InjectionContext;
 /** The factory can creatres an information-panel or dialog for
 the entities of rapla.
 @see ViewTable*/
+@Singleton
 @DefaultImplementation(of=InfoFactory.class, context = InjectionContext.swing)
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Component, DialogUI>
 

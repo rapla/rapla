@@ -12,14 +12,14 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.internal.edit.reservation;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.rapla.client.ClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.entities.domain.Reservation;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 public final class ReservationEditTest extends GUITestCase{
 	
@@ -41,7 +41,7 @@ public final class ReservationEditTest extends GUITestCase{
     	super.setUp();
         clientService = getClientService();
         reservations = clientService.getFacade().getReservationsForAllocatable(null,null,null,null);
-        c = clientService.getContext().lookup(ReservationController.class);
+        c = null;//clientService.getContext().lookup(ReservationController.class);
         window = c.edit(reservations[0]);
         internalWindow = (ReservationEditImpl) window;
     }

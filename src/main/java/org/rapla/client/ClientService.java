@@ -12,26 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
-import java.util.Map;
-
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+
+import java.util.Map;
 
 /** This service starts and manages the rapla-gui-client.
  */
 public interface ClientService
 {
-    public static TypedComponentRole<Map<Object,Object>> SESSION_MAP = new TypedComponentRole<Map<Object,Object>>("org.rapla.SessionMap");
-    public static TypedComponentRole<RaplaFrame> MAIN_COMPONENT = new TypedComponentRole<RaplaFrame>("org.rapla.MainComponent");
-    public static TypedComponentRole<RaplaWidget> WELCOME_FIELD = new TypedComponentRole<RaplaWidget>("org.rapla.client.swing.gui.WelcomeField");
-    
-    
+    //public static TypedComponentRole<RaplaFrame> MAIN_COMPONENT = new TypedComponentRole<RaplaFrame>("org.rapla.MainComponent");
+
     void addRaplaClientListener(RaplaClientListener listener);
     void removeRaplaClientListener(RaplaClientListener listener);
 
@@ -51,7 +47,5 @@ public interface ClientService
 	/** returns true if an logout option is available. This is true when the user used an login dialog.*/
     boolean isLogoutAvailable();
     
-    RaplaContext getContext();
-  
     void logout();
 }

@@ -105,7 +105,7 @@ public class DynamicTypeTest extends RaplaTestCase {
     		facade.store( modified);
     	}
     	{
-	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
 	    	ClassificationFilter firstFilter = eventType.newClassificationFilter();
 	    	assertNotNull( firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=",Boolean.TRUE}});
@@ -121,7 +121,7 @@ public class DynamicTypeTest extends RaplaTestCase {
     	}
     	{
     		Thread.sleep(100);
-	    	CalendarSelectionModel model =  getClientService().getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model =  getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();
     	}
 //    	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();
@@ -150,7 +150,7 @@ public class DynamicTypeTest extends RaplaTestCase {
    		facade.store( modified);
    	}
    	{
-	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
 	    	ClassificationFilter firstFilter = allocType.newClassificationFilter();
 	    	assertNotNull( firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=","t"}});
@@ -176,7 +176,7 @@ public class DynamicTypeTest extends RaplaTestCase {
             DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
             InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(facade, i18n, raplaLocale, logger, permissionController, infoFactory, raplaImages);
-	    	CalendarSelectionModel model = getClientService().getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;

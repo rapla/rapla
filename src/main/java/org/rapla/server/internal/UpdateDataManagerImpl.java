@@ -12,40 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TimeZone;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.PermissionContainer.Util;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -54,12 +28,7 @@ import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.*;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -69,6 +38,11 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -615,10 +589,9 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
     {
     }
 
-    static public void convertToNewPluginConfig(RaplaContext context, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
+    static public void convertToNewPluginConfig(ClientFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
             throws RaplaContextException
     {
-        ClientFacade facade = context.lookup(ClientFacade.class);
         try
         {
             PreferencesImpl clone = (PreferencesImpl) facade.edit(facade.getSystemPreferences());
@@ -632,7 +605,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
             // we split the config entry in the plugin config and the new config entry;
             if (pluginConfig != null)
             {
-                context.lookup(Logger.class).info("Converting plugin conf " + className + " to preference entry " + newConfKey);
+                logger.info("Converting plugin conf " + className + " to preference entry " + newConfKey);
                 newPluginConfigEntry.removeChild(pluginConfig);
                 boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
                 RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());

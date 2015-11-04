@@ -35,6 +35,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JTree;
@@ -91,6 +92,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.StorageOperator;
 
+@Singleton
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private final PermissionController permissionController;

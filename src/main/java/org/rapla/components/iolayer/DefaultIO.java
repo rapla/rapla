@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import java.net.URL;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.PrintException;
@@ -49,6 +50,7 @@ import javax.swing.filechooser.FileFilter;
 
 import org.rapla.framework.logger.Logger;
 
+@Singleton
 public class DefaultIO  implements IOInterface{
     static DocFlavor flavor = DocFlavor.SERVICE_FORMATTED.PRINTABLE;
     /**

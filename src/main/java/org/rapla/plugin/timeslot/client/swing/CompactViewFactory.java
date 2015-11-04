@@ -17,6 +17,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
@@ -44,6 +45,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
+@Singleton
 @Extension(provides = SwingViewFactory.class, id = TimeslotPlugin.WEEK_TIMESLOT)
 public class CompactViewFactory implements SwingViewFactory
 {

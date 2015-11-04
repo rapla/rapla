@@ -40,7 +40,6 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.ResourceSelection.ResourceSelectionFactory;
-import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
@@ -57,6 +56,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.UpdateResult;
@@ -81,7 +81,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
     @Inject
-    public CalendarEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface) throws RaplaException {
+    public CalendarEditor(StartupEnvironment environment,RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
 
@@ -114,7 +114,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 	      };
 
 	      
-        final RaplaMenu viewMenu = getService( InternMenus.VIEW_MENU_ROLE);
+        final RaplaMenu viewMenu = menuBar.getViewMenu();
         ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
         ownReservationsMenu.setText( getString("only_own_reservations"));
         ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
@@ -208,7 +208,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         JPanel jp = new JPanel();
         jp.setLayout( new BorderLayout());
         
-        savedViews = new SavedCalendarView(facade, i18n, raplaLocale, logger, calendarContainer, resourceSelection, model, extensionFactories, infoFactory, raplaImages, dialogUiFactory, ioInterface);
+        savedViews = new SavedCalendarView(menuBar,facade, i18n, raplaLocale, logger, calendarContainer, resourceSelection, model, extensionFactories,
+                environment, infoFactory, raplaImages, dialogUiFactory, ioInterface);
         jp.add( savedViews.getComponent(), BorderLayout.CENTER );
         templatePanel.setVisible( false);
         jp.add( templatePanel, BorderLayout.WEST );

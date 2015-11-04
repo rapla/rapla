@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.client.swing.internal.common.InternMenus;
+
 import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Iterator;

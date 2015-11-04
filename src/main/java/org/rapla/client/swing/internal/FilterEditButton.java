@@ -116,8 +116,7 @@ public class FilterEditButton extends RaplaGUIComponent
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final TreeFactory treeFactory;
-        private final ClassifiableFilter filter;
-        private final ChangeListener listener;
+
         private final RaplaImages raplaImages;
         private final DateFieldFactory dateFieldFactory;
         private final BooleanFieldFactory booleanFieldFactory;
@@ -127,7 +126,7 @@ public class FilterEditButton extends RaplaGUIComponent
 
         @Inject
         public FilterEditButtonFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
-                ClassifiableFilter filter, ChangeListener listener, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
+                 RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
                 BooleanFieldFactory booleanFieldFactory, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory,
                 LongFieldFactory longFieldFactory)
         {
@@ -137,8 +136,6 @@ public class FilterEditButton extends RaplaGUIComponent
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.treeFactory = treeFactory;
-            this.filter = filter;
-            this.listener = listener;
             this.raplaImages = raplaImages;
             this.dateFieldFactory = dateFieldFactory;
             this.booleanFieldFactory = booleanFieldFactory;
@@ -147,7 +144,7 @@ public class FilterEditButton extends RaplaGUIComponent
             this.longFieldFactory = longFieldFactory;
         }
 
-        public FilterEditButton create(boolean isResourceSelection)
+        public FilterEditButton create(ClassifiableFilter filter,boolean isResourceSelection,ChangeListener listener)
         {
             return new FilterEditButton(facade, i18n, raplaLocale, logger, treeFactory, filter, listener, raplaImages, dateFieldFactory, booleanFieldFactory,
                     dialogUiFactory, isResourceSelection, textFieldFactory, longFieldFactory);

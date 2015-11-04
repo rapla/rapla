@@ -6,8 +6,6 @@ import org.rapla.framework.TypedComponentRole;
 
 public interface InternMenus
 {
-    public static final TypedComponentRole<RaplaMenubar> MENU_BAR = new TypedComponentRole<RaplaMenubar>("org.rapla.client.swing.gui.MenuBar");
-
     public static final TypedComponentRole<RaplaMenu> FILE_MENU_ROLE = new TypedComponentRole<RaplaMenu>("org.rapla.client.swing.gui.SystemMenu");
     public static final TypedComponentRole<RaplaMenu> EXTRA_MENU_ROLE = new TypedComponentRole<RaplaMenu>("org.rapla.client.swing.gui.ExtraMenu");
     public static final TypedComponentRole<RaplaMenu> VIEW_MENU_ROLE =new TypedComponentRole<RaplaMenu>("org.rapla.client.swing.gui.ViewMenu");

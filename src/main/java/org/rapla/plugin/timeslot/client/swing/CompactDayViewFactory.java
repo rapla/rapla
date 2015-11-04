@@ -16,6 +16,7 @@ import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
@@ -43,6 +44,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
+@Singleton
 @Extension(provides = SwingCalendarView.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class CompactDayViewFactory implements SwingViewFactory
 {

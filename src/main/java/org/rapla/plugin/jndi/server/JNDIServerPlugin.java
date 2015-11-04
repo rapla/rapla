@@ -13,22 +13,23 @@
 package org.rapla.plugin.jndi.server;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.server.internal.UpdateDataManagerImpl;
 
 public class JNDIServerPlugin  {
     
-    private void convertSettings(RaplaContext context,Configuration config) throws RaplaContextException
+    private void convertSettings(ClientFacade facade, Logger logger,Configuration config) throws RaplaContextException
     {
         String className = JNDIPlugin.class.getName();
         TypedComponentRole<RaplaConfiguration> newConfKey = JNDIPlugin.JNDISERVER_CONFIG;
         if ( config.getAttributeNames().length > 2)
         {
-            UpdateDataManagerImpl.convertToNewPluginConfig(context, className, newConfKey);
+            UpdateDataManagerImpl.convertToNewPluginConfig(facade,logger, className, newConfKey);
         }
     }
     

@@ -302,7 +302,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         content.setDividerLocation(0.3);
 
         calendarModel = originalModel.clone();
-        filter = filterEditButtonFactory.create(true);
+        filter = filterEditButtonFactory.create(calendarModel,true,listener);
         leftPanel.add(filter.getButton(), "4,0,r,f");
         //		filterAction = new FilterAction(getContext(), getComponent(), null);
         //		filterAction.setFilter(calendarModel);

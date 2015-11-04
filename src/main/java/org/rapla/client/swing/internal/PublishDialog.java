@@ -52,11 +52,12 @@ public class PublishDialog extends RaplaGUIComponent
 	PublishExtension addressCreator= null;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
+    StartupEnvironment environment;
 
-
-    public PublishDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException
+    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.environment = environment;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         if ( !isModifyPreferencesAllowed() ) {
@@ -76,8 +77,7 @@ public class PublishDialog extends RaplaGUIComponent
     String getAddress(String filename, String generator) {
         try 
         {
-            StartupEnvironment env = getService( StartupEnvironment.class );
-            URL codeBase = env.getDownloadURL();
+            URL codeBase = environment.getDownloadURL();
 
             String pageParameters = "page="+generator+"&user=" + getUser().getUsername();
             if ( filename != null)

@@ -13,24 +13,6 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.Vector;
-import java.util.concurrent.Semaphore;
-
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaClient;
 import org.rapla.RaplaResources;
@@ -83,6 +65,22 @@ import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RestartServer;
 import org.rapla.storage.dbrm.StatusUpdater;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.Semaphore;
 
 /** Implementation of the ClientService.
 */
@@ -142,8 +140,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         return m_context;
     }
 
-
-
     @Override
     protected void initialize() throws Exception {
         super.initialize();
@@ -159,7 +155,6 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
                 return hasRole( role);
             }
         };
-        addContainerProvidedComponentInstance(RaplaContext.class, m_context);
         advanceLoading(false);
     	StartupEnvironment env = lookup(StartupEnvironment.class);
         int startupMode = env.getStartupMode();
@@ -184,43 +179,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
     	defaultLanguageChoosen = true;
     	getLogger().info("Starting gui ");
 		
-    	addContainerProvidedComponent(WELCOME_FIELD, LicenseInfoUI.class);
-        addContainerProvidedComponent(RaplaImages.class, RaplaImages.class);
+    	addContainerProvidedComponent(RaplaImages.class, RaplaImages.class);
         addContainerProvidedComponent(FrameControllerList.class, FrameControllerList.class);
-        addContainerProvidedComponent(MAIN_COMPONENT, RaplaFrame.class);
-
-        RaplaMenubar menuBar = new RaplaMenubar();
-
-        RaplaMenu systemMenu =  new RaplaMenu( InternMenus.FILE_MENU_ROLE.getId() );
-        RaplaMenu editMenu = new RaplaMenu( InternMenus.EDIT_MENU_ROLE.getId() );
-        editMenu.add( new RaplaSeparator("EDIT_BEGIN"));
-        editMenu.add( new RaplaSeparator("EDIT_END"));
-        RaplaMenu viewMenu = new RaplaMenu( InternMenus.VIEW_MENU_ROLE.getId() );
-        RaplaMenu helpMenu = new RaplaMenu( InternMenus.EXTRA_MENU_ROLE.getId() );
-
-        RaplaMenu newMenu = new RaplaMenu( InternMenus.NEW_MENU_ROLE.getId() );
-        RaplaMenu settingsMenu = new RaplaMenu( InternMenus.CALENDAR_SETTINGS.getId());
-        RaplaMenu adminMenu = new RaplaMenu( InternMenus.ADMIN_MENU_ROLE.getId() );
-        RaplaMenu importMenu = new RaplaMenu( InternMenus.IMPORT_MENU_ROLE.getId());
-        RaplaMenu exportMenu = new RaplaMenu( InternMenus.EXPORT_MENU_ROLE.getId());
-        
-        menuBar.add( systemMenu );
-        menuBar.add( editMenu );
-        menuBar.add( viewMenu );
-        menuBar.add( helpMenu );
-        
-        addContainerProvidedComponentInstance( SESSION_MAP, new HashMap<Object,Object>());
-
-        addContainerProvidedComponentInstance( InternMenus.MENU_BAR,  menuBar);
-        addContainerProvidedComponentInstance( InternMenus.FILE_MENU_ROLE, systemMenu );
-        addContainerProvidedComponentInstance( InternMenus.EDIT_MENU_ROLE,  editMenu);
-        addContainerProvidedComponentInstance( InternMenus.VIEW_MENU_ROLE,  viewMenu);
-        addContainerProvidedComponentInstance( InternMenus.ADMIN_MENU_ROLE,  adminMenu);
-        addContainerProvidedComponentInstance( InternMenus.IMPORT_MENU_ROLE, importMenu );
-        addContainerProvidedComponentInstance( InternMenus.EXPORT_MENU_ROLE, exportMenu );
-        addContainerProvidedComponentInstance( InternMenus.NEW_MENU_ROLE, newMenu );
-        addContainerProvidedComponentInstance( InternMenus.CALENDAR_SETTINGS, settingsMenu );
-        addContainerProvidedComponentInstance( InternMenus.EXTRA_MENU_ROLE, helpMenu );
 
         final StorageOperator storageOperator = getContext().lookup(StorageOperator.class);
         ((FacadeImpl)getFacade()).setOperator( storageOperator);
@@ -366,7 +326,8 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         javax.swing.ToolTipManager.sharedInstance().setReshowDelay( 0 );
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
 
-        RaplaFrame mainComponent = getContext().lookup( MAIN_COMPONENT );
+        RaplaFrame mainComponent = inject(RaplaFrame.class);
+        RaplaGUIComponent.setMainComponent( mainComponent);
         mainComponent.addWindowListener(new WindowAdapter() {
             public void windowClosed(WindowEvent e) {
                 try {
@@ -520,6 +481,7 @@ public class RaplaClientServiceImpl extends RaplaClient implements ClientService
         if (!started)
             return;
 
+        RaplaGUIComponent.setMainComponent( null );
         try {
             ClientFacade facade = getFacade();
             facade.removeUpdateErrorListener( this);

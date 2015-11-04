@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
-import java.net.URL;
-import java.net.URLDecoder;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
@@ -23,6 +20,9 @@ import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+
+import java.net.URL;
+import java.net.URLDecoder;
 
 
 public class MainWebclient  
@@ -75,8 +75,7 @@ public class MainWebclient
     protected void startRapla( ConnectInfo connectInfo) throws Exception, RaplaContextException {
         final RaplaClientServiceImpl clientContainer = new RaplaClientServiceImpl( env );
         this.raplaContainer = clientContainer;
-        ClientService client =  clientContainer.getContext().lookup( ClientService.class);
-        client.addRaplaClientListener(new RaplaClientListenerAdapter() {
+        clientContainer.addRaplaClientListener(new RaplaClientListenerAdapter() {
                 public void clientClosed(ConnectInfo reconnect) {
                     if ( reconnect != null) {
                         clientContainer.dispose();

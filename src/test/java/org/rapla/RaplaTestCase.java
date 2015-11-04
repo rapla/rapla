@@ -76,7 +76,7 @@ public abstract class RaplaTestCase extends TestCase {
     }
    
     protected RaplaContext getContext() {
-        return raplaContainer.getContext();
+        return null;
     }
 
     protected SerializableDateTimeFormat formater() {

@@ -17,6 +17,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
@@ -43,6 +44,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 
+@Singleton
 @Extension(provides = SwingViewFactory.class, id = CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
 public class CompactWeekViewFactory implements SwingViewFactory
 {

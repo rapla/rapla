@@ -25,6 +25,10 @@
 	</source>
 	<source path='client'>
 		<exclude name='**/swing/**' />
+		<exclude name='internal/RaplaClientServiceImpl.java' />
+		<exclude name='internal/CountryChooser.java' />
+		<exclude name='ClientService.java' />
+		<exclude name='Main*.java'/>
 	</source>
 	<source path='components/xmlbundle/impl' />
     <source path='framework/internal' includes="AbstractRaplaLocale.java" />
@@ -70,7 +74,7 @@
 	<inherits name='org.gwtbootstrap3.extras.datetimepicker.DateTimePicker'/>
 	<inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>
 	<!-- Specify the paths for translatable code -->
-	<inherits name='org.rapla.gwtjsonrpc.gwtjsonrpc'/>
+	<inherits name='org.rapla.jsonrpc.jsonrpc'/>
 	<inherits name='org.rapla.inject.inject'/>
 	<!--
 	<inherits name='org.rapla.Rapla_generated'/>

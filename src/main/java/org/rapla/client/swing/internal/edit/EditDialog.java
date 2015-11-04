@@ -244,7 +244,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
             }
             catch (IllegalAnnotationException ex)
             {
-                showWarning(ex.getMessage(), dlg);
+                showWarning(ex.getMessage(), dlg,dialogUiFactory);
             }
             catch (RaplaException ex)
             {

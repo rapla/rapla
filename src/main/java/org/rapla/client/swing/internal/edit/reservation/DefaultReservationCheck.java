@@ -155,7 +155,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         }
         catch (RaplaException ex)
         {
-            showWarning( ex.getMessage(), ((SwingPopupContext)sourceComponent).getParent());
+            showWarning( ex.getMessage(), ((SwingPopupContext)sourceComponent).getParent(),dialogUiFactory);
             return false;
         }
     }

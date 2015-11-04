@@ -12,52 +12,42 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.print;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.util.Collection;
-import java.util.HashMap;
-
-import javax.inject.Inject;
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.ListSelectionModel;
-
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.util.Collection;
+import java.util.HashMap;
 
 
-public class ExportServiceList extends RaplaGUIComponent  {
+@Singleton
+public class ExportServiceList   {
 
     HashMap<Object,ExportService> exporters = new HashMap<Object,ExportService>();
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
-    /**
-     * @param sm
-     * @throws RaplaException
-     */
+    private final RaplaResources i18n;
+
     @Inject
-    public ExportServiceList(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
-        super(facade, i18n, raplaLocale, logger);
+    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+        this.i18n = i18n;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        boolean applet =(getService(StartupEnvironment.class)).getStartupMode() == StartupEnvironment.APPLET;
+        boolean applet =startupEnvironment.getStartupMode() == StartupEnvironment.APPLET;
         if (printInterface.supportsPostscriptExport() && !applet) {
-            PSExportService exportService = new PSExportService(facade, i18n, raplaLocale, logger, printInterface);
+            PSExportService exportService = new PSExportService( printInterface, i18n);
             addService("psexport",exportService);
         }
     }
@@ -71,17 +61,17 @@ public class ExportServiceList extends RaplaGUIComponent  {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-        panel.add(new JLabel(getString("weekview.print.choose_export")),BorderLayout.NORTH);
+        panel.add(new JLabel(i18n.getString("weekview.print.choose_export")),BorderLayout.NORTH);
         panel.add(list,BorderLayout.CENTER);
         setRenderer(list);
         list.setSelectedIndex(0);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         DialogUI dlg = dialogUiFactory.create(parentComponent,true,panel,
                                        new String[] {
-                                           getString("export")
-                                           ,getString("cancel")
+                                           i18n.getString("export")
+                                           ,i18n.getString("cancel")
                                            });
-        dlg.setTitle(getString("weekview.print.choose_export"));
+        dlg.setTitle(i18n.getString("weekview.print.choose_export"));
         dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
         dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
         dlg.start();
@@ -95,7 +85,7 @@ public class ExportServiceList extends RaplaGUIComponent  {
 
 	@SuppressWarnings("unchecked")
 	private void setRenderer(JList list) {
-		list.setCellRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+		list.setCellRenderer(new NamedListCellRenderer(i18n.getLocale()));
 	}
 
     public void addService(Object policy,ExportService exportService) {

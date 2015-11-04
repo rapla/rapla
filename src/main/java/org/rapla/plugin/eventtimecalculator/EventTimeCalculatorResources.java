@@ -3,6 +3,7 @@ package org.rapla.plugin.eventtimecalculator;
 import java.util.Locale;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
@@ -10,6 +11,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
 
+@Singleton
 @Extension(provides = I18nBundle.class, id = EventTimeCalculatorPlugin.PLUGIN_ID) public class EventTimeCalculatorResources extends AbstractBundle
 {
     public static final String BUNDLENAME = EventTimeCalculatorPlugin.PLUGIN_ID + ".EventTimeCalculatorResources";

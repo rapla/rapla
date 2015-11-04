@@ -32,7 +32,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
@@ -54,7 +53,7 @@ public class MainFrame extends RaplaGUIComponent
         ModificationListener
 {
     RaplaMenuBar menuBar;
-    RaplaFrame frame = null;
+    private final RaplaFrame frame ;
     Listener listener = new Listener();
     CalendarEditor cal;
     JLabel statusBar = new JLabel("");
@@ -62,13 +61,13 @@ public class MainFrame extends RaplaGUIComponent
     private final FrameControllerList frameControllerList;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-    public MainFrame(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public MainFrame(RaplaMenuBarContainer menuBarContainer,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactory dialogUiFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
         this.frameControllerList = frameControllerList;
         this.dialogUiFactory = dialogUiFactory;
-        frame =  getService( ClientService.MAIN_COMPONENT );
+        frame =  (RaplaFrame)getMainComponent();
         String title = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
         // CKO TODO Title should be set in config along with the facade used
         frame.setTitle(title );
@@ -76,7 +75,7 @@ public class MainFrame extends RaplaGUIComponent
         cal = editor;
         getUpdateModule().addModificationListener(this);
 
-        JMenuBar menuBar = getService( InternMenus.MENU_BAR);
+        JMenuBar menuBar = menuBarContainer.getMenubar();
         menuBar.add(Box.createHorizontalGlue());
         menuBar.add(statusBar);
         menuBar.add(Box.createHorizontalStrut(5));

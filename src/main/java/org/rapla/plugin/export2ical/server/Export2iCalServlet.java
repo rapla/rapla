@@ -29,7 +29,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
@@ -92,14 +91,6 @@ public class Export2iCalServlet  implements RaplaPageExtension
 		lastModifiedIntervall = config.getChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL).getValueAsInteger(10);
     }
     
-	public static RaplaContext createLoggerContext(RaplaContext context) throws RaplaContextException
-	{
-		Logger logger = context.lookup(Logger.class);
-		RaplaDefaultContext newContext = new RaplaDefaultContext( context);
-		newContext.put(Logger.class, logger.getChildLogger("ical"));
-		return newContext;
-	}
-
 	public Logger getLogger()
 	{
 		return logger;

@@ -212,7 +212,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                             AttributeType type = attribute.getType();
                             if ( type != AttributeType.STRING  && type != AttributeType.CATEGORY)
                             {
-                                showWarning("Only string or category types are allowed for color attribute", getComponent());
+                                showWarning("Only string or category types are allowed for color attribute", getComponent(),dialogUiFactory);
                                 colorChooser.setSelectedIndex(2);
                                 return;
                             }

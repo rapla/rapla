@@ -51,6 +51,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.CalendarEditor;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
+import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -126,17 +127,17 @@ public class MultiCalendarView extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     
-    public MultiCalendarView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
+    public MultiCalendarView(final RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
             CalendarEditor calendarEditor, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory,
             BooleanFieldFactory booleanFieldFactory, final Set<SwingViewFactory> factoryList, FilterEditButtonFactory filterEditButtonFactory)
                     throws RaplaException
     {
-        this(facade, i18n, raplaLocale, logger, model, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, factoryList,
+        this(menuBar,facade, i18n, raplaLocale, logger, model, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, factoryList,
                 filterEditButtonFactory, true);
         this.calendarEditor = calendarEditor;
     }
 
-    public MultiCalendarView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
+    public MultiCalendarView(final RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
             RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
             final Set<SwingViewFactory> factoryList, FilterEditButtonFactory filterEditButtonFactory, boolean editable) throws RaplaException
     {
@@ -158,7 +159,7 @@ public class MultiCalendarView extends RaplaGUIComponent
 	             }
 	         }
          }
-        RaplaMenu view = getService( InternMenus.VIEW_MENU_ROLE);
+        RaplaMenu view = menuBar.getViewMenu();
         if ( !view.hasId( "views") ) 
         {
             addMenu( model, ids, view );
@@ -167,7 +168,8 @@ public class MultiCalendarView extends RaplaGUIComponent
         addTypeChooser( ids );
         header.setLayout(new BorderLayout());
         header.add( viewChooser, BorderLayout.CENTER);
-        filter = filterEditButtonFactory.create(false);
+        final ChangeListener listener = this;
+        filter = filterEditButtonFactory.create(model,false, listener);
         final JPanel filterContainer = new JPanel();
         filterContainer.setLayout( new BorderLayout());
         filterContainer.add(filter.getButton(), BorderLayout.WEST);
@@ -456,11 +458,12 @@ public class MultiCalendarView extends RaplaGUIComponent
         private final Set<SwingViewFactory> factoryList;
         private final BooleanFieldFactory booleanFieldFactory;
         private final FilterEditButtonFactory filterEditButtonFactory;
+        private final RaplaMenuBarContainer menuBar;
 
         @Inject
         public MultiCalendarViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
                 RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, final Set<SwingViewFactory> factoryList,
-                BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory)
+                BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
         {
             this.facade = facade;
             this.i18n = i18n;
@@ -473,17 +476,18 @@ public class MultiCalendarView extends RaplaGUIComponent
             this.factoryList = factoryList;
             this.booleanFieldFactory = booleanFieldFactory;
             this.filterEditButtonFactory = filterEditButtonFactory;
+            this.menuBar = menuBar;
         }
 
         public MultiCalendarView create(boolean editable)
         {
-            return new MultiCalendarView(facade, i18n, raplaLocale, logger, model, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory,
+            return new MultiCalendarView(menuBar,facade, i18n, raplaLocale, logger, model, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory,
                     factoryList, filterEditButtonFactory, editable);
         }
 
         public MultiCalendarView create(CalendarEditor calendarEditor)
         {
-            return new MultiCalendarView(facade, i18n, raplaLocale, logger, model, calendarEditor, raplaImages, dateFieldFactory, dialogUiFactory,
+            return new MultiCalendarView(menuBar,facade, i18n, raplaLocale, logger, model, calendarEditor, raplaImages, dateFieldFactory, dialogUiFactory,
                     booleanFieldFactory, factoryList, filterEditButtonFactory);
         }
     }
