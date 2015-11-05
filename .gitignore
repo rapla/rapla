@@ -18,7 +18,6 @@
 rapla.iml
 /src/test/logs/
 bin/
-.factorypath
 src/main/gwt-jre/gwt-jre.iml
 src/main/main.iml
 src/test/test.iml
