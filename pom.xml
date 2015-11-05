@@ -69,6 +69,7 @@
 		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
 		<doc.homepage>http://rapla.org</doc.homepage>
+		<rapla.module>moduleDescription</rapla.module>
 	</properties>
 	<distributionManagement>
 		<snapshotRepository>
@@ -211,6 +212,22 @@
 							</resources>
 						</configuration>
 					</execution>
+					<execution>
+						<id>copyModuleDescription</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/WEB-INF/classes</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${basedir}/src/main/resources</directory>
+									<include>${rapla.module}</include>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -273,6 +290,7 @@
 								<exclude>**/storage/dbsql/**</exclude>
 								<exclude>**/servletpages/**</exclude>
 								<exclude>se/**</exclude>
+								<exclude>**/${rapla.module}</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -484,7 +502,6 @@
 							<attach>true</attach>
 						</configuration>
 					</execution>
-
 				</executions>
 			</plugin>
 			<plugin>

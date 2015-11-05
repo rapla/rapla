@@ -10,6 +10,9 @@
 		<fileSet>
 			<directory>${project.build.directory}/classes</directory>
 			<outputDirectory></outputDirectory>
+			<excludes>
+				<exclude>${rapla.module}</exclude>
+			</excludes>
 			<includes>
 			 <include>**/*</include>
 			</includes>
