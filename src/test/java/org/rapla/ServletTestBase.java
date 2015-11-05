@@ -2,8 +2,6 @@ package org.rapla;
 
 import java.io.File;
 
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.server.MainServlet;
 import org.rapla.server.internal.ServerServiceImpl;
@@ -69,25 +67,15 @@ public abstract class ServletTestBase extends TestCase
 //        }
     }
     
-    protected RaplaContext getContext()
-    {
-        throw new IllegalStateException();
-        //return mainServlet.getContext();
-    }
-    
+
     protected ServerServiceImpl getContainer()
     {
         throw new IllegalStateException();
         //return mainServlet.getContainer();
     }
 
-
-	protected <T> T getService(Class<T> role) throws RaplaException {
-	    return getContext().lookup( role);
-	}
-
 	protected RaplaLocale getRaplaLocale() throws Exception {
-        return getContext().lookup(RaplaLocale.class);
+        throw new IllegalStateException();
     }
 
     

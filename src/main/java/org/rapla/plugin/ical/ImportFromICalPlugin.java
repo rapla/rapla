@@ -13,7 +13,7 @@ public class ImportFromICalPlugin {
 //        isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
 //    }
 
-//	public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
+//	public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaXMLContextException {
 //		if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
 //			return;
 //

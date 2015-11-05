@@ -26,7 +26,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 
@@ -36,7 +35,7 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
      * @param sm
      * @throws RaplaException
      */
-    public RaplaCalendarSettingsWriter(RaplaContext sm) throws RaplaException {
+    public RaplaCalendarSettingsWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

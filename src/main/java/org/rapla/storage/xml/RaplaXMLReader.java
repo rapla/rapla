@@ -39,8 +39,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -59,7 +57,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     private SerializableDateTimeFormat dateTimeFormat;
     private RaplaResources i18n;
     private Date now;
-    private RaplaContext context;
+    private RaplaXMLContext context;
     
     public static class TimestampDates
     {
@@ -79,13 +77,13 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             try {
                 Double version = context.lookup( VERSION);
                 return version <1.2;
-            } catch (RaplaContextException e) {
+            } catch (RaplaXMLContextException e) {
             }
         }
         return false;
     }
     
-    public RaplaXMLReader( RaplaContext context ) throws RaplaException
+    public RaplaXMLReader( RaplaXMLContext context ) throws RaplaException
     {
         this.context = context;
         logger = context.lookup( Logger.class );

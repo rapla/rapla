@@ -21,7 +21,6 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class AllocatableReader extends RaplaXMLReader
@@ -32,7 +31,7 @@ public class AllocatableReader extends RaplaXMLReader
 	private Annotatable currentAnnotatable;
 	private PermissionReader permissionHandler;
 	
-    public AllocatableReader( RaplaContext context ) throws RaplaException
+    public AllocatableReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
         dynAttHandler = new DynAttReader( context );

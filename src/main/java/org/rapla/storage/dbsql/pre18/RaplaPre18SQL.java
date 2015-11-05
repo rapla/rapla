@@ -64,7 +64,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.framework.RaplaContext;
+import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.OldIdMapping;
@@ -79,11 +79,11 @@ import org.rapla.storage.xml.RaplaXMLWriter;
 public class RaplaPre18SQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
     private final Logger logger;
-    RaplaContext context;
+    RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
     PeriodStorage periodStorage;
     
-    public RaplaPre18SQL( RaplaContext context) throws RaplaException{
+    public RaplaPre18SQL( RaplaXMLContext context) throws RaplaException{
     	this.context = context;
         logger =  context.lookup( Logger.class);
         // The order is important. e.g. appointments can only be loaded if the reservation they are refering to are already loaded.
@@ -208,7 +208,7 @@ public class RaplaPre18SQL {
 abstract class RaplaTypeStorage<T extends Entity<T>> extends OldEntityStorage<T> {
 	RaplaType raplaType;
 
-	RaplaTypeStorage( RaplaContext context, RaplaType raplaType, String tableName, String[] entries) throws RaplaException {
+	RaplaTypeStorage( RaplaXMLContext context, RaplaType raplaType, String tableName, String[] entries) throws RaplaException {
 		super( context,tableName, entries );
 		this.raplaType = raplaType;
 	}
@@ -247,7 +247,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends OldEntityStorage<T>
 @Deprecated
 class PeriodStorage extends OldEntityStorage {
 	Map<String,PeriodImpl> result = new LinkedHashMap<String,PeriodImpl>();
-    public PeriodStorage(RaplaContext context) throws RaplaException {
+    public PeriodStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,"PERIOD",new String[] {"ID INTEGER NOT NULL PRIMARY KEY","NAME VARCHAR(255) NOT NULL","PERIOD_START DATETIME NOT NULL","PERIOD_END DATETIME NOT NULL"});
     }
 
@@ -309,7 +309,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         }    
     );
     
-    public CategoryStorage(RaplaContext context) throws RaplaException {
+    public CategoryStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,Category.TYPE, "CATEGORY",new String[] {"ID INTEGER NOT NULL PRIMARY KEY","PARENT_ID INTEGER KEY","CATEGORY_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER"});
     }
     
@@ -386,7 +386,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
     PermissionStorage permissionStorage;
 
-    public AllocatableStorage(RaplaContext context ) throws RaplaException {
+    public AllocatableStorage(RaplaXMLContext context ) throws RaplaException {
         super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage( context, allocatableMap);
@@ -513,7 +513,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     // appointmentstorage is not a sub store but a delegate
 	AppointmentStorage appointmentStorage;
 
-    public ReservationStorage(RaplaContext context) throws RaplaException {
+    public ReservationStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Reservation.TYPE, "EVENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
@@ -586,7 +586,7 @@ class AttributeValueStorage<T extends Entity<T>> extends OldEntityStorage<T> {
     public final static String OLD_ANNOTATION_PREFIX = "annotation:";
   	public final static String ANNOTATION_PREFIX = "rapla:";
 	
-    public AttributeValueStorage(RaplaContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
+    public AttributeValueStorage(RaplaXMLContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
     	super(context, tablename, new String[]{foreignKeyName + " INTEGER NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(100)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
@@ -656,7 +656,7 @@ class AttributeValueStorage<T extends Entity<T>> extends OldEntityStorage<T> {
 @Deprecated
 class PermissionStorage extends OldEntityStorage<Allocatable>  {
     Map<String,Allocatable> allocatableMap;
-    public PermissionStorage(RaplaContext context,Map<String,Allocatable> allocatableMap) throws RaplaException {
+    public PermissionStorage(RaplaXMLContext context,Map<String,Allocatable> allocatableMap) throws RaplaException {
         super(context,"RESOURCE_PERMISSION",new String[] {"RESOURCE_ID INTEGER NOT NULL KEY","USER_ID INTEGER","GROUP_ID INTEGER","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.allocatableMap = allocatableMap;
     }
@@ -703,7 +703,7 @@ class PermissionStorage extends OldEntityStorage<Allocatable>  {
 class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     AppointmentExceptionStorage appointmentExceptionStorage;
     AllocationStorage allocationStorage;
-    public AppointmentStorage(RaplaContext context) throws RaplaException {
+    public AppointmentStorage(RaplaXMLContext context) throws RaplaException {
         super(context, Appointment.TYPE,"APPOINTMENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","EVENT_ID INTEGER NOT NULL KEY","APPOINTMENT_START DATETIME NOT NULL","APPOINTMENT_END DATETIME NOT NULL","REPETITION_TYPE VARCHAR(255)","REPETITION_NUMBER INTEGER","REPETITION_END DATETIME","REPETITION_INTERVAL INTEGER"});
         appointmentExceptionStorage = new AppointmentExceptionStorage(context);
         allocationStorage = new AllocationStorage( context);
@@ -754,7 +754,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 @Deprecated
 class AllocationStorage extends OldEntityStorage<Appointment>  {
 
-    public AllocationStorage(RaplaContext context) throws RaplaException  
+    public AllocationStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context,"ALLOCATION",new String [] {"APPOINTMENT_ID INTEGER NOT NULL KEY", "RESOURCE_ID INTEGER NOT NULL", "OPTIONAL INTEGER"});
     }
@@ -796,7 +796,7 @@ class AllocationStorage extends OldEntityStorage<Appointment>  {
  }
 @Deprecated
 class AppointmentExceptionStorage extends OldEntityStorage<Appointment>  {
-    public AppointmentExceptionStorage(RaplaContext context) throws RaplaException {
+    public AppointmentExceptionStorage(RaplaXMLContext context) throws RaplaException {
         super(context,"APPOINTMENT_EXCEPTION",new String [] {"APPOINTMENT_ID INTEGER NOT NULL KEY","EXCEPTION_DATE DATETIME NOT NULL"});
     }
 
@@ -823,7 +823,7 @@ class AppointmentExceptionStorage extends OldEntityStorage<Appointment>  {
 @Deprecated
 class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
-    public DynamicTypeStorage(RaplaContext context) throws RaplaException {
+    public DynamicTypeStorage(RaplaXMLContext context) throws RaplaException {
         super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL"});
     }
 
@@ -845,7 +845,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 @Deprecated
 class PreferenceStorage extends RaplaTypeStorage<Preferences> 
 {
-    public PreferenceStorage(RaplaContext context) throws RaplaException {
+    public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Preferences.TYPE,"PREFERENCE",
 	    new String [] {"USER_ID INTEGER KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT"});
     }
@@ -929,7 +929,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 @Deprecated
 class UserStorage extends RaplaTypeStorage<User> {
     UserGroupStorage groupStorage;
-    public UserStorage(RaplaContext context) throws RaplaException {
+    public UserStorage(RaplaXMLContext context) throws RaplaException {
         super( context,User.TYPE, "RAPLA_USER",
 	    new String [] {"ID INTEGER NOT NULL PRIMARY KEY","USERNAME VARCHAR(100) NOT NULL","PASSWORD VARCHAR(100)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL"});
         groupStorage = new UserGroupStorage( context );
@@ -972,7 +972,7 @@ class UserStorage extends RaplaTypeStorage<User> {
 }
 @Deprecated
 class UserGroupStorage extends OldEntityStorage<User> {
-    public UserGroupStorage(RaplaContext context) throws RaplaException {
+    public UserGroupStorage(RaplaXMLContext context) throws RaplaException {
         super(context,"RAPLA_USER_GROUP", new String [] {"USER_ID INTEGER NOT NULL KEY","CATEGORY_ID INTEGER NOT NULL"});
     }
 

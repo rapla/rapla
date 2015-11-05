@@ -111,8 +111,7 @@ public class ServerStarter
                 backendContext.shutdownService = new ShutdownServiceImpl();
             }
             server = create();
-            //final RaplaContext context = raplaContainer.getContext();
-            final Logger logger = server.getLogger(); 
+            final Logger logger = server.getLogger();
             {
                 logger.info("Rapla server started");
 

@@ -22,7 +22,6 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
@@ -36,7 +35,7 @@ public class PreferenceReader extends RaplaXMLReader {
     RaplaXMLReader childReader;
     String stringValue = null;
 
-    public PreferenceReader(RaplaContext sm) throws RaplaException {
+    public PreferenceReader(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
     

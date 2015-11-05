@@ -22,12 +22,11 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class UserWriter extends RaplaXMLWriter {
     
-    public UserWriter(RaplaContext sm) throws RaplaException {
+    public UserWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

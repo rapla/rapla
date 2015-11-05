@@ -18,14 +18,13 @@ import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.SAXConfigurationHandler;
 
 public class RaplaConfigurationReader extends RaplaXMLReader  {
     boolean delegating = false;
     
-    public RaplaConfigurationReader(RaplaContext context) throws RaplaException {
+    public RaplaConfigurationReader(RaplaXMLContext context) throws RaplaException {
         super(context);
     }
     

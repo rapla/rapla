@@ -13,34 +13,6 @@
 
 package org.rapla.client.swing.internal.print;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.Graphics;
-import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.print.PageFormat;
-import java.awt.print.Paper;
-import java.awt.print.Printable;
-import java.awt.print.PrinterException;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -55,11 +27,36 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.AbstractAction;
+import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.util.Map;
 
 
 public class CalendarPrintDialog extends DialogUI
@@ -193,8 +190,6 @@ public class CalendarPrintDialog extends DialogUI
         }
 
         SwingViewFactory factory = factoryMap.get( model.getViewId());
-        RaplaDefaultContext contextWithPrintInfo = new RaplaDefaultContext();
-        contextWithPrintInfo.put(SwingViewFactory.PRINT_CONTEXT, new Boolean(true));
         currentView = factory.createSwingView( model, false);
         if ( currentView instanceof Printable)
         {

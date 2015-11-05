@@ -1,10 +1,5 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.calendar.RaplaNumber;
@@ -12,11 +7,15 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 /**
  * ****************************************************************************
@@ -37,7 +36,7 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
     EventTimeCalculatorResources eventTimei18n;
 
 
-    public EventTimeCalculatorOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean adminOptions, EventTimeCalculatorResources eventTimei18n) throws RaplaContextException
+    public EventTimeCalculatorOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean adminOptions, EventTimeCalculatorResources eventTimei18n)
     {
         super(facade, i18n, raplaLocale, logger);
         this.adminOptions = adminOptions;

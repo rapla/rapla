@@ -15,7 +15,6 @@ package org.rapla.plugin.jndi.server;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
@@ -23,7 +22,7 @@ import org.rapla.server.internal.UpdateDataManagerImpl;
 
 public class JNDIServerPlugin  {
     
-    private void convertSettings(ClientFacade facade, Logger logger,Configuration config) throws RaplaContextException
+    private void convertSettings(ClientFacade facade, Logger logger,Configuration config)
     {
         String className = JNDIPlugin.class.getName();
         TypedComponentRole<RaplaConfiguration> newConfKey = JNDIPlugin.JNDISERVER_CONFIG;

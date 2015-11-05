@@ -23,7 +23,6 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class RaplaMapReader extends RaplaXMLReader  {
@@ -32,7 +31,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
     RaplaMapImpl entityMap;
     RaplaXMLReader childReader;
 
-    public RaplaMapReader(RaplaContext sm) throws RaplaException {
+    public RaplaMapReader(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

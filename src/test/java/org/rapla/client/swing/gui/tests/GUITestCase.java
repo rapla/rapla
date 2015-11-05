@@ -25,7 +25,6 @@ import org.rapla.client.swing.toolkit.FrameController;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.FrameControllerListener;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public abstract class GUITestCase extends RaplaTestCase {
@@ -36,7 +35,7 @@ public abstract class GUITestCase extends RaplaTestCase {
     }
     
     protected <T> T getService(Class<T> role) throws RaplaException {
-           return getContext().lookup( role);
+           return null;
     }
 
     protected PopupContext createPopupContext()
@@ -44,10 +43,6 @@ public abstract class GUITestCase extends RaplaTestCase {
         return new SwingPopupContext( null, null);
     }
 
-    protected RaplaContext getContext()
-    {
-        return null;
-    }
 
     public void interactiveTest(String methodName) {
         try {
@@ -55,7 +50,7 @@ public abstract class GUITestCase extends RaplaTestCase {
             ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
             try {
                 this.getClass().getMethod(methodName, new Class[] {}).invoke(this,new Object[] {});
-                waitUntilLastFrameClosed( getContext().lookup(FrameControllerList.class) );
+                waitUntilLastFrameClosed( getService(FrameControllerList.class) );
                 System.exit(0);
             } catch (Exception ex) {
                 getLogger().error(ex.getMessage(), ex);
@@ -104,7 +99,7 @@ public abstract class GUITestCase extends RaplaTestCase {
         Use this method for testing new GUI-Components.
      */
     public void testComponent(JComponent component,int x,int y) throws Exception{
-        FrameControllerList frameControllerList = getContext().lookup(FrameControllerList.class);
+        FrameControllerList frameControllerList = getService(FrameControllerList.class);
         RaplaFrame frame = new RaplaFrame(frameControllerList);
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(component, BorderLayout.CENTER);

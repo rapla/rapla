@@ -209,7 +209,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
     
     protected MenuContext createMenuContext(Point p, Object obj) {
-        MenuContext menuContext = new MenuContext(null, obj, new SwingPopupContext(getComponent(), p));
+        MenuContext menuContext = new MenuContext( obj, new SwingPopupContext(getComponent(), p));
         return menuContext;
     }
     

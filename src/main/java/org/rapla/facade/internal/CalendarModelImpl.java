@@ -93,11 +93,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
     String title;
     ClientFacade facade;
     String selectedView;
-    //RaplaContext context;
-    //RaplaLocale raplaLocale;
     User user;
     Map<String,String> optionMap = new HashMap<String,String>();
-    //Map<String,String> viewOptionMap = new HashMap<String,String>();
 
     boolean defaultEventTypes = true;
     boolean defaultResourceTypes = true;

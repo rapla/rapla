@@ -21,12 +21,10 @@ import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.MainFrame;
-import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.Command;
@@ -42,13 +40,10 @@ import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.UserModule;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
@@ -186,7 +181,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 
     }
 
-	public ClientFacade getFacade() throws RaplaContextException {
+	public ClientFacade getFacade()  {
         return  facade;
     }
 
@@ -341,7 +336,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     }
     */
     
-    private void initLanguage() throws RaplaException, RaplaContextException
+    private void initLanguage() throws RaplaException
     {
         ClientFacade facade = getFacade();
         if ( !defaultLanguageChoosen)

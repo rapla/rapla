@@ -26,7 +26,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
+import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
@@ -57,9 +57,8 @@ public class SQLOperatorRemoteTest extends ServerTest {
    }
    
    public void testExport() throws Exception {
-       RaplaContext context = getContext();
-       
-       ImportExportManager conv =  context.lookup(ImportExportManager.class);
+
+       ImportExportManager conv =  null;
        conv.doExport();
        {
            CachableStorageOperator operator = getRapladb();

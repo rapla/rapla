@@ -21,7 +21,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.storage.internal.ReferenceHandler;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class PermissionReader extends RaplaXMLReader
@@ -29,7 +28,7 @@ public class PermissionReader extends RaplaXMLReader
 	
     PermissionContainer permissionContainer;
     
-    public PermissionReader( RaplaContext context ) throws RaplaException
+    public PermissionReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
     }

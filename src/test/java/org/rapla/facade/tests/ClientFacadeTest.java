@@ -63,7 +63,7 @@ public class ClientFacadeTest extends RaplaTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        facade = getContext().lookup(ClientFacade.class );
+        facade = getFacade();
         facade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
     }

@@ -341,7 +341,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         if ( selectedEvents.size() == 1) {
             focusedObject = selectedEvents.get( 0);
         }
-        MenuContext menuContext = new MenuContext( null, focusedObject, new SwingPopupContext(getComponent(),p));
+        MenuContext menuContext = new MenuContext(  focusedObject, new SwingPopupContext(getComponent(),p));
         menuContext.setSelectedObjects( selectedEvents);
 
         // add the new reservations wizards

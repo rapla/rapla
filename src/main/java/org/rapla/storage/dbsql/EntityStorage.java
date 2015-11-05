@@ -42,8 +42,8 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaContextException;
+import org.rapla.storage.xml.RaplaXMLContextException;
+import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -64,7 +64,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     String deleteAllSql;
     //String searchForIdSql;
 
-    RaplaContext context;
+    RaplaXMLContext context;
     protected LocalCache cache;
     protected EntityStore entityStore;
     private RaplaLocale raplaLocale;
@@ -80,7 +80,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     Calendar datetimeCal;
     
-    protected EntityStorage( RaplaContext context, String table,String[] entries) throws RaplaException {
+    protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
         this.context = context;
         if ( context.has( EntityStore.class))
         {
@@ -913,7 +913,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected <S> S lookup( TypedComponentRole<S> role) throws RaplaException {
         try {
             return context.lookup( role);
-        } catch (RaplaContextException e) {
+        } catch (RaplaXMLContextException e) {
             throw new RaplaException( e);
         }
     }
@@ -921,7 +921,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected <S> S lookup( Class<S> role) throws RaplaException {
         try {
             return context.lookup( role);
-        } catch (RaplaContextException e) {
+        } catch (RaplaXMLContextException e) {
             throw new RaplaException( e);
         }
 

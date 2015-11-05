@@ -12,15 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
-import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-
-import java.util.Map;
 
 /** This service starts and manages the rapla-gui-client.
  */
@@ -31,13 +25,11 @@ public interface ClientService
     void addRaplaClientListener(RaplaClientListener listener);
     void removeRaplaClientListener(RaplaClientListener listener);
 
-    ClientFacade getFacade() throws RaplaContextException;
+    ClientFacade getFacade();
     /** setup a component with the services logger,context and servicemanager */
     boolean isRunning();
     
-    /** the admin can switch to another user!
-     * @throws RaplaContextException 
-     * @throws RaplaException */
+    /** the admin can switch to another user!*/
     void switchTo(User user) throws  RaplaException;
     /** returns true if the admin has switched to anoter user!*/
     boolean canSwitchBack();

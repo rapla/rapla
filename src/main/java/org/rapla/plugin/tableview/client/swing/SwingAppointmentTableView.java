@@ -15,7 +15,6 @@ import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisabledGlassPane;
 import org.rapla.client.swing.toolkit.MenuInterface;
@@ -36,11 +35,9 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
@@ -424,7 +421,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
     }
 
-    protected void updateMenu(MenuInterface editMenu, MenuInterface newMenu, Point p) throws RaplaException, RaplaContextException
+    protected void updateMenu(MenuInterface editMenu, MenuInterface newMenu, Point p) throws RaplaException
     {
         List<AppointmentBlock> selectedEvents = getSelectedEvents();
         AppointmentBlock focusedObject = null;
@@ -433,8 +430,8 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             focusedObject = selectedEvents.get(0);
         }
 
-        MenuContext menuContext = new MenuContext(null, focusedObject, new SwingPopupContext(getComponent(), p));
-        menuContext.put(RaplaCalendarViewListener.SELECTED_DATE, focusedObject != null ? new Date(focusedObject.getStart()) : new Date());
+        MenuContext menuContext = new MenuContext(focusedObject, new SwingPopupContext(getComponent(), p));
+        menuContext.setSelectedDate(focusedObject != null ? new Date(focusedObject.getStart()) : new Date());
         {
             menuContext.setSelectedObjects(selectedEvents);
         }

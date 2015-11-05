@@ -21,12 +21,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 
 public class ReservationWriter extends ClassifiableWriter {
-    public ReservationWriter(RaplaContext sm) throws RaplaException {
+    public ReservationWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

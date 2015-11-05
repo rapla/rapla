@@ -111,22 +111,6 @@ public abstract class RaplaBuilder
 	final private AppointmentFormater appointmentFormater;
     final private PermissionController permissionController;
 	
-//	public RaplaBuilder(RaplaContext context)  {
-//	    try
-//	    {
-//    	    raplaLocale = context.lookupDeprecated(RaplaLocale.class);
-//    	    clientFacade = context.lookupDeprecated(ClientFacade.class);
-//    	    i18n = context.lookupDeprecated(RaplaComponent.RAPLA_RESOURCES);
-//    	    logger = context.lookupDeprecated(Logger.class);
-//    	    appointmentFormater = context.lookupDeprecated( AppointmentFormater.class);
-//	    }
-//	    catch (RaplaException ex)
-//	    {
-//	        throw new IllegalStateException( ex);
-//	    }
-//	
-//    }
-//	
 	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController) {
         this.permissionController = permissionController;
         Locale locale = raplaLocale.getLocale();

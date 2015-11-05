@@ -1,19 +1,9 @@
 package org.rapla.rest.server;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -25,9 +15,16 @@ import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.internal.dagger.WebMethodProvider;
 import org.rapla.storage.RaplaSecurityException;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 
 
@@ -40,7 +37,7 @@ public class RaplaAPIPage implements RaplaPageExtension
     Logger logger;
 
     @Inject
-    public RaplaAPIPage(Logger logger, WebMethodProvider webservices) throws RaplaContextException {
+    public RaplaAPIPage(Logger logger, WebMethodProvider webservices)  {
         this.logger = logger;
         this.webservices = webservices;
       //  this.serverContainer = serverContainer;

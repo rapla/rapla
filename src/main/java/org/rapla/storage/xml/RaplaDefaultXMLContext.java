@@ -1,29 +1,31 @@
-package org.rapla.framework;
+package org.rapla.storage.xml;
+
+import org.rapla.framework.TypedComponentRole;
 
 import java.util.HashMap;
 
 
 
 
-public class RaplaDefaultContext implements RaplaContext
+public class RaplaDefaultXMLContext implements RaplaXMLContext
 {
     private final HashMap<String,Object> contextObjects = new HashMap<String,Object>();
-    protected final RaplaContext parent;
+    protected final RaplaXMLContext parent;
 
-    public RaplaDefaultContext()
+    public RaplaDefaultXMLContext()
     {
         this( null );
     }
 
-    public RaplaDefaultContext( final RaplaContext parent )
+    public RaplaDefaultXMLContext(final RaplaXMLContext parent)
     {
         this.parent = parent;
     }
 
 	/**
-	 * @throws RaplaContextException  
+	 * @throws RaplaXMLContextException
 	 */
-	protected Object lookup( final String key ) throws RaplaContextException
+	protected Object lookup( final String key ) throws RaplaXMLContextException
     {
         return contextObjects.get( key );
     }
@@ -59,7 +61,8 @@ public class RaplaDefaultContext implements RaplaContext
     }
     
     @SuppressWarnings("unchecked")
-    public <T> T lookup(Class<T> componentRole) throws RaplaContextException {
+    public <T> T lookup(Class<T> componentRole) throws RaplaXMLContextException
+    {
         final String key = componentRole.getName();
         T lookup = (T) lookup(key);
         if ( lookup == null)
@@ -70,7 +73,7 @@ public class RaplaDefaultContext implements RaplaContext
             }
             else
             {
-                throw new RaplaContextException(  key );     
+                throw new RaplaXMLContextException(  key );
             }
         }
         return lookup;
@@ -78,7 +81,8 @@ public class RaplaDefaultContext implements RaplaContext
 
     
     @SuppressWarnings("unchecked")
-    public <T> T lookup(TypedComponentRole<T> componentRole) throws RaplaContextException {
+    public <T> T lookup(TypedComponentRole<T> componentRole) throws RaplaXMLContextException
+    {
         final String key = componentRole.getId();
         T lookup = (T) lookup(key);
         if ( lookup == null)
@@ -89,7 +93,7 @@ public class RaplaDefaultContext implements RaplaContext
             }
             else
             {
-                throw new RaplaContextException(  key );     
+                throw new RaplaXMLContextException(  key );
             }
         }
         return lookup;

@@ -29,7 +29,6 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class ReservationReader extends RaplaXMLReader {
@@ -43,7 +42,7 @@ public class ReservationReader extends RaplaXMLReader {
 	private Annotatable currentAnnotatable;
 	private PermissionReader permissionHandler;
 
-    public ReservationReader( RaplaContext context) throws RaplaException  {
+    public ReservationReader( RaplaXMLContext context) throws RaplaException  {
         super( context);
         dynAttHandler = new DynAttReader( context);
         permissionHandler = new PermissionReader( context );

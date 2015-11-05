@@ -30,7 +30,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.internal.CalendarOptionsImpl;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
@@ -58,11 +57,6 @@ public class RaplaComponent
     ClientFacade facade;
 
     public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-//        try {
-//            logger = context.lookupDeprecated(Logger.class );
-//        } catch (RaplaContextException e) {
-//            logger = new ConsoleLogger();
-//        }
         this.facade = facade;
         this.i18n = i18n;
         this.logger = logger;
@@ -188,10 +182,6 @@ public class RaplaComponent
 
     protected Logger getLogger() {
         return logger;
-    }
-
-    protected UnsupportedOperationException serviceExcption(Object role, RaplaContextException e) {
-        return new UnsupportedOperationException("Service not supported in this context: " + role, e);
     }
 
     /** lookupDeprecated RaplaLocale from the context */

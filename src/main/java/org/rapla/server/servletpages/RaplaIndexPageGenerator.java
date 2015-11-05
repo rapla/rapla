@@ -3,27 +3,25 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.Tools;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.HtmlMainMenu;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Tools;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.HtmlMainMenu;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Extension(provides = RaplaPageExtension.class,id="index")
 public class RaplaIndexPageGenerator implements RaplaPageExtension
@@ -33,7 +31,7 @@ public class RaplaIndexPageGenerator implements RaplaPageExtension
 	
 	ClientFacade facade;
 	@Inject
-    public RaplaIndexPageGenerator( RaplaResources i18n, ClientFacade facade, Set<HtmlMainMenu> entries) throws RaplaContextException
+    public RaplaIndexPageGenerator( RaplaResources i18n, ClientFacade facade, Set<HtmlMainMenu> entries)
     {
         this.i18n = i18n;
         this.facade = facade;

@@ -13,9 +13,10 @@
 package org.rapla.server;
 
 import org.rapla.entities.User;
-import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.server.RequestScoped;
+import org.rapla.storage.RaplaSecurityException;
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/
@@ -25,7 +26,7 @@ public interface RemoteSession
 {
 
     public Logger getLogger();
-    public User getUser() throws RaplaContextException;
+    public User getUser() throws RaplaSecurityException;
 
     public boolean isAuthentified();
 

@@ -33,7 +33,6 @@ final public class LanguageChooser implements RaplaWidget
 {
     JComboBox jComboBox;
     String country;
-    //RaplaContext context;
     Logger logger;
 
     @Inject

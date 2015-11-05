@@ -21,13 +21,12 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
     
 public class RaplaMapWriter extends RaplaXMLWriter {
     
-    public RaplaMapWriter(RaplaContext sm) throws RaplaException {
+    public RaplaMapWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

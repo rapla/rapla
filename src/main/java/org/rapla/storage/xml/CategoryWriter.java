@@ -17,11 +17,10 @@ import java.io.IOException;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.RaplaObject;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class CategoryWriter extends RaplaXMLWriter {
-    public CategoryWriter(RaplaContext sm) throws RaplaException {
+    public CategoryWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
     

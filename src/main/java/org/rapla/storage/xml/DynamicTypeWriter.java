@@ -22,13 +22,12 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class DynamicTypeWriter extends RaplaXMLWriter
 {
-    public DynamicTypeWriter(RaplaContext sm) throws RaplaException {
+    public DynamicTypeWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

@@ -31,7 +31,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
 
@@ -43,7 +42,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
     protected LocalCache cache;
     private String version = OUTPUT_FILE_VERSION;
 
-    public RaplaMainWriter(RaplaContext context, LocalCache cache) throws RaplaException {
+    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache) throws RaplaException {
         super(context);
         this.cache = cache;
         Assert.notNull(cache);

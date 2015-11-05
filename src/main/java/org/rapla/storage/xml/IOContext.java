@@ -20,8 +20,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -51,7 +49,7 @@ public class IOContext
         return localnameMap;
     }
  
-    protected void addReaders(Map<RaplaType,RaplaXMLReader> readerMap,RaplaContext context) throws RaplaException {
+    protected void addReaders(Map<RaplaType,RaplaXMLReader> readerMap,RaplaXMLContext context) throws RaplaException {
         readerMap.put( Category.TYPE,new CategoryReader( context));
         readerMap.put( Conflict.TYPE,new ConflictReader( context));
         readerMap.put( Preferences.TYPE, new PreferenceReader(context) );
@@ -65,7 +63,7 @@ public class IOContext
         readerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsReader(context) );
     }
 
-     protected void addWriters(Map<RaplaType,RaplaXMLWriter> writerMap,RaplaContext context) throws RaplaException {
+     protected void addWriters(Map<RaplaType,RaplaXMLWriter> writerMap,RaplaXMLContext context) throws RaplaException {
         writerMap.put( Category.TYPE,new CategoryWriter(context));
         writerMap.put( Preferences.TYPE,new PreferenceWriter(context) );
         writerMap.put( DynamicType.TYPE,new DynamicTypeWriter(context));
@@ -78,9 +76,9 @@ public class IOContext
         writerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsWriter(context) );
     }
 
-    public RaplaDefaultContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable) throws RaplaException {
+    public RaplaDefaultXMLContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable) throws RaplaException {
          
-        RaplaDefaultContext ioContext = new RaplaDefaultContext( );
+        RaplaDefaultXMLContext ioContext = new RaplaDefaultXMLContext( );
         ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put(EntityStore.class, store);
@@ -95,9 +93,9 @@ public class IOContext
     public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".idonly");
     public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<Provider<Category>>( IOContext.class.getName() + ".supercategory");
     
-    public RaplaDefaultContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
+    public RaplaDefaultXMLContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
         
-        RaplaDefaultContext ioContext = new RaplaDefaultContext( );
+        RaplaDefaultXMLContext ioContext = new RaplaDefaultXMLContext( );
         ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put( Logger.class,logger );

@@ -12,16 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -31,6 +26,10 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
 
 @DefaultImplementation(of = MailConfigService.class, context = InjectionContext.server)
 public class RaplaConfigServiceImpl implements MailConfigService
@@ -43,7 +42,7 @@ public class RaplaConfigServiceImpl implements MailConfigService
 
 
     @Inject
-    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession) throws RaplaContextException
+    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession)
     {
         this.remoteSession = remoteSession;
         this.keyStore = keyStore;

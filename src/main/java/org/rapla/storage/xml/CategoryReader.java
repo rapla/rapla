@@ -23,7 +23,6 @@ import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class CategoryReader extends RaplaXMLReader
@@ -37,7 +36,7 @@ public class CategoryReader extends RaplaXMLReader
     CategoryImpl lastProcessedCategory = null;
     boolean readOnlyThisCategory;
 
-    public CategoryReader( RaplaContext context ) throws RaplaException
+    public CategoryReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
         superCategory = getSuperCategory();

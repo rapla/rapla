@@ -18,12 +18,11 @@ import java.util.Date;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class ConflictReader extends RaplaXMLReader
 {
-    public ConflictReader( RaplaContext context ) throws RaplaException
+    public ConflictReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
     }
