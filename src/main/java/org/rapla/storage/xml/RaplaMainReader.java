@@ -32,7 +32,6 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 
 public class RaplaMainReader extends RaplaXMLReader
@@ -41,9 +40,9 @@ public class RaplaMainReader extends RaplaXMLReader
     public final static String INPUT_FILE_VERSION = RaplaMainWriter.OUTPUT_FILE_VERSION;
     private TimeInterval invalidateInterval = null;
     private boolean resourcesRefresh = false;
-    RaplaDefaultContext writeableContext;
+    RaplaDefaultXMLContext writeableContext;
   
-	public RaplaMainReader( RaplaDefaultContext context ) throws RaplaException
+	public RaplaMainReader( RaplaDefaultXMLContext context ) throws RaplaException
     {
         super( context );
         writeableContext = context;

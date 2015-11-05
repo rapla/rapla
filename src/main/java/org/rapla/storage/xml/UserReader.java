@@ -22,7 +22,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class UserReader extends RaplaXMLReader
@@ -30,7 +29,7 @@ public class UserReader extends RaplaXMLReader
     UserImpl user;
     PreferenceReader preferenceHandler;
 
-    public UserReader( RaplaContext context ) throws RaplaException
+    public UserReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
         preferenceHandler = new PreferenceReader( context );

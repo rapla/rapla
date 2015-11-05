@@ -20,13 +20,12 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 
 public class RaplaConfigurationWriter extends RaplaXMLWriter {
 
-    public RaplaConfigurationWriter(RaplaContext sm) throws RaplaException {
+    public RaplaConfigurationWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

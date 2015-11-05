@@ -22,6 +22,7 @@
 	<source path='plugin'>
    	    <exclude name='**/server/**' />
 		<exclude name='**/swing/**' />
+		<exclude name='**/abstractcalendar/RaplaCalendarViewListener.java'/>
 	</source>
 	<source path='client'>
 		<exclude name='**/swing/**' />
@@ -35,8 +36,6 @@
 	<source path='rest' includes="RemoteLogger*" />
     <source path='framework' includes="SimpleProvider.java" />
     <source path='framework' includes="RaplaException.java" />
-    <source path='framework' includes="RaplaContext.java" />
-    <source path='framework' includes="RaplaContextException.java" />
     <source path='framework' includes="DefaultConfiguration.java" />
     <source path='framework' includes="ConfigurationException.java" />
     <source path='framework' includes="Configuration.java" />

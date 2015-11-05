@@ -1,10 +1,9 @@
-package org.rapla.framework;
+package org.rapla.storage.xml;
 
+import org.rapla.framework.RaplaContextException;
+import org.rapla.framework.TypedComponentRole;
 
-
-
-
-public interface RaplaContext
+public interface RaplaXMLContext
 {
 	/** Returns a reference to the requested object (e.g. a component instance).
 	 *  throws a RaplaContextException if the object can't be returned. This could have

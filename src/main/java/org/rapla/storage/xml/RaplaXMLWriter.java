@@ -39,7 +39,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
@@ -54,11 +53,11 @@ abstract public class RaplaXMLWriter extends XMLWriter
     private Map<String,RaplaType> localnameMap;
     Logger logger;
     Map<RaplaType,RaplaXMLWriter> writerMap;
-    protected RaplaContext context;
+    protected RaplaXMLContext context;
     protected SerializableDateTimeFormat dateTimeFormat = SerializableDateTimeFormat.INSTANCE;
     Provider<Category> superCategory;
     
-    public RaplaXMLWriter( RaplaContext context) throws RaplaException {
+    public RaplaXMLWriter( RaplaXMLContext context) throws RaplaException {
         this.context = context;
         enableLogging( context.lookup( Logger.class));
         this.writerMap =context.lookup( PreferenceWriter.WRITERMAP );

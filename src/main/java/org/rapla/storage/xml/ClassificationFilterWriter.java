@@ -20,12 +20,11 @@ import org.rapla.components.util.Assert;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 
 class ClassificationFilterWriter extends RaplaXMLWriter {
-    public ClassificationFilterWriter(RaplaContext sm) throws RaplaException {
+    public ClassificationFilterWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

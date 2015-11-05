@@ -23,7 +23,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 class ClassificationFilterReader extends RaplaXMLReader {
@@ -41,7 +40,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
     private boolean defaultEventTypes = true;
   
 
-    public ClassificationFilterReader(RaplaContext sm) throws RaplaException {
+    public ClassificationFilterReader(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

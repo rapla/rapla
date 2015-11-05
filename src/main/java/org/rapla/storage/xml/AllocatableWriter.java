@@ -19,12 +19,11 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 
 public class AllocatableWriter extends ClassifiableWriter {
-    public AllocatableWriter(RaplaContext sm) throws RaplaException {
+    public AllocatableWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
 

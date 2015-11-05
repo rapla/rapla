@@ -12,22 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-
+import junit.framework.TestCase;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 
-import junit.framework.TestCase;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
 public abstract class RaplaTestCase extends TestCase {
     protected RaplaClientServiceImpl raplaContainer;
@@ -72,12 +70,9 @@ public abstract class RaplaTestCase extends TestCase {
     }
    
     protected <T> T getService(Class<T> role) throws RaplaException {
-        return getContext().lookup( role);
-    }
-   
-    protected RaplaContext getContext() {
         return null;
     }
+   
 
     protected SerializableDateTimeFormat formater() {
         return new SerializableDateTimeFormat();
@@ -118,11 +113,11 @@ public abstract class RaplaTestCase extends TestCase {
     }
 
     protected ClientFacade getFacade() throws RaplaException {
-        return getContext().lookup(ClientFacade.class);
+        return getService(ClientFacade.class);
     }
 
     protected RaplaLocale getRaplaLocale() throws RaplaException {
-        return getContext().lookup(RaplaLocale.class);
+        return getService(RaplaLocale.class);
     }
 
     protected void tearDown() throws Exception {

@@ -47,7 +47,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaDefaultContext;
+import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
@@ -766,7 +766,7 @@ public class DBOperator extends LocalAbstractCachableOperator
                 throw new RaplaException("Can't create new ids in " + getClass().getName() + " this class is import only for old data ");
             }
         };
-        RaplaDefaultContext inputContext = createInputContext(entityStore, idCreator);
+        RaplaDefaultXMLContext inputContext = createInputContext(entityStore, idCreator);
         
         org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLInput =  new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(inputContext);
         raplaSQLInput.loadAll( connection );
@@ -786,15 +786,15 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
     }
 
-	private RaplaDefaultContext createInputContext(  EntityStore store, IdCreator idCreator) throws RaplaException {
-        RaplaDefaultContext inputContext =  new IOContext().createInputContext(logger,raplaLocale,i18n, store, idCreator);
+	private RaplaDefaultXMLContext createInputContext(  EntityStore store, IdCreator idCreator) throws RaplaException {
+        RaplaDefaultXMLContext inputContext =  new IOContext().createInputContext(logger,raplaLocale,i18n, store, idCreator);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class,xmlAdapter);
         return inputContext;
     }
     
-    private RaplaDefaultContext createOutputContext(LocalCache cache) throws RaplaException {
-        RaplaDefaultContext outputContext =  new IOContext().createOutputContext(logger,raplaLocale,i18n, cache.getSuperCategoryProvider(),true);
+    private RaplaDefaultXMLContext createOutputContext(LocalCache cache) throws RaplaException {
+        RaplaDefaultXMLContext outputContext =  new IOContext().createOutputContext(logger,raplaLocale,i18n, cache.getSuperCategoryProvider(),true);
         outputContext.put( LocalCache.class, cache);
         return outputContext;
         
@@ -824,7 +824,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 //
 //    private void writeData( OutputStream out ) throws IOException, RaplaException
 //    {
-//    	RaplaContext outputContext = new IOContext().createOutputContext( raplaLocale,i18n,cache.getSuperCategoryProvider(), true );
+//    	RaplaXMLContext outputContext = new IOContext().createOutputContext( raplaLocale,i18n,cache.getSuperCategoryProvider(), true );
 //        RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
 //        writer.setEncoding(backupEncoding);
 //        BufferedWriter w = new BufferedWriter(new OutputStreamWriter(out,backupEncoding));

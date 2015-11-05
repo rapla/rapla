@@ -14,19 +14,18 @@
 
 package org.rapla.client.swing.extensionpoints;
 
-import javax.swing.Icon;
-
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
+
+import javax.swing.Icon;
 
 @ExtensionPoint(context = InjectionContext.swing, id="week")
 public interface SwingViewFactory
 {
-    public TypedComponentRole<Boolean> PRINT_CONTEXT = new TypedComponentRole<Boolean>("org.rapla.PrintContext");
+    //public TypedComponentRole<Boolean> PRINT_CONTEXT = new TypedComponentRole<Boolean>("org.rapla.PrintContext");
     // instance scope
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException;
     public String getViewId();

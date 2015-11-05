@@ -11,27 +11,27 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
+
+import org.rapla.client.PopupContext;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 
-import org.rapla.client.PopupContext;
-import org.rapla.framework.RaplaContext;
-import org.rapla.framework.RaplaDefaultContext;
-
-public class MenuContext extends RaplaDefaultContext
+public class MenuContext
 {
     Collection<?> selectedObjects = Collections.EMPTY_LIST;
     Object focused;
     private final PopupContext popupContext;
+
+    private Date selectedDate;
     
-    public MenuContext(RaplaContext parentContext, Object focusedObject) {
-        this( parentContext, focusedObject, null );
+    public MenuContext( Object focusedObject) {
+        this(  focusedObject, null );
     }
 
-    public MenuContext(RaplaContext parentContext,  Object focusedObject, PopupContext popupContext) {
-        super( parentContext);
-        this.focused = focusedObject;
+    public MenuContext(  Object focusedObject, PopupContext popupContext) {this.focused = focusedObject;
         this.popupContext = popupContext;
     }
 
@@ -52,6 +52,15 @@ public class MenuContext extends RaplaDefaultContext
         return  focused;
     }
 
+    public void setSelectedDate(Date selectedDate)
+    {
+        this.selectedDate = selectedDate;
+    }
+
+    public Date getSelectedDate()
+    {
+        return selectedDate;
+    }
 }
 
 

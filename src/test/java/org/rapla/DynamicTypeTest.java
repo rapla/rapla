@@ -105,7 +105,7 @@ public class DynamicTypeTest extends RaplaTestCase {
     		facade.store( modified);
     	}
     	{
-	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    	ClassificationFilter firstFilter = eventType.newClassificationFilter();
 	    	assertNotNull( firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=",Boolean.TRUE}});
@@ -121,7 +121,7 @@ public class DynamicTypeTest extends RaplaTestCase {
     	}
     	{
     		Thread.sleep(100);
-	    	CalendarSelectionModel model =  getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model =  getService(CalendarSelectionModel.class);
 	    	model.getReservations();
     	}
 //    	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();
@@ -176,7 +176,7 @@ public class DynamicTypeTest extends RaplaTestCase {
             DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
             InfoFactory infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(facade, i18n, raplaLocale, logger, permissionController, infoFactory, raplaImages);
-	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;

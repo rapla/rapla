@@ -20,7 +20,6 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
@@ -28,7 +27,7 @@ import org.rapla.framework.TypedComponentRole;
 public class PreferenceWriter extends RaplaXMLWriter {
     public static final TypedComponentRole<Map<RaplaType,RaplaXMLWriter>> WRITERMAP = new TypedComponentRole<Map<RaplaType,RaplaXMLWriter>>( "org.rapla.storage.xml.writerMap");
 
-    public PreferenceWriter(RaplaContext sm) throws RaplaException {
+    public PreferenceWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
     

@@ -47,7 +47,7 @@ public class DataUpdateTest extends RaplaTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         clientService = getClientService();
-        facade = getContext().lookup(ClientFacade.class);
+        facade = getService(ClientFacade.class);
     }
 
     protected void tearDown() throws Exception {
@@ -83,7 +83,7 @@ public class DataUpdateTest extends RaplaTestCase {
     	
     	facade.store( newResource );
      	
-    	final CalendarSelectionModel model = getContext().lookup( CalendarSelectionModel.class);
+    	final CalendarSelectionModel model = getService( CalendarSelectionModel.class);
     	ClassificationFilter filter = dynamicType.newClassificationFilter();
     	filter.addIsRule("newkey", "filter");
     	model.setAllocatableFilter( new ClassificationFilter[] {filter});

@@ -50,7 +50,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaDefaultContext;
+import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -237,7 +237,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 getLogger().debug( "Reading data from file:" + loadingURL );
 
             EntityStore entityStore = new EntityStore( cache, cache.getSuperCategory() );
-            RaplaDefaultContext inputContext = new IOContext().createInputContext( logger, raplaLocale,i18n, entityStore, this );
+            RaplaDefaultXMLContext inputContext = new IOContext().createInputContext( logger, raplaLocale,i18n, entityStore, this );
             RaplaMainReader contentHandler = new RaplaMainReader( inputContext );
             parseData(  contentHandler );
             Collection<Entity> list = entityStore.getList();
@@ -451,7 +451,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private void writeData( OutputStream out, LocalCache cache,String version, boolean includeIds ) throws IOException, RaplaException
     {
-        RaplaDefaultContext outputContext = new IOContext().createOutputContext( logger, raplaLocale, i18n , cache.getSuperCategoryProvider(), includeIds );
+        RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext( logger, raplaLocale, i18n , cache.getSuperCategoryProvider(), includeIds );
         RaplaMainWriter writer = new RaplaMainWriter( outputContext, cache );
         writer.setEncoding( encoding );
         if ( version != null)

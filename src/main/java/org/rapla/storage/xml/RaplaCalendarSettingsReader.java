@@ -27,7 +27,6 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
@@ -48,7 +47,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
     Map<String,String> optionMap;
   
     
-    public RaplaCalendarSettingsReader(RaplaContext context) throws RaplaException {
+    public RaplaCalendarSettingsReader(RaplaXMLContext context) throws RaplaException {
         super( context );
         optionMapReader= new RaplaMapReader(context);
         classificationFilterHandler = new ClassificationFilterReader(context);

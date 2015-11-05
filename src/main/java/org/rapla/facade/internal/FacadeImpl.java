@@ -134,7 +134,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public CommandHistory commandHistory = new CommandHistory();
 
 	Locale locale;
-	//RaplaContext context;
 
 	Logger logger;
 	

@@ -35,7 +35,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 public class DynamicTypeReader extends RaplaXMLReader
@@ -53,7 +52,7 @@ public class DynamicTypeReader extends RaplaXMLReader
 	private HashMap<String, Map<Attribute,String>> unresolvedDynamicTypeConstraints = new HashMap<String, Map<Attribute,String>>();
 	private PermissionReader permissionHandler;
 	
-    public DynamicTypeReader( RaplaContext context ) throws RaplaException
+    public DynamicTypeReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
         unresolvedDynamicTypeConstraints.clear();

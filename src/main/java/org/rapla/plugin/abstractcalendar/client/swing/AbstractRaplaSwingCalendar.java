@@ -160,10 +160,9 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     }
 
 	protected boolean isPrintContext() {
-        boolean test = SwingViewFactory.PRINT_CONTEXT != SwingViewFactory.PRINT_CONTEXT;
-	    return false;
-	    // FIXME
-		//return getContext().has(SwingViewFactory.PRINT_CONTEXT) && getService( SwingViewFactory.PRINT_CONTEXT);
+        // FIXME
+        return false;
+	    //return getContext().has(SwingViewFactory.PRINT_CONTEXT) && getService( SwingViewFactory.PRINT_CONTEXT);
 	}
 
     abstract protected AbstractSwingCalendar createView(boolean showScrollPane) throws RaplaException;

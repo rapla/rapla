@@ -53,7 +53,6 @@ import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
 
 public class RaplaCalendarViewListener extends RaplaGUIComponent implements ViewListener
 {
-    public static TypedComponentRole<Date> SELECTED_DATE = new TypedComponentRole<Date>(RaplaCalendarViewListener.class.getName());
     protected boolean keepTime = false;
     private final Set<ObjectMenuFactory> objectMenuFactories;
 
@@ -119,7 +118,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         {
             RaplaPopupMenu menu = new RaplaPopupMenu();
             Object focusedObject = null;
-            MenuContext context = new MenuContext(null, focusedObject);
+            MenuContext context = new MenuContext( focusedObject);
             menuFactory.addReservationWizards(menu, context, null);
 
             final ClientFacade clientFacade = getClientFacade();
@@ -313,8 +312,8 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         while (it.hasNext())
         {
             ObjectMenuFactory objectMenuFact = it.next();
-            MenuContext menuContext = new MenuContext(null, appointment);
-            menuContext.put(SELECTED_DATE, start);
+            MenuContext menuContext = new MenuContext( appointment);
+            menuContext.setSelectedDate( start);
 
             RaplaMenuItem[] items = objectMenuFact.create(menuContext, appointment);
             for (int i = 0; i < items.length; i++)

@@ -21,14 +21,13 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 
 class DynAttReader extends RaplaXMLReader {
     Classifiable classifiable;
     ClassificationImpl classification;
     Attribute attribute;
-    public DynAttReader(RaplaContext context) throws RaplaException {
+    public DynAttReader(RaplaXMLContext context) throws RaplaException {
         super(context);
     }
 
