@@ -77,7 +77,7 @@ public class FileOperatorDiffTest extends RaplaTestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        operator = raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
+        operator = null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
     }
 
     public void testSave() throws RaplaException,IOException  {

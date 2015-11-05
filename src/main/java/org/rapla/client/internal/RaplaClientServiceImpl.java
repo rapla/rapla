@@ -79,6 +79,7 @@ import java.util.concurrent.Semaphore;
 @Singleton
 public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener,Disposable
 {
+    
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
     RaplaResources i18n;
     boolean started;
@@ -104,7 +105,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactory dialogUiFactory, ClientFacade facade, RaplaResources i18n,
             FrameControllerList frameControllerList, RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
             RaplaImages raplaImages, Provider<MainFrame> mainFrameProvider, Provider<RaplaFrame> raplaFrameProvider, Provider<CalendarSelectionModel> calendarModel,
-            Provider<Set<ClientExtension>> clientExtensions) throws Exception {
+            Provider<Set<ClientExtension>> clientExtensions) {
         this.env = env;
         this.i18n = i18n;
         this.logger = logger;
@@ -157,7 +158,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         lookAndFeelSet = true;
     }
 
-    protected void initialize() throws Exception {
+    protected void initialize() {
         advanceLoading(false);
     	int startupMode = env.getStartupMode();
         final Logger logger = getLogger();

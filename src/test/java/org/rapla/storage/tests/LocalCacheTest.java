@@ -109,7 +109,7 @@ public class LocalCacheTest extends RaplaTestCase {
     }
 
     public void test2() throws Exception {
-        final CachableStorageOperator storage = raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
+        final CachableStorageOperator storage = null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
         storage.connect();
         final Period[] periods = getFacade().getPeriods();
         storage.runWithReadLock(new CachableStorageOperatorCommand() {
@@ -184,7 +184,7 @@ public class LocalCacheTest extends RaplaTestCase {
 
         facade.store( modifiableReservation);
       
-        CachableStorageOperator storage =  raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
+        CachableStorageOperator storage =  null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
         User user = null;
 		Collection<Allocatable> allocatables = null;
 		Map<String, String> annotationQuery = null;

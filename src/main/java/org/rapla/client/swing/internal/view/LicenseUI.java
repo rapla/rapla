@@ -19,6 +19,7 @@ import java.awt.Point;
 import java.io.IOException;
 import java.net.URL;
 
+import javax.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -42,6 +43,7 @@ public class LicenseUI
     JScrollPane jScrollPane = new JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
                                               JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
+    @Inject
     public LicenseUI() {
         panel.setOpaque(true);
         panel.setLayout(borderLayout1);

@@ -31,7 +31,6 @@ import javax.inject.Provider;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
-import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.HTMLInfo.Row;
@@ -66,7 +65,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
      */
     Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
     AppointmentFormater appointmentFormater;
-    Provider<ReservationEditFactory> editProvider;
+    private ReservationEditFactory editFactory;
     ClientFacade facade;
     private RaplaLocale raplaLocale;
     private Logger logger;
@@ -74,7 +73,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
     private final PermissionController permissionController;
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
@@ -82,10 +81,14 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         this.i18n = i18n;
         this.calendarModel = calendarModel;
         this.appointmentFormater=appointmentFormater; 
-        this.editProvider = editProvider;
         this.clipboard = clipboard;
         this.permissionController = permissionController;
         facade.addModificationListener(this);
+    }
+    
+    public void setEditFactory(ReservationEditFactory editFactory)
+    {
+        this.editFactory = editFactory;
     }
     
     protected ClientFacade getFacade()
@@ -144,7 +147,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         if (c != null) {
             c.toFront();
         } else {
-            c = editProvider.get().create(reservation, appointmentBlock);
+            c = editFactory.create(reservation, appointmentBlock);
             // only is allowed to exchange allocations
         }
         return c;
@@ -233,7 +236,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
     abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<String> iconList, String title, String content, String dialogIcon) throws RaplaException;
 
-    abstract protected Set<Provider<EventCheck>> getEventChecks() throws RaplaException;
+    abstract protected Provider<Set<EventCheck>> getEventChecks() throws RaplaException;
 /*
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables)
     {
@@ -1561,10 +1564,10 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 		}
 
 		boolean save(Collection<Reservation> reservations,PopupContext sourceComponent) throws RaplaException {
-	        Set<Provider<EventCheck>> checkers = getEventChecks();
-            for (Provider<EventCheck> checkProvider:checkers)
+		    Provider<Set<EventCheck>> checkers = getEventChecks();
+            final Set<EventCheck> set = checkers.get();
+            for (EventCheck eventCheck:set)
             {
-                final EventCheck eventCheck = checkProvider.get();
                 boolean successful= eventCheck.check(reservations, sourceComponent);
                 if ( !successful)
                 {

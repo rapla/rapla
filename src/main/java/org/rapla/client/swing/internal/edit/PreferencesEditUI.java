@@ -74,8 +74,8 @@ public class PreferencesEditUI extends RaplaGUIComponent
     OptionPanel lastOptionPanel;
     Preferences preferences;
 
-    private final Set<Provider<UserOptionPanel>> userOptionPanel;
-    private final Set<Provider<SystemOptionPanel>> systemOptionPanel;
+    private final Provider<Set<UserOptionPanel>> userOptionPanel;
+    private final Provider<Set<SystemOptionPanel>> systemOptionPanel;
     private final Map<String,Provider<PluginOptionPanel>> pluginOptionPanel;
     private final TreeFactory treeFactory;
     private final DialogUiFactory dialogUiFactory;
@@ -83,8 +83,8 @@ public class PreferencesEditUI extends RaplaGUIComponent
     /** called during initialization to create the info component 
      */
     @Inject
-    public PreferencesEditUI( TreeFactory treeFactory, Set<Provider<UserOptionPanel>> userOptionPanel,
-            Set<Provider<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
+    public PreferencesEditUI( TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,
+            Provider<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
             RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactory dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
@@ -148,8 +148,9 @@ public class PreferencesEditUI extends RaplaGUIComponent
 
     public Collection<OptionPanel> getUserOptions() throws RaplaException {
         List<OptionPanel> optionList = new ArrayList<OptionPanel>();
-        for (Provider<UserOptionPanel> panel : userOptionPanel){
-            optionList.add(panel.get());
+        final Set<UserOptionPanel> set = userOptionPanel.get();
+        for (UserOptionPanel panel : set){
+            optionList.add(panel);
         }
         sort(optionList);
         return optionList;
@@ -157,8 +158,9 @@ public class PreferencesEditUI extends RaplaGUIComponent
 
     public Collection<OptionPanel> getAdminOptions() throws RaplaException {
         List<OptionPanel> optionList = new ArrayList<OptionPanel>();
-        for (Provider<SystemOptionPanel> panel : systemOptionPanel){
-            optionList.add(panel.get());
+        final Set<SystemOptionPanel> set = systemOptionPanel.get();
+        for (SystemOptionPanel panel : set){
+            optionList.add(panel);
         }
         sort(optionList);
         return optionList;

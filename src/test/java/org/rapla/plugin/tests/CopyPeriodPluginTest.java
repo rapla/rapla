@@ -38,7 +38,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.client.gwt.internal.impl.ser.SimpleProvider;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
@@ -54,7 +53,7 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        facade = raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade");
+        facade = null;//FIXME raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade");
         facade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
     }
@@ -100,7 +99,13 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         DialogUiFactory dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList );
         BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
         IOInterface t = new DefaultIO(logger);
-        Provider<CopyDialog> copyDialogProvider = new SimpleProvider<CopyDialog>(new CopyDialog(getFacade(), rr, getRaplaLocale(), getLogger(), i18n, model, dateRenderer, booleanFieldFactory, dialogUiFactory, t ));
+        Provider<CopyDialog> copyDialogProvider = new Provider<CopyDialog>(){
+            @Override
+            public CopyDialog get()
+            {
+                return new CopyDialog(getFacade(), rr, getRaplaLocale(), getLogger(), i18n, model, dateRenderer, booleanFieldFactory, dialogUiFactory, t );
+            }
+        };
         CopyPluginMenu init = new CopyPluginMenu( getFacade(), rr, getRaplaLocale(), getLogger(), i18n, copyDialogProvider, raplaImages, dialogUiFactory);
         Reservation[] original = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
         assertNotNull(findReservationWithName(original, "power planting"));

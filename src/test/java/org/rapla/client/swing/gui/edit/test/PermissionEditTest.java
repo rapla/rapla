@@ -73,7 +73,7 @@ public final class PermissionEditTest extends GUITestCase
         final RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
-        InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
+        InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
         TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), permissionController, infoFactory, raplaImages);
         DateRenderer dateRenderer = new RaplaDateRenderer(getFacade(), i18n, getRaplaLocale(), getLogger());
         RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages);

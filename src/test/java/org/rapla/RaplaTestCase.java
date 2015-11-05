@@ -93,7 +93,7 @@ public abstract class RaplaTestCase extends TestCase {
         URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
         //env.setConfigURL( configURL);
         copyDataFile("test-src/" + testFile);
-        raplaContainer = new RaplaClientServiceImpl( env );
+        raplaContainer = null;// FIXME new RaplaClientServiceImpl( env );
         assertNotNull("Container not initialized.",raplaContainer);
         ClientFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray());

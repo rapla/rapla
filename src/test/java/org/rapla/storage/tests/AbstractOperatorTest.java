@@ -39,8 +39,8 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        operator = raplaContainer.lookupDeprecated(CachableStorageOperator.class, getStorageName());
-        facade = raplaContainer.lookupDeprecated(ClientFacade.class, getFacadeName());
+        operator = null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, getStorageName());
+        facade = null;// FIXME raplaContainer.lookupDeprecated(ClientFacade.class, getFacadeName());
     }
 
     abstract protected String getStorageName();

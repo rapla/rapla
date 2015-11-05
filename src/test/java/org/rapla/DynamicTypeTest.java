@@ -174,7 +174,7 @@ public class DynamicTypeTest extends RaplaTestCase {
             final RaplaImages raplaImages = new RaplaImages(logger);
             FrameControllerList frameList = new FrameControllerList(logger);
             DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
-            InfoFactory<Component, DialogUI> infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
+            InfoFactory infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(facade, i18n, raplaLocale, logger, permissionController, infoFactory, raplaImages);
 	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
 	    	model.getReservations();

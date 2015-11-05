@@ -7,7 +7,7 @@ public class DaggerClientCreator
 {
     public static RaplaClientServiceImpl create(StartupEnvironment startupEnvironment)
     {
-        ClientComponent component= org.rapla.client.swing.internal.dagger.DaggerClientComponent.builder().myModule(new MyClientModule(startupEnvironment)).build();
+        ClientComponent component= org.rapla.client.swing.internal.dagger.DaggerClientComponent.builder().myClientModule(new MyClientModule(startupEnvironment)).build();
         final RaplaClientServiceImpl client = component.getClient();
         //server.getMethodProvider().setList( component.getWebservices().getList());
         return client;

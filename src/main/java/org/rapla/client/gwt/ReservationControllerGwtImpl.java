@@ -13,7 +13,6 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.ReservationControllerImpl;
-import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
@@ -30,9 +29,9 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
 
     @Inject
     public ReservationControllerGwtImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
+            AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
     {
-        super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard, permissionController);
+        super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard, permissionController);
     }
 
 
@@ -62,9 +61,16 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
     }
 
     @Override
-    protected Set<Provider<EventCheck>> getEventChecks() throws RaplaException
+    protected Provider<Set<EventCheck>> getEventChecks() throws RaplaException
     {
-        return Collections.emptySet();
+        return new Provider<Set<EventCheck>>()
+        {
+            @Override
+            public Set<EventCheck> get()
+            {
+                return Collections.emptySet();
+            }
+        };
     }
 
 }

@@ -15,7 +15,6 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.ReservationControllerImpl;
-import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -40,14 +39,14 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     private final InfoFactory infoFactory;
     private final RaplaGUIComponent wrapper;
     private final RaplaImages images;
-    private final Set<Provider<EventCheck>> checkers;
+    private final Provider<Set<EventCheck>> checkers;
     private final DialogUiFactory dialogUiFactory;
     
     @Inject
     public ReservationControllerSwingImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactory dialogUiFactory)
+            AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Provider<Set<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactory dialogUiFactory)
     {
-        super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard, permissionController);
+        super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard, permissionController);
         this.infoFactory = infoFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.wrapper = new RaplaGUIComponent(facade, i18n, raplaLocale, logger);
@@ -100,7 +99,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     }
 
     @Override
-    protected Set<Provider<EventCheck>> getEventChecks() throws RaplaException
+    protected Provider<Set<EventCheck>> getEventChecks() throws RaplaException
     {
         return checkers;
     }
