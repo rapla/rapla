@@ -54,7 +54,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     private final RaplaClipboard clipboard;
     private final TimeslotProvider timeslotProvider;
     private final ReservationController reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
     private final DialogUiFactory dialogUiFactory;
@@ -69,7 +69,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     @Inject
     public CompactDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
             DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater)
     {
         this.facade = facade;

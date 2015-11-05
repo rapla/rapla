@@ -50,11 +50,11 @@ import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaDefaultContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -160,7 +160,6 @@ public class CalendarPrintDialog extends DialogUI
 
     };
 
-    private RaplaContext context;
 
     private final DialogUiFactory dialogUiFactory;
 
@@ -171,9 +170,8 @@ public class CalendarPrintDialog extends DialogUI
     private final Logger logger;
 
     @Inject
-    public CalendarPrintDialog(RaplaContext context,Frame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactory dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactory dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
         super(i18n, raplaImages, bundleManager, frameList, owner);
-        this.context = context;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.i18n = i18n;
@@ -195,7 +193,7 @@ public class CalendarPrintDialog extends DialogUI
         }
 
         SwingViewFactory factory = factoryMap.get( model.getViewId());
-        RaplaDefaultContext contextWithPrintInfo = new RaplaDefaultContext(context);
+        RaplaDefaultContext contextWithPrintInfo = new RaplaDefaultContext();
         contextWithPrintInfo.put(SwingViewFactory.PRINT_CONTEXT, new Boolean(true));
         currentView = factory.createSwingView( model, false);
         if ( currentView instanceof Printable)

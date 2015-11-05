@@ -39,7 +39,7 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     private final Logger logger;
     private final Set<AppointmentStatusFactory> list;
     private final ReservationController reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final ReservationInfoEditFactory reservationInfoEditFactory;
@@ -50,7 +50,7 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
 
     @Inject
     public ReservationEditFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentStatusFactory> list,
-             ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
+             ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages,
             DialogUiFactory dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
             AllocatableSelectionFactory allocatableSelectionFactory, PermissionController permissionController, FrameControllerList frameControllerList)
     {

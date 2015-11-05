@@ -73,10 +73,11 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
 	@Inject
-    public TemplateWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException{
+    public TemplateWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model/*, EditController editController*/ ,RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException{
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
-        this.editController = editController;
+		// FIXME editcontroller contains a cycle
+        this.editController = null;//editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;

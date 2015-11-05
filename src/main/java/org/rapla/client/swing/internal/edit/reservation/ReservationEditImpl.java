@@ -62,6 +62,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
+import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
@@ -148,14 +149,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
     private final ReservationControllerImpl reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
 
     @Inject
     public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
+            Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
             PermissionController permissionController, FrameControllerList frameControllerList) throws RaplaException
@@ -646,7 +647,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     @Override
     public void delete() throws RaplaException {
         try {
-            DialogUI dlg = infoFactory.createDeleteDialog(new Object[] {mutableReservation}
+            DialogInterface dlg = infoFactory.createDeleteDialog(new Object[] {mutableReservation}
                                                                ,new SwingPopupContext(frame, null));
             dlg.start();
             if (dlg.getSelectedIndex() == 0) {

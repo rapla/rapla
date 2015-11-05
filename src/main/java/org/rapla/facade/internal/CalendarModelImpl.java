@@ -80,6 +80,7 @@ import org.rapla.storage.UpdateResult;
 
 @Singleton
 @DefaultImplementation(of=CalendarSelectionModel.class,context = InjectionContext.client)
+@DefaultImplementation(of=CalendarModel.class,context = InjectionContext.client)
 public class CalendarModelImpl implements CalendarSelectionModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;

@@ -26,6 +26,11 @@ public class ServerStarter
     Collection<ServletRequestPreprocessor> processors;
     ServerContainerContext backendContext;
 
+    private ServerServiceImpl create()
+    {
+        return DaggerServerCreator.create(logger, backendContext);
+    }
+
     public ServerStarter(Logger logger, RaplaJNDIContext jndi)
     {
         this.logger = logger;
@@ -35,6 +40,8 @@ public class ServerStarter
         this.backendContext = backendContext;
 
     }
+
+
 
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) {
         String env_raplafile;
@@ -103,7 +110,7 @@ public class ServerStarter
             {
                 backendContext.shutdownService = new ShutdownServiceImpl();
             }
-            server = DaggerServerCreator.create(logger, backendContext);
+            server = create();
             //final RaplaContext context = raplaContainer.getContext();
             final Logger logger = server.getLogger(); 
             {
@@ -129,7 +136,8 @@ public class ServerStarter
             throw new ServletException( message,e);
         }
     }
-    
+
+
     public ServerServiceContainer getServer()
     {
         return server;

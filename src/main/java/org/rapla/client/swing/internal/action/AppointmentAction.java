@@ -57,12 +57,12 @@ public class AppointmentAction extends RaplaAction {
 	private Collection<Allocatable> contextAllocatables;
 	private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
     
-	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
+	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
     {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;

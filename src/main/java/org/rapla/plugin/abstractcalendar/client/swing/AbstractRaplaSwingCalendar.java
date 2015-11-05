@@ -50,6 +50,7 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.VisibleTimeInterval;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -97,7 +98,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final CalendarSelectionModel calendarSelectionModel;
     protected final RaplaClipboard clipboard;
     protected final ReservationController reservationController;
-    protected final InfoFactory<Component, DialogUI> infoFactory;
+    protected final InfoFactory infoFactory;
     protected final RaplaImages raplaImages;
     protected final DialogUiFactory dialogUiFactory;
     protected final PermissionController permissionController;
@@ -106,7 +107,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
+            InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
             PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
@@ -159,8 +160,9 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     }
 
 	protected boolean isPrintContext() {
+        boolean test = SwingViewFactory.PRINT_CONTEXT != SwingViewFactory.PRINT_CONTEXT;
 	    return false;
-	    // TODO
+	    // FIXME
 		//return getContext().has(SwingViewFactory.PRINT_CONTEXT) && getService( SwingViewFactory.PRINT_CONTEXT);
 	}
 

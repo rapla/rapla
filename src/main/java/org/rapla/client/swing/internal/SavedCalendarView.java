@@ -40,6 +40,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -145,7 +146,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             try 
             {
                 String[] objects = new String[] { getSelectedFile().name};
-                DialogUI dlg = infoFactory.createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
+                DialogInterface dlg = infoFactory.createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
                 dlg.start();
                 if (dlg.getSelectedIndex() != 0)
                     return;
@@ -161,7 +162,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     final PublishAction publishAction;
     final DeleteAction deleteAction;
 
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
 
     private final RaplaImages raplaImages;
 
@@ -222,7 +223,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     }
     
     public SavedCalendarView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory<Component, DialogUI> infoFactory,
+            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.extensionFactories = extensionFactories;

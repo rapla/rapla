@@ -54,7 +54,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     private final MenuFactory menuFactory;
     private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final IntervalChooserPanel dateChooser;
     private final DialogUiFactory dialogUiFactory;
@@ -69,7 +69,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     @Inject
     public AppointmentTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
             RaplaMenuBarContainer menuBar)
     {
         this.facade = facade;

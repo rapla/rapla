@@ -11,22 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.Action;
-import javax.swing.JMenuItem;
-import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
@@ -44,7 +28,6 @@ import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.MenuInterface;
@@ -74,6 +57,21 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.Action;
+import javax.swing.JMenuItem;
+import javax.swing.MenuElement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 @Singleton
 @DefaultImplementation(of=MenuFactory.class,context = InjectionContext.swing)
 public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
@@ -91,23 +89,27 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final PermissionController permissionController;
     private final CalendarSelectionModel model;
     private final ClientService service;
-    private final EditController editController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private EditController editController;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service,InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = permissionController;
         this.model = model;
         this.service = service;
-        this.editController = editController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+    }
+
+    public void setEditController(EditController editController)
+    {
+        this.editController = editController;
     }
 
 

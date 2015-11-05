@@ -6,6 +6,7 @@ import java.util.Collection;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
+import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
@@ -15,6 +16,12 @@ public class ClientStarter extends GUIStarter
 {
     URL downloadUrl_;
 
+    private RaplaClientServiceImpl create(RaplaStartupEnvironment env)
+    {
+        return DaggerClientCreator.create(env);
+    }
+
+    
     public ClientStarter(Logger logger,RaplaJNDIContext jndi, String servletContextPath) throws Exception
     {
         super(logger, jndi);
@@ -87,7 +94,7 @@ public class ClientStarter extends GUIStarter
         env.setDownloadURL( downloadUrl_ );
         try
         {
-            client = new RaplaClientServiceImpl( env );
+            client = create(env);
             startGUI(  client, connectInfo);
             try {
                 guiMutex.acquire();
@@ -95,7 +102,7 @@ public class ClientStarter extends GUIStarter
                 {
                      client.dispose();
                      try {
-                         client = new RaplaClientServiceImpl( env );
+                         client = create(env);
                          startGUI(  client, reconnect);
                          guiMutex.acquire();
                      } catch (Exception ex) {
@@ -114,6 +121,6 @@ public class ClientStarter extends GUIStarter
             throw ex;
         }
     }
-    
+
 
 }

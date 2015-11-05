@@ -63,13 +63,13 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
 
     public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
     {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;

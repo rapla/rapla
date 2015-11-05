@@ -53,8 +53,8 @@ import org.rapla.framework.RaplaException;
 
 public class DialogUI extends JDialog
     implements
-        FrameController
-        ,LocaleChangeListener
+        FrameController,LocaleChangeListener
+        ,DialogInterface
 { 
     private static final long serialVersionUID = 1L;
     

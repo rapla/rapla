@@ -78,7 +78,7 @@ public class StandaloneStarter extends GUIStarter
         {
             throw new RaplaException("Can't find user with username " + reconnectUser);
         }
-        client = new RaplaClientServiceImpl( env);
+        client = null;//new RaplaClientServiceImpl( env);
         startGUI( client,connectInfo);
     }
 

@@ -15,6 +15,7 @@ package org.rapla.client;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.internal.RaplaClientServiceImpl;
+import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.StartupEnvironment;
@@ -72,8 +73,13 @@ public class MainWebclient
         startRapla( connectInfo);
     }
 
+    private RaplaClientServiceImpl create(RaplaStartupEnvironment env)
+    {
+        return DaggerClientCreator.create(env);
+    }
+
     protected void startRapla( ConnectInfo connectInfo) throws Exception, RaplaContextException {
-        final RaplaClientServiceImpl clientContainer = new RaplaClientServiceImpl( env );
+        final RaplaClientServiceImpl clientContainer = create(env);
         this.raplaContainer = clientContainer;
         clientContainer.addRaplaClientListener(new RaplaClientListenerAdapter() {
                 public void clientClosed(ConnectInfo reconnect) {

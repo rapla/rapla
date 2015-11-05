@@ -75,7 +75,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 	
     public SwingCompactDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
             Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
+            TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
             IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {

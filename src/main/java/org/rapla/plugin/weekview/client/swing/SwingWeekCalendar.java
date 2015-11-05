@@ -62,7 +62,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
     public SwingWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, final Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
-            InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
+            InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
             PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,

@@ -105,7 +105,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
     public SwingReservationTableView(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions,
             final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
-            final InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory,
+            final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory,
             PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);

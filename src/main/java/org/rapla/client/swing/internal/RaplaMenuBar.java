@@ -21,13 +21,13 @@ import org.rapla.client.extensionpoints.HelpMenuExtension;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
 import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RestartRaplaAction;
 import org.rapla.client.swing.internal.action.RestartServerAction;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
-import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.edit.TemplateEdit;
 import org.rapla.client.swing.internal.edit.TemplateEdit.TemplateEditFactory;
 import org.rapla.client.swing.internal.print.PrintAction;
@@ -40,8 +40,6 @@ import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.swing.toolkit.RaplaMenubar;
-import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
@@ -54,7 +52,6 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -67,7 +64,6 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
-import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -107,6 +103,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Set<HelpMenuExtension> helpMenuExt,
             Set<ImportMenuExtension> importMenuExt,
             Set<ExportMenuExtension> exportMenuExt,
+            MenuFactory menuFactory,
             EditController editController,
             CalendarSelectionModel model,
             ClientService clientService,
@@ -124,6 +121,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.templateEditFactory = templateEditFactory;
+        // TODO Hack to solve dependency Cycle
+        ((MenuFactoryImpl)menuFactory).setEditController( editController);
 
 
         RaplaMenu calendarSettings = menuBarContainer.getSettingsMenu();

@@ -11,6 +11,6 @@ import org.rapla.inject.InjectionContext;
  @see AppointmentStatusFactory
   * */
 @ExtensionPoint(context = InjectionContext.swing,id = "appointmentstatus")
-public interface AppointmentStatusFactory<T> {
-	RaplaWidget<T> createStatus(ReservationEdit reservationEdit) throws RaplaException;
+public interface AppointmentStatusFactory {
+	RaplaWidget createStatus(ReservationEdit reservationEdit) throws RaplaException;
 }

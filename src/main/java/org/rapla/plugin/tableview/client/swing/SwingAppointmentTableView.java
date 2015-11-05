@@ -101,7 +101,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
     private final ReservationController reservationController;
 
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
 
     private final RaplaImages raplaImages;
 
@@ -115,7 +115,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
     SwingAppointmentTableView(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory,
+            CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);

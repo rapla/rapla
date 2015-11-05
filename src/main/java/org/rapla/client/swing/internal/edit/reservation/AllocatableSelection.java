@@ -198,7 +198,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final TreeFactory treeFactory;
     private final CalendarModel model;
     private final MenuFactory menuFactory;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final MultiCalendarViewFactory multiCalendarViewFactory;
     private final DialogUiFactory dialogUiFactory;
@@ -206,7 +206,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean addCalendarButton,
             CommandHistory commandHistory, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            PermissionController permissionController, MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
+            PermissionController permissionController, MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages,
             DialogUiFactory dialogUiFactory, DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory,
             BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList)
     {
@@ -809,9 +809,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             menuContext.setSelectedObjects(list);
             RaplaMenu newMenu = new RaplaMenu("new");
             newMenu.setText(getString("new"));
-            ((MenuFactoryImpl) menuFactory).addNew(newMenu, menuContext, null);
-
-            menuFactory.addObjectMenu(menu, menuContext, seperatorId);
+            if ( menuFactory != null)
+            {
+                ((MenuFactoryImpl) menuFactory).addNew(newMenu, menuContext, null);
+                menuFactory.addObjectMenu(menu, menuContext, seperatorId);
+            }
             newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
             menu.insertAfterId(newMenu, seperatorId);
             menu.show(table, p.x, p.y);
@@ -2305,7 +2307,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final TreeFactory treeFactory;
         private final CalendarSelectionModel model;
         private final MenuFactory menuFactory;
-        private final InfoFactory<Component, DialogUI> infoFactory;
+        private final InfoFactory infoFactory;
         private final RaplaImages raplaImages;
         private final DialogUiFactory dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
@@ -2317,7 +2319,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         @Inject
         public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, PermissionController permissionController, TreeFactory treeFactory, CalendarSelectionModel model,
-                MenuFactory menuFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
+                MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,
                 DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList)
         {

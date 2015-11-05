@@ -13,22 +13,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client.swing;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.MenuElement;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
@@ -54,6 +38,20 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
+import javax.inject.Inject;
+import javax.swing.MenuElement;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
 @Extension(provides = ReservationWizardExtension.class, id= "defaultWizard")
@@ -66,11 +64,12 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, CalendarModel model, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
+	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, CalendarModel model /*,EditController editController*/, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         this.model = model;
-        this.editController = editController;
+        //FIXME  edit controller contains a cycle
+        this.editController = null;//editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
     }

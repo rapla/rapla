@@ -47,7 +47,7 @@ import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of=EditController.class, context = InjectionContext.swing)
 @Singleton
-public class EditControllerImpl<W> implements
+public class EditControllerImpl implements
 		EditController {
 	Collection<EditDialog<?>> editWindowList = new ArrayList<EditDialog<?>>();
 	private Map<String,Provider<EditComponent>> editUiProviders;
@@ -136,13 +136,13 @@ public class EditControllerImpl<W> implements
 
 
 	@SuppressWarnings("unchecked")
-    private <T extends Entity> EditComponent<T,W> createUI(T obj) throws RaplaException {
+    private <T extends Entity> EditComponent<T,JComponent> createUI(T obj) throws RaplaException {
 		RaplaType type = obj.getRaplaType();
 		final String id = type.getTypeClass().getName();
 		final Provider<EditComponent> editComponentProvider = editUiProviders.get(id);
 		if ( editComponentProvider != null)
 		{
-			EditComponent<T,W> ui = (EditComponent<T,W>)editComponentProvider.get();
+			EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)editComponentProvider.get();
 			return ui;
 		}
 		else

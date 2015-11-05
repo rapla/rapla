@@ -96,7 +96,7 @@ import org.rapla.storage.StorageOperator;
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private final PermissionController permissionController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     
     Icon bigFolderUsers;
@@ -115,7 +115,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     Font bigFont =  normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
     
     @Inject
-    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages) {
+    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, InfoFactory infoFactory, RaplaImages raplaImages) {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         this.infoFactory = infoFactory;

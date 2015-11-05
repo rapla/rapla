@@ -81,7 +81,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
     @Inject
-    public CalendarEditor(StartupEnvironment environment,RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface) throws RaplaException {
+    public CalendarEditor(StartupEnvironment environment,RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
 

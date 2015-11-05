@@ -69,11 +69,11 @@ public class ViewTable<T> extends RaplaGUIComponent
     Map<Integer,Object> linkMap;
     int linkId = 0;
     boolean packText = true;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final IOInterface ioInterface;
     private final DialogUiFactory dialogUiFactory;
 
-    public ViewTable(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory<Component, DialogUI> infoFactory, IOInterface ioInterface, DialogUiFactory dialogUiFactory) {
+    public ViewTable(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory, IOInterface ioInterface, DialogUiFactory dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.infoFactory = infoFactory;
         this.ioInterface = ioInterface;

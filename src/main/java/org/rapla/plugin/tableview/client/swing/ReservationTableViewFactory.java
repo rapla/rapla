@@ -50,7 +50,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final MenuFactory menuFactory;
     private final ReservationController reservationController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final IntervalChooserPanel dateChooser;
     private final DialogUiFactory dialogUiFactory;
@@ -65,7 +65,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     @Inject
     public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-            ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages,
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages,
             IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
             RaplaMenuBarContainer menuBar)
     {

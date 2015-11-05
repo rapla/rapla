@@ -1,8 +1,5 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
@@ -15,9 +12,12 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 @Extension(provides = AppointmentStatusFactory.class, id="eventtimecalculator")
 @Singleton
-public class EventTimeCalculatorStatusFactory<T> implements AppointmentStatusFactory<T> {
+public class EventTimeCalculatorStatusFactory implements AppointmentStatusFactory {
     private final EventTimeCalculatorFactory factory;
     private final EventTimeCalculatorResources resources;
     private final ClientFacade facade;
@@ -35,7 +35,7 @@ public class EventTimeCalculatorStatusFactory<T> implements AppointmentStatusFac
         this.factory = factory;
         this.resources = resources;
     }
-	public RaplaWidget<T> createStatus(ReservationEdit reservationEdit) throws RaplaException {
+	public RaplaWidget createStatus(ReservationEdit reservationEdit) throws RaplaException {
         return new EventTimeCalculatorStatusWidget(facade, i18n, raplaLocale, logger, reservationEdit,factory, resources);
     }
 }

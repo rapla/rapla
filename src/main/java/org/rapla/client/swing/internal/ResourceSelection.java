@@ -13,27 +13,6 @@
 
 package org.rapla.client.swing.internal;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultTreeModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
@@ -44,7 +23,6 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.action.RaplaObjectAction;
-import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -52,7 +30,6 @@ import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
@@ -78,6 +55,25 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.tree.DefaultTreeModel;
+import java.awt.BorderLayout;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+
 public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget {
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
@@ -92,12 +88,12 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final TreeFactory treeFactory;
     private final MenuFactory menuFactory;
     private final EditController editController;
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
     private final RaplaMenuBarContainer menuBar;
-	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
+	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
 
         this.menuBar = menuBar;
@@ -367,7 +363,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         private final TreeFactory treeFactory;
         private final MenuFactory menuFactory;
         private final EditController editController;
-        private final InfoFactory<Component, DialogUI> infoFactory;
+        private final InfoFactory infoFactory;
         private final RaplaImages raplaImages;
         private final DateFieldFactory dateFieldFactory;
         private final DialogUiFactory dialogUiFactory;
@@ -380,7 +376,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
         @Inject
         public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
-                TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory<Component, DialogUI> infoFactory,
+                TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory,
                 RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
                 PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)

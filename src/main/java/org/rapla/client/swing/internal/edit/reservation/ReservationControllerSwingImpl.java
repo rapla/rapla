@@ -20,6 +20,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -36,7 +37,7 @@ import org.rapla.inject.InjectionContext;
 @Singleton
 public class ReservationControllerSwingImpl extends ReservationControllerImpl
 {
-    private final InfoFactory<Component, DialogUI> infoFactory;
+    private final InfoFactory infoFactory;
     private final RaplaGUIComponent wrapper;
     private final RaplaImages images;
     private final Set<Provider<EventCheck>> checkers;
@@ -44,7 +45,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     
     @Inject
     public ReservationControllerSwingImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory<Component, DialogUI> infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactory dialogUiFactory)
+            AppointmentFormater appointmentFormater, Provider<ReservationEditFactory> editProvider, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Set<Provider<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactory dialogUiFactory)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, editProvider, calendarModel, clipboard, permissionController);
         this.infoFactory = infoFactory;
@@ -56,7 +57,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
 
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
     {
-        DialogUI dlg =infoFactory.createDeleteDialog(deletables, context);
+        DialogInterface dlg =infoFactory.createDeleteDialog(deletables, context);
         dlg.start();
         int result = dlg.getSelectedIndex();
         return result == 0;

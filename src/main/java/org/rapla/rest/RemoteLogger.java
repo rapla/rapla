@@ -7,7 +7,6 @@ import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.jsonrpc.common.VoidResult;
 
-@WebService
 @RemoteJsonMethod
 public interface RemoteLogger 
 {

@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
@@ -41,6 +40,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
+import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.Category;
@@ -67,7 +67,7 @@ the entities of rapla.
 @see ViewTable*/
 @Singleton
 @DefaultImplementation(of=InfoFactory.class, context = InjectionContext.swing)
-public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Component, DialogUI>
+public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
 {
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
@@ -104,11 +104,12 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
         throw new RaplaException( "Could not create view for this object: " + object.getClass() );
     }
 
+    /*
     public <T> Component createInfoComponent( T object ) throws RaplaException {
         ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
         viewTable.updateInfo( object );
         return viewTable.getComponent();
-    }
+    }*/
 
     public String getToolTip(Object obj) {
         return getToolTip(obj,true);
@@ -208,7 +209,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory<Co
     /* (non-Javadoc)
      * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.ServerComponent)
      */
-    public DialogUI createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
+    public DialogInterface createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
         DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getClientFacade(), getLogger());
         DialogUI dlg = dialogUiFactory.create(popupContext

@@ -68,7 +68,7 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
-    public SwingCompactWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory<Component, DialogUI> infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException {
+    public SwingCompactWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarModel settings, boolean editable, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException {
         super( facade, i18n, raplaLocale, logger, settings, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
     }
     
