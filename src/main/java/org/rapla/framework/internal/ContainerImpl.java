@@ -12,6 +12,25 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
+import org.jetbrains.annotations.NotNull;
+import org.rapla.RaplaResources;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.Extension;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.common.RemoteJsonMethod;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,32 +56,23 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
-import org.jetbrains.annotations.NotNull;
-import org.rapla.RaplaResources;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaContextException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.Extension;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
-
 /** Base class for the ComponentContainers in Rapla.
  * Containers are the RaplaMainContainer, the Client- and the Server-Service
  */
 public class ContainerImpl implements Disposable
 {
+
+    public static class RaplaContainerContextException extends  RaplaException
+    {
+        public RaplaContainerContextException(String text)
+        {
+            super(text);
+        }
+        public RaplaContainerContextException(String text,Exception ex)
+        {
+            super(text, ex);
+        }
+    }
     public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
     public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<String>("org.rapla.locale");
     public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
@@ -81,7 +91,7 @@ public class ContainerImpl implements Disposable
         addContainerProvidedComponent(PermissionController.class, PermissionController.class);
     }
 
-    public <T> T inject(Class<T> component, Object... params) throws RaplaContextException
+    public <T> T inject(Class<T> component, Object... params) throws RaplaContainerContextException
     {
         T result = null;
         try
@@ -90,7 +100,7 @@ public class ContainerImpl implements Disposable
         }
         catch (Exception e)
         {
-            throw new RaplaContextException(e.getMessage(),e);
+            throw new RaplaContainerContextException(e.getMessage(), e);
         }
         return result;
     }
@@ -140,7 +150,7 @@ public class ContainerImpl implements Disposable
         addContainerProvidedComponentPrivate(roleInterface.getName(), implementingClass, hint);
     }
 
-    protected <T> T getInstance(Class<T> componentRole, Object... params) throws RaplaContextException
+    protected <T> T getInstance(Class<T> componentRole, Object... params) throws RaplaContainerContextException
     {
         String key = componentRole.getName();//+ "/" + hint;
         ComponentHandler<T> handler = getHandler(key);
@@ -159,16 +169,16 @@ public class ContainerImpl implements Disposable
                     return handler.get(0);
                 }
             }
-            catch (RaplaContextException ex)
+            catch (RaplaContainerContextException ex)
             {
                 throw ex;
             }
             catch (Exception ex)
             {
-                throw new RaplaContextException(ex.getMessage(),ex);
+                throw new RaplaContainerContextException(ex.getMessage(), ex);
             }
         }
-        throw new RaplaContextException(key);
+        throw new RaplaContainerContextException(key);
     }
 
     protected boolean has(Class componentRole, String hint)
@@ -196,7 +206,7 @@ public class ContainerImpl implements Disposable
         return false;
     }
 
-    @SuppressWarnings("unchecked") @Deprecated public <T> T lookupDeprecated(Class<T> componentRole, String hint) throws RaplaContextException
+    @SuppressWarnings("unchecked") @Deprecated public <T> T lookupDeprecated(Class<T> componentRole, String hint) throws RaplaContainerContextException
     {
 
         String key = componentRole.getName();
@@ -213,13 +223,13 @@ public class ContainerImpl implements Disposable
             }
             catch (Exception e)
             {
-                throw new RaplaContextException(e.getMessage(),e);
+                throw new RaplaContainerContextException(e.getMessage(), e);
             }
         }
-        throw new RaplaContextException(key);
+        throw new RaplaContainerContextException(key);
     }
 
-    protected Object lookupPrivateWithNull(String role, int depth) throws RaplaContextException
+    protected Object lookupPrivateWithNull(String role, int depth) throws RaplaContainerContextException
     {
         ComponentHandler handler = getHandler(role);
         if (handler != null)
@@ -230,18 +240,18 @@ public class ContainerImpl implements Disposable
             }
             catch (Exception e)
             {
-                throw new RaplaContextException(e.getMessage(),e);
+                throw new RaplaContainerContextException(e.getMessage(), e);
             }
         }
         return null;
     }
 
-    protected <T> T lookup(Class<T> clazz) throws RaplaContextException
+    protected <T> T lookup(Class<T> clazz) throws RaplaContainerContextException
     {
         return myLookup(clazz, 0);
     }
 
-    private <T> T myLookup(Class<T> clazz, int depth) throws RaplaContextException
+    private <T> T myLookup(Class<T> clazz, int depth) throws RaplaContainerContextException
     {
         String role = clazz.getName();
         ComponentHandler handler = getHandler(role);
@@ -253,13 +263,13 @@ public class ContainerImpl implements Disposable
             }
             catch (Exception e)
             {
-                throw new RaplaContextException(e.getMessage(),e);
+                throw new RaplaContainerContextException(e.getMessage(), e);
             }
         }
-        throw new RaplaContextException(clazz, " Implementation not found.");
+        throw new RaplaContainerContextException(" Implementation not found for " +clazz.getName());
     }
 
-    protected <T> Set<T> lookupServicesFor(Class<T> role, int depth) throws RaplaContextException
+    protected <T> Set<T> lookupServicesFor(Class<T> role, int depth) throws RaplaContainerContextException
     {
         Map<String, T> map = lookupServiceMapFor(role, depth);
         Set<T> result = new LinkedHashSet<T>(map.values());
@@ -344,9 +354,9 @@ public class ContainerImpl implements Disposable
             {
                 interfaceClass = (Class) param;
             }
-            else if (param instanceof ParameterizedType && ((ParameterizedType)param).getRawType() instanceof Class)
+            else if (param instanceof ParameterizedType && ((ParameterizedType) param).getRawType() instanceof Class)
             {
-                interfaceClass = (Class) ((ParameterizedType)param).getRawType();
+                interfaceClass = (Class) ((ParameterizedType) param).getRawType();
             }
             else
             {
@@ -602,8 +612,8 @@ public class ContainerImpl implements Disposable
 
     @SuppressWarnings("unchecked") protected boolean isWebservice(Class type)
     {
-        boolean assignableFrom = type.isAnnotationPresent( RemoteJsonMethod.class );
-//        boolean assignableFrom = RemoteJsonService.class.isAssignableFrom(type);
+        boolean assignableFrom = type.isAnnotationPresent(RemoteJsonMethod.class);
+        //        boolean assignableFrom = RemoteJsonService.class.isAssignableFrom(type);
         return assignableFrom;
         //return type.isAnnotationPresent(WebService.class);
     }
@@ -675,17 +685,17 @@ public class ContainerImpl implements Disposable
         catch (InvocationTargetException e)
         {
             final Throwable targetException = e.getTargetException();
-            if ( targetException instanceof  Exception)
+            if (targetException instanceof Exception)
             {
                 throw (Exception) targetException;
             }
-            if ( targetException instanceof  Error)
+            if (targetException instanceof Error)
             {
                 throw (Error) targetException;
             }
             else
             {
-                throw new IllegalStateException( targetException);
+                throw new IllegalStateException(targetException);
             }
         }
         catch (Exception e)
@@ -732,7 +742,7 @@ public class ContainerImpl implements Disposable
                 Object lookup = lookupPrivateWithNull(id, depth);
                 if (lookup == null)
                 {
-                    throw new RaplaContextException("No constant found for id " + id + " with name " + value);
+                    throw new RaplaContainerContextException("No constant found for id " + id + " with name " + value);
                 }
                 return lookup;
             }
@@ -751,7 +761,7 @@ public class ContainerImpl implements Disposable
         }
         if (!(type instanceof Class))
         {
-            throw new IllegalStateException("Param of type "  + type.getTypeName() + " can't be injected it is not a class ");
+            throw new IllegalStateException("Param of type " + type.getTypeName() + " can't be injected it is not a class ");
         }
         Class guessedRole = (Class) type;
         if (has(guessedRole, null))
@@ -771,7 +781,7 @@ public class ContainerImpl implements Disposable
                     // e.g. MyClass(Date startDate, Date endDate)
                     if (throwSingletonExceptionOnMatchingParam)
                     {
-                        throw new RaplaContextException("Additional Param can't be injected for singletons");
+                        throw new RaplaContainerContextException("Additional Param can't be injected for singletons");
                     }
                     additionalParams.remove(j);
                     return additional;
@@ -782,7 +792,7 @@ public class ContainerImpl implements Disposable
         return p;
     }
 
-    private Object resolveParameterized(int depth, ParameterizedType parameterizedType) throws RaplaContextException
+    private Object resolveParameterized(int depth, ParameterizedType parameterizedType) throws RaplaContainerContextException
     {
         final Object result;
         String typeName = parameterizedType.getRawType().getTypeName();
@@ -835,14 +845,14 @@ public class ContainerImpl implements Disposable
                 final ParameterizedType paramType = (ParameterizedType) valueParam;
                 if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
                 {
-                    if(paramType.getRawType() instanceof Class)
+                    if (paramType.getRawType() instanceof Class)
                     {
                         final Class<? extends Type> class1 = (Class<? extends Type>) paramType.getRawType();
                         result = lookupServicesFor(class1, depth);
                     }
                     else
                     {
-                        throw new RaplaContextException("Can't instanciate parameterized Set or Map for generic type " + paramType);
+                        throw new RaplaContainerContextException("Can't instanciate parameterized Set or Map for generic type " + paramType);
                     }
                 }
                 else
@@ -876,14 +886,14 @@ public class ContainerImpl implements Disposable
                         final ParameterizedType paramType = (ParameterizedType) valueParam;
                         if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
                         {
-                            if(paramType.getRawType() instanceof Class)
+                            if (paramType.getRawType() instanceof Class)
                             {
                                 final Class<? extends Type> class1 = (Class<? extends Type>) paramType.getRawType();
                                 result = lookupServiceMapFor(class1, depth);
                             }
                             else
                             {
-                                throw new RaplaContextException("Can't instanciate parameterized Set or Map for generic type " + paramType);
+                                throw new RaplaContainerContextException("Can't instanciate parameterized Set or Map for generic type " + paramType);
                             }
                         }
                         else
@@ -1043,10 +1053,10 @@ public class ContainerImpl implements Disposable
             catch (ClassNotFoundException e1)
             {
                 final int i = module.lastIndexOf(".");
-                if ( i >=0)
+                if (i >= 0)
                 {
                     StringBuilder builder = new StringBuilder(module);
-                    final StringBuilder innerClass = builder.replace(i, i+1, "$");
+                    final StringBuilder innerClass = builder.replace(i, i + 1, "$");
                     try
                     {
                         final String className = innerClass.toString();
@@ -1195,12 +1205,10 @@ public class ContainerImpl implements Disposable
                         addRequestComponent(interfaceClass, clazz, id);
                     }
 
-
-
                 }
                 catch (Throwable e)
                 {
-                    logger.warn("Error loading implementationClassName (" + implementationClassName + ") for " + interfaceName+" from file "+url);
+                    logger.warn("Error loading implementationClassName (" + implementationClassName + ") for " + interfaceName + " from file " + url);
                 }
 
             }

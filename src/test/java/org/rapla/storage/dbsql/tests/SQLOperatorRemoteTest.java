@@ -57,9 +57,8 @@ public class SQLOperatorRemoteTest extends ServerTest {
    }
    
    public void testExport() throws Exception {
-       RaplaXMLContext context = getContext();
-       
-       ImportExportManager conv =  context.lookup(ImportExportManager.class);
+
+       ImportExportManager conv =  null;
        conv.doExport();
        {
            CachableStorageOperator operator = getRapladb();

@@ -1,11 +1,10 @@
 package org.rapla.client.swing.toolkit;
 
-import javax.swing.JComboBox;
-
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.entities.Named;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
+
+import javax.swing.JComboBox;
 
 public final class RaplaListComboBox extends JComboBox {
     private static final long serialVersionUID = 1L;
@@ -24,11 +23,7 @@ public final class RaplaListComboBox extends JComboBox {
 
     @SuppressWarnings("unchecked")
     public void init(RaplaLocale raplaLocale) {
-        try {
-            setRenderer(new NamedListCellRenderer(raplaLocale.getLocale()));
-        } catch (RaplaContextException e) {
-            throw new IllegalStateException(e);
-        }
+        setRenderer(new NamedListCellRenderer(raplaLocale.getLocale()));
     }
 
     protected boolean processKeyBinding(javax.swing.KeyStroke ks, java.awt.event.KeyEvent e, int condition, boolean pressed) {

@@ -9,12 +9,9 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.internal.ServerStorageSelector;
-import org.rapla.storage.StorageOperator;
 
 import javax.inject.Singleton;
 
@@ -43,7 +40,7 @@ import javax.inject.Singleton;
 
             }
 
-            @Override public ClientFacade getFacade() throws RaplaContextException
+            @Override public ClientFacade getFacade()
             {
                 return null;
             }

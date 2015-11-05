@@ -150,7 +150,7 @@ public class DynamicTypeTest extends RaplaTestCase {
    		facade.store( modified);
    	}
    	{
-	    	CalendarSelectionModel model = getContext().lookup(CalendarSelectionModel.class);
+	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    	ClassificationFilter firstFilter = allocType.newClassificationFilter();
 	    	assertNotNull( firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=","t"}});

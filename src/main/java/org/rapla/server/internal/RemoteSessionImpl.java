@@ -1,15 +1,15 @@
 package org.rapla.server.internal;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-
 import org.rapla.entities.User;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.server.RequestScoped;
 import org.rapla.server.RemoteSession;
+import org.rapla.storage.RaplaSecurityException;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 
 @RequestScoped
 @DefaultImplementation(of=RemoteSession.class,context = InjectionContext.server)
@@ -64,10 +64,10 @@ public class RemoteSessionImpl implements RemoteSession {
         return logger;
     }
 
-    public User getUser() throws RaplaContextException
+    public User getUser() throws RaplaSecurityException
     {
         if (user == null)
-            throw new RaplaContextException("No user found in session.");
+            throw new RaplaSecurityException("No user found in session.");
         return user;
     }
 

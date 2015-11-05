@@ -38,8 +38,8 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.storage.xml.RaplaXMLContextException;
 import org.rapla.storage.xml.RaplaXMLContext;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -783,7 +783,7 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
     protected <S> S lookup( TypedComponentRole<S> role) throws RaplaException {
         try {
             return context.lookup( role);
-        } catch (RaplaContextException e) {
+        } catch (RaplaXMLContextException e) {
             throw new RaplaException( e);
         }
     }
@@ -791,7 +791,7 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
     protected <S> S lookup( Class<S> role) throws RaplaException {
         try {
             return context.lookup( role);
-        } catch (RaplaContextException e) {
+        } catch (RaplaXMLContextException e) {
             throw new RaplaException( e);
         }
 

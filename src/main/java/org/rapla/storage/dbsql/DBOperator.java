@@ -46,7 +46,7 @@ import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaContextException;
+import org.rapla.storage.xml.RaplaXMLContextException;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -105,7 +105,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 //        {
 //	        try {
 //	        	lookupDeprecated  = ContextTools.resolveContextObject(datasourceName, context );
-//	        } catch (RaplaContextException ex) {
+//	        } catch (RaplaXMLContextException ex) {
 //	        	throw new RaplaDBException("Datasource " + datasourceName + " not found"); 
 //	        }
 //        }
@@ -313,7 +313,8 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
     @SuppressWarnings("deprecation")
-    private boolean upgradeDatabase(Connection c) throws SQLException, RaplaException, RaplaContextException {
+    private boolean upgradeDatabase(Connection c) throws SQLException, RaplaException, RaplaXMLContextException
+    {
         Map<String, TableDef> schema = loadDBSchema(c);
         TableDef dynamicTypeDef = schema.get("DYNAMIC_TYPE"); 
         boolean empty = false;

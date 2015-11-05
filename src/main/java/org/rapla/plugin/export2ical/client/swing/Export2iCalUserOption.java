@@ -20,7 +20,6 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -63,7 +62,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	final Export2iCalResources i18nIcal;
 
 	@Inject
-    public Export2iCalUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalConfigService configService, Export2iCalResources i18nIcal) throws RaplaContextException
+    public Export2iCalUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalConfigService configService, Export2iCalResources i18nIcal)
 	{
 		super(facade, i18n, raplaLocale, logger);
 		this.configService = configService;

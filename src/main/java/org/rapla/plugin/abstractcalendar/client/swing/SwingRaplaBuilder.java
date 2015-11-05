@@ -22,7 +22,6 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -31,15 +30,12 @@ public class SwingRaplaBuilder extends RaplaBuilder
 {
     RaplaImages images;
     
-    public SwingRaplaBuilder(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController, RaplaImages raplaImages) throws RaplaContextException 
+    public SwingRaplaBuilder(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController, RaplaImages raplaImages)
     {
         super(raplaLocale, clientFacade, i18n, logger, appointmentFormater, permissionController);
         this.images= raplaImages;
     }
 
-    /**
-     * @see org.rapla.plugin.abstractcalendar.RaplaBuilder#createBlock(calendar.RaplaBuilder.RaplaBlockContext, java.util.Date, java.util.Date)
-     */
     protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
         SwingRaplaBlock block = new SwingRaplaBlock();
         block.contextualize(blockContext);

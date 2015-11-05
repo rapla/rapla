@@ -48,7 +48,7 @@ public class Export2iCalPlugin  {
 //        isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
 //    }
     
-	//public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
+	//public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaXMLContextException {
 //		container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, Export2iCalAdminOption.class);
 //		if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
 //			return;

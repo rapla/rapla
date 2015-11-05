@@ -53,7 +53,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -80,7 +79,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 	@Inject
-	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources,RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaContextException
+	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources,RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
 	{
 		super(facade, i18n, raplaLocale, logger);
 		this.importService = importService;

@@ -38,6 +38,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
+import org.rapla.storage.xml.RaplaXMLContextException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -590,7 +591,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
     }
 
     static public void convertToNewPluginConfig(ClientFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
-            throws RaplaContextException
+            throws RaplaXMLContextException
     {
         try
         {
@@ -625,11 +626,11 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
         }
         catch (RaplaException ex)
         {
-            if (ex instanceof RaplaContextException)
+            if (ex instanceof RaplaXMLContextException)
             {
-                throw (RaplaContextException) ex;
+                throw (RaplaXMLContextException) ex;
             }
-            throw new RaplaContextException(ex.getMessage(), ex);
+            throw new RaplaXMLContextException(ex.getMessage(), ex);
         }
     }
 

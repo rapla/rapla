@@ -1,6 +1,5 @@
 package org.rapla.storage.xml;
 
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.TypedComponentRole;
 
 import java.util.HashMap;
@@ -24,9 +23,9 @@ public class RaplaDefaultXMLContext implements RaplaXMLContext
     }
 
 	/**
-	 * @throws RaplaContextException
+	 * @throws RaplaXMLContextException
 	 */
-	protected Object lookup( final String key ) throws RaplaContextException
+	protected Object lookup( final String key ) throws RaplaXMLContextException
     {
         return contextObjects.get( key );
     }
@@ -62,7 +61,8 @@ public class RaplaDefaultXMLContext implements RaplaXMLContext
     }
     
     @SuppressWarnings("unchecked")
-    public <T> T lookup(Class<T> componentRole) throws RaplaContextException {
+    public <T> T lookup(Class<T> componentRole) throws RaplaXMLContextException
+    {
         final String key = componentRole.getName();
         T lookup = (T) lookup(key);
         if ( lookup == null)
@@ -73,7 +73,7 @@ public class RaplaDefaultXMLContext implements RaplaXMLContext
             }
             else
             {
-                throw new RaplaContextException(  key );     
+                throw new RaplaXMLContextException(  key );
             }
         }
         return lookup;
@@ -81,7 +81,8 @@ public class RaplaDefaultXMLContext implements RaplaXMLContext
 
     
     @SuppressWarnings("unchecked")
-    public <T> T lookup(TypedComponentRole<T> componentRole) throws RaplaContextException {
+    public <T> T lookup(TypedComponentRole<T> componentRole) throws RaplaXMLContextException
+    {
         final String key = componentRole.getId();
         T lookup = (T) lookup(key);
         if ( lookup == null)
@@ -92,7 +93,7 @@ public class RaplaDefaultXMLContext implements RaplaXMLContext
             }
             else
             {
-                throw new RaplaContextException(  key );     
+                throw new RaplaXMLContextException(  key );
             }
         }
         return lookup;

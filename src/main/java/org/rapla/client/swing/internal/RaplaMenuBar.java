@@ -52,7 +52,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
@@ -389,7 +388,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     }
 
-    private void addPluginExtensions(Set<? extends IdentifiableMenuEntry> points, RaplaMenu menu) throws RaplaContextException
+    private void addPluginExtensions(Set<? extends IdentifiableMenuEntry> points, RaplaMenu menu)
     {
         for (IdentifiableMenuEntry menuItem : points)
         {

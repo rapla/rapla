@@ -1,21 +1,11 @@
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.AuthenticationStore;
@@ -23,6 +13,14 @@ import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 public class RaplaAuthentificationService
 {
@@ -54,13 +52,13 @@ public class RaplaAuthentificationService
         RaplaAuthentificationService.passwordCheckDisabled = passwordCheckDisabled;
     }
 
-    protected User getValidUser(final RemoteSession session) throws RaplaContextException, RaplaSecurityException
+    protected User getValidUser(final RemoteSession session) throws RaplaSecurityException
     {
-        User user = session.getUser();
-        if (user == null)
+        if (!session.isAuthentified())
         {
             throw new RaplaSecurityException(i18n.getString("error.login"));
         }
+        User user = session.getUser();
         return user;
     }
 

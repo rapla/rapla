@@ -39,7 +39,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -78,7 +77,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             try {
                 Double version = context.lookup( VERSION);
                 return version <1.2;
-            } catch (RaplaContextException e) {
+            } catch (RaplaXMLContextException e) {
             }
         }
         return false;

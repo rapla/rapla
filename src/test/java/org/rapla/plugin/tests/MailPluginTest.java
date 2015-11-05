@@ -57,8 +57,8 @@ public class MailPluginTest extends ServletTestBase {
     public void test() throws Exception 
     {
         MockMailer mailMock = (MockMailer) null;
-        final ClientFacade facade = getContext().lookup(ClientFacade.class);
-        Logger logger = getContext().lookup(Logger.class);
+        final ClientFacade facade = null;
+        Logger logger = null;
 
         MailToUserImpl mail = new MailToUserImpl(mailMock, facade, logger);
         mail.sendMail( "homer","Subject", "MyBody");

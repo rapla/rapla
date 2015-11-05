@@ -121,7 +121,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 //        	String filePath;
 //	        try {
 //	        	 filePath = ContextTools.resolveContext(datasourceName, context );
-//	        } catch (RaplaContextException ex) {
+//	        } catch (RaplaXMLContextException ex) {
 //	        	filePath = "${context-root}/data.xml";
 //	        	String message = "JNDI config raplafile is not found using '" + filePath + "' :"+ ex.getMessage() ;
 //	        	getLogger().warn(message);

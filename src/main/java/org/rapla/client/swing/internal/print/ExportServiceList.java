@@ -18,14 +18,18 @@ import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.ListSelectionModel;
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.util.Collection;
@@ -96,10 +100,10 @@ public class ExportServiceList   {
         exporters.remove(policy);
     }
 
-    public ExportService select(Object policy) throws RaplaContextException {
+    public ExportService select(Object policy) throws RaplaException {
         ExportService result =  exporters.get(policy);
         if (result == null)
-            throw new RaplaContextException("Export Service not found for key " + policy);
+            throw new RaplaException("Export Service not found for key " + policy);
         return result;
     }
 

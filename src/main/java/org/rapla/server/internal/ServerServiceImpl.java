@@ -12,16 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.sql.DataSource;
-
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -29,7 +21,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Configuration;
-import org.rapla.framework.RaplaContextException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
@@ -49,8 +40,14 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.sql.DataSource;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
 
 
 public class ServerServiceImpl implements StorageUpdateListener, ServerServiceContainer
@@ -65,7 +62,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
-    public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors() throws RaplaContextException
+    public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
     {
         return requestPreProcessors;
     }
@@ -164,7 +161,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
                 {
                     if (timeZone == null)
                     {
-                        throw new RaplaContextException(fallback + " timezone not found in ical registry. ical4j maybe corrupted or not loaded correctyl");
+                        throw new RaplaException(fallback + " timezone not found in ical registry. ical4j maybe corrupted or not loaded correctyl");
                     }
                 }
             }
@@ -269,29 +266,12 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         return null;
     }
 
-
     public RaplaPageGenerator getWebpage(String page)
     {
-        try
-        {
-            String lowerCase = page.toLowerCase();
-            @SuppressWarnings("deprecation")
-            RaplaPageGenerator factory = pageMap.get(lowerCase);
-            return factory;
-        }
-        catch (RaplaContextException ex)
-        {
-            Throwable cause = ex.getCause();
-            if (cause != null)
-            {
-                getLogger().error(cause.getMessage(), cause);
-            }
-            else
-            {
-                getLogger().error(ex.getMessage(), ex);
-            }
-            return null;
-        }
+        String lowerCase = page.toLowerCase();
+        @SuppressWarnings("deprecation")
+        RaplaPageGenerator factory = pageMap.get(lowerCase);
+        return factory;
     }
 
     public void updateError(RaplaException ex)

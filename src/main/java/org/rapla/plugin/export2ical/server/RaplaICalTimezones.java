@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import org.rapla.framework.RaplaContextException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.common.FutureResult;
@@ -25,7 +24,7 @@ public class RaplaICalTimezones implements ICalTimezones{
 	TimeZoneConverter converter;
 
 	@Inject
-	public RaplaICalTimezones(TimeZoneConverter converter) throws RaplaContextException {
+	public RaplaICalTimezones(TimeZoneConverter converter)  {
 		availableIDs = new ArrayList<String>(Arrays.asList( TimeZone.getAvailableIDs()));
 		Collections.sort(availableIDs, String.CASE_INSENSITIVE_ORDER);
 		this.converter = converter;
