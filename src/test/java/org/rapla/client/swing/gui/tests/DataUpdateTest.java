@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.rapla.RaplaTestCase;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -33,7 +33,6 @@ import junit.framework.TestSuite;
 
 public class DataUpdateTest extends RaplaTestCase {
     ClientFacade facade;
-    ClientService clientService;
     Exception error;
 
     public DataUpdateTest(String name) {
@@ -46,7 +45,6 @@ public class DataUpdateTest extends RaplaTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        clientService = getClientService();
         facade = getService(ClientFacade.class);
     }
 

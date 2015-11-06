@@ -12,12 +12,11 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.gui.edit.test;
-import java.awt.Component;
 import java.util.Collections;
 
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -30,7 +29,6 @@ import org.rapla.client.swing.internal.edit.fields.PermissionField.PermissionFie
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
@@ -61,7 +59,6 @@ public final class PermissionEditTest extends GUITestCase
     }
 
     public void testMain() throws Exception {
-        ClientService clientService = getClientService();
         final Logger logger = getLogger();
         final ServerBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -81,13 +78,13 @@ public final class PermissionEditTest extends GUITestCase
         LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
         PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dateRenderer, dialogUiFactory, dateFieldFactory, longFieldFactory);
         PermissionListField editor = new PermissionListField(getFacade(), i18n, getRaplaLocale(), getLogger(),"permissions", raplaListEditFactory, permissionFieldFactory);
-        Allocatable a = clientService.getFacade().getAllocatables(null)[0];
-        Allocatable r = clientService.getFacade().edit( a );
+        Allocatable a = facade.getAllocatables(null)[0];
+        Allocatable r = facade.edit( a );
         Permission p1 = r.newPermission();
-        p1.setUser(clientService.getFacade().getUsers()[0]);
+        p1.setUser(facade.getUsers()[0]);
         r.addPermission(p1);
         Permission p2 = r.newPermission();
-        p2.setUser( clientService.getFacade().getUsers()[1]);
+        p2.setUser( facade.getUsers()[1]);
         r.addPermission(p2);
         Permission p3 = r.newPermission();
         r.addPermission(p3);

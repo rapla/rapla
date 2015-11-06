@@ -1,10 +1,7 @@
 package org.rapla.server.internal.console;
 
-import java.net.URL;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
-import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.entities.User;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -13,8 +10,9 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
-import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
+
+import java.net.URL;
 
 public class StandaloneStarter extends GUIStarter
 {
@@ -30,7 +28,7 @@ public class StandaloneStarter extends GUIStarter
 
     public void startStandalone( ) throws Exception 
     {
-        ServerServiceImpl server = serverStarter.startServer();
+        ServerServiceContainer server = serverStarter.startServer();
         String username = startupUser != null ? startupUser:server.getFirstAdmin();
         ConnectInfo connectInfo =  new ConnectInfo(username, "".toCharArray());
         RaplaStartupEnvironment env = new RaplaStartupEnvironment();
@@ -70,7 +68,7 @@ public class StandaloneStarter extends GUIStarter
         }
     }
 
-    private void startStandaloneGUI(RaplaStartupEnvironment env, ConnectInfo connectInfo, final ServerServiceImpl server) throws RaplaException, Exception {
+    private void startStandaloneGUI(RaplaStartupEnvironment env, ConnectInfo connectInfo, final ServerServiceContainer server) throws RaplaException, Exception {
         RemoteAuthentificationServiceImpl.setPasswordCheckDisabled(true);
         String reconnectUser = connectInfo.getConnectAs() != null ? connectInfo.getConnectAs() : connectInfo.getUsername();
         User user = server.getOperator().getUser(reconnectUser);

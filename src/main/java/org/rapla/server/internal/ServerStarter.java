@@ -13,20 +13,20 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
-import org.rapla.server.internal.dagger.DaggerServerCreator;
+import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 public class ServerStarter
 {
 
-    private ServerServiceImpl server;
+    private ServerServiceContainer server;
     Logger logger;
     Runnable shutdownCommand;
     private ReadWriteLock restartLock = new ReentrantReadWriteLock();
     Collection<ServletRequestPreprocessor> processors;
     ServerContainerContext backendContext;
 
-    private ServerServiceImpl create()
+    private ServerServiceContainer create()
     {
         return DaggerServerCreator.create(logger, backendContext);
     }
@@ -101,7 +101,7 @@ public class ServerStarter
     }
     
     //Logger logger;
-    public ServerServiceImpl startServer()    throws ServletException {
+    public ServerServiceContainer startServer()    throws ServletException {
         
 
         try
@@ -111,11 +111,8 @@ public class ServerStarter
                 backendContext.shutdownService = new ShutdownServiceImpl();
             }
             server = create();
-            final Logger logger = server.getLogger();
-            {
-                logger.info("Rapla server started");
+            logger.info("Rapla server started");
 
-            }
             processors = server.getServletRequestPreprocessors();
             return server;
         }

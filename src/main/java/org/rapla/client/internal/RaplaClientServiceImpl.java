@@ -17,6 +17,7 @@ import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListener;
+import org.rapla.client.UserClientService;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -44,6 +45,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
@@ -69,9 +72,10 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
-/** Implementation of the ClientService.
+/** Implementation of the UserClientService.
 */
 @Singleton
+@DefaultImplementation(of=ClientService.class,context = InjectionContext.swing,export = true)
 public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener,Disposable
 {
     
@@ -118,6 +122,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         this.raplaImages = raplaImages;
         initialize();
     }
+
 
     public Logger getLogger()
     {

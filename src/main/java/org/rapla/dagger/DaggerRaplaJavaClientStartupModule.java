@@ -1,8 +1,8 @@
-package org.rapla.client.swing.internal.dagger;
+package org.rapla.dagger;
 
 import dagger.Module;
 import dagger.Provides;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.RaplaClientListener;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
@@ -15,36 +15,21 @@ import org.rapla.framework.logger.Logger;
 
 import javax.inject.Singleton;
 
-@Module public class MyClientModule
+@Module public class DaggerRaplaJavaClientStartupModule
 {
     StartupEnvironment context;
     Logger logger;
 
-    public MyClientModule(StartupEnvironment context)
+    public DaggerRaplaJavaClientStartupModule(StartupEnvironment context)
     {
         this.context = context;
         this.logger = context.getBootstrapLogger();
     }
 
-    @Provides ClientService provideService()
+    @Provides UserClientService provideService()
     {
-        return new ClientService()
+        return new UserClientService()
         {
-            @Override public void addRaplaClientListener(RaplaClientListener listener)
-            {
-
-            }
-
-            @Override public void removeRaplaClientListener(RaplaClientListener listener)
-            {
-
-            }
-
-            @Override public ClientFacade getFacade()
-            {
-                return null;
-            }
-
             @Override public boolean isRunning()
             {
                 return false;

@@ -16,7 +16,7 @@ import java.util.Collections;
 
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -54,7 +54,6 @@ public final class CategoryEditTest extends GUITestCase
 
 
     public void testMain() throws Exception {
-        ClientService clientService = getClientService();
         final Logger logger = getLogger();
         final ServerBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -72,7 +71,7 @@ public final class CategoryEditTest extends GUITestCase
         MultiLanguageFieldFactory multiLAnguageFieldFactoy = new MultiLanguageFieldFactory(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, textField, ioInterface);
         TextFieldFactory longFieldFactory = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
         CategoryEditUI editor = new CategoryEditUI( getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, multiLAnguageFieldFactoy, longFieldFactory);
-        editor.setObjects( Collections.singletonList(clientService.getFacade().getSuperCategory().getCategories()[0] ));
+        editor.setObjects( Collections.singletonList(getFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
         getLogger().info("Category edit started");
     }

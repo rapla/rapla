@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.facade.ClientFacade;
@@ -21,9 +21,9 @@ import org.rapla.framework.logger.Logger;
 
 
 public class RestartRaplaAction extends RaplaAction{
-    private final ClientService clientService;
+    private final UserClientService clientService;
 
-    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClientService clientService, RaplaImages raplaImages)  
+    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, UserClientService clientService, RaplaImages raplaImages)
     {
         super(facade, i18n, raplaLocale, logger);
         this.clientService = clientService;

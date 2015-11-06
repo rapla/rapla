@@ -12,6 +12,37 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.swing.toolkit.ErrorDialog;
+import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.calendar.RaplaCalendar;
+import org.rapla.components.calendar.RaplaTime;
+import org.rapla.components.calendar.TimeRenderer;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.DependencyException;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.RaplaNewVersionException;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.dbrm.RaplaConnectException;
+import org.rapla.storage.dbrm.RaplaRestartingException;
+import org.rapla.storage.dbrm.WrongRaplaVersionException;
+
+import javax.swing.Action;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JTable;
+import javax.swing.KeyStroke;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.JTextComponent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Point;
@@ -26,46 +57,6 @@ import java.awt.event.MouseEvent;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
-import java.util.Map;
-
-import javax.swing.Action;
-import javax.swing.ImageIcon;
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
-import javax.swing.JTable;
-import javax.swing.KeyStroke;
-import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.JTextComponent;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
-import org.rapla.client.PopupContext;
-import org.rapla.client.ReservationController;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.action.AppointmentAction;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.calendar.RaplaCalendar;
-import org.rapla.components.calendar.RaplaTime;
-import org.rapla.components.calendar.TimeRenderer;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.entities.DependencyException;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.RaplaNewVersionException;
-import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.dbrm.RaplaConnectException;
-import org.rapla.storage.dbrm.RaplaRestartingException;
-import org.rapla.storage.dbrm.WrongRaplaVersionException;
 
 /**
     Base class for most components in the gui package. Eases

@@ -13,7 +13,7 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
@@ -108,7 +108,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             MenuFactory menuFactory,
             EditController editController,
             CalendarSelectionModel model,
-            ClientService clientService,
+            UserClientService clientService,
             RestartServer restartServerService,
             RaplaImages raplaImages, 
             DialogUiFactory dialogUiFactory,

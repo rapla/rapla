@@ -20,7 +20,7 @@ import java.util.concurrent.Semaphore;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -41,18 +41,19 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 public final class ReservationControllerTest extends GUITestCase {
+	ClientFacade facade = null;
+
 	public ReservationControllerTest(String name) {
 		super(name);
 	}
+
 
 	public static Test suite() {
 		return new TestSuite(ReservationControllerTest.class);
 	}
 
 	public void testMain() throws Exception {
-		ClientService clientService = getClientService();
-		Reservation[] reservations = clientService.getFacade()
-				.getReservationsForAllocatable(null, null, null, null);
+		Reservation[] reservations = facade.getReservationsForAllocatable(null, null, null, null);
 		final ReservationController c = getService(ReservationController.class);
 		final Reservation reservation = reservations[0];
 		c.edit(reservation);
@@ -60,8 +61,7 @@ public final class ReservationControllerTest extends GUITestCase {
 	}
 
 	public void testMove() throws Exception {
-		final ClientService clientService = getClientService();
-		Reservation[] reservations = clientService.getFacade().getReservationsForAllocatable(null, null, null, null);
+		Reservation[] reservations = facade.getReservationsForAllocatable(null, null, null, null);
 		final ReservationController c =  getService(ReservationController.class);
 		final Reservation reservation = reservations[0];
 		Appointment[] appointments = reservation.getAppointments();
@@ -78,7 +78,7 @@ public final class ReservationControllerTest extends GUITestCase {
 				Date newStart = DateTools.addDay(appointment.getStart());
 				try {
 					c.moveAppointment(appointmentBlock, newStart, createPopupContext(),	keepTime);
-					Appointment app = clientService.getFacade().getPersistant(reservation).getAppointments()[0];
+					Appointment app = facade.getPersistant(reservation).getAppointments()[0];
 					assertEquals(DateTools.addDay(from), app.getStart());
 					// Now the test can end
 					mutex.release();
@@ -107,10 +107,10 @@ public final class ReservationControllerTest extends GUITestCase {
 		mutex.release();
 		
 		//Testing undo & redo function
-		clientService.getFacade().getCommandHistory().undo();
-		assertEquals(from, clientService.getFacade().getPersistant(reservation).getAppointments()[0].getStart());
-		clientService.getFacade().getCommandHistory().redo();
-		assertEquals(DateTools.addDay(from), clientService.getFacade().getPersistant(reservation).getAppointments()[0].getStart());
+		facade.getCommandHistory().undo();
+		assertEquals(from, facade.getPersistant(reservation).getAppointments()[0].getStart());
+		facade.getCommandHistory().redo();
+		assertEquals(DateTools.addDay(from), facade.getPersistant(reservation).getAppointments()[0].getStart());
 	}
 	
 	
@@ -120,9 +120,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		Allocatable[] periods = facade.getAllocatables(filters);
 		facade.removeObjects(periods);
 		Thread.sleep(500);
-		ClientService clientService = getClientService();
-		Reservation[] reservations = clientService.getFacade()
-				.getReservationsForAllocatable(null, null, null, null);
+		Reservation[] reservations = facade.getReservationsForAllocatable(null, null, null, null);
 		ReservationController c = getService(ReservationController.class);
 		c.edit(reservations[0]);
 		getLogger().info("ReservationController started");

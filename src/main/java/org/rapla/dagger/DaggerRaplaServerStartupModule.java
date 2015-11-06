@@ -1,4 +1,4 @@
-package org.rapla.server.internal.dagger;
+package org.rapla.dagger;
 
 import javax.inject.Named;
 
@@ -13,15 +13,12 @@ import org.rapla.storage.StorageOperator;
 import dagger.Module;
 import dagger.Provides;
 
-/**
- * Created by Christopher on 04.11.2015.
- */
-@Module public class MyModule
+@Module public class DaggerRaplaServerStartupModule
 {
     ServerServiceImpl.ServerContainerContext context;
     Logger logger;
 
-    public MyModule(ServerServiceImpl.ServerContainerContext context, Logger logger)
+    public DaggerRaplaServerStartupModule(ServerServiceImpl.ServerContainerContext context, Logger logger)
     {
         this.context = context;
         this.logger = logger;

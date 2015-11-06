@@ -4,7 +4,10 @@ import java.util.List;
 
 import javax.inject.Singleton;
 
+import org.rapla.client.gwt.dagger.DaggerRaplaGwtComponent;
+import org.rapla.client.gwt.dagger.RaplaGwtComponent;
 import org.rapla.client.gwt.view.RaplaPopups;
+import org.rapla.dagger.DaggerRaplaGwtModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.client.EntryPointFactory;
 import org.rapla.jsonrpc.client.gwt.AbstractJsonProxy;
@@ -18,13 +21,6 @@ import dagger.Component;
 
 public class Rapla implements EntryPoint
 {
-
-    @Component(modules = {org.rapla.dagger.DaggerGwtModule.class/*, DaggerStaticModule.class*/})
-    @Singleton
-    public interface RaplaGwtInjectionStart
-    {
-        RaplaGwtStarter getStarter();
-    }
 
     private void setProxy()
     {
@@ -56,7 +52,8 @@ public class Rapla implements EntryPoint
         RaplaPopups.getProgressBar().setPercent(10);
         //        final MainInjector injector = GWT.create(MainInjector.class);
         //        new RaplaGwtStarter(injector).startApplication();
-        final RaplaGwtStarter starter = DaggerRapla_RaplaGwtInjectionStart.create().getStarter();
+        final RaplaGwtComponent component = DaggerRaplaGwtComponent.builder().build();
+        GwtStarter starter = component.getGwtStarter();
         starter.startApplication();
     }
 

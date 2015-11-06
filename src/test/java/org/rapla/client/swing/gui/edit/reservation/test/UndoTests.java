@@ -1,13 +1,7 @@
 package org.rapla.client.swing.gui.edit.reservation.test;
 
-import java.awt.Window;
-import java.util.Date;
-import java.util.concurrent.Semaphore;
-
-import javax.swing.JDialog;
-import javax.swing.SwingUtilities;
-
-import org.rapla.client.ClientService;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -24,8 +18,11 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import javax.swing.JDialog;
+import javax.swing.SwingUtilities;
+import java.awt.Window;
+import java.util.Date;
+import java.util.concurrent.Semaphore;
 
 public class UndoTests extends GUITestCase {
 
@@ -88,8 +85,7 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testMoveUndo() throws Exception{ 
-		final ClientService clientService = getClientService();
-    	final ClientFacade facade = clientService.getFacade();
+		final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
         //Creating Event
@@ -145,8 +141,7 @@ public class UndoTests extends GUITestCase {
 	 */
 	
 	public void testResizeUndo() throws Exception{
-		final ClientService clientService = getClientService();
-    	final ClientFacade facade = clientService.getFacade();
+    	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
 		final Reservation event = createEvent(facade.newResource(), facade.newReservation());
@@ -204,8 +199,7 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testDeleteUndo() throws Exception{
-		final ClientService clientService = getClientService();
-    	final ClientFacade facade = clientService.getFacade();
+    	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
 		Allocatable nonPersistantAllocatable = facade.newResource();

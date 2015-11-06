@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006  Christopher Kohlhaas                               |
+ | Copyright (C) 2014 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -10,23 +10,28 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.server;
+package org.rapla.client;
 
 import org.rapla.entities.User;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.RaplaSecurityException;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
 
-/** An interface to access the SessionInformation. An implementation of
- * RemoteSession gets passed to the creation RaplaRemoteService.*/
-
-@org.rapla.server.RequestScoped
-public interface RemoteSession
+/** This service starts and manages the rapla-gui-client.
+ */
+public interface UserClientService
 {
+    /** setup a component with the services logger,context and servicemanager */
+    boolean isRunning();
+    
+    /** the admin can switch to another user!*/
+    void switchTo(User user) throws  RaplaException;
+    /** returns true if the admin has switched to anoter user!*/
+    boolean canSwitchBack();
 
-    Logger getLogger();
-    User getUser() throws RaplaSecurityException;
-
-    boolean isAuthentified();
-
+    /** restarts the complete Client and displays a new login*/
+    void restart();
+	/** returns true if an logout option is available. This is true when the user used an login dialog.*/
+    boolean isLogoutAvailable();
+    
     void logout();
 }

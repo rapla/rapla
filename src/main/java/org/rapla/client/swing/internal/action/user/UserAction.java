@@ -13,7 +13,7 @@
 package org.rapla.client.swing.internal.action.user;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaAction;
@@ -31,12 +31,12 @@ public class UserAction extends RaplaAction {
     public final int SWITCH_TO_USER = 3;
     int type = NEW;
     private final PopupContext popupContext;
-    private final ClientService service;
+    private final UserClientService service;
     private final EditController editController;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 
-    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, ClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, UserClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
         this.service = service;

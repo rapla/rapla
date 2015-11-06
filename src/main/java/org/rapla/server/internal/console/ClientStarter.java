@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
+import org.rapla.client.ClientService;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.framework.RaplaException;
@@ -16,7 +17,7 @@ public class ClientStarter extends GUIStarter
 {
     URL downloadUrl_;
 
-    private RaplaClientServiceImpl create(RaplaStartupEnvironment env)
+    private ClientService create(RaplaStartupEnvironment env)
     {
         return DaggerClientCreator.create(env);
     }

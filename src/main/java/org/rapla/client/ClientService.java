@@ -12,32 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
+import org.rapla.ConnectInfo;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 
 /** This service starts and manages the rapla-gui-client.
  */
-public interface ClientService
+public interface ClientService extends Disposable
 {
-    //public static TypedComponentRole<RaplaFrame> MAIN_COMPONENT = new TypedComponentRole<RaplaFrame>("org.rapla.MainComponent");
-
+    public void start(ConnectInfo connectInfo) throws Exception;
     void addRaplaClientListener(RaplaClientListener listener);
-    void removeRaplaClientListener(RaplaClientListener listener);
 
-    ClientFacade getFacade();
-    /** setup a component with the services logger,context and servicemanager */
-    boolean isRunning();
-    
-    /** the admin can switch to another user!*/
-    void switchTo(User user) throws  RaplaException;
-    /** returns true if the admin has switched to anoter user!*/
-    boolean canSwitchBack();
-
-    /** restarts the complete Client and displays a new login*/
-    void restart();
-	/** returns true if an logout option is available. This is true when the user used an login dialog.*/
-    boolean isLogoutAvailable();
-    
-    void logout();
 }

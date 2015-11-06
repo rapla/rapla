@@ -1,19 +1,20 @@
 package org.rapla.server.internal.console;
 
-import java.util.concurrent.Semaphore;
-
 import org.rapla.ConnectInfo;
+import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.RaplaJNDIContext;
 
+import java.util.concurrent.Semaphore;
+
 class GUIStarter
 {
     protected ConnectInfo reconnect;
     protected Semaphore guiMutex = new Semaphore(1);
-    RaplaClientServiceImpl client;
+    ClientService client;
     protected Logger logger;
     Runnable shutdownCommand;
     protected String startupUser;
@@ -26,7 +27,7 @@ class GUIStarter
     }
       
     
-    protected void startGUI( RaplaClientServiceImpl raplaContainer, ConnectInfo connectInfo) throws Exception {
+    protected void startGUI( ClientService raplaContainer, ConnectInfo connectInfo) throws Exception {
         try
         {
             ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();

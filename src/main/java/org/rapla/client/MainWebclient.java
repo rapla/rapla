@@ -72,13 +72,13 @@ public class MainWebclient
         startRapla( connectInfo);
     }
 
-    private RaplaClientServiceImpl create(RaplaStartupEnvironment env)
+    private ClientService create(RaplaStartupEnvironment env)
     {
         return DaggerClientCreator.create(env);
     }
 
     protected void startRapla( ConnectInfo connectInfo) throws Exception {
-        final RaplaClientServiceImpl clientContainer = create(env);
+        final ClientService clientContainer = create(env);
         this.raplaContainer = clientContainer;
         clientContainer.addRaplaClientListener(new RaplaClientListenerAdapter() {
                 public void clientClosed(ConnectInfo reconnect) {

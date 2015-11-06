@@ -13,7 +13,7 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.ClientService;
+import org.rapla.client.UserClientService;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
@@ -88,14 +88,14 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final PermissionController permissionController;
     private final CalendarSelectionModel model;
-    private final ClientService service;
+    private final UserClientService service;
     private EditController editController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
 
     @Inject
-    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, ClientService service,InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, UserClientService service,InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
