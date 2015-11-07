@@ -2,40 +2,41 @@ package org.rapla.client.gwt.components.util;
 
 import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.dom.client.Element;
+import jsinterop.annotations.JsPackage;
 
-@JsType(prototype = "jQuery")
+@jsinterop.annotations.JsType(isNative = true,name = "jQuery",namespace = JsPackage.GLOBAL)
 public interface JQueryElement {
     
-    JQueryElement append(JQueryElement... element);
+    public JQueryElement append(JQueryElement... element);
 
-    String html();
-    
-    String prop(String prop);
+    public String html();
 
-    JQueryElement data(String key, String value);
+    public String prop(String prop);
 
-    JQueryElement text(String text);
-    
-    JQueryElement[] children(String selector);
-    
-    void remove();
-    
-    JQueryElement addClass(String clazz);
-    
-    JQueryElement removeClass(String clazz);
+    public JQueryElement data(String key, String value);
 
-    Object val();
-    
-    void on(String event, Function fn);
-    
-    void click(Function fn);
+    public JQueryElement text(String text);
 
-    JQueryElement attr(String attr, Object value);
-    
-    JQueryElement before(JQueryElement element);
-    
-    JQueryElement prepend(JQueryElement element);
-    
+    public JQueryElement[] children(String selector);
+
+    public void remove();
+
+    public JQueryElement addClass(String clazz);
+
+    public JQueryElement removeClass(String clazz);
+
+    public Object val();
+
+    public void on(String event, Function fn);
+
+    public void click(Function fn);
+
+    public JQueryElement attr(String attr, Object value);
+
+    public JQueryElement before(JQueryElement element);
+
+    public JQueryElement prepend(JQueryElement element);
+
     public void trigger(String select, Object... params);
     
     

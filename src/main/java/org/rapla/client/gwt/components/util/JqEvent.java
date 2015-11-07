@@ -1,9 +1,9 @@
 package org.rapla.client.gwt.components.util;
 
-import com.google.gwt.core.client.js.JsProperty;
-import com.google.gwt.core.client.js.JsType;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
-@JsType(prototype = "jQuery.Event")
+@JsType(name="Event",namespace = "jQuery")
 public interface JqEvent
 {
 

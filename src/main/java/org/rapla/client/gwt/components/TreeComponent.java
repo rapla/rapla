@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsProperty;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gwt.components.util.JQueryElement;
 import org.rapla.client.gwt.components.util.JS;
@@ -17,9 +19,7 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArrayInteger;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
-import com.google.gwt.core.client.js.JsFunction;
-import com.google.gwt.core.client.js.JsProperty;
-import com.google.gwt.core.client.js.JsType;
+import jsinterop.annotations.JsType;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
@@ -36,7 +36,7 @@ public class TreeComponent extends Div
         void selectionChanged(final Collection<Allocatable> selected);
     }
 
-    @JsType(prototype = "jQuery")
+    @JsType
     public interface JsTreeJquery extends JQueryElement
     {
         JsTreeElement jstree(JsTreeOptions options);
@@ -44,7 +44,7 @@ public class TreeComponent extends Div
         void on(String event, JsTreeEventListener eventListener);
     }
 
-    @JsType(prototype = "jQuery")
+    @JsType
     public interface JsTreeElement extends JQueryElement
     {
         JsTree data(String key);

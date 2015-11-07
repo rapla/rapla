@@ -259,7 +259,7 @@
 					<module>org.rapla.Rapla</module>
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
 					<sourceLevel>1.8</sourceLevel>
-					<jsInteropMode>JS</jsInteropMode>
+					<jsInteropMode>JS_RC</jsInteropMode>
 					<gen>${project.build.directory}/generated-gwt-code</gen>
 					<detail>false</detail>
 				</configuration>

@@ -1,7 +1,14 @@
 package org.rapla.client.gwt.components;
 
-import java.util.Date;
-
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.user.client.ui.TextBox;
+import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import org.gwtbootstrap3.client.ui.InputGroupAddon;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.html.Div;
@@ -10,15 +17,7 @@ import org.rapla.client.gwt.components.util.JS;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
-import com.google.gwt.core.client.js.JsFunction;
-import com.google.gwt.core.client.js.JsProperty;
-import com.google.gwt.core.client.js.JsType;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.ui.TextBox;
+import java.util.Date;
 
 public class ClockPicker extends Div
 {
@@ -27,55 +26,55 @@ public class ClockPicker extends Div
         void timeChanged(final Date newDate);
     }
 
-    @JsType(prototype = "jQuery")
-    public interface ClockPickerJquery extends JQueryElement
+    @JsType(isNative = true)
+    public static interface ClockPickerJquery extends JQueryElement
     {
-        ClockPickerElement clockpicker(ClockPickerOptions options);
+        public ClockPickerElement clockpicker(ClockPickerOptions options);
 
-        void remove();
+        public void remove();
     }
 
-    @JsType(prototype = "jQuery")
+    @JsType
     public interface ClockPickerElement extends JQueryElement
     {
         /*
          * clockpicker is the key
          */
-        ClockPickerI data(String key);
+        public ClockPickerI data(String key);
     }
 
     @JsType
     public interface ClockPickerI extends JQueryElement
     {
-        void show();
+        public void show();
     }
 
     @JsFunction
     public interface Callback
     {
-        void handleAction();
+        public void handleAction();
     }
 
     @JsType
     public interface ClockPickerOptions
     {
         @JsProperty
-        void setAutoclose(Boolean autoclose);
+        public void setAutoclose(Boolean autoclose);
 
         @JsProperty
-        Boolean getAutoclose();
+        public Boolean getAutoclose();
 
         @JsProperty
-        void setTwelvehour(Boolean twelvehour);
+        public void setTwelvehour(Boolean twelvehour);
 
         @JsProperty
-        Boolean getTwelvehour();
+        public Boolean getTwelvehour();
 
         @JsProperty
-        void setAfterDone(Callback listener);
+        public void setAfterDone(Callback listener);
 
         @JsProperty
-        Callback getAfterDone();
+        public Callback getAfterDone();
     }
 
     private ClockPickerI clockPicker;
@@ -155,5 +154,6 @@ public class ClockPicker extends Div
         final Date time = format.parse(value);
         return time;
     }
+
 
 }

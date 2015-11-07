@@ -16,8 +16,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
 import com.google.gwt.core.client.JavaScriptObject;
-import com.google.gwt.core.client.js.JsProperty;
-import com.google.gwt.core.client.js.JsType;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -31,50 +31,50 @@ public class DateRangeComponent extends Input
         void dateRangeChanged(Date startDate, Date endDate);
     }
 
-    @JsType(prototype = "jQuery")
+    @JsType
     public interface DateRangePickerJquery extends JQueryElement
     {
-        DateRangePickerElement daterangepicker(DateRangeOptions options);
+        public DateRangePickerElement daterangepicker(DateRangeOptions options);
     }
 
-    @JsType(prototype = "jQuery")
+    @JsType
     public interface DateRangePickerElement extends JQueryElement
     {
-        DateRangePicker data(String key);
+        public DateRangePicker data(String key);
     }
 
-    @JsType(prototype = "DateRangePicker")
+    @JsType
     public interface DateRangePicker extends JQueryElement
     {
         @JsProperty
-        void setTimePicker(boolean timePicker);
+        public void setTimePicker(boolean timePicker);
 
         @JsProperty
-        boolean isTimePicker();
+        public boolean isTimePicker();
 
         @JsProperty
-        Locale getLocale();
+        public Locale getLocale();
 
-        void setStartDate(Date start);
+        public void setStartDate(Date start);
 
-        void setEndDate(Date end);
+        public void setEndDate(Date end);
 
-        void updateView();
+        public void updateView();
         
-        void remove();
+        public void remove();
     }
 
     @JsType
     public interface DateRangeOptions
     {
         @JsProperty
-        void setLocale(Locale locale);
+        public void setLocale(Locale locale);
 
         @JsProperty
-        Locale getLocale();
+        public Locale getLocale();
 
         @JsProperty
-        void setTimePicker(boolean timePicker);
+        public void setTimePicker(boolean timePicker);
 
         @JsProperty
         boolean isTimePicker();
