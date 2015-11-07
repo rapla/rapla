@@ -72,7 +72,7 @@ public class MainWebclient
         startRapla( connectInfo);
     }
 
-    private ClientService create(RaplaStartupEnvironment env)
+    private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
         return DaggerClientCreator.create(env);
     }

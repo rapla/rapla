@@ -33,7 +33,7 @@ The rapla container has only one instance at runtime. Configuration of the Rapla
 files. Typical configurations of the MainContainer are
 
  <ol>
- <li>Client: A ClientContainerService, one facade and a remote storage ( automatically pointing to the download server in webstart mode)</li>
+ <li>JavaClient: A ClientContainerService, one facade and a remote storage ( automatically pointing to the download server in webstart mode)</li>
  <li>Server: A ServerContainerService (providing a facade) a messaging server for handling the connections with the clients, a storage (file or db) and an extra service for importing and exporting in the db</li>
  <li>Embedded: Configuration example follows.</li>
  </ol>

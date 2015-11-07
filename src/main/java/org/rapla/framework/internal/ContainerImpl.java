@@ -57,7 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /** Base class for the ComponentContainers in Rapla.
- * Containers are the RaplaMainContainer, the Client- and the Server-Service
+ * Containers are the RaplaMainContainer, the JavaClient- and the Server-Service
  */
 public class ContainerImpl implements Disposable
 {

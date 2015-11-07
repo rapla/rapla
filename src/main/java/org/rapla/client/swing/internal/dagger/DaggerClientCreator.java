@@ -1,20 +1,32 @@
 package org.rapla.client.swing.internal.dagger;
 
-import java.net.URL;
-
 import org.rapla.client.ClientService;
 import org.rapla.client.swing.dagger.RaplaJavaClientComponent;
 import org.rapla.dagger.DaggerRaplaJavaClientStartupModule;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.jsonrpc.client.EntryPointFactory;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 
+import java.net.URL;
+
 public class DaggerClientCreator
 {
-    public static ClientService create(StartupEnvironment startupEnvironment)
+    public static ClientService create(StartupEnvironment startupEnvironment) throws Exception
     {
-        RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule( new DaggerRaplaJavaClientStartupModule(startupEnvironment)).build();
-        final ClientService client = component.getClientService();
+        final ClientService client;
+        final DaggerRaplaJavaClientStartupModule startupModule = new DaggerRaplaJavaClientStartupModule(startupEnvironment);
+        boolean useReflection = true;
+        if (useReflection)
+        {
+            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
+        }
+        else
+        {
+            RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
+            client = component.getClientService();
+        }
+
         URL downloadURL = startupEnvironment.getDownloadURL();
         BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
         {
@@ -24,7 +36,6 @@ public class DaggerClientCreator
                 return url;
             }
         });
-        //server.getMethodProvider().setList( component.getWebservices().getList());
         return client;
     }
 }

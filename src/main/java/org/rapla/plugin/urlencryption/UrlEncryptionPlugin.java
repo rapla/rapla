@@ -3,7 +3,7 @@ package org.rapla.plugin.urlencryption;
 /**
  * This plugin provides a service to secure the publishing function of a calendar by encrypting the source parameters.
  * This class initializes the Option panel for the administrator, the UrlEncryptionService on the server and the 
- * Server Stub on the Client for using the encryption service. 
+ * Server Stub on the JavaClient for using the encryption service.
  * 
  * @author Jonas Kohlbrenner
  * 

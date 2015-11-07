@@ -28,13 +28,11 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.server.WebserviceCreator;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.dagger.WebMethodProvider;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
@@ -57,7 +55,6 @@ import java.util.TreeSet;
 public class ServerServiceImpl implements StorageUpdateListener, ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
-    final private WebMethodProvider methodProvider;
 
     final Logger logger;
 
@@ -102,21 +99,15 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         }
     }
 
-    public void setServiceMap(Map<String,WebserviceCreator> serviceMap)
-    {
-        methodProvider.setProviders( serviceMap);
-    }
-
     public Logger getLogger()
     {
         return logger;
     }
 
     @Inject
-    public ServerServiceImpl(CachableStorageOperator operator,ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors, final Provider<Map<String,RaplaPageExtension>> pageMap,WebMethodProvider methodProvider)
+    public ServerServiceImpl(CachableStorageOperator operator,ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors, final Provider<Map<String,RaplaPageExtension>> pageMap)
     {
         this.logger = logger;
-        this.methodProvider = methodProvider;
         //webMethods.setList( );
 //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
 //        if (containerContext.mailSession != null)

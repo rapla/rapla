@@ -133,7 +133,7 @@ public class CommunicatorTest extends ServletTestBase
             RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, functionFactoryMap,remoteAuthentificationService, remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getController() );
             opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
             opts[i] = opt;
-            System.out.println("Client " + i + " successfully subscribed");
+            System.out.println("JavaClient " + i + " successfully subscribed");
         }
         testClient();
         

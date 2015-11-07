@@ -101,7 +101,7 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 
 /**
- * This is the default implementation of the necessary Client-Facade to the
+ * This is the default implementation of the necessary JavaClient-Facade to the
  * DB-Subsystem.
  * <p>
  * Sample configuration 1:

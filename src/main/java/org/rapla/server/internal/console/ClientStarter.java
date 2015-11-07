@@ -17,7 +17,7 @@ public class ClientStarter extends GUIStarter
 {
     URL downloadUrl_;
 
-    private ClientService create(RaplaStartupEnvironment env)
+    private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
         return DaggerClientCreator.create(env);
     }

@@ -193,4 +193,18 @@ public abstract class Tools
 	public static String createXssSafeString(String value) {
 	    return value != null ? value.replaceAll("<","&lt;").replaceAll(">", "&gt;").replaceAll("\"", "'") : null;
 	}
+
+    public static String firstCharUp(String s)
+    {
+        if (s == null)
+        {
+            return null;
+        }
+        if (s.length() < 1)
+        {
+            return s;
+        }
+        final String result = Character.toUpperCase(s.charAt(0)) + s.substring(1);
+        return result;
+    }
 }

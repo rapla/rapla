@@ -15,8 +15,6 @@ public interface ServerServiceContainer extends Disposable
     // main servlet
 	RaplaPageGenerator getWebpage(String page);
 
-    void setServiceMap(Map<String,WebserviceCreator> serviceMap);
-
     Collection<ServletRequestPreprocessor> getServletRequestPreprocessors();
 
     StorageOperator getOperator();

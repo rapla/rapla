@@ -28,7 +28,7 @@ public interface UserClientService
     /** returns true if the admin has switched to anoter user!*/
     boolean canSwitchBack();
 
-    /** restarts the complete Client and displays a new login*/
+    /** restarts the complete JavaClient and displays a new login*/
     void restart();
 	/** returns true if an logout option is available. This is true when the user used an login dialog.*/
     boolean isLogoutAvailable();

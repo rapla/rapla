@@ -26,7 +26,7 @@ public class ServerStarter
     Collection<ServletRequestPreprocessor> processors;
     ServerContainerContext backendContext;
 
-    private ServerServiceContainer create()
+    private ServerServiceContainer create() throws Exception
     {
         return DaggerServerCreator.create(logger, backendContext);
     }

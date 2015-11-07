@@ -11,13 +11,12 @@ import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.jsonrpc.server.JsonServlet;
 import org.rapla.jsonrpc.server.WebserviceCreator;
+import org.rapla.jsonrpc.server.WebserviceCreatorMap;
 import org.rapla.jsonrpc.server.internal.RPCServletUtils;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
-import org.rapla.server.dagger.WebMethodProvider;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -34,11 +33,11 @@ import java.util.Map;
 public class RaplaAPIPage implements RaplaPageExtension
 {
     //final ServerServiceContainer serverContainer;
-    WebMethodProvider webservices;
+    WebserviceCreatorMap webservices;
     Logger logger;
 
     @Inject
-    public RaplaAPIPage(Logger logger, WebMethodProvider webservices)  {
+    public RaplaAPIPage(Logger logger, WebserviceCreatorMap webservices)  {
         this.logger = logger;
         this.webservices = webservices;
       //  this.serverContainer = serverContainer;
