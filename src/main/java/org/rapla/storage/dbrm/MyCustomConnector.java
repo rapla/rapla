@@ -16,7 +16,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.jsonrpc.common.FutureResult;
 
-@DefaultImplementation(of=BasicRaplaHTTPConnector.CustomConnector.class,context = InjectionContext.client)
+@DefaultImplementation(of=BasicRaplaHTTPConnector.CustomConnector.class,context = InjectionContext.swing)
 public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
