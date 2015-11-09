@@ -1,7 +1,7 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.core.client.EntryPoint;
-import com.google.gwt.core.client.GWT;
+import java.util.List;
+
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.client.EntryPointFactory;
@@ -9,9 +9,8 @@ import org.rapla.jsonrpc.client.gwt.AbstractJsonProxy;
 import org.rapla.jsonrpc.client.gwt.internal.ExceptionDeserializer;
 import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
-import java.util.List;
-
-;
+import com.google.gwt.core.client.EntryPoint;
+import com.google.gwt.core.client.GWT;
 
 public class Rapla implements EntryPoint
 {
@@ -40,14 +39,10 @@ public class Rapla implements EntryPoint
 
     public void onModuleLoad()
     {
-        GWT.log("starting rapla");
         setProxy();
 
         RaplaPopups.getProgressBar().setPercent(10);
-        //        final MainInjector injector = GWT.create(MainInjector.class);
-        //        new RaplaGwtStarter(injector).startApplication();
-        final org.rapla.client.gwt.dagger.RaplaGwtComponent component = org.rapla.client.gwt.dagger.DaggerRaplaGwtComponent.builder().build();
-        GwtStarter starter = component.getGwtStarter();
+        GwtStarter starter = GWT.create(GwtStarter.class);
         starter.startApplication();
     }
 
