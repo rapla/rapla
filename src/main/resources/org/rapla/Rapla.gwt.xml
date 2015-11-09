@@ -4,8 +4,6 @@
 <module rename-to='Rapla'>
   <inherits name='org.rapla.Rapla_main_module'/>
   <entry-point class='org.rapla.client.gwt.Rapla'/>
-  <extend-property name='locale' values='de' />
-  <set-property name='locale' value='de' />
   <set-property name='gwt.logging.logLevel' value='INFO'/>
   <set-property name='gwt.logging.enabled' value='TRUE'/>
   <set-configuration-property name='devModeRedirectEnabled' value='true'/>

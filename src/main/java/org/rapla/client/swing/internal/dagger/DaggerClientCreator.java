@@ -2,7 +2,7 @@ package org.rapla.client.swing.internal.dagger;
 
 import org.rapla.client.ClientService;
 import org.rapla.client.swing.dagger.RaplaJavaClientComponent;
-import org.rapla.dagger.DaggerRaplaJavaClientStartupModule;
+import org.rapla.client.swing.dagger.DaggerRaplaJavaClientStartupModule;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.jsonrpc.client.EntryPointFactory;

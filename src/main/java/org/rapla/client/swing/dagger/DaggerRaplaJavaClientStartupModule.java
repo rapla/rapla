@@ -1,14 +1,12 @@
-package org.rapla.dagger;
+package org.rapla.client.swing.dagger;
 
 import dagger.Module;
 import dagger.Provides;
 import org.rapla.client.UserClientService;
-import org.rapla.client.RaplaClientListener;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;

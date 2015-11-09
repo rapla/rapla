@@ -1,6 +1,5 @@
 package org.rapla.server.dagger;
 
-import org.rapla.dagger.DaggerRaplaServerStartupModule;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
