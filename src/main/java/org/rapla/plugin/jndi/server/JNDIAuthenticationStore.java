@@ -70,6 +70,7 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.inject.Singleton;
 import javax.naming.CommunicationException;
 import javax.naming.Context;
 import javax.naming.Name;
@@ -134,6 +135,7 @@ import org.rapla.storage.RaplaSecurityException;
  *     </ul></li>
  *
  */
+
 
 public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,JNDIConf {
     // ----------------------------------------------------- Instance Variables

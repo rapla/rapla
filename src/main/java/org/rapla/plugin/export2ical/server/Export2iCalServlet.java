@@ -26,6 +26,7 @@ import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ import java.util.Locale;
 import java.util.SimpleTimeZone;
 
 @Extension(provides = RaplaPageExtension.class, id = "ical")
+@Singleton
 public class Export2iCalServlet  implements RaplaPageExtension
 {
 	private int global_daysBefore;

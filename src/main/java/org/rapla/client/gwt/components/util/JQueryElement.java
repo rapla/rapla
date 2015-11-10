@@ -39,8 +39,6 @@ public interface JQueryElement {
 
     public void trigger(String select, Object... params);
     
-    
-
     public static class Static {
 
         public static native JQueryElement $(String selector) /*-{

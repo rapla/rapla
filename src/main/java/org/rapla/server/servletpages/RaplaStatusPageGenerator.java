@@ -6,6 +6,7 @@ package org.rapla.server.servletpages;
 import java.io.IOException;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -15,6 +16,7 @@ import org.rapla.inject.Extension;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="server")
+@Singleton
 public class RaplaStatusPageGenerator implements RaplaPageExtension {
     RaplaResources m_i18n;
     @Inject

@@ -15,6 +15,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+@Singleton
 public class RaplaAuthentificationService
 {
     final RaplaResources i18n;

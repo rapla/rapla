@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.rapla.inject.Extension;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
+@Singleton
 public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
 
     private final ClientFacade facade;

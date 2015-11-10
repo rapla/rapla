@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +46,7 @@ import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id=AutoExportPlugin.CALENDAR_LIST_GENERATOR)
+@Singleton
 public class CalendarListPageGenerator  implements RaplaPageExtension
 {
 

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 
 @Extension(provides = RaplaPageExtension.class,id="store")
+@Singleton
 public class RaplaStorePage implements RaplaPageExtension
 {
 

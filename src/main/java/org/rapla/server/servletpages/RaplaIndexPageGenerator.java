@@ -13,6 +13,7 @@ import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -24,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Extension(provides = RaplaPageExtension.class,id="index")
+@Singleton
 public class RaplaIndexPageGenerator implements RaplaPageExtension
 {
 	Set<RaplaMenuGenerator> entries;
