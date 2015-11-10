@@ -18,12 +18,16 @@ import javax.ws.rs.core.MediaType;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
+import org.rapla.server.internal.RaplaAuthentificationService;
+import org.rapla.server.internal.TokenHandler;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -32,27 +36,42 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 @Singleton
 @Path("auth")
 @RemoteJsonMethod
-public class RaplaAuthRestPage
+public class RaplaAuthRestPage extends AbstractRestPage
 {
 
-    private final RemoteAuthentificationService remoteAuthentificationService;
+    private final RaplaAuthentificationService authentificationService;
     private final I18nBundle i18n;
     private final ClientFacade facade;
+    private final Logger logger;
+    private final TokenHandler tokenHandler;
 
     @Inject
-    public RaplaAuthRestPage(ClientFacade facade, RemoteAuthentificationService remoteAuthentificationService, RaplaResources i18n) throws RaplaException
+    public RaplaAuthRestPage(ClientFacade facade, RaplaAuthentificationService authentificationService, RaplaResources i18n, Logger logger, TokenHandler tokenHandler) throws RaplaException
     {
+        super(facade, null, false);
         this.facade = facade;
-        this.remoteAuthentificationService = remoteAuthentificationService;
+        this.authentificationService = authentificationService;
         this.i18n = i18n;
+        this.logger = logger;
+        this.tokenHandler = tokenHandler;
     }
 
     @POST
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public LoginTokens create(@QueryParam("credentials") LoginCredentials credentials) throws Exception
     {
-        final FutureResult<LoginTokens> result = remoteAuthentificationService.auth(credentials);
-        final LoginTokens loginTokens = result.get();
+        User user = null;
+        try
+        {
+            user = authentificationService.authenticate(credentials.getUsername(), credentials.getPassword(), credentials.getConnectAs(), logger);
+        }
+        catch(Exception e)
+        {
+            logger.error(e.getMessage());
+            final String loginErrorMessage = i18n.getString("error.login");
+            throw new RaplaSecurityException(loginErrorMessage);
+        }
+        final LoginTokens loginTokens = tokenHandler.generateAccessToken(user);
         if (loginTokens.isValid())
         {
             return loginTokens;
