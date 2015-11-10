@@ -12,8 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.sql.DataSource;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -29,6 +39,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.rest.server.RaplaRestApiWrapper;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
@@ -41,14 +52,9 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.sql.DataSource;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import dagger.internal.Factory;
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
 
 @DefaultImplementation(of=ServerServiceContainer.class,context = InjectionContext.server,export = true)
@@ -60,6 +66,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 
     private final Map<String,RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
+    private final Map<String, RaplaRestApiWrapper> restPages = new HashMap<String, RaplaRestApiWrapper>();
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
@@ -105,7 +112,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
     }
 
     @Inject
-    public ServerServiceImpl(CachableStorageOperator operator,ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors, final Provider<Map<String,RaplaPageExtension>> pageMap)
+    public ServerServiceImpl(CachableStorageOperator operator,ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors, final Provider<Map<String,RaplaPageExtension>> pageMap, final Map<String, Factory> restPageFactories, TokenHandler tokenHandler, RaplaAuthentificationService raplaAuthentificationService)
     {
         this.logger = logger;
         //webMethods.setList( );
@@ -173,45 +180,16 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         }
 
         {// Rest Pages
-            // Scan for services
-            /**
-            try
+            @SuppressWarnings("rawtypes")
+            final Set<Entry<String, Factory>> restPageEntries = restPageFactories.entrySet();
+            for (Entry<String, Factory> restPage : restPageEntries)
             {
-                final String name = "META-INF/services/" + Path.class.getCanonicalName();
-                final Enumeration<URL> restPagesDefinitions = getClass().getClassLoader().getResources(name);
-                Set<String> restPagesSet = new LinkedHashSet<String>();
-                while (restPagesDefinitions.hasMoreElements())
-                {
-                    final URL url = restPagesDefinitions.nextElement();
-                    final InputStream modules = url.openStream();
-                    final BufferedReader br = new BufferedReader(new InputStreamReader(modules, "UTF-8"));
-                    String module = null;
-                    while ((module = br.readLine()) != null)
-                    {
-                        restPagesSet.add(module);
-                    }
-                    br.close();
-                }
-                for (String restPage : restPagesSet)
-                {
-                    try
-                    {
-                        final Class<?> restPageClass = Class.forName(restPage);
-                        final String restUri = restPageClass.getAnnotation(Path.class).value();
-                        final RaplaRestApiWrapper restWrapper = new RaplaRestApiWrapper(this, logger, restPageClass);
-                        addContainerProvidedComponentInstance(RaplaPageExtension.class, restWrapper, restUri);
-                    }
-                    catch (Exception e)
-                    {
-                        getLogger().error(restPage + " could not be used as REST page: " + e.getMessage(), e);
-                    }
-                }
+                final String restPagePath = restPage.getKey();
+                final Factory restPageFactory = restPage.getValue();
+                final Class<?> restPageClass = restPageFactory.get().getClass();
+                final RaplaRestApiWrapper restWrapper = new RaplaRestApiWrapper(logger, tokenHandler, raplaAuthentificationService, restPageClass, restPageFactory);
+                restPages.put(restPagePath, restWrapper);
             }
-            catch (Exception e)
-            {
-                getLogger().error("Rest pages not available due to " + e.getMessage(), e);
-            }
-             */
         }
         
         //User user = getFirstAdmin(operator);
