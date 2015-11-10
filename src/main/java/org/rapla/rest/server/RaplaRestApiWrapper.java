@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -25,11 +24,15 @@ import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
+import org.rapla.server.internal.RaplaAuthentificationService;
+import org.rapla.server.internal.RemoteSessionImpl;
+import org.rapla.server.internal.TokenHandler;
 import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
+
+import dagger.internal.Factory;
 
 /**
  * Wrapper for all REST pages, which listen under the rest @Path.
@@ -37,22 +40,23 @@ import org.rapla.storage.RaplaSecurityException;
 public class RaplaRestApiWrapper implements RaplaPageExtension, RaplaPageGenerator
 {
     private static final String ALL = "ALL";
-    private final ServerServiceContainer serverContainer;
     private final Logger logger;
     private final Class<?> restPageClass;
+    private final Factory<?> restPageFactory;
     private final Map<String, String> getMethods;
     private final Map<String, String> updatetMethods;
     private final Map<String, String> createMethods;
     private final Map<String, String> listMethods;
+    private final TokenHandler tokenHandler;
+    private final RaplaAuthentificationService raplaAuthentificationService;
 
-    RemoteSession session;
-    @Inject
-    public RaplaRestApiWrapper(ServerServiceContainer serverContainer, Logger logger, Class<?> restPageClass, RemoteSession session) throws RaplaException
+    public RaplaRestApiWrapper(Logger logger, TokenHandler tokenHandler, RaplaAuthentificationService raplaAuthentificationService, Class<?> restPageClass, Factory<?> restPageFactory) throws RaplaException
     {
-        this.serverContainer = serverContainer;
-        this.session = session;
         this.logger = logger;
+        this.tokenHandler = tokenHandler;
+        this.raplaAuthentificationService = raplaAuthentificationService;
         this.restPageClass = restPageClass;
+        this.restPageFactory = restPageFactory;
         getMethods = getMethodNameWithAnnotations(restPageClass, GET.class, Path.class);
         updatetMethods = getMethodNameWithAnnotations(restPageClass, PUT.class);
         createMethods = getMethodNameWithAnnotations(restPageClass, POST.class);
@@ -118,7 +122,7 @@ public class RaplaRestApiWrapper implements RaplaPageExtension, RaplaPageGenerat
         try
         {
             servlet = new RaplaJsonServlet(logger, restPageClass);
-            serviceObj = ((ContainerImpl) serverContainer).inject(restPageClass);
+            serviceObj = restPageFactory.get();
             if (serviceObj instanceof AbstractRestPage)
             {
                 authentificationRequired = ((AbstractRestPage) serviceObj).isAuthenificationRequired();
@@ -140,11 +144,12 @@ public class RaplaRestApiWrapper implements RaplaPageExtension, RaplaPageGenerat
 
             if (authentificationRequired)
             {
-                if (!session.isAuthentified())
+                final RemoteSessionImpl remoteSession = new RemoteSessionImpl(logger, tokenHandler, raplaAuthentificationService, request);
+                if (!remoteSession.isAuthentified())
                 {
                     throw new RaplaSecurityException("User not authentified. Pass access token");
                 }
-                final User user = session.getUser();
+                final User user = remoteSession.getUser();
                 request.setAttribute("user", user);
             }
             String pathInfo = request.getPathInfo();
