@@ -6,20 +6,22 @@ import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.StorageOperator;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
 public interface ServerServiceContainer extends Disposable
 {
-    /** @return null when the server doesn't have the webpage  */
-    // main servlet
-	RaplaPageGenerator getWebpage(String page);
-
     Collection<ServletRequestPreprocessor> getServletRequestPreprocessors();
 
     StorageOperator getOperator();
 
     String getFirstAdmin();
+
+    void servePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
     // json servlet
     //<T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;
     //

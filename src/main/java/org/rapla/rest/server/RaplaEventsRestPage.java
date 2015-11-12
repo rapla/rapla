@@ -13,6 +13,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
 import org.rapla.entities.User;
@@ -29,27 +30,29 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
+import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
 
 @Path("events")
-@Singleton
 @RemoteJsonMethod
 public class RaplaEventsRestPage extends AbstractRestPage 
 {
 
 	private final PermissionController permissionController;
+    private final User user;
 
     @Inject
-    public RaplaEventsRestPage(ClientFacade facade, Logger logger, PermissionController permissionController) throws RaplaException {
-		super(facade,  logger, true);
+    public RaplaEventsRestPage(ClientFacade facade,  PermissionController permissionController, RemoteSession session) throws RaplaException {
+		super(facade);
         this.permissionController = permissionController;
+        user = session.getUser();
 	}
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION});
 
 	@GET
-    public List<ReservationImpl> list(@QueryParam("user") User user, @QueryParam("start")Date start, @QueryParam("end")Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") List<String> eventTypes,@QueryParam("attributeFilter") Map<String,String> simpleFilter ) throws Exception
+    public List<ReservationImpl> list( @QueryParam("start")Date start, @QueryParam("end")Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") List<String> eventTypes,@QueryParam("attributeFilter") Map<String,String> simpleFilter ) throws Exception
     {
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id :resources)
@@ -76,7 +79,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
     
 	@GET
     @Path("{id}")
-	public ReservationImpl get(@QueryParam("user") User user, @QueryParam("id") String id) throws RaplaException
+	public ReservationImpl get( @PathParam("id") String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
         if (!permissionController.canRead(event, user, getEntityResolver()))
@@ -87,7 +90,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
     }
     
 	@PUT
-    public ReservationImpl update(@QueryParam("user") User user, ReservationImpl event) throws RaplaException
+    public ReservationImpl update( ReservationImpl event) throws RaplaException
     {
         if (!permissionController.canModify(event, user, getEntityResolver()))
         {
@@ -100,7 +103,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
     }
     
     @POST
-    public ReservationImpl create(@QueryParam("user") User user, ReservationImpl event) throws RaplaException
+    public ReservationImpl create( ReservationImpl event) throws RaplaException
     {
         event.setResolver( operator);
         if (!getQuery().canCreateReservations(event.getClassification().getType(), user))

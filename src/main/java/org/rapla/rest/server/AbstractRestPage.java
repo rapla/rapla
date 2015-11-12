@@ -23,12 +23,10 @@ public abstract class AbstractRestPage
 
     protected StorageOperator operator;
     protected JsonServlet servlet;
-    private boolean authentificationRequired;
     protected ClientFacade facade;
 
-    public AbstractRestPage(ClientFacade facade, Logger logger, boolean authentificationRequired) throws RaplaException
+    public AbstractRestPage(ClientFacade facade) throws RaplaException
     {
-        this.authentificationRequired = authentificationRequired;
         this.facade = facade;
         operator = facade.getOperator();
     }
@@ -100,11 +98,6 @@ public abstract class AbstractRestPage
     protected EntityResolver getEntityResolver()
     {
         return facade.getOperator();
-    }
-
-    public boolean isAuthenificationRequired()
-    {
-        return authentificationRequired;
     }
 
 

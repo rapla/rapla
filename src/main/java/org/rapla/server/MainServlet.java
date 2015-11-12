@@ -132,7 +132,6 @@ public class MainServlet extends HttpServlet {
 		
 	public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
     {
-    	RaplaPageGenerator  servletPage;
     	Lock readLock = null;
     	try
     	{
@@ -173,59 +172,7 @@ public class MainServlet extends HttpServlet {
 	           
 	            return;
 	        }
-
-	        String page =  request.getParameter("page");
-	        String requestURI =request.getRequestURI();
-	        if ( page == null)
-	        {
-	            String raplaPrefix = "rapla/";
-	            String contextPath = request.getContextPath();
-	            String toParse; 
-	            if (requestURI.startsWith( contextPath))
-	            {
-	            	toParse = requestURI.substring( contextPath.length());
-	            }
-	            else
-	            {
-	            	toParse = requestURI;
-	            }
-	            int pageContextIndex = toParse.lastIndexOf(raplaPrefix);
-	            if ( pageContextIndex>= 0)
-	            {
-	                page = toParse.substring( pageContextIndex + raplaPrefix.length());
-	                int firstSeparator = page.indexOf('/');
-	                if ( firstSeparator>1)
-	                {
-	                    page = page.substring(0,firstSeparator );
-	                }
-	            }
-	        }
-	        if ( page == null || page.trim().length() == 0) {
-	            page = "index";
-	        }
-            servletPage = serverStarter.getServer().getWebpage( page);
-            if ( servletPage == null)
-            {
-            	response.setStatus( 404 );
-                java.io.PrintWriter out = null;
-                try
-                {
-                	out =	response.getWriter();
-                	String message = "404: Page " + page + " not found in Rapla context";
-        			out.print(message);
-        			logger.getChildLogger("server.html.404").warn( message);
-                } finally 
-                {
-                    if ( out != null)
-                    {
-                        out.close();
-                    }
-                }
-                
-    			return;
-            }
-            ServletContext servletContext = getServletContext();
-            servletPage.generatePage( servletContext, request, response);
+			serverStarter.getServer().servePage(request, response);
         } 
 
         finally

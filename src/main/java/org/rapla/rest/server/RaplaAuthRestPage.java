@@ -33,7 +33,6 @@ import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
-@Singleton
 @Path("auth")
 @RemoteJsonMethod
 public class RaplaAuthRestPage extends AbstractRestPage
@@ -48,7 +47,7 @@ public class RaplaAuthRestPage extends AbstractRestPage
     @Inject
     public RaplaAuthRestPage(ClientFacade facade, RaplaAuthentificationService authentificationService, RaplaResources i18n, Logger logger, TokenHandler tokenHandler) throws RaplaException
     {
-        super(facade, null, false);
+        super(facade);
         this.facade = facade;
         this.authentificationService = authentificationService;
         this.i18n = i18n;

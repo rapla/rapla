@@ -28,25 +28,27 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
+import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
 @Path("resources")
-@Singleton
 @RemoteJsonMethod
 public class RaplaResourcesRestPage extends AbstractRestPage {
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] { DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON });
     private final PermissionController permissionController;
+	private final User user;
 
 	@Inject
-	public RaplaResourcesRestPage(ClientFacade facade, Logger logger, PermissionController permissionController) throws RaplaException {
-		super(facade, logger, true);
+	public RaplaResourcesRestPage(ClientFacade facade,PermissionController permissionController, RemoteSession session) throws RaplaException {
+		super(facade);
         this.permissionController = permissionController;
+		this.user = session.getUser();
 	}
 
 	@GET
-	public List<AllocatableImpl> list(@QueryParam("user") User user, @QueryParam("resourceTypes") List<String> resourceTypes,
+	public List<AllocatableImpl> list( @QueryParam("resourceTypes") List<String> resourceTypes,
 			@WebParam(name = "attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
 		ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
@@ -61,7 +63,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 
 	@GET
 	@Path("{id}")
-	public AllocatableImpl get(@QueryParam("user") User user, @PathParam("id") String id) throws RaplaException {
+	public AllocatableImpl get( @PathParam("id") String id) throws RaplaException {
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
 		if (!permissionController.canRead(resource, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't read  " + resource);
@@ -70,7 +72,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 	}
 
 	@PUT
-	public AllocatableImpl update(@QueryParam("user") User user, AllocatableImpl resource) throws RaplaException {
+	public AllocatableImpl update( AllocatableImpl resource) throws RaplaException {
 		if (!permissionController.canModify(resource, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
@@ -81,7 +83,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 	}
 
 	@POST
-	public AllocatableImpl create(@QueryParam("user") User user, AllocatableImpl resource) throws RaplaException {
+	public AllocatableImpl create(AllocatableImpl resource) throws RaplaException {
 		resource.setResolver(operator);
 		Classification classification = resource.getClassification();
 		DynamicType type = classification.getType();

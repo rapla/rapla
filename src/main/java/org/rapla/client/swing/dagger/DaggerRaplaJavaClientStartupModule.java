@@ -11,53 +11,25 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 @Module public class DaggerRaplaJavaClientStartupModule
 {
-    StartupEnvironment context;
-    Logger logger;
+    private final StartupEnvironment context;
+    private final Logger logger;
+    private final Provider<UserClientService> userClientServiceProvider;
 
-    public DaggerRaplaJavaClientStartupModule(StartupEnvironment context)
+    public DaggerRaplaJavaClientStartupModule(StartupEnvironment context,Provider<UserClientService> userClientServiceProvider)
     {
         this.context = context;
         this.logger = context.getBootstrapLogger();
+        this.userClientServiceProvider = userClientServiceProvider;
     }
 
     @Provides UserClientService provideService()
     {
-        return new UserClientService()
-        {
-            @Override public boolean isRunning()
-            {
-                return false;
-            }
-
-            @Override public void switchTo(User user) throws RaplaException
-            {
-
-            }
-
-            @Override public boolean canSwitchBack()
-            {
-                return false;
-            }
-
-            @Override public void restart()
-            {
-
-            }
-
-            @Override public boolean isLogoutAvailable()
-            {
-                return false;
-            }
-
-            @Override public void logout()
-            {
-
-            }
-        };
+        return userClientServiceProvider.get();
     }
 
     @Provides public Logger provideLogger()

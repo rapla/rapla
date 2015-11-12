@@ -260,6 +260,7 @@
 					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
 					<sourceLevel>1.8</sourceLevel>
 					<jsInteropMode>JS_RC</jsInteropMode>
+					<logLevel>DEBUG</logLevel>
 					<gen>${project.build.directory}/generated-gwt-code</gen>
 					<detail>false</detail>
 				</configuration>

@@ -50,7 +50,8 @@ class RaplaJsonServlet extends JsonServlet
             childLogger.debug(out);
         }
     }
-    
+
+    /*
     private boolean isHtmlTextRequest(HttpServletRequest req)
     {
         final String header = req.getHeader("Accept");
@@ -76,6 +77,7 @@ class RaplaJsonServlet extends JsonServlet
             return;
         super.writeResponse(servletContext, call, out);
     }
+    */
 
     @Override
     protected  void error(String message,Throwable ex)

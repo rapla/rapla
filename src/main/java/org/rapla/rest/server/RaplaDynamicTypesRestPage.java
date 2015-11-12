@@ -9,22 +9,28 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
+import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
+import org.rapla.server.RemoteSession;
 
-@Singleton
 @Path("dynamictypes")
 @RemoteJsonMethod
 public class RaplaDynamicTypesRestPage extends AbstractRestPage
 {
+    final User user;
+    final PermissionController controller;
     @Inject
-    public RaplaDynamicTypesRestPage(ClientFacade facade, Logger logger) throws RaplaException
+    public RaplaDynamicTypesRestPage(ClientFacade facade,RemoteSession session,PermissionController controller) throws RaplaException
     {
-        super(facade, logger, true);
+        super(facade);
+        user = session.getUser();
+        this.controller = controller;
     }
 
     @GET
@@ -32,9 +38,12 @@ public class RaplaDynamicTypesRestPage extends AbstractRestPage
     {
         DynamicType[] types = getQuery().getDynamicTypes(classificationType);
         List<DynamicTypeImpl> result = new ArrayList<DynamicTypeImpl>();
-        for (DynamicType r : types)
+        for (DynamicType type : types)
         {
-            result.add((DynamicTypeImpl) r);
+            if ( controller.canRead( type, user))
+            {
+                result.add((DynamicTypeImpl) type);
+            }
         }
         return result;
     }

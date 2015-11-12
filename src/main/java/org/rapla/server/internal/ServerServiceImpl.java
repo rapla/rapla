@@ -12,18 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.sql.DataSource;
-
+import dagger.internal.Factory;
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -38,8 +29,9 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.server.WebserviceCreatorMap;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.rest.server.RaplaRestApiWrapper;
+import org.rapla.rest.server.RaplaAPIPage;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
@@ -52,9 +44,19 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import dagger.internal.Factory;
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
 
 
 @DefaultImplementation(of=ServerServiceContainer.class,context = InjectionContext.server,export = true)
@@ -66,7 +68,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 
     private final Map<String,RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
-    private final Map<String, RaplaRestApiWrapper> restPages = new HashMap<String, RaplaRestApiWrapper>();
+    private final RaplaAPIPage apiPage;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
@@ -112,7 +114,8 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
     }
 
     @Inject
-    public ServerServiceImpl(CachableStorageOperator operator,ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors, final Provider<Map<String,RaplaPageExtension>> pageMap, final Map<String, Factory> restPageFactories, TokenHandler tokenHandler, RaplaAuthentificationService raplaAuthentificationService)
+    public ServerServiceImpl(CachableStorageOperator operator, ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            final Provider<Map<String, RaplaPageExtension>> pageMap, WebserviceCreatorMap webservices)
     {
         this.logger = logger;
         //webMethods.setList( );
@@ -122,6 +125,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 //            externalMailSession.setValue(containerContext.getMailSession());
 //        }
         this.operator = operator;
+        this.apiPage = new RaplaAPIPage(logger, webservices);
         ((FacadeImpl)facade).setOperator( operator);
         operator.addStorageUpdateListener(this);
         //        if ( username != null  )
@@ -179,6 +183,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
             logger.error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
 
+        /*
         {// Rest Pages
             @SuppressWarnings("rawtypes")
             final Set<Entry<String, Factory>> restPageEntries = restPageFactories.entrySet();
@@ -191,6 +196,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
                 restPages.put(restPagePath, restWrapper);
             }
         }
+        */
         
         //User user = getFirstAdmin(operator);
         //adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
@@ -237,6 +243,71 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
             }
         }
         return null;
+    }
+
+    @Override public void servePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
+        String page =  request.getParameter("page");
+        String requestURI =request.getRequestURI();
+        if ( page == null)
+        {
+            String raplaPrefix = "rapla/";
+            String contextPath = request.getContextPath();
+            String toParse;
+            if (requestURI.startsWith( contextPath))
+            {
+                toParse = requestURI.substring( contextPath.length());
+            }
+            else
+            {
+                toParse = requestURI;
+            }
+            int pageContextIndex = toParse.lastIndexOf(raplaPrefix);
+            if ( pageContextIndex>= 0)
+            {
+                page = toParse.substring( pageContextIndex + raplaPrefix.length());
+                int firstSeparator = page.indexOf('/');
+                if ( firstSeparator>1)
+                {
+                    page = page.substring(0,firstSeparator );
+                }
+            }
+        }
+        if ( page == null || page.trim().length() == 0) {
+            page = "index";
+        }
+
+        RaplaPageGenerator  servletPage = getWebpage( page);
+        if ( servletPage == null)
+        {
+            final boolean b = apiPage.hasWebservice(page);
+            if ( b)
+            {
+                servletPage = apiPage;
+            }
+        }
+        if ( servletPage == null)
+        {
+            response.setStatus( 404 );
+            java.io.PrintWriter out = null;
+            try
+            {
+                out =	response.getWriter();
+                String message = "404: Page " + page + " not found in Rapla context";
+                out.print(message);
+                logger.getChildLogger("server.html.404").warn( message);
+            } finally
+            {
+                if ( out != null)
+                {
+                    out.close();
+                }
+            }
+
+            return;
+        }
+        ServletContext servletContext = request.getServletContext();
+        servletPage.generatePage( servletContext, request, response);
     }
 
     public RaplaPageGenerator getWebpage(String page)

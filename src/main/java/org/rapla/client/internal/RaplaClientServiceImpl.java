@@ -13,30 +13,11 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.Set;
-import java.util.Vector;
-import java.util.concurrent.Semaphore;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListener;
+import org.rapla.client.UserClientService;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -72,11 +53,30 @@ import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.StatusUpdater;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.Semaphore;
+
 /** Implementation of the UserClientService.
 */
 @Singleton
 @DefaultImplementation(of=ClientService.class,context = InjectionContext.swing,export = true)
-public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener,Disposable
+public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener,Disposable,UserClientService
 {
     
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
