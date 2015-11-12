@@ -33,9 +33,11 @@ import javax.inject.Inject;
 import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.event.StartActivityEvent;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -61,6 +63,8 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
 
+import com.google.web.bindery.event.shared.EventBus;
+
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */
 @Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID)
@@ -68,19 +72,18 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 {
 	Collection<Allocatable> templateNames;
     private final CalendarSelectionModel model;
-    private final EditController editController;
     private final RaplaImages raplaImages;
     private final DialogUiFactory dialogUiFactory;
     private final PermissionController permissionController;
+    private final EventBus eventBus;
 	@Inject
-    public TemplateWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model/*, EditController editController*/ ,RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController) throws RaplaException{
+    public TemplateWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController, EventBus eventBus) throws RaplaException{
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
-		// FIXME editcontroller contains a cycle
-        this.editController = null;//editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = permissionController;
+        this.eventBus = eventBus;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
     }
@@ -296,42 +299,10 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 	public void actionPerformed(ActionEvent e) {
 		try
 		{
-		    Collection<Reservation> reservations;
 		    TemplateMenuItem source = (TemplateMenuItem) e.getSource();
             Allocatable template = source.getTemplate();
-            reservations = getQuery().getTemplateReservations(template);
-            if (reservations.size() == 0)
-            {
-                showException(new EntityNotFoundException("Template " + template + " is empty. Please create events in template first."), getMainComponent(), dialogUiFactory);
-                return;
-            }
-            Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
-		    Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-		    boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
-            boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
-	    	Date beginn = getStartDate(model);
-	    	Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime);
-       		if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
-       		{
-       		    Appointment app = newReservations.iterator().next().getAppointments()[0];
-       		    TimeInterval first = markedIntervals.iterator().next();
-       		    Date end = first.getEnd();
-       		    if (!markedIntervalTimeEnabled)
-       		    {
-       		        end = getRaplaLocale().toDate( end,app.getEnd() );
-       		    }
-       		    if (!beginn.before(end))
-       		    {
-       		        end = new Date( app.getStart().getTime() + DateTools.MILLISECONDS_PER_HOUR );
-       		    }
-       		    app.move(app.getStart(), end);
-       		}
-            List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, getUser());
-            Reservation[] array = list.toArray(Reservation.RESERVATION_ARRAY);
-			final SwingPopupContext popupContext = new SwingPopupContext(getMainComponent(), null);
-			String title = null;
-			EditController.EditCallback<List<Reservation>> callback = null;
-			editController.edit(list, title, popupContext, callback);
+            final String id = template.getId();
+            eventBus.fireEvent(new StartActivityEvent(SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE, id));
 		}
 		catch (RaplaException ex)
 		{
