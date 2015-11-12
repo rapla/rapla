@@ -68,7 +68,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     @Inject
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            PermissionController permissionController, InfoFactory infoFactory, RaplaImages raplaImages,
+            PermissionController permissionController, InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
             DialogUiFactory dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
             DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaException
     {
@@ -77,8 +77,6 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
 
-        // FIXME provide menufactory without a cycle
-        MenuFactory menuFactory = null;
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
                 appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
                 booleanFieldFactory, filterEditButtonFactory, frameControllerList)

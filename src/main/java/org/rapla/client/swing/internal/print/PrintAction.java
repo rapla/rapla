@@ -38,10 +38,9 @@ public class PrintAction extends RaplaAction {
     private final Provider<CalendarPrintDialog> calendarPringDialogProvider;
     private final DialogUiFactory dialogUiFactory;
     @Inject
-    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,/* Map<String, SwingViewFactory> factoryMap,*/ RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactory dialogUiFactory) {
+    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactory dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
-        //FIXME printfactory contains a cycle
-        this.factoryMap = null;//factoryMap;
+        this.factoryMap = factoryMap;
         this.calendarPringDialogProvider = calendarPringDialogProvider;
         this.dialogUiFactory = dialogUiFactory;
         setEnabled(false);
