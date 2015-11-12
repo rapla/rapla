@@ -490,14 +490,6 @@ public abstract class DateTools
         return newJulienDate;
     }
 
-    public static Locale changeCountry(String country, Locale locale) {
-        return new Locale(locale.getLanguage(), country);
-    }
-
-    public static Locale changeLang(String lang, Locale locale) {
-        return new Locale(lang, locale.getCountry());
-    }
-
     public static String getLang(Locale locale) {
         String localeString = locale.toString();
         String[] parts = localeString.split("_");
