@@ -1,8 +1,11 @@
-package org.rapla.rest.server;
+package org.rapla.server.internal;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import org.rapla.entities.DependencyException;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -11,43 +14,37 @@ import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.jsonrpc.server.JsonServlet;
 import org.rapla.jsonrpc.server.WebserviceCreator;
 import org.rapla.jsonrpc.server.WebserviceCreatorMap;
+import org.rapla.jsonrpc.server.internal.ActiveCall;
 import org.rapla.jsonrpc.server.internal.RPCServletUtils;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-
-
-@Singleton
-public class RaplaAPIPage implements RaplaPageGenerator
+@Singleton public class RaplaRpcAndRestProcessor
 {
     //final ServerServiceContainer serverContainer;
-    final Map<String,WebserviceCreator> webserviceMap;
+    final Map<String, WebserviceCreator> webserviceMap;
     Logger logger;
 
-    public RaplaAPIPage(Logger logger,WebserviceCreatorMap webservices)  {
+    public RaplaRpcAndRestProcessor(Logger logger, WebserviceCreatorMap webservices)
+    {
         this.logger = logger;
         this.webserviceMap = webservices.asMap();
     }
 
-    public boolean hasWebservice(String path)
+    Map<Class, JsonServlet> servletMap = new HashMap<Class, JsonServlet>();
+
+    private JsonServlet getJsonServlet(HttpServletRequest request, Class interfaceClass) throws RaplaException
     {
-        final boolean b = webserviceMap.get(path) != null;
-        return b;
-    }
-    
-    Map<Class,JsonServlet> servletMap = new HashMap<Class, JsonServlet>();
-    private JsonServlet getJsonServlet(HttpServletRequest request,Class interfaceClass) throws RaplaException {
-        JsonServlet servlet = servletMap.get( interfaceClass);
-        if ( servlet == null)
+        JsonServlet servlet = servletMap.get(interfaceClass);
+        if (servlet == null)
         {
             try
             {
@@ -62,33 +59,44 @@ public class RaplaAPIPage implements RaplaPageGenerator
             }
             catch (Exception ex)
             {
-                throw new RaplaException( ex.getMessage(), ex);
+                throw new RaplaException(ex.getMessage(), ex);
             }
-            servletMap.put( interfaceClass, servlet);
+            servletMap.put(interfaceClass, servlet);
         }
         return servlet;
     }
 
-
-    public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
+    public class Path
     {
-        String id = request.getParameter("id");
+        final String path;
+        final String appendix;
+
+        Path(String path, String appendix)
+        {
+            this.path = path;
+            this.appendix = appendix;
+        }
+    }
+
+    public Path find(HttpServletRequest request)
+    {
         String path = null;
         String appendix = null;
-        String requestURI =request.getPathInfo();
+        String requestURI = request.getPathInfo();
         String subPath;
-        if ( requestURI.startsWith("/rapla/"))
+        if (requestURI.startsWith("/rapla/"))
         {
             subPath = requestURI.substring("/rapla/".length());
         }
-        else if ( requestURI.length() > 0){
+        else if (requestURI.length() > 0)
+        {
             subPath = requestURI.substring(1);
         }
         else
         {
             throw new RaplaException("No pathinfo found");
         }
-        for (String key:webserviceMap.keySet())
+        for (String key : webserviceMap.keySet())
         {
             if (subPath.startsWith(key))
             {
@@ -99,23 +107,29 @@ public class RaplaAPIPage implements RaplaPageGenerator
                 }
             }
         }
-        if ( path == null)
+        if (path == null)
         {
-            throw new RaplaException("No webservice found for " + requestURI);
+            return null;
         }
-        final WebserviceCreator webserviceCreator = webserviceMap.get(path);
+        return new Path(path, appendix);
+    }
+
+    public void generate(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response, Path path) throws IOException
+    {
+        String id = request.getParameter("id");
+        final WebserviceCreator webserviceCreator = webserviceMap.get(path.path);
         Class serviceClass = webserviceCreator.getServiceClass();
 
         JsonServlet servlet;
         try
         {
-            servlet = getJsonServlet( request, serviceClass );
+            servlet = getJsonServlet(request, serviceClass);
         }
         catch (RaplaException ex)
         {
             logger.error(ex.getMessage(), ex);
             String out = serializeException(id, ex);
-            RPCServletUtils.writeResponse(servletContext, response,  out, false);
+            RPCServletUtils.writeResponse(servletContext, response, out, false);
             return;
         }
         Object impl;
@@ -134,8 +148,7 @@ public class RaplaAPIPage implements RaplaPageGenerator
             servlet.serviceError(request, response, servletContext, ex);
             return;
         }
-
-        servlet.service(request, response, servletContext, impl, appendix);
+        servlet.service(request, response, servletContext, impl, path.appendix);
     }
 
     protected String serializeException(String id, Exception ex)
@@ -144,8 +157,9 @@ public class RaplaAPIPage implements RaplaPageGenerator
         String versionName = "jsonrpc";
         int code = -32603;
         r.add(versionName, new JsonPrimitive("2.0"));
-        if (id != null) {
-          r.add("id", new JsonPrimitive(id));
+        if (id != null)
+        {
+            r.add("id", new JsonPrimitive(id));
         }
         Class[] nonPrimitiveClasses = getNonPrimitiveClasses();
         GsonBuilder gb = JSONParserWrapper.defaultGsonBuilder(nonPrimitiveClasses);
@@ -158,9 +172,56 @@ public class RaplaAPIPage implements RaplaPageGenerator
 
     private Class[] getNonPrimitiveClasses()
     {
-        return new Class[] {RaplaMapImpl.class};
+        return new Class[] { RaplaMapImpl.class };
     }
 
-    
+    class RaplaJsonServlet extends JsonServlet
+    {
+        Logger logger = null;
+
+        public RaplaJsonServlet(Logger logger, Class class1) throws Exception
+        {
+            super(class1);
+            this.logger = logger;
+        }
+
+        @Override protected JsonElement getParams(Throwable failure)
+        {
+            JsonArray params = null;
+            if (failure instanceof DependencyException)
+            {
+                params = new JsonArray();
+                for (String dep : ((DependencyException) failure).getDependencies())
+                {
+                    params.add(new JsonPrimitive(dep));
+                }
+            }
+            return params;
+        }
+
+        @Override protected void debug(String childLoggerName, String out)
+        {
+            Logger childLogger = logger.getChildLogger(childLoggerName);
+            if (childLogger.isDebugEnabled())
+            {
+                childLogger.debug(out);
+            }
+        }
+
+        @Override protected void error(String message, Throwable ex)
+        {
+            logger.error(message, ex);
+        }
+
+        @Override protected boolean isSecurityException(Throwable i)
+        {
+            return i instanceof RaplaSecurityException;
+        }
+
+        @Override protected Class[] getAdditionalClasses()
+        {
+            return new Class[] { RaplaMapImpl.class };
+        }
+    }
 
 }

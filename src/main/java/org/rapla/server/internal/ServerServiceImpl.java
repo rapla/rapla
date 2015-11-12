@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import dagger.internal.Factory;
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.entities.User;
@@ -31,7 +30,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.server.WebserviceCreatorMap;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.rest.server.RaplaAPIPage;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
@@ -68,7 +66,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 
     private final Map<String,RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
-    private final RaplaAPIPage apiPage;
+    private final RaplaRpcAndRestProcessor apiPage;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
@@ -125,7 +123,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 //            externalMailSession.setValue(containerContext.getMailSession());
 //        }
         this.operator = operator;
-        this.apiPage = new RaplaAPIPage(logger, webservices);
+        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices);
         ((FacadeImpl)facade).setOperator( operator);
         operator.addStorageUpdateListener(this);
         //        if ( username != null  )
@@ -276,41 +274,46 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         if ( page == null || page.trim().length() == 0) {
             page = "index";
         }
-
-        RaplaPageGenerator  servletPage = getWebpage( page);
-        if ( servletPage == null)
+        final ServletContext servletContext = request.getServletContext();
+        final RaplaPageGenerator  servletPage = getWebpage( page);
+        if ( servletPage != null)
         {
-            final boolean b = apiPage.hasWebservice(page);
-            if ( b)
+            servletPage.generatePage(servletContext,request, response);
+        }
+        else
+        {
+            final RaplaRpcAndRestProcessor.Path b = apiPage.find( request);
+            if ( b != null)
             {
-                servletPage = apiPage;
+                apiPage.generate(servletContext, request, response, b);
+            }
+            else
+            {
+                print404Response(response, page);
             }
         }
-        if ( servletPage == null)
-        {
-            response.setStatus( 404 );
-            java.io.PrintWriter out = null;
-            try
-            {
-                out =	response.getWriter();
-                String message = "404: Page " + page + " not found in Rapla context";
-                out.print(message);
-                logger.getChildLogger("server.html.404").warn( message);
-            } finally
-            {
-                if ( out != null)
-                {
-                    out.close();
-                }
-            }
-
-            return;
-        }
-        ServletContext servletContext = request.getServletContext();
-        servletPage.generatePage( servletContext, request, response);
     }
 
-    public RaplaPageGenerator getWebpage(String page)
+    private void print404Response(HttpServletResponse response, String page) throws IOException
+    {
+        response.setStatus( 404 );
+        java.io.PrintWriter out = null;
+        try
+        {
+            out =	response.getWriter();
+            String message = "404: Page " + page + " not found in Rapla context";
+            out.print(message);
+            logger.getChildLogger("server.html.404").warn( message);
+        } finally
+        {
+            if ( out != null)
+            {
+                out.close();
+            }
+        }
+    }
+
+    private RaplaPageGenerator getWebpage(String page)
     {
         String lowerCase = page.toLowerCase();
         @SuppressWarnings("deprecation")

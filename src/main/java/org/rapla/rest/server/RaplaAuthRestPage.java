@@ -113,6 +113,7 @@ public class RaplaAuthRestPage extends AbstractRestPage
     }
 
     @GET
+    @Produces(MediaType.TEXT_HTML)
     public void getHtml(@QueryParam("url") String url, @Context HttpServletResponse response) throws IOException
     {
         createPage(url, null, null, response);
