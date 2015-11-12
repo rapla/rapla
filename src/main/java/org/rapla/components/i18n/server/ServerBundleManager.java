@@ -206,12 +206,12 @@ public class ServerBundleManager implements BundleManager {
     }
 
     public void setLanguage(String language) {
-        Locale locale = DateTools.changeLang(language, this.locale);
+        Locale locale = new Locale(language, this.locale.getCountry());
         setLocale(locale);
     }
 
     public void setCountry(String country) {
-        Locale locale = DateTools.changeCountry(country, this.locale);
+        Locale locale = new Locale(this.locale.getLanguage(), country);
         setLocale(locale);
     }
 

@@ -491,13 +491,11 @@ public abstract class DateTools
     }
 
     public static Locale changeCountry(String country, Locale locale) {
-        // FIXME need to implement for gwt
-        return Locale.US;
+        return new Locale(locale.getLanguage(), country);
     }
 
     public static Locale changeLang(String lang, Locale locale) {
-        // FIXME need to implement for gwt
-        return Locale.ENGLISH;
+        return new Locale(lang, locale.getCountry());
     }
 
     public static String getLang(Locale locale) {
