@@ -1,5 +1,6 @@
 package org.rapla.server.internal.console;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
@@ -40,8 +41,7 @@ public class StandaloneStarter extends GUIStarter
     public void startStandalone( ) throws Exception 
     {
         server = serverStarter.startServer();
-        String username = startupUser != null ? startupUser:server.getFirstAdmin();
-        ConnectInfo connectInfo =  new ConnectInfo(username, "".toCharArray());
+        ConnectInfo connectInfo = getStartupConnectInfo();
         RemoteConnectionInfo.setMockProxy(new MockProxy()
         {
             @Override public <T> T create(Class<T> tClass, String accessToken)
@@ -69,10 +69,7 @@ public class StandaloneStarter extends GUIStarter
                     server = serverStarter.startServer();
                     if (  reconnect.getUsername() == null)
                     {
-                        if ( startupUser != null)
-                        {
-                            reconnect= new ConnectInfo(startupUser, "".toCharArray());
-                        }
+                        reconnect= getStartupConnectInfo();
                     } 
                     startStandaloneGUI(env, reconnect, server);
                     guiMutex.acquire();
@@ -85,6 +82,12 @@ public class StandaloneStarter extends GUIStarter
         } catch (InterruptedException e) {
             
         }
+    }
+
+    @NotNull private ConnectInfo getStartupConnectInfo()
+    {
+        String username = startupUser != null ? startupUser : server.getFirstAdmin();
+        return new ConnectInfo(username, "".toCharArray());
     }
 
     private void startStandaloneGUI(RaplaStartupEnvironment env, ConnectInfo connectInfo, final ServerServiceContainer server) throws RaplaException, Exception {
