@@ -278,7 +278,7 @@
 						</goals>
 						<configuration>
 							<outputDirectory>${webapp.dir}/webclient</outputDirectory>
-							<finalName>raplaclient</finalName>
+							<finalName>rapla</finalName>
 							<excludes>
 								<exclude>**/*.gwt.xml</exclude>
 								<exclude>org/rapla/gwt/**</exclude>
@@ -293,6 +293,7 @@
 								<exclude>se/**</exclude>
 								<exclude>**/${rapla.module}</exclude>
 							</excludes>
+							<classifier>client</classifier>
 						</configuration>
 					</execution>
 					<execution>
