@@ -54,7 +54,7 @@
 			<lineEnding>crlf</lineEnding>
 		</file>		
 		<file>
-			<source>${rapla.distribution.directory}/templates/scripts/rapla_bat</source>
+			<source>${rapla.distribution.directory}/templates/scripts/raplaclient_bat</source>
 			<destName>raplaclient.bat</destName>
 			<fileMode>0720</fileMode>
 			<lineEnding>crlf</lineEnding>
