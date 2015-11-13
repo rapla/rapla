@@ -1,6 +1,5 @@
 package org.rapla.server.internal.console;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
@@ -14,7 +13,6 @@ import org.rapla.jsonrpc.client.gwt.MockProxy;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
-import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
@@ -84,7 +82,7 @@ public class StandaloneStarter extends GUIStarter
         }
     }
 
-    @NotNull private ConnectInfo getStartupConnectInfo()
+    private ConnectInfo getStartupConnectInfo()
     {
         String username = startupUser != null ? startupUser : server.getFirstAdmin();
         return new ConnectInfo(username, "".toCharArray());
