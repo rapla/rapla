@@ -1,9 +1,10 @@
 package org.rapla.storage.dbrm;
 
+import org.rapla.ConnectInfo;
+import org.rapla.jsonrpc.client.gwt.MockProxy;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import org.rapla.ConnectInfo;
 
 @Singleton
 public class RemoteConnectionInfo
@@ -12,6 +13,7 @@ public class RemoteConnectionInfo
     String serverURL;
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
+    static MockProxy mockProxy;
 
     @Inject
     public RemoteConnectionInfo()
@@ -42,6 +44,15 @@ public class RemoteConnectionInfo
         return accessToken;
     }
 
+    public static void setMockProxy(MockProxy mockProxy)
+    {
+        RemoteConnectionInfo.mockProxy = mockProxy;
+    }
+
+    public MockProxy getMockProxy()
+    {
+        return mockProxy;
+    }
 
     public String getServerURL() {
         return serverURL;

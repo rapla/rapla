@@ -21,6 +21,8 @@ public interface ServerServiceContainer extends Disposable
 
     String getFirstAdmin();
 
+    <T> T getMockService(final Class<T> test, final String accessToken);
+
     void servePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
     // json servlet
     //<T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;

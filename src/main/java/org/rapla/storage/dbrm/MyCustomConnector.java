@@ -13,6 +13,7 @@ import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.client.gwt.MockProxy;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.jsonrpc.common.FutureResult;
 
@@ -90,5 +91,10 @@ public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnecto
     @Override public String getAccessToken()
     {
         return remoteConnectionInfo.getAccessToken();
+    }
+
+    @Override public MockProxy getMockProxy()
+    {
+        return remoteConnectionInfo.getMockProxy();
     }
 }

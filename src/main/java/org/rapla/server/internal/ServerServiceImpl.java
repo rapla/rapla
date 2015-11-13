@@ -50,6 +50,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -292,6 +295,29 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
                 print404Response(response, page);
             }
         }
+    }
+
+    public <T> T getMockService(final Class<T> test, final String accessToken)
+    {
+        InvocationHandler invocationHandler = new InvocationHandler()
+        {
+            @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+            {
+                if ( method.getName().equals("getParameter"))
+                {
+                    String key = (String)args[0];
+                    if ( key.equals( "access_token"))
+                    {
+                        return  accessToken;
+                    }
+                }
+                return null;
+            }
+        };
+        HttpServletRequest request = (HttpServletRequest)Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {HttpServletRequest.class}, invocationHandler);
+        HttpServletResponse response = (HttpServletResponse)Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {HttpServletResponse.class}, invocationHandler);
+        final T o = (T) apiPage.webserviceMap.get(test.getCanonicalName()).create(request, response);
+        return o;
     }
 
     private void print404Response(HttpServletResponse response, String page) throws IOException
