@@ -16,6 +16,7 @@ import org.rapla.client.event.StartActivityEvent.StartActivityEventHandler;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -63,7 +64,8 @@ public class SwingActivityController extends RaplaComponent implements StartActi
             case CREATE_RESERVATION_FOR_DYNAMIC_TYPE:
             {
                 final String dynamicTypeId = event.getInfo();
-                final DynamicType type = facade.getDynamicType(dynamicTypeId);
+                final Entity resolve = facade.getOperator().resolve(dynamicTypeId);
+                final DynamicType type = (DynamicType)resolve;
                 Classification newClassification = type.newClassification();
                 Reservation r = facade.newReservation(newClassification);
                 Appointment appointment = createAppointment(model);

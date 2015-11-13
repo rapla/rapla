@@ -26,6 +26,7 @@ import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RestartRaplaAction;
 import org.rapla.client.swing.internal.action.RestartServerAction;
@@ -115,7 +116,9 @@ public class RaplaMenuBar extends RaplaGUIComponent
             TemplateEditFactory templateEditFactory,
             Provider<LicenseInfoUI> licenseInfoUIProvider,
             ReservationEditFactory editFactory,
-            ReservationController reservationController
+            ReservationController reservationController,
+            //FIXME hack for initialization
+            SwingActivityController activityController
     )
             throws RaplaException
     {
