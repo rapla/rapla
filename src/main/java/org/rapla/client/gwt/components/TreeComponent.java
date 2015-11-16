@@ -36,7 +36,7 @@ public class TreeComponent extends Div
         void selectionChanged(final Collection<Allocatable> selected);
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeJquery extends JQueryElement
     {
         JsTreeElement jstree(JsTreeOptions options);
@@ -44,13 +44,13 @@ public class TreeComponent extends Div
         void on(String event, JsTreeEventListener eventListener);
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeElement extends JQueryElement
     {
         JsTree data(String key);
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTree extends JQueryElement
     {
         void deselect_all(boolean supressEvent);
@@ -63,7 +63,7 @@ public class TreeComponent extends Div
         void show_contextmenu(JsTreeContextMenu menuFunction);
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeSettings
     {
 
@@ -75,7 +75,7 @@ public class TreeComponent extends Div
 
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeOptions
     {
         @JsProperty
@@ -98,7 +98,7 @@ public class TreeComponent extends Div
 
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeCore
     {
         @JsProperty
@@ -126,7 +126,7 @@ public class TreeComponent extends Div
         boolean isCheck_callback();
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeThemes
     {
         @JsProperty
@@ -142,7 +142,7 @@ public class TreeComponent extends Div
         Boolean getResponsive();
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeDataChange
     {
         @JsProperty
@@ -233,7 +233,7 @@ public class TreeComponent extends Div
         });
     }
 
-    @JsType
+    @JsType(isNative=true)
     public interface JsTreeContextMenu
     {
         @JsProperty

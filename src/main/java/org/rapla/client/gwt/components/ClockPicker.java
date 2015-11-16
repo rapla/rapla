@@ -34,7 +34,7 @@ public class ClockPicker extends Div
         public void remove();
     }
 
-    @JsType
+    @JsType(isNative = true)
     public interface ClockPickerElement extends JQueryElement
     {
         /*
@@ -43,7 +43,7 @@ public class ClockPicker extends Div
         public ClockPickerI data(String key);
     }
 
-    @JsType
+    @JsType(isNative = true)
     public interface ClockPickerI extends JQueryElement
     {
         public void show();
@@ -55,7 +55,7 @@ public class ClockPicker extends Div
         public void handleAction();
     }
 
-    @JsType
+    @JsType(isNative = true)
     public interface ClockPickerOptions
     {
         @JsProperty
