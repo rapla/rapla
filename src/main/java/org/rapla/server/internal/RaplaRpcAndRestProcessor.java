@@ -45,13 +45,17 @@ public class RaplaRpcAndRestProcessor
         }
     }
 
-    public Path find(HttpServletRequest request)
+    public Path find(HttpServletRequest request, String page)
     {
         String path = null;
         String appendix = null;
         String requestURI = request.getPathInfo();
         String subPath;
-        if (requestURI.startsWith("/rapla/"))
+        if ( page != null)
+        {
+            subPath = page;
+        }
+        else if (requestURI.startsWith("/rapla/"))
         {
             subPath = requestURI.substring("/rapla/".length());
         }

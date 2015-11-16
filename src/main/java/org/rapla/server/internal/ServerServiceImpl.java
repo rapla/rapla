@@ -285,7 +285,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         }
         else
         {
-            final RaplaRpcAndRestProcessor.Path b = apiPage.find( request);
+            final RaplaRpcAndRestProcessor.Path b = apiPage.find( request,page);
             if ( b != null)
             {
                 apiPage.generate(servletContext, request, response, b);
