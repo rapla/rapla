@@ -7,7 +7,7 @@ import java.util.Locale;
 import javax.inject.Inject;
 
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.client.ClientBundleManager;
+import org.rapla.components.i18n.client.GwtBundleManager;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -68,7 +68,7 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
     @Override
     public Locale newLocale(String language, String country)
     {
-        return ((ClientBundleManager)bundleManager).newLocale(language, country);
+        return ((GwtBundleManager)bundleManager).newLocale(language, country);
     }
     
     

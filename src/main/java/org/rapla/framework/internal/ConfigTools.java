@@ -239,7 +239,7 @@ public abstract class ConfigTools
         }
         catch ( Exception ex )
         {
-            throw new RaplaException( "Can't get configuration file in webstart mode." );
+            throw new RaplaException( "Can't get configuration file in webstart mode.", ex );
         }
     }
 

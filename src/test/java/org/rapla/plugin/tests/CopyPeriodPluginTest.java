@@ -27,7 +27,7 @@ import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
@@ -87,7 +87,7 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         }
         assertNotNull( "Period not found ", sourcePeriod );
         assertNotNull( "Period not found ", destPeriod );
-        BundleManager bundleManager= new ServerBundleManager();
+        BundleManager bundleManager= new DefaultBundleManager();
         PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
         final Logger logger = getLogger();
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);

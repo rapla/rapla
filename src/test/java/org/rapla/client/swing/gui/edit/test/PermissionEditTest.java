@@ -16,7 +16,6 @@ import java.util.Collections;
 
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.client.UserClientService;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -32,7 +31,7 @@ import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
@@ -60,7 +59,7 @@ public final class PermissionEditTest extends GUITestCase
 
     public void testMain() throws Exception {
         final Logger logger = getLogger();
-        final ServerBundleManager bundleManager = new ServerBundleManager();
+        final DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);

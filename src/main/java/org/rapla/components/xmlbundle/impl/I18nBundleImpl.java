@@ -20,7 +20,7 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
@@ -108,7 +108,7 @@ public class I18nBundleImpl implements I18nBundle
             className = className.trim();
         }
         setLocale( localeSelector.getLocale());
-        ((ServerBundleManager)localeSelector).addLocaleChangeListener(new LocaleChangeListener()
+        ((DefaultBundleManager)localeSelector).addLocaleChangeListener(new LocaleChangeListener()
         {
             
             @Override

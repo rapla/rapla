@@ -19,7 +19,7 @@ import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.framework.logger.Logger;
 
 import junit.framework.Test;
@@ -39,7 +39,7 @@ public class ErrorDialogTest extends GUITestCase {
         ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
         final Logger logger = getLogger();
         FrameControllerList frameList = new FrameControllerList(logger);
-        BundleManager bundleManager = new ServerBundleManager();
+        BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaImages raplaImages = new RaplaImages(getLogger());
         RaplaResources raplaResources = new RaplaResources(bundleManager);

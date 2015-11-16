@@ -5,11 +5,11 @@ import java.util.Locale;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 
 public class TestI18nLocaleFormats
 {
-    ServerBundleManager bundleManager;
+    DefaultBundleManager bundleManager;
     @Before
     public void setUp        (){
         this.bundleManager = bundleManager;

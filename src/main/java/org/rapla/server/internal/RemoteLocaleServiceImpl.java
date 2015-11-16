@@ -9,7 +9,7 @@ import javax.inject.Inject;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -26,7 +26,7 @@ import org.rapla.storage.StorageOperator;
 @DefaultImplementation(of = RemoteLocaleService.class, context = InjectionContext.server)
 public class RemoteLocaleServiceImpl implements RemoteLocaleService
 {
-    private final ServerBundleManager bundleManager;
+    private final DefaultBundleManager bundleManager;
     private final RaplaLocale raplaLocale;
     private  RemoteSession session;
     private final Logger logger;
@@ -38,7 +38,7 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     public RemoteLocaleServiceImpl(BundleManager bundleManager, RaplaLocale raplaLocale, Logger logger, StorageOperator operator,ResourceBundleList resourceBundleList, RemoteSession session)
     {
         this.resourceBundleList = resourceBundleList;
-        this.bundleManager = (ServerBundleManager) bundleManager;
+        this.bundleManager = (DefaultBundleManager) bundleManager;
         this.raplaLocale = raplaLocale;
         this.operator = operator;
         this.session = session;

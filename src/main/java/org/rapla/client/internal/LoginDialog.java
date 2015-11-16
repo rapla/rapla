@@ -40,7 +40,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -71,13 +71,13 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 	ImageObserver				observer;
 	Image						image;
 	JPanel						canvas;
-	protected ServerBundleManager localeSelector;
+	protected DefaultBundleManager localeSelector;
     StartupEnvironment env;
     // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
     private final RaplaLocale raplaLocale;
     private final Logger logger;
 
-    private LoginDialog(StartupEnvironment env, RaplaResources i18n, ServerBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, FrameControllerList frameControllerList) throws RaplaException
+    private LoginDialog(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, FrameControllerList frameControllerList) throws RaplaException
 	{
 		super(frameControllerList);
 		this.env =  env;
@@ -88,7 +88,7 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 		this.raplaLocale = raplaLocale;
 	}
 	
-	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, ServerBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector, FrameControllerList frameControllerList) throws RaplaException
+	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector, FrameControllerList frameControllerList) throws RaplaException
 	{
 		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, logger, raplaLocale,frameControllerList);
 		dlg.init(languageSelector);

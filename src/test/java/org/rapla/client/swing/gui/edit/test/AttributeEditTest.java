@@ -14,7 +14,6 @@
 package org.rapla.client.swing.gui.edit.test;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.UserClientService;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
@@ -22,7 +21,7 @@ import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
@@ -48,7 +47,7 @@ public final class AttributeEditTest extends GUITestCase
         final Logger logger = getLogger();
         RaplaImages raplaImages = new RaplaImages(logger);
         final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
-        BundleManager bundleManager = new ServerBundleManager();
+        BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList);
@@ -63,7 +62,7 @@ public final class AttributeEditTest extends GUITestCase
         final Logger logger = getLogger();
         RaplaImages raplaImages = new RaplaImages(logger);
         final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
-        BundleManager bundleManager = new ServerBundleManager();
+        BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList);

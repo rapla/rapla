@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -83,7 +83,7 @@ public class ParsedTextTest extends TestCase
     private Map<String, FunctionFactory> createFactoryMap()
     {
         Map<String,FunctionFactory> map = new HashMap<String,FunctionFactory>();
-        BundleManager manager = new ServerBundleManager();
+        BundleManager manager = new DefaultBundleManager();
         RaplaLocale raplaLocale = new RaplaLocaleImpl(manager);
         map.put(StandardFunctions.NAMESPACE,new StandardFunctions(raplaLocale));
         return map;

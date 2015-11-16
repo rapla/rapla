@@ -44,7 +44,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
@@ -69,7 +69,7 @@ public class DialogUI extends JDialog
     private int selectedIndex = -1;
     private FrameControllerList frameList = null;
     protected boolean packFrame = true;
-    private ServerBundleManager localeSelector;
+    private DefaultBundleManager localeSelector;
     private RaplaResources i18n;
 
     private ButtonListener buttonListener = new ButtonListener();
@@ -234,7 +234,7 @@ public class DialogUI extends JDialog
     			getButton(0).setText(i18n.getString("ok"));
     		}
     	}
-    	localeSelector = (ServerBundleManager) bundleManager;
+    	localeSelector = (DefaultBundleManager) bundleManager;
     	localeSelector.addLocaleChangeListener(this);
     	this.frameList = frameList;
     	frameList.add(this);

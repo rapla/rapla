@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
-import java.awt.Component;
 import java.util.Date;
 
 import org.rapla.client.swing.InfoFactory;
@@ -25,11 +24,10 @@ import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
@@ -165,7 +163,7 @@ public class DynamicTypeTest extends RaplaTestCase {
    	}
    	{
             final Logger logger = getLogger();
-            final ServerBundleManager bundleManager = new ServerBundleManager();
+            final DefaultBundleManager bundleManager = new DefaultBundleManager();
             RaplaResources i18n = new RaplaResources(bundleManager);
             RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
             AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);

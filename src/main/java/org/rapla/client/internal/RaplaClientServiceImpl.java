@@ -27,7 +27,7 @@ import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.User;
@@ -363,7 +363,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
             String language = facade.getPreferences().getEntryAsString( RaplaLocale.LANGUAGE_ENTRY, null);
             if ( language != null)
             {
-                ServerBundleManager localeSelector =  (ServerBundleManager)bundleManager;
+                DefaultBundleManager localeSelector =  (DefaultBundleManager)bundleManager;
                 localeSelector.setLanguage( language );
             }
         }
@@ -496,7 +496,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         try {
 			final Logger logger = getLogger();
 			final LanguageChooser languageChooser = new LanguageChooser(logger,i18n,raplaLocale);
-            ServerBundleManager localeSelector = (ServerBundleManager)bundleManager;
+            DefaultBundleManager localeSelector = (DefaultBundleManager)bundleManager;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent(), frameControllerList);
             
             Action languageChanged = new AbstractAction()

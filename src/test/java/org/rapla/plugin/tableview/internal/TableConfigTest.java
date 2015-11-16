@@ -11,7 +11,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.rapla.components.i18n.server.ServerBundleManager;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.ConfigurationException;
@@ -105,7 +105,7 @@ public class TableConfigTest extends TestCase
         final Transport fromXml = (Transport) unmarshaller.unmarshal(new ByteArrayInputStream(out.toByteArray()));
         
         final RaplaConfiguration raplaConfig = TableConfig.print( fromXml.config);
-        final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new ServerBundleManager()));
+        final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new DefaultBundleManager()));
         final String json2 = gson.toJson(test);
         //System.out.println(json2);
         assertEquals(json, json2);
