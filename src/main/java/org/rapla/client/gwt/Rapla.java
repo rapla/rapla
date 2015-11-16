@@ -21,7 +21,7 @@ public class Rapla implements EntryPoint
         {
             @Override public String getEntryPoint(String interfaceName, String relativePath)
             {
-                String url = GWT.getModuleBaseURL() + "../rapla/json/" + (relativePath != null ? relativePath : interfaceName);
+                String url = GWT.getModuleBaseURL() + "../rapla/" + (relativePath != null ? relativePath : interfaceName);
                 return url;
             }
         });
