@@ -14,7 +14,8 @@ public class DaggerServerCreator
         boolean useReflection = true;
         if (useReflection)
         {
-            server = DaggerReflectionStarter.startWithReflectionAndStartupModule(ServerServiceContainer.class, DaggerReflectionStarter.Scope.Server, startupModule);
+            String moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
+            server = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ServerServiceContainer.class, DaggerReflectionStarter.Scope.Server, startupModule);
         }
         else
         {

@@ -24,6 +24,8 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
+import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
@@ -32,12 +34,14 @@ public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
 
     private final ClientFacade facade;
     private final RaplaResources i18n;
+    private final String moduleId;
 
     @Inject
     public RaplaJNLPPageGenerator( ClientFacade facade,RaplaResources i18n )
     {
         this.facade = facade;
         this.i18n = i18n;
+        moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
     }
 
     private String getCodebase( HttpServletRequest request)  {
@@ -171,6 +175,10 @@ public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
             String usernameProperty = "jnlp.org.rapla.startupUser";
             String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
             out.println("  <property name=\"" +usernameProperty +"\" value=\"" + safeUsername + "\"/>");
+        }
+        {
+            String moduleIdProperty = "jnlp.org.rapla.moduleId";
+            out.println("  <property name=\"" +moduleIdProperty +"\" value=\"" + moduleId + "\"/>");
         }
         out.println(getLibsJNLP(context, webstartRoot));
         out.println("</resources>");

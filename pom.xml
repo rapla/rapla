@@ -292,6 +292,7 @@
 								<exclude>**/storage/dbsql/**</exclude>
 								<exclude>**/servletpages/**</exclude>
 								<exclude>se/**</exclude>
+								<exclude>**/${rapla.module}</exclude>
 							</excludes>
 							<classifier>client</classifier>
 						</configuration>

@@ -23,6 +23,8 @@ final public class MainWebstart
         	main.init( ConfigTools.webstartConfigToURL( ""),StartupEnvironment.WEBSTART);
             String startupUser = System.getProperty("jnlp.org.rapla.startupUser");
             main.setStartupUser( startupUser);
+            String moduleId = System.getProperty("jnlp.org.rapla.moduleId");
+            main.setModuleId( moduleId );
         	main.startRapla();
         } catch (Throwable ex) {
             main.getLogger().error("Couldn't start Rapla",ex);

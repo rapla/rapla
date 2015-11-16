@@ -33,7 +33,8 @@ public class MainWebclient
     Disposable raplaContainer;
 
     String startupUser;
-    
+    private String moduleId;
+
     void init(URL downloadURL,int mode) throws Exception {
         env.setStartupMode( mode );
         env.setDownloadURL(downloadURL );
@@ -74,7 +75,7 @@ public class MainWebclient
 
     private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
-        return DaggerClientCreator.create(env);
+        return DaggerClientCreator.create(env, moduleId);
     }
 
     protected void startRapla( ConnectInfo connectInfo) throws Exception {
@@ -138,5 +139,9 @@ public class MainWebclient
     Logger getLogger() {
         return logger;
     }
-    
+
+    public void setModuleId(String moduleId)
+    {
+        this.moduleId = moduleId;
+    }
 }

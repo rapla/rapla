@@ -10,6 +10,9 @@ import org.rapla.jsonrpc.client.EntryPointFactory;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 
 import javax.inject.Provider;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 
 public class DaggerClientCreator
@@ -28,7 +31,14 @@ public class DaggerClientCreator
             this.client = client;
         }
     }
+
     public static ClientService create(StartupEnvironment startupEnvironment) throws Exception
+    {
+        String moduleId = DaggerReflectionStarter.loadModuleId( ClientService.class.getClassLoader());
+        return create(startupEnvironment, moduleId);
+    }
+
+    public static ClientService create(StartupEnvironment startupEnvironment, String moduleId) throws Exception
     {
 
         final ClientService client;
@@ -37,7 +47,7 @@ public class DaggerClientCreator
         boolean useReflection = true;
         if (useReflection)
         {
-            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
+            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
         }
         else
         {
@@ -56,4 +66,5 @@ public class DaggerClientCreator
         });
         return client;
     }
+
 }

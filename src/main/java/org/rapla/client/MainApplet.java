@@ -114,6 +114,8 @@ final public class MainApplet extends JApplet
                     MainWebclient main = new MainWebclient();
                     String startupUser = getParameter("org.rapla.startupUser");
                     main.setStartupUser( startupUser);
+                    String moduleId = getParameter("org.rapla.moduleId");
+                    main.setModuleId( moduleId );
                     URL downloadURL = new URL( getCodeBase(), "" );
                     main.init( downloadURL, StartupEnvironment.APPLET );
                     System.out.println( "Codebase " + getCodeBase() );

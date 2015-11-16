@@ -14,15 +14,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.rapla.inject.Extension;
+import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaapplet")
 @Singleton
 public class RaplaAppletPageGenerator implements RaplaPageExtension
 {
+    private final String moduleId;
+
     @Inject
     public RaplaAppletPageGenerator()
     {
+        moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
     }
 
     private String getLibsApplet(ServletContext context) throws java.io.IOException {
@@ -69,6 +74,7 @@ public class RaplaAppletPageGenerator implements RaplaPageExtension
             String safeUsername = URLEncoder.encode(passedUsername, "UTF-8");
             out.println("  <param name=\"org.rapla.startupUser\" value=\""+safeUsername + "\"/>");
         }
+        out.println("  <param name=\"org.rapla.moduleId\" value=\""+moduleId + "\"/>");
         out.println("      No Java support for APPLET tags please install java plugin for your browser!!");
         out.println("   </applet>");
         out.println("</body>");
