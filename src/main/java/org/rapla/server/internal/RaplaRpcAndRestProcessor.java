@@ -55,17 +55,17 @@ public class RaplaRpcAndRestProcessor
         {
             subPath = page;
         }
-        else if (requestURI.startsWith("/rapla/"))
+        else if (requestURI != null && requestURI.startsWith("/rapla/"))
         {
             subPath = requestURI.substring("/rapla/".length());
         }
-        else if (requestURI.length() > 0)
+        else if (requestURI != null && requestURI.length() > 0)
         {
             subPath = requestURI.substring(1);
         }
         else
         {
-            throw new RaplaException("No pathinfo found");
+            return  null;
         }
         for (String key : webserviceMap.keySet())
         {
