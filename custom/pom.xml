@@ -145,6 +145,60 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>Rapla Client Jar</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${webapp.dir}/webclient</outputDirectory>
+							<finalName>${artifactId}</finalName>
+							<excludes>
+								<exclude>**/*.gwt.xml</exclude>
+								<exclude>org/rapla/gwt/**</exclude>
+								<exclude>org/rapla/bootstrap/*</exclude>
+								<exclude>**/Slf4jAdapter**</exclude>
+								<exclude>**/server/**</exclude>
+								<exclude>**/server/**</exclude>
+								<exclude>**/storage/xml/**</exclude>
+								<exclude>**/storage/dbfile/**</exclude>
+								<exclude>**/storage/dbsql/**</exclude>
+								<exclude>**/servletpages/**</exclude>
+								<exclude>se/**</exclude>
+								<exclude>**/${rapla.module}</exclude>
+							</excludes>
+							<classifier>client</classifier>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.6</version>
+				<configuration>
+					<overlays>
+						<overlay>
+							<groupId>org.rapla</groupId>
+							<artifactId>rapla</artifactId>
+							<excludes>
+								<exclude>Rapla/*cache.js</exclude>
+								<exclude>webclient/*.jar</exclude>
+								<exclude>WEB-INF/classes/clientlibs.properties</exclude>
+								<exclude>WEB-INF/classes/moduleDescription</exclude>
+							</excludes>
+						</overlay>
+					</overlays>
+					<archiveClasses>true</archiveClasses>
+					<failOnMissingWebXml>false</failOnMissingWebXml>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>

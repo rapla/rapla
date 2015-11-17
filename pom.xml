@@ -35,6 +35,18 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <archiveClasses>true</archiveClasses>
+                    <warSourceExcludes>Rapla/Rapla.nocache.js</warSourceExcludes>
+                    <packagingExcludes>**/*.java</packagingExcludes>
+                    <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
+                    <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.5.5</version>
                 <executions>
