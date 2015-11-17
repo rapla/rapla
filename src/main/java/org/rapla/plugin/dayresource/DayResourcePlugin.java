@@ -9,5 +9,5 @@ import org.rapla.framework.TypedComponentRole;
 public interface DayResourcePlugin
 {
     String DAY_RESOURCE_VIEW = "day_resource";
-    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(DAY_RESOURCE_VIEW + ".config");
+    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(DAY_RESOURCE_VIEW + ".config");
 }

@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.dayresource.client.swing;
 
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.Icon;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -41,7 +34,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
+import org.rapla.plugin.dayresource.DayResourcePlugin;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.Icon;
+import java.util.Set;
 
 @Singleton
 @Extension(provides = SwingViewFactory.class,id = DayResourceViewFactory.DAY_RESOURCE_VIEW)
@@ -86,7 +85,7 @@ public class DayResourceViewFactory implements SwingViewFactory
         this.permissionController = permissionController;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
-        config = facade.getSystemPreferences().getEntry(CompactWeekviewPlugin.CONFIG, new RaplaConfiguration());
+        config = facade.getSystemPreferences().getEntry(DayResourcePlugin.CONFIG, new RaplaConfiguration());
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";
