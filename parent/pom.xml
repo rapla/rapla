@@ -3,13 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-parent</artifactId>
-	<version>${global.version}</version>
-	<parent>
-		<groupId>org.rapla</groupId>
-		<artifactId>rapla-master</artifactId>
-		<relativePath>../master/pom.xml</relativePath>
-		<version>${global.version}</version>
-	</parent>
+	<version>2.0-SNAPSHOT</version>
 	<url>https://github.com/rapla/rapla</url>
 	<description>rapla - parent</description>
 	<name>rapla - parent</name>
