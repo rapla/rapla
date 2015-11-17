@@ -36,14 +36,10 @@
 		<connection>scm:git:git://github.com/rapla/rapla.git</connection>
 		<url>https://github.com/rapla/rapla.git</url>
 	</scm>
-
 	<properties>
-
-		<!-- <rapla.gwt.plugins>org.rapla.gwt.client.plugin.TestGWTModule</rapla.gwt.plugins> -->
 		<slf4j.version>1.7.12</slf4j.version>
 		<logback.version>1.1.3</logback.version>
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
-		<!-- <jetty.version>9.3.0.v20150612</jetty.version> -->
 		<jetty.version>9.3.1.v20150714</jetty.version>
 		<maven.install.skip>false</maven.install.skip>
 		<dagger.version>2.0.2</dagger.version>
@@ -71,6 +67,10 @@
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
 		<doc.homepage>http://rapla.org</doc.homepage>
 		<rapla.module>moduleDescription</rapla.module>
+		<keystore.file>raplaselfsigned.ks</keystore.file>
+		<keystore.alias>rapla</keystore.alias>
+		<keystore.password>raplaselfsigned</keystore.password>
+		<keystore.keypass>${keystore.password}</keystore.keypass>
 	</properties>
 	<distributionManagement>
 		<snapshotRepository>
@@ -377,63 +377,6 @@
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.8</version>
 				<executions>
-					<!--
-					<execution>
-						<id>PluginList</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-							<target>
-								<echo>creating plugin meta</echo>
-								<property name="compile_classpath" refid="maven.compile.classpath" />
-								<property name="runtime_classpath" refid="maven.runtime.classpath" />
-								<property name="test_classpath" refid="maven.test.classpath" />
-								<property name="plugin_classpath" refid="maven.plugin.classpath" />
-
-								<java classname="org.rapla.framework.ServiceListCreator"
-									failonerror="true">
-									<classpath refid="maven.test.classpath" />
-									<sysproperty key="jetty.home" value="src/test" />
-									<arg value="${project.build.directory}/classes" />
-									<arg
-										value="${project.build.directory}/classes/META-INF/rapla-plugin.list" />
-								</java>
-							</target>
-						</configuration>
-					</execution>
-					-->
-
-					<execution>
-						<id>loadbuildproperties</id>
-						<phase>prepare-package</phase>
-						<configuration>
-							<exportAntProperties>true</exportAntProperties>
-							<tasks>
-								<echo>Reading build.properties</echo>
-								<available file="${basedir}/${build.properties}"
-									property="build.properties.present" />
-
-								<copy todir="${basedir}">
-									<fileset dir="${basedir}">
-										<include name="build.properties.template" unless="build.properties.present" />
-									</fileset>
-									<mapper type="glob" from="*.template" to="*" />
-								</copy>
-								<property file="${basedir}/build.properties" />
-								<property name="keystore.file" value="${basedir}/raplaselfsigned.ks" />
-								<property name="keystore.password" value="raplaselfsigned" />
-								<property name="keystore.keypass" value="${keystore.password}" />
-								<property name="keystore.alias" value="rapla" />
-								<property name="doc.name" value="rapla" />
-								<property name="doc.version">${project.version}</property>
-							</tasks>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
 					<execution>
 						<id>generateclientlibsproperties</id>
 						<phase>prepare-package</phase>
