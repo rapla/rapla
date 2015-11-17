@@ -4,12 +4,14 @@
     <parent>
         <groupId>org.rapla</groupId>
         <artifactId>rapla-parent</artifactId>
-        <version>2.0-SNAPSHOT</version>
+        <version>${global.version}</version>
         <relativePath>parent/pom.xml</relativePath>
     </parent>
+    <name>rapla - resource scheduling and event planing</name>
+    <description>rapla - resource scheduling and event planing</description>
     <groupId>org.rapla</groupId>
     <artifactId>rapla</artifactId>
-    <version>2.0-SNAPSHOT</version>
+    <version>${global.version}</version>
     <packaging>war</packaging>
     <scm>
         <connection>scm:git:git://github.com/rapla/rapla.git</connection>
@@ -31,6 +33,9 @@
         <name>Rapla</name>
         <url>http://rapla.org</url>
     </organization>
+    <properties>
+		<parent-process-activate>true</parent-process-activate>
+    </properties>
     <build>
         <plugins>
             <plugin>
@@ -70,6 +75,7 @@
             </plugin>
         </plugins>
     </build>
+    
     <profiles>
         <profile>
             <id>deploy</id>

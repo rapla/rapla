@@ -21,3 +21,5 @@ bin/
 src/main/gwt-jre/gwt-jre.iml
 src/main/main.iml
 src/test/test.iml
+custom/target/
+parent/target/

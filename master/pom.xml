@@ -1,0 +1,27 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.rapla</groupId>
+	<artifactId>rapla-master</artifactId>
+	<version>${global.version}</version>
+	<url>https://github.com/rapla/rapla</url>
+	<description>rapla - master</description>
+	<name>rapla - master</name>
+	<inceptionYear>2000</inceptionYear>
+	<licenses>
+		<license>
+			<name>GNU GPL v3</name>
+			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<packaging>pom</packaging>
+	<modules>
+		<module>../parent</module>
+		<module>../</module>
+		<module>../custom</module>
+	</modules>
+	<properties>
+		<global.version>2.0-SNAPSHOT</global.version>
+	</properties>
+</project>
