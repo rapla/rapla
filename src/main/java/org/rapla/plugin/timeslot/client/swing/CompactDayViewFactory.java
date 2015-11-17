@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot.client.swing;
 
-import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -28,10 +27,10 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
@@ -65,6 +64,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
+    private RaplaConfiguration config;
 
     @Inject
     public CompactDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
@@ -89,12 +89,19 @@ public class CompactDayViewFactory implements SwingViewFactory
         this.permissionController = permissionController;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
+        config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
     }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingCompactDayCalendar(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, calendarSelectionModel,
                 clipboard, timeslotProvider, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
+    }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return config.getAttributeAsBoolean(TimeslotPlugin.DAY_TIMESLOT + ".enabled", true);
     }
 
     public String getViewId()

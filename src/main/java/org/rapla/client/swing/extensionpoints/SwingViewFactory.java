@@ -28,6 +28,7 @@ public interface SwingViewFactory
     //public TypedComponentRole<Boolean> PRINT_CONTEXT = new TypedComponentRole<Boolean>("org.rapla.PrintContext");
     // instance scope
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException;
+    boolean isEnabled();
     public String getViewId();
     /** return the key that is responsible for placing the view in the correct position in the drop down selection menu*/
     public String getMenuSortKey();

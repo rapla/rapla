@@ -189,8 +189,7 @@ public class MultiCalendarView extends RaplaGUIComponent
 	@SuppressWarnings("unchecked")
 	private void addTypeChooser( String[] ids )
     {
-		JComboBox jComboBox = new JComboBox( ids);
-		viewChooser = jComboBox;
+		viewChooser = new JComboBox( ids);
         viewChooser.setVisible( viewChooser.getModel().getSize() > 0);
         viewChooser.setMaximumRowCount(ids.length);
         viewChooser.setSelectedItem( getModel().getViewId() );
@@ -338,7 +337,10 @@ public class MultiCalendarView extends RaplaGUIComponent
         List<String> list = new ArrayList<String>();
         for (Iterator<SwingViewFactory> it = sortedList.iterator();it.hasNext();) {
             SwingViewFactory factory =  it.next();
-            list.add(factory.getViewId());
+            if(factory.isEnabled())
+            {
+                list.add(factory.getViewId());
+            }
         }
         return list.toArray( RaplaObject.EMPTY_STRING_ARRAY);
     }

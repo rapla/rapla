@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.monthview.client.swing;
 
-import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -29,10 +28,11 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
@@ -65,12 +65,13 @@ public class MonthViewFactory implements SwingViewFactory
     private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
+    private RaplaConfiguration config;
 
     @Inject
-    public MonthViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory,
-            Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
-            IOInterface ioInterface, AppointmentFormater appointmentFormater)
+    public MonthViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
+            MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
+            DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -89,12 +90,19 @@ public class MonthViewFactory implements SwingViewFactory
         this.permissionController = permissionController;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
+        config = facade.getSystemPreferences().getEntry(MonthViewPlugin.CONFIG, new RaplaConfiguration());
     }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {
         return new SwingMonthCalendar(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
                 reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
+    }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return config.getAttributeAsBoolean("enabled", true);
     }
 
     public String getViewId()

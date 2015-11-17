@@ -90,6 +90,12 @@ public class AppointmentTableViewFactory implements SwingViewFactory
         this.ioInterface = ioInterface;
         this.menuBar = menuBar;
     }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
+    }
 
     public final static String TABLE_VIEW = "table_appointments";
 

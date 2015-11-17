@@ -90,6 +90,12 @@ public class WeekViewFactory implements SwingViewFactory
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
     }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
+    }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
     {

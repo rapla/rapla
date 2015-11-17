@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.client.swing;
 
-import java.awt.Component;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -27,7 +26,6 @@ import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.permission.PermissionController;
@@ -84,6 +82,12 @@ public class ReservationTableViewFactory implements SwingViewFactory
         this.permissionController = permissionController;
         this.ioInterface = ioInterface;
         this.menuBar = menuBar;
+    }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
     }
 
     public final static String TABLE_VIEW = "table";
