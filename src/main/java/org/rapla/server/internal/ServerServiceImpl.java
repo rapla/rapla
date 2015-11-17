@@ -116,7 +116,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 
     @Inject
     public ServerServiceImpl(CachableStorageOperator operator, ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            final Provider<Map<String, RaplaPageExtension>> pageMap, WebserviceCreatorMap webservices)
+            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices)
     {
         this.logger = logger;
         //webMethods.setList( );
@@ -126,8 +126,8 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 //            externalMailSession.setValue(containerContext.getMailSession());
 //        }
         this.operator = operator;
-        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices);
         ((FacadeImpl)facade).setOperator( operator);
+        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
         operator.addStorageUpdateListener(this);
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
