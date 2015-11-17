@@ -3,10 +3,16 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-parent</artifactId>
-	<version>2.0-SNAPSHOT</version>
+	<version>${global.version}</version>
+	<parent>
+		<groupId>org.rapla</groupId>
+		<artifactId>rapla-master</artifactId>
+		<relativePath>../master/pom.xml</relativePath>
+		<version>${global.version}</version>
+	</parent>
 	<url>https://github.com/rapla/rapla</url>
-	<description>rapla - resource scheduling and event planing</description>
-	<name>rapla - resource scheduling and event planing</name>
+	<description>rapla - parent</description>
+	<name>rapla - parent</name>
 	<inceptionYear>2000</inceptionYear>
 	<licenses>
 		<license>
@@ -593,7 +599,9 @@
 		<profile>
 			<id>parent-process</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<file>
+					<exists>src/main/java</exists>
+				</file>
 			</activation>
 			<build>
 				<plugins>
