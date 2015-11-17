@@ -224,7 +224,7 @@
 							<outputDirectory>${webapp.dir}/WEB-INF/classes</outputDirectory>
 							<resources>
 								<resource>
-									<directory>${basedir}/src/main/resources</directory>
+									<directory>${project.build.directory}/classes</directory>
 									<include>${rapla.module}</include>
 								</resource>
 							</resources>
@@ -697,7 +697,6 @@
 			<version>${logback.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
@@ -792,7 +791,6 @@
 			<version>${jetty.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
 	</dependencies>
 	<repositories>
 		<repository>
