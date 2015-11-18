@@ -37,6 +37,10 @@ public class SyncError    {
             return false;
         return true;
     }
+    // Empty constructor for json serializer
+    SyncError()
+    {
+    }
     public SyncError(String appointmentDetail, String errorMessage) {
         this.appointmentDetail = appointmentDetail;
         this.errorMessage = errorMessage;
