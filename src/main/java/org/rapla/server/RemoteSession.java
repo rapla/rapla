@@ -14,12 +14,13 @@ package org.rapla.server;
 
 import org.rapla.entities.User;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.server.RequestScoped;
 import org.rapla.storage.RaplaSecurityException;
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/
 
-@org.rapla.server.RequestScoped
+@RequestScoped
 public interface RemoteSession
 {
 
