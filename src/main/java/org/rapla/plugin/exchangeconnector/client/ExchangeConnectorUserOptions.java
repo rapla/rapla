@@ -70,7 +70,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     private final DialogUiFactory dialogUiFactory;
     
     @Inject
-    public ExchangeConnectorUserOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorRemote service, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactory dialogUiFactory) throws Exception {
+    public ExchangeConnectorUserOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorRemote service, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactory dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.exchangeConnectorResources = exchangeConnectorResources;
         this.service = service;
