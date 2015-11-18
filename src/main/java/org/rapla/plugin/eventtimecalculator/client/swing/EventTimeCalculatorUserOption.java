@@ -46,6 +46,12 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
         optionPanel = new EventTimeCalculatorOption(facade, i18n, raplaLocale, logger, false, eventTimei18n);
         panel = optionPanel.createPanel();
     }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return config.getAttributeAsBoolean("enabled", EventTimeCalculatorPlugin.ENABLE_BY_DEFAULT);
+    }
 
     @Override
     public JComponent getComponent() {

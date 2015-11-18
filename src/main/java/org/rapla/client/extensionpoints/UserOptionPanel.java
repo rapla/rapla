@@ -10,5 +10,8 @@ import org.rapla.inject.InjectionContext;
  * */
 @ExtensionPoint(context = InjectionContext.swing,id = "org.rapla.UserOptions")
 public interface UserOptionPanel extends OptionPanel {
+    
+    boolean isEnabled();
+    
 }
 

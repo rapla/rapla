@@ -162,7 +162,7 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
 
     protected void addChildren(DefaultConfiguration newConfig) {
 
-    	//ExchangeConnectorPlugin.ENABLED_BY_ADMIN = enableSynchronisationBox.isSelected();
+    	set(newConfig, ExchangeConnectorConfig.ENABLED_BY_ADMIN, activate.isSelected());
 		set(newConfig, ExchangeConnectorConfig.EXCHANGE_WS_FQDN, exchangeWebServiceFQDNTextField.getText());
 		set(newConfig, ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY, categoryForRaplaAppointmentsOnExchangeTextField.getText());
 		set(newConfig, ExchangeConnectorConfig.SYNCING_PERIOD_PAST, syncIntervalPast.getNumber().intValue());
@@ -192,6 +192,10 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
 		newConfig.getMutableChild(key.getId(), true).setValue(value);
 	}
 
+	public void set(DefaultConfiguration newConfig,TypedComponentRole<Boolean> key, boolean value) {
+	    newConfig.getMutableChild(key.getId(), true).setValue(value);
+	}
+	
 	public void set(DefaultConfiguration newConfig,TypedComponentRole<Integer> key, Integer value) {
 		newConfig.getMutableChild(key.getId(), true).setValue(value);
 	}

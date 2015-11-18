@@ -18,6 +18,7 @@ import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
@@ -67,6 +68,14 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 		super(facade, i18n, raplaLocale, logger);
 		this.configService = configService;
 		this.i18nIcal = i18nIcal;
+	}
+	
+	@Override
+	public boolean isEnabled()
+	{
+	    final RaplaConfiguration config = getClientFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+        final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
+        return enabled;
 	}
 
 	public JComponent getComponent() {

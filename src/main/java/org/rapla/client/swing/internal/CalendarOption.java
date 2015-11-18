@@ -156,6 +156,12 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
             
         }
     }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
+    }
 
 	@SuppressWarnings("unchecked")
 	private void setRenderer() {

@@ -11,6 +11,9 @@ public class Export2iCalPlugin  {
 
 	public static final String PLUGIN_CLASS = Export2iCalPlugin.class.getName();
 	public static final TypedComponentRole<RaplaConfiguration> ICAL_CONFIG =  new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.export2ical.server.Config");
+
+    public static final String ENABLED_STRING = "org.rapla.plugin.export2ical.enabled";
+	public static final TypedComponentRole<Boolean> ENABLED =  new TypedComponentRole<Boolean>(ENABLED_STRING);
     
 	public static final String ICAL_EXPORT = "org.rapla.plugin.export2ical.selected";
 	public static final String DAYS_BEFORE = "days_before";

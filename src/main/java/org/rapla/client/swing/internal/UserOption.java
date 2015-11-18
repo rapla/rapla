@@ -79,6 +79,12 @@ public class UserOption extends RaplaGUIComponent
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
     }
+	
+	@Override
+	public boolean isEnabled()
+	{
+	    return true;
+	}
 
     
     private void create() throws RaplaException {
