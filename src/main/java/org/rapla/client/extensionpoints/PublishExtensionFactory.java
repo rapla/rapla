@@ -12,4 +12,6 @@ import org.rapla.inject.InjectionContext;
 public interface PublishExtensionFactory
 {
 	PublishExtension creatExtension(CalendarSelectionModel model, PropertyChangeListener revalidateCallback) throws RaplaException;
+
+    boolean isEnabled();
 }

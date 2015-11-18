@@ -36,6 +36,7 @@ public interface ExchangeConnectorConfig
 	public static final boolean DEFAULT_EXCHANGE_REMINDER_SET = true;
 	public static final String DEFAULT_EXCHANGE_FREE_AND_BUSY = "Busy";
 
+
 //  public static final TypedComponentRole<String> EXPORT_EVENT_TYPE_KEY = new TypedComponentRole<String>("export-event-type-key");
 //	public static final String DEFAULT_EXPORT_EVENT_TYPE = "//";
 //	public static final TypedComponentRole<Boolean> ENABLED_BY_USER_KEY = new TypedComponentRole<Boolean>("exchangeconnector.userenabled");
@@ -44,7 +45,8 @@ public interface ExchangeConnectorConfig
 //	public static final TypedComponentRole<String> PASSWORD = new TypedComponentRole<String>("exchangeconnector.password");
 //	public static final TypedComponentRole<Boolean> SYNC_FROM_EXCHANGE_ENABLED_KEY = new TypedComponentRole<Boolean>("sync_from_exchange");
 //	public static final boolean DEFAULT_SYNC_FROM_EXCHANGE_ENABLED = false;
-	public static final TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>("exchange_connector_enabled_by_admin");
+	public static final String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
+	public static final TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>(ENABLED_BY_ADMIN_STRING);
 	public static final boolean DEFAULT_ENABLED_BY_ADMIN = false;
 //	public static final String PULL_FREQUENCY_KEY = "exch-pull-freq";
 //	public static final Integer DEFAULT_PULL_FREQUENCY = 180;

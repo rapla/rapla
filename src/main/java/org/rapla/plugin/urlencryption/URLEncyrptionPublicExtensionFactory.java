@@ -44,7 +44,13 @@ public class URLEncyrptionPublicExtensionFactory  implements PublishExtensionFac
 		this.logger = logger;
 		this.facade = facade;
 	}
-
+	
+	@Override
+	public boolean isEnabled()
+	{
+	    // FIXME config read
+	    return true;
+	}
 	
 	public PublishExtension creatExtension(CalendarSelectionModel model, PropertyChangeListener refreshCallBack)
 			throws RaplaException {

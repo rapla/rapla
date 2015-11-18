@@ -38,6 +38,12 @@ public class HTMLPublicExtensionFactory implements PublishExtensionFactory
         this.raplaImages = raplaImages;
         this.ioInterface = ioInterface;
 	}
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
+    }
 
 	public PublishExtension creatExtension(CalendarSelectionModel model,PropertyChangeListener revalidateCallback) throws RaplaException 
 	{

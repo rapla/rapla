@@ -22,6 +22,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import javax.swing.AbstractAction;
@@ -104,6 +105,10 @@ public class PublishDialog extends RaplaGUIComponent
         addressCreator = null;
         for ( PublishExtensionFactory entry:extensionFactories)
         {
+            if(!entry.isEnabled())
+            {
+                continue;
+            }
         	PublishExtensionFactory extensionFactory = entry;
         	PublishExtension extension = extensionFactory.creatExtension(model, new PropertyChangeListener() {
 				

@@ -28,6 +28,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
+import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
@@ -116,6 +117,7 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
      */
     protected JPanel createPanel() throws RaplaException {
         JPanel parentPanel = super.createPanel();
+        activate.setSelected(getConfig().getChild(ExchangeConnectorConfig.ENABLED_BY_ADMIN_STRING).getValueAsBoolean(ExchangeConnectorConfig.DEFAULT_ENABLED_BY_ADMIN));
         JPanel content = new JPanel();
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.FILL, 5}

@@ -9,12 +9,14 @@ import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.plugin.export2ical.Export2iCalPlugin;
 
 @Extension(provides=PublishExtensionFactory.class,id="ical")
 public class IcalPublicExtensionFactory implements PublishExtensionFactory
@@ -36,6 +38,14 @@ public class IcalPublicExtensionFactory implements PublishExtensionFactory
         this.raplaImages = raplaImages;
         this.ioInterface = ioInterface;
 	}
+    
+    @Override
+    public boolean isEnabled()
+    {
+        final RaplaConfiguration config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+        final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
+        return enabled;
+    }
 
 	public PublishExtension creatExtension(CalendarSelectionModel model,
 			PropertyChangeListener revalidateCallback) throws RaplaException 
