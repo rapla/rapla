@@ -49,6 +49,12 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         panel.add( showConflictWarningsField,"2,0");
 
     }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
+    }
 
     public JComponent getComponent() {
         return panel;

@@ -142,15 +142,18 @@ public class PreferencesEditUI extends RaplaGUIComponent
         return optionList;
     }
 
-	public void sort(List<OptionPanel> list) {
+	public void sort(List<? extends OptionPanel> list) {
         Collections.sort(list, new NamedComparator<OptionPanel>(getRaplaLocale().getLocale()));
     }
 
-    public Collection<OptionPanel> getUserOptions() throws RaplaException {
-        List<OptionPanel> optionList = new ArrayList<OptionPanel>();
+    public Collection<UserOptionPanel> getUserOptions() throws RaplaException {
+        List<UserOptionPanel> optionList = new ArrayList<UserOptionPanel>();
         final Set<UserOptionPanel> set = userOptionPanel.get();
         for (UserOptionPanel panel : set){
-            optionList.add(panel);
+            if(panel.isEnabled())
+            {
+                optionList.add(panel);
+            }
         }
         sort(optionList);
         return optionList;

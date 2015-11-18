@@ -66,6 +66,13 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
        
         content.add(selection.getComponent(), "1,4");
     }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        // FIXME
+        return true;
+    }
 
     /** calls "&lt;html&gt;" + getI18n().getString(key) + "&lt;/html&gt;"*/
     final public String getAsHTML(String string) {

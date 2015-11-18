@@ -159,6 +159,7 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 		String lastModIntervall = chkUseLastModifiedIntervall.isSelected() ? new String("-1") : spiLastModifiedInterval.getValue().toString();
 		newConfig.getMutableChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL, true).setValue(lastModIntervall);
 
+		newConfig.getMutableChild(Export2iCalPlugin.ENABLED_STRING, true).setValue(activate.isSelected());
         newConfig.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES, true).setValue(chkExportAttendees.isSelected());
         newConfig.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_EMAIL_ATTRIBUTE, true).setValue(txtEMailRessourceAttribute.getText());
         newConfig.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS, true).setValue(cbDefaultParticipationsStatusRessourceAttribute.getSelectedItem().toString());

@@ -44,8 +44,8 @@ public interface ExchangeConnectorConfig
 //	public static final TypedComponentRole<String> PASSWORD = new TypedComponentRole<String>("exchangeconnector.password");
 //	public static final TypedComponentRole<Boolean> SYNC_FROM_EXCHANGE_ENABLED_KEY = new TypedComponentRole<Boolean>("sync_from_exchange");
 //	public static final boolean DEFAULT_SYNC_FROM_EXCHANGE_ENABLED = false;
-//	public static final TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>("exchange_connector_enabled_by_admin");
-//	public static final boolean DEFAULT_ENABLED_BY_ADMIN = false;
+	public static final TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>("exchange_connector_enabled_by_admin");
+	public static final boolean DEFAULT_ENABLED_BY_ADMIN = false;
 //	public static final String PULL_FREQUENCY_KEY = "exch-pull-freq";
 //	public static final Integer DEFAULT_PULL_FREQUENCY = 180;
 //	public static final TypedComponentRole<String> IMPORT_EVENT_TYPE_KEY = new TypedComponentRole<String>("import-event-type-key");
@@ -88,7 +88,7 @@ public interface ExchangeConnectorConfig
 		        //loadInt(config,SYNCING_PERIOD_FUTURE,DEFAULT_SYNCING_PERIOD_FUTURE);
 		        load(config,EXCHANGE_APPOINTMENT_CATEGORY,DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY);
 		        load(config,EXCHANGE_TIMEZONE,DEFAULT_EXCHANGE_TIMEZONE);
-		        //loadBoolean(config,ENABLED_BY_ADMIN, DEFAULT_ENABLED_BY_ADMIN);
+		        loadBoolean(config,ENABLED_BY_ADMIN, DEFAULT_ENABLED_BY_ADMIN);
 		        //loadInt(config,PULL_FREQUENCY_KEY,DEFAULT_PULL_FREQUENCY);
 		        //load(config,IMPORT_EVENT_TYPE_KEY,DEFAULT_IMPORT_EVENT_TYPE);
 		        //load(config,RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL,DEFAULT_RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL);
@@ -102,11 +102,11 @@ public interface ExchangeConnectorConfig
 		        //loadBoolean(config,EXCHANGE_APPOINTMENT_PRIVATE_NAME_IN_RAPLA_KEY,DEFAULT_EXCHANGE_ALWAYS_PRIVATE);
 		    }
 
-//	    	private void loadBoolean(Configuration config,TypedComponentRole<Boolean> key,
-//	    			boolean defaultValue) {
-//	    	    	boolean value = config.getChild(key.getId()).getValueAsBoolean(defaultValue);
-//	    	    	map.put( key,value);
-//	    	}
+	    	private void loadBoolean(Configuration config,TypedComponentRole<Boolean> key,
+	    			boolean defaultValue) {
+	    	    	boolean value = config.getChild(key.getId()).getValueAsBoolean(defaultValue);
+	    	    	map.put( key,value);
+	    	}
 	    	    
 	    	private void loadInt(Configuration config,TypedComponentRole<Integer> key,
 	    			int defaultValue) {
@@ -148,6 +148,11 @@ public interface ExchangeConnectorConfig
             public int getSyncPeriodPast()
             {
                 return get(SYNCING_PERIOD_PAST).intValue();
+            }
+            
+            public boolean isEnabled()
+            {
+                return get(ENABLED_BY_ADMIN);
             }
 	    }
 
