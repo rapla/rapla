@@ -267,18 +267,34 @@
 		</pluginManagement>
 	</build>
 	<dependencies>
+		<!-- Code generation -->
+		<dependency>
+			<groupId>org.rapla</groupId>
+			<artifactId>gwtjsonrpc</artifactId>
+			<version>${gwtjsonrpc.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.rapla</groupId>
+			<artifactId>gwtjsonrpc</artifactId>
+			<version>${gwtjsonrpc.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>com.google.dagger</groupId>
 			<artifactId>dagger-compiler</artifactId>
 			<version>${dagger.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<!-- Code scanning for property files -->
 		<dependency>
 			<groupId>com.intellij</groupId>
 			<artifactId>annotations</artifactId>
 			<version>12.0</version>
 			<scope>provided</scope>
 		</dependency>
+		<!-- other dependencies -->
 		<dependency>
 			<groupId>javax.ws.rs</groupId>
 			<artifactId>javax.ws.rs-api</artifactId>
@@ -454,19 +470,6 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>jul-to-slf4j</artifactId>
 			<version>${slf4j.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.rapla</groupId>
-			<artifactId>gwtjsonrpc</artifactId>
-			<version>${gwtjsonrpc.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.rapla</groupId>
-			<artifactId>gwtjsonrpc</artifactId>
-			<version>${gwtjsonrpc.version}</version>
-			<classifier>sources</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
