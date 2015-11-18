@@ -1,6 +1,6 @@
 package org.rapla.client.gwt;
 
-import org.rapla.inject.gwt.GwtComponentMarker;
+import org.rapla.inject.client.gwt.GwtComponentMarker;
 
 /**
  * Created by Christopher on 06.11.2015.
