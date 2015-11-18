@@ -112,14 +112,6 @@
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>net.sf.supercsv</groupId>
-                                            <artifactId>super-csv</artifactId>
-                                            <version>${supercsv.version}</version>
-                                            <type>jar</type>
-                                            <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                        </artifactItem>
-                                        <artifactItem>
                                             <groupId>org.rapla</groupId>
                                             <artifactId>rapla</artifactId>
                                             <version>${rapla.version}</version>
@@ -131,8 +123,8 @@
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.rapla</groupId>
-                                            <artifactId>gwtjsonrpc</artifactId>
-                                            <version>${gwtjsonrpc.version}</version>
+                                            <artifactId>restinject</artifactId>
+                                            <version>${restinject.version}</version>
                                             <type>jar</type>
                                             <overWrite>true</overWrite>
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
