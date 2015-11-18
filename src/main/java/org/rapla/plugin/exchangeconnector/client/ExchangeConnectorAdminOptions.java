@@ -93,7 +93,6 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
         this.syncIntervalPastLabel = new JLabel(exchangeConnectorResources.getString("sync.past"));
         this.categoryForRaplaAppointmentsOnExchangeLabel = new JLabel(exchangeConnectorResources.getString("appointment.category"));
         this.exchangeWebServiceFQDNLabel = new JLabel(exchangeConnectorResources.getString("msexchange.hosturl"));
-
         this.eventTypeLabel = new JLabel("Timezone");
         this.cbEventTypes = new JComboBox();
 
@@ -117,7 +116,6 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
      */
     protected JPanel createPanel() throws RaplaException {
         JPanel parentPanel = super.createPanel();
-        activate.setSelected(getConfig().getChild(ExchangeConnectorConfig.ENABLED_BY_ADMIN_STRING).getValueAsBoolean(ExchangeConnectorConfig.DEFAULT_ENABLED_BY_ADMIN));
         JPanel content = new JPanel();
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.FILL, 5}
@@ -253,12 +251,13 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
       
         ConfigReader reader = new ConfigReader(config);
         //enableSynchronisationBox.setSelected(ExchangeConnectorPlugin.ENABLED_BY_ADMIN);
-        exchangeWebServiceFQDNTextField.setText(reader.get(ExchangeConnectorConfig.EXCHANGE_WS_FQDN));
-        categoryForRaplaAppointmentsOnExchangeTextField.setText(reader.get(ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY));
-        syncIntervalPast.setNumber(reader.get(ExchangeConnectorConfig.SYNCING_PERIOD_PAST));
+        activate.setSelected(reader.isEnabled());
+        exchangeWebServiceFQDNTextField.setText(reader.getExchangeServerURL());
+        categoryForRaplaAppointmentsOnExchangeTextField.setText(reader.getAppointmentCategory());
+        syncIntervalPast.setNumber(reader.getSyncPeriodPast());
 //        syncIntervalFuture.setNumber(reader.get(SYNCING_PERIOD_FUTURE));
         cbEventTypes.setModel( new DefaultComboBoxModel( timezones.toArray(new String[]{} )));
-        cbEventTypes.setSelectedItem(reader.get( ExchangeConnectorConfig.EXCHANGE_TIMEZONE));
+        cbEventTypes.setSelectedItem(reader.getExchangeTimezone());
         
         //pullFrequency.setNumber(ExchangeConnectorPlugin.PULL_FREQUENCY);
 //        DynamicType importEventType = null;
