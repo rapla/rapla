@@ -142,19 +142,19 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
         removeButton = new RaplaButton();
         retryButton = new RaplaButton();
         //loginButton.setText("Set Login");
-        removeButton.setText(getString("disconnect"));
-        syncButton.setText(getString("resync.exchange"));
-        syncButton.setToolTipText(getString("resync.exchange.tooltip"));
-        retryButton.setText(getString("retry"));
-        usernameInfoLabel.setText( getString("exchange_user"));
+        removeButton.setText(exchangeConnectorResources.getString("disconnect"));
+        syncButton.setText(exchangeConnectorResources.getString("resync.exchange"));
+        syncButton.setToolTipText(exchangeConnectorResources.getString("resync.exchange.tooltip"));
+        retryButton.setText(exchangeConnectorResources.getString("retry"));
+        usernameInfoLabel.setText( exchangeConnectorResources.getString("exchange_user"));
         //usernameLabel.setText("not connected");
         this.optionsPanel.add(usernameInfoLabel, "1, 0");
         this.optionsPanel.add(usernameLabel, "3, 0");
         this.optionsPanel.add(loginButton, "3, 2");
         this.optionsPanel.add(removeButton, "3, 4");
 
-        this.optionsPanel.add(new JLabel(getString("synchronization")), "1, 6");
-        enableNotifyBox = new JCheckBox(getString("mail_on_invitation_cancelation"));
+        this.optionsPanel.add(new JLabel(exchangeConnectorResources.getString("synchronization")), "1, 6");
+        enableNotifyBox = new JCheckBox(exchangeConnectorResources.getString("mail_on_invitation_cancelation"));
         if ( isAdmin())
         {
             this.optionsPanel.add(this.enableNotifyBox, "3,6");
@@ -297,11 +297,11 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     }
     
     private String getConnectButtonString() {
-        return connected ? getString("change_account") : getString("connect");
+        return connected ? exchangeConnectorResources.getString("change_account") : getString("connect");
     }
     
     private String getConnectButtonTooltip() {
-        return connected ?  getString("change_account") : getString("enable.sync.rapla.exchange");
+        return connected ?  exchangeConnectorResources.getString("change_account") : exchangeConnectorResources.getString("enable.sync.rapla.exchange");
     }
 
     private void setValuesToJComponents() throws RaplaException {
@@ -382,14 +382,14 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     private void updateComponentState() throws RaplaException {
     	SynchronizationStatus synchronizationStatus = service.getSynchronizationStatus();
     	this.connected = synchronizationStatus.enabled;
-    	this.usernameLabel.setText(  connected ? synchronizationStatus.username: getString("disconnected"));
+    	this.usernameLabel.setText(  connected ? synchronizationStatus.username: exchangeConnectorResources.getString("disconnected"));
     	
     	int synchronizedEvents = synchronizationStatus.synchronizedEvents;
     	int unsynchronizedEvents = synchronizationStatus.synchronizationErrors.size();
-        String format = getI18n().format("format.synchronized_events", synchronizedEvents);
+        String format = exchangeConnectorResources.format("format.synchronized_events", synchronizedEvents);
         if ( unsynchronizedEvents > 0)
         {
-            format += ",  " +getI18n().format("format.unsynchronized_events", unsynchronizedEvents);
+            format += ",  " +exchangeConnectorResources.format("format.unsynchronized_events", unsynchronizedEvents);
         }
         synchronizedLabel.setText(format);
     	Color foreground = usernameLabel.getForeground();
@@ -423,7 +423,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     	this.loginButton.setToolTipText( getConnectButtonTooltip());
     	this.enableNotifyBox.setEnabled( connected);
     	this.removeButton.setEnabled( connected);
-    	this.removeButton.setToolTipText(getString("disable.sync.rapla.exchange"));
+    	this.removeButton.setToolTipText(exchangeConnectorResources.getString("disable.sync.rapla.exchange"));
     	this.syncButton.setEnabled( connected);
     	this.retryButton.setEnabled( connected && unsynchronizedEvents > 0);
 
