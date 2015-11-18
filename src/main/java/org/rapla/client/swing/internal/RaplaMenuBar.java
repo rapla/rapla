@@ -133,10 +133,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
         ((ReservationControllerImpl)reservationController).setEditFactory(editFactory);
 
 
-        RaplaMenu calendarSettings = menuBarContainer.getSettingsMenu();
         RaplaMenu editMenu = menuBarContainer.getEditMenu();
         RaplaMenu viewMenu = menuBarContainer.getViewMenu();
-        RaplaMenu newMenu = menuBarContainer.getNewMenu();
         RaplaMenu systemMenu = menuBarContainer.getSystemMenu();
         RaplaMenu adminMenu = menuBarContainer.getAdminMenu();
         RaplaMenu extraMenu = menuBarContainer.getExtraMenu();
@@ -153,20 +151,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
         addPluginExtensions(viewMenuExt, viewMenu);
         addPluginExtensions(editMenuExt, editMenu);
 
-        systemMenu.add(newMenu);
-        systemMenu.add(calendarSettings);
-
         systemMenu.add(new JSeparator());
 
-        systemMenu.add(exportMenu);
-        systemMenu.add(importMenu);
-        systemMenu.add(adminMenu);
-
-        JSeparator printSep = new JSeparator();
-        printSep.setName(getString("calendar"));
-        systemMenu.add(printSep);
-
         JMenuItem printMenu = new JMenuItem(getString("print"));
+        systemMenu.setMnemonic('F');
         printMenu.setAction(new ActionWrapper(printAction));
         printAction.setEnabled(true);
         printAction.setModel(model);

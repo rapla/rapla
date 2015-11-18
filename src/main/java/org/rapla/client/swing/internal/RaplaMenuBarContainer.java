@@ -102,17 +102,6 @@ public class RaplaMenuBarContainer
         systemMenu.add(exportMenu);
         systemMenu.add(importMenu);
         systemMenu.add(adminMenu);
-
-        JSeparator printSep = new JSeparator();
-        printSep.setName(i18n.getString("calendar"));
-        systemMenu.add(printSep);
-
-        JMenuItem printMenu = new JMenuItem(i18n.getString("print"));
-        systemMenu.add(printMenu);
-        systemMenu.setMnemonic('F');
-        systemMenu.add(new JSeparator());
-
-
     }
 
     public JMenuBar getMenubar()
