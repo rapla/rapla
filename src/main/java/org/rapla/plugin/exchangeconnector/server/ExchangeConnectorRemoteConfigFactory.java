@@ -10,12 +10,14 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-
+@DefaultImplementation(context = InjectionContext.server, of = ExchangeConnectorConfigRemote.class)
 public class ExchangeConnectorRemoteConfigFactory implements ExchangeConnectorConfigRemote
 {
 			

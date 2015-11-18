@@ -9,6 +9,8 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 import org.rapla.plugin.exchangeconnector.SynchronizeResult;
@@ -16,7 +18,9 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.RemoteSession;
 
-public class ExchangeConnectorRemoteObjectFactory extends RaplaComponent implements ExchangeConnectorRemote{
+@DefaultImplementation(context = InjectionContext.server, of = ExchangeConnectorRemote.class)
+public class ExchangeConnectorRemoteObjectFactory extends RaplaComponent implements ExchangeConnectorRemote
+{
 	final SynchronisationManager manager;
 	RaplaKeyStorage keyStorage;
     private final RemoteSession remoteSession;
