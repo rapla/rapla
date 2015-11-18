@@ -87,11 +87,11 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
 //        this.infoBox = new JTextArea(getString("infobox.sync"));
 
 //        this.enableSynchronisationLabel = new JLabel(getString("sync.msexchange"));
-        this.syncIntervalFutureLabel = new JLabel(getString("sync.future"));
+        this.syncIntervalFutureLabel = new JLabel(exchangeConnectorResources.getString("sync.future"));
 //        this.pullFrequencyLabel = new JLabel(getString("server.frequency"));
-        this.syncIntervalPastLabel = new JLabel(getString("sync.past"));
-        this.categoryForRaplaAppointmentsOnExchangeLabel = new JLabel(getString("appointment.category"));
-        this.exchangeWebServiceFQDNLabel = new JLabel(getString("msexchange.hosturl"));
+        this.syncIntervalPastLabel = new JLabel(exchangeConnectorResources.getString("sync.past"));
+        this.categoryForRaplaAppointmentsOnExchangeLabel = new JLabel(exchangeConnectorResources.getString("appointment.category"));
+        this.exchangeWebServiceFQDNLabel = new JLabel(exchangeConnectorResources.getString("msexchange.hosturl"));
 
         this.eventTypeLabel = new JLabel("Timezone");
         this.cbEventTypes = new JComboBox();
