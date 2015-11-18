@@ -60,13 +60,14 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 {
     
     public SwingWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, final Provider<DateRenderer> dateRendererProvider,
-            CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController,
-            InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory,
-            PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
+            boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, final Provider<DateRenderer> dateRendererProvider,
+            CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
+            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
+            IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
+        super(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel,
+                clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface,
+                appointmentFormater);
     }
 
     protected AbstractSwingCalendar createView(boolean showScrollPane) {

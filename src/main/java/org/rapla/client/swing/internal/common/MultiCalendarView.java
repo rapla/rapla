@@ -386,7 +386,7 @@ public class MultiCalendarView extends RaplaGUIComponent
                 model.setMarkedIntervals(emptySet, false);
             	if ( factory != null)
             	{
-            		currentView = factory.createSwingView( model, editable);
+            		currentView = factory.createSwingView( model, editable, false);
             	    currentViewId = viewId; 	}
             	else
             	{

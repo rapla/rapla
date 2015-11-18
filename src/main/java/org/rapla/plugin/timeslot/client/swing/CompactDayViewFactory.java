@@ -92,9 +92,9 @@ public class CompactDayViewFactory implements SwingViewFactory
         config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
     }
 
-    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingCompactDayCalendar(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, calendarSelectionModel,
+        return new SwingCompactDayCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, calendarSelectionModel,
                 clipboard, timeslotProvider, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
     }
     

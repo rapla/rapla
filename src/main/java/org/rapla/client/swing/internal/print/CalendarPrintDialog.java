@@ -190,7 +190,7 @@ public class CalendarPrintDialog extends DialogUI
         }
 
         SwingViewFactory factory = factoryMap.get( model.getViewId());
-        currentView = factory.createSwingView( model, false);
+        currentView = factory.createSwingView( model, false, true);
         if ( currentView instanceof Printable)
         {
             printable = (Printable)currentView;

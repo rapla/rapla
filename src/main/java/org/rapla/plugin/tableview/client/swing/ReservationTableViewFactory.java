@@ -92,9 +92,9 @@ public class ReservationTableViewFactory implements SwingViewFactory
 
     public final static String TABLE_VIEW = "table";
 
-    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingReservationTableView(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, tableConfigLoader, menuFactory,
+        return new SwingReservationTableView(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, tableConfigLoader, menuFactory,
                 reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, permissionController, ioInterface);
     }
 

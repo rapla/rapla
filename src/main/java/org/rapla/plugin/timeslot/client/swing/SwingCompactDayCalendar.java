@@ -74,12 +74,12 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     private final TimeslotProvider timeslotProvider;
 	
     public SwingCompactDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
+            boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
+            RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
             IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger, settings, editable, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,
+        super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,
                 reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
         this.timeslotProvider = timeslotProvider;
     }

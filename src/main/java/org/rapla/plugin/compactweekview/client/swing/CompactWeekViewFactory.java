@@ -95,9 +95,9 @@ public class CompactWeekViewFactory implements SwingViewFactory
         config = facade.getSystemPreferences().getEntry(CompactWeekviewPlugin.CONFIG, new RaplaConfiguration());
     }
 
-    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingCompactWeekCalendar(facade, i18n, raplaLocale, logger, model, editable, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
+        return new SwingCompactWeekCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
                 reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
     }
 

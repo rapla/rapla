@@ -99,9 +99,9 @@ public class AppointmentTableViewFactory implements SwingViewFactory
 
     public final static String TABLE_VIEW = "table_appointments";
 
-    public SwingCalendarView createSwingView(CalendarModel model, boolean editable) throws RaplaException
+    public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingAppointmentTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, objectMenuFactories, editable, tableConfigLoader, menuFactory,
+        return new SwingAppointmentTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, objectMenuFactories, editable, printing, tableConfigLoader, menuFactory,
                 calendarSelectionModel, reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, permissionController, ioInterface);
     }
 
