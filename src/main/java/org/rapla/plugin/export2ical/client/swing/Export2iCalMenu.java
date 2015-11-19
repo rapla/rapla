@@ -15,6 +15,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
@@ -91,7 +92,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 		        export(result, name);
 		    }
 		} catch (Exception ex) {
-			showException(ex, getMainComponent(), dialogUiFactory);
+		    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 		}
 	}
 	private void export(String result, String name) throws RaplaException {

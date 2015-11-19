@@ -54,6 +54,7 @@ import org.rapla.client.AppointmentListener;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
@@ -62,7 +63,6 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
-import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
@@ -107,7 +107,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 			try {
 				commandHistory.undo();
 			} catch (Exception ex) {
-				showException(ex, getMainComponent(), dialogUiFactory);
+			    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 			}
 		}
 	};
@@ -118,7 +118,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 			try {
 				commandHistory.redo();
 			} catch (Exception ex) {
-				showException(ex, getMainComponent(), dialogUiFactory);
+			    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 			}
 		}
 	};
@@ -338,14 +338,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         if (bDeleting)
             return;
         getLogger().debug("Reservation has been deleted.");
-        DialogUI dlg = dialogUiFactory.create(
-                mainContent
+        DialogInterface dlg = dialogUiFactory.create(
+                new SwingPopupContext(mainContent, null)
                 ,true
                 ,getString("warning")
                 ,getString("warning.reservation.delete")
         );
-        dlg.setIcon(raplaImages.getIconFromKey("icon.warning"));
-        dlg.start();
+        dlg.setIcon("icon.warning");
+        dlg.start(true);
         closeWindow();
     }
 
@@ -353,20 +353,20 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         if (bSaving)
             return;
         getLogger().debug("Reservation has been changed.");
-        DialogUI dlg = dialogUiFactory.create(
-                mainContent
+        DialogInterface dlg = dialogUiFactory.create(
+                new SwingPopupContext(mainContent, null)
                 ,true
                 ,getString("warning")
                 ,getString("warning.reservation.update")
         );
         commandHistory.clear();
         try {
-            dlg.setIcon(raplaImages.getIconFromKey("icon.warning"));
-            dlg.start();
+            dlg.setIcon("icon.warning");
+            dlg.start(true);
             this.original = newReservation;
             setReservation(getModification().edit(newReservation) , null);
         } catch (RaplaException ex) {
-            showException(ex,frame, dialogUiFactory);
+            dialogUiFactory.showException(ex,new SwingPopupContext(frame, null));
         }
     }
 
@@ -578,7 +578,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                         closeWindow();
                 }
             } catch (RaplaException ex) {
-                showException(ex, new SwingPopupContext(null, null), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(null, null));
             }
         }
 
@@ -594,8 +594,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             return true;
 
 		try {
-        DialogUI dlg = dialogUiFactory.create(
-                        mainContent
+		    DialogInterface dlg = dialogUiFactory.create(
+                new SwingPopupContext(mainContent, null)
                             ,true
                             ,getString("confirm-close.title")
                             ,getString("confirm-close.question")
@@ -604,9 +604,9 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                                 ,getString("back")
                             }
                             );
-			dlg.setIcon(raplaImages.getIconFromKey("icon.question"));
+			dlg.setIcon("icon.question");
             dlg.setDefault(1);
-            dlg.start();
+            dlg.start(true);
             return (dlg.getSelectedIndex() == 0) ;
 		} catch (RaplaException e) {
 			return true;
@@ -632,7 +632,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                 setSaved(true);
             }
         } catch (RaplaException ex) {
-            showException(ex, frame, dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(frame, null));
         } finally {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             if (bSaved)
@@ -649,7 +649,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         try {
             DialogInterface dlg = infoFactory.createDeleteDialog(new Object[] {mutableReservation}
                                                                ,new SwingPopupContext(frame, null));
-            dlg.start();
+            dlg.start(true);
             if (dlg.getSelectedIndex() == 0) {
                 bDeleting = true;
                 Set<Reservation> reservationsToRemove = Collections.singleton( original);

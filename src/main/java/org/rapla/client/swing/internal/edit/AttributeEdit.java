@@ -27,6 +27,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -130,7 +131,7 @@ public class AttributeEdit extends RaplaGUIComponent
                 }
 
             } catch (RaplaException ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
         public void stateChanged(ChangeEvent e) {
@@ -138,7 +139,7 @@ public class AttributeEdit extends RaplaGUIComponent
                 confirmEdits();
                 fireContentChanged();
             } catch (RaplaException ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
     }

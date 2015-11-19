@@ -29,6 +29,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -216,8 +217,8 @@ public class UserOption extends RaplaGUIComponent
 					inputSurname.setText( user.getName());
 					layout.setRows(1);
 				}
-				DialogUI dlg = dialogUiFactory.create(getComponent(),true,test,new String[] {getString("save"),getString("abort")});
-				dlg.start();
+				DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(getComponent(), null),true,test,new String[] {getString("save"),getString("abort")});
+				dlg.start(true);
 				if (dlg.getSelectedIndex() == 0)
 				{
 					String title = inputTitle.getText();
@@ -230,7 +231,7 @@ public class UserOption extends RaplaGUIComponent
 			} 
 			catch (RaplaException ex) 
 			{
-				showException( ex, getMainComponent(), dialogUiFactory);
+			    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
 			}
 		}
 	}
@@ -245,6 +246,7 @@ public class UserOption extends RaplaGUIComponent
 		public void actionPerformed(ActionEvent arg0) {
 			try 
 			{
+			    // FIXME DialogUI -> DialogInterface
 			DialogUI dlg;
 			JPanel content = new JPanel();
 			GridLayout layout = new GridLayout();
@@ -263,18 +265,18 @@ public class UserOption extends RaplaGUIComponent
 			content.add(validate);
 			addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 			addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-			dlg = dialogUiFactory.create(getComponent(),true,content,new String[] {getString("save"),getString("abort")});
+			dlg = (DialogUI) dialogUiFactory.create(new SwingPopupContext(getComponent(), null),true,content,new String[] {getString("save"),getString("abort")});
 			validate.setAction(new EmailChangeActionA(dlg));
 			validate.setEnabled(false);
 			dlg.setDefault(0);
 	        dlg.setTitle("Email");
 	        dlg.getButton(0).setAction(new EmailChangeActionC(getUserModule().getUser(), dlg));
 	        dlg.getButton(0).setEnabled(false);
-	        dlg.start();
+	        dlg.start(true);
 			}
 			catch (RaplaException ex) 
 			{
-				showException( ex, getMainComponent(), dialogUiFactory);
+			    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
 			}
 			
 		}
@@ -313,7 +315,7 @@ public class UserOption extends RaplaGUIComponent
 					}
 					
 				} catch (RaplaException ex) {
-					showException(ex, getMainComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 				}
 			}
 			 
@@ -344,7 +346,7 @@ public class UserOption extends RaplaGUIComponent
 			            code.setEnabled(true);
 					} 
 					catch (Exception ex) {
-						showException(ex, getMainComponent(), dialogUiFactory);
+					    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 					}
 				}
 				 

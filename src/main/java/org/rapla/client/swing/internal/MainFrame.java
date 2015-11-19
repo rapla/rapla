@@ -12,10 +12,27 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Window;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyVetoException;
+import java.beans.VetoableChangeListener;
+import java.util.Locale;
+
+import javax.inject.Inject;
+import javax.swing.Box;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JMenuBar;
+import javax.swing.JPanel;
+
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -28,22 +45,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
-
-import javax.inject.Inject;
-import javax.swing.Box;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JMenuBar;
-import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Window;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyVetoException;
-import java.beans.VetoableChangeListener;
-import java.util.Locale;
 
 
 
@@ -241,8 +242,8 @@ public class MainFrame extends RaplaGUIComponent
 
     protected boolean shouldExit() {
 		try {
-	        DialogUI dlg = dialogUiFactory.create(
-				                           frame.getRootPane()
+		    DialogInterface dlg = dialogUiFactory.create(
+				                           new SwingPopupContext(frame.getRootPane(), null)
 				                           ,true
 				                           ,getString("exit.title")
 				                           ,getString("exit.question")
@@ -251,11 +252,11 @@ public class MainFrame extends RaplaGUIComponent
 				                               ,getString("exit.abort")
 				                           }
 				                           );
-			dlg.setIcon(raplaImages.getIconFromKey("icon.question"));
+			dlg.setIcon("icon.question");
 	        //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-	        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.abort"));
+	        dlg.getAction(0).setIcon("icon.abort");
 	        dlg.setDefault(1);
-	        dlg.start();
+	        dlg.start(true);
         return (dlg.getSelectedIndex() == 0);
 		} catch (RaplaException e) {
 			getLogger().error( e.getMessage(), e);

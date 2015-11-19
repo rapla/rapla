@@ -102,7 +102,7 @@ public class UserAction extends RaplaAction {
                     {
                             @Override public void onFailure(Throwable e)
                             {
-                                showException( e, popupContext, dialogUiFactory);
+                                dialogUiFactory.showException( e, popupContext);
                             }
 
                             @Override public void onSuccess(User editObject)
@@ -129,7 +129,7 @@ public class UserAction extends RaplaAction {
 
             }
         } catch (RaplaException ex) {
-            showException(ex, popupContext, dialogUiFactory);
+            dialogUiFactory.showException(ex, popupContext);
         }
     }
 

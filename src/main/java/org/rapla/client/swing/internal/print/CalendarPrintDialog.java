@@ -13,36 +13,6 @@
 
 package org.rapla.client.swing.internal.print;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.iolayer.ComponentPrinter;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.AbstractAction;
-import javax.swing.Box;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -57,6 +27,39 @@ import java.awt.print.Paper;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.AbstractAction;
+import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.toolkit.ErrorDialog;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.iolayer.ComponentPrinter;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 
 
 public class CalendarPrintDialog extends DialogUI
@@ -314,7 +317,7 @@ public class CalendarPrintDialog extends DialogUI
     }
 
     public void start() {
-        super.start();
+        super.start(true);
     }
 
     private class Listener extends AbstractAction implements KeyListener {
@@ -419,16 +422,16 @@ public class CalendarPrintDialog extends DialogUI
     
     protected boolean confirmPrint(Component topLevel) {
 		try {
-			DialogUI dlg = dialogUiFactory.create(
-                    		topLevel
+			DialogInterface dlg = dialogUiFactory.create(
+                    		new SwingPopupContext(topLevel, null)
                             ,true
                             ,i18n.getString("print")
                             ,i18n.getString("file_saved")
                             ,new String[] { i18n.getString("ok")}
                             );
-			dlg.setIcon(images.getIconFromKey("icon.pdf"));
+			dlg.setIcon("icon.pdf");
             dlg.setDefault(0);
-            dlg.start();
+            dlg.start(true);
             return (dlg.getSelectedIndex() == 0);
 		} catch (RaplaException e) {
 			return true;

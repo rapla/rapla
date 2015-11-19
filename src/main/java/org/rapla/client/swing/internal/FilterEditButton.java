@@ -90,7 +90,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     popup.setVisible(true);
                     filterButton.setChar('^');
                 } catch (Exception ex) {
-                    showException(ex, getMainComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                 }
             }
             

@@ -27,6 +27,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Category;
@@ -202,7 +203,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
             	newCategory.setValue( null );
                 newCategory.showDialog(newButton);
             } catch (RaplaException ex) {
-                showException(ex,newButton, dialogUiFactory);
+                dialogUiFactory.showException(ex,new SwingPopupContext(newButton, null));
             }
         }
         if ( evt.getSource() ==  removeButton)

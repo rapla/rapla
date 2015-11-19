@@ -33,6 +33,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -101,7 +102,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 				try {
 					updateReservations();
 				} catch (RaplaException ex) {
-					showException(ex, getComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 				}
 			}
 		});
@@ -186,7 +187,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 				try {
 					updateReservations();
 				} catch (RaplaException ex) {
-					showException(ex, getComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 				}
 			}
 		};

@@ -23,8 +23,9 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -86,20 +87,20 @@ final public class LicenseInfoUI
     public void viewLicense(Component owner,boolean modal,String link) {
         try {
             LicenseUI license =  licenseUiProvider.get();
-            DialogUI dialog = dialogUiFactory.create(owner,modal,license.getComponent(), new String[] {getString("ok")} );
+            DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null),modal,license.getComponent(), new String[] {getString("ok")} );
             dialog.setTitle(getString("licensedialog.title"));
             dialog.setSize(600,400);
             if (link.equals("warranty")) {
-                dialog.start();
+                dialog.start(true);
                 license.getComponent().revalidate();
                 license.showBottom();
             } else {
-                dialog.start();
+                dialog.start(true);
                 license.getComponent().revalidate();
                 license.showTop();
             }
         } catch (Exception ex) {
-            showException(ex,owner, dialogUiFactory);
+            dialogUiFactory.showException(ex,new SwingPopupContext(owner, null));
         }
     }
 

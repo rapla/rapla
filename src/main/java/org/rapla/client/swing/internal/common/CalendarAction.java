@@ -19,6 +19,7 @@ import java.util.List;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisposingTool;
@@ -92,7 +93,7 @@ public class CalendarAction extends RaplaAction {
             frame.setVisible(true);
             cal.getSelectedCalendar().scrollToStart();
         } catch (Exception ex) {
-            showException(ex, parent, dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(parent, null));
         }
     }
 }

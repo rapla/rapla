@@ -44,6 +44,7 @@ import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
@@ -165,14 +166,14 @@ public class CategoryEditUI extends RaplaGUIComponent
                     detailPanel.mapFrom( category );
                 }
             } catch (RaplaException ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
         public void stateChanged(ChangeEvent e) {
             try {
                 confirmEdits();
             } catch (RaplaException ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
     }

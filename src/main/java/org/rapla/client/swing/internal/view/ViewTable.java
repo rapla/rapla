@@ -182,7 +182,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         		try {
         			infoFactory.showInfoDialog(object,new SwingPopupContext(htmlView,null));
         		} catch (RaplaException ex) {
-        			showException(ex,getComponent(), dialogUiFactory);
+        		    dialogUiFactory.showException(ex,new SwingPopupContext(getComponent(), null));
         		} // end of try-catch
         	}
         	catch ( NumberFormatException ex)
@@ -193,7 +193,7 @@ public class ViewTable<T> extends RaplaGUIComponent
 				} 
         		catch (Exception e1) 
         		{
-        			showException(ex,getComponent(), dialogUiFactory);
+        		    dialogUiFactory.showException(ex,new SwingPopupContext(getComponent(), null));
         		}	
         	}
         }

@@ -306,7 +306,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		}
 		catch (RaplaException ex)
 		{
-			showException( ex, getMainComponent(), dialogUiFactory);
+		    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
 		}
     }
 	

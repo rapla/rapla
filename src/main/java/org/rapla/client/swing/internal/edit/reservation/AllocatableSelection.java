@@ -100,7 +100,6 @@ import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.PopupEvent;
@@ -457,7 +456,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
         catch (Exception ex)
         {
-            showException(ex, content, dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(content, null));
         }
     }
 
@@ -764,7 +763,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
             catch (Exception ex)
             {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
 
@@ -820,7 +819,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
         catch (RaplaException ex)
         {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
 

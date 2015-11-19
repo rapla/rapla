@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -20,9 +19,11 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -33,7 +34,6 @@ import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.DateChangeEvent;
@@ -102,7 +102,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
     RaplaCalendar defaultSelectDate ;
     RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
     JComboBox tabSelect = new JComboBox();
-    DialogUI dialog;
+    DialogInterface dialog;
     boolean emailPossible = false;
     Category rootCategory;
     AnnotationEditUI annotationEdit;
@@ -177,7 +177,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
                 try {
                     showAnnotationDialog();
                 } catch (RaplaException ex) {
-                    showException(ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
 
             }
@@ -419,20 +419,20 @@ public class AttributeDefaultConstraints extends AbstractEditField
             dialog.close();
         }
         dialog = dialogUiFactory.create(
-                getComponent()
+                new SwingPopupContext(getComponent(), null)
                 ,modal
                 ,annotationEdit.getComponent()
                 ,new String[] { getString("close")});
 
-        dialog.getButton(0).setAction( new AbstractAction() {
+        dialog.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
-            public void actionPerformed(ActionEvent e) {
+            public void run() {
                 fireContentChanged();
                 dialog.close();
             }
         });
         dialog.setTitle(getString("select"));
-        dialog.start();
+        dialog.start(true);
     }
 
     public void actionPerformed(ActionEvent evt) {
@@ -449,7 +449,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         try {
             update();
         } catch (RaplaException ex) {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
 

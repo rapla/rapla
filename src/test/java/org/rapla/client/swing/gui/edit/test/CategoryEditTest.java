@@ -63,7 +63,7 @@ public final class CategoryEditTest extends GUITestCase
         ClientFacade facade = getFacade();
         RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
-        DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
+        DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger );
         InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
         TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), permissionController, infoFactory, raplaImages);
         TextFieldFactory textField = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);

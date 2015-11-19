@@ -12,6 +12,7 @@ import javax.inject.Singleton;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.ReservationControllerImpl;
@@ -19,8 +20,6 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogInterface;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
@@ -57,7 +56,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
     {
         DialogInterface dlg =infoFactory.createDeleteDialog(deletables, context);
-        dlg.start();
+        dlg.start(true);
         int result = dlg.getSelectedIndex();
         return result == 0;
     }
@@ -73,8 +72,8 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
             parent = casted.getParent();
         }
 
-        DialogUI dialog = dialogUiFactory.create(
-                parent
+        DialogInterface dialog = dialogUiFactory.create(
+                new SwingPopupContext(parent, null)
                 ,true
                 ,title
                 ,content
@@ -82,18 +81,18 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
         );
         if ( dialogIcon != null)
         {
-            dialog.setIcon(images.getIconFromKey(dialogIcon));
+            dialog.setIcon(dialogIcon);
         }
         for ( int i=0;i< optionList.size();i++)
         {
             final String string = iconList.get( i);
             if ( string != null)
             {
-                dialog.getButton(i).setIcon(images.getIconFromKey(string));
+                dialog.getAction(i).setIcon(string);
             }
         }
-        
-        dialog.start(point);
+        dialog.setPosition(point.getX(), point.getY());
+        dialog.start(true);
         int index = dialog.getSelectedIndex();
         return index;
     }
@@ -113,7 +112,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     @Override
     protected void showException(Exception ex, PopupContext sourceComponent)
     {
-        wrapper.showError(ex, sourceComponent, dialogUiFactory);
+        dialogUiFactory.showError(ex, sourceComponent);
     }
 
 

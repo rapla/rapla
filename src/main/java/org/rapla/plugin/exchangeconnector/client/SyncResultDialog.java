@@ -11,7 +11,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.ClientFacade;
@@ -91,8 +93,8 @@ public class SyncResultDialog extends RaplaGUIComponent
         pane.setPreferredSize( new Dimension(500,300));
         content.add( new JLabel(header), BorderLayout.NORTH);
         content.add( pane, BorderLayout.CENTER);
-        DialogUI dialog = dialogUiFactory.create(getMainComponent(),false, content, new String[] {getString("close")});
+        DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null),false, content, new String[] {getString("close")});
         dialog.setTitle( title);
-        dialog.start();
+        dialog.start(true);
     }
 }

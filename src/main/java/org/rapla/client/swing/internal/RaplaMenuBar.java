@@ -12,9 +12,36 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
+import javax.swing.SwingUtilities;
+
 import org.rapla.RaplaResources;
-import org.rapla.client.UserClientService;
 import org.rapla.client.ReservationController;
+import org.rapla.client.UserClientService;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -59,31 +86,6 @@ import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.dbrm.RestartServer;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
-import javax.swing.MenuElement;
-import javax.swing.SwingUtilities;
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Set;
 
 @Singleton
 public class RaplaMenuBar extends RaplaGUIComponent
@@ -346,7 +348,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     }
                     catch (Exception ex)
                     {
-                        showException(ex, getMainComponent(), dialogUiFactory);
+                        dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                     }
                 }
             }
@@ -367,7 +369,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (Exception ex)
                 {
-                    showException(ex, getMainComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                 }
             }
         }
@@ -402,7 +404,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getMainComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                 }
             }
 
@@ -490,10 +492,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     String body = completeText.toString();
                     infoText.setBody(body);
                     final JScrollPane content = new JScrollPane(infoText);
-                    DialogUI dialog = dialogUiFactory.create(getMainComponent(), false, content, new String[] { getString("ok") });
+                    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), false, content, new String[] { getString("ok") });
                     dialog.setTitle(name);
                     dialog.setSize(780, 580);
-                    dialog.startNoPack();
+                    dialog.start(false);
 
                     SwingUtilities.invokeLater(new Runnable()
                     {
@@ -506,7 +508,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getMainComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                 }
             }
 
@@ -548,18 +550,18 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     // the following creates the dialog that pops up, when we click
                     // on the license entry within the help section of the menu menubar
                     // we call the create Method of the DialogUI class and give it all necessary things
-                    DialogUI dialog = dialogUiFactory.create(getMainComponent(), true, new JScrollPane((Component) welcomeField.getComponent()),
+                    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), true, new JScrollPane((Component) welcomeField.getComponent()),
                             new String[] { getString("ok") });
                     // setting the dialog's title
                     dialog.setTitle(name);
                     // and the size of the popup window
                     dialog.setSize(550, 250);
                     // but I honestly have no clue what this startNoPack() does
-                    dialog.startNoPack();
+                    dialog.start(false);
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getMainComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                 }
             }
         };

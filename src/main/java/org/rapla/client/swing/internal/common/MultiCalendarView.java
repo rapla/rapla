@@ -52,6 +52,7 @@ import org.rapla.client.swing.internal.CalendarEditor;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -201,7 +202,7 @@ public class MultiCalendarView extends RaplaGUIComponent
                 try {
                     selectView( viewId );
                 } catch (RaplaException ex) {
-                    showException(ex, page, dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(page, null));
                 }
             }
         }
@@ -245,7 +246,7 @@ public class MultiCalendarView extends RaplaGUIComponent
             	update(null);
             }
         } catch (Exception ex) {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
     private void addMenu( CalendarSelectionModel model, String[] ids, RaplaMenu view )
@@ -281,7 +282,7 @@ public class MultiCalendarView extends RaplaGUIComponent
                     try {
                         selectView( viewId );
                     } catch (RaplaException ex) {
-                        showException(ex, page, dialogUiFactory);
+                        dialogUiFactory.showException(ex, new SwingPopupContext(page, null));
                     }
         		}
    

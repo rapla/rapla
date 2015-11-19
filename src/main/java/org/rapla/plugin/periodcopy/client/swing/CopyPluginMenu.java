@@ -26,11 +26,12 @@ import javax.inject.Provider;
 import javax.swing.JMenuItem;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.DateTools;
@@ -95,11 +96,11 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
         try {
             final CopyDialog useCase = copyDialogProvider.get();
             String[] buttons = new String[]{getString("abort"), getString("copy") };
-            final DialogUI dialog = dialogUiFactory.create( getMainComponent(),true, useCase.getComponent(), buttons);
+            final DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getMainComponent(), null),true, useCase.getComponent(), buttons);
             dialog.setTitle( label);
             dialog.setSize( 600, 500);
-            dialog.getButton( 0).setIcon( raplaImages.getIconFromKey("icon.abort"));
-            dialog.getButton( 1).setIcon( raplaImages.getIconFromKey("icon.copy"));
+            dialog.getAction( 0).setIcon( "icon.abort");
+            dialog.getAction( 1).setIcon( "icon.copy");
             
 //            ActionListener listener = new ActionListener() {
 //                public void actionPerformed(ActionEvent arg0) {
@@ -107,7 +108,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 //                }
 //            };
 //          
-            dialog.startNoPack();
+            dialog.start(false);
             final boolean includeSingleAppointments = useCase.isSingleAppointments();
             
             if ( dialog.getSelectedIndex() == 1) {
@@ -116,7 +117,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
             	copy( reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments );
             }
          } catch (Exception ex) {
-            showException( ex, getMainComponent(), dialogUiFactory );
+             dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null) );
         }
     }
     

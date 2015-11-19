@@ -27,6 +27,7 @@ import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -171,7 +172,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, calendarContainerComponent, dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(calendarContainerComponent, null));
         }
 
     }
@@ -203,7 +204,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, b.getView(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
         }
     }
 
@@ -224,7 +225,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, b.getView(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
         }
     }
 
@@ -248,7 +249,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            showException(ex, b.getView(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
         }
     }
 

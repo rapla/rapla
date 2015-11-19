@@ -35,6 +35,7 @@ import javax.swing.tree.TreeModel;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Category;
@@ -200,7 +201,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 			}
 			assignedElementsList.setModel(assignedElementsListModel);
 		} catch (RaplaException ex) {
-			showException(ex, getMainComponent(), dialogUiFactory);
+		    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 		}
 	}
 	
@@ -287,7 +288,7 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
 				selectionTreeTable.getTree().setModel(selectionModel);
 				assignedElementsListModel.clear();
 			} catch (RaplaException ex) {
-				showException(ex, getMainComponent(), dialogUiFactory);
+			    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 			}
 	}
 

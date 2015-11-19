@@ -47,6 +47,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -261,7 +262,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 					NewAppointment 	command = new NewAppointment(appointment);
 					commandHistory.storeAndExecute(command);
 				} catch (RaplaException ex) {
-					showException(ex, getMainComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 				}
 			} 
 			else if (evt.getActionCommand().equals("split")) 
@@ -513,7 +514,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 				}
 				return true;
 			} catch (RaplaException ex) {
-				showException(ex, getComponent(), dialogUiFactory);
+			    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 				return false;
 			}
 		}

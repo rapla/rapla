@@ -47,6 +47,7 @@ import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.OptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Named;
@@ -257,7 +258,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
             lastOptionPanel = optionPanel;
             setOptionPanel( lastOptionPanel );
         } catch (Exception ex) {
-            showException(ex,getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex,new SwingPopupContext(getComponent(), null));
         }
     }
 

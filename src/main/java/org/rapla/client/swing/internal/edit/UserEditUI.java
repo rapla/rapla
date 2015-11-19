@@ -32,16 +32,17 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
@@ -122,13 +123,13 @@ public class UserEditUI  extends AbstractEditUI<User> {
 	        	try {
 					if(!isOneAdmin()) 
 					{
-						showWarning(getString("error.no_admin"), getComponent(),dialogUiFactory);
+					    dialogUiFactory.showWarning(getString("error.no_admin"), new SwingPopupContext(getComponent(), null));
 						setValue(true);
 					}
 				} 
 	        	catch (RaplaException ex) 
 				{
-	        		showException(ex, getComponent(), dialogUiFactory);
+	        	    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 				}
 			}  
 	        return;
@@ -216,7 +217,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 try {
                     showAddDialog();
                 } catch (RaplaException ex) {
-                    showException(ex,newButton, dialogUiFactory);
+                    dialogUiFactory.showException(ex,new SwingPopupContext(newButton, null));
                 }
             }
             
@@ -230,7 +231,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
 	                emailField.setValue( user.getEmail());
 	                updateButton();
 				} catch (RaplaException ex) {
-					showException(ex, getComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 				}
             }
                
@@ -240,7 +241,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         }
         
         private void showAddDialog() throws RaplaException {
-            final DialogUI dialog;
+            final DialogInterface dialog;
             RaplaTree treeSelection = new RaplaTree();
             treeSelection.setMultiSelect(true);
             treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
@@ -277,7 +278,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             
            
             dialog = dialogUiFactory.create(
-                    getComponent()
+                    new SwingPopupContext(getComponent(), null)
                     ,true
                     ,treeSelection
                     ,new String[] { getString("apply"),getString("cancel")});
@@ -289,19 +290,19 @@ public class UserEditUI  extends AbstractEditUI<User> {
                     if (selPath != null && e.getClickCount() == 2) {
                         final Object lastPathComponent = selPath.getLastPathComponent();
                         if (((TreeNode) lastPathComponent).isLeaf() )
-                            dialog.getButton(0).doClick();
+                            dialog.getAction(0).execute();
                         }
                     else if (selPath != null && e.getClickCount() == 1) {
                         final Object lastPathComponent = selPath.getLastPathComponent();
                         if (((TreeNode) lastPathComponent).isLeaf() ) 
-                            dialog.getButton(0).setEnabled(true);
+                            dialog.getAction(0).setEnabled(true);
                         else
-                            dialog.getButton(0).setEnabled(false);                       
+                            dialog.getAction(0).setEnabled(false);                       
                     }
                 }
             });
             dialog.setTitle(getName());
-            dialog.start();
+            dialog.start(true);
             if (dialog.getSelectedIndex() == 0) {
                 Iterator<?> it = treeSelection.getSelectedElements().iterator();
                 while (it.hasNext()) {

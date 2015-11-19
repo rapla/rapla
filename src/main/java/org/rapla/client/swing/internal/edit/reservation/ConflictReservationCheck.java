@@ -27,13 +27,13 @@ import javax.swing.tree.TreeModel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.User;
@@ -88,8 +88,8 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
             return true;
         }
         JComponent content = getConflictPanel(conflictList);
-        DialogUI dialog = dialogUiFactory.create(
-                ((SwingPopupContext)sourceComponent).getParent()
+        DialogInterface dialog = dialogUiFactory.create(
+                    sourceComponent
                     ,true
                     ,content
                     ,new String[] {
@@ -98,16 +98,16 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
                     }
         );
         dialog.setDefault(1);
-        dialog.setIcon(raplaImages.getIconFromKey("icon.big_folder_conflicts"));
-        dialog.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
-        dialog.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
+        dialog.setIcon("icon.big_folder_conflicts");
+        dialog.getAction(0).setIcon("icon.save");
+        dialog.getAction(1).setIcon("icon.cancel");
         dialog.setTitle(getString("warning.conflict"));
-        dialog.start();
+        dialog.start(true);
         if (dialog.getSelectedIndex()  == 0) {
             try {
                 return true;
             } catch (Exception ex) {
-                showException(ex,(Component)sourceComponent, dialogUiFactory);
+                dialogUiFactory.showException(ex,new SwingPopupContext((Component)sourceComponent, null));
                 return false;
             }
         }

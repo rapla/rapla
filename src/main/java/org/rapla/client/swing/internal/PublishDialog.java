@@ -22,7 +22,6 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import javax.swing.AbstractAction;
@@ -31,11 +30,11 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -142,19 +141,19 @@ public class PublishDialog extends RaplaGUIComponent
         
         updateAddress(filename, extensions);
         
-        final DialogUI dlg = dialogUiFactory.create(
-                                        parentComponent,false,panel,
+        final DialogInterface dlg = dialogUiFactory.create(
+                                        new SwingPopupContext(parentComponent, null),false,panel,
                                        new String[] {
                                            getString("save")
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("publish"));
-        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
-        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
-        dlg.getButton(0).setAction( new AbstractAction() {
+        dlg.getAction(0).setIcon("icon.save");
+        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.getAction(0).setRunnable(new Runnable() {
             private static final long serialVersionUID = 1L;
 
-			public void actionPerformed(ActionEvent e) {
+			public void run() {
                 dlg.close();
                 try 
                 {
@@ -166,11 +165,11 @@ public class PublishDialog extends RaplaGUIComponent
                 } 
                 catch (RaplaException ex) 
                 {
-                    showException( ex, parentComponent, dialogUiFactory);
+                    dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
                 }
             }
         });
-        dlg.start();
+        dlg.start(true);
     }
 
 	protected void updateAddress(final String filename,

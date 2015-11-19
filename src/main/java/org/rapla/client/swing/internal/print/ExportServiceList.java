@@ -12,14 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.print;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.StartupEnvironment;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.util.Collection;
+import java.util.HashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,12 +26,16 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.util.Collection;
-import java.util.HashMap;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.common.NamedListCellRenderer;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.StartupEnvironment;
 
 
 @Singleton
@@ -70,15 +72,15 @@ public class ExportServiceList   {
         setRenderer(list);
         list.setSelectedIndex(0);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        DialogUI dlg = dialogUiFactory.create(parentComponent,true,panel,
+        DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(parentComponent, null),true,panel,
                                        new String[] {
                                            i18n.getString("export")
                                            ,i18n.getString("cancel")
                                            });
         dlg.setTitle(i18n.getString("weekview.print.choose_export"));
-        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
-        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
-        dlg.start();
+        dlg.getAction(0).setIcon("icon.save");
+        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.start(true);
         if (dlg.getSelectedIndex() != 0 || list.getSelectedIndex() == -1)
             return false;
 

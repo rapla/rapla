@@ -9,9 +9,11 @@ import javax.swing.Icon;
 import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -57,13 +59,13 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
         try {
            
         	RaplaRightsReport report = rightsReportProvider.get();
-            DialogUI dialog = dialogUiFactory.create( getMainComponent(),true, report.getComponent(), new String[] {getString("ok")});
+            DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getMainComponent(), null),true, report.getComponent(), new String[] {getString("ok")});
             dialog.setTitle( name);
             dialog.setSize( 650, 550);
             report.show();
-            dialog.startNoPack();
+            dialog.start(false);
         } catch (RaplaException ex) {
-            showException( ex, getMainComponent(), dialogUiFactory);
+            dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
         }
     }
 

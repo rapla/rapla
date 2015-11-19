@@ -239,7 +239,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
             menu.show(component, p.x, p.y);
         } catch (RaplaException ex) {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
     
@@ -290,7 +290,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             		updateChange();
             	}
             } catch (Exception ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
         
@@ -303,7 +303,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 				}
 				updateMenu();
 			} catch (Exception ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+			    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
 		}
 

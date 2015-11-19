@@ -44,9 +44,10 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
@@ -136,7 +137,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             try {
                 showDialog(selectButton);
             } catch (RaplaException ex) {
-                showException(ex,selectButton, dialogUiFactory);
+                dialogUiFactory.showException(ex,new SwingPopupContext(selectButton, null));
             }
         }
     }
@@ -217,7 +218,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
     @SuppressWarnings("serial")
 	public void showDialog(JComponent parent) throws RaplaException {
-        final DialogUI dialog;
+        final DialogInterface dialog;
         final JTree tree;
         if ( multipleSelectionPossible)
         {
@@ -296,7 +297,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         }
 
         dialog = dialogUiFactory.create(
-        		                 parent
+                new SwingPopupContext(parent, null)
                                  ,true
                                  ,panel
                                  ,new String[] { getString("apply"),getString("cancel")});
@@ -314,14 +315,14 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                 if (selPath != null && e.getClickCount() == 2) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode)selPath.getLastPathComponent();
                     if (node.isLeaf()) {
-                        dialog.getButton(0).doClick();
+                        dialog.getAction(0).execute();
                     }
                 }
             }
         });
         dialog.setTitle(getString("select"));
-        dialog.setInitFocus( tree);
-        dialog.start();
+        dialog.start(true);
+        tree.requestFocus();
         if (dialog.getSelectedIndex() == 0) {
             TreePath[] paths = tree.getSelectionPaths();
             Collection<T> newValues = new LinkedHashSet<T>();

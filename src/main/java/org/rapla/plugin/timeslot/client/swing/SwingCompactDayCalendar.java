@@ -37,6 +37,7 @@ import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
@@ -299,7 +300,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 					 }
 				 } 
 				 catch (RaplaException ex) {
-					showException(ex, getMainComponent(), dialogUiFactory);
+				     dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 				}
 			
 			 }

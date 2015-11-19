@@ -54,10 +54,11 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.PeriodChooser;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.MonthChooser;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -640,7 +641,7 @@ public class AppointmentController extends RaplaGUIComponent
 
 		RaplaButton exceptionButton = new RaplaButton();
 		ExceptionEditor exceptionEditor;
-		DialogUI exceptionDlg;
+		DialogInterface exceptionDlg;
 		MonthChooser monthChooser = new MonthChooser();
 		private boolean listenerEnabled = true;
 
@@ -842,7 +843,7 @@ public class AppointmentController extends RaplaGUIComponent
 				try {
 					showExceptionDlg();
 				} catch (RaplaException ex) {
-					showException(ex, content, dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(content, null));
 				}
 				return;
 			}
@@ -1163,11 +1164,11 @@ public class AppointmentController extends RaplaGUIComponent
 			exceptionEditor.initialize();
 			exceptionEditor.mapFromAppointment();
 			exceptionEditor.getComponent().setBorder( BorderFactory.createEmptyBorder(5, 5, 5, 5));
-			exceptionDlg = dialogUiFactory.create(getComponent(), true,
+			exceptionDlg = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), true,
 					exceptionEditor.getComponent(),
 					new String[] { getString("close") });
 			exceptionDlg.setTitle(getString("appointment.exceptions"));
-			exceptionDlg.start();
+			exceptionDlg.start(true);
 			updateExceptionCount();
 		}
 	
@@ -1500,12 +1501,12 @@ public class AppointmentController extends RaplaGUIComponent
 			}
 			else
 			{
-				showWarning("No free appointment found", getMainComponent(),dialogUiFactory);
+			    dialogUiFactory.showWarning("No free appointment found", new SwingPopupContext(getMainComponent(), null));
 			}
 		} 
 		catch (Exception ex)
 		{
-			showException( ex, getMainComponent(), dialogUiFactory);
+		    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
 		}
 	}
 

@@ -195,7 +195,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
             }
         });
@@ -313,7 +313,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         }
         catch (RaplaException ex)
         {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
 
@@ -343,7 +343,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 }
                 catch (RaplaException e)
                 {
-                    showException(e, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(e, new SwingPopupContext(getComponent(), null));
                 }
             }
             copy(table, evt, ioInterface, getRaplaLocale());
@@ -378,7 +378,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             }
             catch (RaplaException ex)
             {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
 
@@ -415,7 +415,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
             }
         }

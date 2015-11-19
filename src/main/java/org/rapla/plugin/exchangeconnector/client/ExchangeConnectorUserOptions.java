@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.Locale;
 
 import javax.inject.Inject;
-import javax.swing.AbstractAction;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -16,15 +15,15 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
-import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -189,31 +188,31 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 				}
 				try
 				{
-					final DialogUI dialog = dialogUiFactory.create(getComponent(), modal, content, options);
+					final DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), modal, content, options);
 					dialog.setTitle( "Exchange Login");
-					dialog.getButton( 0).setAction( new AbstractAction() {
+					dialog.getAction( 0).setRunnable( new Runnable() {
 						
 						private static final long serialVersionUID = 1L;
 
 						@Override
-						public void actionPerformed(ActionEvent e) {
+						public void run() {
 							String username = content.getUsername();
 							String password = content.getPassword();
 						     try {
 						    	 service.changeUser(username,password);
 						     } catch (RaplaException ex) {
-			                	 showException(ex, getMainComponent(), dialogUiFactory);
+						         dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 			                	 return;
 			                 }
 						     dialog.close();
 						}
 					});
-					dialog.start();
+					dialog.start(true);
 					updateComponentState();
 				}
 				catch (RaplaException ex)
 				{
-					 showException(ex, getMainComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                      getLogger().error("The operation was not successful!", ex);
 				}
             }
@@ -232,7 +231,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 				}
 				catch (RaplaException ex)
 				{
-					 showException(ex, getMainComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                      getLogger().error("The operation was not successful!", ex);
 				}
 				
@@ -250,7 +249,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 				}
 				catch (RaplaException ex)
 				{
-					 showException(ex, getMainComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                      getLogger().error("The operation was not successful!", ex);
 				}
 			}
@@ -267,7 +266,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 				}
 				catch (RaplaException ex)
 				{
-					 showException(ex, getMainComponent(), dialogUiFactory);
+				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
                      getLogger().error("The operation was not successful!", ex);
 				}
 			}

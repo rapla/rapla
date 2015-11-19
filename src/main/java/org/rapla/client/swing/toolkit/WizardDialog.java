@@ -94,7 +94,7 @@ public class WizardDialog extends DialogUI {
 
     public void start(WizardPanel newPanel) {
         if (!isVisible())
-            start();
+            start(true);
 
         if (wizardPanel != null)
             content.remove((Component)wizardPanel.getComponent());

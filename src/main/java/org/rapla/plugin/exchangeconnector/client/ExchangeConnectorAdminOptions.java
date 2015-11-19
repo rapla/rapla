@@ -14,6 +14,7 @@ import javax.swing.JTextField;
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
@@ -28,7 +29,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
-import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
@@ -219,7 +219,7 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
         } 
         catch (RaplaException ex)
         {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             return;
         }
 //        try {

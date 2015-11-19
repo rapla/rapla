@@ -23,11 +23,11 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
+import java.util.Iterator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
@@ -41,6 +41,7 @@ import javax.swing.LayoutFocusTraversalPolicy;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.BundleManager;
@@ -48,7 +49,15 @@ import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.entities.DependencyException;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.RaplaNewVersionException;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.dbrm.RaplaConnectException;
+import org.rapla.storage.dbrm.RaplaRestartingException;
+import org.rapla.storage.dbrm.WrongRaplaVersionException;
 
 
 public class DialogUI extends JDialog
@@ -75,13 +84,17 @@ public class DialogUI extends JDialog
     private ButtonListener buttonListener = new ButtonListener();
     private boolean m_modal;
 
-    private Action abortAction = new AbstractAction() {
-        private static final long serialVersionUID = 1L;
-        
-            public void actionPerformed(ActionEvent evt) {
-                close();
-            }
-        };
+    private Runnable abortAction = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            close();
+        }
+    };
+    private final RaplaImages images;
+
+    protected Point p = null;
 
 
     public static Component getOwnerWindow(Component component) {
@@ -101,11 +114,13 @@ public class DialogUI extends JDialog
 
     public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Dialog parent) throws RaplaException {
         super( parent );
+        this.images = images;
         service( i18n, images, bundleManager, frameList );
     }
 
     public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Frame parent) throws RaplaException {
         super( parent );
+        this.images = images;
         service( i18n, images, bundleManager, frameList );
     }
 
@@ -169,6 +184,43 @@ public class DialogUI extends JDialog
         contentPane.getActionMap().put("abort",buttonListener);
         contentPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(stroke,"abort");
     }
+    
+    private static class UiDialogAction extends AbstractAction implements DialogAction{
+        
+        private final RaplaImages raplaImages;
+        private Runnable action;
+
+        public UiDialogAction(RaplaImages raplaImages)
+        {
+            this.raplaImages = raplaImages;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            action.run();
+        }
+
+        @Override
+        public void setRunnable(Runnable action)
+        {
+            this.action = action;
+            
+        }
+
+        @Override
+        public void setIcon(String iconKey)
+        {
+            putValue(LARGE_ICON_KEY, raplaImages.getIconFromKey(iconKey));
+        }
+
+        @Override
+        public void execute()
+        {
+            action.run();
+        }
+        
+    }
 
     protected void setButtons(String[] options) {
         buttons = new RaplaButton[options.length];
@@ -176,7 +228,9 @@ public class DialogUI extends JDialog
         for (int i=0;i<options.length;i++) {
             buttons[i] = new RaplaButton(options[i],RaplaButton.DEFAULT);
             buttons[i].addActionListener(buttonListener);
-            buttons[i].setAction(abortAction);
+            final UiDialogAction action = new UiDialogAction(images);
+            action.setRunnable(abortAction);
+            buttons[i].setAction(action);
             buttons[i].setDefaultCapable(true);
         }
         jPanelButtonFrame.removeAll();
@@ -210,7 +264,7 @@ public class DialogUI extends JDialog
                 }
             }
             selectedIndex = -1;
-            abortAction.actionPerformed(new ActionEvent(DialogUI.this, ActionEvent.ACTION_PERFORMED,""));
+            abortAction.run();//actionPerformed(new ActionEvent(DialogUI.this, ActionEvent.ACTION_PERFORMED,""));
         }
     }
 
@@ -218,7 +272,8 @@ public class DialogUI extends JDialog
         return selectedIndex;
     }
 
-    public void setAbortAction(Action action) {
+    @Override
+    public void setAbortAction(Runnable action) {
         abortAction = action;
     }
 
@@ -250,6 +305,12 @@ public class DialogUI extends JDialog
 
     }
 
+    @Override
+    public void setIcon(String iconKey)
+    {
+        setIcon(images.getIconFromKey(iconKey));
+    }
+    
     public void setIcon(Icon icon) {
         try {
             if (label != null)
@@ -293,10 +354,12 @@ public class DialogUI extends JDialog
     }
 
     // The implementation of the DialogController Interface
+    @Override
     public void setDefault(int index) {
         this.getRootPane().setDefaultButton(getButton(index));
     }
 
+    @Override
     public void setTitle(String title) {
         super.setTitle(title);
     }
@@ -305,6 +368,11 @@ public class DialogUI extends JDialog
         return bClosed;
     }
 
+    @Override
+    public void setPosition(double x, double y)
+    {
+        this.p = new Point((int)x, (int)y);
+    }
     
     public void start(Point p) {
         //Validate frames that have preset sizes
@@ -336,19 +404,27 @@ public class DialogUI extends JDialog
     {
         initFocusComponent = component;
     }
-
-    public void start() {
-        start(null);
+    @Override
+    public DialogAction getAction(int commandIndex)
+    {
+        return (DialogAction) buttons[commandIndex].getAction();
+    }
+    
+    @Override
+    public void addWindowListener(Disposable disposable)
+    {
+        this.addWindowListener(new DisposingTool(disposable));
     }
 
-    public void startNoPack() {
-        packFrame = false;
-        start(null);
+    @Override
+    public void start(boolean pack) {
+        packFrame = pack;
+        start(p);
     }
 
     protected void processWindowEvent(WindowEvent e) {
         if (e.getID() == WindowEvent.WINDOW_CLOSING) {
-            abortAction.actionPerformed(new ActionEvent(this,ActionEvent.ACTION_PERFORMED,""));
+            abortAction.run();//actionPerformed(new ActionEvent(this,ActionEvent.ACTION_PERFORMED,""));
         } else if (e.getID() == WindowEvent.WINDOW_CLOSED) {
             close();
         }
@@ -375,14 +451,16 @@ public class DialogUI extends JDialog
         private final RaplaImages images;
         private final BundleManager bundleManager;
         private final FrameControllerList frameList;
+        private final Logger logger;
 
         @Inject
-        public DialogUiFactory(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList)
+        public DialogUiFactory(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Logger logger)
         {
             this.i18n = i18n;
             this.images = images;
             this.bundleManager = bundleManager;
             this.frameList = frameList;
+            this.logger = logger;
         }
 
         public RaplaImages getImages()
@@ -390,39 +468,160 @@ public class DialogUI extends JDialog
             return images;
         }
 
-        public DialogUI create(Component owner, boolean modal, JComponent content, String[] options) throws RaplaException
+        public DialogInterface create(PopupContext popupContext, boolean modal, JComponent content, String[] options) throws RaplaException
         {
             DialogUI dlg;
-            Component topLevel = getOwnerWindow(owner);
+            Component parent = SwingPopupContext.extractParent(popupContext);
+            Component topLevel = getOwnerWindow(parent);
             if (topLevel instanceof Dialog)
                 dlg = new DialogUI(i18n, images, bundleManager, frameList, (Dialog) topLevel);
             else
                 dlg = new DialogUI(i18n, images, bundleManager, frameList, (Frame) topLevel);
-
-            dlg.parent = owner;
+            
+            dlg.parent = parent;
             dlg.init(modal, content, options);
             return dlg;
         }
 
-        public DialogUI create(PopupContext popupContext, boolean modal, JComponent content, String[] options) throws RaplaException
+        public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text, String[] options) throws RaplaException
         {
-            return create(SwingPopupContext.extractParent(popupContext), modal, content, options);
-        }
-
-        public DialogUI create(Component owner, boolean modal, String title, String text, String[] options) throws RaplaException
-        {
-            DialogUI dlg = create(owner, modal, new JPanel(), options);
+            DialogUI dlg = (DialogUI) create(popupContext, modal, new JPanel(), options);
             dlg.createMessagePanel(text);
             dlg.setTitle(title);
             return dlg;
         }
 
-        public DialogUI create(Component owner, boolean modal, String title, String text) throws RaplaException
+        public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException
         {
-            DialogUI dlg = create(owner, modal, title, text, getDefaultOptions());
+            DialogUI dlg = (DialogUI) create(popupContext, modal, title, text, getDefaultOptions());
             dlg.useDefaultOptions = true;
             return dlg;
         }
+
+        /** Creates a new ErrorDialog with the specified owner and displays the exception
+        @param ex the exception that should be displayed.
+        @param owner the exception that should be displayed. Can be null, but providing
+        a parent-component will lead to a more appropriate display.
+        */
+        public void showException(Throwable ex, PopupContext popupContext)
+        {
+            showException(ex, popupContext, i18n, getImages(), logger);
+        }
+
+        public void showError(Exception ex, PopupContext context)
+        {
+            showException(ex, context);
+        }
+
+        public void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
+        {
+            Component owner = SwingPopupContext.extractParent(popupContext);
+            if (ex instanceof RaplaConnectException)
+            {
+                String message = ex.getMessage();
+                Throwable cause = ex.getCause();
+                String additionalInfo = "";
+                if (cause != null)
+                {
+                    additionalInfo = " " + cause.getClass() + ":" + cause.getMessage();
+                }
+
+                logger.warn(message + additionalInfo);
+                if (ex instanceof RaplaRestartingException)
+                {
+                    return;
+                }
+                try
+                {
+                    ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, this);
+                    dialog.showWarningDialog(message, owner);
+                }
+                catch (RaplaException e)
+                {
+                }
+                catch (Throwable e)
+                {
+                    logger.error(e.getMessage(), e);
+                }
+                return;
+            }
+            try
+            {
+                ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, this);
+                if (ex instanceof DependencyException)
+                {
+                    dialog.showWarningDialog(getHTML((DependencyException) ex), owner);
+                }
+                else if (isWarningOnly(ex))
+                {
+                    dialog.showWarningDialog(ex.getMessage(), owner);
+                }
+                else
+                {
+                    dialog.showExceptionDialog(ex, owner);
+                }
+            }
+            catch (RaplaException ex2)
+            {
+                logger.error(ex2.getMessage(), ex2);
+            }
+            catch (Throwable ex2)
+            {
+                logger.error(ex2.getMessage(), ex2);
+            }
+        }
+
+        static public boolean isWarningOnly(Throwable ex)
+        {
+            return ex instanceof RaplaNewVersionException || ex instanceof RaplaSecurityException || ex instanceof WrongRaplaVersionException
+                    || ex instanceof RaplaConnectException;
+        }
+
+        static private String getHTML(DependencyException ex)
+        {
+            StringBuffer buf = new StringBuffer();
+            buf.append(ex.getMessage() + ":");
+            buf.append("<br><br>");
+            Iterator<String> it = ex.getDependencies().iterator();
+            int i = 0;
+            while (it.hasNext())
+            {
+                Object obj = it.next();
+                buf.append((++i));
+                buf.append(") ");
+
+                buf.append(obj);
+
+                buf.append("<br>");
+                if (i == 30 && it.hasNext())
+                {
+                    buf.append("... " + (ex.getDependencies().size() - 30) + " more");
+                    break;
+                }
+            }
+            return buf.toString();
+        }
+
+        /** Creates a new ErrorDialog with the specified owner and displays the waring */
+        public void showWarning(String warning, PopupContext popupContext)
+        {
+            showWarning(warning, popupContext, i18n, getImages(), logger);
+        }
+
+        public void showWarning(String warning, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
+        {
+            try
+            {
+                Component owner = SwingPopupContext.extractParent(popupContext);
+                ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, this);
+                dialog.showWarningDialog(warning, owner);
+            }
+            catch (RaplaException ex2)
+            {
+                logger.error(ex2.getMessage(), ex2);
+            }
+        }
+
     }
 
 }

@@ -13,16 +13,37 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.Semaphore;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListener;
 import org.rapla.client.UserClientService;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.MainFrame;
-import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -52,25 +73,6 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.StatusUpdater;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.Set;
-import java.util.Vector;
-import java.util.concurrent.Semaphore;
 
 /** Implementation of the UserClientService.
 */
@@ -540,13 +542,13 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                         if ( !success )
                         {
                             dlg.resetPassword();
-                            RaplaGUIComponent.showWarning(i18n.getString("error.login"), dlg, i18n, raplaImages, logger, dialogUiFactory);
+                            dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null), i18n, raplaImages, logger);
                         }
                     } 
                     catch (RaplaException ex) 
                     {
                         dlg.resetPassword();
-                        RaplaGUIComponent.showException(ex, dlg, i18n, raplaImages, logger, dialogUiFactory);
+                        dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null), i18n, raplaImages, logger);
                     }
                     if ( success) {
                         dlg.close();
@@ -554,7 +556,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                         try {
                             beginRaplaSession();
                         } catch (Throwable ex) {
-                        	RaplaGUIComponent.showException(ex, null, i18n, raplaImages, logger, dialogUiFactory);
+                            dialogUiFactory.showException(ex, null, i18n, raplaImages, logger);
                             fireClientAborted();
                         }
                     } // end of else
@@ -603,18 +605,18 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 					String title = i18n.getString("restart_client");
 					try {
 					    Component owner = frameControllerList.getMainWindow();
-                        DialogUI dialog = dialogUiFactory.create(owner, modal, title, message);
-						Action action = new AbstractAction() {
+					    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), modal, title, message);
+						Runnable action = new Runnable() {
 							private static final long serialVersionUID = 1L;
 
-							public void actionPerformed(ActionEvent e) {
+							public void run() {
 								getLogger().warn("restart");
 								restart();
 							}
 						};
 						dialog.setAbortAction(action);
-						dialog.getButton(0).setAction( action);
-						dialog.start();
+						dialog.getAction(0).setRunnable( action);
+						dialog.start(true);
 					} catch (Throwable e) {
 						getLogger().error(e.getMessage(), e);
 					}

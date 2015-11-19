@@ -32,6 +32,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
@@ -40,7 +41,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -119,7 +119,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 }
             }
             catch (RaplaException ex) {
-                showException( ex, getMainComponent(), dialogUiFactory);
+                dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
             }
         }
         
@@ -147,13 +147,13 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             {
                 String[] objects = new String[] { getSelectedFile().name};
                 DialogInterface dlg = infoFactory.createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
-                dlg.start();
+                dlg.start(true);
                 if (dlg.getSelectedIndex() != 0)
                     return;
                 delete();
             }
             catch (RaplaException ex) {
-                showException( ex, getMainComponent(), dialogUiFactory);
+                dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
             }
         }
     }
@@ -305,7 +305,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         	changeSelection();
         }
         catch (RaplaException ex) {
-            showException( ex, getMainComponent(), dialogUiFactory);
+            dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
         }
     }
     
@@ -549,7 +549,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                         if( entry != null)
                         	saveSelectedDateField.setSelected(entry.equals("true"));
                     } catch (RaplaException ex) {
-                           showException( ex, getMainComponent(), dialogUiFactory);
+                        dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
                     }
                 }
               
@@ -557,23 +557,23 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 
         });
         
-        final DialogUI dlg = dialogUiFactory.create(
-                                        parentComponent,true,panel,
+        final DialogInterface dlg = dialogUiFactory.create(
+                                        new SwingPopupContext(parentComponent, null),true,panel,
                                        new String[] {
                                            getString("save")
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("save") + " " +getString("calendar_settings"));
-        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
-        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
-        dlg.getButton(0).setAction( new AbstractAction() {
+        dlg.getAction(0).setIcon("icon.save");
+        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
 
-            public void actionPerformed(ActionEvent e) {
+            public void run() {
                 String filename = textField.getText().trim();
                 if (filename.length() == 0)
                 {
-                    showWarning(getString("error.no_name"), parentComponent,dialogUiFactory);
+                    dialogUiFactory.showWarning(getString("error.no_name"), new SwingPopupContext(parentComponent, null));
                     return;
                 }
                 dlg.close();
@@ -639,7 +639,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 }
                 catch (RaplaException ex) 
                 {
-                    showException( ex, parentComponent, dialogUiFactory);
+                    dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
                 }
                 
             }
@@ -661,9 +661,9 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 
 
         });
-        dlg.start();
+        dlg.start(true);
         } catch (RaplaException ex) {
-            showException( ex, parentComponent, dialogUiFactory);
+            dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
         }
     }
     

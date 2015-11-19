@@ -24,15 +24,16 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.Entity;
 import org.rapla.entities.NamedComparator;
@@ -113,7 +114,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
 
                 } catch (RaplaException ex) {
-                    showException(ex, templateList.getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(templateList.getComponent(), null));
                 }
             }
         };
@@ -208,16 +209,16 @@ public class TemplateEdit extends RaplaGUIComponent
             Collection<String> options = new ArrayList<String>();
             options.add( getString("apply") );
             options.add(getString("cancel"));
-            final DialogUI dlg = dialogUiFactory.create(
-                    parentComponent,true,templateList.getComponent(),
+            final DialogInterface dlg = dialogUiFactory.create(
+                    new SwingPopupContext(parentComponent, null),true,templateList.getComponent(),
                     options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
-            dlg.getButton(options.size() - 1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
+            dlg.getAction(options.size() - 1).setIcon("icon.cancel");
 
-            final AbstractAction action = new AbstractAction() {
+            final Runnable action = new Runnable() {
                 private static final long serialVersionUID = 1L;
     
-                public void actionPerformed(ActionEvent e) {
+                public void run() {
                     try
                     {
                         LinkedHashSet<RaplaObject> toRemoveObj = new LinkedHashSet<RaplaObject>();
@@ -263,7 +264,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
                     catch (RaplaException ex)
                     {
-                        showException( ex, getMainComponent(), dialogUiFactory);
+                        dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
                     }
                     dlg.close();
                 }
@@ -273,15 +274,15 @@ public class TemplateEdit extends RaplaGUIComponent
                 public void mouseClicked(MouseEvent e) {
                     if ( e.getClickCount() >=2)
                     {
-                        action.actionPerformed( new ActionEvent( list, ActionEvent.ACTION_PERFORMED, "save"));
+                        action.run();//actionPerformed( new ActionEvent( list, ActionEvent.ACTION_PERFORMED, "save"));
                     }
                 }
             });
-            dlg.getButton(0).setAction( action);
-            dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.confirm"));
-            dlg.start();
+            dlg.getAction(0).setRunnable( action);
+            dlg.getAction(0).setIcon("icon.confirm");
+            dlg.start(true);
         } catch (RaplaException ex) {
-            showException( ex, parentComponent, dialogUiFactory);
+            dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
         }
     }
 

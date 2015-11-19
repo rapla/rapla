@@ -158,7 +158,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                         CommandHistory commanHistory = getModification().getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
-                        showException(ex, getComponent(), dialogUiFactory);
+                        dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                     }
                 }
 
@@ -174,7 +174,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                         CommandHistory commanHistory = getModification().getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
-                        showException(ex, getComponent(), dialogUiFactory);
+                        dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                     }
                     
                 }
@@ -186,7 +186,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 
             menu.show(component, p.x, p.y);
         } catch (Exception ex) {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
     

@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.swing.AbstractAction;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -30,10 +29,12 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
@@ -41,7 +42,6 @@ import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
@@ -99,7 +99,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     //boolean isResourceType;
     //boolean isEventType;
     AnnotationEditUI annotationEdit;
-    DialogUI dialog;
+    DialogInterface dialog;
     PermissionListField permissionListField;
     private final DialogUiFactory dialogUiFactory;
 
@@ -163,7 +163,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     showAnnotationDialog();
                 } catch (RaplaException ex) {
-                    showException(ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
                 
             }
@@ -181,7 +181,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     updateAnnotations();
                 } catch (RaplaException ex) {
-                    showException(ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
             }
 
@@ -212,12 +212,12 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                             AttributeType type = attribute.getType();
                             if ( type != AttributeType.STRING  && type != AttributeType.CATEGORY)
                             {
-                                showWarning("Only string or category types are allowed for color attribute", getComponent(),dialogUiFactory);
+                                dialogUiFactory.showWarning("Only string or category types are allowed for color attribute", new SwingPopupContext(getComponent(), null));
                                 colorChooser.setSelectedIndex(2);
                                 return;
                             }
-                            DialogUI ui = dialogUiFactory.create(getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
-                            ui.start();
+                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            ui.start(true);
                             if (ui.getSelectedIndex() == 0)
                             {
                                 attribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
@@ -230,8 +230,8 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                         }
                         else
                         {
-        					DialogUI ui = dialogUiFactory.create(getMainComponent(), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
-    						ui.start();
+                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+    						ui.start(true);
     						if (ui.getSelectedIndex() == 0)
     						{
     							createNewColorAttribute();
@@ -242,7 +242,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     						}
                         }
     				} catch (RaplaException ex) {
-						showException(ex, getMainComponent(), dialogUiFactory);
+    				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
 					}
     				
     			}
@@ -338,26 +338,26 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             dialog.close();
         }
         dialog = dialogUiFactory.create(
-                getComponent()
+                new SwingPopupContext(getComponent(), null)
                 ,modal
                 ,annotationEdit.getComponent()
                 ,new String[] { getString("close")});
 
-        dialog.getButton(0).setAction( new AbstractAction() {
+        dialog.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
-            public void actionPerformed(ActionEvent e) {
+            public void run() {
                 List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
                 try {
                     annotationEdit.mapTo(asList);
                 } catch (Exception e1) {
                     getLogger().error(e1.getMessage(), e1);
-                    showException( e1, getMainComponent(), dialogUiFactory);
+                    dialogUiFactory.showException( e1, new SwingPopupContext(getMainComponent(), null));
                 }
                 dialog.close();
             }
         });
         dialog.setTitle(getString("select"));
-        dialog.start();
+        dialog.start(true);
     }
 
     

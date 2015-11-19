@@ -11,15 +11,14 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action.user;
-import java.awt.event.ActionEvent;
-
-import javax.swing.AbstractAction;
+import java.awt.Component;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
@@ -68,7 +67,7 @@ public class PasswordChangeAction extends RaplaAction {
                 return;
             changePassword((User) object, !getUser().isAdmin());
         } catch (RaplaException ex) {
-            showException(ex, popupContext, dialogUiFactory);
+            dialogUiFactory.showException(ex, popupContext);
         }
     }
 
@@ -76,10 +75,10 @@ public class PasswordChangeAction extends RaplaAction {
         new PasswordChangeActionA(user,showOld).start();
     }
 
-    class PasswordChangeActionA extends AbstractAction {
+    class PasswordChangeActionA implements Runnable {
         private static final long serialVersionUID = 1L;
         PasswordChangeUI ui;
-        DialogUI dlg;
+        DialogInterface dlg;
         User user;
         boolean showOld;
 
@@ -95,12 +94,13 @@ public class PasswordChangeAction extends RaplaAction {
             dlg = dialogUiFactory.create(popupContext,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));
-            dlg.getButton(0).setAction(this);
-            dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
-            dlg.start();
+            dlg.getAction(0).setRunnable(this);
+            dlg.getAction(1).setIcon("icon.cancel");
+            dlg.start(true);
         }
-
-        public void actionPerformed(ActionEvent evt) {
+        
+        public void run()
+        {
             try {
                 char[] oldPassword = showOld ? ui.getOldPassword() : new char[0];
                 char[] p1= ui.getNewPassword();
@@ -110,9 +110,10 @@ public class PasswordChangeAction extends RaplaAction {
                 getUserModule().changePassword(user , oldPassword, p1);
                 dlg.close();
             } catch (RaplaException ex) {
-                showException(ex,dlg, dialogUiFactory);
+                dialogUiFactory.showException(ex,new SwingPopupContext((Component)dlg, null));
             }
         }
+
     }
 
 

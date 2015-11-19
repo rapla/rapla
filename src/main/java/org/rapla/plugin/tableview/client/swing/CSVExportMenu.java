@@ -29,9 +29,11 @@ import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
@@ -74,7 +76,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
          try {
              export( model);
          } catch (Exception ex) {
-             showException( ex, getMainComponent(), dialogUiFactory );
+             dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null) );
          }
      }
 	 
@@ -154,16 +156,16 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	
 	 protected boolean exportFinished(Component topLevel) {
 			try {
-				DialogUI dlg = dialogUiFactory.create(
-	                    		topLevel
+				DialogInterface dlg = dialogUiFactory.create(
+				                new SwingPopupContext(topLevel, null)
 	                            ,true
 	                            ,getString("export")
 	                            ,getString("file_saved")
 	                            ,new String[] { getString("ok")}
 	                            );
-				dlg.setIcon(raplaImages.getIconFromKey("icon.export"));
+				dlg.setIcon("icon.export");
 	            dlg.setDefault(0);
-	            dlg.start();
+	            dlg.start(true);
 	            return (dlg.getSelectedIndex() == 0);
 			} catch (RaplaException e) {
 				return true;

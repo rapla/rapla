@@ -24,6 +24,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -85,10 +86,10 @@ public class PrintAction extends RaplaAction {
                 
             }
             );
-            dialog.startNoPack();
+            dialog.start(false);
             
         } catch (Exception ex) {
-            showException(ex, parent, dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(parent, null));
         }
     }
 }

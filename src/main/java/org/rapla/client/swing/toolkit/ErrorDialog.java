@@ -27,7 +27,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.framework.RaplaException;
@@ -184,10 +186,10 @@ final public class ErrorDialog {
                 }
             }
 
-            DialogUI dlg = dialogUiFactory.create(owner,true,component, new String[] {getI18n().getString("ok")});
+            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null),true,component, new String[] {getI18n().getString("ok")});
             dlg.setTitle(createTitle("error"));
-            dlg.setIcon(images.getIconFromKey("icon.error"));
-            dlg.start();
+            dlg.setIcon("icon.error");
+            dlg.start(true);
         } catch (Exception ex) {
             getLogger().error( e.getMessage(), e);
             getLogger().error("Can't show errorDialog " + ex);
@@ -196,9 +198,9 @@ final public class ErrorDialog {
 
     private void showDialog(String title, String message,Component owner) {
         try {
-            DialogUI dlg = dialogUiFactory.create(owner,true,title,message);
-            dlg.setIcon(images.getIconFromKey("icon.error"));
-            dlg.start();
+            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null),true,title,message);
+            dlg.setIcon("icon.error");
+            dlg.start(true);
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());
         }
@@ -206,9 +208,9 @@ final public class ErrorDialog {
 
     public void showWarningDialog(String title, String message,Component owner) {
         try {
-            DialogUI dlg = dialogUiFactory.create(owner,true,title,message);
-            dlg.setIcon(images.getIconFromKey("icon.warning"));
-            dlg.start();
+            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null),true,title,message);
+            dlg.setIcon("icon.warning");
+            dlg.start(true);
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());
         }

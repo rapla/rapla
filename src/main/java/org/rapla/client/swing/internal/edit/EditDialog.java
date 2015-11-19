@@ -14,13 +14,11 @@ package org.rapla.client.swing.internal.edit;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -28,13 +26,13 @@ import javax.swing.JPanel;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.components.util.undo.CommandHistory;
@@ -54,7 +52,7 @@ import org.rapla.framework.logger.Logger;
 
 public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable
 {
-    DialogUI dlg;
+    DialogInterface dlg;
     boolean bSaving = false;
     EditComponent<T, JComponent> ui;
     private Collection<T> originals;
@@ -117,18 +115,18 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         editComponent.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
         boolean modal = false;
         dlg = dialogUiFactory
-                .create(SwingPopupContext.extractParent(popupContext), modal, panel, new String[] { getString("save"), getString("cancel") });
+                .create(popupContext, modal, panel, new String[] { getString("save"), getString("cancel") });
 
         final AbortAction action = new AbortAction(callback);
         dlg.setAbortAction(action);
-        dlg.getButton(0).setAction(new SaveAction(callback, reservationController));
-        dlg.getButton(1).setAction(action);
-        dlg.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
-        dlg.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
+        dlg.getAction(0).setRunnable(new SaveAction(callback, reservationController));
+        dlg.getAction(1).setRunnable(action);
+        dlg.getAction(0).setIcon("icon.save");
+        dlg.getAction(1).setIcon("icon.cancel");
         dlg.setTitle(getI18n().format("edit.format", title));
         getUpdateModule().addModificationListener(this);
-        dlg.addWindowListener(new DisposingTool(this));
-        dlg.start();
+        dlg.addWindowListener(this);//new DisposingTool(this));
+        dlg.start(true);
         {
             getPrivateEditDialog().addEditDialog(this);
             // to avoid java compiler error
@@ -170,14 +168,14 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         {
             getLogger().warn("Object has been changed outside.");
             final Component component = (Component) ui.getComponent();
-            DialogUI warning = dialogUiFactory.create(component, true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
-            warning.start();
+            DialogInterface warning = dialogUiFactory.create(new SwingPopupContext(component, null), true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
+            warning.start(true);
             getPrivateEditDialog().removeEditDialog(this);
             dlg.close();
         }
     }
 
-    class SaveAction extends AbstractAction
+    class SaveAction implements Runnable
     {
         private static final long serialVersionUID = 1L;
         private final ReservationController reservationController;
@@ -187,7 +185,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
             this.reservationController = reservationController;
         }
 
-        public void actionPerformed(ActionEvent evt)
+        public void run()
         {
             try
             {
@@ -244,23 +242,23 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
             }
             catch (IllegalAnnotationException ex)
             {
-                showWarning(ex.getMessage(), dlg,dialogUiFactory);
+                dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component)dlg, null));
             }
             catch (RaplaException ex)
             {
-                showException(ex, dlg, dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext((Component)dlg, null));
             }
         }
     }
 
-    class AbortAction extends AbstractAction
+    class AbortAction implements Runnable
     {
         private static final long serialVersionUID = 1L;
         public AbortAction(EditController.EditCallback<List<T>> callback)
         {
         }
 
-        public void actionPerformed(ActionEvent evt)
+        public void run()
         {
             getPrivateEditDialog().removeEditDialog(EditDialog.this);
             dlg.close();

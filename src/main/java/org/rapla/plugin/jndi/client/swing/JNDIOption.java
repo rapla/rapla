@@ -34,8 +34,10 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -156,9 +158,9 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                     String password ="";
                     {
                         PasswordEnterUI testUser = new PasswordEnterUI(raplaResources);
-                        DialogUI dialog =dialogUiFactory.create( getComponent(), true,testUser.getComponent(),new String[] {"test","abort"});
+                        DialogInterface dialog =dialogUiFactory.create( new SwingPopupContext(getComponent(), null), true,testUser.getComponent(),new String[] {"test","abort"});
                         dialog.setTitle("Please enter valid user!");
-                        dialog.start();
+                        dialog.start(true);
                         username = testUser.getUsername();
                         password = new String(testUser.getNewPassword());
                         int index=dialog.getSelectedIndex();
@@ -169,17 +171,17 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
                     }
                     configService.test(conf,username,password);
                     {
-                        DialogUI dialog = dialogUiFactory.create( getComponent(), true, "JNDI","JNDI Authentification successfull");
-                        dialog.start(); 
+                        DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getComponent(), null), true, "JNDI","JNDI Authentification successfull");
+                        dialog.start(true); 
                     }
                 } 
                 catch (RaplaSecurityException ex)
                 {
-                    showWarning(ex.getMessage(), getComponent(), dialogUiFactory);
+                    dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext(getComponent(), null));
                 }
                 catch (Exception ex)
                 {
-                    showException(ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
             }
     	    
@@ -239,7 +241,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
         } 
         catch (RaplaException ex)
         {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             this.config = config;
         }
     	readAttribute("digest", digest);

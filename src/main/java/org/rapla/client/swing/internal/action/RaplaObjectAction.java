@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
@@ -28,7 +29,6 @@ import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.DialogInterface;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -194,7 +194,7 @@ public class RaplaObjectAction extends RaplaAction {
             case VIEW: view();break;
             }
         } catch (RaplaException ex) {
-            showException(ex,popupContext, dialogUiFactory);
+            dialogUiFactory.showException(ex,popupContext);
         } // end of try-catch
     }
 
@@ -295,7 +295,7 @@ public class RaplaObjectAction extends RaplaAction {
             return;
         Entity<?>[] objects = new Entity[] {  object};
         DialogInterface dlg = infoFactory.createDeleteDialog( objects, popupContext);
-        dlg.start();
+        dlg.start(true);
         if (dlg.getSelectedIndex() != 0)
             return;
         List<Entity<?>> singletonList = Arrays.asList( objects);
@@ -307,7 +307,7 @@ public class RaplaObjectAction extends RaplaAction {
         if (objectList == null || objectList.size() == 0)
             return;
         DialogInterface dlg = infoFactory.createDeleteDialog(objectList.toArray(), popupContext);
-        dlg.start();
+        dlg.start(true);
         if (dlg.getSelectedIndex() != 0)
             return;
 		delete(objectList);

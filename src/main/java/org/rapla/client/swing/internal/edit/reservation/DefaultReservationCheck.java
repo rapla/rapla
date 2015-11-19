@@ -22,11 +22,10 @@ import javax.swing.JPanel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
@@ -124,8 +123,8 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
             }
             
             if (  warningPanel.getComponentCount() > 0) {
-                DialogUI dialog = dialogUiFactory.create(
-                        ((SwingPopupContext)sourceComponent).getParent()
+                DialogInterface dialog = dialogUiFactory.create(
+                        sourceComponent
                         ,true
                         ,warningPanel
                         ,new String[] {
@@ -134,11 +133,11 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                 }
                 );
                 dialog.setTitle( getString("warning"));
-                dialog.setIcon(raplaImages.getIconFromKey("icon.warning"));
+                dialog.setIcon("icon.warning");
                 dialog.setDefault(1);
-                dialog.getButton(0).setIcon(raplaImages.getIconFromKey("icon.save"));
-                dialog.getButton(1).setIcon(raplaImages.getIconFromKey("icon.cancel"));
-                dialog.start();
+                dialog.getAction(0).setIcon("icon.save");
+                dialog.getAction(1).setIcon("icon.cancel");
+                dialog.start(true);
                 if (dialog.getSelectedIndex() == 0)
                 {
                     return true;
@@ -155,7 +154,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         }
         catch (RaplaException ex)
         {
-            showWarning( ex.getMessage(), ((SwingPopupContext)sourceComponent).getParent(),dialogUiFactory);
+            dialogUiFactory.showWarning( ex.getMessage(), sourceComponent);
             return false;
         }
     }

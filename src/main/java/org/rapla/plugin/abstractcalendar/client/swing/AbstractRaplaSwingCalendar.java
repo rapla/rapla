@@ -51,6 +51,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
@@ -185,7 +186,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
             // model.setSelectedDate( date );
             update();
         } catch (RaplaException ex) {
-            showException(ex, view.getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(view.getComponent(), null));
         }
     }
 

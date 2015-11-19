@@ -21,13 +21,13 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaTree;
@@ -161,7 +161,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
                 }
                 catch (RaplaException ex )
                 {
-                    old.showException( ex, SwingPopupContext.extractParent(menuContext.getPopupContext()), dialogUiFactory);
+                    dialogUiFactory.showException( ex, menuContext.getPopupContext());
                 } 
             }
          });
@@ -175,7 +175,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     }
     
     private User showAddDialog() throws RaplaException {
-        final DialogUI dialog;
+        final DialogInterface dialog;
         RaplaTree treeSelection = new RaplaTree();
         treeSelection.setMultiSelect(true);
         treeSelection.getTree().setCellRenderer(getTreeFactory().createRenderer());
@@ -193,12 +193,12 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
         treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
         dialog = dialogUiFactory.create(
-                old.getMainComponent()
+                new SwingPopupContext(old.getMainComponent(), null)
                 ,true
                 ,treeSelection
                 ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
         dialog.setTitle(setOwnerI18n.getString("changeownerto"));
-        dialog.getButton(0).setEnabled(false);
+        dialog.getAction(0).setEnabled(false);
         
         final JTree tree = treeSelection.getTree(); 
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -209,7 +209,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
                 if (selPath != null && e.getClickCount() == 2) {
                     final Object lastPathComponent = selPath.getLastPathComponent();
                     if (((TreeNode) lastPathComponent).isLeaf() ) {
-                        dialog.getButton(0).doClick();
+                        dialog.getAction(0).execute();
                         return;
                     }
                 }
@@ -217,7 +217,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
                 	if (selPath != null && e.getClickCount() == 1) {
                         final Object lastPathComponent = selPath.getLastPathComponent();
                         if (((TreeNode) lastPathComponent).isLeaf() ) {
-                            dialog.getButton(0).setEnabled(true);
+                            dialog.getAction(0).setEnabled(true);
                             return;
                         }
                 	}
@@ -225,7 +225,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
             }
         });
         
-        dialog.start(); 
+        dialog.start(true); 
         if (dialog.getSelectedIndex() != 0) {
         	return null;
         }

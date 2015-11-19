@@ -29,6 +29,7 @@ import javax.swing.JTextField;
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -225,13 +226,13 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 					catch (UnsupportedOperationException ex)
 					{
 				          JComponent component = getComponent();
-				          showException( new RaplaException(getString("restart_options")), component, dialogUiFactory);
+				          dialogUiFactory.showException( new RaplaException(getString("restart_options")), new SwingPopupContext(component, null));
 					}
     			}
 				catch (RaplaException ex )
 				{
 					JComponent component = getComponent();
-					showException( ex, component, dialogUiFactory);
+					dialogUiFactory.showException( ex, new SwingPopupContext(component, null));
 				
 				
 //				} catch (ConfigurationException ex) {

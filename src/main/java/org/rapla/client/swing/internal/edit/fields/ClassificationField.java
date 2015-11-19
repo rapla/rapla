@@ -36,6 +36,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -307,7 +308,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 				}
 			}
 		} catch (RaplaException ex) {
-			showException(ex, content, dialogUiFactory);
+		    dialogUiFactory.showException(ex, new SwingPopupContext(content, null));
 		}
 	}
 

@@ -13,9 +13,11 @@
 package org.rapla.plugin.archiver.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -214,9 +216,9 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 				else if (source == restoreButton)
 				{
 					boolean modal = true;
-					DialogUI dialog = dialogUiFactory.create(content,modal,"Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
+					DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(content, null),modal,"Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
 					dialog.setDefault( 1);
-					dialog.start();
+					dialog.start(true);
 					
 					if (dialog.getSelectedIndex() == 0)
 					{
@@ -229,7 +231,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 		catch (RaplaException ex)
 		{
 //             gui.getMainComponent()
-             RaplaGUIComponent.showException(ex, null, i18n, raplaImages, logger, dialogUiFactory);
+		    dialogUiFactory.showException(ex, null, i18n, raplaImages, logger);
 		}
 	}
 

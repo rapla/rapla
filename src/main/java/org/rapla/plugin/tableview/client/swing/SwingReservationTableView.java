@@ -187,7 +187,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                 try {
                     update(  );
                 } catch (RaplaException ex ){
-                    showException( ex, getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException( ex, new SwingPopupContext(getComponent(), null));
                 }
             }
         });
@@ -218,7 +218,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 	                reservationController.copyReservations(selectedEvents, markedAllocatables);
 	            }
             } catch (RaplaException ex) {
-                showException(ex, getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
 	        copy(table, evt, ioInterface, getRaplaLocale());            
 		}
@@ -311,7 +311,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 			newMenu.setEnabled(enableNewMenu);
 			editMenu.setEnabled(permissionController.canUserAllocateSomething(user, clientFacade));
 		} catch (RaplaException ex) {
-			showException (ex,getComponent(), dialogUiFactory);
+		    dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
 		}
 	}
     
@@ -397,7 +397,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 	            newMenu.setEnabled(enableNewMenu);
             	menu.show( table, p.x, p.y);
             } catch (RaplaException ex) {
-            	showException (ex,getComponent(), dialogUiFactory);
+                dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
             }
         }
 
@@ -426,7 +426,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                 try {
                     reservationController.edit( reservation );
                 } catch (RaplaException ex) {
-                    showException (ex,getComponent(), dialogUiFactory);
+                    dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
                 }
             }
         }

@@ -49,6 +49,7 @@ import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
@@ -221,7 +222,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
                         	} 
                         	catch (RaplaException ex) 
                         	{
-		                        showException(ex, getComponent(), dialogUiFactory);
+                        	    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                         	} 
                         	finally
                         	{

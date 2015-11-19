@@ -51,7 +51,7 @@ public class SaveableToggleAction extends RaplaAction {
  	                prefs.putEntry( configEntry, newSelected);
  	                getModification().store( prefs);
  	            } catch (Exception ex) {
- 	                showException(  ex, new SwingPopupContext(null, null), dialogUiFactory );
+ 	               dialogUiFactory.showException(  ex, new SwingPopupContext(null, null) );
  	                return;
  	            }
  	   }

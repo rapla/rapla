@@ -1,7 +1,7 @@
 package org.rapla.client.swing;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.swing.toolkit.DialogInterface;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.framework.RaplaException;
 
 public interface InfoFactory

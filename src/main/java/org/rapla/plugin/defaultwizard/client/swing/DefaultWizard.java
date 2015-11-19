@@ -32,6 +32,7 @@ import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -151,7 +152,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		}
 		catch (RaplaException ex)
 		{
-			showException( ex, getMainComponent(), dialogUiFactory);
+		    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
 		}
     }
 

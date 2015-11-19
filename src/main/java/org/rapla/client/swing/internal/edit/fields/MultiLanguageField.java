@@ -34,9 +34,10 @@ import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
@@ -111,7 +112,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         }
         catch (RaplaException ex)
         {
-            showException(ex, getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
 
@@ -181,7 +182,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
         public void show() throws RaplaException
         {
-            DialogUI dlg = dialogUiFactory.create(owner, true, comp, new String[] { getString("ok"), getString("cancel") });
+            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null), true, comp, new String[] { getString("ok"), getString("cancel") });
             dlg.setTitle(getString("translation"));
             // Workaround for Bug ID  4480264 on developer.java.sun.com
             if (table.getRowCount() > 0)
@@ -189,7 +190,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
                 table.editCellAt(0, 0);
                 table.editCellAt(0, 1);
             }
-            dlg.start();
+            dlg.start(true);
             if (dlg.getSelectedIndex() == 0)
             {
                 for (int i = 0; i < availableLanguages.length; i++)

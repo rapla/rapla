@@ -171,7 +171,7 @@ public class DynamicTypeTest extends RaplaTestCase {
             PermissionController permissionController = DefaultPermissionControllerSupport.getController();
             final RaplaImages raplaImages = new RaplaImages(logger);
             FrameControllerList frameList = new FrameControllerList(logger);
-            DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList );
+            DialogUiFactory dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger);
             InfoFactory infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(facade, i18n, raplaLocale, logger, permissionController, infoFactory, raplaImages);
 	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);

@@ -14,7 +14,6 @@
 package org.rapla.client.swing.internal;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -42,7 +41,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.ResourceSelection.ResourceSelectionFactory;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -133,7 +131,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 	   				calendarContainer.update(modificationEvt);
 	   				conflictsView.dataChanged( modificationEvt);
 		    	} catch (Exception ex) {
-                   showException(ex, getComponent(), dialogUiFactory);
+		    	    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 		    	}
 
 			}

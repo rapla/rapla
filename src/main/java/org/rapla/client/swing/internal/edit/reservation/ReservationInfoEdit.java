@@ -37,6 +37,7 @@ import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -286,7 +287,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 commandHistory.storeAndExecute(permissionChange);   
             }
         } catch (RaplaException ex) {
-            showException(ex, this.getComponent(), dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(this.getComponent(), null));
         }
     }
 
@@ -376,7 +377,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 //            }
 
         } catch (RaplaException ex) {
-            showException(ex, content, dialogUiFactory);
+            dialogUiFactory.showException(ex, new SwingPopupContext(content, null));
         }
     }
 
@@ -511,7 +512,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                     commandHistory.storeAndExecute(classificationChange);	
                 }
             } catch (RaplaException ex) {
-                showException(ex, this.getComponent(), dialogUiFactory);
+                dialogUiFactory.showException(ex, new SwingPopupContext(this.getComponent(), null));
             }
         }
         
