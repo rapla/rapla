@@ -49,7 +49,14 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     
     private DateField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DateRenderer dateRenderer, IOInterface ioInterface) {
         super( facade, i18n, raplaLocale, logger);
-        panel = new JPanel();
+        panel = new JPanel(){
+            @Override
+            public void setEnabled(boolean enabled)
+            {
+                super.setEnabled(enabled);
+                field.setEnabled(enabled);
+            }
+        };
         field = createRaplaCalendar(dateRenderer, ioInterface);
         panel.setLayout(new BorderLayout());
         panel.add(field,BorderLayout.WEST);

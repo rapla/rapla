@@ -36,7 +36,7 @@ import org.rapla.framework.logger.Logger;
 
 public class BooleanField extends AbstractEditField implements ActionListener, FocusListener, MultiEditField, SetGetField<Boolean>
 {
-    JPanel panel = new JPanel();
+    JPanel panel;
     JRadioButton field1 = new JRadioButton();
     JRadioButton field2 = new JRadioButton();
     ButtonGroup group = new ButtonGroup();
@@ -54,6 +54,15 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
     public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) 
     {
         super(facade, i18n, raplaLocale, logger);
+        panel  = new JPanel(){
+            @Override
+            public void setEnabled(boolean enabled)
+            {
+                super.setEnabled(enabled);
+                field1.setEnabled(enabled);
+                field2.setEnabled(enabled);
+            }
+        };
         field1.setOpaque( false );
         field2.setOpaque( false );
         panel.setOpaque( false );

@@ -22,6 +22,7 @@ import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -285,6 +286,18 @@ public class PermissionController
             }
         }
         return false;
+    }
+
+    private boolean hasAccess(Attribute attribute, User user, AccessLevel edit)
+    {
+        for (PermissionExtension permissionExtension : permissionExtensions)
+        {
+            if (!permissionExtension.hasAccess(attribute, user, edit))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean hasAccess(Collection<Permission> permissions, User user, final AccessLevel permission, final Date start, final Date end, final Date today,
@@ -610,7 +623,6 @@ public class PermissionController
             if (template != null)
             {
                 if (canModify(template, user, resolver))
-                    ;
                 {
                     return true;
                 }
@@ -628,7 +640,6 @@ public class PermissionController
             if (template != null)
             {
                 if (canRead(template, user, resolver))
-                    ;
                 {
                     return true;
                 }
@@ -715,6 +726,24 @@ public class PermissionController
             return true;
         }
         return false;
+    }
+
+    public boolean canWrite(Attribute attribute, User user)
+    {
+        if(user.isAdmin())
+        {
+            return true;
+        }
+        return hasAccess(attribute, user, Permission.AccessLevel.EDIT);
+    }
+    
+    public boolean canRead(Attribute attribute, User user)
+    {
+        if(user.isAdmin())
+        {
+            return true;
+        }
+        return hasAccess(attribute, user, Permission.AccessLevel.READ);
     }
 
 }

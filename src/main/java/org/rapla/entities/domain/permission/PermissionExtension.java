@@ -6,6 +6,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Permission.AccessLevel;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
@@ -15,4 +16,6 @@ public interface PermissionExtension
     boolean hasAccess(PermissionContainer container, User user, AccessLevel accessLevel);
 
     boolean hasAccess(Iterable<? extends Permission> permissions, User user, AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday);
+
+    boolean hasAccess(Attribute attribute, User user, AccessLevel edit);
 }

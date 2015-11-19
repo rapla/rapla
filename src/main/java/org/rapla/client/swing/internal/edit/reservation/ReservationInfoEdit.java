@@ -115,7 +115,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         this.dialogUiFactory = dialogUiFactory;
         typeSelector = new RaplaListComboBox( raplaLocale );
         this.commandHistory = commandHistory;
-        editUI = new MyClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+        editUI = new MyClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory, permissionController);
         this.permissionListField = permissionListFieldFactory.create("permissions");
         this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
         this.permissionListField.setDefaultAccessLevel( Permission.READ );
@@ -396,8 +396,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
     class MyClassificationEditUI extends ClassificationEditUI {
         int height  = 0;
-        public MyClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
-            super(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+        public MyClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController) {
+            super(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory, permissionController);
         }
 
         public int getHeight()

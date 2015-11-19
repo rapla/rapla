@@ -60,7 +60,7 @@ import org.rapla.framework.logger.Logger;
 public abstract class AbstractSelectField<T> extends AbstractEditField implements MultiEditField, SetGetField<T>, SetGetCollectionField<T>
 {
     private RaplaButton selectButton = new RaplaButton(RaplaButton.SMALL);
-    JPanel panel = new JPanel();
+    JPanel panel;
     JLabel selectText = new JLabel();
     private Collection<T> selectedValues = new ArrayList<T>();
     T defaultValue;
@@ -84,6 +84,15 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.panel = new JPanel()
+        {
+            @Override
+            public void setEnabled(boolean enabled)
+            {
+                super.setEnabled(enabled);
+                selectButton.setEnabled(enabled);
+            }
+        };
         useDefault = defaultValue != null;
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);

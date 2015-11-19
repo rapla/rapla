@@ -34,7 +34,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 public class LongField extends AbstractEditField implements ChangeListener, FocusListener, MultiEditField, SetGetField<Long>{
-	JPanel panel = new JPanel();
+	JPanel panel;
 	RaplaNumber field;
 	boolean multipleValues = false; // indicator, shows if multiple different
 									// values are shown in this field
@@ -54,6 +54,14 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 	private LongField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, Long minimum)
 	{
 		super(facade, i18n, raplaLocale, logger);
+		panel = new JPanel(){
+		    @Override
+		    public void setEnabled(boolean enabled)
+		    {
+		        super.setEnabled(enabled);
+		        field.setEnabled(enabled);
+		    }
+		};
 		panel.setLayout(new BorderLayout());
 		panel.setOpaque(false);
 		field = new RaplaNumber(minimum, minimum, null, minimum == null);

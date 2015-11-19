@@ -39,6 +39,8 @@ import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -60,6 +62,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     private final BooleanFieldFactory booleanFieldFactory;
     private final TextFieldFactory textFieldFactory;
     private final LongFieldFactory longFieldFactory;
+    private final PermissionController permissionController;
 	
     public String getSelectedView()
     {
@@ -71,7 +74,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
+    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController) {
 		super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
@@ -80,6 +83,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.booleanFieldFactory = booleanFieldFactory;
         this.textFieldFactory = textFieldFactory;
         this.longFieldFactory = longFieldFactory;
+        this.permissionController = permissionController;
 	}
 
 	// enhanced to an array, for administration of multiple classifications
@@ -214,6 +218,14 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
             }
 		}
 		Assert.notNull(field, "Unknown AttributeType");
+		final User user = getUser();
+        final boolean canRead = permissionController.canRead(attribute, user);
+        field.getComponent().setVisible(canRead);
+        if(canRead)
+        {
+            final boolean canWrite = permissionController.canWrite(attribute, user);
+            field.getComponent().setEnabled(canWrite);
+        }
 		return field;
 	}
 

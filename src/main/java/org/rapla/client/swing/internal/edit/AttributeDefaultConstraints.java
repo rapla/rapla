@@ -45,6 +45,8 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -106,12 +108,14 @@ public class AttributeDefaultConstraints extends AbstractEditField
     AnnotationEditUI annotationEdit;
     Attribute attribute;
     private final DialogUiFactory dialogUiFactory;
+    private final PermissionController permissionController;
 
     @Inject
-    public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaException
+    public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface, PermissionController permissionController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
+        this.permissionController = permissionController;
         annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, attributeExtensionSet);
         key = textFieldFactory.create();
         name = multiLanguageFieldFactory.create();
@@ -375,24 +379,36 @@ public class AttributeDefaultConstraints extends AbstractEditField
         AttributeType type = types[classSelect.getSelectedIndex()];
         List<Annotatable> asList = Arrays.asList((Annotatable)attribute);
         annotationEdit.setObjects( asList);
-        final boolean categoryVisible = type.equals(AttributeType.CATEGORY);
-        final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
-        final boolean textVisible = type.equals(AttributeType.STRING);
-        final boolean booleanVisible = type.equals(AttributeType.BOOLEAN);
-        final boolean numberVisible = type.equals(AttributeType.INT);
-        final boolean dateVisible  = type.equals(AttributeType.DATE);
+        final User user = getUser();
+        final boolean canRead = permissionController.canRead(attribute, user);
+        final boolean categoryVisible = canRead && type.equals(AttributeType.CATEGORY);
+        final boolean allocatableVisible = canRead && type.equals(AttributeType.ALLOCATABLE);
+        final boolean textVisible = canRead && type.equals(AttributeType.STRING);
+        final boolean booleanVisible = canRead && type.equals(AttributeType.BOOLEAN);
+        final boolean numberVisible = canRead && type.equals(AttributeType.INT);
+        final boolean dateVisible  = canRead && type.equals(AttributeType.DATE);
+        final boolean canWrite = canRead && permissionController.canWrite(attribute, user);
         categoryLabel.setVisible( categoryVisible );
         categorySelect.getComponent().setVisible( categoryVisible );
+        categorySelect.getComponent().setEnabled(canWrite);
         dynamicTypeLabel.setVisible( allocatableVisible);
         dynamicTypeSelect.getComponent().setVisible( allocatableVisible);
+        dynamicTypeSelect.getComponent().setEnabled(canWrite);
         defaultLabel.setVisible( !allocatableVisible);
         defaultSelectCategory.getComponent().setVisible( categoryVisible);
+        defaultSelectCategory.getComponent().setEnabled(canWrite);
         defaultSelectText.getComponent().setVisible( textVisible);
+        defaultSelectText.getComponent().setEnabled(canWrite);
         defaultSelectBoolean.getComponent().setVisible( booleanVisible);
+        defaultSelectBoolean.getComponent().setEnabled(canWrite);
         defaultSelectNumber.setVisible( numberVisible);
+        defaultSelectNumber.setEnabled(canWrite);
         defaultSelectDate.setVisible( dateVisible);
+        defaultSelectDate.setEnabled(canWrite);
         multiSelectLabel.setVisible( categoryVisible || allocatableVisible);
+        multiSelectLabel.setEnabled(canWrite);
         multiSelect.getComponent().setVisible( categoryVisible || allocatableVisible);
+        multiSelect.getComponent().setEnabled(canWrite);
     }
 
     private void showAnnotationDialog() throws RaplaException
