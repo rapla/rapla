@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.IllegalAnnotationException;
@@ -22,17 +27,16 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.storage.LocalCache;
 
-import junit.framework.TestCase;
-
-public class ParsedTextTest extends TestCase
+@RunWith(JUnit4.class)
+public class ParsedTextTest 
 {
     DynamicTypeImpl type ;
     AttributeImpl attribute;
     CategoryImpl c2;
     CategoryImpl c3;
     CategoryImpl c4;
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
 
         final Map<String, FunctionFactory> functionFactoryMap = createFactoryMap();
@@ -89,6 +93,7 @@ public class ParsedTextTest extends TestCase
         return map;
     }
 
+    @Test
     public void testCategoryAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -102,10 +107,11 @@ public class ParsedTextTest extends TestCase
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
         
-        assertEquals("Welt", formatName);
-        assertEquals(annotationContent, type.getAnnotation(annoName));
+        Assert.assertEquals("Welt", formatName);
+        Assert.assertEquals(annotationContent, type.getAnnotation(annoName));
     }
     
+    @Test
     public void testBoundAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -116,14 +122,14 @@ public class ParsedTextTest extends TestCase
             type.setAnnotation(annoName, annotationContentWithoutParanth);
             parsedAnnotation = type.getParsedAnnotation(annoName);
             final String externalRepresentation = type.getAnnotation(annoName);
-            assertEquals(annotationContentWithoutParanth, externalRepresentation);
+            Assert.assertEquals(annotationContentWithoutParanth, externalRepresentation);
         }
         {
             final String annotationContent = "{(p)->name(attribute(p,\"a1\"),\"de\")}";
             type.setAnnotation(annoName, annotationContent);
             parsedAnnotation = type.getParsedAnnotation(annoName);
             final String externalRepresentation = type.getAnnotation(annoName);
-            assertEquals(annotationContentWithoutParanth, externalRepresentation);
+            Assert.assertEquals(annotationContentWithoutParanth, externalRepresentation);
         }
         type.setReadOnly();
         Locale locale = Locale.GERMANY;
@@ -132,19 +138,16 @@ public class ParsedTextTest extends TestCase
         {
             final EvalContext evalContext = new EvalContext(locale, annoName, Collections.singletonList(classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
-            assertEquals("Welt", formatName);
+            Assert.assertEquals("Welt", formatName);
         }
         {
             final EvalContext evalContext = new EvalContext(locale,  annoName, Collections.emptyList());
             final String formatName = parsedAnnotation.formatName(evalContext);
-            assertEquals("", formatName);
+            Assert.assertEquals("", formatName);
         }
-        
-        
-
-        
     }
     
+    @Test
     public void testMultiBoundAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -156,22 +159,20 @@ public class ParsedTextTest extends TestCase
         classification.setValue(attribute, c2);
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String externalRepresentation = type.getAnnotation(annoName);
-        assertEquals(annotationContent, externalRepresentation);
+        Assert.assertEquals(annotationContent, externalRepresentation);
         {
             final EvalContext evalContext = new EvalContext(locale,  annoName, Collections.singletonList(classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
-            assertEquals("Welt", formatName);
+            Assert.assertEquals("Welt", formatName);
         }
         {
             final EvalContext evalContext = new EvalContext(locale,  annoName, Arrays.asList(new Classification[] { classification, classification}));
             final String formatName = parsedAnnotation.formatName(evalContext);
-            assertEquals("WeltWelt", formatName);
+            Assert.assertEquals("WeltWelt", formatName);
         }
-        
-
-        
     }
 
+    @Test
     public void testInnerBoundAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -180,7 +181,7 @@ public class ParsedTextTest extends TestCase
         type.setReadOnly();
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String externalRepresentation = type.getAnnotation(annoName);
-        assertEquals(annotationContent, externalRepresentation);
+        Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
@@ -198,13 +199,12 @@ public class ParsedTextTest extends TestCase
             classification.setValue(attribute, c4);
             classifications.add(classification);
         }
-        
-        
         final EvalContext evalContext = new EvalContext(locale,  annoName, Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
-        assertEquals("Welt, Welten", formatName);
+        Assert.assertEquals("Welt, Welten", formatName);
     }
     
+    @Test
     public void testInnerBoundWithOuterReferenceAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -213,7 +213,7 @@ public class ParsedTextTest extends TestCase
         type.setReadOnly();
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String externalRepresentation = type.getAnnotation(annoName);
-        assertEquals(annotationContent, externalRepresentation);
+        Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
@@ -231,13 +231,12 @@ public class ParsedTextTest extends TestCase
             classification.setValue(attribute, c4);
             classifications.add(classification);
         }
-        
-        
         final EvalContext evalContext = new EvalContext(locale,  annoName, Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
-        assertEquals("Welten", formatName);
+        Assert.assertEquals("Welten", formatName);
     }
     
+    @Test
     public void testSortAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -246,7 +245,7 @@ public class ParsedTextTest extends TestCase
         type.setReadOnly();
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String externalRepresentation = type.getAnnotation(annoName);
-        assertEquals(annotationContent, externalRepresentation);
+        Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
@@ -264,13 +263,12 @@ public class ParsedTextTest extends TestCase
             classification.setValue(attribute, c4);
             classifications.add(classification);
         }
-        
-        
         final EvalContext evalContext = new EvalContext(locale,  annoName, Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
-        assertEquals("Welten, Welt, Rapla", formatName);
+        Assert.assertEquals("Welten, Welt, Rapla", formatName);
     }
     
+    @Test
     public void testFilterSortAnnotation() throws IllegalAnnotationException
     {
         final String annoName = "myanno";
@@ -279,7 +277,7 @@ public class ParsedTextTest extends TestCase
         type.setReadOnly();
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String externalRepresentation = type.getAnnotation(annoName);
-        assertEquals(annotationContent, externalRepresentation);
+        Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
@@ -297,11 +295,9 @@ public class ParsedTextTest extends TestCase
             classification.setValue(attribute, c4);
             classifications.add(classification);
         }
-        
-        
         final EvalContext evalContext = new EvalContext(locale,  annoName, Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
-        assertEquals("Welten, Welt", formatName);
+        Assert.assertEquals("Welten, Welt", formatName);
     }
     
    

@@ -12,25 +12,28 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.components.util.Tools;
 
-import junit.framework.TestCase;
+@RunWith(JUnit4.class)
+public class ToolsTest
+{
 
-
-public class ToolsTest extends TestCase {
-    public ToolsTest(String name) {
-        super(name);
-    }
-    public void testEqualsOrBothNull() {
-        Integer a = new Integer( 1 );
-        Integer b = new Integer( 1 );
-        Integer c = new Integer( 2 );
-        assertTrue ( a != b );
-        assertEquals ( a, b );
-        assertTrue( Tools.equalsOrBothNull( null, null ) );
-        assertTrue( !Tools.equalsOrBothNull( a, null ) );
-        assertTrue( !Tools.equalsOrBothNull( null, b ) );
-        assertTrue( Tools.equalsOrBothNull( a, b ) );
-        assertTrue( !Tools.equalsOrBothNull(  b, c ) );
+    @Test
+    public void testEqualsOrBothNull()
+    {
+        Integer a = new Integer(1);
+        Integer b = new Integer(1);
+        Integer c = new Integer(2);
+        Assert.assertTrue(a != b);
+        Assert.assertEquals(a, b);
+        Assert.assertTrue(Tools.equalsOrBothNull(null, null));
+        Assert.assertTrue(!Tools.equalsOrBothNull(a, null));
+        Assert.assertTrue(!Tools.equalsOrBothNull(null, b));
+        Assert.assertTrue(Tools.equalsOrBothNull(a, b));
+        Assert.assertTrue(!Tools.equalsOrBothNull(b, c));
     }
 }

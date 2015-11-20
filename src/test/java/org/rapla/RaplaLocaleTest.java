@@ -11,64 +11,41 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
-import org.rapla.framework.DefaultConfiguration;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.util.Calendar;
 
-public class RaplaLocaleTest extends TestCase {
-    DefaultConfiguration config;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 
-    public RaplaLocaleTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-	return new TestSuite(RaplaLocaleTest.class);
-    }
-
-    private DefaultConfiguration createConfig(String defaultLanguage,String countryString) {
-	DefaultConfiguration config = new DefaultConfiguration("locale");
-	DefaultConfiguration country = new DefaultConfiguration("country");
-	country.setValue(countryString);
-	config.addChild(country);
-	DefaultConfiguration languages = new DefaultConfiguration("languages");
-	config.addChild(languages);
-	languages.setAttribute("default",defaultLanguage);
-	DefaultConfiguration language1 = new DefaultConfiguration("language");
-	language1.setValue("de");
-	DefaultConfiguration language2 = new DefaultConfiguration("language");
-	language2.setValue("en");
-	languages.addChild(language1);
-	languages.addChild(language2);
-	return config;
-    }
-
-    /*
+@RunWith(JUnit4.class)
+public class RaplaLocaleTest 
+{
+    @Test
     public void testDateFormat3() throws Exception
     {
-        RaplaLocale raplaLocale = new RaplaLocaleImpl(createConfig("de","DE"));
-        String s = raplaLocale.formatDate(new SerializableDateTimeFormat().parseDate("2001-01-12",false));
-        assertEquals( "12.01.01", s);
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(new DefaultBundleManager());
+        String s = raplaLocale.formatDate(new SerializableDateTimeFormat().parseDate("2001-01-12", false));
+        Assert.assertEquals("12.01.01", s);
     }
 
-    public void testTimeFormat4() 
+    @Test
+    public void testTimeFormat4()
     {
-        RaplaLocale raplaLocale= new RaplaLocaleImpl(createConfig("en","US"));
-        Calendar cal = Calendar.inject(raplaLocale.getTimeZone()
-					    ,Locale.US);
-        cal.set(Calendar.HOUR_OF_DAY,21);
-        cal.set(Calendar.MINUTE,0);
+        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        bundleManager.setCountry("us");
+        bundleManager.setLanguage("en");
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        Calendar cal = Calendar.getInstance(raplaLocale.getTimeZone(), raplaLocale.getLocale());
+        cal.set(Calendar.HOUR_OF_DAY, 21);
+        cal.set(Calendar.MINUTE, 0);
         String s = raplaLocale.formatTime(cal.getTime());
-        assertEquals("9:00 PM", s);
+        Assert.assertEquals("9:00 PM", s);
     }
-*/
-
 
 }
-
-
-
-
-

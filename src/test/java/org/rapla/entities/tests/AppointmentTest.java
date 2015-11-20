@@ -21,6 +21,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.junit.runners.Suite.SuiteClasses;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -28,23 +33,15 @@ import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import static org.junit.Assert.*;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-public class AppointmentTest extends TestCase {
+@RunWith(JUnit4.class)
+@SuiteClasses(value=AppointmentTest.class)
+public class AppointmentTest {
     TimeZone zone = DateTools.getTimeZone(); //this is GMT
     Locale locale = Locale.getDefault();
 
-    public AppointmentTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(AppointmentTest.class);
-    }
-
+    @Before
     public void setUp() throws Exception {
     }
 
@@ -64,6 +61,7 @@ public class AppointmentTest extends TestCase {
         return new AppointmentImpl(startTime,endTime);
     }
 
+    @Test
     public void testOverlapAndCompareTo()  {
         Appointment a1 = createAppointment(new Day(2002,5,25),new Time(12,15),new Time(14,15));
         Appointment a2 = createAppointment(new Day(2002,5,26),new Time(13,0),new Time(15,0));
@@ -123,6 +121,7 @@ public class AppointmentTest extends TestCase {
         assertTrue("overlap is not symetric",!a3.overlaps(a1));
     }
 
+    @Test
     public void testOverlap1()  {
         Appointment a1 = createAppointment(new Day(2002,4,15),new Time(10,0),new Time(12,0));
         Appointment a2 = createAppointment(new Day(2002,4,15),new Time(9,0),new Time(11,0));
@@ -140,6 +139,7 @@ public class AppointmentTest extends TestCase {
         assertTrue("overlap is not symetric",a2.overlaps(a1));
     }
 
+    @Test
     public void testOverlap2() {
         Appointment a1 = createAppointment(new Day(2002,4,12),new Time(12,0),new Time(14,0));
         a1.setRepeatingEnabled(true);
@@ -149,6 +149,7 @@ public class AppointmentTest extends TestCase {
                                           , new Day(2002,4,22).toDate(zone)));
     }
     
+    @Test
     public void testOverlap3() {
     	final Appointment a1,a2;
     	{
@@ -174,6 +175,7 @@ public class AppointmentTest extends TestCase {
         
     }
 
+    @Test
     public void testBlocks() {
         Appointment a1 = createAppointment(new Day(2002,4,12),new Time(12,0),new Time(14,0));
         a1.setRepeatingEnabled(true);
@@ -186,6 +188,7 @@ public class AppointmentTest extends TestCase {
         assertEquals( "Repeating end is in the past: createBlocks should only return one block", 1, blocks.size() );
     }
 
+    @Test
     public void testMatchNeverEnding()  {
         Appointment a1 = createAppointment(new Day(2002,5,25),new Time(11,15),new Time(13,15));
         Appointment a2 = createAppointment(new Day(2002,5,25),new Time(11,15),new Time(13,15));
@@ -203,6 +206,7 @@ public class AppointmentTest extends TestCase {
         assertTrue( !a2.matches( a1 ) );
     }
     
+    @Test
     public void testMonthly()
     {
         Appointment a1 = createAppointment(new Day(2006,8,17),new Time(10,30),new Time(12,0));
@@ -253,6 +257,7 @@ public class AppointmentTest extends TestCase {
         assertEquals( 1, blocks.size());        
     }
 
+    @Test
     public void testMonthly5ft()
     {
         Appointment a1 = createAppointment(new Day(2006,8,31),new Time(10,30),new Time(12,0));
@@ -306,6 +311,7 @@ public class AppointmentTest extends TestCase {
         assertEquals( 1, blocks.size());        
     }
 
+    @Test
     public void testMonthlyNeverending()
     {
         Appointment a1 = createAppointment(new Day(2006,8,31),new Time(10,30),new Time(12,0));
@@ -352,6 +358,7 @@ public class AppointmentTest extends TestCase {
         assertEquals( 5, blocks.size());
     }
 
+    @Test
     public void testYearly29February()
     {
         Appointment a1 = createAppointment(new Day(2004,2,29),new Time(10,30),new Time(12,0));
@@ -403,6 +410,7 @@ public class AppointmentTest extends TestCase {
         assertEquals( 1, blocks.size());        
     }
 
+    @Test
     public void testYearly()
     {
         Appointment a1 = createAppointment(new Day(2006,8,17),new Time(10,30),new Time(12,0));
@@ -438,6 +446,7 @@ public class AppointmentTest extends TestCase {
 		return Calendar.getInstance( DateTools.getTimeZone());
 	}
 
+    @Test
 	public void testMonthlySetEnd()
     {
         Appointment a1 = createAppointment(new Day(2006,8,17),new Time(10,30),new Time(12,0));

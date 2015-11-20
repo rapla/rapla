@@ -12,7 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import junit.framework.TestCase;
+import java.io.File;
+import java.io.IOException;
+
+import org.junit.Before;
 import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.components.util.IOUtil;
@@ -23,16 +26,14 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import junit.framework.TestCase;
 
 public abstract class RaplaTestCase extends TestCase {
     protected RaplaClientServiceImpl raplaContainer;
  	Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN).getChildLogger("test");
 
- 	public static String TEST_SRC_FOLDER_NAME="test-src";
-    public static String TEST_FOLDER_NAME="temp/test";
+ 	public static String TEST_SRC_FOLDER_NAME="src/test/resources";
+    public static String TEST_FOLDER_NAME="target/test";
     protected RaplaStartupEnvironment env = new RaplaStartupEnvironment();
 
     public RaplaTestCase(String name) {
@@ -85,16 +86,16 @@ public abstract class RaplaTestCase extends TestCase {
     protected void setUp(String testFile) throws Exception  {
         ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = true;
         
-        URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
+//        URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
         //env.setConfigURL( configURL);
-        copyDataFile("test-src/" + testFile);
+        copyDataFile(TEST_SRC_FOLDER_NAME + "/" + testFile);
         raplaContainer = null;// FIXME new RaplaClientServiceImpl( env );
         assertNotNull("Container not initialized.",raplaContainer);
         ClientFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray());
-        
     }
 
+    @Before
     protected void setUp() throws Exception {
         setUp("testdefault.xml");
     }

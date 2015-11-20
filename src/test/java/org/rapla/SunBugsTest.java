@@ -11,25 +11,30 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
+
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-public class SunBugsTest extends TestCase {
-    public SunBugsTest(String name) {
-        super(name);
-    }
-    
-    public void testCalendarBug1_4_2() {
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+0"), Locale.US );
-        cal.set(Calendar.HOUR_OF_DAY,12);
+@RunWith(JUnit4.class)
+public class SunBugsTest
+{
+
+    @Test
+    public void testCalendarBug1_4_2()
+    {
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+0"), Locale.US);
+        cal.set(Calendar.HOUR_OF_DAY, 12);
         // This call causes the invalid result in the second get
         cal.getTime();
-        cal.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
         //Exposes Bug in jdk1.4.2beta
-        assertEquals("Bug exposed in jdk 1.4.2 beta",Calendar.MONDAY,cal.get(Calendar.DAY_OF_WEEK));
+        Assert.assertEquals("Bug exposed in jdk 1.4.2 beta", Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
     }
 
     /** this is not bug, but a undocumented feature. The exception should be thrown 
@@ -38,7 +43,7 @@ public class SunBugsTest extends TestCase {
         Calendar calendar =  Calendar.inject(TimeZone.getTimeZone("GMT+0"), Locale.GERMANY);
         calendar.setLenient( false );
         calendar.setTime( new Date());
-
+    
         // calculate the number of days of the current month
         calendar.set(Calendar.MONTH,2);
         calendar.roll(Calendar.MONTH,+1);
@@ -49,10 +54,5 @@ public class SunBugsTest extends TestCase {
         calendar.get(Calendar.DATE);
     }
     */
-        
+
 }
-
-
-
-
-
