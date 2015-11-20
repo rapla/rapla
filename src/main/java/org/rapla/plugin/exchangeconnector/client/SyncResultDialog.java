@@ -12,10 +12,10 @@ import javax.swing.JTextArea;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -27,10 +27,10 @@ import org.rapla.plugin.exchangeconnector.SynchronizeResult;
 
 public class SyncResultDialog extends RaplaGUIComponent
 {
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final ExchangeConnectorResources exchangeConnectorResources;
 
-    public SyncResultDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactory dialogUiFactory) {
+    public SyncResultDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.exchangeConnectorResources = exchangeConnectorResources;
 //        setChildBundleName(exchangeConnectorResources);

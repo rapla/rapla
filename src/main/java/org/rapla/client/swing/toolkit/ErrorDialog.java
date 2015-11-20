@@ -28,22 +28,22 @@ import javax.swing.JScrollPane;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
 final public class ErrorDialog {
     RaplaImages images;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
     private final Logger logger;
 
 
     @Inject
-    public ErrorDialog(Logger logger, RaplaResources i18n, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public ErrorDialog(Logger logger, RaplaResources i18n, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         this.logger = logger;
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;

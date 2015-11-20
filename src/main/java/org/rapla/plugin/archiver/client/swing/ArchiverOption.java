@@ -12,14 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.archiver.client.swing;
 
-import org.rapla.RaplaResources;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Locale;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
@@ -32,13 +38,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.storage.dbrm.RestartServer;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Locale;
 
 @Extension(provides = PluginOptionPanel.class,id=ArchiverService.PLUGIN_ID)
 public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
@@ -54,16 +53,12 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     Preferences preferences;
     Logger logger;
     RestartServer restartServer;
-    private final DialogUiFactory dialogUiFactory;
-    private final RaplaResources i18n;
-    private final RaplaImages raplaImages;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public ArchiverOption( Logger logger,ArchiverService archiver, RaplaResources i18n, RaplaImages raplaImages, RestartServer restartServer, DialogUiFactory dialogUiFactory){
+    public ArchiverOption( Logger logger,ArchiverService archiver, RestartServer restartServer, DialogUiFactoryInterface dialogUiFactory){
         this.archiver = archiver;
         this.logger = logger;
-        this.i18n = i18n;
-        this.raplaImages = raplaImages;
         this.restartServer = restartServer;
         this.dialogUiFactory = dialogUiFactory;
     }
@@ -231,7 +226,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 		catch (RaplaException ex)
 		{
 //             gui.getMainComponent()
-		    dialogUiFactory.showException(ex, null, i18n, raplaImages, logger);
+		    dialogUiFactory.showException(ex, null);
 		}
 	}
 

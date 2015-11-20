@@ -18,4 +18,13 @@ public class GwtPopupContext implements PopupContext
     {
         return point;
     }
+    
+    public static Point extractPoint(PopupContext context)
+    {
+        if(context instanceof GwtPopupContext)
+        {
+            return ((GwtPopupContext)context).getPoint();
+        }
+        return null;
+    }
 }

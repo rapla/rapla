@@ -16,10 +16,10 @@ import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
@@ -68,11 +68,11 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     
 	private boolean connected;
     private final ExchangeConnectorResources exchangeConnectorResources;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final ConfigReader config;
     
     @Inject
-    public ExchangeConnectorUserOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorRemote service, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactory dialogUiFactory, ConfigReader config) {
+    public ExchangeConnectorUserOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorRemote service, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ConfigReader config) {
         super(facade, i18n, raplaLocale, logger);
         this.exchangeConnectorResources = exchangeConnectorResources;
         this.service = service;

@@ -34,6 +34,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -43,7 +44,6 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
 import org.rapla.entities.RaplaObject;
@@ -82,9 +82,9 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	
     boolean mainTabSelected = true;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     
-	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController)  {
+	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController)  {
 		super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -322,7 +322,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	    private final TreeFactory treeFactory;
 	    private final RaplaImages raplaImages;
 	    private final DateFieldFactory dateFieldFactory;
-	    private final DialogUiFactory dialogUiFactory;
+	    private final DialogUiFactoryInterface dialogUiFactory;
         private final BooleanFieldFactory booleanFieldFactory;
         private final ClientFacade facade;
         private final RaplaResources i18n;
@@ -334,7 +334,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	    
 	    @Inject
         public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
-                DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController)
+                DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController)
         {
             super();
             this.facade = facade;

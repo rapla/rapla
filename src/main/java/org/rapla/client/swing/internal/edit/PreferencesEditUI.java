@@ -40,6 +40,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.extensionpoints.UserOptionPanel;
@@ -48,7 +49,6 @@ import org.rapla.client.swing.OptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -79,14 +79,14 @@ public class PreferencesEditUI extends RaplaGUIComponent
     private final Provider<Set<SystemOptionPanel>> systemOptionPanel;
     private final Map<String,Provider<PluginOptionPanel>> pluginOptionPanel;
     private final TreeFactory treeFactory;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     /** called during initialization to create the info component 
      */
     @Inject
     public PreferencesEditUI( TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,
             Provider<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
-            RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactory dialogUiFactory)
+            RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;

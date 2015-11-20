@@ -40,6 +40,7 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -50,7 +51,6 @@ import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLangu
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl.NamedNode;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.components.calendar.RaplaArrowButton;
@@ -88,10 +88,10 @@ public class CategoryEditUI extends RaplaGUIComponent
 
     private final TreeFactory treeFactory;
 
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)  {
+    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)  {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
@@ -436,7 +436,7 @@ class CategoryDetail extends RaplaGUIComponent
 	RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
 
-    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory) 
+    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory) 
     {
         super(facade, i18n, raplaLocale, logger);
         name = multiLanguageFieldFactory.create();

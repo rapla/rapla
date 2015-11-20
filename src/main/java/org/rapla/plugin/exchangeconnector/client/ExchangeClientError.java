@@ -5,8 +5,8 @@ import java.util.Date;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ClientExtension;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.ParseDateException;
@@ -34,11 +34,11 @@ public class ExchangeClientError extends RaplaComponent implements ClientExtensi
     
     TypedComponentRole<String> LAST_SYNC_ERROR_SHOWN = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_shown");
     private final ExchangeConnectorResources exchangeConnectorResources;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     
     
     @Inject
-    public ExchangeClientError(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ExchangeConnectorRemote remote, final CommandScheduler scheduler, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public ExchangeClientError(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ExchangeConnectorRemote remote, final CommandScheduler scheduler, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.remote = remote;
         this.exchangeConnectorResources = exchangeConnectorResources;

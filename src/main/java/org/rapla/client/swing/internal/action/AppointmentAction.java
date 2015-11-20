@@ -20,11 +20,11 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -59,10 +59,10 @@ public class AppointmentAction extends RaplaAction {
     private final ReservationController reservationController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     
-	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
+	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController)
     {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;

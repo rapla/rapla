@@ -55,6 +55,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
@@ -64,7 +65,6 @@ import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.All
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -151,13 +151,13 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final ReservationControllerImpl reservationController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
 
     @Inject
     public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactory dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
+            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
             PermissionController permissionController, FrameControllerList frameControllerList) throws RaplaException
     {

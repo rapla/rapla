@@ -14,6 +14,7 @@ import javax.swing.JWindow;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -23,7 +24,6 @@ import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.ClientFacade;
@@ -38,7 +38,7 @@ public class FilterEditButton extends RaplaGUIComponent
         
     private FilterEditButton(final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Logger logger,
             final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final RaplaImages raplaImages,
-            final DateFieldFactory dateFieldFactory, final BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory,
+            final DateFieldFactory dateFieldFactory, final BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory,
             final boolean isResourceSelection, final TextFieldFactory textFieldFactory, final LongFieldFactory longFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);
@@ -120,14 +120,14 @@ public class FilterEditButton extends RaplaGUIComponent
         private final RaplaImages raplaImages;
         private final DateFieldFactory dateFieldFactory;
         private final BooleanFieldFactory booleanFieldFactory;
-        private final DialogUiFactory dialogUiFactory;
+        private final DialogUiFactoryInterface dialogUiFactory;
         private final TextFieldFactory textFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
         @Inject
         public FilterEditButtonFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
                  RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
-                BooleanFieldFactory booleanFieldFactory, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory,
+                BooleanFieldFactory booleanFieldFactory, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory,
                 LongFieldFactory longFieldFactory)
         {
             super();

@@ -9,6 +9,7 @@ import javax.inject.Singleton;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.swing.InfoFactory;
@@ -17,7 +18,6 @@ import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.All
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -41,7 +41,7 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     private final ReservationController reservationController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final ReservationInfoEditFactory reservationInfoEditFactory;
     private final AppointmentListEditFactory appointmentListEditFactory;
     private final AllocatableSelectionFactory allocatableSelectionFactory;
@@ -51,7 +51,7 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     @Inject
     public ReservationEditFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentStatusFactory> list,
              ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages,
-            DialogUiFactory dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
+            DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
             AllocatableSelectionFactory allocatableSelectionFactory, PermissionController permissionController, FrameControllerList frameControllerList)
     {
         this.facade = facade;

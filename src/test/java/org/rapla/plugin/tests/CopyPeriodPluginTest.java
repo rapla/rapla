@@ -20,6 +20,7 @@ import javax.inject.Provider;
 
 import org.rapla.RaplaResources;
 import org.rapla.RaplaTestCase;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -96,7 +97,7 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         RaplaResources raplaResources = rr;
         final RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
-        DialogUiFactory dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList, logger );
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList, logger );
         BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
         IOInterface t = new DefaultIO(logger);
         Provider<CopyDialog> copyDialogProvider = new Provider<CopyDialog>(){

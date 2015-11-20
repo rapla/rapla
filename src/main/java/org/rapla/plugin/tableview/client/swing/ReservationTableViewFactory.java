@@ -20,13 +20,13 @@ import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
@@ -51,7 +51,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final IntervalChooserPanel dateChooser;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final Logger logger;
     private final RaplaLocale raplaLocale;
@@ -64,7 +64,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
             ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages,
-            IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
+            IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
             RaplaMenuBarContainer menuBar)
     {
         this.facade = facade;

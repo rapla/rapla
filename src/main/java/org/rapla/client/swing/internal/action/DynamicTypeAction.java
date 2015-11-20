@@ -15,11 +15,11 @@ import java.awt.Component;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
@@ -31,7 +31,7 @@ public class DynamicTypeAction extends  RaplaObjectAction {
 	String classificationType;
 
     public DynamicTypeAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PopupContext popupContext, EditController editController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactory dialogUiFactory, PermissionController permissionController)
+            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController)
     {
         super(facade, i18n, raplaLocale, logger, popupContext, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
     }

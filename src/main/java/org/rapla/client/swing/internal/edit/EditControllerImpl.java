@@ -29,10 +29,10 @@ import javax.swing.JComponent;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Reservation;
@@ -55,13 +55,13 @@ public class EditControllerImpl implements
 	private final RaplaResources i18n;
 	private final ClientFacade facade;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaLocale raplaLocale;
     private final Logger logger; 
 
 	@Inject
     public EditControllerImpl(Map<String, Provider<EditComponent>> editUiProviders, ReservationController controller, RaplaResources i18n, ClientFacade facade,
-            RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+            RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
 	{
 		this.editUiProviders = editUiProviders;
 		this.reservationController = controller;

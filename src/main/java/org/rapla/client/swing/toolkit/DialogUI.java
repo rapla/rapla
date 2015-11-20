@@ -42,6 +42,7 @@ import javax.swing.LayoutFocusTraversalPolicy;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.BundleManager;
@@ -53,6 +54,8 @@ import org.rapla.entities.DependencyException;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.RaplaConnectException;
@@ -106,10 +109,6 @@ public class DialogUI extends JDialog
             return component;
         Container owner = component.getParent();
         return getOwnerWindow(owner);
-    }
-
-    private static String[] getDefaultOptions() {
-        return new String[] {"OK"};
     }
 
     public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Dialog parent) throws RaplaException {
@@ -445,7 +444,8 @@ public class DialogUI extends JDialog
     }
     
     @Singleton
-    public static class DialogUiFactory
+    @DefaultImplementation(context=InjectionContext.swing, of=DialogUiFactoryInterface.class)
+    public static class DialogUiFactory implements DialogUiFactoryInterface
     {
         private final RaplaResources i18n;
         private final RaplaImages images;
@@ -463,12 +463,16 @@ public class DialogUI extends JDialog
             this.logger = logger;
         }
 
-        public RaplaImages getImages()
+        private RaplaImages getImages()
         {
             return images;
         }
 
-        public DialogInterface create(PopupContext popupContext, boolean modal, JComponent content, String[] options) throws RaplaException
+        /* (non-Javadoc)
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, javax.swing.JComponent, java.lang.String[])
+         */
+        @Override
+        public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options) throws RaplaException
         {
             DialogUI dlg;
             Component parent = SwingPopupContext.extractParent(popupContext);
@@ -479,10 +483,14 @@ public class DialogUI extends JDialog
                 dlg = new DialogUI(i18n, images, bundleManager, frameList, (Frame) topLevel);
             
             dlg.parent = parent;
-            dlg.init(modal, content, options);
+            dlg.init(modal, (JComponent)content, options);
             return dlg;
         }
 
+        /* (non-Javadoc)
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, java.lang.String, java.lang.String, java.lang.String[])
+         */
+        @Override
         public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text, String[] options) throws RaplaException
         {
             DialogUI dlg = (DialogUI) create(popupContext, modal, new JPanel(), options);
@@ -491,29 +499,36 @@ public class DialogUI extends JDialog
             return dlg;
         }
 
+        /* (non-Javadoc)
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, java.lang.String, java.lang.String)
+         */
+        @Override
         public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException
         {
-            DialogUI dlg = (DialogUI) create(popupContext, modal, title, text, getDefaultOptions());
+            DialogUI dlg = (DialogUI) create(popupContext, modal, title, text, DialogUiFactoryInterface.getDefaultOptions());
             dlg.useDefaultOptions = true;
             return dlg;
         }
 
-        /** Creates a new ErrorDialog with the specified owner and displays the exception
-        @param ex the exception that should be displayed.
-        @param owner the exception that should be displayed. Can be null, but providing
-        a parent-component will lead to a more appropriate display.
-        */
+        /* (non-Javadoc)
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showException(java.lang.Throwable, org.rapla.client.PopupContext)
+         */
+        @Override
         public void showException(Throwable ex, PopupContext popupContext)
         {
             showException(ex, popupContext, i18n, getImages(), logger);
         }
 
+        /* (non-Javadoc)
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showError(java.lang.Exception, org.rapla.client.PopupContext)
+         */
+        @Override
         public void showError(Exception ex, PopupContext context)
         {
             showException(ex, context);
         }
 
-        public void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
+        private void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
         {
             Component owner = SwingPopupContext.extractParent(popupContext);
             if (ex instanceof RaplaConnectException)
@@ -552,7 +567,7 @@ public class DialogUI extends JDialog
                 {
                     dialog.showWarningDialog(getHTML((DependencyException) ex), owner);
                 }
-                else if (isWarningOnly(ex))
+                else if (DialogUiFactoryInterface.isWarningOnly(ex))
                 {
                     dialog.showWarningDialog(ex.getMessage(), owner);
                 }
@@ -569,12 +584,6 @@ public class DialogUI extends JDialog
             {
                 logger.error(ex2.getMessage(), ex2);
             }
-        }
-
-        static public boolean isWarningOnly(Throwable ex)
-        {
-            return ex instanceof RaplaNewVersionException || ex instanceof RaplaSecurityException || ex instanceof WrongRaplaVersionException
-                    || ex instanceof RaplaConnectException;
         }
 
         static private String getHTML(DependencyException ex)
@@ -602,13 +611,16 @@ public class DialogUI extends JDialog
             return buf.toString();
         }
 
-        /** Creates a new ErrorDialog with the specified owner and displays the waring */
+        /* (non-Javadoc)
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showWarning(java.lang.String, org.rapla.client.PopupContext)
+         */
+        @Override
         public void showWarning(String warning, PopupContext popupContext)
         {
             showWarning(warning, popupContext, i18n, getImages(), logger);
         }
 
-        public void showWarning(String warning, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
+        private void showWarning(String warning, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
         {
             try
             {

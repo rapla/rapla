@@ -35,10 +35,10 @@ import javax.swing.table.DefaultTableModel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.MultiLanguageName;
@@ -56,18 +56,18 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     MultiLanguageEditorDialog editorDialog;
 
     String[] availableLanguages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final IOInterface ioInterface;
 
     private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
-            IOInterface ioInterface, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory, String fieldName)
+            IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, String fieldName)
     {
         this(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory);
         setFieldName(fieldName);
     }
 
     private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
-            IOInterface ioInterface, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory)
+            IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.ioInterface = ioInterface;
@@ -263,13 +263,13 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final RaplaImages raplaImages;
-        private final DialogUiFactory dialogUiFactory;
+        private final DialogUiFactoryInterface dialogUiFactory;
         private final TextFieldFactory textFieldFactory;
         private final IOInterface ioInterface;
 
         @Inject
         public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
-                DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
+                DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
         {
             this.facade = facade;
             this.i18n = i18n;

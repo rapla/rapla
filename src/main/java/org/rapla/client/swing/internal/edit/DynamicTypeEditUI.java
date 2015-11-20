@@ -30,6 +30,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -42,7 +43,6 @@ import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -101,10 +101,10 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     AnnotationEditUI annotationEdit;
     DialogInterface dialog;
     PermissionListField permissionListField;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactory dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaException {
+    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
         annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, annotationExtensions);

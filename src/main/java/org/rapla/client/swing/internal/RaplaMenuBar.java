@@ -42,6 +42,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -65,7 +66,6 @@ import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.internal.view.LicenseInfoUI;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -96,7 +96,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     JMenuItem templateEdit;
     private final EditController editController;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final TemplateEditFactory templateEditFactory;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
 
@@ -114,7 +114,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             UserClientService clientService,
             RestartServer restartServerService,
             RaplaImages raplaImages, 
-            DialogUiFactory dialogUiFactory,
+            DialogUiFactoryInterface dialogUiFactory,
             TemplateEditFactory templateEditFactory,
             Provider<LicenseInfoUI> licenseInfoUIProvider,
             ReservationEditFactory editFactory,

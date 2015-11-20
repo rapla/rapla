@@ -43,6 +43,7 @@ import javax.swing.RepaintManager;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
@@ -52,7 +53,6 @@ import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -99,7 +99,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final ReservationController reservationController;
     protected final InfoFactory infoFactory;
     protected final RaplaImages raplaImages;
-    protected final DialogUiFactory dialogUiFactory;
+    protected final DialogUiFactoryInterface dialogUiFactory;
     protected final PermissionController permissionController;
     protected final AppointmentFormater appointmentFormater;
     private final boolean printing;
@@ -107,7 +107,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
+            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController,
             IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);

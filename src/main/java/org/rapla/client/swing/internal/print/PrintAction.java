@@ -21,11 +21,11 @@ import javax.inject.Provider;
 import javax.swing.SwingUtilities;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
@@ -37,9 +37,9 @@ public class PrintAction extends RaplaAction {
     PageFormat m_pageFormat;
     final Map<String,SwingViewFactory> factoryMap;
     private final Provider<CalendarPrintDialog> calendarPringDialogProvider;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactory dialogUiFactory) {
+    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.factoryMap = factoryMap;
         this.calendarPringDialogProvider = calendarPringDialogProvider;

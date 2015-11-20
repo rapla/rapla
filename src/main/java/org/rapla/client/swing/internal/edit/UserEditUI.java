@@ -33,6 +33,7 @@ import javax.swing.tree.TreePath;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.TreeFactory;
@@ -43,7 +44,6 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Category;
@@ -81,13 +81,13 @@ public class UserEditUI  extends AbstractEditUI<User> {
     GroupListField groupField;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     /**
      * @param context
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws RaplaException {
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;

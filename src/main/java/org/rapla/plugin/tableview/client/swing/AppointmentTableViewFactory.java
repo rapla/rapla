@@ -21,6 +21,7 @@ import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
@@ -29,7 +30,6 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
@@ -57,7 +57,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final IntervalChooserPanel dateChooser;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final ClientFacade facade;
     private final RaplaResources i18n;
@@ -69,7 +69,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     @Inject
     public AppointmentTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController, IOInterface ioInterface,
             RaplaMenuBarContainer menuBar)
     {
         this.facade = facade;

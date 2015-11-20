@@ -29,10 +29,10 @@ import javax.swing.ListSelectionModel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
@@ -43,11 +43,11 @@ public class ExportServiceList   {
 
     HashMap<Object,ExportService> exporters = new HashMap<Object,ExportService>();
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
 
     @Inject
-    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         this.i18n = i18n;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;

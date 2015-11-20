@@ -2,6 +2,7 @@ package org.rapla.plugin.tableview.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
@@ -12,7 +13,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
@@ -95,7 +95,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
     private final RaplaImages raplaImages;
 
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     private final PermissionController permissionController;
 
@@ -106,7 +106,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     public SwingReservationTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions, final boolean editable, boolean printing,
             TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
-            final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory,
+            final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory,
             PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -36,7 +37,6 @@ import org.rapla.client.swing.internal.edit.fields.SetGetCollectionField;
 import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -57,7 +57,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
     private final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
     private final BooleanFieldFactory booleanFieldFactory;
     private final TextFieldFactory textFieldFactory;
@@ -74,7 +74,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController) {
+    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController) {
 		super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;

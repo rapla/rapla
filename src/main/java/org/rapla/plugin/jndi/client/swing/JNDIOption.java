@@ -35,12 +35,12 @@ import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
@@ -79,13 +79,13 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 	
 	GroupListField groupField;
 	JNDIConfig configService;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final Provider<GroupListField> groupListFieldProvider;
     private final RaplaResources raplaResources;
     private final IOInterface ioInterface;
 
     @Inject
-    public JNDIOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactory dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
+    public JNDIOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
         super(facade, i18n, raplaLocale, logger);
         this.raplaResources = raplaResources;
         this.configService = config;

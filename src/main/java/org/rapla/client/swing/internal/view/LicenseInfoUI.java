@@ -24,9 +24,9 @@ import javax.swing.event.HyperlinkListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
@@ -46,11 +46,11 @@ final public class LicenseInfoUI
 {
     JScrollPane scrollPane;
     HTMLView license;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final Provider<LicenseUI> licenseUiProvider;
 
     @Inject
-    public LicenseInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactory dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaException  {
+    public LicenseInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaException  {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
         this.licenseUiProvider = licenseUiProvider;

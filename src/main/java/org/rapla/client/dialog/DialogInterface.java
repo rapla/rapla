@@ -11,7 +11,7 @@ public interface DialogInterface
     int getSelectedIndex();
     void setTitle(String createTitle);
     void setIcon(String iconKey);
-    void setSize(int width, int heigth);
+    void setSize(int width, int height);
     void close();
     boolean isVisible();
     void setPosition(double x, double y);

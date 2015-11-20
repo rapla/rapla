@@ -12,10 +12,10 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -64,10 +64,10 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
     //private JCheckBox chkAlwaysPrivate;
     ExchangeConnectorConfigRemote configService;
     private final ExchangeConnectorResources exchangeConnectorResources;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public ExchangeConnectorAdminOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorConfigRemote configService, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactory dialogUiFactory) {
+    public ExchangeConnectorAdminOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorConfigRemote configService, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.configService = configService;
         this.exchangeConnectorResources = exchangeConnectorResources;

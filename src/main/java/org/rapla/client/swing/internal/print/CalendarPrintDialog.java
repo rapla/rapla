@@ -42,6 +42,7 @@ import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
@@ -161,7 +162,7 @@ public class CalendarPrintDialog extends DialogUI
     };
 
 
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     private final Provider<ErrorDialog> errorDialogProvider;
 
@@ -170,7 +171,7 @@ public class CalendarPrintDialog extends DialogUI
     private final Logger logger;
 
     @Inject
-    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactory dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
         super(i18n, raplaImages, bundleManager, frameList, owner);
         this.raplaLocale = raplaLocale;
         this.logger = logger;

@@ -45,10 +45,10 @@ import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
 import org.rapla.components.util.Tools;
@@ -71,17 +71,17 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     boolean multipleValues = false;
     boolean multipleSelectionPossible = false;
     private final TreeFactory treeFactory;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
   
     public RaplaButton getButton() {
         return selectButton;
     }
 
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory){
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory){
        this( facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, null);
     }
     
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, T defaultValue) {
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;

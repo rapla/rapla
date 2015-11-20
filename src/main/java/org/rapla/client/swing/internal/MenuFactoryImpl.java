@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.UserClientService;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
@@ -28,7 +29,6 @@ import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -92,10 +92,10 @@ public class MenuFactoryImpl extends RaplaGUIComponent implements MenuFactory
     private EditController editController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, UserClientService service,InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, PermissionController permissionController, CalendarSelectionModel model, UserClientService service,InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;

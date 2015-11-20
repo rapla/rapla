@@ -14,6 +14,7 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
@@ -30,7 +31,6 @@ import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -90,10 +90,10 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final EditController editController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final RaplaMenuBarContainer menuBar;
-	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
+	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
 
         this.menuBar = menuBar;
@@ -366,7 +366,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         private final InfoFactory infoFactory;
         private final RaplaImages raplaImages;
         private final DateFieldFactory dateFieldFactory;
-        private final DialogUiFactory dialogUiFactory;
+        private final DialogUiFactoryInterface dialogUiFactory;
         private final BooleanFieldFactory booleanFieldFactory;
         private final PermissionController permissionController;
         private final TextFieldFactory textFieldFactory;
@@ -377,7 +377,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         @Inject
         public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
                 TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory,
-                RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
+                RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
                 PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
         {

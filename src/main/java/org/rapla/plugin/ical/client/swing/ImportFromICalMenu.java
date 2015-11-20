@@ -37,12 +37,12 @@ import javax.swing.border.BevelBorder;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.TreeAllocatableSelection;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.iolayer.FileContent;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -77,9 +77,9 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
     private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 	@Inject
-	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources,RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources,RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
 	{
 		super(facade, i18n, raplaLocale, logger);
 		this.importService = importService;

@@ -27,13 +27,13 @@ import javax.inject.Inject;
 import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.StartActivityEvent;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
@@ -60,10 +60,10 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 	private final PermissionController permissionController;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final EventBus eventBus;
     @Inject
-	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, CalendarModel model, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, EventBus eventBus){
+	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = permissionController;
         this.model = model;

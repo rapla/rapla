@@ -32,6 +32,7 @@ import javax.swing.JLabel;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
@@ -39,7 +40,6 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.CalendarView;
@@ -77,7 +77,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     public SwingCompactDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
             boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
             RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, PermissionController permissionController,
+            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController,
             IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,

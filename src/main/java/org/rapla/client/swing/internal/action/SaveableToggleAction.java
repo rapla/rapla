@@ -12,9 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
@@ -25,9 +25,9 @@ public class SaveableToggleAction extends RaplaAction {
 	
    TypedComponentRole<Boolean> configEntry;
    String name;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
    
-   public SaveableToggleAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,String name,TypedComponentRole<Boolean> configEntry, DialogUiFactory dialogUiFactory)  
+   public SaveableToggleAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,String name,TypedComponentRole<Boolean> configEntry, DialogUiFactoryInterface dialogUiFactory)  
    {
         super(facade, i18n, raplaLocale, logger);
         this.name = name;

@@ -27,13 +27,13 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
@@ -59,9 +59,9 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     private final EditControllerImpl editController;
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
-    public EditDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+    public EditDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.ui = ui;

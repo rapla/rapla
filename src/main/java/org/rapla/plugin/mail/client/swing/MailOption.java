@@ -27,12 +27,12 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.iolayer.IOInterface;
@@ -69,11 +69,11 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 	Preferences preferences;
 	MailConfigService configService;
 	Configuration config;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final TextFieldFactory textFieldFactory;
     private final IOInterface ioInterface;
 	@Inject
-    public MailOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,MailConfigService mailConfigService, DialogUiFactory dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)   
+    public MailOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,MailConfigService mailConfigService, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)   
     {
         super(facade, i18n, raplaLocale, logger);
         this.configService = mailConfigService;

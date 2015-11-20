@@ -40,11 +40,11 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -76,10 +76,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 	Collection<Conflict> conflicts;
 	Listener listener = new Listener();
     private final TreeFactory treeFactory;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
 	 
-    public ConflictSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,final MultiCalendarView view, final CalendarSelectionModel model, TreeFactory treeFactory, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public ConflictSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,final MultiCalendarView view, final CalendarSelectionModel model, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
         this.view = view;

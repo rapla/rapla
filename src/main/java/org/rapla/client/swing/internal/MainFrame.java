@@ -31,9 +31,9 @@ import javax.swing.JPanel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.entities.User;
@@ -59,9 +59,9 @@ public class MainFrame extends RaplaGUIComponent
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
     private final FrameControllerList frameControllerList;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public MainFrame(RaplaMenuBarContainer menuBarContainer,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactory dialogUiFactory) throws RaplaException {
+    public MainFrame(RaplaMenuBarContainer menuBarContainer,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;

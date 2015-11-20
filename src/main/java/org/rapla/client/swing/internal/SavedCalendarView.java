@@ -33,6 +33,7 @@ import javax.swing.event.ListSelectionListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
@@ -42,7 +43,6 @@ import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -166,7 +166,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 
     private final RaplaImages raplaImages;
 
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     private final IOInterface ioInterface;
     
@@ -224,7 +224,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     
     public SavedCalendarView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
             final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) throws RaplaException {
+            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.extensionFactories = extensionFactories;
         this.environment = environment;

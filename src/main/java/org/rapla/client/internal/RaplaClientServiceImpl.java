@@ -39,12 +39,12 @@ import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListener;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.MainFrame;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.components.i18n.BundleManager;
@@ -92,7 +92,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 	static boolean lookAndFeelSet;
     final Logger logger;
     final StartupEnvironment env;
-    final DialogUiFactory dialogUiFactory;
+    final DialogUiFactoryInterface dialogUiFactory;
     final ClientFacade facade;
     final RaplaLocale raplaLocale;
     final BundleManager bundleManager;
@@ -103,7 +103,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     final private Provider<CalendarSelectionModel> calendarModel;
     final private Provider<Set<ClientExtension>> clientExtensions;
     @Inject
-	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactory dialogUiFactory, ClientFacade facade, RaplaResources i18n,
+	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
             FrameControllerList frameControllerList, RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
             RaplaImages raplaImages, Provider<MainFrame> mainFrameProvider, Provider<RaplaFrame> raplaFrameProvider, Provider<CalendarSelectionModel> calendarModel,
             Provider<Set<ClientExtension>> clientExtensions) {
@@ -542,13 +542,13 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                         if ( !success )
                         {
                             dlg.resetPassword();
-                            dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null), i18n, raplaImages, logger);
+                            dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
                         }
                     } 
                     catch (RaplaException ex) 
                     {
                         dlg.resetPassword();
-                        dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null), i18n, raplaImages, logger);
+                        dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
                     }
                     if ( success) {
                         dlg.close();
@@ -556,7 +556,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                         try {
                             beginRaplaSession();
                         } catch (Throwable ex) {
-                            dialogUiFactory.showException(ex, null, i18n, raplaImages, logger);
+                            dialogUiFactory.showException(ex, null);
                             fireClientAborted();
                         }
                     } // end of else

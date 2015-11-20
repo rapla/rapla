@@ -17,11 +17,11 @@ import java.util.Date;
 import java.util.List;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -38,10 +38,10 @@ public class CalendarAction extends RaplaAction {
     Component parent;
     Date start;
     private final MultiCalendarViewFactory multiCalendarViewFactory;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final FrameControllerList frameControllerList;
 
-    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactory dialogUiFactory, FrameControllerList frameControllerList)
+    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, MultiCalendarViewFactory multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory, FrameControllerList frameControllerList)
     {
         super(facade, i18n, raplaLocale, logger);
         this.multiCalendarViewFactory = multiCalendarViewFactory;

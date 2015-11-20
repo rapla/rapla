@@ -27,6 +27,7 @@ import javax.swing.AbstractAction;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.AllocatableInfoUI;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.CategoryInfoUI;
@@ -40,7 +41,6 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
@@ -74,10 +74,10 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
     private final IOInterface ioInterface;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public InfoFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public InfoFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.ioInterface = ioInterface;
         this.raplaImages = raplaImages;

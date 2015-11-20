@@ -22,13 +22,13 @@ import javax.swing.tree.TreeSelectionModel;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Entity;
@@ -59,9 +59,9 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     TreeFactory treeFactory;
     RaplaGUIComponent old;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public SetOwnerMenuFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, SetOwnerResources setOwnerI18n, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)
+    public SetOwnerMenuFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, SetOwnerResources setOwnerI18n, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         this.setOwnerI18n = setOwnerI18n;
         this.raplaImages = raplaImages;

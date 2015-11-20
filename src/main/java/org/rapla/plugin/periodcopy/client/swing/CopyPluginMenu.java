@@ -27,12 +27,12 @@ import javax.swing.JMenuItem;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
@@ -55,9 +55,9 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     private final PeriodCopyResources periodCopyI18n;
     private final Provider<CopyDialog> copyDialogProvider;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 	@Inject
-    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages, DialogUiFactory dialogUiFactory)  {
+    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)  {
         super(facade, i18n, raplaLocale, logger);
         //menu.insert( new RaplaSeparator("info_end"));
         this.periodCopyI18n = periodCopyI18n;

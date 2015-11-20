@@ -13,6 +13,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.ReservationControllerImpl;
@@ -20,7 +21,6 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
@@ -39,11 +39,11 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     private final RaplaGUIComponent wrapper;
     private final RaplaImages images;
     private final Provider<Set<EventCheck>> checkers;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     
     @Inject
     public ReservationControllerSwingImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Provider<Set<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactory dialogUiFactory)
+            AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Provider<Set<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images, PermissionController permissionController, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard, permissionController);
         this.infoFactory = infoFactory;
@@ -64,16 +64,14 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     protected int showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content, String dialogIcon) throws RaplaException
     {
         Point point = null;
-        Component parent = null;
         if ( popupContext instanceof SwingPopupContext)
         {
             SwingPopupContext casted = (SwingPopupContext)popupContext;
             point = casted.getPoint();
-            parent = casted.getParent();
         }
 
         DialogInterface dialog = dialogUiFactory.create(
-                new SwingPopupContext(parent, null)
+                popupContext
                 ,true
                 ,title
                 ,content

@@ -16,10 +16,10 @@ import java.awt.Component;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
@@ -33,9 +33,9 @@ public class PasswordChangeAction extends RaplaAction {
     Object object;
     PopupContext popupContext;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
-    public PasswordChangeAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public PasswordChangeAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
         this.raplaImages = raplaImages;

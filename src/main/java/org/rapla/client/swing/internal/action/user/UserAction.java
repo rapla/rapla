@@ -14,11 +14,11 @@ package org.rapla.client.swing.internal.action.user;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.UserClientService;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -34,9 +34,9 @@ public class UserAction extends RaplaAction {
     private final UserClientService service;
     private final EditController editController;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
-    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, UserClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, UserClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
         this.service = service;

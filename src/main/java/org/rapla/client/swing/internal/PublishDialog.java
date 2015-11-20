@@ -31,11 +31,11 @@ import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -51,10 +51,10 @@ public class PublishDialog extends RaplaGUIComponent
 	private final Set<PublishExtensionFactory> extensionFactories;
 	PublishExtension addressCreator= null;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     StartupEnvironment environment;
 
-    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) throws RaplaException
+    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.environment = environment;

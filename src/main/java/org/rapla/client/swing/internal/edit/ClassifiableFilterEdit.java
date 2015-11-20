@@ -45,6 +45,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -64,7 +65,6 @@ import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
@@ -101,13 +101,13 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     final RaplaButton  nothingButton = new RaplaButton(RaplaButton.SMALL);
     final TreeFactory treeFactory;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
     private final BooleanFieldFactory booleanFieldFactory;
     private final TextFieldFactory textFieldFactory;
     private final LongFieldFactory longFieldFactory;
     
-    public ClassifiableFilterEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactory dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
+    public ClassifiableFilterEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, boolean isResourceSelection, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
@@ -396,13 +396,13 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
     JScrollPane pane;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
     private final BooleanFieldFactory booleanFieldFactory;
     private final TextFieldFactory textFieldFactory;
     private final LongFieldFactory longFieldFactory;
     
-    ClassificationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactory dialogUiFactory,JScrollPane pane, DateFieldFactory dateFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory){
+    ClassificationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,JScrollPane pane, DateFieldFactory dateFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory){
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;

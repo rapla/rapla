@@ -46,10 +46,10 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.DateRenderer;
@@ -99,9 +99,9 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     AppointmentFormater appointmentFormater;
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactory dialogUiFactory, IOInterface ioInterface)
+	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
 			throws RaplaException {
 		super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
@@ -602,13 +602,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         private final ReservationController reservationController;
         private final RaplaImages raplaImages;
         private final DateRenderer dateRenderer;
-        private final DialogUiFactory dialogUiFactory;
+        private final DialogUiFactoryInterface dialogUiFactory;
         private final IOInterface ioInterface;
 
         @Inject
         public AppointmentListEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, ReservationController reservationController, RaplaImages raplaImages, DateRenderer dateRenderer,
-                DialogUiFactory dialogUiFactory, IOInterface ioInterface)
+                DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
         {
             super();
             this.facade = facade;

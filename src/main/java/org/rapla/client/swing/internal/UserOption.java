@@ -30,6 +30,7 @@ import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -37,7 +38,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -70,11 +70,11 @@ public class UserOption extends RaplaGUIComponent
 
     private final RaplaImages raplaImages;
 
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     private final IOInterface ioInterface;
 	@Inject
-    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, IOInterface ioInterface) {
+    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) {
         super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;

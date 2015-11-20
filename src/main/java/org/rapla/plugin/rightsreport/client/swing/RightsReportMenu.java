@@ -10,12 +10,12 @@ import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -30,10 +30,10 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
 	private RaplaMenuItem report;
 	final String name = getString("user") +"/"+ getString("groups") + " "+getString("report") ;
     private final Provider<RaplaRightsReport> rightsReportProvider;
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
 	@Inject
-	public RightsReportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Provider<RaplaRightsReport> rightsReportProvider, RaplaImages raplaImages, DialogUiFactory dialogUiFactory) {
+	public RightsReportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Provider<RaplaRightsReport> rightsReportProvider, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
 		super(facade, i18n, raplaLocale, logger);
         this.rightsReportProvider = rightsReportProvider;
         this.dialogUiFactory = dialogUiFactory;

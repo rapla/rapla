@@ -3,6 +3,7 @@ package org.rapla.plugin.tableview.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
@@ -15,7 +16,6 @@ import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.DisabledGlassPane;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -102,7 +102,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
     private final RaplaImages raplaImages;
 
-    private final DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     private final PermissionController permissionController;
 
@@ -113,7 +113,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     SwingAppointmentTableView(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, boolean printing, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
             CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactory dialogUiFactory, PermissionController permissionController, IOInterface ioInterface) throws RaplaException
+            RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = menuBar;
