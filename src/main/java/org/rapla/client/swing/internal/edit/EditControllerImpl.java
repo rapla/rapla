@@ -18,62 +18,49 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.swing.JComponent;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.EditComponent;
+import org.rapla.client.dialog.EditDialogFactoryInterface;
+import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.swing.EditController;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 /** This class handles the edit-ui for all entities (except reservations). */
 
-@DefaultImplementation(of=EditController.class, context = InjectionContext.swing)
+@DefaultImplementation(of=EditController.class, context = InjectionContext.client)
 @Singleton
 public class EditControllerImpl implements
 		EditController {
-	Collection<EditDialog<?>> editWindowList = new ArrayList<EditDialog<?>>();
-	private Map<String,Provider<EditComponent>> editUiProviders;
+	Collection<EditDialogInterface<?>> editWindowList = new ArrayList<EditDialogInterface<?>>();
+	private final EditDialogFactoryInterface editDialogFactory;
 	private final ReservationController reservationController;
-	private final RaplaResources i18n;
 	private final ClientFacade facade;
-    private final RaplaImages raplaImages;
-    private final DialogUiFactoryInterface dialogUiFactory;
-    private final RaplaLocale raplaLocale;
-    private final Logger logger; 
+    private final RaplaResources i18n;
 
-	@Inject
-    public EditControllerImpl(Map<String, Provider<EditComponent>> editUiProviders, ReservationController controller, RaplaResources i18n, ClientFacade facade,
-            RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
-	{
-		this.editUiProviders = editUiProviders;
-		this.reservationController = controller;
-		this.i18n = i18n;
-		this.facade = facade;
-        this.raplaLocale = raplaLocale;
-        this.logger = logger;
-        this.raplaImages = raplaImages;
-        this.dialogUiFactory = dialogUiFactory;
-	}
+    @Inject
+	public EditControllerImpl(EditDialogFactoryInterface editDialogFactory, ReservationController reservationController,
+            ClientFacade facade, RaplaResources i18n)
+    {
+        super();
+        this.editDialogFactory = editDialogFactory;
+        this.reservationController = reservationController;
+        this.facade = facade;
+        this.i18n = i18n;
+    }
 
-	@Override
+    @Override
 	public <T extends Entity> void edit(T obj, PopupContext popupContext) throws RaplaException {
         String title = null;
         boolean createNew=false;
@@ -126,29 +113,12 @@ public class EditControllerImpl implements
 	}
 
 
-	void addEditDialog(EditDialog<?> editWindow) {
+	void addEditDialog(EditDialogInterface editWindow) {
 		editWindowList.add(editWindow);
 	}
 
-	void removeEditDialog(EditDialog<?> editWindow) {
+	void removeEditDialog(EditDialogInterface editWindow) {
 		editWindowList.remove(editWindow);
-	}
-
-
-	@SuppressWarnings("unchecked")
-    private <T extends Entity> EditComponent<T,JComponent> createUI(T obj) throws RaplaException {
-		RaplaType type = obj.getRaplaType();
-		final String id = type.getTypeClass().getName();
-		final Provider<EditComponent> editComponentProvider = editUiProviders.get(id);
-		if ( editComponentProvider != null)
-		{
-			EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)editComponentProvider.get();
-			return ui;
-		}
-		else
-		{
-			throw new RuntimeException("Can't edit objects of type " + type.toString());
-		}
 	}
 
 //	enhancement of the method to deal with arrays
@@ -212,11 +182,11 @@ public class EditControllerImpl implements
                  return;
              }
              // Lookup if the entity (not a reservation) is already beeing edited
-             EditDialog<?> c = null;
-             Iterator<EditDialog<?>> it = editWindowList.iterator();
+             EditDialogInterface c = null;
+             Iterator<EditDialogInterface<?>> it = editWindowList.iterator();
              while (it.hasNext()) {
                  c =  it.next();
-                 List<?> editObj = c.ui.getObjects();
+                 List<?> editObj = c.getObjects();
                  if (editObj != null && editObj.size() == 1 )
                  {
                      Object first = editObj.get(0);
@@ -230,16 +200,15 @@ public class EditControllerImpl implements
 
              if (c != null)
              {
-                 c.dlg.requestFocus();
-                 c.dlg.toFront();
+                 c.getDialog().requestFocus();
+                 c.getDialog().toFront();
                  return;
              }
          }
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
     	Collection<T> toEdit = facade.edit(list);
     	if (toEdit.size() > 0) {
-        	EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)createUI(toEdit.iterator().next());
-        	EditDialog<T> gui = new EditDialog<T>(facade, i18n, raplaLocale, logger, ui, this, reservationController, raplaImages, dialogUiFactory);
+        	EditDialogInterface<T> gui = editDialogFactory.create(this);
             gui.start(toEdit, title, popupContext, createNew, callback);
         }
     }

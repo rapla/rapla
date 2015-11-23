@@ -19,6 +19,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -28,17 +31,19 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.EditDialogFactoryInterface;
+import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -49,22 +54,25 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
-public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable
+public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable, EditDialogInterface<T>
 {
-    DialogInterface dlg;
+    private DialogInterface dlg;
     boolean bSaving = false;
-    EditComponent<T, JComponent> ui;
     private Collection<T> originals;
     private final EditControllerImpl editController;
     private final ReservationController reservationController;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
+    private final Map<String, Provider<EditComponent>> editUiProvider;
+    private EditComponent<T, JComponent> ui;
 
-    public EditDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditComponent<T, JComponent> ui, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+    public EditDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, Provider<EditComponent>> editUiProvider, EditController editController, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
-        this.ui = ui;
+        this.editUiProvider = editUiProvider;
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -76,9 +84,11 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         return editController;
     }
 
+    @Override
     public void start(Collection<T> editObjects, String title, PopupContext popupContext, boolean isNew, EditController.EditCallback<List<T>> callback)
             throws RaplaException
     {
+        ui = createUI(editObjects.iterator().next());
         // sets for every object in this array an edit item in the logfile
         originals = new ArrayList<T>();
         Map<T, T> persistant = getModification().getPersistant(editObjects);
@@ -141,6 +151,39 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 
         }
     }
+    
+    @Override
+    public DialogInterface getDialog()
+    {
+        return dlg;
+    }
+    
+    @Override
+    public List<?> getObjects()
+    {
+        if(ui == null)
+        {
+            return null;
+        }
+        return ui.getObjects();
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Entity> EditComponent<T,JComponent> createUI(T obj) throws RaplaException {
+        RaplaType type = obj.getRaplaType();
+        final String id = type.getTypeClass().getName();
+        final Provider<EditComponent> editComponentProvider = editUiProvider.get(id);
+        if ( editComponentProvider != null)
+        {
+            EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)editComponentProvider.get();
+            return ui;
+        }
+        else
+        {
+            throw new RuntimeException("Can't edit objects of type " + type.toString());
+        }
+    }
+
 
     protected boolean shouldCancelOnModification(ModificationEvent evt)
     {
@@ -268,6 +311,42 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
     public void dispose()
     {
         getUpdateModule().removeModificationListener(this);
+    }
+
+    @Singleton
+    @DefaultImplementation(context=InjectionContext.swing, of=EditDialogFactoryInterface.class)
+    public static class EditDialogFactory implements EditDialogFactoryInterface
+    {
+        private final Map<String, Provider<EditComponent>> editUiProviders;
+        private final ClientFacade facade;
+        private final RaplaResources i18n;
+        private final RaplaLocale raplaLocale;
+        private final Logger logger;
+        private final ReservationController reservationController;
+        private final RaplaImages raplaImages;
+        private final DialogUiFactoryInterface dialogUiFactory;
+
+        @Inject
+        public EditDialogFactory(Map<String, Provider<EditComponent>> editUiProviders, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
+                Logger logger, ReservationController reservationController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+        {
+            super();
+            this.editUiProviders = editUiProviders;
+            this.facade = facade;
+            this.i18n = i18n;
+            this.raplaLocale = raplaLocale;
+            this.logger = logger;
+            this.reservationController = reservationController;
+            this.raplaImages = raplaImages;
+            this.dialogUiFactory = dialogUiFactory;
+        }
+
+        @Override
+        public EditDialogInterface create(EditController editController)
+        {
+            return new EditDialog(facade, i18n, raplaLocale, logger, editUiProviders, editController, reservationController, raplaImages, dialogUiFactory);
+        }
+
     }
 }
 
