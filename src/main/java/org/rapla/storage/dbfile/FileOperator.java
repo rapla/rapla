@@ -33,6 +33,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
@@ -65,71 +66,73 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /** Use this Operator to keep the data stored in an XML-File.
- * <p>Sample configuration:
- <pre>
- &lt;file-storage id="file">
- &lt;file>data.xml&lt;/file>
- &lt;encoding>utf-8&lt;/encoding>
- &lt;validate>no&lt;/validate>
- &lt;/facade>
- </pre>
- * <ul>
- *   <li>The file entry contains the path of the data file.
- *   If the path is not an absolute path it will be resolved
- *   relative to the location of the configuration file
- *   </li>
- *   <li>The encoding entry specifies the encoding of the xml-file.
- *   Currently only UTF-8 is tested.
- *   </li>
- *   <li>The validate entry specifies if the xml-file should be checked
- *    against a schema-file that is located under org/rapla/storage/xml/rapla.rng
- *    (Default is no)
- *   </li>
- * </ul>
- * </p>
- * <p>Note: The xmloperator doesn't check passwords.</p>
-
  @see AbstractCachableOperator
  @see org.rapla.storage.StorageOperator
  */
 final public class FileOperator extends LocalAbstractCachableOperator
 {
     protected URI storageURL;
-    //private URL loadingURL;
 
-    private final String encoding;
     protected boolean isConnected = false;
     final boolean includeIds = false;
+
+    static DefaultFileIO FileIO = new DefaultFileIO();
+
+    public static void setFileIO(DefaultFileIO fileIO)
+    {
+        FileIO = fileIO;
+    }
+    static  public class DefaultFileIO
+    {
+        public InputSource getInputSource(URI storageURL) throws IOException
+        {
+            return new InputSource(storageURL.toURL().toExternalForm().toString());
+        }
+
+        public void write(RaplaWriter writer, URI storageURL) throws IOException
+        {
+            final String encoding = "utf-8";
+            File storageFile = new File( storageURL);
+            final String newPath = storageFile.getPath() + ".new";
+            final String backupPath = storageFile.getPath() + ".bak";
+            final File newFile = new File(newPath);
+            try (OutputStream outNew = new FileOutputStream(newFile);)
+            {
+                BufferedWriter w = new BufferedWriter(new OutputStreamWriter(outNew, encoding));
+                writer.write(w);
+                w.flush();
+                w.close();
+                File parentFile = storageFile.getParentFile();
+                if (!parentFile.exists())
+                {
+                    parentFile.mkdirs();
+                }
+                moveFile(storageFile, backupPath);
+                moveFile(newFile, storageFile.getPath());
+            }
+        }
+
+        private void moveFile(File file, String newPath)
+        {
+            File backupFile = new File(newPath);
+            backupFile.delete();
+            file.renameTo(backupFile);
+        }
+
+    }
+
 
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
             PermissionController permissionController) throws RaplaException
     {
         super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionController);
-        //StartupEnvironment env =  context.lookupDeprecated( StartupEnvironment.class );
-
-        //        URL contextRootURL = env.getContextRootURL();
-        //
-        //        String datasourceName = config.getChild("datasource").getValue(null);
-        //        if ( datasourceName != null)
-        //        {
-        //        	String filePath;
-        //	        try {
-        //	        	 filePath = ContextTools.resolveContext(datasourceName, context );
-        //	        } catch (RaplaXMLContextException ex) {
-        //	        	filePath = "${context-root}/data.xml";
-        //	        	String message = "JNDI config raplafile is not found using '" + filePath + "' :"+ ex.getMessage() ;
-        //	        	getLogger().warn(message);
-        //	        }
-        //	        String 	resolvedPath = ContextTools.resolveContext(filePath, context);
         try
         {
             storageURL = new File(resolvedPath).getCanonicalFile().toURI();
@@ -138,7 +141,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             throw new RaplaException("Error parsing file '" + resolvedPath + "' " + e.getMessage());
         }
-        encoding = "utf-8";//config.getChild( "encoding" ).getValue( "utf-8" );
         //        boolean validate = config.getChild( "validate" ).getValueAsBoolean( false );
         //        if ( validate )
         //        {
@@ -170,7 +172,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
         initIndizes();
         isConnected = true;
         getLogger().debug("Connected");
-        return null;
+        final String username = connectInfo.getUsername();
+        final UserImpl user = cache.getUser(username);
+        if ( user == null)
+        {
+            throw new RaplaException("User " + username + " not found!");
+        }
+        return user;
     }
 
     final public boolean isConnected()
@@ -325,7 +333,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         ContentHandler contentHandler = new RaplaContentHandler(reader);
         try
         {
-            InputSource source = getInputSource();
+            InputSource source = FileIO.getInputSource(storageURL);
             XMLReader parser = XMLReaderAdapter.createXMLReader(false);
             RaplaErrorHandler errorHandler = new RaplaErrorHandler(getLogger().getChildLogger("reading"));
             parser.setContentHandler(contentHandler);
@@ -399,14 +407,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
         RaplaMainWriter raplaMainWriter = getMainWriter(cache, version, includeIds);
         try
         {
-            write(new Writer()
+            FileIO.write(new RaplaWriter()
             {
                 @Override public void write(BufferedWriter writer) throws IOException
                 {
-                    raplaMainWriter.setWriter( writer);
+                    raplaMainWriter.setWriter(writer);
                     raplaMainWriter.printContent();
                 }
-            });
+            }, storageURL);
         }
         catch (IOException e)
         {
@@ -417,12 +425,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
     /**
      * Override for custom read
      */
-    protected InputSource getInputSource() throws IOException
-    {
-        return new InputSource(storageURL.toURL().toExternalForm().toString());
-    }
 
-    public interface Writer
+    public interface RaplaWriter
     {
         void write(BufferedWriter writer) throws IOException;
     }
@@ -430,33 +434,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
     /**
      * Override for custom write
      */
-    protected void write(Writer writer) throws IOException
-    {
-        File storageFile = new File( this.storageURL);
-        final String newPath = storageFile.getPath() + ".new";
-        final String backupPath = storageFile.getPath() + ".bak";
-        final File newFile = new File(newPath);
-        try (OutputStream outNew = new FileOutputStream(newFile);)
-        {
-            BufferedWriter w = new BufferedWriter(new OutputStreamWriter(outNew, encoding));
-            writer.write(w);
-            File parentFile = storageFile.getParentFile();
-            if (!parentFile.exists())
-            {
-                getLogger().info("Creating directory " + parentFile.toString());
-                parentFile.mkdirs();
-            }
-            moveFile(storageFile, backupPath);
-            moveFile(newFile, storageFile.getPath());
-        }
 
-    }
 
     @NotNull private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds)
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
         RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache);
-        writer.setEncoding(encoding);
+        writer.setEncoding("utf-8");
         if (version != null)
         {
             writer.setVersion(version);
@@ -464,12 +448,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
         return writer;
     }
 
-    private void moveFile(File file, String newPath)
-    {
-        File backupFile = new File(newPath);
-        backupFile.delete();
-        file.renameTo(backupFile);
-    }
 
     public String toString()
     {

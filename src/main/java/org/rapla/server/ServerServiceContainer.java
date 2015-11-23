@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-public interface ServerServiceContainer extends Disposable
+public interface ServerServiceContainer extends Disposable, HttpService
 {
     Collection<ServletRequestPreprocessor> getServletRequestPreprocessors();
 
@@ -23,11 +23,4 @@ public interface ServerServiceContainer extends Disposable
 
     <T> T getMockService(final Class<T> test, final String accessToken);
 
-    void servePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
-    // json servlet
-    //<T> T createWebservice(Class<T> role,HttpServletRequest request ) throws RaplaException;
-    //
-    //boolean hasWebservice(String interfaceName);
-
-	
 }

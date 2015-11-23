@@ -1,6 +1,7 @@
 package org.rapla;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -8,12 +9,17 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.server.HttpService;
 import org.rapla.server.MainServlet;
 import org.rapla.server.internal.ServerServiceImpl;
 
 import junit.framework.TestCase;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase extends TestCase
@@ -35,25 +41,44 @@ public abstract class ServletTestBase extends TestCase
         testFolder.mkdir();
     }
 
-    static public Server createServer(Class<? extends Servlet> mainServlet) throws Exception
+    static public Server createServer(HttpServlet mainServlet,int port) throws Exception
     {
 
-        int port = 8052;
         File webappFolder = new File("test");
         Server jettyServer = new Server(port);
         WebAppContext context = new WebAppContext(jettyServer, "rapla", "/");
         context.setResourceBase(webappFolder.getAbsolutePath());
         context.setMaxFormContentSize(64000000);
 
-        context.addServlet(new ServletHolder(mainServlet), "/*");
+        final ServletHolder servletHolder = new ServletHolder(mainServlet.getClass());
+        servletHolder.setServlet(mainServlet);
+        context.addServlet(servletHolder, "/*");
         jettyServer.start();
         Handler[] childHandlers = context.getChildHandlersByClass(ServletHandler.class);
         final ServletHandler childHandler = (ServletHandler) childHandlers[0];
         final ServletHolder[] servlets = childHandler.getServlets();
         ServletHolder servlet = servlets[0];
-
         return jettyServer;
     }
+
+    static public Server createServer(HttpService service, int port) throws Exception
+    {
+        final HttpServlet servlet = createServlet(service);
+        return createServer(servlet, port);
+    }
+
+    static HttpServlet createServlet(final HttpService service)
+    {
+        return new HttpServlet()
+        {
+            public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
+            {
+                service.service(request,response);
+            }
+        };
+    }
+
+
 
     protected void setUp() throws Exception
     {

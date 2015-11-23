@@ -78,37 +78,6 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         return requestPreProcessors;
     }
 
-    public static class ServerContainerContext
-    {
-        DataSource dbDatasource;
-        String fileDatasource;
-        Object mailSession;
-        boolean isDbDatasource;
-        ShutdownService shutdownService;
-
-        public String getFileDatasource()
-        {
-            return fileDatasource;
-        }
-
-        public Object getMailSession()
-        {
-            return mailSession;
-        }
-
-        public DataSource getDbDatasource()
-        {
-            return dbDatasource;
-        }
-
-        public boolean isDbDatasource() { return isDbDatasource;}
-
-        public ShutdownService getShutdownService()
-        {
-            return shutdownService;
-        }
-    }
-
     public Logger getLogger()
     {
         return logger;
@@ -246,7 +215,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         return null;
     }
 
-    @Override public void servePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    @Override public void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         String page =  request.getParameter("page");
         String requestURI =request.getRequestURI();

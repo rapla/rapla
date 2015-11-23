@@ -4,7 +4,7 @@ import javax.inject.Named;
 
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
-import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.server.internal.ShutdownService;
 import org.rapla.storage.CachableStorageOperator;
@@ -15,10 +15,10 @@ import dagger.Provides;
 
 @Module public class DaggerRaplaServerStartupModule
 {
-    ServerServiceImpl.ServerContainerContext context;
+    ServerContainerContext context;
     Logger logger;
 
-    public DaggerRaplaServerStartupModule(ServerServiceImpl.ServerContainerContext context, Logger logger)
+    public DaggerRaplaServerStartupModule(ServerContainerContext context, Logger logger)
     {
         this.context = context;
         this.logger = logger;
@@ -29,7 +29,7 @@ import dagger.Provides;
         return logger;
     }
 
-    @Provides ServerServiceImpl.ServerContainerContext provideContext()
+    @Provides ServerContainerContext provideContext()
     {
         return context;
     }

@@ -38,7 +38,6 @@ import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 public class MainServlet extends HttpServlet {
     
@@ -172,7 +171,7 @@ public class MainServlet extends HttpServlet {
 	           
 	            return;
 	        }
-			serverStarter.getServer().servePage(request, response);
+			serverStarter.getServer().service(request, response);
         } 
 
         finally

@@ -26,7 +26,7 @@ import org.rapla.storage.impl.server.ImportExportManagerImpl;
 //@DefaultImplementation(of = CachableStorageOperator.class,context = InjectionContext.server)
 public class ServerStorageSelector implements Provider<CachableStorageOperator>
 {
-    final ServerServiceImpl.ServerContainerContext containerContext;
+    final ServerContainerContext containerContext;
     FileOperator file;
     DBOperator db;
 
@@ -38,7 +38,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     final PermissionController permissionController;
     ImportExportManager manager;
 
-    @Inject ServerStorageSelector(ServerServiceImpl.ServerContainerContext context, ServerServiceImpl.ServerContainerContext containerContext, Logger logger,
+    @Inject ServerStorageSelector(ServerContainerContext context, ServerContainerContext containerContext, Logger logger,
             RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             PermissionController permissionController)
     {
@@ -54,7 +54,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
 
     @NotNull private FileOperator createFileOperator()
     {
-        final String fileDatasource = containerContext.fileDatasource != null ? containerContext.fileDatasource : "data/data.xml";
+        final String fileDatasource = containerContext.getFileDatasource() != null ? containerContext.getFileDatasource() : "data/data.xml";
         return new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionController);
     }
 
@@ -81,7 +81,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     @NotNull private DBOperator createDbOperator()
     {
         Provider<ImportExportManager> importExportMananger = getImportExportManager();
-        final DataSource dbDatasource = containerContext.dbDatasource;
+        final DataSource dbDatasource = containerContext.getDbDatasource();
         return new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionController);
     }
 
