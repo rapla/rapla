@@ -18,8 +18,6 @@ public interface DialogUiFactoryInterface
 
     /** Creates a new ErrorDialog with the specified owner and displays the exception
     @param ex the exception that should be displayed.
-    @param owner the exception that should be displayed. Can be null, but providing
-    a parent-component will lead to a more appropriate display.
     */
     void showException(Throwable ex, PopupContext popupContext);
 

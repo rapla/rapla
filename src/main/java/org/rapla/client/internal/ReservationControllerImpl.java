@@ -592,24 +592,24 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
 
 
-    public Appointment copyAppointment(
+    public void copyAppointment(
             AppointmentBlock appointmentBlock
             ,PopupContext context
             ,Collection<Allocatable> contextAllocatables
             )
                     throws RaplaException
     {
-        return copyCutAppointment(appointmentBlock, context, contextAllocatables,"copy", false);
+         copyCutAppointment(appointmentBlock, context, contextAllocatables,"copy", false);
     }
 
-    public Appointment cutAppointment(
+    public void cutAppointment(
             AppointmentBlock appointmentBlock
             ,PopupContext context
             ,Collection<Allocatable> contextAllocatables
             )
                     throws RaplaException
     {
-        return copyCutAppointment(appointmentBlock, context, contextAllocatables, "cut", false);
+         copyCutAppointment(appointmentBlock, context, contextAllocatables, "cut", false);
     }
     
     public void copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException
@@ -646,7 +646,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     }
 
 
-    private Appointment copyCutAppointment(
+    private void copyCutAppointment(
     		                           AppointmentBlock appointmentBlock
                                        ,PopupContext context
                                        ,Collection<Allocatable> contextAllocatables
@@ -707,7 +707,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             if ( num >= clonedAppointments.length)
             {
                 // appointment may be deleted
-                return null;
+                return; //null;
             }
             Appointment clonedAppointment = clonedAppointments[num];
             RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_RESERVATION : CopyType.COPY_RESERVATION;
@@ -732,7 +732,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         {
             deleteAppointment(appointmentBlock, dialogResult, true);
         }
-        return copy;
+        //return copy;
     }
     
 
@@ -900,8 +900,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
     public boolean save(Reservation reservation, PopupContext sourceComponent) throws RaplaException {
         return save(Collections.singleton(reservation), sourceComponent);
-    }  
-    
+    }
+
     public boolean save(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
         if (getFacade().getCommandHistory().storeAndExecute(saveCommand))

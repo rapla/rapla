@@ -41,8 +41,8 @@ public interface ReservationController
 
     void deleteAppointment( AppointmentBlock appointmentBlock, PopupContext context )  throws RaplaException;
 
-    Appointment copyAppointment( AppointmentBlock appointmentBlock, PopupContext context,Collection<Allocatable> contextAllocatables ) throws RaplaException;
-    Appointment cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException;
+    void copyAppointment( AppointmentBlock appointmentBlock, PopupContext context,Collection<Allocatable> contextAllocatables ) throws RaplaException;
+    void cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException;
 
     void pasteAppointment( Date start, PopupContext context, boolean asNewReservation, boolean keepTime ) throws RaplaException;
 
