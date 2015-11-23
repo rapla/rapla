@@ -164,7 +164,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
         if (isConnected)
             return null;
         getLogger().info("Connecting: " + getURL());
-        loadData();
+        cache.clearAll();
+        addInternalTypes(cache);
+        loadData(cache);
         initIndizes();
         isConnected = true;
         getLogger().debug("Connected");
@@ -194,17 +196,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
         getLogger().warn("Incremental refreshs are not supported");
     }
 
-    final protected void loadData() throws RaplaException
+    final protected void loadData(LocalCache cache) throws RaplaException
     {
-        cache.clearAll();
-        addInternalTypes(cache);
         if (getLogger().isDebugEnabled())
             getLogger().debug("Reading data from file:" + getURL());
 
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this);
         RaplaMainReader contentHandler = new RaplaMainReader(inputContext);
-
         try
         {
             parseData(contentHandler);
