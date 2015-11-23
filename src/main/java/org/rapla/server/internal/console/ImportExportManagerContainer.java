@@ -11,7 +11,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
 import org.rapla.server.ServerService;
 import org.rapla.server.internal.RaplaJNDIContext;
-import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
+import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;

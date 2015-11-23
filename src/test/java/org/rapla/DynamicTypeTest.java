@@ -13,6 +13,12 @@
 package org.rapla;
 import java.util.Date;
 
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.TreeFactory;
@@ -48,18 +54,35 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+
+@RunWith(JUnit4.class)
+public class DynamicTypeTest  {
 
 
-public class DynamicTypeTest extends RaplaTestCase {
+	ClientFacade facade;
+	Logger logger;
+	CalendarSelectionModel model;
+	@Before
+	public void setUp()
+	{
+		logger = RaplaBootstrapLogger.createRaplaLogger();
+		facade = RaplaTestCase.createFacadeWithFile(logger,"testdefault.xml");
+		facade.login("homer","duffs".toCharArray());
+		model  = facade.newCalendarModel( facade.getUser());
+	}
 
-    public DynamicTypeTest(String name) {
-        super(name);
-    }
+	@After
+	public void tearDown()
+	{
+		facade.logout();
+	}
 
+	@Test
     public void testAttributeChangeSimple() throws Exception
     {
-  	  ClientFacade facade = getFacade();
     	String key = "booleantest";
     	{
     		DynamicType eventType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
@@ -72,15 +95,15 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	{
 	    		eventType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
 	    		AttributeImpl attributeImpl = (AttributeImpl) eventType.getAttribute(key);
-	    		assertNotNull( attributeImpl);
+	    		Assert.assertNotNull(attributeImpl);
 	    	}
     	}
     	
     }
-   public void testAttributeChange() throws Exception
+
+	@Test
+	public void testAttributeChange() throws Exception
     {
-	  ClientFacade facade = getFacade();
-  	
 	  Reservation event = facade.newReservation();
     	event.getClassification().setValue("name", "test");
     	Appointment app = facade.newAppointment( new Date() , DateTools.addDay(new Date()));
@@ -104,9 +127,8 @@ public class DynamicTypeTest extends RaplaTestCase {
     		facade.store( modified);
     	}
     	{
-	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    	ClassificationFilter firstFilter = eventType.newClassificationFilter();
-	    	assertNotNull( firstFilter);
+	    	Assert.assertNotNull(firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=",Boolean.TRUE}});
 	    	model.setReservationFilter( new ClassificationFilter[] { firstFilter});
 	    	model.save("test");
@@ -120,17 +142,15 @@ public class DynamicTypeTest extends RaplaTestCase {
     	}
     	{
     		Thread.sleep(100);
-	    	CalendarSelectionModel model =  getService(CalendarSelectionModel.class);
 	    	model.getReservations();
     	}
 //    	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();
 //    	assertTrue(errorMessages.toString(),errorMessages.size() == 0);       		
     }
-  
-   
-   public void testAttributeRemove() throws Exception
+
+	@Test
+	public void testAttributeRemove() throws Exception
    {
-   	ClientFacade facade = getFacade();
    	Allocatable alloc = facade.getAllocatables()[0];
    	DynamicType allocType = alloc.getClassification().getType();
    	
@@ -149,9 +169,8 @@ public class DynamicTypeTest extends RaplaTestCase {
    		facade.store( modified);
    	}
    	{
-	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    	ClassificationFilter firstFilter = allocType.newClassificationFilter();
-	    	assertNotNull( firstFilter);
+	    	Assert.assertNotNull(firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=","t"}});
 	    	model.setReservationFilter( new ClassificationFilter[] { firstFilter});
 	    	model.save("test");
@@ -163,7 +182,6 @@ public class DynamicTypeTest extends RaplaTestCase {
 	    	facade.store( type);
    	}
    	{
-            final Logger logger = getLogger();
             final DefaultBundleManager bundleManager = new DefaultBundleManager();
             RaplaResources i18n = new RaplaResources(bundleManager);
             RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -175,7 +193,6 @@ public class DynamicTypeTest extends RaplaTestCase {
             DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger);
             InfoFactory infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(facade, i18n, raplaLocale, logger, permissionController, infoFactory, raplaImages);
-	    	CalendarSelectionModel model = getService(CalendarSelectionModel.class);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;

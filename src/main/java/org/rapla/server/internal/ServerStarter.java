@@ -12,7 +12,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.ServerServiceImpl.ServerContainerContext;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
@@ -68,18 +67,18 @@ public class ServerStarter
             logger.info("Configured mail service via JNDI");
         }
         ServerContainerContext backendContext = new ServerContainerContext();
-        backendContext.fileDatasource = env_raplafile;
-        backendContext.dbDatasource = env_rapladb;
-        backendContext.mailSession = env_raplamail;
+        backendContext.setFileDatasource( env_raplafile);
+        backendContext.setDbDatasource( env_rapladb);
+        backendContext.setMailSession( env_raplamail);
 
         String env_rapladatasource = jndi.lookupEnvString( "rapladatasource", true);
         if ( env_rapladatasource == null || env_rapladatasource.trim().length() == 0  || env_rapladatasource.startsWith( "${"))
         {
-            if ( backendContext.dbDatasource != null)
+            if ( backendContext.getDbDatasource() != null)
             {
                 env_rapladatasource = "rapladb";
             }
-            else if ( backendContext.fileDatasource != null)
+            else if ( backendContext.getFileDatasource() != null)
             {
                 env_rapladatasource = "raplafile";
             }
@@ -87,9 +86,9 @@ public class ServerStarter
             {
                 logger.warn("Neither file nor database setup configured.");
             }
-            logger.info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb=" + backendContext.dbDatasource + " env_raplafile="+ backendContext.fileDatasource);
+            logger.info("Passed JNDI Environment rapladatasource=" + env_rapladatasource + " env_rapladb=" + backendContext.getDbDatasource() + " env_raplafile="+ backendContext.getFileDatasource());
         }
-        backendContext.isDbDatasource =env_rapladatasource != null && env_rapladatasource.equalsIgnoreCase("rapladb");
+        backendContext.setIsDbDatasource(env_rapladatasource != null && env_rapladatasource.equalsIgnoreCase("rapladb"));
         return backendContext;
     }
     
@@ -108,7 +107,7 @@ public class ServerStarter
         {
             if ( shutdownCommand != null)
             {
-                backendContext.shutdownService = new ShutdownServiceImpl();
+                backendContext.setShutdownService(new ShutdownServiceImpl());
             }
             server = create();
             logger.info("Rapla server started");

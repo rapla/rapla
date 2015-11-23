@@ -3,11 +3,11 @@ package org.rapla.server.dagger;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerContainerContext;
 
 public class DaggerServerCreator
 {
-    public static ServerServiceContainer create(Logger logger, ServerServiceImpl.ServerContainerContext containerContext) throws Exception
+    public static ServerServiceContainer create(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
         final ServerServiceContainer server;

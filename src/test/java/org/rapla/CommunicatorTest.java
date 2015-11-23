@@ -1,38 +1,58 @@
 package org.rapla;
 
-import org.rapla.components.util.CommandScheduler;
+import org.eclipse.jetty.server.Server;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.ConsoleLogger;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
-import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.RemoteStorage;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
+import javax.inject.Provider;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
-public class CommunicatorTest extends ServletTestBase
+@RunWith(JUnit4.class)
+public class CommunicatorTest
 {
-    
-    public CommunicatorTest( String name )
+    private Server server;
+    Logger logger;
+    Provider<ClientFacade> clientFacadeProvider;
+
+    ClientFacade createFacade()
     {
-        super( name );
+        return clientFacadeProvider.get();
+    };
+
+    @Before
+    public void setUp() throws Exception
+    {
+        logger = RaplaBootstrapLogger.createRaplaLogger();
+        int port = 8052;
+        server = RaplaTestCase.createServer(port, logger, "testdefault.xml");
+        clientFacadeProvider = RaplaTestCase.createFacadeWithRemote( logger, port);
     }
 
-    ClientFacade facade = null;
+    @After
+    public void tearDown() throws Exception
+    {
+        server.stop();
+    }
 
+
+    @Test
     public void testLargeform() throws Exception
     {
+        ClientFacade facade = createFacade();
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         StringBuffer buf = new StringBuffer();
@@ -46,11 +66,13 @@ public class CommunicatorTest extends ServletTestBase
         facade.store( alloc);
     }
     
-    
+
+    @Test
     public void testClient() throws Exception
     {
+        ClientFacade facade = createFacade();
        boolean success = facade.login("admin","test".toCharArray());
-       assertFalse( "Login should fail",success ); 
+       Assert.assertFalse("Login should fail", success);
        facade.login("homer","duffs".toCharArray());
        try 
        {
@@ -64,21 +86,23 @@ public class CommunicatorTest extends ServletTestBase
            facade.store( preferences);
 
            Allocatable[] allocatables = facade.getAllocatables();
-           assertTrue( allocatables.length > 0);
-           Reservation[] events = facade.getReservations( new Allocatable[] {allocatables[0]}, null,null);
-           assertTrue( events.length > 0);
-           
-           Reservation r = events[0];
-           Reservation editable = facade.edit( r);
-           facade.store( editable );
-           
+           Assert.assertTrue(allocatables.length > 0);
+
            Reservation newEvent = facade.newReservation();
            Appointment newApp = facade.newAppointment( new Date(), new Date());
            newEvent.addAppointment( newApp );
            newEvent.getClassification().setValue("name","Test Reservation");
            newEvent.addAllocatable( allocatables[0]);
-           
+
            facade.store( newEvent );
+
+           Reservation[] events = facade.getReservations( new Allocatable[] {allocatables[0]}, null,null);
+           Assert.assertTrue(events.length > 0);
+           
+           Reservation r = events[0];
+           Reservation editable = facade.edit( r);
+           facade.store( editable );
+
            facade.remove( newEvent);
        }
        finally
@@ -87,8 +111,10 @@ public class CommunicatorTest extends ServletTestBase
        }
     }
 
+    @Test
     public void testUmlaute() throws Exception
     {
+        ClientFacade facade = createFacade();
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         String typeName = alloc.getClassification().getType().getKey();
@@ -110,37 +136,30 @@ public class CommunicatorTest extends ServletTestBase
         ClassificationFilter filter = type.newClassificationFilter();
         filter.addEqualsRule("name", nameWithUmlaute);
         Allocatable[] allAllocs = facade.getAllocatables();
-        assertEquals( allocSizeBefore + 1, allAllocs.length);
+        Assert.assertEquals(allocSizeBefore + 1, allAllocs.length);
         Allocatable[] allocs = facade.getAllocatables( new ClassificationFilter[] {filter});
-        assertEquals( 1, allocs.length);
-        
+        Assert.assertEquals(1, allocs.length);
     }
+
+    @Test
     public void testManyClients() throws Exception
     {
         int clientNum = 50;
-        RemoteOperator [] opts = new RemoteOperator[ clientNum];
-        RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
-        connectionInfo.setServerURL("http://localhost:8052/");
+        ClientFacade [] opts = new ClientFacade[ clientNum];
+
+
         for ( int i=0;i<clientNum;i++)
         {
-			RemoteAuthentificationService remoteAuthentificationService = null;
-			RemoteStorage remoteStorage = null;
-            RaplaResources i18n = null;
-            CommandScheduler secheduler = null;
-            ConsoleLogger logger = new ConsoleLogger();
-
-            Map<String,FunctionFactory> functionFactoryMap = new HashMap<String,FunctionFactory>();
-            RemoteOperator opt = new RemoteOperator(logger,i18n,getRaplaLocale(),secheduler, functionFactoryMap,remoteAuthentificationService, remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getController() );
-            opt.connect(new ConnectInfo("homer","duffs".toCharArray()));
-            opts[i] = opt;
+            ClientFacade facade = createFacade();
+            facade.login("homer","duffs".toCharArray());
+            opts[i] = facade;
             System.out.println("JavaClient " + i + " successfully subscribed");
         }
-        testClient();
-        
+
         for ( int i=0;i<clientNum;i++)
         {
-            RemoteOperator opt = opts[i];
-            opt.disconnect();
+            ClientFacade opt = opts[i];
+            opt.logout();
         }
     }
 }
