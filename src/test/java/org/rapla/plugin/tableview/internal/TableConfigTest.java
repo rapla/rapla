@@ -11,6 +11,10 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -22,9 +26,8 @@ import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import junit.framework.TestCase;
-
-public class TableConfigTest extends TestCase
+@RunWith(JUnit4.class)
+public class TableConfigTest
 {
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
@@ -32,13 +35,14 @@ public class TableConfigTest extends TestCase
     {
         private Transport()
         {
-            
+
         }
+
         public Transport(TableConfig config)
         {
             this.config = config;
         }
-        
+
         public TableConfig getConfig()
         {
             return config;
@@ -46,7 +50,9 @@ public class TableConfigTest extends TestCase
 
         TableConfig config;
     }
-    public void test() throws JAXBException, ConfigurationException
+
+    @Test
+    public void serializationDesirialization() throws JAXBException, ConfigurationException
     {
         TableConfig config = new TableConfig();
         final TableConfig.TableColumnConfig nameColumn;
@@ -60,9 +66,8 @@ public class TableConfigTest extends TestCase
             name.setName("de", "Name");
             columnConfig.setName(name);
             config.addColumn(columnConfig);
-            
+
             nameColumn = columnConfig;
-            
 
         }
         final TableColumnConfig startColumn;
@@ -78,10 +83,10 @@ public class TableConfigTest extends TestCase
             config.addColumn(columnConfig);
             startColumn = columnConfig;
         }
-        
+
         final ViewDefinition eventView = config.getOrCreateView("events");
         eventView.addColumn(nameColumn);
-        
+
         final ViewDefinition appointmentView = config.getOrCreateView("appointments");
         appointmentView.addColumn(nameColumn);
         appointmentView.addColumn(startColumn);
@@ -89,11 +94,11 @@ public class TableConfigTest extends TestCase
         final Gson gson = builder.setPrettyPrinting().create();
         final String json = gson.toJson(config);
         System.out.println(json);
-        final TableConfig fromJson = gson.fromJson( json , TableConfig.class);
+        final TableConfig fromJson = gson.fromJson(json, TableConfig.class);
         //System.out.println(fromJson.toString());
         JAXBContext context = JAXBContext.newInstance(Transport.class);
         final Marshaller marshaller = context.createMarshaller();
-//        final TableConfig.DateAdapter dateAdapter = new TableConfig.DateAdapter();
+        //        final TableConfig.DateAdapter dateAdapter = new TableConfig.DateAdapter();
         //dateAdapter.setCutDate( true);
         //marshaller.setAdapter(dateAdapter);
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -103,11 +108,11 @@ public class TableConfigTest extends TestCase
         final Unmarshaller unmarshaller = context.createUnmarshaller();
         //unmarshaller.setAdapter(dateAdapter);
         final Transport fromXml = (Transport) unmarshaller.unmarshal(new ByteArrayInputStream(out.toByteArray()));
-        
-        final RaplaConfiguration raplaConfig = TableConfig.print( fromXml.config);
+
+        final RaplaConfiguration raplaConfig = TableConfig.print(fromXml.config);
         final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new DefaultBundleManager()));
         final String json2 = gson.toJson(test);
         //System.out.println(json2);
-        assertEquals(json, json2);
-        }
+        Assert.assertEquals(json, json2);
+    }
 }
