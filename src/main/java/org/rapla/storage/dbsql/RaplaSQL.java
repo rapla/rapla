@@ -518,7 +518,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     PermissionStorage<Allocatable> permissionStorage;
 
     public AllocatableStorage(RaplaXMLContext context ) throws RaplaException {
-        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
+        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage<Allocatable>( context, "RESOURCE",allocatableMap);
         addSubStorage(resourceAttributeStorage);
@@ -589,7 +589,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	PermissionStorage<Reservation> permissionStorage;
 
     public ReservationStorage(RaplaXMLContext context) throws RaplaException {
-        super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
+        super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
         permissionStorage = new PermissionStorage<Reservation>( context,"EVENT", reservationMap);
