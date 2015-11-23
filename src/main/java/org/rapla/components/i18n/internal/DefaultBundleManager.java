@@ -193,7 +193,12 @@ public class DefaultBundleManager implements BundleManager {
     }
 
     public void setLocale(Locale locale) {
+        if(this.locale.equals(locale))
+        {
+            return;
+        }
         this.locale = locale;
+        this.formats = getFormats(locale);
         fireLocaleChanged();
     }
 

@@ -288,7 +288,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#formatDate(java.util.Date)
      */
     public String formatDate( Date date ) {
-        String formatDateLong = getFormats().getFormatDateLong();
+        String formatDateLong = getFormats().getFormatDateShort();
         return _format(date, formatDateLong);
 //      TimeZone timezone = zone;
 //        Locale locale = getLocale();
