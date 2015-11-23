@@ -11,6 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -23,30 +27,26 @@ import org.rapla.facade.UpdateModule;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
-public class AttributeTest extends RaplaTestCase {
+@RunWith(JUnit4.class)
+public class AttributeTest  {
     ModificationModule modificationMod;
     QueryModule queryMod;
     UpdateModule updateMod;
     DynamicType type;
     
-    public AttributeTest(String name) {
-        super(name);
-    }
 
-    public static Test suite() {
-        return new TestSuite(AttributeTest.class);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
-        ClientFacade facade= getFacade();
+    @Before
+    public void setUp() throws Exception {
+        ClientFacade facade= RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
+        facade.login("homer","duffs".toCharArray());
         queryMod = facade;
         modificationMod = facade;
         updateMod = facade;
-        
     }
 
+    @org.junit.Test
     public void testAnnotations() throws Exception {
         type = modificationMod.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         type.setKey("test-type");
@@ -60,10 +60,10 @@ public class AttributeTest extends RaplaTestCase {
         DynamicType type2 = queryMod.getDynamicType("test-type");
         Attribute a2 = type2.getAttribute("test-attribute");
         
-        assertEquals(a1, a2);
-        assertEquals( "default-annotation", a2.getAnnotation("not-defined-ann","default-annotation" ));
-        assertEquals( "expected-rows", a2.getAnnotationKeys()[0]);
-        assertEquals( "5", a2.getAnnotation("expected-rows"));
+        Assert.assertEquals(a1, a2);
+        Assert.assertEquals("default-annotation", a2.getAnnotation("not-defined-ann", "default-annotation"));
+        Assert.assertEquals("expected-rows", a2.getAnnotationKeys()[0]);
+        Assert.assertEquals("5", a2.getAnnotation("expected-rows"));
         
     }
 }

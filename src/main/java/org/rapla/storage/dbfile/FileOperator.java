@@ -172,13 +172,20 @@ final public class FileOperator extends LocalAbstractCachableOperator
         initIndizes();
         isConnected = true;
         getLogger().debug("Connected");
-        final String username = connectInfo.getUsername();
-        final UserImpl user = cache.getUser(username);
-        if ( user == null)
+        if ( connectInfo != null)
         {
-            throw new RaplaException("User " + username + " not found!");
+            final String username = connectInfo.getUsername();
+            final UserImpl user = cache.getUser(username);
+            if (user == null)
+            {
+                throw new RaplaException("User " + username + " not found!");
+            }
+            return user;
         }
-        return user;
+        else
+        {
+            return null;
+        }
     }
 
     final public boolean isConnected()

@@ -126,8 +126,16 @@ public abstract class RaplaTestCase extends TestCase
 
     static Provider<ClientFacade> createFacadeWithRemote(Logger logger, int port)
     {
-        RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
-        connectionInfo.setServerURL("http://localhost:" + port + "/");
+        final String serverURL = "http://localhost:" + port + "/";
+
+        BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
+        {
+            @Override public String getEntryPoint(String interfaceName, String relativePath)
+            {
+                String url = serverURL + "rapla/" + ((relativePath != null) ? relativePath : interfaceName);
+                return url;
+            }
+        });
 
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -135,31 +143,23 @@ public abstract class RaplaTestCase extends TestCase
         CommandScheduler scheduler = new DefaultScheduler(logger);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
 
-        final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
-
-        BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
-        {
-            @Override public String getEntryPoint(String interfaceName, String relativePath)
-            {
-                String url = connectionInfo.getServerURL() + "rapla/" + ((relativePath != null) ? relativePath : interfaceName);
-                return url;
-            }
-        });
-        connectionInfo.setReconnectInfo(connectInfo);
-        BasicRaplaHTTPConnector.CustomConnector customConnector = new MyCustomConnector(connectionInfo, i18n, scheduler);
-        RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
-        RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
 
         Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
         StandardFunctions functions = new StandardFunctions(raplaLocale);
         functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
-
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
         Provider<ClientFacade> clientFacadeProvider = new Provider<ClientFacade>()
         {
             @Override public ClientFacade get()
             {
+                RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
+                connectionInfo.setServerURL(serverURL);
+                //final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
+                connectionInfo.setReconnectInfo(null);
+                BasicRaplaHTTPConnector.CustomConnector customConnector = new MyCustomConnector(connectionInfo, i18n, scheduler);
+                RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
+                RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,
                         remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getController());
                 FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
