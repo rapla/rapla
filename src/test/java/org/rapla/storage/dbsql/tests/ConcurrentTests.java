@@ -132,6 +132,7 @@ public class ConcurrentTests
     {
         final List<T2Obj> result = new ArrayList<T2Obj>();
         t2SelectByT1.setString(1, id);
+        t2SelectByT1.execute();
         final ResultSet resultSet = t2SelectByT1.getResultSet();
         while (resultSet.next())
         {
@@ -148,6 +149,7 @@ public class ConcurrentTests
     {
         final List<T1Obj> result = new ArrayList<T1Obj>();
         t1SelectById.setString(1, id);
+        t1SelectById.execute();
         final ResultSet resultSet = t1SelectById.getResultSet();
         while (resultSet.next())
         {
@@ -245,8 +247,8 @@ public class ConcurrentTests
     public void concurrentActionUpdateUpdate() throws Exception
     {
         final Semaphore semaphore = new Semaphore(0);
-        // first update and then delete
-        // So the first thread will call writer for delete, the second will insert with the same ID in the second table
+        // Both threads will try to do a update 
+        // so every thread will first delete the entry with its time stamp and then create a new one
         final Thread t1 = new Thread(new Runnable()
         {
             private Connection con = con1;
@@ -318,7 +320,34 @@ public class ConcurrentTests
         });
         t2.start();
         semaphore.acquire(2);
-
+    }
+    
+    @Test
+    public void testRollbackAfterDelete() throws Exception
+    {
+        try
+        {
+            final PreparedStatement deleteT1Ps = con1.prepareStatement(deleteT1);
+            final T1Obj t1Obj = t1Objs.get(1);
+            deleteT1Ps.setString(1, t1Obj.id);
+            deleteT1Ps.setDate(2, t1Obj.lastChanged);
+            deleteT1Ps.addBatch();
+            deleteT1Ps.executeBatch();
+            final PreparedStatement selectT2ByT1Ps = con1.prepareStatement(selectT2ByT1);
+            final List<T2Obj> allT2ByT1Id = getAllT2ByT1Id(selectT2ByT1Ps, t1Obj.id);
+            if(!allT2ByT1Id.isEmpty())
+            {
+                throw new IllegalStateException("Dependencies available");
+            }
+            con1.commit();
+        }
+        catch(IllegalStateException e)
+        {
+            // Expected
+            con1.rollback();
+        }
+        final T1Obj newT1 = getT1ById(con1.prepareStatement(selectT1), t1Objs.get(1).id);
+        Assert.assertNotNull(newT1);
     }
 
 }
