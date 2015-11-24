@@ -18,6 +18,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
 import org.rapla.ServerTest;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
@@ -79,10 +80,13 @@ import java.sql.Statement;
     {
         ServerContainerContext container = new ServerContainerContext();
         org.hsqldb.jdbc.JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
-        datasource.setUrl("jdbc:hsqldb:data/rapla-hsqldb");
+        datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
         container.setDbDatasource(datasource);
+        container.setIsDbDatasource( true);
+        String xmlFile = "testdefault.xml";
+        container.setFileDatasource(RaplaTestCase.getTestDataFile(xmlFile));
         return container;
     }
 
@@ -96,10 +100,8 @@ import java.sql.Statement;
     @Test public void testAttributeChange() throws Exception
     {
         ClientFacade facade = getServerFacade();
-        facade.login("admin", "".toCharArray());
         // change Type
         changeEventType(facade);
-        facade.logout();
 
         // We need to disconnect the operator
         CachableStorageOperator operator = getRapladb();
@@ -152,7 +154,6 @@ import java.sql.Statement;
     @Test public void testNewAttribute() throws Exception
     {
         ClientFacade facade = getServerFacade();
-        facade.login("homer", "duffs".toCharArray());
         // change Type
         DynamicType roomType = facade.edit(facade.getDynamicType("room"));
         Attribute attribute = facade.newAttribute(AttributeType.STRING);
@@ -170,15 +171,12 @@ import java.sql.Statement;
         String name = (String) allocatable.getClassification().getValue("name");
         facade.store(allocatable);
 
-        facade.logout();
-
         // We need to disconnect the operator
         CachableStorageOperator operator = getRapladb();
         operator.disconnect();
         // The error shows when connect again
         operator.connect();
 
-        facade.login("homer", "duffs".toCharArray());
         allocatables = facade.getAllocatables(new ClassificationFilter[] { roomType.newClassificationFilter() });
         allocatable = facade.edit(allocatables[0]);
         Assert.assertEquals(name, allocatable.getClassification().getValue("name"));
