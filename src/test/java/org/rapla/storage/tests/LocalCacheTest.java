@@ -11,13 +11,14 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -41,22 +42,20 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
-public class LocalCacheTest extends RaplaTestCase {
+@RunWith(JUnit4.class)
+public class LocalCacheTest  {
     Locale locale;
 
-    public LocalCacheTest(String name) {
-        super(name);
-    }
 
-    public static Test suite() {
-        return new TestSuite(LocalCacheTest.class);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        locale = Locale.getDefault();
     }
 
     public DynamicTypeImpl createDynamicType() throws Exception {
@@ -87,6 +86,7 @@ public class LocalCacheTest extends RaplaTestCase {
         return type.getLocalName() + "_" + intId;
     }
 
+    @Test
     public void testAllocatable() throws Exception {
         LocalCache cache = new LocalCache(new HashMap<String,FunctionFactory>(), DefaultPermissionControllerSupport.getController());
 
@@ -104,14 +104,16 @@ public class LocalCacheTest extends RaplaTestCase {
         resource1.getClassification().setValue("name","Zeta");
         cache.put(resource1);
         Allocatable[] resources = cache.getAllocatables().toArray(Allocatable.ALLOCATABLE_ARRAY);
-        assertEquals(3, resources.length);
-        assertTrue(resources[1].getName(locale).equals("Beta"));
+        Assert.assertEquals(3, resources.length);
+        Assert.assertTrue(resources[1].getName(locale).equals("Beta"));
     }
 
+    @Test
     public void test2() throws Exception {
-        final CachableStorageOperator storage = null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
-        storage.connect();
-        final Period[] periods = getFacade().getPeriods();
+
+        final ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        final CachableStorageOperator storage = (CachableStorageOperator) facade.getOperator();
+        final Period[] periods = facade.getPeriods();
         storage.runWithReadLock(new CachableStorageOperatorCommand() {
 			
 			@Override
@@ -123,23 +125,23 @@ public class LocalCacheTest extends RaplaTestCase {
 		            {
 		                final Period period = periods[2];
 		                Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery).get();
-		                assertEquals(0,reservations.size());
+                        Assert.assertEquals(0, reservations.size());
 		            }
 		            {
 		                final Period period = periods[1];
 	                    Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery).get();
-		                assertEquals(2, reservations.size());
+                        Assert.assertEquals(2, reservations.size());
 		            }
 		            {
     		            User user = cache.getUser("homer");
     		            Collection<Reservation> reservations = storage.getReservations(user,null,null,null, filters,annotationQuery).get();
-    		            assertEquals(3, reservations.size());
+                        Assert.assertEquals(3, reservations.size());
 		            }
 		            {
 		                User user = cache.getUser("homer");
 		                final Period period = periods[1];
                         Collection<Reservation> reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery).get();
-    		            assertEquals(2, reservations.size());
+                        Assert.assertEquals(2, reservations.size());
 		            }
 		        }
 			    catch (Exception ex)
@@ -153,7 +155,7 @@ public class LocalCacheTest extends RaplaTestCase {
 		                {
 		                    continue;
 		                }
-		                assertEquals("erwin",next.getName(locale));
+                        Assert.assertEquals("erwin", next.getName(locale));
 		                break;
 		            }
 		        }		
@@ -161,13 +163,15 @@ public class LocalCacheTest extends RaplaTestCase {
 		});
        
     }
-    
+
+    @Test
     public void testConflicts() throws Exception {
-        ClientFacade facade = getFacade();
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        CachableStorageOperator storage = (CachableStorageOperator) facade.getOperator();
         Reservation reservation = facade.newReservation();
         //start is 13/4  original end = 28/4
-        Date startDate = getRaplaLocale().toRaplaDate(2013, 4, 13);
-        Date endDate = getRaplaLocale().toRaplaDate(2013, 4, 28);
+        Date startDate = new Date(DateTools.toDate(2013, 4, 13));
+        Date endDate = new Date(DateTools.toDate(2013, 4, 28));
         Appointment appointment = facade.newAppointment(startDate, endDate);
         reservation.addAppointment(appointment);
         reservation.getClassification().setValue("name", "test");
@@ -176,7 +180,7 @@ public class LocalCacheTest extends RaplaTestCase {
         Reservation modifiableReservation = facade.edit(reservation);
 
         
-        Date splitTime = getRaplaLocale().toRaplaDate(2013, 4, 20);
+        Date splitTime = new Date(DateTools.toDate(2013, 4, 20));
         Appointment modifiableAppointment = modifiableReservation.findAppointment( appointment);
        // left part
         //leftpart.move(13/4, 20/4)
@@ -184,13 +188,12 @@ public class LocalCacheTest extends RaplaTestCase {
 
         facade.store( modifiableReservation);
       
-        CachableStorageOperator storage =  null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
         User user = null;
 		Collection<Allocatable> allocatables = null;
 		Map<String, String> annotationQuery = null;
 		ClassificationFilter[] filters = null;
 		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, filters,annotationQuery).get();
-        assertEquals( 1, reservations.size());
+        Assert.assertEquals(1, reservations.size());
     }
 }
 

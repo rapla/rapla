@@ -164,15 +164,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
     /** Sets the isConnected-flag and calls loadData.*/
     final public User connect(ConnectInfo connectInfo) throws RaplaException
     {
-        if (isConnected)
-            return null;
-        getLogger().info("Connecting: " + getURL());
-        cache.clearAll();
-        addInternalTypes(cache);
-        loadData(cache);
-        initIndizes();
-        isConnected = true;
-        getLogger().debug("Connected");
+        if (!isConnected)
+        {
+            getLogger().info("Connecting: " + getURL());
+            cache.clearAll();
+            addInternalTypes(cache);
+            loadData(cache);
+            initIndizes();
+            isConnected = true;
+            getLogger().debug("Connected");
+        }
         if ( connectInfo != null)
         {
             final String username = connectInfo.getUsername();

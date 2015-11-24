@@ -11,20 +11,22 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.components.util.iterator.FilterIterable;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.rapla.components.util.iterator.FilterIterable;
+@RunWith(JUnit4.class)
+public class FilterIteratorTest  {
 
-import junit.framework.TestCase;
 
-public class FilterIteratorTest extends TestCase {
-
-    public FilterIteratorTest(String name) {
-        super(name);
-    }
-
+    @Test
     public void testIterator() {
         List<Integer> list = new ArrayList<Integer>();
         for (int i=0;i<6;i++) {
@@ -38,9 +40,9 @@ public class FilterIteratorTest extends TestCase {
         }).iterator();
         for (int i=0;i<6;i++) {
             if ( i % 2 == 0)
-                assertEquals( new Integer(i), it.next());
+                Assert.assertEquals(new Integer(i), it.next());
         }
-        assertTrue( it.hasNext() == false);
+        Assert.assertTrue(it.hasNext() == false);
     }
 }
 
