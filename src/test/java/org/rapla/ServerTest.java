@@ -219,10 +219,10 @@ public class ServerTest
         user.setUsername("test-user");
         facade1.store(user);
 
+        facade2.login("homer", "duffs".toCharArray());
         removeAnAttribute();
         // Wait for the update
         {
-            ClientFacade facade2 = null;
             facade2.login("homer", "duffs".toCharArray());
             facade2.getUser("test-user");
             facade2.logout();
@@ -242,8 +242,6 @@ public class ServerTest
         Assert.assertEquals(5, facade1.getAllocatables().length);
         Assert.assertEquals(2, allocatable.getClassification().getAttributes().length);
 
-        ClientFacade facade2 = null;
-        facade2.login("homer", "duffs".toCharArray());
         // we check if the store affectes the second client.
         Assert.assertEquals(5, facade2.getAllocatables().length);
 
@@ -311,7 +309,7 @@ public class ServerTest
     @Test
     public void testChangeLogin() throws RaplaException
     {
-        ClientFacade facade2 = null;
+        facade2.logout();
         facade2.login("monty", "burns".toCharArray());
 
         // boolean canChangePassword = facade2.canChangePassword();
@@ -387,7 +385,7 @@ public class ServerTest
         prefs.putEntry(TEST_CONF, conf);
         facade1.store(prefs);
 
-        ClientFacade facade = null;
+        ClientFacade facade = getServerFacade();
         User user = facade.getUser("homer");
         Preferences storedPrefs = facade.getPreferences(user);
         Assert.assertNotNull(storedPrefs);
@@ -462,9 +460,6 @@ public class ServerTest
             facade1.logout();
         }
         {
-            ClientFacade facade2 = null;
-            facade2.login("homer", "duffs".toCharArray());
-
             Reservation[] res = facade2.getReservationsForAllocatable(null, start, new Date(start.getTime() + 8 * DateTools.MILLISECONDS_PER_WEEK), null);
             Assert.assertEquals(1, res.length);
             Thread.sleep(100);
@@ -483,8 +478,6 @@ public class ServerTest
         Category myGroup = facade1.getUserGroupsCategory().getCategory("my-group");
         Assert.assertTrue(Arrays.asList(groups).contains(myGroup));
         user.removeGroup(myGroup);
-        ClientFacade facade2 = null;
-        facade2.login("homer", "duffs".toCharArray());
         Allocatable testResource = facade2.edit(facade2.getAllocatables()[0]);
         Assert.assertTrue(permissionController.canAllocate(testResource, facade2.getUser("monty"), null, null, null));
         testResource.removePermission(testResource.getPermissionList().iterator().next());
@@ -559,7 +552,7 @@ public class ServerTest
 
         String reservationName = "bowling";
         {
-            ClientFacade facade = null;
+            ClientFacade facade = getServerFacade();
             String description = getDescriptionOfReservation(facade, reservationName);
             Assert.assertTrue(description.contains("\n"));
         }
@@ -575,7 +568,7 @@ public class ServerTest
     {
         // first test creation on server
         {
-            ClientFacade facade = null;
+            ClientFacade facade = getServerFacade();
             DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
             Classification classification = dynamicType.newClassification();
             Allocatable task = facade.newAllocatable(classification, null);
