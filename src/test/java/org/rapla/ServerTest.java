@@ -240,20 +240,22 @@ public class ServerTest
         Assert.assertEquals(3, allocatable.getClassification().getAttributes().length);
         facade1.storeObjects(new Entity[] { allocatableClone, typeEdit3 });
         Assert.assertEquals(5, facade1.getAllocatables().length);
-        Assert.assertEquals(2, allocatable.getClassification().getAttributes().length);
+        final Attribute[] attributes = allocatable.getClassification().getAttributes();
+        Assert.assertEquals(2, attributes.length);
 
         // we check if the store affectes the second client.
+        facade2.refresh();
         Assert.assertEquals(5, facade2.getAllocatables().length);
 
         ClassificationFilter filter = facade2.getDynamicType("room").newClassificationFilter();
         filter.addIsRule("name", "erwin");
         {
             Allocatable rAfter = facade2.getAllocatables(filter.toArray())[0];
-            Assert.assertEquals(2, rAfter.getClassification().getAttributes().length);
+            final Attribute[] attributes1 = rAfter.getClassification().getAttributes();
+            Assert.assertEquals(2, attributes1.length);
         }
         // facade2.getUserFromRequest("test-user");
         // Wait for the update
-        facade2.refresh();
         facade2.logout();
     }
 
