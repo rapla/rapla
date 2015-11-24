@@ -12,20 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile.tests;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.junit.Assert;
-import org.rapla.RaplaTestCase;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import javax.validation.constraints.AssertTrue;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class FileOperatorDiffTest  {
     CachableStorageOperator operator;
