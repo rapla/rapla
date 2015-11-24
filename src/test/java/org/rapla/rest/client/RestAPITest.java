@@ -2,16 +2,39 @@ package org.rapla.rest.client;
 
 import java.net.URL;
 
+import org.eclipse.jetty.server.Server;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 
 import junit.framework.TestCase;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.ServerServiceContainer;
 
-public class RestAPITest extends ServletTestBase {
+@RunWith(JUnit4.class)
+public class RestAPITest  {
 
-    public RestAPITest(String name) {
-        super(name);
+
+    int port = 8052;
+    Server server;
+    @Before
+    public void setUp() throws Exception
+    {
+        final ServerServiceContainer servlet = RaplaTestCase.createServer(RaplaBootstrapLogger.createRaplaLogger(), "testdefault.xml");
+        server = ServletTestBase.createServer(servlet, port);
     }
 
+    @After
+    public void tearDown() throws Exception
+    {
+        server.stop();
+    }
+
+    @Test
     public void testRestApi() throws Exception
     {
         RestAPIExample example = new RestAPIExample()
@@ -26,8 +49,8 @@ public class RestAPITest extends ServletTestBase {
                 TestCase.assertEquals(o1, o2);
             }
         };
-        URL baseUrl = new URL("http://localhost:8051/rapla/");
-        example.testRestApi(baseUrl,"admin","");
+        URL baseUrl = new URL("http://localhost:"+port+"/rapla/");
+        example.testRestApi(baseUrl,"homer","duffs");
     }
 
    

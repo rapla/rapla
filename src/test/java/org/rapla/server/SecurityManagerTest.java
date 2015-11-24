@@ -1,8 +1,12 @@
 package org.rapla.server;
 
-import java.util.Date;
-import java.util.Locale;
-
+import org.eclipse.jetty.server.Server;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
@@ -11,35 +15,46 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.RaplaSecurityException;
 
-public class SecurityManagerTest extends ServletTestBase {
+import javax.inject.Provider;
+import java.util.Date;
+import java.util.Locale;
+
+@RunWith(JUnit4.class)
+public class SecurityManagerTest  {
 
 
 	protected ClientFacade facade1;
 	
 	Locale locale;
+	private Logger logger;
+	private ServerServiceImpl serverService;
+	private Server server;
 
-	public SecurityManagerTest(String name) 
+	@Before public void setUp() throws Exception
 	{
-		super(name);
-	}
-
-	protected void setUp() throws Exception 
-	{
-		super.setUp();
-		// start the server
-
-		// start the client service
-		facade1 = null;//getContainer().lookupDeprecated(ClientFacade.class, "remote-facade");
+		logger = RaplaBootstrapLogger.createRaplaLogger();
+		int port = 8052;
+		serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
+		server = ServletTestBase.createServer( serverService, port);
+		Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
+		facade1 = clientFacadeProvider.get();
+		//facade2 = clientFacadeProvider.get();
+		//facade2.login("homer", "duffs".toCharArray());
 		locale = Locale.getDefault();
 	}
 
-	protected String getStorageName() 
+	public void tearDown() throws Exception
 	{
-		return "storage-file";
+		server.stop();;
 	}
-	
+
+	@Test
 	public void testConflictForbidden() throws Exception
 	{
 		// We test conflict prevention for an appointment that is in the future
@@ -74,7 +89,7 @@ public class SecurityManagerTest extends ServletTestBase {
 			try 
 			{
 				facade1.store( event );
-				fail("Security Exception expected");
+				Assert.fail("Security Exception expected");
 			}
 			catch ( Exception ex)
 			{
@@ -91,7 +106,7 @@ public class SecurityManagerTest extends ServletTestBase {
 				if ( !secExceptionFound)
 				{
 					ex.printStackTrace();
-					fail("Exception expected but was not security exception");
+					Assert.fail("Exception expected but was not security exception");
 				}
 			}
 			// moving the start of the second appointment to the end of the first one should work 
@@ -112,7 +127,7 @@ public class SecurityManagerTest extends ServletTestBase {
 			try 
 			{
 				facade1.store( event );
-				fail("Security Exception expected");
+				Assert.fail("Security Exception expected");
 			}
 			catch ( Exception ex)
 			{
@@ -129,7 +144,7 @@ public class SecurityManagerTest extends ServletTestBase {
 				if ( !secExceptionFound)
 				{
 					ex.printStackTrace();
-					fail("Exception expected but was not security exception");
+					Assert.fail("Exception expected but was not security exception");
 				}
 			}
 			facade1.logout();
