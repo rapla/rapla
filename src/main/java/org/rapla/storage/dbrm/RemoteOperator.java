@@ -899,6 +899,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             @Override
             public Collection<Reservation> get() throws Exception {
                 List<ReservationImpl> list;
+                Collection<Reservation> filtered;
                 {
                     long time = System.currentTimeMillis();
                     list = serverQuery.get();
@@ -906,11 +907,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                 }
                 {
                     long time = System.currentTimeMillis();
-                    processReservationResult(list, filters);
+                    filtered = processReservationResult(list, filters);
                     logger.debug("event post processing took  " + (System.currentTimeMillis() - time) + " ms");
                 }
 
-                return (Collection) list;
+                return filtered;
             }
 
             @Override
@@ -925,13 +926,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                     @SuppressWarnings("unchecked")
                     @Override
                     public void onSuccess(List<ReservationImpl> list) {
+                        final Collection<Reservation> filtered;
                         try {
-                            processReservationResult(list, filters);
+                            filtered =processReservationResult(list, filters);
                         } catch (RaplaException e) {
                             callback.onFailure( e);
                             return;
                         }
-                        callback.onSuccess((Collection) list);
+                        callback.onSuccess(filtered);
                     }
                 });
                 
@@ -939,7 +941,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         };
     }
 
-    private Collection<Reservation> processReservationResult(List<ReservationImpl> list,ClassificationFilter[] filters) throws RaplaException {
+    private List<Reservation> processReservationResult(List<ReservationImpl> list,ClassificationFilter[] filters) throws RaplaException {
     	try
     	{
 		    Lock lock = readLock();
