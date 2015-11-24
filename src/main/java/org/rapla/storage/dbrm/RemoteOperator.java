@@ -859,6 +859,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 			DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
 		    if ( dynamicType == null)
             {
+                //throw new IllegalStateException("Unresolved resource type not found");
                 return null;
             }
             Classification newClassification = dynamicType.newClassification();

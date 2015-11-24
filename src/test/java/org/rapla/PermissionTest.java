@@ -34,6 +34,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Provider;
@@ -45,6 +46,7 @@ public class PermissionTest  {
     ClientFacade testFacade;
     Locale locale;
     private Server server;
+    ServerServiceContainer servlet;
 
     @Before
     public void setUp() throws Exception
@@ -52,7 +54,8 @@ public class PermissionTest  {
         locale = Locale.getDefault();
         Logger logger = RaplaBootstrapLogger.createRaplaLogger();
         int port = 8052;
-        server = RaplaTestCase.createServer(port, logger, "testdefault.xml");
+        servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
+        this.server = ServletTestBase.createServer(servlet, port);
         Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
         adminFacade = clientFacadeProvider.get();
         testFacade = clientFacadeProvider.get();
@@ -88,7 +91,6 @@ public class PermissionTest  {
         testFacade.logout();
         server.stop();
     }
-
 
     @Test
     public void testReadPermissions() throws Exception {
@@ -131,10 +133,15 @@ public class PermissionTest  {
         // test the permissions in the second facade.
         clientAllocatePermissions();
 
+
         // Uncovers bug 1237332,
         ClassificationFilter filter = testFacade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","R1");
-        Reservation evt = testFacade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} )[0];
+        final Reservation[] reservationsForAllocatable = testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter });
+        Reservation evt = reservationsForAllocatable[0];
+        final String ownerUsername = evt.getOwner().getUsername();
+        Assert.assertEquals("test", ownerUsername);
+        Assert.assertEquals(1, reservationsForAllocatable.length);
         evt =  testFacade.edit( evt );
         evt.removeAllocatable( allocatable );
         testFacade.store( evt );
@@ -149,6 +156,7 @@ public class PermissionTest  {
         evt = testFacade.edit( evt );
         evt.addAllocatable( allocatable );
         try {
+            System.out.println("Trying Store 1 ");
             testFacade.store( evt );
             Assert.fail("RaplaSecurityException expected!");
         } catch (RaplaSecurityException ex) {
@@ -165,6 +173,7 @@ public class PermissionTest  {
         testFacade.refresh();
         evt.addAllocatable( allocatable2 );
         try {
+            System.out.println("Trying Store 2");
             testFacade.store( evt );
             Assert.fail("RaplaSecurityException expected!");
         } catch (RaplaSecurityException ex) {
@@ -207,6 +216,8 @@ public class PermissionTest  {
         Assert.assertTrue(permissionController.canAllocate(allocatable, user, null, null, testFacade.today()));
 
         Reservation r1 = testFacade.newReservation();
+        final String ownerUsername = r1.getOwner().getUsername();
+        Assert.assertEquals("test", ownerUsername);
         r1.getClassification().setValue("name","R1");
 		Appointment a1 = testFacade.newAppointment( start1, end1 );
 		r1.addAppointment( a1 );

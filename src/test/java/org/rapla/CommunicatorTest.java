@@ -17,6 +17,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.ServerServiceContainer;
 
 import javax.inject.Provider;
 import java.util.Date;
@@ -38,7 +39,8 @@ public class CommunicatorTest
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
         int port = 8052;
-        server = RaplaTestCase.createServer(port, logger, "testdefault.xml");
+        final ServerServiceContainer servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
+        this.server = ServletTestBase.createServer(servlet, port);
         clientFacadeProvider = RaplaTestCase.createFacadeWithRemote( logger, port);
     }
 

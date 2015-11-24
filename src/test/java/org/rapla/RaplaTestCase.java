@@ -68,14 +68,18 @@ public abstract class RaplaTestCase extends TestCase
 
     int port = 8052;
 
-    static public Server createServer(int port, Logger logger, String xmlFile) throws Exception
+    public static ServerServiceContainer createServer( Logger logger, String xmlFile) throws Exception
     {
         ServerContainerContext containerContext = new ServerContainerContext();
         containerContext.setFileDatasource(getTestDataFile(xmlFile));
-        initFileHack();
+        return createServer(logger, containerContext);
+    }
+
+    public static ServerServiceContainer createServer(Logger logger, ServerContainerContext containerContext) throws Exception
+    {
         final ServerServiceContainer serverServiceContainer = DaggerServerCreator.create(logger, containerContext);
-        final Server server = ServletTestBase.createServer(serverServiceContainer, port);
-        return server;
+        initFileHack();
+        return serverServiceContainer;
     }
 
     private static void initFileHack()
@@ -96,7 +100,7 @@ public abstract class RaplaTestCase extends TestCase
         );
     }
 
-    private static String getTestDataFile(String xmlFile)
+    public static String getTestDataFile(String xmlFile)
     {
         return "src/test/resources/" + xmlFile;
     }

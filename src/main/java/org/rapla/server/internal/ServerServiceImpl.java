@@ -64,12 +64,13 @@ import java.util.TreeSet;
 public class ServerServiceImpl implements StorageUpdateListener, ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
-
+    final protected ClientFacade facade;
     final Logger logger;
 
     private final Map<String,RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
     private final RaplaRpcAndRestProcessor apiPage;
+    private final RaplaLocale raplaLocale;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
@@ -78,16 +79,14 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         return requestPreProcessors;
     }
 
-    public Logger getLogger()
-    {
-        return logger;
-    }
+
 
     @Inject
     public ServerServiceImpl(CachableStorageOperator operator, ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
             final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices)
     {
         this.logger = logger;
+        this.raplaLocale = raplaLocale;
         //webMethods.setList( );
 //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
 //        if (containerContext.mailSession != null)
@@ -95,6 +94,7 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
 //            externalMailSession.setValue(containerContext.getMailSession());
 //        }
         this.operator = operator;
+        this.facade = facade;
         ((FacadeImpl)facade).setOperator( operator);
         this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
         operator.addStorageUpdateListener(this);
@@ -181,6 +181,21 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         {
             extension.start();
         }
+    }
+
+    public RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
+    }
+
+    public Logger getLogger()
+    {
+        return logger;
+    }
+
+    public ClientFacade getFacade()
+    {
+        return facade;
     }
 
     public void setPasswordCheckDisabled(boolean passwordCheckDisabled)

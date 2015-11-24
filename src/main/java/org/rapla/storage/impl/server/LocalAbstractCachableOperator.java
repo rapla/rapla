@@ -1695,7 +1695,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		Collection<String> removeIds = new ArrayList<String>(evt.getRemoveIds());
         for (Entity entity: storeObjects) 
 		{
-            evt.putStore(entity);
+            //evt.putStore(entity);
             RaplaType raplaType = entity.getRaplaType();
             if (DynamicType.TYPE == raplaType) {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
