@@ -52,9 +52,9 @@ public class ConcurrentTests
     {
         t1Objs.clear();
         t2Objs.clear();
-        con1 = DriverManager.getConnection("jdbc:hsqldb:test", "sa", "");
+        con1 = DriverManager.getConnection("jdbc:hsqldb:target/db/test", "sa", "");
         con1.setAutoCommit(false);
-        con2 = DriverManager.getConnection("jdbc:hsqldb:test", "sa", "");
+        con2 = DriverManager.getConnection("jdbc:hsqldb:target/db/test", "sa", "");
         con2.setAutoCommit(false);
         { // delete old
             final Statement stmt = con1.createStatement();
