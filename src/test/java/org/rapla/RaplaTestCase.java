@@ -21,6 +21,7 @@ import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -31,6 +32,8 @@ import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.MyCustomConnector;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
@@ -39,6 +42,8 @@ import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.dbrm.RemoteStorage_JavaJsonProxy;
+import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.xml.sax.InputSource;
 
 import javax.inject.Provider;
@@ -79,6 +84,11 @@ public abstract class RaplaTestCase
     public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile)
     {
         String resolvedPath = getTestDataFile(xmlFile);
+        return createFacadeWithFile(logger,resolvedPath,new VoidFileIO());
+    }
+
+    public static ClientFacade createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
+    {
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
@@ -95,7 +105,50 @@ public abstract class RaplaTestCase
                 DefaultPermissionControllerSupport.getController());
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
         facade.setOperator(operator);
-        operator.setFileIO(new VoidFileIO());
+        operator.setFileIO(fileIO);
+        operator.connect();
+        return facade;
+    }
+
+    static class MyImportExportManagerProvider implements Provider<ImportExportManager>
+    {
+
+        private ImportExportManager manager;
+
+        @Override public ImportExportManager get()
+        {
+            return manager;
+        }
+
+        public void setManager(ImportExportManager manager)
+        {
+            this.manager = manager;
+        }
+    }
+
+    public static ClientFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile)
+    {
+        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        RaplaResources i18n = new RaplaResources(bundleManager);
+
+        CommandScheduler scheduler = new DefaultScheduler(logger);
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+
+        Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
+        StandardFunctions functions = new StandardFunctions(raplaLocale);
+        functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
+
+        RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
+        PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
+        String resolvedPath = getTestDataFile(xmlFile);
+        FileOperator fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,DefaultPermissionControllerSupport.getController());
+        fileOperator.setFileIO(new VoidFileIO());
+        MyImportExportManagerProvider importExportManager = new MyImportExportManagerProvider();
+        DBOperator operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,dataSource,
+                DefaultPermissionControllerSupport.getController());
+        importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));
+        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
+        facade.setOperator(operator);
         operator.connect();
         return facade;
     }

@@ -12,6 +12,41 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import org.rapla.ConnectInfo;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.RefEntity;
+import org.rapla.facade.Conflict;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ConfigTools;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
+import org.rapla.storage.IdCreator;
+import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.UpdateResult;
+import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.xml.IOContext;
+import org.rapla.storage.xml.RaplaDefaultXMLContext;
+import org.rapla.storage.xml.RaplaXMLContextException;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -29,40 +64,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-
-import org.rapla.ConnectInfo;
-import org.rapla.RaplaResources;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.xml.RaplaNonValidatedInput;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.facade.Conflict;
-import org.rapla.storage.xml.RaplaXMLContextException;
-import org.rapla.storage.xml.RaplaDefaultXMLContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ConfigTools;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.CachableStorageOperatorCommand;
-import org.rapla.storage.IdCreator;
-import org.rapla.storage.ImportExportManager;
-import org.rapla.storage.LocalCache;
-import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.UpdateResult;
-import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-import org.rapla.storage.xml.IOContext;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton
@@ -222,16 +223,28 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
     synchronized public User connect(ConnectInfo connectInfo) throws RaplaException {
-        if (isConnected())
+        if (!isConnected())
+        {
+            getLogger().debug("Connecting: " + getConnectionName());
+            loadData();
+            initIndizes();
+            isConnected = true;
+            getLogger().debug("Connected");
+        }
+        if ( connectInfo != null)
+        {
+            final String username = connectInfo.getUsername();
+            final UserImpl user = cache.getUser(username);
+            if (user == null)
+            {
+                throw new RaplaSecurityException("User " + username + " not found!");
+            }
+            return user;
+        }
+        else
         {
             return null;
         }
-    	getLogger().debug("Connecting: " + getConnectionName());
-        loadData();
-        initIndizes();
-        isConnected = true;
-    	getLogger().debug("Connected");
-    	return null;
     }
 
     public boolean isConnected() {

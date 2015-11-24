@@ -17,8 +17,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -30,16 +32,21 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 
+import javax.sql.DataSource;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 @RunWith(JUnit4.class)
@@ -47,19 +54,29 @@ public class SQLOperatorTest extends AbstractOperatorTest
 {
 
     ClientFacade facade;
+    Logger logger;
 
-    @Override protected ClientFacade getFacade()
+    @Before
+    public void setUp()
     {
-        return facade;
-    }
-
-    @Before public void setUp() throws Exception
-    {
+        logger = RaplaBootstrapLogger.createRaplaLogger();
+        org.hsqldb.jdbc.JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
+        new File("target/temp").mkdir();
+        datasource.setUrl("jdbc:hsqldb:data/target/temp/rapla-hsqldb");
+        datasource.setUser("db_user");
+        datasource.setPassword("your_pwd");
+        String xmlFile = "testdefault.xml";
+        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
         CachableStorageOperator operator = getOperator();
         operator.connect();
         ((DBOperator) operator).removeAll();
         operator.disconnect();
         operator.connect();
+    }
+
+    @Override protected ClientFacade getFacade()
+    {
+        return facade;
     }
 
     @Test
@@ -80,7 +97,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
         operator.refresh();
 
         Set<Reservation> singleton = Collections.singleton(event);
-        Reservation event1 = (Reservation) operator.getPersistant(singleton).get(event);
+        final Map<Entity, Entity> persistantMap = operator.getPersistant(singleton);
+        Reservation event1 = (Reservation) persistantMap.get(event);
         Repeating repeating = event1.getAppointments()[0].getRepeating();
         Assert.assertNotNull(repeating);
         Assert.assertNull(repeating.getEnd());

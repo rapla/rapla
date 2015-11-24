@@ -62,7 +62,9 @@ public class FileOperatorTest extends AbstractOperatorTest {
     public void setUp() throws IOException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
-        facade = createFacadeWithFile(logger, "testdefault.xml");
+        String file = "testdefault.xml";
+        String resolvedPath = RaplaTestCase.getTestDataFile(file);
+        facade = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath,logger));
     }
 
     static class MyFileIO implements FileOperator.FileIO
@@ -109,30 +111,6 @@ public class FileOperatorTest extends AbstractOperatorTest {
             String stringData = new String( data);
             logger.debug("Writing data " + stringData);
         }
-    }
-
-    public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile) throws IOException
-    {
-        String resolvedPath = RaplaTestCase.getTestDataFile(xmlFile);
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
-        RaplaResources i18n = new RaplaResources(bundleManager);
-
-        CommandScheduler scheduler = new DefaultScheduler(logger);
-        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-
-        Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
-        StandardFunctions functions = new StandardFunctions(raplaLocale);
-        functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
-
-        RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
-        PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
-        FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
-                DefaultPermissionControllerSupport.getController());
-        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
-        facade.setOperator(operator);
-        operator.setFileIO(new MyFileIO(resolvedPath,logger));
-        operator.connect();
-        return facade;
     }
 
     @Override protected ClientFacade getFacade()
