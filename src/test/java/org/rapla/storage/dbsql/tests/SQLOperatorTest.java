@@ -35,6 +35,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 
@@ -61,7 +62,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
         org.hsqldb.jdbc.JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
-        new File("target/temp").mkdir();
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
@@ -72,6 +72,28 @@ public class SQLOperatorTest extends AbstractOperatorTest
         ((DBOperator) operator).removeAll();
         operator.disconnect();
         operator.connect();
+    }
+
+    @Test
+    public void testExport() throws Exception
+    {
+
+        ImportExportManager conv = ((DBOperator)getOperator()).getImportExportManager();
+        conv.doExport();
+        {
+            CachableStorageOperator operator = getOperator();
+            operator.connect();
+            operator.getVisibleEntities(null);
+            Thread.sleep(1000);
+        }
+        //
+        //       {
+        //	       CachableStorageOperator operator = 	context.lookupDeprecated(CachableStorageOperator.class ,"file");
+        //
+        //	      operator.connect();
+        //	      operator.getVisibleEntities( null );
+        //	      Thread.sleep( 1000 );
+        //       }
     }
 
     @Override protected ClientFacade getFacade()

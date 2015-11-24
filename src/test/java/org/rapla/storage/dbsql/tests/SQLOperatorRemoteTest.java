@@ -15,6 +15,7 @@ package org.rapla.storage.dbsql.tests;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,6 +35,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -55,36 +57,22 @@ import java.sql.Statement;
    }
    */
 
-    public void testExport() throws Exception
-    {
 
-        ImportExportManager conv = null;
-        conv.doExport();
-        {
-            CachableStorageOperator operator = getRapladb();
-            operator.connect();
-            operator.getVisibleEntities(null);
-            Thread.sleep(1000);
-        }
-        //
-        //       {
-        //	       CachableStorageOperator operator = 	context.lookupDeprecated(CachableStorageOperator.class ,"file");
-        //
-        //	      operator.connect();
-        //	      operator.getVisibleEntities( null );
-        //	      Thread.sleep( 1000 );
-        //       }
-    }
-
-    protected ServerContainerContext createContext()
+    protected ServerContainerContext createContext() throws Exception
     {
         ServerContainerContext container = new ServerContainerContext();
         org.hsqldb.jdbc.JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
+        try (Connection connection = datasource.getConnection())
+        {
+            connection.createStatement().execute("DROP SCHEMA PUBLIC CASCADE;");
+            connection.commit();
+        }
         container.setDbDatasource(datasource);
         container.setIsDbDatasource( true);
+
         String xmlFile = "testdefault.xml";
         container.setFileDatasource(RaplaTestCase.getTestDataFile(xmlFile));
         return container;

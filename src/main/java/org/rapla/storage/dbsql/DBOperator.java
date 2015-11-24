@@ -134,7 +134,12 @@ public class DBOperator extends LocalAbstractCachableOperator
         boolean withTransactionSupport = true;
         return createConnection(withTransactionSupport);
     }
-    
+
+    public ImportExportManager getImportExportManager()
+    {
+        return importExportManager.get();
+    }
+
     public Connection createConnection(boolean withTransactionSupport) throws RaplaException {
         return createConnection(withTransactionSupport, 0);
     }

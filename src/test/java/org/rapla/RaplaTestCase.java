@@ -65,6 +65,7 @@ public abstract class RaplaTestCase
     public static ServerServiceContainer createServer(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         FileOperator.setDefaultFileIO( new VoidFileIO());
+
         final ServerServiceContainer serverServiceContainer = DaggerServerCreator.create(logger, containerContext);
         return serverServiceContainer;
     }

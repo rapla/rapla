@@ -111,7 +111,7 @@ public class ServerTest
         return raplaLocale;
     }
 
-    protected ServerContainerContext createContext()
+    protected ServerContainerContext createContext() throws Exception
     {
         ServerContainerContext container = new ServerContainerContext();
         String xmlFile = "testdefault.xml";
@@ -202,7 +202,8 @@ public class ServerTest
             Allocatable newResource = facade2.getAllocatables(filter.toArray())[0];
             Classification classification = newResource.getClassification();
             Category userGroup = (Category) classification.getValue("test");
-            Assert.assertEquals("Category attribute value is not stored", facade2.getUserGroupsCategory().getCategories()[0].getKey(), userGroup.getKey());
+            final Category[] usergroups = facade2.getUserGroupsCategory().getCategories();
+            Assert.assertEquals("Category attribute value is not stored", usergroups[0].getKey(), userGroup.getKey());
             facade2.logout();
         }
         {
