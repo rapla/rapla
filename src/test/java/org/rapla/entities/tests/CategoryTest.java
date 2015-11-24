@@ -11,6 +11,13 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
@@ -20,27 +27,19 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-public class CategoryTest extends RaplaTestCase {
+@RunWith(JUnit4.class)
+public class CategoryTest {
     CategoryImpl areas;
     ModificationModule modificationMod;
     QueryModule queryMod;
     UpdateModule updateMod;
 
-    public CategoryTest(String name) {
-        super(name);
-    }
 
-    public static Test suite() {
-        return new TestSuite(CategoryTest.class);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
-        ClientFacade facade = getFacade();
+    @Before
+    public void setUp() throws Exception {
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
         updateMod = facade;
@@ -61,36 +60,35 @@ public class CategoryTest extends RaplaTestCase {
         buildingA.addCategory(floor1);
         area51.addCategory(buildingA);
         areas.addCategory(area51);
-
     }
 
+    @Test
     public void testStore2() throws Exception {
         Category superCategory = modificationMod.edit(queryMod.getSuperCategory());
         
         superCategory.addCategory(areas);
         modificationMod.store(superCategory);
-        assertTrue(areas.getId() != null);
+        Assert.assertTrue(areas.getId() != null);
         Category editObject =  modificationMod.edit(superCategory);
         modificationMod.store(editObject);
-        assertTrue("reference to subcategory has changed"
-                   ,areas == (CategoryImpl) superCategory.getCategory("areas")
-                   );
+        Assert.assertTrue("reference to subcategory has changed", areas == (CategoryImpl) superCategory.getCategory("areas"));
     }
 
-    
+    @Test
     public void testStore() throws Exception {
         Category superCategory =modificationMod.edit(queryMod.getSuperCategory());
         superCategory.addCategory(areas);
         modificationMod.store(superCategory);
-        assertTrue(areas.getId() != null);
+        Assert.assertTrue(areas.getId() != null);
         updateMod.refresh();
         Category[] categories = queryMod.getSuperCategory().getCategories();
         for (int i=0;i<categories.length;i++)
             if (categories[i].equals(areas))
                 return;
-        assertTrue("category not stored!",false);
+        Assert.assertTrue("category not stored!", false);
     }
 
+    @Test
     public void testStore3() throws Exception {
         Category superCategory = queryMod.getSuperCategory();
         Category department = modificationMod.edit( superCategory.getCategory("department") );
@@ -98,13 +96,14 @@ public class CategoryTest extends RaplaTestCase {
         try {
             department.removeCategory( school);
             modificationMod.store( department );
-            fail("No dependency exception thrown");
+            Assert.fail("No dependency exception thrown");
         } catch (DependencyException ex) {
         }
         school = modificationMod.edit( superCategory.getCategory("department").getCategory("channel-6") );
         modificationMod.store( school );
     }
-    
+
+    @Test
     public void testEditDeleted() throws Exception {
         Category superCategory = queryMod.getSuperCategory();
         Category department = modificationMod.edit( superCategory.getCategory("department") );
@@ -114,37 +113,40 @@ public class CategoryTest extends RaplaTestCase {
         try {
            Category subDepartmentEdit = modificationMod.edit( subDepartment );
            modificationMod.store( subDepartmentEdit );
-           fail( "store should throw an exception, when trying to edit a removed entity ");
+            Assert.fail("store should throw an exception, when trying to edit a removed entity ");
         } catch ( RaplaException ex) {
         }
     }
 
 
+    @Test
     public void testGetParent() {
         Category area51 = areas.getCategory("51");
         Category buildingA = area51.getCategory("A");
         Category floor1 = buildingA.getCategories()[0];
-        assertEquals(areas, area51.getParent());
-        assertEquals(area51, buildingA.getParent());
-        assertEquals(buildingA, floor1.getParent());
+        Assert.assertEquals(areas, area51.getParent());
+        Assert.assertEquals(area51, buildingA.getParent());
+        Assert.assertEquals(buildingA, floor1.getParent());
     }
 
+    @Test
     @SuppressWarnings("null")
     public void testPath() throws Exception {
         String path = "category[key='51']/category[key='A']/category[key='1']";
         Category sub =areas.getCategoryFromPath(path);
-        assertTrue(sub != null);
-        assertTrue(sub.getName().getName("en").equals("floor 1"));
+        Assert.assertTrue(sub != null);
+        Assert.assertTrue(sub.getName().getName("en").equals("floor 1"));
         String path2 = areas.getPathForCategory(sub);
         //      System.out.println(path2);
-        assertEquals(path, path2);
+        Assert.assertEquals(path, path2);
     }
 
+    @Test
     public void testAncestorOf() throws Exception {
         String path = "category[key='51']/category[key='A']/category[key='1']";
         Category sub =areas.getCategoryFromPath(path);
-        assertTrue(areas.isAncestorOf(sub));
-        assertTrue(!sub.isAncestorOf(areas));
+        Assert.assertTrue(areas.isAncestorOf(sub));
+        Assert.assertTrue(!sub.isAncestorOf(areas));
     }
 }
 

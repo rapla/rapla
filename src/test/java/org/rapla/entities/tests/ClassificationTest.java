@@ -11,12 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -33,8 +33,16 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
-public class ClassificationTest extends RaplaTestCase {
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
+@RunWith(JUnit4.class)
+public class ClassificationTest  {
     Reservation reserv1;
     Reservation reserv2;
     Allocatable allocatable1;
@@ -44,17 +52,14 @@ public class ClassificationTest extends RaplaTestCase {
     ModificationModule modificationMod;
     QueryModule queryMod;
 
-    public ClassificationTest(String name) {
-        super(name);
-    }
-
+	@Before
     public void setUp() throws Exception {
-        super.setUp();
-        ClientFacade facade = getFacade();
+		ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
     }
 
+	@Test
     public void testChangeType() throws RaplaException {
     	Category c1 = modificationMod.newCategory();
     	c1.setKey("c1");
@@ -84,7 +89,7 @@ public class ClassificationTest extends RaplaTestCase {
 
     	try {
     		modificationMod.store(  type  );
-    		fail("Should throw an EntityNotFoundException");
+			Assert.fail("Should throw an EntityNotFoundException");
     	} catch (EntityNotFoundException ex) {
     	}
 		modificationMod.storeObjects( new Entity[] { rootC, type } );
@@ -99,10 +104,10 @@ public class ClassificationTest extends RaplaTestCase {
     	{
 	        Allocatable persistantResource = modificationMod.getPersistant(resource);
 	        Collection<Object> values = persistantResource.getClassification().getValues( classification.getAttribute("test-attribute"));
-	        assertEquals( 2, values.size());
+	        Assert.assertEquals(2, values.size());
 	        Iterator<Object> iterator = values.iterator();
-			assertEquals( c1a,iterator.next());
-	        assertEquals( c1b,iterator.next());
+			Assert.assertEquals(c1a, iterator.next());
+			Assert.assertEquals(c1b, iterator.next());
     	}
     	
     	type = queryMod.getDynamicType("test-type");
@@ -115,9 +120,9 @@ public class ClassificationTest extends RaplaTestCase {
 	    	Allocatable persistantResource = modificationMod.getPersistant(resource);
 	        Classification classification2 = persistantResource.getClassification();
 	        Collection<Object> values = classification2.getValues( classification.getAttribute("test-attribute"));
-			assertEquals(0,  values.size());
+			Assert.assertEquals(0, values.size());
 			Object value = classification2.getValue("test-attribute");
-			assertNull( value);
+			Assert.assertNull(value);
     	}
     }
 

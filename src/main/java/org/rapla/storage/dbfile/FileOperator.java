@@ -43,6 +43,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -178,7 +179,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             final UserImpl user = cache.getUser(username);
             if (user == null)
             {
-                throw new RaplaException("User " + username + " not found!");
+                throw new RaplaSecurityException("User " + username + " not found!");
             }
             return user;
         }

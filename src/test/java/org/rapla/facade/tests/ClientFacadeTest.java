@@ -11,14 +11,13 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.tests;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
 
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -41,36 +40,37 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UserModule;
 import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
 
-public class ClientFacadeTest extends RaplaTestCase {
+
+@RunWith(JUnit4.class)
+public class ClientFacadeTest  {
     ClientFacade facade;
     Locale locale;
 
-    public ClientFacadeTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(ClientFacadeTest.class);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
-        facade = getFacade();
-        facade.login("homer","duffs".toCharArray());
+    @Before
+    public void setUp() throws Exception {
+        facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         locale = Locale.getDefault();
     }
 
-    protected void tearDown() throws Exception {
+
+    @After
+    public void tearDown() throws Exception {
         facade.logout();
-        super.tearDown();
     }
 
     private Reservation findReservation(QueryModule queryMod,String name) throws RaplaException {
@@ -82,6 +82,7 @@ public class ClientFacadeTest extends RaplaTestCase {
         return null;
     }
 
+    @Test
     public void testConflicts() throws Exception {
         Conflict[] conflicts= facade.getConflicts( );
         Reservation[] all = facade.getReservationsForAllocatable(null, null, null, null);
@@ -89,7 +90,7 @@ public class ClientFacadeTest extends RaplaTestCase {
         Reservation orig =  facade.newReservation();
         orig.getClassification().setValue("name","new");
         Date start = DateTools.fillDate( new Date());
-        Date end = getRaplaLocale().toDate( start, getRaplaLocale().toTime(  12,0,0));
+        Date end = DateTools.toDateTime( start,new Date(DateTools.toTime(  12,0,0)));
         orig.addAppointment( facade.newAppointment( start, end));
         
         orig.addAllocatable( facade.getAllocatables()[0]);
@@ -99,40 +100,23 @@ public class ClientFacadeTest extends RaplaTestCase {
         facade.store( clone );
 
         Conflict[] conflictsAfter = facade.getConflicts( );
-        assertEquals( 1, conflictsAfter.length - conflicts.length );
+        Assert.assertEquals(1, conflictsAfter.length - conflicts.length);
         HashSet<Conflict> set = new HashSet<Conflict>( Arrays.asList( conflictsAfter ));
 
-        assertTrue ( set.containsAll( new HashSet<Conflict>( Arrays.asList( conflicts ))));
+        Assert.assertTrue(set.containsAll(new HashSet<Conflict>(Arrays.asList(conflicts))));
         
         
     }
 
-    // Make some Changes to the Reservation in another client
-    private void changeInSecondFacade(String name) throws Exception {
-        ClientFacade facade2 =  null;//FIXME: raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade2");
-        facade2.login("homer","duffs".toCharArray());
-        UserModule userMod2 =  facade2;
-        QueryModule queryMod2 =  facade2;
-        ModificationModule modificationMod2 =  facade2;
-        boolean bLogin = userMod2.login("homer","duffs".toCharArray());
-        assertTrue(bLogin);
-        Reservation reservation = findReservation(queryMod2,name);
-        Reservation mutableReseravation = modificationMod2.edit(reservation);
-        Appointment appointment =  mutableReseravation.getAppointments()[0];
-
-        RaplaLocale loc = getRaplaLocale();
-        Calendar cal = loc.createCalendar();
-        cal.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);
-        Date startTime = loc.toTime( 17,0,0);
-		Date startTime1 = loc.toDate(cal.getTime(), startTime);
-        Date endTime = loc.toTime( 19,0,0);
-		Date endTime1 = loc.toDate(cal.getTime(), endTime);
-        appointment.move(startTime1,endTime1);
-
-        modificationMod2.store( mutableReseravation );
-        //userMod2.logout();
+    @Test
+    public void testLogin() throws Exception {
+        facade.logout();
+        Assert.assertEquals(false, facade.login("non_existant_user", "".toCharArray()));
+        Assert.assertEquals(false, facade.login("non_existant_user", "fake".toCharArray()));
     }
 
+
+    @Test
     public void testClone() throws Exception {
         ClassificationFilter filter = facade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","power planting");
@@ -145,39 +129,28 @@ public class ClientFacadeTest extends RaplaTestCase {
         a.getRepeating().setEnd( newEnd );
         facade.store( clone );
         Reservation[] allPowerPlantings = facade.getReservationsForAllocatable(null,  null, null, new ClassificationFilter[] { filter});
-        assertEquals( 2, allPowerPlantings.length);
+        Assert.assertEquals(2, allPowerPlantings.length);
         Reservation[] onlyClones = facade.getReservationsForAllocatable(null,  newStart, null, new ClassificationFilter[] { filter});
-        assertEquals( 1, onlyClones.length);
+        Assert.assertEquals(1, onlyClones.length);
     }
 
-    public void testRefresh() throws Exception {
-        changeInSecondFacade("bowling");
-        facade.refresh();
-        Reservation resAfter = findReservation(facade,"bowling");
-        Appointment appointment = resAfter.getAppointments()[0];
-        Calendar cal = Calendar.getInstance(DateTools.getTimeZone());
-        cal.setTime(appointment.getStart());
-        assertEquals(17, cal.get(Calendar.HOUR_OF_DAY) );
-        assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK) );
-        cal.setTime(appointment.getEnd());
-        assertEquals(19, cal.get(Calendar.HOUR_OF_DAY));
-        assertEquals( Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
-    }
 
+
+    @Test
     public void testExampleEdit() throws Exception {
 
     	String allocatableId;
     	String eventId;
     	{
-    		Allocatable nonPersistantAllocatable = getFacade().newResource();
+    		Allocatable nonPersistantAllocatable = facade.newResource();
     		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
     		 
-    		Reservation nonPeristantEvent = getFacade().newReservation();
-    		nonPeristantEvent.getClassification().setValue("name","dummy-event");
-    		assertEquals( "event", nonPeristantEvent.getClassification().getType().getKey());
+    		Reservation nonPeristantEvent = facade.newReservation();
+    		nonPeristantEvent.getClassification().setValue("name", "dummy-event");
+    		Assert.assertEquals("event", nonPeristantEvent.getClassification().getType().getKey());
     		nonPeristantEvent.addAllocatable( nonPersistantAllocatable );
-    		nonPeristantEvent.addAppointment( getFacade().newAppointment( new Date(), new Date()));
-    		getFacade().storeObjects( new Entity[] { nonPersistantAllocatable, nonPeristantEvent} );
+    		nonPeristantEvent.addAppointment( facade.newAppointment(new Date(), new Date()));
+    		facade.storeObjects(new Entity[] { nonPersistantAllocatable, nonPeristantEvent });
     		allocatableId = nonPersistantAllocatable.getId();
     		eventId = nonPeristantEvent.getId();
     	}
@@ -185,81 +158,67 @@ public class ClientFacadeTest extends RaplaTestCase {
     	
         // Store the allocatable it a second time to test if it is still modifiable after storing
         allocatable.getClassification().setValue("name", "Blubs");
-        getFacade().store( allocatable );
+        facade.store(allocatable);
 
         // query the allocatable from the store
-        ClassificationFilter filter = getFacade().getDynamicType("room").newClassificationFilter();
+        ClassificationFilter filter = facade.getDynamicType("room").newClassificationFilter();
         filter.addEqualsRule("name","Blubs");
-        Allocatable persistantAllocatable = getFacade().getAllocatables( new ClassificationFilter[] { filter} )[0];
+        Allocatable persistantAllocatable = facade.getAllocatables(new ClassificationFilter[] { filter })[0];
 
         // query the event from the store
-        ClassificationFilter eventFilter = getFacade().getDynamicType("event").newClassificationFilter();
+        ClassificationFilter eventFilter = facade.getDynamicType("event").newClassificationFilter();
         eventFilter.addEqualsRule("name","dummy-event");
-        Reservation persistantEvent = getFacade().getReservationsForAllocatable( null, null, null,new ClassificationFilter[] { eventFilter} )[0];
+        Reservation persistantEvent = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { eventFilter })[0];
         // Another way to get the persistant event would have been
-        //Reservation persistantEvent = getFacade().getPersistant( nonPeristantEvent );
+        //Reservation persistantEvent = facade.getPersistant( nonPeristantEvent );
 
         // test if the ids of editable Versions are equal to the persistant ones
-        assertEquals( persistantAllocatable, allocatable);
+        Assert.assertEquals(persistantAllocatable, allocatable);
         Reservation event = facade.getOperator().resolve( eventId, Reservation.class);
-		assertEquals( persistantEvent, event);
-        assertEquals( persistantEvent.getAllocatables()[0], event.getAllocatables()[0]);
+		Assert.assertEquals(persistantEvent, event);
+        Assert.assertEquals(persistantEvent.getAllocatables()[0], event.getAllocatables()[0]);
 
 //        // Check if the modifiable/original versions are different to the persistant versions
-//        assertTrue( persistantAllocatable !=  allocatable );
-//        assertTrue( persistantEvent !=  event );
-//        assertTrue( persistantEvent.getAllocatables()[0] != event.getAllocatables()[0]);
+//        Assert.assertTrue( persistantAllocatable !=  allocatable );
+//        Assert.assertTrue( persistantEvent !=  event );
+//        Assert.assertTrue( persistantEvent.getAllocatables()[0] != event.getAllocatables()[0]);
 
         // Test the read only constraints
         try {
             persistantAllocatable.getClassification().setValue("name","asdflkj");
-            fail("ReadOnlyException should have been thrown");
+            Assert.fail("ReadOnlyException should have been thrown");
         } catch (ReadOnlyException ex) {
         }
 
         try {
             persistantEvent.getClassification().setValue("name","dummy-event");
-            fail("ReadOnlyException should have been thrown");
+            Assert.fail("ReadOnlyException should have been thrown");
         } catch (ReadOnlyException ex) {
         }
 
         try {
             persistantEvent.removeAllocatable( allocatable);
-            fail("ReadOnlyException should have been thrown");
+            Assert.fail("ReadOnlyException should have been thrown");
         } catch (ReadOnlyException ex) {
         }
 
         // now we get a second edit copy of the event
-        Reservation nonPersistantEventVersion2 =  getFacade().edit( persistantEvent);
-        assertTrue( nonPersistantEventVersion2 !=  event );
+        Reservation nonPersistantEventVersion2 =  facade.edit(persistantEvent);
+        Assert.assertTrue(nonPersistantEventVersion2 != event);
 
         // Both allocatables are persitant, so they have the same reference
-        assertTrue( persistantEvent.getAllocatables()[0] == nonPersistantEventVersion2.getAllocatables()[0]);
+        Assert.assertTrue(persistantEvent.getAllocatables()[0] == nonPersistantEventVersion2.getAllocatables()[0]);
     }
 
-    public void testLogin() throws Exception {
-        ClientFacade facade2 = null;// FIXME raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade2");
-        assertEquals(false, facade2.login("non_existant_user","".toCharArray()));
-        assertEquals(false, facade2.login("non_existant_user","fake".toCharArray()));
-        assertTrue(facade2.login("homer","duffs".toCharArray()));
-        assertEquals("homer",facade2.getUser().getUsername());
-        facade.logout();
-    }
 
-    public void testSavePreferences() throws Exception {
-        ClientFacade facade2 = null;// FIXME raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade2");
-        assertTrue(facade2.login("monty","burns".toCharArray()));
-        Preferences prefs = facade.edit( facade.getPreferences() );
-        facade2.store( prefs );
-        facade2.logout();
-    }
 
+    @Test
     public void testNewUser() throws RaplaException {
         User newUser = facade.newUser();
         newUser.setUsername("newUser");
         try {
             facade.getPreferences(newUser);
-            fail( "getPreferences should throw an Exception for non existant user");
+            Assert.fail("getPreferences should throw an Exception for non existant user");
         } catch (EntityNotFoundException ex ){
         }
         facade.store( newUser );
@@ -267,6 +226,7 @@ public class ClientFacadeTest extends RaplaTestCase {
         facade.store( prefs );
     }
 
+    @Test
     public void testPreferenceDependencies() throws RaplaException {
         Allocatable allocatable = facade.newResource();
         facade.store( allocatable);
@@ -285,7 +245,7 @@ public class ClientFacadeTest extends RaplaTestCase {
         facade.store( editPref );
         try {
             facade.remove( allocatable );
-            fail("DependencyException should have thrown");
+            Assert.fail("DependencyException should have thrown");
         } catch (DependencyException ex) {
         }
 
@@ -297,9 +257,10 @@ public class ClientFacadeTest extends RaplaTestCase {
         facade.remove( allocatable );
     }
 
+    @Test
     public void testResourcesNotEmpty() throws RaplaException {
         Allocatable[] resources = facade.getAllocatables(null);
-        assertTrue(resources.length > 0);
+        Assert.assertTrue(resources.length > 0);
     }
 
     void printConflicts(Conflict[] c) {

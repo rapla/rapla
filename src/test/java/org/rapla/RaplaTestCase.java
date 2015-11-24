@@ -34,6 +34,7 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.jsonrpc.client.EntryPointFactory;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.server.ServerServiceContainer;
@@ -105,6 +106,13 @@ public abstract class RaplaTestCase extends TestCase
         return "src/test/resources/" + xmlFile;
     }
 
+    public static ClientFacade createSimpleSimpsonsWithHomer()
+    {
+        ClientFacade facade = RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
+        facade.login("homer","duffs".toCharArray());
+        return facade;
+    }
+
     public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile)
     {
         String resolvedPath = getTestDataFile(xmlFile);
@@ -125,10 +133,11 @@ public abstract class RaplaTestCase extends TestCase
                 DefaultPermissionControllerSupport.getController());
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
         facade.setOperator(operator);
+        operator.connect();
         return facade;
     }
 
-    static Provider<ClientFacade> createFacadeWithRemote(Logger logger, int port)
+    public static Provider<ClientFacade> createFacadeWithRemote(Logger logger, int port)
     {
         final String serverURL = "http://localhost:" + port + "/";
 

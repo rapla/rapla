@@ -1,24 +1,29 @@
 package org.rapla.server;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
 
-public class RaplaKeyStorageTest extends RaplaTestCase {
+@RunWith(JUnit4.class)
+public class RaplaKeyStorageTest  {
 
-	public RaplaKeyStorageTest(String name) {
-		super(name);
-	}
-	
+	@Test
 	public void testKeyStore() throws RaplaException
 	{
-        ClientFacade facade = getFacade();
-		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(facade,getLogger());
+		Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+		ClientFacade facade = RaplaTestCase.createFacadeWithFile(logger,"testdefault.xml");
+		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(facade,logger);
         User user = facade.newUser();
 		user.setUsername("testuser");
 		facade.store( user);
@@ -29,15 +34,15 @@ public class RaplaKeyStorageTest extends RaplaTestCase {
 		storage.storeLoginInfo(user, tagName, login, secret);
 		{
 			LoginInfo secrets = storage.getSecrets(user, tagName);
-			assertEquals( login,secrets.login);
-			assertEquals( secret,secrets.secret);
+			Assert.assertEquals(login, secrets.login);
+			Assert.assertEquals(secret, secrets.secret);
 		}
 		
 		facade.remove( user);
 		try
 		{
 		    storage.getSecrets(user, tagName);
-		    fail("Should throw Entity not found exception"); 
+			Assert.fail("Should throw Entity not found exception");
 		}
 		catch ( EntityNotFoundException ex)
 		{

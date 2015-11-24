@@ -9,11 +9,14 @@ import javax.inject.Provider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.xml.RaplaXMLContextException;
 
+@RunWith(JUnit4.class)
 public class TestContainerImpl
 {
     ContainerImpl container;

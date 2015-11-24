@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -22,39 +27,32 @@ import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-public class PreferencesTest extends RaplaTestCase {
+@RunWith(JUnit4.class)
+public class PreferencesTest  {
     CategoryImpl areas;
     ModificationModule modificationMod;
     QueryModule queryMod;
     UpdateModule updateMod;
 
-    public PreferencesTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(PreferencesTest.class);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
-        ClientFacade facade = getFacade();
+    @Before
+    public void setUp() throws Exception {
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
         updateMod = facade;
     }
 
+    @Test
     public void testLoad() throws Exception {
         Preferences preferences = queryMod.getPreferences();
         TypedComponentRole<RaplaConfiguration> SESSION_TEST = new TypedComponentRole<RaplaConfiguration>("org.rapla.SessionTest");
         Configuration config = preferences.getEntry(SESSION_TEST);
-        assertEquals("testvalue",config.getAttribute("test"));
+        Assert.assertEquals("testvalue", config.getAttribute("test"));
     }
 
+    @Test
     public void testStore() throws Exception {
         Preferences preferences = queryMod.getPreferences();
         Preferences clone  = modificationMod.edit(preferences);

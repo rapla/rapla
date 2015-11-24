@@ -1,15 +1,15 @@
 package org.rapla.entities.tests;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import java.util.UUID;
 
-import org.rapla.RaplaTestCase;
+@RunWith(JUnit4.class)
+public class IDGeneratorTest  {
 
-public class IDGeneratorTest extends RaplaTestCase {
-
-	public IDGeneratorTest(String name) {
-		super(name);
-	}
-	
+	@Test
 	public void test()
 	{
 		UUID randomUUID = UUID.randomUUID();

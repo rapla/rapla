@@ -13,26 +13,42 @@
 package org.rapla.entities.tests;
 import java.util.Locale;
 
+import org.eclipse.jetty.server.Server;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.ServerServiceContainer;
 
-public class UserTest extends ServletTestBase {
+import javax.inject.Provider;
+
+@RunWith(JUnit4.class)
+public class UserTest  {
     
     ClientFacade adminFacade;
     ClientFacade testFacade;
     Locale locale;
+    Server server;
 
-    public UserTest(String name) {
-        super(name);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        int port = 8052;
+        final Logger raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
+        final ServerServiceContainer servlet = RaplaTestCase.createServer(raplaLogger, "testdefault.xml");
+        server = ServletTestBase.createServer(servlet, port);
         // start the client service
-        adminFacade = null;
+        final Provider<ClientFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
+        adminFacade = facadeWithRemote.get();
         adminFacade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
 
@@ -45,21 +61,22 @@ public class UserTest extends ServletTestBase {
             adminFacade.store( groups );
         } catch (RaplaException ex) {
             adminFacade.logout();
-            super.tearDown();
             throw ex;
             
         }
-        testFacade = null;
+        testFacade = facadeWithRemote.get();
         boolean canLogin = testFacade.login("homer","duffs".toCharArray());
-        assertTrue( "Can't login", canLogin );
+        Assert.assertTrue("Can't login", canLogin);
     }
 
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         adminFacade.logout();
         testFacade.logout();
-        super.tearDown();
+        server.stop();
     }
 
+    @Test
     public void testCreateAndRemoveUser() throws Exception {
         User user = adminFacade.newUser();
         user.setUsername("test");

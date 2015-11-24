@@ -2,56 +2,43 @@ package org.rapla;
 
 import java.util.Date;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
-public class HugeDataFileTest extends RaplaTestCase
+
+@RunWith(JUnit4.class)
+public class HugeDataFileTest
 {
-
-    public HugeDataFileTest( String name )
-    {
-        super( name );
-    }
-
+    @Test
     public void testHuge() throws RaplaException, Exception
     {
-        getFacade().login("homer","duffs".toCharArray());
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         int RESERVATION_COUNT =15000;
         Reservation[] events = new Reservation[RESERVATION_COUNT];
         
         for ( int i=0;i<RESERVATION_COUNT;i++)
         {
-            Reservation event = getFacade().newReservation();
-            Appointment app1 = getFacade().newAppointment( new Date(), new Date());
-            Appointment app2 = getFacade().newAppointment( new Date(), new Date());
+            Reservation event = facade.newReservation();
+            Appointment app1 = facade.newAppointment(new Date(), new Date());
+            Appointment app2 = facade.newAppointment(new Date(), new Date());
             event.addAppointment( app1);
             event.addAppointment( app2);
             event.getClassification().setValue("name", "Test-Event " + i);
             events[i] = event;
         }
-        getLogger().info("Starting store");
-        
-        getFacade().storeObjects( events );
-        getFacade().logout();
 
-        getLogger().info("Stored");
-        getFacade().login("homer","duffs".toCharArray());
+        facade.storeObjects(events);
+        facade.logout();
+
+        
+        facade.login("homer", "duffs".toCharArray());
     }
     
-    public static void main(String[] args)
-    {
-        HugeDataFileTest test = new HugeDataFileTest( HugeDataFileTest.class.getName());
-        try
-        {
-            test.setUp();
-            test.testHuge();
-            test.tearDown();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        
-    }
+
 }

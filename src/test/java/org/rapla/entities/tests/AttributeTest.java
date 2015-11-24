@@ -39,8 +39,7 @@ public class AttributeTest  {
 
     @Before
     public void setUp() throws Exception {
-        ClientFacade facade= RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
-        facade.login("homer","duffs".toCharArray());
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
         updateMod = facade;

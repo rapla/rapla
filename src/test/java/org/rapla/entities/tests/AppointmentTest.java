@@ -41,10 +41,6 @@ public class AppointmentTest {
     TimeZone zone = DateTools.getTimeZone(); //this is GMT
     Locale locale = Locale.getDefault();
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
     Appointment createAppointment(Day day,Time start,Time end) {
         Calendar cal = Calendar.getInstance(zone,locale);
         cal.set(Calendar.YEAR,day.getYear());

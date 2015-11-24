@@ -69,8 +69,7 @@ public class DynamicTypeTest  {
 	public void setUp()
 	{
 		logger = RaplaBootstrapLogger.createRaplaLogger();
-		facade = RaplaTestCase.createFacadeWithFile(logger,"testdefault.xml");
-		facade.login("homer","duffs".toCharArray());
+		facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
 		model  = facade.newCalendarModel( facade.getUser());
 	}
 

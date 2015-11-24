@@ -11,9 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
-import java.util.Collections;
-import java.util.Iterator;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -30,35 +33,29 @@ import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Collections;
+import java.util.Iterator;
 
-public class ClassificationFilterTest extends RaplaTestCase {
+@RunWith(JUnit4.class)
+public class ClassificationFilterTest  {
+    ClientFacade facade;
     ModificationModule modificationMod;
     QueryModule queryMod;
     UpdateModule updateMod;
 
-    public ClassificationFilterTest(String name) 
-    {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(ClassificationFilterTest.class);
-    }
-
+    @Before
     public void setUp() throws Exception 
     {
-        super.setUp();
-        ClientFacade facade = getFacade();
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
         updateMod = facade;
-  
     }
 
+    @Test
     public void testStore() throws Exception {
         // select from event where (name contains 'planting' or name contains 'owl') or (description contains 'friends');
         DynamicType dynamicType = queryMod.getDynamicType("event");
@@ -85,7 +82,7 @@ public class ClassificationFilterTest extends RaplaTestCase {
 */
         ClassificationFilter[] filter = new ClassificationFilter[] {classificationFilter};
 
-        CalendarSelectionModel calendar = modificationMod.newCalendarModel(getFacade().getUser() );
+        CalendarSelectionModel calendar = modificationMod.newCalendarModel(facade.getUser());
         calendar.setViewId( WeekviewPlugin.WEEK_VIEW);
         calendar.setSelectedObjects( Collections.emptyList());
         calendar.setSelectedDate( queryMod.today());
@@ -104,11 +101,12 @@ public class ClassificationFilterTest extends RaplaTestCase {
         filter =  configuration.getFilter();
         Iterator<? extends ClassificationFilterRule> it = filter[0].ruleIterator();
         it.next();
-        assertTrue("second rule should be removed." , !it.hasNext());
+        Assert.assertTrue("second rule should be removed.", !it.hasNext());
 
     }
 
 
+    @Test
     public void testFilter() throws Exception {
         // Test if the new date attribute is used correctly in filters
         {
@@ -123,7 +121,7 @@ public class ClassificationFilterTest extends RaplaTestCase {
         //Issue 235 in rapla: Null date check in filter not working anymore
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
         Allocatable[] allocatablesWithoutFilter = queryMod.getAllocatables( classificationFilter.toArray());
-        assertTrue( allocatablesWithoutFilter.length > 0);
+        Assert.assertTrue(allocatablesWithoutFilter.length > 0);
         classificationFilter.setRule(0
                                      ,dynamicType.getAttribute("date")
                                      ,new Object[][] {
@@ -131,8 +129,8 @@ public class ClassificationFilterTest extends RaplaTestCase {
                                      }
                                      );
         Allocatable[] allocatables = queryMod.getAllocatables( classificationFilter.toArray());
-        
-        assertTrue( allocatables.length > 0);
+
+        Assert.assertTrue(allocatables.length > 0);
     }
 
 }

@@ -12,34 +12,26 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-public class TimeTest extends TestCase {
+@RunWith(JUnit4.class)
+public class TimeTest  {
 
-    public TimeTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-	return new TestSuite(TimeTest.class);
-    }
-
-    protected void setUp() {
-    }
-
+    @Test
     public void testTime() {
         Time time = new Time(0,1);
-        assertTrue(time.getMillis() == Time.MILLISECONDS_PER_MINUTE);
+        Assert.assertTrue(time.getMillis() == Time.MILLISECONDS_PER_MINUTE);
         Time time1 = new Time( 2 * Time.MILLISECONDS_PER_HOUR  + 15 * Time.MILLISECONDS_PER_MINUTE);
-        assertTrue(time1.getHour() == 2);
-        assertTrue(time1.getMinute() == 15);
+        Assert.assertTrue(time1.getHour() == 2);
+        Assert.assertTrue(time1.getMinute() == 15);
         Time time2 = new Time(23,15);
         Time time3 = new Time(2,15);
-        assertTrue(time1.compareTo(time2) == -1); 
-        assertTrue(time2.compareTo(time1) == 1); 
-        assertTrue(time1.compareTo(time3) == 0); 
+        Assert.assertTrue(time1.compareTo(time2) == -1);
+        Assert.assertTrue(time2.compareTo(time1) == 1);
+        Assert.assertTrue(time1.compareTo(time3) == 0);
     }
 }
 

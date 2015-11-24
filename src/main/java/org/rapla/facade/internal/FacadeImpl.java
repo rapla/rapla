@@ -145,7 +145,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    
 		this.logger = logger;
 		this.i18n = i18n;
-        this.notifyQueue = notifyQueue;
+		this.notifyQueue = notifyQueue;
         this.permissionController = permissionController;
 		locale = i18n.getLocale();
 
@@ -921,9 +921,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //           username = connectInfo.getConnectAs();
 //       }
 
-       getLogger().info("Login " + user.getUsername());
-       this.workingUserId = user.getId();
-       return true;
+	   if ( user != null)
+	   {
+		   getLogger().info("Login " + user.getUsername());
+		   this.workingUserId = user.getId();
+		   return true;
+	   }
+	   return false;
    }
    
    public FutureResult<VoidResult> load()

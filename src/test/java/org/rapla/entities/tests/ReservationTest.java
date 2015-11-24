@@ -11,9 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
-import java.util.Calendar;
-import java.util.Date;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
@@ -24,11 +27,14 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Calendar;
+import java.util.Date;
 
-public class ReservationTest extends RaplaTestCase {
+
+@RunWith(JUnit4.class)
+public class ReservationTest {
     Reservation reserv1;
     Reservation reserv2;
     Allocatable allocatable1;
@@ -37,19 +43,12 @@ public class ReservationTest extends RaplaTestCase {
 
     ModificationModule modificationMod;
     QueryModule queryMod;
+    ClientFacade facade;
 
-    public ReservationTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(ReservationTest.class);
-    }
-
-    public void setUp() throws Exception {
-        super.setUp();
-
-        ClientFacade facade = getFacade();
+    @Before
+    public void setUp() throws Exception
+    {
+        facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
 
@@ -79,16 +78,20 @@ public class ReservationTest extends RaplaTestCase {
         reserv1.addAllocatable(allocatable1);
     }
 
+
+    @Test
     public void testHasAllocated() {
-        assertTrue(reserv1.hasAllocated(allocatable1));
-        assertTrue( ! reserv1.hasAllocated(allocatable2));
+        Assert.assertTrue(reserv1.hasAllocated(allocatable1));
+        Assert.assertTrue(!reserv1.hasAllocated(allocatable2));
     }
 
+    @Test
     public void testEqual() {
-        assertTrue( ! reserv1.equals (reserv2));
-        assertTrue(reserv1.equals (reserv1));
+        Assert.assertTrue(!reserv1.equals(reserv2));
+        Assert.assertTrue(reserv1.equals(reserv1));
     }
 
+    @Test
     public void testEdit() throws RaplaException {
         // store the reservation to create the id's
         modificationMod.storeObjects(new Entity[] {allocatable1,allocatable2, reserv1});
@@ -101,8 +104,8 @@ public class ReservationTest extends RaplaTestCase {
 	
 	        // Clone the reservation
 	        Reservation clone =  modificationMod.edit(persistantReservation);
-	        assertTrue(persistantReservation.equals(clone));
-	        assertTrue(clone.hasAllocated(allocatable1));
+            Assert.assertTrue(persistantReservation.equals(clone));
+            Assert.assertTrue(clone.hasAllocated(allocatable1));
 	
 	        // Modify the cloned appointment
 	        Appointment clonedAppointment= clone.getAppointments()[0];
@@ -124,22 +127,22 @@ public class ReservationTest extends RaplaTestCase {
 	        // store clone
 	        modificationMod.storeObjects(new Entity[] {clone});
 	    }
-        Reservation persistantReservation = getFacade().getOperator().resolve(eventId, Reservation.class);
-		assertTrue(persistantReservation.hasAllocated(allocatable1));
+        Reservation persistantReservation = facade.getOperator().resolve(eventId, Reservation.class);
+        Assert.assertTrue(persistantReservation.hasAllocated(allocatable1));
 		// Check if oldAppointment has been modified
 		Appointment[] appointments = persistantReservation.getAppointments();
         cal.setTime(appointments[0].getStart());
-        assertTrue(cal.get(Calendar.DAY_OF_WEEK) == Calendar.TUESDAY);
-        assertTrue(cal.get(Calendar.HOUR_OF_DAY) == 12);
+        Assert.assertTrue(cal.get(Calendar.DAY_OF_WEEK) == Calendar.TUESDAY);
+        Assert.assertTrue(cal.get(Calendar.HOUR_OF_DAY) == 12);
 
         // Check if newAppointment has been added
-        assertTrue(appointments.length == 2);
+        Assert.assertTrue(appointments.length == 2);
         cal.setTime(appointments[1].getEnd());
-        assertEquals(17,cal.get(Calendar.HOUR_OF_DAY));
-        assertEquals(Calendar.MONDAY,cal.get(Calendar.DAY_OF_WEEK));
+        Assert.assertEquals(17, cal.get(Calendar.HOUR_OF_DAY));
+        Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
         cal.setTime(appointments[1].getStart());
-        assertEquals(15,cal.get(Calendar.HOUR_OF_DAY));
-        assertEquals(Calendar.MONDAY,cal.get(Calendar.DAY_OF_WEEK));
+        Assert.assertEquals(15, cal.get(Calendar.HOUR_OF_DAY));
+        Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
     }
 
 }

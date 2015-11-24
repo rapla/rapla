@@ -43,6 +43,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.ModificationModule;
+import org.rapla.facade.QueryModule;
+import org.rapla.facade.UserModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -56,6 +59,7 @@ import org.rapla.storage.StorageOperator;
 
 import javax.inject.Provider;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -603,5 +607,59 @@ public class ServerTest
         Object descriptionValue = classification.getValue("description");
         String description = descriptionValue.toString();
         return description;
+    }
+
+    @Test
+    public void testRefresh() throws Exception {
+        changeInSecondFacade(facade2,"bowling");
+        facade1.refresh();
+        Reservation resAfter = findReservation(facade1,"bowling");
+        Appointment appointment = resAfter.getAppointments()[0];
+        Calendar cal = Calendar.getInstance(DateTools.getTimeZone());
+        cal.setTime(appointment.getStart());
+        Assert.assertEquals(17, cal.get(Calendar.HOUR_OF_DAY));
+        Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
+        cal.setTime(appointment.getEnd());
+        Assert.assertEquals(19, cal.get(Calendar.HOUR_OF_DAY));
+        Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
+    }
+
+    @Test
+    public void testSavePreferences() throws Exception {
+        facade2.logout();
+         Assert.assertTrue(facade2.login("monty", "burns".toCharArray()));
+        Preferences prefs = facade2.edit( facade2.getPreferences() );
+        facade2.store( prefs );
+        facade2.logout();
+    }
+    // Make some Changes to the Reservation in another client
+    private void changeInSecondFacade(ClientFacade facade2,String name) throws Exception {
+        UserModule userMod2 =  facade2;
+        QueryModule queryMod2 =  facade2;
+        ModificationModule modificationMod2 =  facade2;
+        Reservation reservation = findReservation(queryMod2,name);
+        Reservation mutableReseravation = modificationMod2.edit(reservation);
+        Appointment appointment =  mutableReseravation.getAppointments()[0];
+
+        RaplaLocale loc = getRaplaLocale();
+        Calendar cal = loc.createCalendar();
+        cal.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);
+        Date startTime = loc.toTime( 17,0,0);
+        Date startTime1 = loc.toDate(cal.getTime(), startTime);
+        Date endTime = loc.toTime( 19,0,0);
+        Date endTime1 = loc.toDate(cal.getTime(), endTime);
+        appointment.move(startTime1,endTime1);
+
+        modificationMod2.store( mutableReseravation );
+        //userMod2.logout();
+    }
+
+    private Reservation findReservation(QueryModule queryMod,String name) throws RaplaException {
+        Reservation[] reservations = queryMod.getReservationsForAllocatable(null,null,null,null);
+        for (int i=0;i<reservations.length;i++) {
+            if (reservations[i].getName(locale).equals(name))
+                return reservations[i];
+        }
+        return null;
     }
 }
