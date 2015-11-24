@@ -16,33 +16,36 @@ import java.util.Calendar;
 import java.util.Locale;
 
 import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-
-public class WeekdayMapperTest  extends TestCase {
+@RunWith(JUnit4.class)
+public class WeekdayMapperTest   {
     String[] weekdayNames;
     int[] weekday2index;
     int[] index2weekday;
 
-    public WeekdayMapperTest(String methodName) {
-        super( methodName );
-    }
 
-    
+
+    @Test
     public void testLocaleGermany() {
         WeekdayMapper mapper = new WeekdayMapper(Locale.GERMANY);
-        assertEquals(6,mapper.indexForDay(Calendar.SUNDAY));
-        assertEquals(0,mapper.indexForDay(Calendar.MONDAY));
-        assertEquals(Calendar.SUNDAY,mapper.dayForIndex(6));
-        assertEquals(Calendar.MONDAY,mapper.dayForIndex(0));
-        assertEquals("Montag", mapper.getName(Calendar.MONDAY)); 
+        Assert.assertEquals(6, mapper.indexForDay(Calendar.SUNDAY));
+        Assert.assertEquals(0, mapper.indexForDay(Calendar.MONDAY));
+        Assert.assertEquals(Calendar.SUNDAY, mapper.dayForIndex(6));
+        Assert.assertEquals(Calendar.MONDAY, mapper.dayForIndex(0));
+        Assert.assertEquals("Montag", mapper.getName(Calendar.MONDAY));
     }
 
+    @Test
     public void testLocaleUS() {
         WeekdayMapper mapper = new WeekdayMapper(Locale.US);
-        assertEquals(0,mapper.indexForDay(Calendar.SUNDAY));
-        assertEquals(1,mapper.indexForDay(Calendar.MONDAY));
-        assertEquals(Calendar.MONDAY,mapper.dayForIndex(1));
-        assertEquals("Monday", mapper.getName(Calendar.MONDAY)); 
+        Assert.assertEquals(0, mapper.indexForDay(Calendar.SUNDAY));
+        Assert.assertEquals(1, mapper.indexForDay(Calendar.MONDAY));
+        Assert.assertEquals(Calendar.MONDAY, mapper.dayForIndex(1));
+        Assert.assertEquals("Monday", mapper.getName(Calendar.MONDAY));
     }
     
 }

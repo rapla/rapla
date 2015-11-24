@@ -13,44 +13,40 @@
 package org.rapla.components.xmlbundle.tests;
 import java.util.MissingResourceException;
 
+import org.junit.Assert;
+import org.junit.Test;
 import org.rapla.components.xmlbundle.I18nBundle;
 
 import junit.framework.TestCase;
 
-public abstract class AbstractI18nTest extends TestCase {
+public abstract class AbstractI18nTest  {
     abstract public I18nBundle getI18n();
-    public AbstractI18nTest(String name) {
-	   super(name);
-    }
-    
+
+	@Test
     public void testGetString() { 
     	String string = getI18n().getString("cancel");
     	if (getI18n().getLocale().getLanguage().equals("de"))
-    	    assertEquals(string,"Abbrechen");
+    	    Assert.assertEquals(string, "Abbrechen");
     	if (getI18n().getLocale().getLanguage().equals("en"))
-                assertEquals(string,"cancel");
+			Assert.assertEquals(string, "cancel");
     	boolean failed = false;
     	try {
     	    string = getI18n().getString("this_string_request_should_fail.");
     	} catch (MissingResourceException ex) { 
     	    failed = true;
     	}
-    	assertTrue(
-    		   "Request for 'this_string_request_should_fail should throw MissingResourceException"
-    		   ,failed
-    		   );
+		Assert.assertTrue("Request for 'this_string_request_should_fail should throw MissingResourceException", failed);
     }
 
+	@Test
     public void testLocale() {
-	   assertNotNull(getI18n().getLocale());
-	   assertNotNull(getI18n().getLang());
+		Assert.assertNotNull(getI18n().getLocale());
+		Assert.assertNotNull(getI18n().getLang());
     }
 
+	@Test
     public void testXHTML() {
-    	assertTrue(
-    		   "<br/> should be replaced with <br>"
-    		   ,getI18n().getString("error.invalid_key").indexOf("<br>")>=0
-    		   );
+		Assert.assertTrue("<br/> should be replaced with <br>", getI18n().getString("error.invalid_key").indexOf("<br>") >= 0);
     }
 }
 

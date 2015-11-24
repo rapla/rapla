@@ -65,9 +65,6 @@ public abstract class RaplaTestCase extends TestCase
 
     public static String TEST_SRC_FOLDER_NAME = "src/test/resources";
     public static String TEST_FOLDER_NAME = "target/test";
-    protected RaplaStartupEnvironment env = new RaplaStartupEnvironment();
-
-    int port = 8052;
 
     public static ServerServiceContainer createServer( Logger logger, String xmlFile) throws Exception
     {
@@ -256,23 +253,6 @@ public abstract class RaplaTestCase extends TestCase
     @Before protected void setUp() throws Exception
     {
         setUp("testdefault.xml");
-    }
-
-    protected RaplaClientServiceImpl getClientService() throws RaplaException
-    {
-        RaplaClientServiceImpl clientContainer = raplaContainer;
-        if (!clientContainer.isRunning())
-        {
-            try
-            {
-                clientContainer.start(new ConnectInfo("homer", "duffs".toCharArray()));
-            }
-            catch (Exception e)
-            {
-                throw new RaplaException(e.getMessage(), e);
-            }
-        }
-        return raplaContainer;
     }
 
     protected ClientFacade getFacade() throws RaplaException

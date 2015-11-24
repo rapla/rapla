@@ -12,65 +12,51 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.tests;
 
-import java.util.Locale;
-
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Locale;
 
 
+@RunWith(JUnit4.class)
 public class I18nBundleImplTest extends AbstractI18nTest {
     I18nBundleImpl i18n;
     DefaultBundleManager localeSelector;
     Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN);
 
-    public I18nBundleImplTest(String name) {
-        super(name);
-    }
-
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         String config = "org.rapla.RaplaResources";
-        
-        i18n = create(config);
+        localeSelector = new DefaultBundleManager();
+        i18n = new I18nBundleImpl(new ConsoleLogger(), config, localeSelector);
     }
 
-    private I18nBundleImpl create(String config) throws Exception {
-        I18nBundleImpl i18n;
-        i18n = new I18nBundleImpl(new ConsoleLogger(), config, new DefaultBundleManager());
-        return i18n;
-    }
-
-    protected void tearDown() {
-    }
     public I18nBundle getI18n() {
         return i18n;
     }
 
-    public static Test suite() {
-        TestSuite suite = new TestSuite();
-        // The first four test only succeed if the Resource Bundles are build.
-        suite.addTest(new I18nBundleImplTest("testLocaleChanged"));
-        suite.addTest(new I18nBundleImplTest("testGetIcon"));
-        suite.addTest(new I18nBundleImplTest("testGetString"));
-        suite.addTest(new I18nBundleImplTest("testLocale"));
-        return suite;
-    }
 
+    @Test
     public void testLocaleChanged() {
         localeSelector.setLocale(new Locale("de","DE"));
-        assertEquals(getI18n().getString("cancel"),"Abbrechen");
+        Assert.assertEquals(getI18n().getString("cancel"), "Abbrechen");
         localeSelector.setLocale(new Locale("en","DE"));
-        assertEquals(getI18n().getString("cancel"),"Cancel");
+        Assert.assertEquals(getI18n().getString("cancel"), "Cancel");
     }
 
+    @Test
     public void testInvalidConfig() throws Exception {
         try {
-            create("i18n");
+            String config = "invalid";
+            i18n = new I18nBundleImpl(new ConsoleLogger(), config, new DefaultBundleManager());
         } catch (Exception ex) {
         }
     }
