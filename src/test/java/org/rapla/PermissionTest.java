@@ -138,10 +138,10 @@ public class PermissionTest  {
         ClassificationFilter filter = testFacade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","R1");
         final Reservation[] reservationsForAllocatable = testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter });
+        Assert.assertEquals(1, reservationsForAllocatable.length);
         Reservation evt = reservationsForAllocatable[0];
         final String ownerUsername = evt.getOwner().getUsername();
         Assert.assertEquals("test", ownerUsername);
-        Assert.assertEquals(1, reservationsForAllocatable.length);
         evt =  testFacade.edit( evt );
         evt.removeAllocatable( allocatable );
         testFacade.store( evt );
