@@ -11,9 +11,9 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
-import java.util.Date;
 
-import org.rapla.RaplaTestCase;
+import org.junit.Assert;
+import org.junit.Test;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -29,25 +29,20 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 
-public abstract class AbstractOperatorTest extends RaplaTestCase {
+import java.util.Date;
 
-    protected CachableStorageOperator operator;
-    protected ClientFacade facade;
-    public AbstractOperatorTest(String name) {
-        super(name);
-    }
+public abstract class AbstractOperatorTest  {
 
-    protected void setUp() throws Exception {
-        super.setUp();
-        operator = null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, getStorageName());
-        facade = null;// FIXME raplaContainer.lookupDeprecated(ClientFacade.class, getFacadeName());
-    }
+	abstract protected ClientFacade getFacade();
+	protected CachableStorageOperator getOperator()
+	{
+		ClientFacade facade = getFacade();
+		return (CachableStorageOperator)facade.getOperator();
+	}
 
-    abstract protected String getStorageName();
-
-    abstract protected String getFacadeName();
-
+	@Test
     public void testReservationStore() throws RaplaException {
+		ClientFacade facade = getFacade();
         // abspeichern
         facade.login("homer", "duffs".toCharArray() );
         {
@@ -66,6 +61,7 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        app.getRepeating().addException( new Date());
 	        facade.storeObjects( new Entity[] { r, resource });
 	    }
+		CachableStorageOperator operator = getOperator();
         operator.disconnect();
         operator.connect();
         facade.login("homer", "duffs".toCharArray() );
@@ -77,16 +73,18 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        Reservation reservation = facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} )[0];
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
-	        assertEquals( 2, apps.length);
-	        assertEquals( 1, reservation.getAppointmentsFor( resource ).length);
+	        Assert.assertEquals(2, apps.length);
+			Assert.assertEquals(1, reservation.getAppointmentsFor(resource).length);
 	        Appointment app = reservation.getAppointmentsFor( resource )[0];
-	        assertEquals( 1, app.getRepeating().getExceptions().length);
-	        assertEquals( Repeating.DAILY, app.getRepeating().getType());
-	        assertEquals( 10, app.getRepeating().getNumber());
+			Assert.assertEquals(1, app.getRepeating().getExceptions().length);
+			Assert.assertEquals(Repeating.DAILY, app.getRepeating().getType());
+			Assert.assertEquals(10, app.getRepeating().getNumber());
         }
     }
 
+	@Test
     public void testUserStore() throws RaplaException {
+		ClientFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray() );
         {
             User u = facade.newUser();
@@ -95,19 +93,22 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        u.addGroup( facade.getUserGroupsCategory().getCategory("my-group"));
 	        facade.store( u );
         }
+		CachableStorageOperator operator = getOperator();
         operator.disconnect();
         operator.connect();
         facade.login("homer", "duffs".toCharArray() );
         {
             User u = facade.getUser("kohlhaas");
             Category[] groups = u.getGroupList().toArray( new Category [] {});
-            assertEquals( groups.length, 4 );
-            assertEquals( facade.getUserGroupsCategory().getCategory("my-group"), groups[3]);
-            assertFalse( u.isAdmin() );
+			Assert.assertEquals(groups.length, 4);
+			Assert.assertEquals(facade.getUserGroupsCategory().getCategory("my-group"), groups[3]);
+			Assert.assertFalse(u.isAdmin());
         }
     }
 
+	@Test
     public void testCategoryAnnotation() throws RaplaException {
+		ClientFacade facade = getFacade();
     	String sampleDoc = "This is the category for user-groups";
     	String sampleAnnotationValue = "documentation";
     	facade.login("homer", "duffs".toCharArray() );
@@ -116,17 +117,21 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
         	userGroups.setAnnotation( sampleAnnotationValue, sampleDoc );
         	facade.store( userGroups );
         }
+		CachableStorageOperator operator = getOperator();
         operator.disconnect();
         operator.connect();
         facade.login("homer", "duffs".toCharArray() );
         {
         	Category userGroups = facade.getUserGroupsCategory();
-        	assertEquals( sampleDoc, userGroups.getAnnotation( sampleAnnotationValue ));
+			Assert.assertEquals(sampleDoc, userGroups.getAnnotation(sampleAnnotationValue));
         }
     }
 
+	@Test
     public void testAttributeStore() throws RaplaException {
+		ClientFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray() );
+		CachableStorageOperator operator = getOperator();
         // abspeichern
         {
 	        DynamicType type = facade.edit( facade.getDynamicType("event"));
@@ -138,7 +143,7 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        Reservation r = facade.newReservation();
 	        try {
 	        	r.setClassification( type.newClassification() );
-	        	fail("Should have thrown an IllegalStateException");
+				Assert.fail("Should have thrown an IllegalStateException");
 	        } catch (IllegalStateException ex) {
 	        }
 
@@ -172,13 +177,13 @@ public abstract class AbstractOperatorTest extends RaplaTestCase {
 	        Reservation reservation = facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} )[0];
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
-	        assertEquals( "test-att-value", reservation.getClassification().getValue("test-att"));
-	        assertEquals( 2, apps.length);
-	        assertEquals( 1, reservation.getAppointmentsFor( resource ).length);
+			Assert.assertEquals("test-att-value", reservation.getClassification().getValue("test-att"));
+			Assert.assertEquals(2, apps.length);
+			Assert.assertEquals(1, reservation.getAppointmentsFor(resource).length);
 	        Appointment app = reservation.getAppointmentsFor( resource )[0];
-	        assertEquals( 1, app.getRepeating().getExceptions().length);
-	        assertEquals( Repeating.DAILY, app.getRepeating().getType());
-	        assertEquals( 10, app.getRepeating().getNumber());
+			Assert.assertEquals(1, app.getRepeating().getExceptions().length);
+			Assert.assertEquals(Repeating.DAILY, app.getRepeating().getType());
+			Assert.assertEquals(10, app.getRepeating().getNumber());
         }
     }
 }

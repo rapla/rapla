@@ -17,7 +17,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
+import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
@@ -28,43 +34,31 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.internal.ServerServiceImpl;
 
 /** listens for allocation changes */
-public class NotificationPluginTest extends ServletTestBase
+@RunWith(JUnit4.class)
+public class NotificationPluginTest
 {
     ServerServiceImpl raplaServer;
 
     ClientFacade facade1;
     Locale locale;
+    Logger logger;
 
-    public NotificationPluginTest( String name )
+    @Before
+    public void setUp() throws Exception
     {
-        super( name );
-    }
-
-    protected void setUp() throws Exception
-    {
-        super.setUp();
         // start the server
-        raplaServer = getContainer();
+        logger = RaplaBootstrapLogger.createRaplaLogger();
+        raplaServer = (ServerServiceImpl)RaplaTestCase.createServer(logger,"testdefault.xml");
 
         // start the client service
-        facade1 = null;
-        facade1.login( "homer", "duffs".toCharArray() );
+        facade1 = raplaServer.getFacade();
         locale = Locale.getDefault();
-    }
-
-    protected void tearDown() throws Exception
-    {
-        facade1.logout();
-        super.tearDown();
-    }
-
-    protected String getStorageName()
-    {
-        return "storage-file";
     }
 
     private void add( Allocatable allocatable,         Preferences preferences ) throws RaplaException
@@ -88,6 +82,7 @@ public class NotificationPluginTest extends ServletTestBase
         facade1.store( copy );
     }
 
+    @Test
     public void testAdd() throws Exception
     {
         Allocatable allocatable = facade1.getAllocatables()[0];
@@ -123,10 +118,10 @@ public class NotificationPluginTest extends ServletTestBase
         	Thread.sleep( 100 );
         }
         
-        assertTrue( mailMock.getMailBody().indexOf( reservationName ) >= 0 );
+        Assert.assertTrue(mailMock.getMailBody().indexOf(reservationName) >= 0);
 
-       
-        assertEquals( 2, mailMock.getCallCount() );
+
+        Assert.assertEquals(2, mailMock.getCallCount());
         
         reservationName = "Another name";
         r=facade1.edit( r);
@@ -137,15 +132,16 @@ public class NotificationPluginTest extends ServletTestBase
         System.out.println( r.getLastChanged() );
 
         Thread.sleep( 1000 );
-        assertEquals( 4, mailMock.getCallCount() );
+        Assert.assertEquals(4, mailMock.getCallCount());
 
-        assertNotNull( mailMock.getMailBody() );
-        assertTrue( mailMock.getMailBody().indexOf( reservationName ) >= 0 );
+        Assert.assertNotNull(mailMock.getMailBody());
+        Assert.assertTrue(mailMock.getMailBody().indexOf(reservationName) >= 0);
 
        
 
     }
 
+    @Test
     public void testRemove() throws Exception
     {
         Allocatable allocatable = facade1.getAllocatables()[0];
@@ -173,9 +169,9 @@ public class NotificationPluginTest extends ServletTestBase
         	}
         	Thread.sleep( 100 );
         }
-        assertEquals( 2, mailMock.getCallCount() );
+        Assert.assertEquals(2, mailMock.getCallCount());
         String body = mailMock.getMailBody();
-        assertTrue( "Body doesnt contain delete text\n" + body, body.indexOf( "gel\u00f6scht" ) >= 0 );
+        Assert.assertTrue("Body doesnt contain delete text\n" + body, body.indexOf("gel\u00f6scht") >= 0);
      
     }
 

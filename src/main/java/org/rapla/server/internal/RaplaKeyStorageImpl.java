@@ -53,8 +53,6 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
      * Checks whether an encryption key exists or not, reads an existing one from the configuration file
      * or generates a new one. The decryption and encryption ciphers are also initialized here.
      *
-     * @param context
-     * @param config
      * @throws RaplaException
      */
     @Inject

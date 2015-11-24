@@ -13,14 +13,11 @@
 
 package org.rapla.client.swing.internal.edit.reservation;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import org.rapla.client.UserClientService;
+import org.junit.Assert;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
 
 public final class ReservationEditTest extends GUITestCase{
 
@@ -30,16 +27,7 @@ public final class ReservationEditTest extends GUITestCase{
 	ReservationEdit window;
 	ReservationEditImpl internalWindow;
 	
-    public ReservationEditTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(ReservationEditTest.class);
-    }
-    
     public void setUp() throws Exception{
-    	super.setUp();
         reservations = getFacade().getReservationsForAllocatable(null,null,null,null);
         c = null;//clientService.getContext().lookup(ReservationController.class);
         window = c.edit(reservations[0]);
@@ -59,21 +47,21 @@ public final class ReservationEditTest extends GUITestCase{
         Thread.sleep( paintDelay);
         // Check if its removed frmom the list
         int listSizeAfter = appointmentEdit.getListEdit().getList().getModel().getSize();
-        assertEquals( listSize-1, listSizeAfter);
+        Assert.assertEquals(listSize - 1, listSizeAfter);
         internalWindow.commandHistory.undo();
         Thread.sleep( paintDelay);
         listSizeAfter = appointmentEdit.getListEdit().getList().getModel().getSize();
-        assertEquals(listSize, listSizeAfter);
+        Assert.assertEquals(listSize, listSizeAfter);
         internalWindow.commandHistory.redo();
         Thread.sleep( paintDelay);
         listSizeAfter = appointmentEdit.getListEdit().getList().getModel().getSize();
-        assertEquals(listSize-1, listSizeAfter);
+        Assert.assertEquals(listSize - 1, listSizeAfter);
         appointmentEdit.getListEdit().createNewButton.doClick();
         Thread.sleep( paintDelay);
         appointmentEdit.getListEdit().createNewButton.doClick();
         Thread.sleep( paintDelay);
         listSizeAfter = appointmentEdit.getListEdit().getList().getModel().getSize();
-        assertEquals(listSize+1, listSizeAfter);
+        Assert.assertEquals(listSize + 1, listSizeAfter);
         appointmentEdit.getListEdit().select(1);
         Thread.sleep( paintDelay);
         appointmentEdit.getListEdit().removeButton.doClick();
@@ -85,13 +73,13 @@ public final class ReservationEditTest extends GUITestCase{
         appointmentEdit.getListEdit().createNewButton.doClick();
         Thread.sleep( paintDelay);
         listSizeAfter = appointmentEdit.getListEdit().getList().getModel().getSize();
-        assertEquals(listSize, listSizeAfter);
+        Assert.assertEquals(listSize, listSizeAfter);
         internalWindow.commandHistory.undo();
         Thread.sleep( paintDelay);
         internalWindow.commandHistory.undo();
         Thread.sleep( paintDelay);
         listSizeAfter = appointmentEdit.getListEdit().getList().getModel().getSize();
-        assertEquals(listSize, listSizeAfter);
+        Assert.assertEquals(listSize, listSizeAfter);
     }
     
     public void testAllocatable() throws Exception{
@@ -102,22 +90,22 @@ public final class ReservationEditTest extends GUITestCase{
         allocatableEdit.selectedTable.selectAll();
         allocatableEdit.btnRemove.doClick();
         int secondState = getAllocatableSize(allocatableEdit);
-        assertFalse(firstState == secondState);
+        Assert.assertFalse(firstState == secondState);
         internalWindow.commandHistory.undo();
         int thirdState = getAllocatableSize(allocatableEdit);
-        assertTrue(firstState == thirdState);
+        Assert.assertTrue(firstState == thirdState);
         
         //adding all allocatables
         allocatableEdit.completeTable.selectAll();
         allocatableEdit.btnAdd.doClick();
         int fourthState = getAllocatableSize(allocatableEdit);
-        assertFalse (firstState == fourthState);
+        Assert.assertFalse(firstState == fourthState);
         internalWindow.commandHistory.undo();
         int fifthState = getAllocatableSize(allocatableEdit);
-        assertTrue (firstState == fifthState);
+        Assert.assertTrue(firstState == fifthState);
         internalWindow.commandHistory.redo();
         int sixthState = getAllocatableSize(allocatableEdit);
-        assertTrue (fourthState == sixthState);
+        Assert.assertTrue(fourthState == sixthState);
     }
     
     public void testRepeatingEdit() throws Exception{
@@ -127,23 +115,23 @@ public final class ReservationEditTest extends GUITestCase{
     	String firstSelected = getSelectedRadioButton(appointmentEdit.getAppointmentController());
     	appointmentEdit.getAppointmentController().yearlyRepeating.doClick();
     	String secondSelected = getSelectedRadioButton(appointmentEdit.getAppointmentController());
-    	assertFalse(firstSelected.equals(secondSelected));
+        Assert.assertFalse(firstSelected.equals(secondSelected));
     	internalWindow.commandHistory.undo();
-    	assertEquals(firstSelected, getSelectedRadioButton(appointmentEdit.getAppointmentController()));
+        Assert.assertEquals(firstSelected, getSelectedRadioButton(appointmentEdit.getAppointmentController()));
     	internalWindow.commandHistory.redo();
-    	assertEquals("yearly", getSelectedRadioButton(appointmentEdit.getAppointmentController()));
+        Assert.assertEquals("yearly", getSelectedRadioButton(appointmentEdit.getAppointmentController()));
     	appointmentEdit.getAppointmentController().noRepeating.doClick();
     	appointmentEdit.getAppointmentController().monthlyRepeating.doClick();
     	appointmentEdit.getAppointmentController().dailyRepeating.doClick();
     	internalWindow.commandHistory.undo();
-    	assertEquals("monthly", getSelectedRadioButton(appointmentEdit.getAppointmentController()));
+        Assert.assertEquals("monthly", getSelectedRadioButton(appointmentEdit.getAppointmentController()));
     	appointmentEdit.getAppointmentController().yearlyRepeating.doClick();
     	appointmentEdit.getAppointmentController().weeklyRepeating.doClick();
     	appointmentEdit.getAppointmentController().noRepeating.doClick();
     	internalWindow.commandHistory.undo();
     	internalWindow.commandHistory.undo();
     	internalWindow.commandHistory.redo();
-    	assertEquals("weekly", getSelectedRadioButton(appointmentEdit.getAppointmentController()));
+    	Assert.assertEquals("weekly", getSelectedRadioButton(appointmentEdit.getAppointmentController()));
 
     	
     }
@@ -172,8 +160,7 @@ public final class ReservationEditTest extends GUITestCase{
     }
     
     public static void main(String[] args) {
-        new ReservationEditTest(ReservationEditTest.class.getName()
-                               ).interactiveTest("testMain");
+        new ReservationEditTest().interactiveTest("testMain");
     }
 }
 

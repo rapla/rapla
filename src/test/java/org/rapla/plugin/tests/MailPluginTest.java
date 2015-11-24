@@ -12,51 +12,44 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tests;
 
-import java.util.Locale;
-
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
-import org.rapla.ServletTestBase;
+import org.rapla.RaplaTestCase;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 
+import java.util.Locale;
+
 /** listens for allocation changes */
-public class MailPluginTest extends ServletTestBase {
+@RunWith(JUnit4.class)
+public class MailPluginTest {
     ServerServiceImpl raplaServer;
 
     ClientFacade facade1;
     Locale locale;
 
-
-    public MailPluginTest(String name) {
-        super(name);
-    }
-
-    protected void setUp() throws Exception {
-        super.setUp();
-       
-       // start the server
-        //ServerServiceContainer container = getContainer().lookupDeprecated(ServerServiceContainer.class, getStorageName());
-        raplaServer = this.getContainer();
+    @Before
+    public void setUp() throws Exception {
+        Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+        raplaServer = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
+        // start the server
         // start the client service
-        facade1 =  null;
-        facade1.login("homer","duffs".toCharArray());
+        facade1 =  raplaServer.getFacade();
         locale = Locale.getDefault();
     }
     
-    protected String getStorageName() {
-        return "storage-file";
-    }
-    
-    protected void tearDown() throws Exception {
-        facade1.logout();
-        super.tearDown();
-    }
-    
+
+    @Test
     public void test() throws Exception 
     {
-        MockMailer mailMock = (MockMailer) null;
+        MockMailer mailMock = new MockMailer();
         final ClientFacade facade = null;
         Logger logger = null;
 
@@ -65,7 +58,7 @@ public class MailPluginTest extends ServletTestBase {
 
         Thread.sleep( 1000);
 
-        assertNotNull( mailMock.getMailBody() );
+        Assert.assertNotNull(mailMock.getMailBody());
    
     }
     

@@ -11,31 +11,134 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile.tests;
+
+import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.RaplaResources;
+import org.rapla.RaplaTestCase;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
+import org.rapla.entities.dynamictype.internal.StandardFunctions;
+import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.DefaultScheduler;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
+import org.xml.sax.InputSource;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Future;
 
+@RunWith(JUnit4.class)
 public class FileOperatorTest extends AbstractOperatorTest {
 
-    public FileOperatorTest(String name) {
-        super(name);
+    ClientFacade facade;
+    Logger logger;
+
+    @Before
+    public void setUp() throws IOException
+    {
+        logger = RaplaBootstrapLogger.createRaplaLogger();
+        facade = createFacadeWithFile(logger, "testdefault.xml");
     }
 
-    public static Test suite() {
-        return new TestSuite(FileOperatorTest.class);
+    static class MyFileIO implements FileOperator.FileIO
+    {
+        byte[] data;
+        Logger logger;
+
+        MyFileIO(final String resolvedPath,final Logger logger) throws IOException
+        {
+            this.logger = logger;
+            Path path = Paths.get(resolvedPath);
+            try(AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ))
+            {
+
+                ByteBuffer buffer = ByteBuffer.allocate(1024*1024);
+                long position = 0;
+
+                Future<Integer> operation = fileChannel.read(buffer, position);
+
+                while (!operation.isDone())
+                    ;
+
+                buffer.flip();
+                data = new byte[buffer.limit()];
+                buffer.get(data);
+            }
+            String stringData = new String( data);
+            logger.debug("Reading data " + stringData);
+        }
+
+        @Override public InputSource getInputSource(URI storageURL) throws IOException
+        {
+            ByteArrayInputStream in = new ByteArrayInputStream(data);
+            return new InputSource(new InputStreamReader(in, "utf-8"));
+        }
+
+        @Override public void write(FileOperator.RaplaWriter writer, URI storageURL) throws IOException
+        {
+            ByteArrayOutputStream outBytes =new ByteArrayOutputStream();
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outBytes,"utf-8"));
+            writer.write(out);
+            out.close();
+            data = outBytes.toByteArray();
+            String stringData = new String( data);
+            logger.debug("Writing data " + stringData);
+        }
     }
 
+    public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile) throws IOException
+    {
+        String resolvedPath = RaplaTestCase.getTestDataFile(xmlFile);
+        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        RaplaResources i18n = new RaplaResources(bundleManager);
 
-    protected String getStorageName() {
-        return "raplafile";
+        CommandScheduler scheduler = new DefaultScheduler(logger);
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+
+        Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
+        StandardFunctions functions = new StandardFunctions(raplaLocale);
+        functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
+
+        RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
+        PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
+        FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
+                DefaultPermissionControllerSupport.getController());
+        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
+        facade.setOperator(operator);
+        operator.setFileIO(new MyFileIO(resolvedPath,logger));
+        operator.connect();
+        return facade;
     }
-    
-    protected String getFacadeName() {
-        return "local-facade";
+
+    @Override protected ClientFacade getFacade()
+    {
+        return facade;
     }
-    
- 
 }
 
 

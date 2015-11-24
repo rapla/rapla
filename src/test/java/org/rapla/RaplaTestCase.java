@@ -12,15 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import junit.framework.TestCase;
-import org.eclipse.jetty.server.Server;
-import org.junit.Before;
-import org.rapla.client.internal.RaplaClientServiceImpl;
-import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.IOUtil;
-import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
@@ -28,11 +21,9 @@ import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.jsonrpc.client.EntryPointFactory;
@@ -51,21 +42,14 @@ import org.rapla.storage.dbrm.RemoteStorage_JavaJsonProxy;
 import org.xml.sax.InputSource;
 
 import javax.inject.Provider;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class RaplaTestCase extends TestCase
+public abstract class RaplaTestCase
 {
-    protected RaplaClientServiceImpl raplaContainer;
-    Logger logger = new ConsoleLogger(ConsoleLogger.LEVEL_WARN).getChildLogger("test");
-
-    public static String TEST_SRC_FOLDER_NAME = "src/test/resources";
-    public static String TEST_FOLDER_NAME = "target/test";
-
     public static ServerServiceContainer createServer( Logger logger, String xmlFile) throws Exception
     {
         ServerContainerContext containerContext = new ServerContainerContext();
@@ -75,27 +59,9 @@ public abstract class RaplaTestCase extends TestCase
 
     public static ServerServiceContainer createServer(Logger logger, ServerContainerContext containerContext) throws Exception
     {
+        FileOperator.setDefaultFileIO( new VoidFileIO());
         final ServerServiceContainer serverServiceContainer = DaggerServerCreator.create(logger, containerContext);
-        initFileHack();
         return serverServiceContainer;
-    }
-
-    private static void initFileHack()
-    {
-        FileOperator.setFileIO(new FileOperator.DefaultFileIO()
-                               {
-                                   @Override public void write(FileOperator.RaplaWriter writer, URI storageURL) throws IOException
-                                   {
-                                       //super.write(writer, storageURL);
-                                   }
-
-                                   @Override public InputSource getInputSource(URI storageURL) throws IOException
-                                   {
-                                       return super.getInputSource(storageURL);
-                                   }
-                               }
-
-        );
     }
 
     public static String getTestDataFile(String xmlFile)
@@ -113,7 +79,6 @@ public abstract class RaplaTestCase extends TestCase
     public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile)
     {
         String resolvedPath = getTestDataFile(xmlFile);
-        initFileHack();
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
@@ -130,6 +95,7 @@ public abstract class RaplaTestCase extends TestCase
                 DefaultPermissionControllerSupport.getController());
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
         facade.setOperator(operator);
+        operator.setFileIO(new VoidFileIO());
         operator.connect();
         return facade;
     }
@@ -180,9 +146,22 @@ public abstract class RaplaTestCase extends TestCase
         return clientFacadeProvider;
     }
 
-    public RaplaTestCase(String name)
+    private static class VoidFileIO extends FileOperator.DefaultFileIO
     {
-        super(name);
+        @Override public void write(FileOperator.RaplaWriter writer, URI storageURL) throws IOException
+        {
+            //super.write(writer, storageURL);
+        }
+
+        @Override public InputSource getInputSource(URI storageURL) throws IOException
+        {
+            return super.getInputSource(storageURL);
+        }
+    }
+
+    /*
+    public RaplaTestCase()
+    {
         try
         {
             new File("temp").mkdir();
@@ -209,6 +188,7 @@ public abstract class RaplaTestCase extends TestCase
         }
 
     }
+
 
     public void copyDataFile(String testFile) throws IOException
     {
@@ -244,8 +224,6 @@ public abstract class RaplaTestCase extends TestCase
         //        URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
         //env.setConfigURL( configURL);
         copyDataFile(TEST_SRC_FOLDER_NAME + "/" + testFile);
-        raplaContainer = null;// FIXME new RaplaClientServiceImpl( env );
-        assertNotNull("Container not initialized.", raplaContainer);
         ClientFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray());
     }
@@ -270,5 +248,5 @@ public abstract class RaplaTestCase extends TestCase
         if (raplaContainer != null)
             raplaContainer.dispose();
     }
-
+*/
 }

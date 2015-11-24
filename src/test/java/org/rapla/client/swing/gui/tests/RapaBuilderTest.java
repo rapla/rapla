@@ -12,41 +12,49 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.gui.tests;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
+import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.rapla.RaplaTestCase;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-
-public final class RapaBuilderTest extends RaplaTestCase
+@RunWith(JUnit4.class)
+public final class RapaBuilderTest
 {
-    public RapaBuilderTest(String name) {
-        super(name);
+    ClientFacade facade;
+    @Before
+    public void setUp()
+    {
+        facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
     }
 
-    public static Test suite() {
-        return new TestSuite(RapaBuilderTest.class);
+    protected SerializableDateTimeFormat formater()
+    {
+        return new SerializableDateTimeFormat();
     }
 
+    @Test
     public void testSplitAppointments() throws Exception {
         Date start = formater().parseDate("2004-01-01",false);
         Date end = formater().parseDate("2004-01-10",true);
 
         // test 2 Blocks
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        Reservation reservation = getFacade().newReservation();
-        Appointment appointment = getFacade().newAppointment(
-                    formater().parseDateTime("2004-01-01","18:30:00")
-                    ,formater().parseDateTime("2004-01-02","12:00:00")
-                                );
+        Reservation reservation = facade.newReservation();
+        Appointment appointment = facade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks
@@ -54,34 +62,28 @@ public final class RapaBuilderTest extends RaplaTestCase
                     ,end
         );
 
-        assertEquals("Blocks are not split in two", 2, blocks.size());
-        assertEquals( formater().parseDateTime("2004-01-01","23:59:59").getTime()/1000, blocks.get(0).getEnd()/1000);
-        assertEquals( formater().parseDateTime("2004-01-02","00:00:00").getTime(), blocks.get(1).getStart());
-        assertEquals( formater().parseDateTime("2004-01-02","12:00:00").getTime(), blocks.get(1).getEnd());
+        Assert.assertEquals("Blocks are not split in two", 2, blocks.size());
+        Assert.assertEquals(formater().parseDateTime("2004-01-01", "23:59:59").getTime() / 1000, blocks.get(0).getEnd() / 1000);
+        Assert.assertEquals(formater().parseDateTime("2004-01-02", "00:00:00").getTime(), blocks.get(1).getStart());
+        Assert.assertEquals(formater().parseDateTime("2004-01-02", "12:00:00").getTime(), blocks.get(1).getEnd());
 
         //      test 3 Blocks
         blocks.clear();
-        reservation = getFacade().newReservation();
-        appointment = getFacade().newAppointment(
-                    formater().parseDateTime("2004-01-01","18:30:00")
-                    ,formater().parseDateTime("2004-01-04","00:00:00")
-                                );
+        reservation = facade.newReservation();
+        appointment = facade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks
                                            ,start
                                            ,end
                                          );
-        assertEquals("Blocks are not split in three", 3, blocks.size());
-        assertEquals(formater().parseDateTime("2004-01-03","23:59:59").getTime()/1000, blocks.get(2).getEnd()/1000);
+        Assert.assertEquals("Blocks are not split in three", 3, blocks.size());
+        Assert.assertEquals(formater().parseDateTime("2004-01-03", "23:59:59").getTime() / 1000, blocks.get(2).getEnd() / 1000);
 
         //      test 3 Blocks, but only the first two should show
         blocks.clear();
-        reservation = getFacade().newReservation();
-        appointment = getFacade().newAppointment(
-                formater().parseDateTime("2004-01-01","18:30:00")
-                ,formater().parseDateTime("2004-01-04","00:00:00")
-        );
+        reservation = facade.newReservation();
+        appointment = facade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks
@@ -89,8 +91,8 @@ public final class RapaBuilderTest extends RaplaTestCase
                 ,formater().parseDateTime("2004-01-03","00:00:00")
 
         );
-        assertEquals("Blocks are not split in two", 2, blocks.size());
-        assertEquals(formater().parseDateTime("2004-01-02","23:59:59").getTime()/1000, blocks.get(1).getEnd()/1000);
+        Assert.assertEquals("Blocks are not split in two", 2, blocks.size());
+        Assert.assertEquals(formater().parseDateTime("2004-01-02", "23:59:59").getTime() / 1000, blocks.get(1).getEnd() / 1000);
     }
 }
 

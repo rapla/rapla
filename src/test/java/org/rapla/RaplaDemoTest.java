@@ -11,24 +11,21 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla;
+
+import org.junit.Assert;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.ClientFacade;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+@RunWith(JUnit4.class)
+public class RaplaDemoTest {
 
-public class RaplaDemoTest extends RaplaTestCase {
-
-    public RaplaDemoTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(RaplaDemoTest.class);
-    }
-
+    @org.junit.Test
     public void testAccess() throws Exception {
-        Allocatable[] resources = getFacade().getAllocatables();
-        assertTrue(resources.length > 0);
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        Allocatable[] resources = facade.getAllocatables();
+        Assert.assertTrue(resources.length > 0);
     }
 
 }

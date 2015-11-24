@@ -70,6 +70,7 @@ public class RaplaICalImport implements ICalImport {
 		this.session = session;
 		this.facade = facade;
 		this.logger = logger;
+		this.timeZone = converter.getImportExportTimeZone();
 	}
 
 

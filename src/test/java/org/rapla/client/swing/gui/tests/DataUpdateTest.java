@@ -11,11 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.gui.tests;
-import java.util.Collection;
-import java.util.Collections;
 
-import org.rapla.RaplaTestCase;
-import org.rapla.client.UserClientService;
+import org.junit.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -28,28 +25,18 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Collection;
+import java.util.Collections;
 
-public class DataUpdateTest extends RaplaTestCase {
+public class DataUpdateTest  {
     ClientFacade facade;
     Exception error;
-
-    public DataUpdateTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(DataUpdateTest.class);
-    }
+    CalendarSelectionModel model;
 
     protected void setUp() throws Exception {
-        super.setUp();
-        facade = getService(ClientFacade.class);
     }
 
     protected void tearDown() throws Exception {
-        super.tearDown();
     }
 
     public void testReload() throws Exception{
@@ -60,7 +47,7 @@ public class DataUpdateTest extends RaplaTestCase {
         Thread.sleep(1500);
         if (error != null)
             throw error;
-        assertTrue( "User-list varied during refresh! ", facade.getUsers()[0].equals(user) );
+        Assert.assertTrue("User-list varied during refresh! ", facade.getUsers()[0].equals(user));
     }
     boolean fail;
     
@@ -81,33 +68,33 @@ public class DataUpdateTest extends RaplaTestCase {
     	
     	facade.store( newResource );
      	
-    	final CalendarSelectionModel model = getService( CalendarSelectionModel.class);
+
     	ClassificationFilter filter = dynamicType.newClassificationFilter();
     	filter.addIsRule("newkey", "filter");
     	model.setAllocatableFilter( new ClassificationFilter[] {filter});
     	model.setSelectedObjects( Collections.singletonList( newResource));
-    	assertFalse(model.isDefaultResourceTypes());
-    	assertTrue(filter.matches(newResource.getClassification()));
+        Assert.assertFalse(model.isDefaultResourceTypes());
+        Assert.assertTrue(filter.matches(newResource.getClassification()));
     	{
 			ClassificationFilter[] allocatableFilter = model.getAllocatableFilter();
-    		assertEquals(1, allocatableFilter.length);
-    		assertEquals(1,allocatableFilter[0].ruleSize());
+            Assert.assertEquals(1, allocatableFilter.length);
+            Assert.assertEquals(1, allocatableFilter[0].ruleSize());
     	}
     	{
 			DynamicType mutableType = facade.edit(dynamicType);
     		mutableType.removeAttribute( mutableType.getAttribute( "newkey"));
     		facade.storeAndRemove( new Entity[] {mutableType}, new Entity[]{ newResource});
     	}
-    	
-    	assertFalse(model.isDefaultResourceTypes());
+
+        Assert.assertFalse(model.isDefaultResourceTypes());
     	Collection<RaplaObject> selectedObjects = model.getSelectedObjects( );
     	int size = selectedObjects.size();
-    	assertEquals(0,size);
+        Assert.assertEquals(0,size);
     	
     	ClassificationFilter[] allocatableFilter = model.getAllocatableFilter();
-    	assertEquals(1,allocatableFilter.length);
+        Assert.assertEquals(1, allocatableFilter.length);
     	ClassificationFilter  filter1 = allocatableFilter[0];
-    	assertEquals(0,filter1.ruleSize()); 
+        Assert.assertEquals(0, filter1.ruleSize());
     }
 
     private void refreshDelayed() {

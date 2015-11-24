@@ -11,14 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.domain.Allocatable;
@@ -30,142 +28,165 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Set;
 
-public class SQLOperatorTest extends AbstractOperatorTest {
+@RunWith(JUnit4.class)
+public class SQLOperatorTest extends AbstractOperatorTest
+{
 
-    public SQLOperatorTest(String name) {
-        super(name);
+    ClientFacade facade;
+
+    @Override protected ClientFacade getFacade()
+    {
+        return facade;
     }
 
-    public void setUp() throws Exception {
-        super.setUp();
+    @Before public void setUp() throws Exception
+    {
+        CachableStorageOperator operator = getOperator();
         operator.connect();
         ((DBOperator) operator).removeAll();
         operator.disconnect();
         operator.connect();
     }
-    
-    public static Test suite() {
-        return new TestSuite(SQLOperatorTest.class);
-    }
 
-    /** exposes a bug in 1.1 
+    @Test
+    /** exposes a bug in 1.1
      * @throws RaplaException */
-    public void testPeriodInfitiveEnd() throws RaplaException {
-        facade.login("homer", "duffs".toCharArray() );
+    public void testPeriodInfitiveEnd() throws RaplaException
+    {
+        ClientFacade facade = getFacade();
+        CachableStorageOperator operator = getOperator();
+        facade.login("homer", "duffs".toCharArray());
         Reservation event = facade.newReservation();
-        Appointment appointment = facade.newAppointment( new Date(), new Date());
-        event.getClassification().setValue("name","test");
-        appointment.setRepeatingEnabled( true );
-        appointment.getRepeating().setEnd( null );
-        event.addAppointment( appointment );
+        Appointment appointment = facade.newAppointment(new Date(), new Date());
+        event.getClassification().setValue("name", "test");
+        appointment.setRepeatingEnabled(true);
+        appointment.getRepeating().setEnd(null);
+        event.addAppointment(appointment);
         facade.store(event);
         operator.refresh();
-        
-        Set<Reservation> singleton = Collections.singleton( event );
-		Reservation event1 = (Reservation) operator.getPersistant( singleton).get( event);
+
+        Set<Reservation> singleton = Collections.singleton(event);
+        Reservation event1 = (Reservation) operator.getPersistant(singleton).get(event);
         Repeating repeating = event1.getAppointments()[0].getRepeating();
-        assertNotNull( repeating );
-        assertNull( repeating.getEnd());
-        assertEquals( -1, repeating.getNumber());
+        Assert.assertNotNull(repeating);
+        Assert.assertNull(repeating.getEnd());
+        Assert.assertEquals(-1, repeating.getNumber());
     }
 
-    public void testPeriodStorage() throws RaplaException {
-    	facade.login("homer", "duffs".toCharArray() );
-        Date start = DateTools.cutDate( new Date());
-        Date end = new Date( start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
+    @Test
+    public void testPeriodStorage() throws RaplaException
+    {
+        CachableStorageOperator operator = getOperator();
+        ClientFacade facade = getFacade();
+        facade.login("homer", "duffs".toCharArray());
+        Date start = DateTools.cutDate(new Date());
+        Date end = new Date(start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
         Allocatable period = facade.newPeriod();
         Classification c = period.getClassification();
         String name = "TEST PERIOD2";
-		c.setValue("name", name);
-        c.setValue("start", start );
-        c.setValue("end", end );
-        facade.store( period);
+        c.setValue("name", name);
+        c.setValue("start", start);
+        c.setValue("end", end);
+        facade.store(period);
         operator.refresh();
-        
-		//Allocatable period1 = (Allocatable) operator.getPersistant( Collections.singleton( period )).get( period);
+
+        //Allocatable period1 = (Allocatable) operator.getPersistant( Collections.singleton( period )).get( period);
         Period[] periods = facade.getPeriods();
-        for ( Period period1:periods)
+        for (Period period1 : periods)
         {
-        	if ( period1.getName( null).equals(name))
-        	{
-        		assertEquals(  start,period1.getStart());
-        		assertEquals(  end, period1.getEnd());
-        	}
+            if (period1.getName(null).equals(name))
+            {
+                Assert.assertEquals(start, period1.getStart());
+                Assert.assertEquals(end, period1.getEnd());
+            }
         }
     }
-    
-    public void testCategoryChange() throws RaplaException {
-        facade.login("homer", "duffs".toCharArray() );
+
+    @Test
+    public void testCategoryChange() throws RaplaException
+    {
+        ClientFacade facade = getFacade();
+        CachableStorageOperator operator = getOperator();
+        facade.login("homer", "duffs".toCharArray());
         {
             Category category1 = facade.newCategory();
             Category category2 = facade.newCategory();
             category1.setKey("users1");
             category2.setKey("users2");
             Category groups = facade.edit(facade.getUserGroupsCategory());
-            groups.addCategory( category1 );
-            groups.addCategory( category2 );
-            facade.store( groups);
+            groups.addCategory(category1);
+            groups.addCategory(category2);
+            facade.store(groups);
             Category[] categories = facade.getUserGroupsCategory().getCategories();
-            assertEquals("users1",categories[5].getKey());
-            assertEquals("users2",categories[6].getKey());
+            Assert.assertEquals("users1", categories[5].getKey());
+            Assert.assertEquals("users2", categories[6].getKey());
             operator.disconnect();
             operator.connect();
             facade.refresh();
         }
         {
             Category[] categories = facade.getUserGroupsCategory().getCategories();
-            assertEquals("users1",categories[5].getKey());
-            assertEquals("users2",categories[6].getKey());
+            Assert.assertEquals("users1", categories[5].getKey());
+            Assert.assertEquals("users2", categories[6].getKey());
         }
-        
+
     }
-        
-        
-    
+
+    @Test
     public void testDynamicTypeChange() throws Exception
     {
-        facade.login("homer", "duffs".toCharArray() );
+        ClientFacade facade = getFacade();
+        CachableStorageOperator operator = getOperator();
+        facade.login("homer", "duffs".toCharArray());
         DynamicType type = facade.edit(facade.getDynamicType("event"));
         String id = type.getId();
-        Attribute att = facade.newAttribute( AttributeType.STRING);
+        Attribute att = facade.newAttribute(AttributeType.STRING);
         att.setKey("test-att");
-        type.addAttribute( att );
-        facade.store( type);
+        type.addAttribute(att);
+        facade.store(type);
         facade.logout();
         printTypeIds();
         operator.disconnect();
-        facade.login("homer", "duffs".toCharArray() );
+        facade.login("homer", "duffs".toCharArray());
         DynamicType typeAfterEdit = facade.getDynamicType("event");
         String idAfterEdit = typeAfterEdit.getId();
-        assertEquals( id, idAfterEdit);
+        Assert.assertEquals(id, idAfterEdit);
     }
 
     private void printTypeIds() throws RaplaException, SQLException
     {
-        Connection connection = ((DBOperator)operator).createConnection();
-        String sql  ="SELECT * from DYNAMIC_TYPE";
-        try 
+        CachableStorageOperator operator = getOperator();
+        Connection connection = ((DBOperator) operator).createConnection();
+        String sql = "SELECT * from DYNAMIC_TYPE";
+        try
         {
             Statement statement = connection.createStatement();
             ResultSet set = statement.executeQuery(sql);
-            while ( !set.isLast())
+            while (!set.isLast())
             {
                 set.next();
                 String idString = set.getString("ID");
                 String key = set.getString("TYPE_KEY");
-                System.out.println( "id " + idString + " key " + key);
+                System.out.println("id " + idString + " key " + key);
             }
-        } 
-        catch (SQLException ex) 
+        }
+        catch (SQLException ex)
         {
-             throw new RaplaException( ex);
+            throw new RaplaException(ex);
         }
         finally
         {
@@ -173,14 +194,6 @@ public class SQLOperatorTest extends AbstractOperatorTest {
         }
     }
 
-    protected String getStorageName() {
-        return "rapladb";
-    }
-    
-    protected String getFacadeName() {
-        return "sql-facade";
-    }
-    
 }
 
 

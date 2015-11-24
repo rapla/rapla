@@ -50,14 +50,6 @@ import junit.framework.TestSuite;
 
 public final class PermissionEditTest extends GUITestCase
 {
-    public PermissionEditTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(PermissionEditTest.class);
-    }
-
     public void testMain() throws Exception {
         final Logger logger = getLogger();
         final DefaultBundleManager bundleManager = new DefaultBundleManager();
@@ -95,8 +87,7 @@ public final class PermissionEditTest extends GUITestCase
 
 
     public static void main(String[] args) {
-        new PermissionEditTest(PermissionEditTest.class.getName()
-                               ).interactiveTest("testMain");
+        new PermissionEditTest().interactiveTest("testMain");
     }
 }
 

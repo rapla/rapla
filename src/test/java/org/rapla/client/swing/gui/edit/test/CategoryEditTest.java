@@ -44,14 +44,6 @@ import junit.framework.TestSuite;
 
 public final class CategoryEditTest extends GUITestCase
 {
-    public CategoryEditTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(CategoryEditTest.class);
-    }
-
 
     public void testMain() throws Exception {
         final Logger logger = getLogger();
@@ -78,8 +70,7 @@ public final class CategoryEditTest extends GUITestCase
 
 
     public static void main(String[] args) {
-        new CategoryEditTest(CategoryEditTest.class.getName()
-                               ).interactiveTest("testMain");
+        new CategoryEditTest().interactiveTest("testMain");
     }
 }
 

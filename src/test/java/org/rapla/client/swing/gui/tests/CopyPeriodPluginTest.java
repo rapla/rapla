@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.plugin.tests;
+package org.rapla.client.swing.gui.tests;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +18,8 @@ import java.util.Locale;
 
 import javax.inject.Provider;
 
+import org.junit.Assert;
+import org.junit.Before;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaTestCase;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -37,6 +39,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
@@ -44,19 +47,32 @@ import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
 
 /** listens for allocation changes */
-public class CopyPeriodPluginTest extends RaplaTestCase {
+public class CopyPeriodPluginTest {
     ClientFacade facade;
     Locale locale;
+    Logger logger;
+    RaplaLocale raplaLocale;
 
-    public CopyPeriodPluginTest(String name) {
-        super(name);
+
+    @Before
+    public void setUp() throws Exception {
+        facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        locale = Locale.getDefault();
     }
 
-    protected void setUp() throws Exception {
-        super.setUp();
-        facade = null;//FIXME raplaContainer.lookupDeprecated(ClientFacade.class, "local-facade");
-        facade.login("homer","duffs".toCharArray());
-        locale = Locale.getDefault();
+    RaplaLocale getRaplaLocale()
+    {
+        return  raplaLocale;
+    }
+
+    public ClientFacade getFacade()
+    {
+        return facade;
+    }
+
+    Logger getLogger()
+    {
+        return logger;
     }
 
     private Reservation findReservationWithName(Reservation[] reservations, String name) {
@@ -86,8 +102,8 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
                 destPeriod = periods[i];
             }
         }
-        assertNotNull( "Period not found ", sourcePeriod );
-        assertNotNull( "Period not found ", destPeriod );
+        Assert.assertNotNull("Period not found ", sourcePeriod);
+        Assert.assertNotNull("Period not found ", destPeriod);
         BundleManager bundleManager= new DefaultBundleManager();
         PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
         final Logger logger = getLogger();
@@ -109,12 +125,12 @@ public class CopyPeriodPluginTest extends RaplaTestCase {
         };
         CopyPluginMenu init = new CopyPluginMenu( getFacade(), rr, getRaplaLocale(), getLogger(), i18n, copyDialogProvider, raplaImages, dialogUiFactory);
         Reservation[] original = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
-        assertNotNull(findReservationWithName(original, "power planting"));
+        Assert.assertNotNull(findReservationWithName(original, "power planting"));
 
         init.copy( Arrays.asList(original), destPeriod.getStart(),destPeriod.getEnd(), false);
 
         Reservation[] copy = model.getReservations( destPeriod.getStart(), destPeriod.getEnd());
-        assertNotNull(findReservationWithName(copy,"power planting"));
+        Assert.assertNotNull(findReservationWithName(copy, "power planting"));
 
     }
 }

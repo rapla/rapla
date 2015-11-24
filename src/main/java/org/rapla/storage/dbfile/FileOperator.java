@@ -59,6 +59,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 
+import javax.imageio.stream.FileImageOutputStream;
 import javax.inject.Named;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -83,13 +84,24 @@ final public class FileOperator extends LocalAbstractCachableOperator
     protected boolean isConnected = false;
     final boolean includeIds = false;
 
-    static DefaultFileIO FileIO = new DefaultFileIO();
+    static FileIO DefaultFileIO = new DefaultFileIO();
+    FileIO FileIO = DefaultFileIO;
 
-    public static void setFileIO(DefaultFileIO fileIO)
+    public void setFileIO(FileIO fileIO)
     {
         FileIO = fileIO;
     }
-    static  public class DefaultFileIO
+
+    static public void setDefaultFileIO(FileIO fileIO)
+    {
+        DefaultFileIO = fileIO;
+    }
+    public interface FileIO
+    {
+        public InputSource getInputSource(URI storageURL) throws IOException;
+        public void write(RaplaWriter writer, URI storageURL) throws IOException;
+    }
+    static  public class DefaultFileIO implements FileIO
     {
         public InputSource getInputSource(URI storageURL) throws IOException
         {

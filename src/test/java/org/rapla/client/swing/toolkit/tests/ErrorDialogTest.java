@@ -28,14 +28,6 @@ import junit.framework.TestSuite;
 
 public class ErrorDialogTest extends GUITestCase {
 
-    public ErrorDialogTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(ErrorDialogTest.class);
-    }
-
     public void testError() throws Exception {
         ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
         final Logger logger = getLogger();
@@ -51,7 +43,7 @@ public class ErrorDialogTest extends GUITestCase {
     }
 
     public static void main(String[] args) {
-        new ErrorDialogTest("ErrorDialogTest").interactiveTest("testError");
+        new ErrorDialogTest().interactiveTest("testError");
     }
 
 

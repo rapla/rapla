@@ -12,25 +12,17 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.gui.tests;
-import java.util.Date;
 
+import org.junit.Test;
 import org.rapla.client.swing.internal.CalendarEditor;
 import org.rapla.facade.CalendarSelectionModel;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.util.Date;
 
 
 public final class CalendarEditorTest extends GUITestCase
 {
-    public CalendarEditorTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(CalendarEditorTest.class);
-    }
-
+    @Test
     public void testShow() throws Exception {
         CalendarSelectionModel settings = getFacade().newCalendarModel(getFacade().getUser() );
         settings.setSelectedDate(new Date());
@@ -70,8 +62,7 @@ public final class CalendarEditorTest extends GUITestCase
  */
 
     public static void main(String[] args) {
-        new CalendarEditorTest(CalendarEditorTest.class.getName()
-                               ).interactiveTest("testShow");
+        new CalendarEditorTest().interactiveTest("testShow");
     }
 }
 

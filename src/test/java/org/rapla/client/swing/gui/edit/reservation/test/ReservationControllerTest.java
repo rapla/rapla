@@ -20,6 +20,7 @@ import java.util.concurrent.Semaphore;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 
+import org.junit.Assert;
 import org.rapla.client.UserClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -42,15 +43,6 @@ import junit.framework.TestSuite;
 
 public final class ReservationControllerTest extends GUITestCase {
 	ClientFacade facade = null;
-
-	public ReservationControllerTest(String name) {
-		super(name);
-	}
-
-
-	public static Test suite() {
-		return new TestSuite(ReservationControllerTest.class);
-	}
 
 	public void testMain() throws Exception {
 		Reservation[] reservations = facade.getReservationsForAllocatable(null, null, null, null);
@@ -79,7 +71,7 @@ public final class ReservationControllerTest extends GUITestCase {
 				try {
 					c.moveAppointment(appointmentBlock, newStart, createPopupContext(),	keepTime);
 					Appointment app = facade.getPersistant(reservation).getAppointments()[0];
-					assertEquals(DateTools.addDay(from), app.getStart());
+					Assert.assertEquals(DateTools.addDay(from), app.getStart());
 					// Now the test can end
 					mutex.release();
 				} catch (RaplaException e) {
@@ -108,9 +100,9 @@ public final class ReservationControllerTest extends GUITestCase {
 		
 		//Testing undo & redo function
 		facade.getCommandHistory().undo();
-		assertEquals(from, facade.getPersistant(reservation).getAppointments()[0].getStart());
+		Assert.assertEquals(from, facade.getPersistant(reservation).getAppointments()[0].getStart());
 		facade.getCommandHistory().redo();
-		assertEquals(DateTools.addDay(from), facade.getPersistant(reservation).getAppointments()[0].getStart());
+		Assert.assertEquals(DateTools.addDay(from), facade.getPersistant(reservation).getAppointments()[0].getStart());
 	}
 	
 	
@@ -138,7 +130,6 @@ public final class ReservationControllerTest extends GUITestCase {
 	}
 
 	public static void main(String[] args) {
-		new ReservationControllerTest(ReservationControllerTest.class.getName())
-				.interactiveTest("testMain");
+		new ReservationControllerTest().interactiveTest("testMain");
 	}
 }

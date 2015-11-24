@@ -1,102 +1,120 @@
 package org.rapla.plugin.tests;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
-
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.RaplaTestCase;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 
-public class ICalImportTest extends RaplaTestCase{
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
 
-	public ICalImportTest(String name) {
-		super(name);
-	}
-	
+@RunWith(JUnit4.class)
+public class ICalImportTest {
+
+
+    Logger logger;
+    ClientFacade facade;
+
+    @Before
+    public void setUp()
+    {
+        logger = RaplaBootstrapLogger.createRaplaLogger();
+        facade = RaplaTestCase.createFacadeWithFile(logger, "testdefault.xml");
+        facade.login("homer","duffs".toCharArray());
+    }
+
+    @Test
 	public void testICalImport1() throws Exception{
 
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
         TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
         converter.setImportExportTimeZone(timezone);
-        Logger logger = getLogger();
-        ClientFacade facade = getFacade();
+
         RemoteSession session = new RemoteSessionImpl(logger, facade.getUser());
         RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
         boolean isUrl = true;
         String content = "https://www.google.com/calendar/ical/76kijffqdch1nkemshokjlf6r4%40group.calendar.google.com/private-e8c8772e35043055c7d9c16f366fdfbf/basic.ics";
-        Allocatable newResource = getFacade().newResource();
+        Allocatable newResource = facade.newResource();
         newResource.getClassification().setValue("name", "icaltest");
-        getFacade().store( newResource);
+        facade.store(newResource);
         List<Allocatable> allocatables = Collections.singletonList( newResource);
-        User user = getFacade().getUser("homer");
-        String eventTypeKey = getFacade().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
+        User user = facade.getUser("homer");
+        String eventTypeKey = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
         importer.importCalendar(content, isUrl, allocatables, user, eventTypeKey, "name");
     }
-	
+
+    @Test
 	public void testICalImport2() throws Exception{
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
         TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
         converter.setImportExportTimeZone(timezone);
-        Logger logger = getLogger();
-        ClientFacade facade = getFacade();
         RemoteSession session = new RemoteSessionImpl(logger, facade.getUser());
         RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
         boolean isUrl = false;
         String packageName = getClass().getPackage().getName().replaceAll("\\.", "/");
-		String pathname = TEST_SRC_FOLDER_NAME + "/" + packageName + "/test.ics";
-        BufferedReader reader = new BufferedReader(new FileReader( new File(pathname)));
+        final String name = "/" + packageName + "/test.ics";
         StringBuilder fileContent = new StringBuilder();
-        while ( true)
+        try (final InputStream resource1 = getClass().getResourceAsStream(name))
         {
-            String line = reader.readLine();
-            if ( line == null)
+            BufferedReader reader = new BufferedReader(new InputStreamReader(resource1));
+            while ( true)
             {
-                break;
+                String line = reader.readLine();
+                if ( line == null)
+                {
+                    break;
+                }
+                fileContent.append( line );
+                fileContent.append( "\n");
             }
-            fileContent.append( line );
-            fileContent.append( "\n");
         }
-        reader.close();
         String content = fileContent.toString();
-        Allocatable newResource = getFacade().newResource();
+        Allocatable newResource = facade.newResource();
         newResource.getClassification().setValue("name", "icaltest");
-        getFacade().store( newResource);
+        facade.store(newResource);
         List<Allocatable> allocatables = Collections.singletonList( newResource);
-        User user = getFacade().getUser("homer");
-        String eventTypeKey = getFacade().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
+        User user = facade.getUser("homer");
+        String eventTypeKey = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
         importer.importCalendar(content, isUrl, allocatables, user, eventTypeKey, "name");
         Reservation[] reservations;
         {
             Date start = null;
             Date end = null;
-            reservations = getFacade().getReservations( allocatables.toArray( Allocatable.ALLOCATABLE_ARRAY), start, end);
+            reservations = facade.getReservations(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end);
         }
-        assertEquals( 1, reservations.length);
+        Assert.assertEquals(1, reservations.length);
         Reservation event = reservations[0];
         Appointment[] appointments = event.getAppointments();
-        assertEquals( 1, appointments.length);
+        Assert.assertEquals(1, appointments.length);
         Appointment appointment = appointments[0];
         Date start= appointment.getStart();
-        RaplaLocale raplaLocale = getRaplaLocale();
         // We expect a one our shift in time because we set GMT+1 in timezone settings and the timezone of the ical file is GMT+0
-        Date time = raplaLocale.toTime(11+1, 30, 0);
-        Date date = raplaLocale.toRaplaDate(2012, 11, 6);
-        assertEquals( raplaLocale.toDate(date, time), start);
+        Date time = new Date(DateTools.toTime(11 + 1, 30, 0));
+        Date date = new Date(DateTools.toDate(2012, 11, 6));
+        Assert.assertEquals(DateTools.toDateTime(date, time), start);
         
 	}
 }

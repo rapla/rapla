@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.rapla.RaplaTestCase;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
@@ -24,13 +25,11 @@ import org.rapla.storage.dbfile.FileOperator;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import javax.validation.constraints.AssertTrue;
 
-public class FileOperatorDiffTest extends RaplaTestCase {
+public class FileOperatorDiffTest  {
     CachableStorageOperator operator;
 
-    public FileOperatorDiffTest(String name) {
-        super(name);
-    }
 
     public boolean differ(String file1, String file2) throws IOException {
         BufferedReader in1 = null;
@@ -76,17 +75,17 @@ public class FileOperatorDiffTest extends RaplaTestCase {
     }
 
     public void setUp() throws Exception {
-        super.setUp();
         operator = null;// FIXME raplaContainer.lookupDeprecated(CachableStorageOperator.class, "raplafile");
     }
 
     public void testSave() throws RaplaException,IOException  {
         String testFile = "test-src/testdefault.xml";
-        assertTrue(differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false);
+        // FIXME real foleder
+        String TEST_FOLDER_NAME = "";
+        Assert.assertTrue(differ(TEST_FOLDER_NAME + "/test.xml", testFile) == false);
         operator.connect();
         ((FileOperator)operator).saveData();
-        assertTrue("stored version differs from orginal " + testFile
-                   , differ(TEST_FOLDER_NAME + "/test.xml",testFile) == false );
+        Assert.assertTrue("stored version differs from orginal " + testFile, differ(TEST_FOLDER_NAME + "/test.xml", testFile) == false);
     }
 
 }

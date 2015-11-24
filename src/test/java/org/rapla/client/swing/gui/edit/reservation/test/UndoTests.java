@@ -1,7 +1,6 @@
 package org.rapla.client.swing.gui.edit.reservation.test;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import org.junit.Assert;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -28,16 +27,7 @@ public class UndoTests extends GUITestCase {
 
 //	ReservationEdit reservationEdit;
 	
-	public UndoTests(String name) {
-		super(name);
-	}
-
-	public static Test suite() {
-		return new TestSuite(UndoTests.class);
-	}
-
 	protected void setUp() throws Exception {
-		super.setUp();
 //		reservationEdit = (ReservationEditImpl)control.getEditWindows()[0];
 //		reservationEdit.allocatableEdit
 //		selection = new AllocatableSelection(getContext(),true,null);
@@ -103,7 +93,7 @@ public class UndoTests extends GUITestCase {
 					PopupContext popupContext = createPopupContext();
                     control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
 				} catch (RaplaException e) {
-					fail(e.getMessage());
+					Assert.fail(e.getMessage());
 				}
 			}
 		}, buttonNr);
@@ -115,21 +105,21 @@ public class UndoTests extends GUITestCase {
 			Reservation persistant = facade.getPersistant( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
-			assertFalse(appOrig.matches(appCpy));
+			Assert.assertFalse(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().undo();
 			Reservation persistant = facade.getPersistant( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
-			assertTrue(appOrig.matches(appCpy));
+			Assert.assertTrue(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().redo();
 			Reservation persistant = facade.getPersistant( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
-			assertFalse(appOrig.matches(appCpy));
+			Assert.assertFalse(appOrig.matches(appCpy));
 		}
     }
 	
@@ -159,7 +149,7 @@ public class UndoTests extends GUITestCase {
 					PopupContext popupContext= createPopupContext();
                     control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
 				} catch (RaplaException e) {
-					fail(e.getMessage());
+					Assert.fail(e.getMessage());
 				}
 			}
 		}, buttonNr);
@@ -171,21 +161,21 @@ public class UndoTests extends GUITestCase {
 			Reservation persistant = facade.getPersistant( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
-			assertFalse(appOrig.matches(appCpy));
+			Assert.assertFalse(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().undo();
 			Reservation persistant = facade.getPersistant( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
-			assertTrue(appOrig.matches(appCpy));
+			Assert.assertTrue(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().redo();
 			Reservation persistant = facade.getPersistant( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
-			assertFalse(appOrig.matches(appCpy));
+			Assert.assertFalse(appOrig.matches(appCpy));
 		}
 
     }
@@ -217,7 +207,7 @@ public class UndoTests extends GUITestCase {
 					PopupContext popupContext = createPopupContext();
                     control.deleteAppointment(appointmentBlock, popupContext);
 				} catch (RaplaException e) {
-					fail(e.getMessage());
+					Assert.fail(e.getMessage());
 				}
 			}
 		}, buttonNr);
@@ -227,20 +217,20 @@ public class UndoTests extends GUITestCase {
         	exist = facade.getPersistant(nonPersistantEvent);
         	
         	//checks if an appointment was deleted (not used if exception is thrown)
-        	assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
+			Assert.assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
 		} catch (EntityNotFoundException e) {
 			facade.getCommandHistory().undo();
 		}
         try {
         	exist = facade.getPersistant(nonPersistantEvent);
-        	assertTrue(exist !=null);
+			Assert.assertTrue(exist != null);
 		} catch (EntityNotFoundException e) {
 			e.printStackTrace();
 		}
         facade.getCommandHistory().redo();
         try {
         	exist = facade.getPersistant(nonPersistantEvent);
-        	assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
+			Assert.assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
 		} catch (Exception e) {
 		}
         	
@@ -259,7 +249,7 @@ public class UndoTests extends GUITestCase {
 			Reservation nonPersistantEvent) throws RaplaException, Exception {
 		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
 		nonPersistantEvent.getClassification().setValue("name","dummy-event");
-        assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
+		Assert.assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
         nonPersistantEvent.addAllocatable( nonPersistantAllocatable );
         Appointment appointment = getFacade().newAppointment( new Date(), new Date());
         appointment.setRepeatingEnabled( true);

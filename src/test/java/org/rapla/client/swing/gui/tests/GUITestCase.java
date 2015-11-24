@@ -25,17 +25,34 @@ import org.rapla.client.swing.toolkit.FrameController;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.FrameControllerListener;
 import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
-public abstract class GUITestCase extends RaplaTestCase {
-    
-    public GUITestCase(String name)
-    {
-        super(name);
-    }
-    
+public abstract class GUITestCase  {
+
+    Logger logger;
+    ClientFacade facade;
+    RaplaLocale raplaLocale;
+
     protected <T> T getService(Class<T> role) throws RaplaException {
            return null;
+    }
+
+    public Logger getLogger()
+    {
+        return logger;
+    }
+
+    public ClientFacade getFacade()
+    {
+        return facade;
+    }
+
+    public RaplaLocale getRaplaLocale()
+    {
+        return raplaLocale;
     }
 
     protected PopupContext createPopupContext()
@@ -46,17 +63,16 @@ public abstract class GUITestCase extends RaplaTestCase {
 
     public void interactiveTest(String methodName) {
         try {
-            setUp();
             ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
             try {
                 this.getClass().getMethod(methodName, new Class[] {}).invoke(this,new Object[] {});
                 waitUntilLastFrameClosed( getService(FrameControllerList.class) );
                 System.exit(0);
             } catch (Exception ex) {
-                getLogger().error(ex.getMessage(), ex);
+                logger.error(ex.getMessage(), ex);
                 System.exit(1);
             } finally {
-                tearDown();
+                //tearDown();
             }
         } catch (Exception ex) {
             ex.printStackTrace();

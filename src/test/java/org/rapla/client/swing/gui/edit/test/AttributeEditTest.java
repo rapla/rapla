@@ -33,16 +33,6 @@ import junit.framework.TestSuite;
 
 public final class AttributeEditTest extends GUITestCase
 {
-    public AttributeEditTest(String name) {
-        super(name);
-    }
-
-    public static Test suite() {
-        return new TestSuite(AttributeEditTest.class);
-    }
-
-
-
     public void testMain() throws Exception {
         ClientFacade facade = null;
         final Logger logger = getLogger();
@@ -77,8 +67,7 @@ public final class AttributeEditTest extends GUITestCase
 
 
     public static void main(String[] args) {
-        new AttributeEditTest(AttributeEditTest.class.getName()
-                               ).interactiveTest("testMain");
+        new AttributeEditTest().interactiveTest("testMain");
     }
 }
 
