@@ -62,7 +62,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         logger = RaplaBootstrapLogger.createRaplaLogger();
         org.hsqldb.jdbc.JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
         new File("target/temp").mkdir();
-        datasource.setUrl("jdbc:hsqldb:data/target/temp/rapla-hsqldb");
+        datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
         String xmlFile = "testdefault.xml";
