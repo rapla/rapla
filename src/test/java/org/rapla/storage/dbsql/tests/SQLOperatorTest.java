@@ -38,6 +38,7 @@ import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
@@ -334,8 +335,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<Entity> addObjects = modificationEvent.getAddObjects();
                 Assert.assertEquals(1, addObjects.size());
-                final Entity addedObj = addObjects
-                .iterator().next();
+                final Entity addedObj = addObjects.iterator().next();
                 Assert.assertTrue(addedObj instanceof Category);
                 Category newCat = (Category) addedObj;
                 Assert.assertEquals(key, newCat.getKey());
@@ -394,18 +394,53 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Reservation newReservation = (Reservation) next;
                 Assert.assertEquals(allocatables.length, newReservation.getAllocatables().length);
             }
-            {//UserGroupStorage
-                
-            }
-            {// UserStorage
-                
+            {// UserStorage and UserGroupStorage
+                final User newUser = writeFacade.newUser();
+                {
+                    newUser.getGroupList().clear();
+                    newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
+                    newUser.setAdmin(false);
+                    String email = "123@456.de";
+                    newUser.setEmail(email);
+                    final String name = "example";
+                    newUser.setName(name);
+                    final String username = "userEx";
+                    newUser.setUsername(username);
+                    writeFacade.store(newUser);
+                    readFacade.refresh();
+                    final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                    Assert.assertTrue(tryAcquire);
+                    final ModificationEvent modificationEvent = updateResult.get();
+                    final Set<Entity> addObjects = modificationEvent.getAddObjects();
+                    Assert.assertEquals(1, addObjects.size());
+                    final Entity next = addObjects.iterator().next();
+                    Assert.assertTrue(next instanceof User);
+                    User addedUser = (User) next;
+                    Assert.assertEquals(email, addedUser.getEmail());
+                    Assert.assertEquals(name, addedUser.getName());
+                    Assert.assertEquals(username, addedUser.getUsername());
+                    Assert.assertEquals(writeFacade.getUserGroupsCategory().getCategories()[0], addedUser.getGroupList().iterator().next());
+                }
+                {// now change the group
+                    newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[1]);
+                    writeFacade.store(newUser);
+                    readFacade.refresh();
+                    final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                    Assert.assertTrue(tryAcquire);
+                    final ModificationEvent modificationEvent = updateResult.get();
+                    final Set<Entity> changed = modificationEvent.getChanged();
+                    Assert.assertEquals(1, changed.size());
+                    final Entity next = changed.iterator().next();
+                    Assert.assertTrue(next instanceof User);
+                    User changedUser = (User) next;
+                    Assert.assertEquals(writeFacade.getUserGroupsCategory().getCategories()[1], changedUser.getGroupList().iterator().next());
+                }
             }
             {// Delete of an resource
                  
             }
         }
     }
-
 }
 
 
