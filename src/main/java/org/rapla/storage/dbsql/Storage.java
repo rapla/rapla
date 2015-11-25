@@ -32,6 +32,7 @@ interface Storage<T extends Entity<T>> {
     public List<String> getCreateSQL();
 	void createOrUpdateIfNecessary( Map<String, TableDef> schema) throws SQLException, RaplaException;
     void dropTable() throws SQLException;
+    void update(Connection con, String id) throws SQLException;
 }
 
 

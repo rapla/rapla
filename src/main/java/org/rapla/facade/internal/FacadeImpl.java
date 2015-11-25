@@ -1525,7 +1525,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		if (result instanceof ModifiableTimestamp) {
 			Date now = operator.getCurrentTimestamp();
-			((ModifiableTimestamp) result).setLastChanged(now);
+//			((ModifiableTimestamp) result).setLastChanged(now);
 			if (workingUser != null) {
 				((ModifiableTimestamp) result).setLastChangedBy(workingUser);
 			}

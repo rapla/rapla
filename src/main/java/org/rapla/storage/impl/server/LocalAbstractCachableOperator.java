@@ -826,7 +826,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                     currentTime = getCurrentTimestamp();
                 }
-                modifiableTimestamp.setLastChanged( currentTime);
+//                modifiableTimestamp.setLastChanged( currentTime);
                 modifiableTimestamp.setLastChangedBy( lastChangedBy );
             }
         }
@@ -1680,7 +1680,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // check event for inconsistencies
 		check( evt, store);
 		// update last changed date
-		updateLastChanged( evt );
+//		updateLastChanged( evt );
 	}
 
 	/**

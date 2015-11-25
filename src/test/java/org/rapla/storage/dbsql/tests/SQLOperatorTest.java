@@ -12,12 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.inject.Provider;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.RaplaResources;
 import org.rapla.RaplaTestCase;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -26,29 +45,30 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.StandardFunctions;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
+import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.DefaultScheduler;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.tests.AbstractOperatorTest;
-
-import javax.sql.DataSource;
-import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class SQLOperatorTest extends AbstractOperatorTest
@@ -56,12 +76,13 @@ public class SQLOperatorTest extends AbstractOperatorTest
 
     ClientFacade facade;
     Logger logger;
-
+    org.hsqldb.jdbc.JDBCDataSource datasource;
+    
     @Before
-    public void setUp()
+    public void setUp() throws SQLException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
-        org.hsqldb.jdbc.JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
+        datasource = new org.hsqldb.jdbc.JDBCDataSource();
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
@@ -73,7 +94,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         operator.disconnect();
         operator.connect();
     }
-
+    
     @Test
     public void testExport() throws Exception
     {
@@ -231,6 +252,76 @@ public class SQLOperatorTest extends AbstractOperatorTest
         finally
         {
             connection.close();
+        }
+    }
+    
+    @Test
+    public void testUpdateFromDB() throws Exception
+    {
+        final AtomicReference<ModificationEvent> updateResult = new AtomicReference<ModificationEvent>();
+        final Semaphore waitFor = new Semaphore(0);
+        facade.addModificationListener(new ModificationListener()
+        {
+            @Override
+            public void dataChanged(ModificationEvent evt) throws RaplaException
+            {
+                updateResult.set(evt);
+                waitFor.release();
+            }
+        });
+        Thread.sleep(500);
+        {// create second facade
+            DefaultBundleManager bundleManager = new DefaultBundleManager();
+            RaplaResources i18n = new RaplaResources(bundleManager);
+
+            CommandScheduler scheduler = new DefaultScheduler(logger);
+            RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+
+            Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
+            StandardFunctions functions = new StandardFunctions(raplaLocale);
+            functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
+
+            RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
+            PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
+            
+            Provider<ImportExportManager> importExportManager = new Provider<ImportExportManager>()
+            {
+                @Override
+                public ImportExportManager get()
+                {
+                    return null;
+                }
+            };
+            DBOperator operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,datasource,
+                    DefaultPermissionControllerSupport.getController());
+            FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
+            facade.setOperator(operator);
+            operator.connect();
+            facade.login("homer", "duffs".toCharArray());
+            final Reservation newReservation = facade.newReservation();
+            Date endDate = new Date();
+            Date startDate = new Date(endDate.getTime() - 120000);
+            newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+            final Classification classification = newReservation.getClassification();
+            final Attribute attribute = classification.getAttributes()[0];
+            final String value = "TestName";
+            classification.setValue(attribute, value);
+            facade.store(newReservation);
+            // FIXME 300 -> 3
+            final boolean tryAcquire = waitFor.tryAcquire(300, TimeUnit.MINUTES);
+            Assert.assertTrue(tryAcquire);
+            final ModificationEvent modificationEvent = updateResult.get();
+            Assert.assertNotNull(modificationEvent);
+            final Set<Entity> addObjects = modificationEvent.getAddObjects();
+            Assert.assertEquals(1, addObjects.size());
+            final Entity first = addObjects.iterator().next();
+            Assert.assertTrue(first instanceof Reservation);
+            Reservation newReserv = (Reservation)first;
+            final Classification classification2 = newReserv.getClassification();
+            final Attribute attribute2 = classification2.getAttributes()[0];
+            final Object value2 = classification2.getValue(attribute2);
+            Assert.assertEquals(value, value2.toString());
+            // FIXME do more tests
         }
     }
 

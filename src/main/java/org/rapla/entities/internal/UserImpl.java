@@ -63,7 +63,13 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 
     public void setLastChanged(Date date) {
         checkWritable();
-    	lastChanged = date;
+        setLastChangedWithoutCheck(lastChanged);
+    }
+    
+    @Override
+    public void setLastChangedWithoutCheck(Date date)
+    {
+        lastChanged = date;
     }
     
     public boolean isAdmin() {return admin;}

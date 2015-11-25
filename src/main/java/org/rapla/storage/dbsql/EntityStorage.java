@@ -40,28 +40,31 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.storage.xml.RaplaXMLContextException;
-import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.PreferenceWriter;
+import org.rapla.storage.xml.RaplaXMLContext;
+import org.rapla.storage.xml.RaplaXMLContextException;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
 abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     String insertSql;
-    String updateSql;
     String deleteSql;
     String selectSql;
     String deleteAllSql;
+    private String containsSql;
+    private String loadAllUpdatesSql;
     //String searchForIdSql;
 
     RaplaXMLContext context;
@@ -73,6 +76,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected Connection con;
     int lastParameterIndex; /** first paramter is 1 */
     protected final String tableName;
+    private final boolean hasLastChangedTimestamp;
 
     protected Logger logger;
     String dbProductName = "";
@@ -95,18 +99,86 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         logger = context.lookup( Logger.class);
         lastParameterIndex = entries.length;
         tableName = table;
+        boolean hasLastChangedColumn = false;
         for ( String unparsedEntry: entries)
         {
         	ColumnDef col = new ColumnDef(unparsedEntry);
+        	if (col.getName().equals("LAST_CHANGED"))
+        	{
+        	    hasLastChangedColumn = true;
+        	}
         	columns.put( col.getName(), col);
         }
+        this.hasLastChangedTimestamp = hasLastChangedColumn;
     	createSQL(columns.values());
         if (getLogger().isDebugEnabled()) {
             getLogger().debug(insertSql);
-            getLogger().debug(updateSql);
             getLogger().debug(deleteSql);
             getLogger().debug(selectSql);
             getLogger().debug(deleteAllSql);
+            getLogger().debug(containsSql);
+            getLogger().debug(loadAllUpdatesSql);
+        }
+    }
+
+    @Override
+    public void update(Connection con, String id) throws SQLException
+    {// default implementation is to ask the sub stores to update
+        for (Storage<T> storage : subStores)
+        {
+            storage.update(con, id);
+        }
+    }
+    
+    public void update(Connection c, Date lastUpdated, UpdateResult updateResult) throws SQLException
+    {
+        if (!hasLastChangedTimestamp)
+        {
+            return;
+        }
+        PreparedStatement stmt = null;
+        try
+        {
+            stmt = c.prepareStatement(loadAllUpdatesSql);
+            setTimestamp(stmt, 1, lastUpdated);
+            stmt.execute();
+            final ResultSet resultSet = stmt.getResultSet();
+            if (resultSet == null)
+            {
+                return;
+            }
+            while(resultSet.next())
+            {
+                // deletion of entities must be handled somewhere else
+                final String id = resultSet.getString(1);
+                for (Storage<T> storage : subStores)
+                {
+                    storage.update(c, id);
+                }
+                final Entity<?> oldEntity = entityStore.tryResolve(id);
+                load(resultSet);
+                final Entity<?> newEntity = entityStore.tryResolve(id);
+                if(oldEntity == null)
+                {// we have a new entity
+                    updateResult.addOperation(new UpdateResult.Add(newEntity));
+                }
+                else
+                {// or a update
+                    final Date lastChangedOld = ((Timestamp)oldEntity).getLastChanged();
+                    final Date lastChangedNew = ((Timestamp)newEntity).getLastChanged();
+                    if(lastChangedOld.before(lastChangedNew))
+                    {
+                        updateResult.addOperation(new UpdateResult.Change(newEntity, oldEntity));
+                    }
+                }
+            }
+        }
+        finally
+        {
+            if (stmt != null)
+            {
+                stmt.close();
+            }
         }
     }
 
@@ -344,12 +416,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         String idString = entries.iterator().next().getName();
         String table = tableName;
 		selectSql = "select " + getEntryList(entries) + " from " + table ;
-		deleteSql = "delete from " + table + " where " + idString + "= ?";
+        containsSql = "select count(" + idString + ") from " + table + " where " + idString + "= ?";
+        deleteSql = "delete from " + table + " where " + idString + "= ?" + (hasLastChangedTimestamp ? " AND LAST_CHANGED = ?" : "");
 		String valueString = " (" + getEntryList(entries) + ")";
 		insertSql = "insert into " + table + valueString + " values (" + getMarkerList(entries.size()) + ")";
-		updateSql = "update " + table + " set " + getUpdateList(entries) + " where " + idString + "= ?";
 		deleteAllSql = "delete from " + table;
-		
+		loadAllUpdatesSql = hasLastChangedTimestamp ? selectSql + " where LAST_CHANGED > ?" : null;
 		//searchForIdSql = "select id from " + table + " where id = ?";
 	}
 
@@ -756,6 +828,36 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
+    public boolean has(String id)
+    {
+        PreparedStatement stmt = null;
+        try
+        {
+            stmt = con.prepareStatement(containsSql);
+            stmt.setString(1, id);
+            stmt.execute();
+            final ResultSet resultSet = stmt.getResultSet();
+            return resultSet != null && resultSet.next() && resultSet.getInt(1) == 1;
+        }
+        catch(Exception e)
+        {
+            
+        }
+        finally
+        {
+            if (stmt != null)
+            {
+                try
+                {
+                    stmt.close();
+                }
+                catch (SQLException e)
+                {
+                }
+            }
+        }
+        return false;
+    }
 
 	public void loadAll() throws SQLException,RaplaException {
 	    Statement stmt = null;
@@ -860,13 +962,66 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         {
         	ids.add( entity.getId());
         }
-        deleteIds(ids);
+        if(ids.isEmpty())
+        {
+            return;
+        }
+        deleteFromSubStores(ids);
+        if(hasLastChangedTimestamp)
+        {
+            PreparedStatement stmt = null;
+            try
+            {
+                final String deleteSql = this.deleteSql;
+                stmt = con.prepareStatement(deleteSql);
+                boolean commitNeeded = false;
+                for (T entity : entities)
+                {
+                    final Timestamp castedEntity = (Timestamp)entity;
+                    if(has(entity.getId()))
+                    {
+                        stmt.setString(1, entity.getId());
+                        setTimestamp(stmt, 2, castedEntity.getLastChanged());
+                        stmt.addBatch();
+                        commitNeeded = true;
+                    }
+                }
+                if(commitNeeded)
+                {
+                    final int[] executeBatch = stmt.executeBatch();
+                    for (int i : executeBatch)
+                    {
+                        if (i != 1)
+                        {
+                            throw new RaplaException("Entry already deleted");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (stmt != null)
+                {
+                    stmt.close();
+                }
+            }
+
+        }
+        else
+        {
+            deleteIds(ids);
+        }
+    }
+
+    protected void deleteFromSubStores(Set<String> ids) throws SQLException
+    {
+        for (Storage<T> storage : subStores)
+        {
+            storage.deleteIds(ids);
+        }
     }
 
 	public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
-    	for (Storage<T> storage: subStores) {
-            storage.deleteIds( ids);
-        }
     	PreparedStatement stmt = null;
         try {
             stmt = con.prepareStatement(deleteSql);

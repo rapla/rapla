@@ -104,7 +104,13 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 
     public void setLastChanged(Date date) {
         checkWritable();
-    	lastChanged = date;
+        setLastChangedWithoutCheck(date);
+    }
+    
+    @Override
+    public void setLastChangedWithoutCheck(Date date)
+    {
+        lastChanged = date;
     }
     
     public void setCreateDate(Date createDate) {

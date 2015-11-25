@@ -12,8 +12,34 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
+import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Entity;
@@ -42,28 +68,6 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.storage.xml.RaplaXMLContextException;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton
@@ -110,7 +114,32 @@ public class DBOperator extends LocalAbstractCachableOperator
 //	        	throw new RaplaDBException("Datasource " + datasourceName + " not found"); 
 //	        }
 //        }
-        
+        final int delay = 15000;
+        final AtomicReference<Date> dateReference = new AtomicReference<Date>(new Date());
+        scheduler.schedule(new Command()
+        {
+            @Override
+            public void execute() throws Exception
+            {
+                final Date lastUpdated = dateReference.get();
+                try
+                {
+                    UpdateResult result;
+                    final Connection c = createConnection();
+                    final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+                    final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
+                    final Date updateStart = new Date();
+                    result = raplaSQLInput.update( c, lastUpdated );
+                    fireStorageUpdated(result);
+                    dateReference.set(updateStart);
+                }
+                catch(Throwable e)
+                {
+                    logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
+                }
+                scheduler.schedule(this, delay);
+            }
+        }, delay);
     }
 
     public boolean supportsActiveMonitoring() {
@@ -596,13 +625,13 @@ public class DBOperator extends LocalAbstractCachableOperator
         Connection connection = createConnection();
         try {
             RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
+            for (String id: removeObjects) {
+                Entity entity = cache.get(id);
+                if (entity != null)
+                    raplaSQLOutput.remove( connection, entity);
+            }
             raplaSQLOutput.store( connection, storeObjects);
             raplaSQLOutput.storePatches( connection, preferencePatches);
-            for (String id: removeObjects) {
-                 Entity entity = cache.get(id);
-                 if (entity != null)
-                     raplaSQLOutput.remove( connection, entity);
-            }
             if (bSupportsTransactions) {
                 getLogger().debug("Commiting");
                 connection.commit();
