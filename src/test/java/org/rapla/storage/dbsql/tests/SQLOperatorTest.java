@@ -262,11 +262,13 @@ public class SQLOperatorTest extends AbstractOperatorTest
         });
         Thread.sleep(500);
         {// create second writeFacade
+            String reservationId = null;
             String xmlFile = null;
             ClientFacade writeFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
             writeFacade.login("homer", "duffs".toCharArray());
             { // Reservation test with an attribute, appointment and permission
                 final Reservation newReservation = writeFacade.newReservation();
+                reservationId = newReservation.getId();
                 Date endDate = new Date();
                 Date startDate = new Date(endDate.getTime() - 120000);
                 final Appointment newAppointment = writeFacade.newAppointment(startDate, endDate);
@@ -371,6 +373,35 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     final Object value = classification.getValue(attribute);
                     Assert.assertEquals(renamedFirstAttribute, value.toString());
                 }
+            }
+            {// AllocationStorage
+                Reservation reservationChange = writeFacade.edit(writeFacade.getOperator().resolve(reservationId, Reservation.class));
+                final Allocatable[] allocatables = writeFacade.getAllocatables();
+                Assert.assertTrue(reservationChange.getAllocatables().length < allocatables.length);
+                for (Allocatable allocatable : allocatables)
+                {
+                    reservationChange.addAllocatable(allocatable);
+                }
+                writeFacade.store(reservationChange);
+                readFacade.refresh();
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> changed = modificationEvent.getChanged();
+                Assert.assertEquals(1, changed.size());
+                final Entity next = changed.iterator().next();
+                Assert.assertTrue(next instanceof Reservation);
+                Reservation newReservation = (Reservation) next;
+                Assert.assertEquals(allocatables.length, newReservation.getAllocatables().length);
+            }
+            {//UserGroupStorage
+                
+            }
+            {// UserStorage
+                
+            }
+            {// Delete of an resource
+                 
             }
         }
     }
