@@ -12,6 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +44,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -43,22 +58,6 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(JUnit4.class)
 public class SQLOperatorTest extends AbstractOperatorTest
@@ -277,9 +276,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Date repeatingEnd = DateTools.addDays(startDate, 14);
                 newAppointment.getRepeating().setEnd(repeatingEnd);
                 newReservation.addAppointment(newAppointment);
-                Permission permission = new PermissionImpl();
+                Permission permission = newReservation.newPermission();
                 permission.setAccessLevel(Permission.DENIED);
-                permission.setUser(writeFacade.getUser());
                 Category category = writeFacade.getUserGroupsCategory().getCategories()[0];
                 permission.setGroup(category);
                 newReservation.getPermissionList().clear();
@@ -314,14 +312,17 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Collection<Permission> permissionList = newReserv.getPermissionList();
                 Assert.assertEquals(1, permissionList.size());
                 final Permission loadedPermission = permissionList.iterator().next();
-                Assert.assertEquals(writeFacade.getUser().getId(), loadedPermission.getUser().getId());
-                Assert.assertEquals(category, loadedPermission.getGroup());
                 Assert.assertEquals(Permission.DENIED, loadedPermission.getAccessLevel());
+                Assert.assertEquals(category, loadedPermission.getGroup());
             }
             {// Next we will insert a Category
                 final Category newCategory = writeFacade.newCategory();
+                final Category editSuperCat = writeFacade.edit(writeFacade.getSuperCategory());
+                editSuperCat.addCategory(newCategory);
                 String key = "newCat";
                 newCategory.setKey(key);
+                writeFacade.storeObjects(new Entity[]{editSuperCat, newCategory});
+                readFacade.refresh();
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 writeFacade.store(newCategory);
@@ -350,6 +351,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     rename.put(id, newValue);
                 }
                 writeFacade.storeObjects(allocatables);
+                readFacade.refresh();
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
