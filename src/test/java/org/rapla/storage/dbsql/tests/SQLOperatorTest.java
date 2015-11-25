@@ -13,14 +13,16 @@
 package org.rapla.storage.dbsql.tests;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +45,10 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
@@ -67,7 +71,6 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
-import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.tests.AbstractOperatorTest;
 
 @RunWith(JUnit4.class)
@@ -298,30 +301,96 @@ public class SQLOperatorTest extends AbstractOperatorTest
             facade.setOperator(operator);
             operator.connect();
             facade.login("homer", "duffs".toCharArray());
-            final Reservation newReservation = facade.newReservation();
-            Date endDate = new Date();
-            Date startDate = new Date(endDate.getTime() - 120000);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate));
-            final Classification classification = newReservation.getClassification();
-            final Attribute attribute = classification.getAttributes()[0];
-            final String value = "TestName";
-            classification.setValue(attribute, value);
-            facade.store(newReservation);
-            // FIXME 300 -> 3
-            final boolean tryAcquire = waitFor.tryAcquire(300, TimeUnit.MINUTES);
-            Assert.assertTrue(tryAcquire);
-            final ModificationEvent modificationEvent = updateResult.get();
-            Assert.assertNotNull(modificationEvent);
-            final Set<Entity> addObjects = modificationEvent.getAddObjects();
-            Assert.assertEquals(1, addObjects.size());
-            final Entity first = addObjects.iterator().next();
-            Assert.assertTrue(first instanceof Reservation);
-            Reservation newReserv = (Reservation)first;
-            final Classification classification2 = newReserv.getClassification();
-            final Attribute attribute2 = classification2.getAttributes()[0];
-            final Object value2 = classification2.getValue(attribute2);
-            Assert.assertEquals(value, value2.toString());
-            // FIXME do more tests
+            { // Reservation test with an attribute, appointment and permission
+                final Reservation newReservation = facade.newReservation();
+                Date endDate = new Date();
+                Date startDate = new Date(endDate.getTime() - 120000);
+                newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+                Permission permission = new PermissionImpl();
+                permission.setAccessLevel(Permission.DENIED);
+                permission.setUser(facade.getUser());
+                Category category = facade.getUserGroupsCategory().getCategories()[0];
+                permission.setGroup(category);
+                newReservation.getPermissionList().clear();
+                newReservation.addPermission(permission);
+                final Classification classification = newReservation.getClassification();
+                final Attribute attribute = classification.getAttributes()[0];
+                final String value = "TestName";
+                classification.setValue(attribute, value);
+                facade.store(newReservation);
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                Assert.assertNotNull(modificationEvent);
+                final Set<Entity> addObjects = modificationEvent.getAddObjects();
+                Assert.assertEquals(1, addObjects.size());
+                final Entity first = addObjects.iterator().next();
+                Assert.assertTrue(first instanceof Reservation);
+                Reservation newReserv = (Reservation) first;
+                final Classification classification2 = newReserv.getClassification();
+                final Attribute attribute2 = classification2.getAttributes()[0];
+                final Object value2 = classification2.getValue(attribute2);
+                Assert.assertEquals(value, value2.toString());
+                final Appointment appointment = newReserv.getAppointments()[0];
+                Assert.assertEquals(startDate.getTime(), appointment.getStart().getTime());
+                Assert.assertEquals(endDate.getTime(), appointment.getEnd().getTime());
+                final Collection<Permission> permissionList = newReserv.getPermissionList();
+                Assert.assertEquals(1, permissionList.size());
+                final Permission loadedPermission = permissionList.iterator().next();
+                Assert.assertEquals(facade.getUser().getId(), loadedPermission.getUser().getId());
+                Assert.assertEquals(category, loadedPermission.getGroup());
+                Assert.assertEquals(Permission.DENIED, loadedPermission.getAccessLevel());
+            }
+            {// Next we will insert a Category
+                final Category newCategory = this.facade.newCategory();
+                String key = "newCat";
+                newCategory.setKey(key);
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                facade.store(newCategory);
+                // check
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> addObjects = modificationEvent.getAddObjects();
+                Assert.assertEquals(1, addObjects.size());
+                final Entity addedObj = addObjects
+                .iterator().next();
+                Assert.assertTrue(addedObj instanceof Category);
+                Category newCat = (Category) addedObj;
+                Assert.assertEquals(key, newCat.getKey());
+                Assert.assertEquals(newCategory.getId(), newCat.getId());
+            }
+            {// check update of more entities
+                Map<String, String> rename = new HashMap<String, String>();
+                final Allocatable[] allocatables = facade.getAllocatables();
+                final Random random = new Random();
+                for (Allocatable allocatable : allocatables)
+                {
+                    final String id = allocatable.getId();
+                    final Classification classification = allocatable.getClassification();
+                    final Attribute attribute = classification.getAttributes()[0];
+                    String newValue = "generated " + random.nextInt(100);
+                    classification.setValue(attribute, newValue);
+                    rename.put(id, newValue);
+                }
+                facade.storeObjects(allocatables);
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> changed = modificationEvent.getChanged();
+                Assert.assertEquals(allocatables.length, changed.size());
+                final Iterator<Entity> iterator = changed.iterator();
+                while(iterator.hasNext())
+                {
+                    final Entity next = iterator.next();
+                    Assert.assertTrue(next instanceof Allocatable);
+                    Allocatable alloc = (Allocatable) next;
+                    final String renamedFirstAttribute = rename.get(alloc.getId());
+                    final Classification classification = alloc.getClassification();
+                    final Attribute attribute = classification.getAttributes()[0];
+                    final Object value = classification.getValue(attribute);
+                    Assert.assertEquals(renamedFirstAttribute, value.toString());
+                }
+            }
         }
     }
 
