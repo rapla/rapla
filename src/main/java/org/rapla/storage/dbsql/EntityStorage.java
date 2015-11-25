@@ -213,7 +213,8 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     		//long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
     		long offset = 0;
             long timeInMillis = time.getTime() - offset;
-			stmt.setTimestamp( column, new java.sql.Timestamp( timeInMillis), datetimeCal);
+			final java.sql.Timestamp x = new java.sql.Timestamp(timeInMillis);
+			stmt.setTimestamp( column, x, datetimeCal);
         }
         else
         {
@@ -968,7 +969,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     protected void deleteFromSubStores(Set<String> ids) throws SQLException
     {
-        for (Storage<T> storage : subStores)
+        for (SubStorage<T> storage : subStores)
         {
             storage.deleteIds(ids);
         }

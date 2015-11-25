@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -321,11 +322,12 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 editSuperCat.addCategory(newCategory);
                 String key = "newCat";
                 newCategory.setKey(key);
-                writeFacade.storeObjects(new Entity[]{editSuperCat, newCategory});
+                writeFacade.storeObjects(new Entity[]{editSuperCat});
                 readFacade.refresh();
+
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
-                writeFacade.store(newCategory);
+//                writeFacade.store(newCategory);
                 // check
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<Entity> addObjects = modificationEvent.getAddObjects();
@@ -339,7 +341,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             }
             {// check update of more entities
                 Map<String, String> rename = new HashMap<String, String>();
-                final Allocatable[] allocatables = writeFacade.getAllocatables();
+                final Collection<Allocatable> allocatables = writeFacade.edit(Arrays.asList(writeFacade.getAllocatables()));
                 final Random random = new Random();
                 for (Allocatable allocatable : allocatables)
                 {
@@ -350,13 +352,13 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     classification.setValue(attribute, newValue);
                     rename.put(id, newValue);
                 }
-                writeFacade.storeObjects(allocatables);
+                writeFacade.storeObjects(allocatables.toArray(Entity.ENTITY_ARRAY));
                 readFacade.refresh();
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<Entity> changed = modificationEvent.getChanged();
-                Assert.assertEquals(allocatables.length, changed.size());
+                Assert.assertEquals(allocatables.size(), changed.size());
                 final Iterator<Entity> iterator = changed.iterator();
                 while(iterator.hasNext())
                 {

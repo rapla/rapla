@@ -451,12 +451,12 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 
     @Override
     public void deleteEntities(Iterable<Category> entities) throws SQLException,RaplaException {
-    	Set<String> idList = new HashSet<String>();
+        Set<Category> transitiveCategories = new HashSet<Category>();
     	for ( Category cat:entities)
     	{
-    		idList.addAll( getIds( cat.getId()));
+    		transitiveCategories.addAll(getTransitiveCategories(cat));
     	}
-    	deleteIds(idList);
+        super.deleteEntities( transitiveCategories );
     }
     
     @Override
@@ -464,23 +464,23 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         Set<Category> transitiveCategories = new LinkedHashSet<Category>();
         for ( Category cat: entities)
         {
-            transitiveCategories.add( cat);
-            transitiveCategories.addAll(getAllChilds( cat ));
+            transitiveCategories.addAll(getTransitiveCategories(cat));
         }
         super.insert(transitiveCategories);
     }
     
-    private Collection<Category> getAllChilds(Category cat) {
+    private Collection<Category> getTransitiveCategories(Category cat) {
         Set<Category> allChilds = new LinkedHashSet<Category>();
         allChilds.add( cat);
         for ( Category child: cat.getCategories())
         {
-            allChilds.addAll(getAllChilds( child ));
+            allChilds.addAll(getTransitiveCategories(child));
         }
         return allChilds;
     }
-    
-    private Collection<String> getIds(String parentId) throws SQLException, RaplaException {
+
+    // get
+    private Collection<String> getTransitiveIds(String parentId) throws SQLException, RaplaException {
 		Set<String> childIds = new HashSet<String>();
 		String sql = "SELECT ID FROM CATEGORY WHERE PARENT_ID=?";
 		PreparedStatement stmt = null;
@@ -502,7 +502,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         Set<String> result = new HashSet<String>();
         for (String childId : childIds)
         {
-        	result.addAll( getIds( childId));
+        	result.addAll( getTransitiveIds(childId));
         }
         result.add( parentId);
 		return result;
@@ -511,17 +511,18 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     @Override
 	protected int write(PreparedStatement stmt,Category category) throws SQLException, RaplaException {
     	Category root = getSuperCategory();
+        ((ModifiableTimestamp)category).setLastChangedWithoutCheck(getCurrentTimestamp());
         if ( category.equals( root ))
             return 0;
         setId( stmt,1, category);
 		setId( stmt,2, category.getParent());
         int order = getOrder( category);
-        ((ModifiableTimestamp)category).setLastChangedWithoutCheck(getCurrentTimestamp());
+
         String xml = getXML( category );
         setString(stmt, 3, category.getKey());
         setText(stmt, 4, xml);
         setInt(stmt, 5, order);
-        setDate( stmt,6, category.getLastChanged());
+        setTimestamp( stmt,6, category.getLastChanged());
 		stmt.addBatch();
 		return 1;
     }
@@ -571,6 +572,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 			getLogger().warn("Category has empty xml field. Ignoring.");
 			return;
     	}
+        final Date lastChanged = getTimestampOrNow(rset, 6);
+        category.setLastChanged( lastChanged);
 		category.setId( id);
         put( category );
 
@@ -799,40 +802,12 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	super.loadAll();
     }
 
-    @Override
-    public void deleteEntities(Iterable<Reservation> entities)
-    		throws SQLException, RaplaException {
-    	super.deleteEntities(entities);
-    	deleteAppointments(entities);
+    @Override protected void deleteFromSubStores(Set<String> ids) throws SQLException
+    {
+        super.deleteFromSubStores(ids);
+        appointmentStorage.deleteAppointments( ids);
     }
 
-	private void deleteAppointments(Iterable<Reservation> entities)
-			throws SQLException, RaplaException {
-		Set<String> ids = new HashSet<String>();
-		String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
-		for (Reservation entity:entities)
-		{
-			PreparedStatement stmt = null;
-	        ResultSet rset = null;
-	        try {
-	            stmt = con.prepareStatement(sql);
-	            String eventId = entity.getId();
-                setString(stmt,1,  eventId);
-	            rset = stmt.executeQuery();
-	            while (rset.next ()) {
-	            	String appointmentId = readId(rset, 1, Appointment.class);
-	            	ids.add( appointmentId);
-	            }
-	        } finally {
-	            if (rset != null)
-	                rset.close();
-	            if (stmt!=null)
-	                stmt.close();
-	        }
-		}
-		// and delete them
-		appointmentStorage.deleteIds( ids);
-	}
 }
 
 class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implements  SubStorage<T> {
@@ -1040,6 +1015,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 
 }
 
+// TODO is it possible to add this as substorage
 class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     AppointmentExceptionStorage appointmentExceptionStorage;
     AllocationStorage allocationStorage;
@@ -1047,6 +1023,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     public AppointmentStorage(RaplaXMLContext context) throws RaplaException {
         super(context, Appointment.TYPE,"APPOINTMENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","EVENT_ID VARCHAR(255) NOT NULL KEY","APPOINTMENT_START DATETIME NOT NULL","APPOINTMENT_END DATETIME NOT NULL","REPETITION_TYPE VARCHAR(255)","REPETITION_NUMBER INTEGER","REPETITION_END DATETIME","REPETITION_INTERVAL INTEGER"});
         updateSql = "SELECT * FROM APPOINTMENT WHERE EVENT_ID = ?";
+        deleteSql = "DELETE FROM APPOINTMENT WHERE EVENT_ID=?";
         appointmentExceptionStorage = new AppointmentExceptionStorage(context);
         allocationStorage = new AllocationStorage( context);
         addSubStorage(appointmentExceptionStorage);
@@ -1070,6 +1047,34 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
                 updateSubstores(appointmentId);
             }
         }
+    }
+
+    void deleteAppointments(Collection<String> reservationIds)
+            throws SQLException, RaplaException {
+        deleteIds(reservationIds);
+//        Set<String> ids = new HashSet<String>();
+//        String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
+//        for (String eventId:reservationIds)
+//        {
+//            PreparedStatement stmt = null;
+//            ResultSet rset = null;
+//            try {
+//                stmt = con.prepareStatement(sql);
+//                setString(stmt,1,  eventId);
+//                rset = stmt.executeQuery();
+//                while (rset.next ()) {
+//                    String appointmentId = readId(rset, 1, Appointment.class);
+//                    ids.add( appointmentId);
+//                }
+//            } finally {
+//                if (rset != null)
+//                    rset.close();
+//                if (stmt!=null)
+//                    stmt.close();
+//            }
+//        }
+//        // and delete them
+//        deleteIds(ids);
     }
 
     @Override public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
@@ -1658,8 +1663,8 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     
     public ConflictStorage(RaplaXMLContext context) throws RaplaException {
         super( context,Conflict.TYPE, "RAPLA_CONFLICT",
-        new String [] {"RESOURCE_ID VARCHAR(255) NOT NULL","APPOINTMENT1 VARCHAR(255) NOT NULL","APPOINTMENT2 VARCHAR(255) NOT NULL","APP1ENABLED INTEGER NOT NULL","APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP"});
-        this.deleteSql = "delete from " + tableName + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=?";
+        new String [] {"RESOURCE_ID VARCHAR(255) NOT NULL","APPOINTMENT1 VARCHAR(255) NOT NULL","APPOINTMENT2 VARCHAR(255) NOT NULL","APP1ENABLED INTEGER NOT NULL","APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY"});
+        this.deleteSql = "delete from " + tableName + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
     }
 
     @Override
@@ -1667,22 +1672,27 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         insert( cache.getDisabledConflicts());
     }
 
-    public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
+    public void deleteEntities(Iterable<Conflict> entities) throws SQLException, RaplaException {
         PreparedStatement stmt = null;
         try {
             stmt = con.prepareStatement(deleteSql);
-            for ( String id: ids)
+            boolean execute = false;
+            for (Conflict conflict : entities)
             {
-                Conflict conflict = new ConflictImpl(id, null);
+                String id = conflict.getId();
+                // FIXME add timestamp to conflicts
+                Date lastChanged = conflict.getStartDate();
                 String allocatableId = conflict.getAllocatableId();
                 String appointment1Id = conflict.getAppointment1();
                 String appointment2Id = conflict.getAppointment2();
                 stmt.setString(1,allocatableId);
                 stmt.setString(2,appointment1Id);
                 stmt.setString(3,appointment2Id);
+                setTimestamp(stmt, 4, lastChanged);
                 stmt.addBatch();
+                execute = true;
             }
-            if ( ids.size() > 0)
+            if ( execute)
             {
                 stmt.executeBatch();
             }

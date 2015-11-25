@@ -804,40 +804,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		checkNoDependencies(evt, store);
 		checkVersions(storeObjects);
 	}
-	
-	protected void updateLastChanged(UpdateEvent evt) throws RaplaException {
-        Date currentTime = getCurrentTimestamp();
-        String userId = evt.getUserId();
-        User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
-        
-        for ( Entity e: evt.getStoreObjects())
-        {
-            if ( e instanceof ModifiableTimestamp)
-            {
-                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
-                Date lastChangeTime = modifiableTimestamp.getLastChanged();
-                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
-                {
-                    // wait 1 ms to increase timestamp
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e1) {
-                        throw new RaplaException( e1.getMessage(), e1);
-                    }
-                    currentTime = getCurrentTimestamp();
-                }
-                modifiableTimestamp.setLastChanged( currentTime);
-                modifiableTimestamp.setLastChangedBy( lastChangedBy );
-            }
-        }
-        for ( PreferencePatch patch: evt.getPreferencePatches())
-        {
-            patch.setLastChanged( currentTime );
-        }
-    }
 
-
-	
 	class TimestampComparator implements Comparator<LastChangedTimestamp>
 	{
 		public int compare(LastChangedTimestamp o1, LastChangedTimestamp o2) {
@@ -1679,8 +1646,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         addClosure( evt, store );
         // check event for inconsistencies
 		check( evt, store);
-		// update last changed date
-//		updateLastChanged( evt );
 	}
 
 	/**

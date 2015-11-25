@@ -33,6 +33,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
@@ -43,6 +44,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
@@ -70,6 +72,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
@@ -393,6 +396,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             preprocessEventStorage(evt);
+            updateLastChanged( evt);
             // call of update must be first to update the cache.
             // then saveData() saves all the data in the cache
             result = update(evt);
@@ -403,6 +407,37 @@ final public class FileOperator extends LocalAbstractCachableOperator
             unlock(writeLock);
         }
         fireStorageUpdated(result);
+    }
+
+    protected void updateLastChanged(UpdateEvent evt) throws RaplaException {
+        Date currentTime = getCurrentTimestamp();
+        String userId = evt.getUserId();
+        User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
+
+        for ( Entity e: evt.getStoreObjects())
+        {
+            if ( e instanceof ModifiableTimestamp)
+            {
+                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
+                Date lastChangeTime = modifiableTimestamp.getLastChanged();
+                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
+                {
+                    // wait 1 ms to increase timestamp
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e1) {
+                        throw new RaplaException( e1.getMessage(), e1);
+                    }
+                    currentTime = getCurrentTimestamp();
+                }
+                modifiableTimestamp.setLastChanged( currentTime);
+                modifiableTimestamp.setLastChangedBy( lastChangedBy );
+            }
+        }
+        for ( PreferencePatch patch: evt.getPreferencePatches())
+        {
+            patch.setLastChanged( currentTime );
+        }
     }
 
     synchronized final public void saveData() throws RaplaException

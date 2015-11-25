@@ -512,9 +512,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         return false;
     }
 
-    @Override
-    protected void updateLastChanged(UpdateEvent evt) throws RaplaException {
-        Date currentTime = getCurrentTimestamp();
+    protected void updateLastChangedUser(UpdateEvent evt) throws RaplaException {
         String userId = evt.getUserId();
         User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
 
@@ -523,24 +521,8 @@ public class DBOperator extends LocalAbstractCachableOperator
             if ( e instanceof ModifiableTimestamp)
             {
                 ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
-                Date lastChangeTime = modifiableTimestamp.getLastChanged();
-                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
-                {
-                    // wait 1 ms to increase timestamp
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e1) {
-                        throw new RaplaException( e1.getMessage(), e1);
-                    }
-                    currentTime = getCurrentTimestamp();
-                }
-                //modifiableTimestamp.setLastChanged( currentTime);
                 modifiableTimestamp.setLastChangedBy( lastChangedBy );
             }
-        }
-        for ( PreferencePatch patch: evt.getPreferencePatches())
-        {
-            //patch.setLastChanged( currentTime );
         }
     }
     
@@ -648,6 +630,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     	try
         {
     	    preprocessEventStorage(evt);
+            updateLastChangedUser(evt);
     	    Collection<Entity> storeObjects = evt.getStoreObjects();
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             Collection<String> removeObjects = evt.getRemoveIds();
