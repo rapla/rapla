@@ -64,7 +64,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     String selectSql;
     String deleteAllSql;
     private String containsSql;
-    private String loadAllUpdatesSql;
+    protected String loadAllUpdatesSql;
     //String searchForIdSql;
 
     RaplaXMLContext context;
@@ -76,7 +76,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected Connection con;
     int lastParameterIndex; /** first paramter is 1 */
     protected final String tableName;
-    private final boolean hasLastChangedTimestamp;
+    protected final boolean hasLastChangedTimestamp;
 
     protected Logger logger;
     String dbProductName = "";
@@ -121,69 +121,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
-    @Override
+    /*
     public void update(String id) throws SQLException
     {// default implementation is to ask the sub stores to update
-        for (Storage<T> storage : subStores)
-        {
-            storage.update( id);
-        }
-    }
+
+    }*/
     
-    public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
-    {
-        if (!hasLastChangedTimestamp)
-        {
-            return;
-        }
-        PreparedStatement stmt = null;
-        try
-        {
-            stmt = con.prepareStatement(loadAllUpdatesSql);
-            setTimestamp(stmt, 1, lastUpdated);
-            stmt.execute();
-            final ResultSet resultSet = stmt.getResultSet();
-            int count =0;
-            if (resultSet == null)
-            {
-                return;
-            }
-            while(resultSet.next())
-            {
-                count ++;
-                final String id = resultSet.getString(1);
-
-                // deletion of entities must be handled somewhere else
-
-                final Entity<?> oldEntity = entityStore.tryResolve(id);
-                load(resultSet);
-                update(id);
-                final Entity<?> newEntity = entityStore.tryResolve(id);
-                if(oldEntity == null)
-                {// we have a new entity
-                    updateResult.addOperation(new UpdateResult.Add(newEntity));
-                }
-                else
-                {// or a update
-                    final Date lastChangedOld = ((Timestamp)oldEntity).getLastChanged();
-                    final Date lastChangedNew = ((Timestamp)newEntity).getLastChanged();
-                    if(lastChangedOld.before(lastChangedNew))
-                    {
-                        updateResult.addOperation(new UpdateResult.Change(newEntity, oldEntity));
-                    }
-                }
-            }
-            getLogger().debug("Updated " + count);
-        }
-        finally
-        {
-            if (stmt != null)
-            {
-                stmt.close();
-            }
-        }
-    }
-
 	protected Date getDate( ResultSet rset,int column) throws SQLException
 	{
 		

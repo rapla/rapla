@@ -290,6 +290,7 @@ public class ConcurrentTests
             {
                 try
                 {
+                    con.setSavepoint();
                     Thread.sleep(500);
                     final PreparedStatement psDelete = con.prepareStatement(deleteT1);
                     final T1Obj t1Obj = t1Objs.get(0);

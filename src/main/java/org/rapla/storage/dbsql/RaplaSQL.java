@@ -42,6 +42,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -326,26 +327,83 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 		parser.read(xmlWithNamespaces, reader, logger);
 	    return reader;
 	}
-	
-    protected StringBuilder createQueryString(final Collection<String> ids, final String startQueryString)
+
+    public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
     {
-        final StringBuilder sb = new StringBuilder(startQueryString);
-        boolean first = true;
-        for (String localId : ids)
+        if (!hasLastChangedTimestamp)
         {
-            if(first)
-            {
-                first = false;
-            }
-            else
-            {
-                sb.append(",");
-            }
-            sb.append(localId);
+            return;
         }
-        sb.append(")");
-        return sb;
+        PreparedStatement stmt = null;
+        try
+        {
+            stmt = con.prepareStatement(loadAllUpdatesSql);
+            setTimestamp(stmt, 1, lastUpdated);
+            stmt.execute();
+            final ResultSet resultSet = stmt.getResultSet();
+            int count =0;
+            if (resultSet == null)
+            {
+                return;
+            }
+            while(resultSet.next())
+            {
+                count ++;
+                final String id = resultSet.getString(1);
+
+                // deletion of entities must be handled somewhere else
+
+                final Entity<?> oldEntity = entityStore.tryResolve(id);
+                load(resultSet);
+                updateSubstores(id);
+                final Entity<?> newEntity = entityStore.tryResolve(id);
+                if(oldEntity == null)
+                {// we have a new entity
+                    updateResult.addOperation(new UpdateResult.Add(newEntity));
+                }
+                else
+                {// or a update
+                    final Date lastChangedOld = ((Timestamp)oldEntity).getLastChanged();
+                    final Date lastChangedNew = ((Timestamp)newEntity).getLastChanged();
+                    if(lastChangedOld.before(lastChangedNew))
+                    {
+                        updateResult.addOperation(new UpdateResult.Change(newEntity, oldEntity));
+                    }
+                }
+            }
+            getLogger().debug("Updated " + count);
+        }
+        finally
+        {
+            if (stmt != null)
+            {
+                stmt.close();
+            }
+        }
     }
+
+    abstract protected void updateSubstores(String id) throws SQLException;
+
+
+    //    protected StringBuilder createQueryString(final Collection<String> ids, final String startQueryString)
+//    {
+//        final StringBuilder sb = new StringBuilder(startQueryString);
+//        boolean first = true;
+//        for (String localId : ids)
+//        {
+//            if(first)
+//            {
+//                first = false;
+//            }
+//            else
+//            {
+//                sb.append(",");
+//            }
+//            sb.append(localId);
+//        }
+//        sb.append(")");
+//        return sb;
+//    }
 }
 
 class CategoryStorage extends RaplaTypeStorage<Category> {
@@ -380,6 +438,10 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         
         }    
     );
+
+    @Override protected void updateSubstores(String id) throws SQLException
+    {
+    }
 
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY"});
@@ -579,6 +641,12 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 	void insertAll() throws SQLException, RaplaException {
 		insert( cache.getAllocatables());
 	}
+
+    @Override protected void updateSubstores(String id) throws SQLException
+    {
+        resourceAttributeStorage.update(id);
+        permissionStorage.update(id);
+    }
 	
     @Override
 	protected int write(PreparedStatement stmt,Allocatable entity) throws SQLException,RaplaException {
@@ -696,9 +764,10 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     }
     
     @Override
-    public void update(String id) throws SQLException
+    protected void updateSubstores(String id) throws SQLException
     {
-        super.update(id);
+        permissionStorage.update(id);
+        attributeValueStorage.update(id);
         appointmentStorage.update(id);
     }
 
@@ -795,7 +864,6 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         updateSql = "SELECT * FROM " + tablename + " WHERE " + foreignKeyName + " = ?";
     }
     
-    @Override
     public void update(String id) throws SQLException
     {
         final PreparedStatement stmt = con.prepareStatement(updateSql);
@@ -808,7 +876,6 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
                 load(result);
             }
         }
-        super.update( id);
     }
 
     @Override
@@ -920,8 +987,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
         updateSql = "SELECT * FROM " + type+"_PERMISSION  WHERE " + type + "_ID = ? ";
     }
 
-    @Override
-    public void update( String id) throws SQLException
+     public void update( String id) throws SQLException
     {
         try(final PreparedStatement stmt = con.prepareStatement(updateSql))
         {
@@ -998,8 +1064,13 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
         addSubStorage(appointmentExceptionStorage);
         addSubStorage(allocationStorage);
     }
+
+    @Override protected void updateSubstores(String id) throws SQLException
+    {
+        appointmentExceptionStorage.update(id);
+        allocationStorage.update( id);
+    }
     
-    @Override
     public void update( String id) throws SQLException
     {
         try (final PreparedStatement stmt = con.prepareStatement(updateSql))
@@ -1014,7 +1085,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
             {
                 load(result);
                 String appointmentId = result.getString(1);
-                super.update(appointmentId);
+                updateSubstores(appointmentId);
             }
         }
     }
@@ -1115,7 +1186,6 @@ class AllocationStorage extends EntityStorage<Appointment>  {
         return count;
     }
 
-    @Override
     public void update( String id) throws SQLException
     {
         // FIXME
@@ -1157,7 +1227,6 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
         updateSql = "SELECT * FROM APPOINTMENT_EXCEPTION WHERE APPOINTMENT_ID = ?";
     }
 
-    @Override
     public void update( String id) throws SQLException
     {
         try (final PreparedStatement stmt = con.prepareStatement(updateSql))
@@ -1220,6 +1289,11 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
         checkAndAdd(schema, "LAST_CHANGED");
     }
 
+    @Override protected void updateSubstores(String id) throws SQLException
+    {
+    }
+
+
     @Override
 	protected int write(PreparedStatement stmt, DynamicType type) throws SQLException, RaplaException {
 		if (((DynamicTypeImpl) type).isInternal())
@@ -1277,10 +1351,8 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"});
     }
 
-    class PatchEntry
+    @Override protected void updateSubstores(String id) throws SQLException
     {
-        String userId;
-        String role;
     }
 
     @Override
@@ -1550,7 +1622,12 @@ class UserStorage extends RaplaTypeStorage<User> {
 	void insertAll() throws SQLException, RaplaException {
 		insert( cache.getUsers());
 	}
-	
+
+    @Override protected void updateSubstores(String id) throws SQLException
+    {
+        groupStorage.update(id);
+    }
+
     @Override
     protected int write(PreparedStatement stmt,User user) throws SQLException, RaplaException {
     	setId(stmt, 1, user);
@@ -1615,8 +1692,11 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     void insertAll() throws SQLException, RaplaException {
         insert( cache.getDisabledConflicts());
     }
-    
-    
+
+    @Override protected void updateSubstores(String id) throws SQLException
+    {
+    }
+
     public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
         PreparedStatement stmt = null;
         try {
@@ -1683,10 +1763,8 @@ class UserGroupStorage extends EntityStorage<User> {
         super(context,"RAPLA_USER_GROUP", new String [] {"USER_ID VARCHAR(255) NOT NULL KEY","CATEGORY_ID VARCHAR(255) NOT NULL"});
     }
     
-    @Override
     public void update( String id) throws SQLException
     {
-        super.update( id);
         // FIXME
     }
 
