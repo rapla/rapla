@@ -437,7 +437,16 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 }
             }
             {// Delete of an resource
-                 
+                final Reservation existingReservaton = writeFacade.getOperator().resolve(reservationId, Reservation.class);
+                writeFacade.remove(existingReservaton);
+                readFacade.refresh();
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> removed = modificationEvent.getRemoved();
+                Assert.assertEquals(1, removed.size());
+                final Entity next = removed.iterator().next();
+                Assert.assertEquals(existingReservaton.getId(), next.getId());
             }
         }
     }
