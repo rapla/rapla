@@ -72,7 +72,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected EntityStore entityStore;
     private RaplaLocale raplaLocale;
     
-    Collection<Storage<T>> subStores = new ArrayList<Storage<T>>();
+    Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
     protected Connection con;
     int lastParameterIndex; /** first paramter is 1 */
     protected final String tableName;
@@ -448,6 +448,14 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			}
         }
 	}
+
+	protected void updateSubstores(String foreignId) throws SQLException
+	{
+		for (SubStorage<T> subStorage:getSubStores())
+		{
+			subStorage.update(foreignId);
+		}
+	}
     
     protected String getDatabaseProductType(String type) {
         if ( type.equals("TEXT"))
@@ -696,11 +704,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     }
 
     
-    protected void addSubStorage(Storage<T> subStore) {
+    protected void addSubStorage(SubStorage<T> subStore) {
     	subStores.add(subStore);
     }
     
-    public Collection<Storage<T>> getSubStores() {
+    public Collection<SubStorage<T>> getSubStores() {
 		return subStores;
 	}
 

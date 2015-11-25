@@ -11,27 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -80,6 +59,28 @@ import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -382,8 +383,6 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
         }
     }
 
-    abstract protected void updateSubstores(String id) throws SQLException;
-
 
     //    protected StringBuilder createQueryString(final Collection<String> ids, final String startQueryString)
 //    {
@@ -438,10 +437,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         
         }    
     );
-
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
-    }
 
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY"});
@@ -623,7 +618,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 	}
 }
 
-class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
+class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     Map<String,Classification> classificationMap = new HashMap<String,Classification>();
     Map<String,Allocatable> allocatableMap = new HashMap<String,Allocatable>();
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
@@ -642,12 +637,6 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
 		insert( cache.getAllocatables());
 	}
 
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
-        resourceAttributeStorage.update(id);
-        permissionStorage.update(id);
-    }
-	
     @Override
 	protected int write(PreparedStatement stmt,Allocatable entity) throws SQLException,RaplaException {
 	  	AllocatableImpl allocatable = (AllocatableImpl) entity;
@@ -764,11 +753,10 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     }
     
     @Override
-    protected void updateSubstores(String id) throws SQLException
+    protected void updateSubstores(String foreignId) throws SQLException
     {
-        permissionStorage.update(id);
-        attributeValueStorage.update(id);
-        appointmentStorage.update(id);
+        super.updateSubstores(foreignId);
+        appointmentStorage.update(foreignId);
     }
 
     @Override
@@ -847,7 +835,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	}
 }
 
-class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
+class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implements  SubStorage<T> {
     Map<String,Classification> classificationMap;
     Map<String,? extends Annotatable> annotableMap;
     final String foreignKeyName;
@@ -978,7 +966,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     }
 }
 
- class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  {
+ class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  implements  SubStorage<T> {
     Map<String,T> referenceMap;
     private final String updateSql;
     public PermissionStorage(RaplaXMLContext context,String type,Map<String,T> idMap) throws RaplaException {
@@ -1065,12 +1053,6 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
         addSubStorage(allocationStorage);
     }
 
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
-        appointmentExceptionStorage.update(id);
-        allocationStorage.update( id);
-    }
-    
     public void update( String id) throws SQLException
     {
         try (final PreparedStatement stmt = con.prepareStatement(updateSql))
@@ -1089,8 +1071,14 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
             }
         }
     }
-    
-	@Override
+
+    @Override public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
+    {
+        //
+        //super.update(lastUpdated, updateResult);
+    }
+
+    @Override
 	void insertAll() throws SQLException, RaplaException {
 		Collection<Reservation> reservations = cache.getReservations();
 		Collection<Appointment> appointments = new LinkedHashSet<Appointment>();
@@ -1165,7 +1153,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 }
 
 
-class AllocationStorage extends EntityStorage<Appointment>  {
+class AllocationStorage extends EntityStorage<Appointment> implements SubStorage<Appointment> {
 
     public AllocationStorage(RaplaXMLContext context) throws RaplaException
     {
@@ -1220,18 +1208,18 @@ class AllocationStorage extends EntityStorage<Appointment>  {
 
  }
 
-class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
+class AppointmentExceptionStorage extends EntityStorage<Appointment> implements SubStorage<Appointment> {
     private final String updateSql;
     public AppointmentExceptionStorage(RaplaXMLContext context) throws RaplaException {
         super(context,"APPOINTMENT_EXCEPTION",new String [] {"APPOINTMENT_ID VARCHAR(255) NOT NULL KEY","EXCEPTION_DATE DATETIME NOT NULL"});
         updateSql = "SELECT * FROM APPOINTMENT_EXCEPTION WHERE APPOINTMENT_ID = ?";
     }
 
-    public void update( String id) throws SQLException
+    public void update( String reservationId) throws SQLException
     {
         try (final PreparedStatement stmt = con.prepareStatement(updateSql))
         {
-            stmt.setString(1, id);
+            stmt.setString(1, reservationId);
             final ResultSet result = stmt.executeQuery();
             if (result == null)
             {
@@ -1289,11 +1277,6 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
         checkAndAdd(schema, "LAST_CHANGED");
     }
 
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
-    }
-
-
     @Override
 	protected int write(PreparedStatement stmt, DynamicType type) throws SQLException, RaplaException {
 		if (((DynamicTypeImpl) type).isInternal())
@@ -1349,10 +1332,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Preferences.TYPE,"PREFERENCE",
 	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"});
-    }
-
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
     }
 
     @Override
@@ -1623,11 +1602,6 @@ class UserStorage extends RaplaTypeStorage<User> {
 		insert( cache.getUsers());
 	}
 
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
-        groupStorage.update(id);
-    }
-
     @Override
     protected int write(PreparedStatement stmt,User user) throws SQLException, RaplaException {
     	setId(stmt, 1, user);
@@ -1693,10 +1667,6 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         insert( cache.getDisabledConflicts());
     }
 
-    @Override protected void updateSubstores(String id) throws SQLException
-    {
-    }
-
     public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
         PreparedStatement stmt = null;
         try {
@@ -1758,7 +1728,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
 
 }
 
-class UserGroupStorage extends EntityStorage<User> {
+class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
     public UserGroupStorage(RaplaXMLContext context) throws RaplaException {
         super(context,"RAPLA_USER_GROUP", new String [] {"USER_ID VARCHAR(255) NOT NULL KEY","CATEGORY_ID VARCHAR(255) NOT NULL"});
     }
