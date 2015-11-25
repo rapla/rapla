@@ -282,6 +282,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 
             final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
             result = raplaSQLInput.update( c, lastUpdated );
+            setResolver(result.getChanged());
             fireStorageUpdated(result);
 
             //result = new UpdateResult(null);
