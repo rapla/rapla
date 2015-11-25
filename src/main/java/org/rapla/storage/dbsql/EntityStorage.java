@@ -157,10 +157,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
                 final Entity<?> oldEntity = entityStore.tryResolve(id);
                 load(resultSet);
-                for (Storage<T> storage : subStores)
-                {
-                    storage.update( id);
-                }
+                update(id);
                 final Entity<?> newEntity = entityStore.tryResolve(id);
                 if(oldEntity == null)
                 {// we have a new entity
