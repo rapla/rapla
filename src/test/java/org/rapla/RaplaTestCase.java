@@ -141,13 +141,20 @@ public abstract class RaplaTestCase
 
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
-        String resolvedPath = getTestDataFile(xmlFile);
-        FileOperator fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,DefaultPermissionControllerSupport.getController());
-        fileOperator.setFileIO(new VoidFileIO());
+
+
         MyImportExportManagerProvider importExportManager = new MyImportExportManagerProvider();
         DBOperator operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,dataSource,
                 DefaultPermissionControllerSupport.getController());
-        importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));
+        if ( xmlFile != null)
+        {
+            String resolvedPath = getTestDataFile(xmlFile);
+            FileOperator fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
+                    DefaultPermissionControllerSupport.getController());
+            fileOperator.setFileIO(new VoidFileIO());
+            importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));
+        }
+
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
         facade.setOperator(operator);
         operator.connect();

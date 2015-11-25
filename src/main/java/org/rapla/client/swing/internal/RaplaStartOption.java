@@ -45,7 +45,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.storage.RemoteLocaleService;
-
+import org.rapla.storage.dbrm.RestartServer;
 
 @Extension(provides = SystemOptionPanel.class, id="startOption")
 public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {
@@ -58,6 +58,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 	ICalTimezones timezoneService;
 	private JCheckBox ownReservations;
 	RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
+    boolean isRestartPossible;
 
     @Override
     public RaplaResources getI18n()
@@ -67,8 +68,9 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 
 
     @Inject
-    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface) throws RaplaException {
+    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
+        isRestartPossible = restartServer.isRestartPossible();
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre}}));
         this.timezoneService = timezoneService;      
@@ -160,7 +162,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         ownReservations.setSelected( selected);
         int delay = preferences.getEntryAsInteger( UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
         seconds.setNumber( new Long(delay / 1000));
-        seconds.setEnabled(getClientFacade().isClientForServer());
+        seconds.setEnabled(isRestartPossible);
 
     }
 

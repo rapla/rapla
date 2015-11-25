@@ -212,10 +212,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	/******************************
 	 * Update-module *
 	 ******************************/
-	public boolean isClientForServer() {
-		return operator.supportsActiveMonitoring();
-	}
-
 	public void refresh() throws RaplaException {
 		if (operator.supportsActiveMonitoring()) {
 			operator.refresh();
@@ -1525,7 +1521,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		if (result instanceof ModifiableTimestamp) {
 			Date now = operator.getCurrentTimestamp();
-//			((ModifiableTimestamp) result).setLastChanged(now);
+			((ModifiableTimestamp) result).setLastChanged(now);
 			if (workingUser != null) {
 				((ModifiableTimestamp) result).setLastChangedBy(workingUser);
 			}

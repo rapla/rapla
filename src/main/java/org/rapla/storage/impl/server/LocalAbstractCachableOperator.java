@@ -826,7 +826,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                     currentTime = getCurrentTimestamp();
                 }
-//                modifiableTimestamp.setLastChanged( currentTime);
+                modifiableTimestamp.setLastChanged( currentTime);
                 modifiableTimestamp.setLastChangedBy( lastChangedBy );
             }
         }

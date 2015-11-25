@@ -122,15 +122,15 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     }
 
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update(String id) throws SQLException
     {// default implementation is to ask the sub stores to update
         for (Storage<T> storage : subStores)
         {
-            storage.update(con, id);
+            storage.update( id);
         }
     }
     
-    public void update(Connection c, Date lastUpdated, UpdateResult updateResult) throws SQLException
+    public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
     {
         if (!hasLastChangedTimestamp)
         {
@@ -139,24 +139,28 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         PreparedStatement stmt = null;
         try
         {
-            stmt = c.prepareStatement(loadAllUpdatesSql);
+            stmt = con.prepareStatement(loadAllUpdatesSql);
             setTimestamp(stmt, 1, lastUpdated);
             stmt.execute();
             final ResultSet resultSet = stmt.getResultSet();
+            int count =0;
             if (resultSet == null)
             {
                 return;
             }
             while(resultSet.next())
             {
-                // deletion of entities must be handled somewhere else
+                count ++;
                 final String id = resultSet.getString(1);
-                for (Storage<T> storage : subStores)
-                {
-                    storage.update(c, id);
-                }
+
+                // deletion of entities must be handled somewhere else
+
                 final Entity<?> oldEntity = entityStore.tryResolve(id);
                 load(resultSet);
+                for (Storage<T> storage : subStores)
+                {
+                    storage.update( id);
+                }
                 final Entity<?> newEntity = entityStore.tryResolve(id);
                 if(oldEntity == null)
                 {// we have a new entity
@@ -172,6 +176,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
                     }
                 }
             }
+            getLogger().debug("Updated " + count);
         }
         finally
         {

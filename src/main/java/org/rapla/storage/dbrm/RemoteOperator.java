@@ -68,6 +68,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.client.gwt.MockProxy;
 import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
@@ -433,7 +434,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     private String getLastSyncedTime() {
         return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
     }
- 
+
+    /** returns if the Facade is connected through a server (false if it has a local store)*/
+    synchronized public boolean isRestartPossible()
+    {
+        final MockProxy mockProxy = connectionInfo.getMockProxy();
+        return mockProxy == null;
+    }
+
     synchronized public void restartServer() throws RaplaException {
     	getLogger().info("Restart in progress ...");
     	String message = i18n.getString("restart_server");

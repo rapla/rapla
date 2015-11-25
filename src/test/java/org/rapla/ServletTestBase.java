@@ -20,7 +20,24 @@ import java.net.URL;
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase
 {
-    static public Server createServer(HttpServlet mainServlet,int port) throws Exception
+
+    static public Server createServer(HttpService service, int port) throws Exception
+    {
+        final HttpServlet servlet = createServlet(service);
+        return createServer(servlet, port);
+    }
+
+    private static HttpServlet createServlet(final HttpService service)
+    {
+        return new HttpServlet()
+        {
+            public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
+            {
+                service.service(request,response);
+            }
+        };
+    }
+    static private Server createServer(HttpServlet mainServlet,int port) throws Exception
     {
 
         File webappFolder = new File("test");
@@ -57,22 +74,7 @@ public abstract class ServletTestBase
         return jettyServer;
     }
 
-    static public Server createServer(HttpService service, int port) throws Exception
-    {
-        final HttpServlet servlet = createServlet(service);
-        return createServer(servlet, port);
-    }
 
-    static HttpServlet createServlet(final HttpService service)
-    {
-        return new HttpServlet()
-        {
-            public void service( HttpServletRequest request, HttpServletResponse response )  throws IOException, ServletException
-            {
-                service.service(request,response);
-            }
-        };
-    }
 
 
  }

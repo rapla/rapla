@@ -12,6 +12,37 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.RaplaTestCase;
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.tests.AbstractOperatorTest;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,51 +58,6 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.inject.Provider;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.rapla.RaplaResources;
-import org.rapla.RaplaTestCase;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.StandardFunctions;
-import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
-import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.DefaultScheduler;
-import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.ImportExportManager;
-import org.rapla.storage.dbsql.DBOperator;
-import org.rapla.storage.tests.AbstractOperatorTest;
 
 @RunWith(JUnit4.class)
 public class SQLOperatorTest extends AbstractOperatorTest
@@ -257,59 +243,36 @@ public class SQLOperatorTest extends AbstractOperatorTest
             connection.close();
         }
     }
-    
+
+
     @Test
     public void testUpdateFromDB() throws Exception
     {
         final AtomicReference<ModificationEvent> updateResult = new AtomicReference<ModificationEvent>();
         final Semaphore waitFor = new Semaphore(0);
-        facade.addModificationListener(new ModificationListener()
+        ClientFacade readFacade = this.facade;
+        readFacade.addModificationListener(new ModificationListener()
         {
-            @Override
-            public void dataChanged(ModificationEvent evt) throws RaplaException
+            @Override public void dataChanged(ModificationEvent evt) throws RaplaException
             {
                 updateResult.set(evt);
                 waitFor.release();
             }
         });
         Thread.sleep(500);
-        {// create second facade
-            DefaultBundleManager bundleManager = new DefaultBundleManager();
-            RaplaResources i18n = new RaplaResources(bundleManager);
-
-            CommandScheduler scheduler = new DefaultScheduler(logger);
-            RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-
-            Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
-            StandardFunctions functions = new StandardFunctions(raplaLocale);
-            functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
-
-            RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
-            PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
-            
-            Provider<ImportExportManager> importExportManager = new Provider<ImportExportManager>()
-            {
-                @Override
-                public ImportExportManager get()
-                {
-                    return null;
-                }
-            };
-            DBOperator operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,datasource,
-                    DefaultPermissionControllerSupport.getController());
-            FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
-            facade.setOperator(operator);
-            operator.connect();
-            facade.login("homer", "duffs".toCharArray());
+        {// create second writeFacade
+            String xmlFile = null;
+            ClientFacade writeFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+            writeFacade.login("homer", "duffs".toCharArray());
             { // Reservation test with an attribute, appointment and permission
-                final Reservation newReservation = facade.newReservation();
+                final Reservation newReservation = writeFacade.newReservation();
                 Date endDate = new Date();
                 Date startDate = new Date(endDate.getTime() - 120000);
-                newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+                newReservation.addAppointment(writeFacade.newAppointment(startDate, endDate));
                 Permission permission = new PermissionImpl();
                 permission.setAccessLevel(Permission.DENIED);
-                permission.setUser(facade.getUser());
-                Category category = facade.getUserGroupsCategory().getCategories()[0];
+                permission.setUser(writeFacade.getUser());
+                Category category = writeFacade.getUserGroupsCategory().getCategories()[0];
                 permission.setGroup(category);
                 newReservation.getPermissionList().clear();
                 newReservation.addPermission(permission);
@@ -317,7 +280,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Attribute attribute = classification.getAttributes()[0];
                 final String value = "TestName";
                 classification.setValue(attribute, value);
-                facade.store(newReservation);
+                writeFacade.store(newReservation);
+                readFacade.refresh();
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
@@ -337,17 +301,17 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Collection<Permission> permissionList = newReserv.getPermissionList();
                 Assert.assertEquals(1, permissionList.size());
                 final Permission loadedPermission = permissionList.iterator().next();
-                Assert.assertEquals(facade.getUser().getId(), loadedPermission.getUser().getId());
+                Assert.assertEquals(writeFacade.getUser().getId(), loadedPermission.getUser().getId());
                 Assert.assertEquals(category, loadedPermission.getGroup());
                 Assert.assertEquals(Permission.DENIED, loadedPermission.getAccessLevel());
             }
             {// Next we will insert a Category
-                final Category newCategory = this.facade.newCategory();
+                final Category newCategory = writeFacade.newCategory();
                 String key = "newCat";
                 newCategory.setKey(key);
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
-                facade.store(newCategory);
+                writeFacade.store(newCategory);
                 // check
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<Entity> addObjects = modificationEvent.getAddObjects();
@@ -361,7 +325,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             }
             {// check update of more entities
                 Map<String, String> rename = new HashMap<String, String>();
-                final Allocatable[] allocatables = facade.getAllocatables();
+                final Allocatable[] allocatables = writeFacade.getAllocatables();
                 final Random random = new Random();
                 for (Allocatable allocatable : allocatables)
                 {
@@ -372,7 +336,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     classification.setValue(attribute, newValue);
                     rename.put(id, newValue);
                 }
-                facade.storeObjects(allocatables);
+                writeFacade.storeObjects(allocatables);
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();

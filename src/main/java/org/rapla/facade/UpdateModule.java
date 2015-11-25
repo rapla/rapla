@@ -53,8 +53,7 @@ public interface UpdateModule
        
     */
     void refresh() throws RaplaException;
-    /** returns if the Facade is connected through a server (false if it has a local store)*/
-    boolean isClientForServer();
+
     /**
      *  registers a new ModificationListener.
      *  A ModifictionEvent will be fired to every registered DateChangeListener

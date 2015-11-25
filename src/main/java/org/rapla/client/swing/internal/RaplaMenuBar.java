@@ -121,6 +121,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             ReservationController reservationController,
             //FIXME hack for initialization
             SwingActivityController activityController
+
     )
             throws RaplaException
     {
@@ -171,7 +172,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             adminMenu.add(switchBack);
         }
 
-        boolean server = getUpdateModule().isClientForServer();
+        boolean server = restartServerService.isRestartPossible();
         if (server && isAdmin())
         {
             JMenuItem restartServer = new JMenuItem();

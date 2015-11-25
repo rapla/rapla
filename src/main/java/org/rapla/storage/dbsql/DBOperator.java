@@ -47,6 +47,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.Conflict;
@@ -85,7 +86,8 @@ public class DBOperator extends LocalAbstractCachableOperator
     DataSource lookup;
     
     private String connectionName;
-    
+    final AtomicReference<Date> dateReference = new AtomicReference<Date>();
+
     Provider<ImportExportManager> importExportManager;
     private final PermissionController permissionController;
     @Inject
@@ -115,35 +117,18 @@ public class DBOperator extends LocalAbstractCachableOperator
 //	        }
 //        }
         final int delay = 15000;
-        final AtomicReference<Date> dateReference = new AtomicReference<Date>(new Date());
         scheduler.schedule(new Command()
         {
             @Override
             public void execute() throws Exception
             {
-                final Date lastUpdated = dateReference.get();
-                try
-                {
-                    UpdateResult result;
-                    final Connection c = createConnection();
-                    final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-                    final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
-                    final Date updateStart = new Date();
-                    result = raplaSQLInput.update( c, lastUpdated );
-                    fireStorageUpdated(result);
-                    dateReference.set(updateStart);
-                }
-                catch(Throwable e)
-                {
-                    logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
-                }
                 scheduler.schedule(this, delay);
             }
         }, delay);
     }
 
     public boolean supportsActiveMonitoring() {
-        return false;
+        return true;
     }
 
     public String getConnectionName()
@@ -284,9 +269,29 @@ public class DBOperator extends LocalAbstractCachableOperator
     public boolean isConnected() {
         return isConnected;
     }
-    
+
+
     final public void refresh() throws RaplaException {
-        getLogger().warn("Incremental refreshs are not supported");
+        final Date lastUpdated = dateReference.get();
+        try
+        {
+            UpdateResult result;
+            final Connection c = createConnection();
+            final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+            final Date updateStart = new Date();
+
+            final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
+            result = raplaSQLInput.update( c, lastUpdated );
+            fireStorageUpdated(result);
+
+            //result = new UpdateResult(null);
+            //fireStorageUpdated(result);
+            dateReference.set(updateStart);
+        }
+        catch(Throwable e)
+        {
+            logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
+        }
     }
 
     synchronized public void disconnect() throws RaplaException 
@@ -321,7 +326,8 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
     public final void loadData() throws RaplaException {
-    	Connection c = null;
+
+        Connection c = null;
     	Lock writeLock = writeLock();
         try {
         	c = createConnection();
@@ -498,10 +504,43 @@ public class DBOperator extends LocalAbstractCachableOperator
         }
         else
         {
+            // Normal Database upgrade
             RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
             raplaSQLOutput.createOrUpdateIfNecessary( c, schema);
         }
         return false;
+    }
+
+    @Override
+    protected void updateLastChanged(UpdateEvent evt) throws RaplaException {
+        Date currentTime = getCurrentTimestamp();
+        String userId = evt.getUserId();
+        User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
+
+        for ( Entity e: evt.getStoreObjects())
+        {
+            if ( e instanceof ModifiableTimestamp)
+            {
+                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
+                Date lastChangeTime = modifiableTimestamp.getLastChanged();
+                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
+                {
+                    // wait 1 ms to increase timestamp
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e1) {
+                        throw new RaplaException( e1.getMessage(), e1);
+                    }
+                    currentTime = getCurrentTimestamp();
+                }
+                //modifiableTimestamp.setLastChanged( currentTime);
+                modifiableTimestamp.setLastChangedBy( lastChangedBy );
+            }
+        }
+        for ( PreferencePatch patch: evt.getPreferencePatches())
+        {
+            //patch.setLastChanged( currentTime );
+        }
     }
     
     private Map<String, TableDef> loadDBSchema(Connection c)
@@ -739,9 +778,9 @@ public class DBOperator extends LocalAbstractCachableOperator
 		}
 		getLogger().info("Inserting new Data into " + connectionName);
 		raplaSQLOutput.createAll( connection );
-		if ( !connection.getAutoCommit())
+        if ( !connection.getAutoCommit())
 		{
-		    connection.commit();
+            connection.commit();
 		}
 		// do something here
 		getLogger().info("Import complete for " + connectionName);
@@ -769,6 +808,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
+        dateReference.set(new Date());
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, this));
         raplaSQLInput.loadAll( connection );

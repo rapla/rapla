@@ -271,7 +271,16 @@ class RaplaSQL {
         final UpdateResult updateResult = new UpdateResult(null);
         for (RaplaTypeStorage raplaTypeStorage : stores)
         {
-            raplaTypeStorage.update(c, lastUpdated, updateResult);
+            raplaTypeStorage.setConnection( c);
+            try
+            {
+                raplaTypeStorage.update(lastUpdated, updateResult);
+            }
+            finally
+            {
+                raplaTypeStorage.setConnection( null);
+            }
+
         }
         return updateResult;
     }
@@ -375,7 +384,14 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY"});
     }
-    
+
+    @Override
+    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary( schema);
+        checkAndAdd(schema, "LAST_CHANGED");
+    }
+
     @Override
     public void deleteEntities(Iterable<Category> entities) throws SQLException,RaplaException {
     	Set<String> idList = new HashSet<String>();
@@ -443,11 +459,11 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         setId( stmt,1, category);
 		setId( stmt,2, category.getParent());
         int order = getOrder( category);
-        String xml = getXML( category );
-        setString(stmt,3, category.getKey());
-		setText(stmt,4, xml);
-        setInt( stmt,5, order);
         ((ModifiableTimestamp)category).setLastChangedWithoutCheck(getCurrentTimestamp());
+        String xml = getXML( category );
+        setString(stmt, 3, category.getKey());
+        setText(stmt, 4, xml);
+        setInt(stmt, 5, order);
         setDate( stmt,6, category.getLastChanged());
 		stmt.addBatch();
 		return 1;
@@ -673,7 +689,12 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         stmt.addBatch();
         return 1;
     }
-    
+
+    @Override public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
+    {
+        super.update(lastUpdated, updateResult);
+    }
+
     @Override
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
     	final Date createDate = getTimestampOrNow(rset,4);
@@ -768,9 +789,9 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     }
     
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update(String id) throws SQLException
     {
-        super.update(con, id);
+        super.update( id);
         final PreparedStatement stmt = con.prepareStatement(updateSql);
         stmt.setString(1, id);
         final ResultSet result = stmt.executeQuery();
@@ -891,7 +912,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> {
     }
 
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update( String id) throws SQLException
     {
         // FIXME
     }
@@ -956,7 +977,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     }
     
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update( String id) throws SQLException
     {
         // FIXME
     }
@@ -1058,7 +1079,7 @@ class AllocationStorage extends EntityStorage<Appointment>  {
     }
 
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update( String id) throws SQLException
     {
         // FIXME
     }
@@ -1098,7 +1119,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment>  {
     }
 
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update( String id) throws SQLException
     {
         // FIXME
     }
@@ -1139,6 +1160,13 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
     
     public DynamicTypeStorage(RaplaXMLContext context) throws RaplaException {
         super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","LAST_CHANGED TIMESTAMP KEY"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
+    }
+
+    @Override
+    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary( schema);
+        checkAndAdd(schema, "LAST_CHANGED");
     }
 
     @Override
@@ -1194,15 +1222,21 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 class PreferenceStorage extends RaplaTypeStorage<Preferences> 
 {
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
-        // FIXME LAST_CHANGED TIMESTAMP KEY insert
         super(context,Preferences.TYPE,"PREFERENCE",
-	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT"});
+	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"});
     }
 
     class PatchEntry
     {
         String userId;
         String role;
+    }
+
+    @Override
+    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary( schema);
+        checkAndAdd(schema, "LAST_CHANGED");
     }
     
 	public void storePatches(List<PreferencePatch> preferencePatches) throws RaplaException, SQLException 
@@ -1268,13 +1302,15 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         try {
             stmt = con.prepareStatement(insertSql);
             int count = 0;
+            Date lastChanged = getCurrentTimestamp();
             for ( PreferencePatch patch:preferencePatches)
             {
                 String userId = patch.getUserId();
+                patch.setLastChanged(lastChanged );
                 for ( String role:patch.keySet())
                 {
                     Object entry = patch.get( role);
-                    insterEntry(stmt, userId, role, entry);
+                    insertEntry(stmt, userId, role, entry,lastChanged);
                     count++;
                 }
             }
@@ -1322,14 +1358,16 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         int count = 0;
         for (String role:preferences.getPreferenceEntries()) {
             Object entry = preferences.getEntry(role);
-            insterEntry(stmt, userId, role, entry);
+            final Date lastChanged = getCurrentTimestamp();
+            ((ModifiableTimestamp)preferences).setLastChangedWithoutCheck(lastChanged);
+            insertEntry(stmt, userId, role, entry,lastChanged);
             count++;
         }
        
         return count;
     }
 
-    private void insterEntry(PreparedStatement stmt, String userId, String role, Object entry) throws SQLException, RaplaException {
+    private void insertEntry(PreparedStatement stmt, String userId, String role, Object entry, Date lastChanged) throws SQLException, RaplaException {
         setString( stmt, 1, userId);
         setString( stmt,2, role);
         String xml;
@@ -1344,6 +1382,9 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
         setString( stmt,3, entryString);
         setText(stmt, 4, xml);
+        setDate( stmt,5, lastChanged);
+
+
         stmt.addBatch();
     }
 
@@ -1592,9 +1633,9 @@ class UserGroupStorage extends EntityStorage<User> {
     }
     
     @Override
-    public void update(Connection con, String id) throws SQLException
+    public void update( String id) throws SQLException
     {
-        super.update(con, id);
+        super.update( id);
         // FIXME
     }
 

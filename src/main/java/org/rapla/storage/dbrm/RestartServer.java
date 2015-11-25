@@ -18,5 +18,6 @@ import org.rapla.framework.RaplaException;
 
 public interface RestartServer 
 {
+    public  boolean isRestartPossible();
     public void restartServer() throws RaplaException;
 }
