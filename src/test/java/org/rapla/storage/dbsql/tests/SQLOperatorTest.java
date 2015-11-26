@@ -322,8 +322,10 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(Permission.DENIED, loadedPermission.getAccessLevel());
                 Assert.assertEquals(category, loadedPermission.getGroup());
             }
+            final String categoryId;
             {// Next we will insert a Category
                 final Category newCategory = writeFacade.newCategory();
+                categoryId = newCategory.getId();
                 final Category editSuperCat = writeFacade.edit(writeFacade.getSuperCategory());
                 editSuperCat.addCategory(newCategory);
                 String key = "newCat";
@@ -397,11 +399,11 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Reservation newReservation = (Reservation) next;
                 Assert.assertEquals(allocatables.length, newReservation.getAllocatables().length);
             }
+            final String userID;
             {// UserStorage and UserGroupStorage
-                final User user;
                 {
                     final User newUser = writeFacade.newUser();
-                    user = newUser;
+                    userID = newUser.getId();
                     for (Category cat:newUser.getGroupList()) {newUser.removeGroup( cat);}
                     //newUser.getGroupList().clear();
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
@@ -430,7 +432,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     Assert.assertEquals(categories[0], groupList.iterator().next());
                 }
                 {// now change the group
-                    final User newUser = writeFacade.edit( user);
+                    final User newUser = writeFacade.edit(writeFacade.getOperator().tryResolve(userID, User.class));
                     newUser.removeGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[1]);
                     writeFacade.store(newUser);
@@ -448,7 +450,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     Assert.assertEquals(categories[1], groupList.iterator().next());
                 }
             }
-            {// Delete of an resource
+            {// Delete of an reservation
                 final Reservation existingReservaton = writeFacade.getOperator().resolve(reservationId, Reservation.class);
                 writeFacade.remove(existingReservaton);
                 readFacade.refresh();
@@ -459,6 +461,43 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(1, removed.size());
                 final Entity next = removed.iterator().next();
                 Assert.assertEquals(existingReservaton.getId(), next.getId());
+            }
+            {// Delete of an resource
+                final Allocatable[] allocatables = writeFacade.getAllocatables();
+                final Allocatable allocatable = allocatables[0];
+                writeFacade.remove(allocatable);
+                readFacade.refresh();
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> removed = modificationEvent.getRemoved();
+                Assert.assertEquals(1, removed.size());
+                final Entity next = removed.iterator().next();
+                Assert.assertEquals(allocatable.getId(), next.getId());
+            }
+            {// Delete of an user
+                final User newUser = writeFacade.edit(writeFacade.getOperator().tryResolve(userID, User.class));
+                writeFacade.remove(newUser);
+                readFacade.refresh();
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> removed = modificationEvent.getRemoved();
+                Assert.assertEquals(1, removed.size());
+                final Entity next = removed.iterator().next();
+                Assert.assertEquals(newUser.getId(), next.getId());
+            }
+            {// Delete of a category
+                final Category newCategory = writeFacade.edit(writeFacade.getOperator().tryResolve(categoryId, Category.class));
+                writeFacade.remove(newCategory);
+                readFacade.refresh();
+                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+                Assert.assertTrue(tryAcquire);
+                final ModificationEvent modificationEvent = updateResult.get();
+                final Set<Entity> removed = modificationEvent.getRemoved();
+                Assert.assertEquals(1, removed.size());
+                final Entity next = removed.iterator().next();
+                Assert.assertEquals(newCategory.getId(), next.getId());
             }
         }
     }
