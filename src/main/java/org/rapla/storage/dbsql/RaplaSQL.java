@@ -12,6 +12,28 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -60,30 +82,9 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
+    private final DeleteStorage deleteStorage;
     private final Logger logger;
     RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
@@ -105,6 +106,7 @@ class RaplaSQL {
 		stores.add(new ConflictStorage( context));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
+		deleteStorage = new DeleteStorage(context);
 	}
     
     private List<Storage<?>> getStoresWithChildren() 
@@ -253,6 +255,15 @@ class RaplaSQL {
     			storage.setConnection( null);
     		}
 		}
+    	try
+    	{
+    	    deleteStorage.setConnection(con);
+    	    deleteStorage.createOrUpdateIfNecessary(schema);
+    	}
+    	finally
+    	{
+    	    deleteStorage.setConnection(null);
+    	}
 	}
 
     public void storePatches(Connection connection, List<PreferencePatch> preferencePatches) throws SQLException, RaplaException {
@@ -282,9 +293,34 @@ class RaplaSQL {
             {
                 raplaTypeStorage.setConnection( null);
             }
-
+        }
+        try
+        {
+            deleteStorage.setConnection(c);
+            deleteStorage.update(lastUpdated, updateResult);
+        }
+        finally
+        {
+            deleteStorage.setConnection(null);
         }
         return updateResult;
+    }
+
+    public void storeDeleted(Connection connection, List<Entity> deletedEntities) throws RaplaException, SQLException
+    {
+        if(deletedEntities == null || deletedEntities.isEmpty())
+        {
+            return;
+        }
+        try
+        {
+            deleteStorage.setConnection(connection);
+            deleteStorage.insert(deletedEntities);
+        }
+        finally
+        {
+            deleteStorage.setConnection(null);
+        }
     }
 
 
@@ -1696,6 +1732,63 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
         	return;
         }
         user.addGroup( category);
+    }
+}
+
+class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
+{
+    protected DeleteStorage(RaplaXMLContext context) throws RaplaException
+    {
+        super(context, null, "DELETED", new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "LAST_CHANGED TIMESTAMP KEY" });
+    }
+    
+    public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
+    {
+        try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
+        {
+            setTimestamp(stmt, 1, lastUpdated);
+            final ResultSet result = stmt.executeQuery();
+            if(result == null)
+            {
+                return;
+            }
+            while(result.next())
+            {
+                final String id = result.getString(1);
+                if(id != null)
+                {
+                    // FIXME 
+//                    updateResult.addOperation(new UpdateResult.Remove(id));
+                }
+            }
+        }
+    }
+
+    @Override
+    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException
+    {
+        // do nothing as should not happen
+    }
+
+    @Override
+    protected int write(PreparedStatement stmt, T entity) throws SQLException, RaplaException
+    {
+        stmt.setString(1, entity.getId());
+        setTimestamp(stmt, 2, getCurrentTimestamp());
+        stmt.addBatch();
+        return 1;
+    }
+
+    @Override
+    protected void load(ResultSet rs) throws SQLException, RaplaException
+    {
+        // On startup no load is needed 
+    }
+
+    @Override
+    void insertAll() throws SQLException, RaplaException
+    {
+        // no initialization needed
     }
 }
 

@@ -648,11 +648,16 @@ public class DBOperator extends LocalAbstractCachableOperator
         Connection connection = createConnection();
         try {
             RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
+            List<Entity> deletedEntities = new ArrayList<Entity>();
             for (String id: removeObjects) {
                 Entity entity = cache.get(id);
                 if (entity != null)
+                {
                     raplaSQLOutput.remove( connection, entity);
+                    deletedEntities.add(entity);
+                }
             }
+            raplaSQLOutput.storeDeleted(connection, deletedEntities);
             raplaSQLOutput.store( connection, storeObjects);
             raplaSQLOutput.storePatches( connection, preferencePatches);
             if (bSupportsTransactions) {
