@@ -16,12 +16,14 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -50,6 +52,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -458,6 +461,60 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(existingReservaton.getId(), next.getId());
             }
         }
+    }
+    
+    @Test
+    public void concurrentReadAndUpdate() throws Exception
+    {
+        ClientFacade writeFacade = this.facade;
+        writeFacade.login("homer", "duffs".toCharArray());
+        String xmlFile = null;
+        // create init data
+        final DynamicType dynamicType = writeFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
+        List<Entity> storeObjects = new ArrayList<Entity>();
+        for(int i = 0; i< 100000; i++)
+        {
+            final Classification classification = dynamicType.newClassification();
+            final Allocatable allocatable = writeFacade.newAllocatable(classification);
+            final Attribute attribute = classification.getAttributes()[0];
+            classification.setValue(attribute, "generated-alloc-"+i);
+            storeObjects.add(allocatable);
+        }
+        final Allocatable[] storedAllocatables = storeObjects.toArray(new Allocatable[storeObjects.size()]);
+        writeFacade.storeObjects(storedAllocatables);
+        storeObjects.clear();
+        for(int i = 0; i < 30000; i++)
+        {
+            final Reservation reservation = writeFacade.newReservation();
+            final Classification classification = reservation.getClassification();
+            final Attribute attribute = classification.getAttributes()[0];
+            classification.setValue(attribute, "generated-reserv-" + i);
+            Date endDate = new Date();
+            Date startDate = new Date(endDate.getTime() - 120000);
+            final Appointment newAppointment = writeFacade.newAppointment(startDate, endDate);
+            reservation.addAppointment(newAppointment);
+            newAppointment.setRepeatingEnabled(true);
+            newAppointment.getRepeating().setType(RepeatingType.DAILY);
+            newAppointment.getRepeating().setInterval(i);
+            reservation.addAllocatable(storedAllocatables[i * 3]);
+            reservation.addAllocatable(storedAllocatables[i * 3 + 1]);
+            reservation.addAllocatable(storedAllocatables[i * 3 + 2]);
+            storeObjects.add(reservation);
+            storeObjects.add(newAppointment);
+        }
+        writeFacade.storeObjects(storeObjects.toArray(new Entity[storeObjects.size()]));
+        final AtomicReference<ClientFacade> initReference = new AtomicReference<ClientFacade>(null);
+        final Semaphore semaphore = new Semaphore(0);
+        // now lets start init the other facade
+        new Thread(new Runnable(){
+            public void run() {
+                ClientFacade initFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+                initReference.set(initFacade);
+                semaphore.release();
+            };
+        }).start();
+        // and remove an new reservation and its allocations
+        
     }
 }
 
