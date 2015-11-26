@@ -49,7 +49,6 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.LocalCache;
-import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.PreferenceWriter;
@@ -65,6 +64,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     String deleteAllSql;
     private String containsSql;
     protected String loadAllUpdatesSql;
+	protected String selectUpdateSql;
     //String searchForIdSql;
 
     RaplaXMLContext context;
@@ -83,8 +83,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected Map<String,ColumnDef> columns = new LinkedHashMap<String,ColumnDef>();
 
     Calendar datetimeCal;
-    
-    protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
+	protected String idName;
+
+	protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
         this.context = context;
         if ( context.has( EntityStore.class))
         {
@@ -121,6 +122,30 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
     }
 
+	public void setForeignId(String foreignId)
+	{
+		selectUpdateSql = selectUpdateSql.replace("where "+idName,"where " + foreignId);
+		deleteSql = deleteSql.replace("where "+ idName, "where " + foreignId);
+	}
+
+	public void updateWithForeignId( String foreignId) throws SQLException
+	{
+		try (final PreparedStatement stmt = con.prepareStatement(selectUpdateSql))
+		{
+			stmt.setString(1, foreignId);
+			final ResultSet result = stmt.executeQuery();
+			if (result == null)
+			{
+				return;
+			}
+			while (result.next())
+			{
+				load(result);
+				String subId =result.getString(idName);
+				updateSubstores( subId);
+			}
+		}
+	}
     /*
     public void update(String id) throws SQLException
     {// default implementation is to ask the sub stores to update
@@ -359,11 +384,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     
     protected void createSQL(Collection<ColumnDef> entries) {
     	
-        String idString = entries.iterator().next().getName();
+        idName = entries.iterator().next().getName();
         String table = tableName;
 		selectSql = "select " + getEntryList(entries) + " from " + table ;
-        containsSql = "select count(" + idString + ") from " + table + " where " + idString + "= ?";
-        deleteSql = "delete from " + table + " where " + idString + "= ?" + (hasLastChangedTimestamp ? " AND LAST_CHANGED = ?" : "");
+        containsSql = "select count(" + idName + ") from " + table + " where " + idName + "= ?";
+        deleteSql = "delete from " + table + " where " + idName + "= ?" + (hasLastChangedTimestamp ? " AND LAST_CHANGED = ?" : "");
+		selectUpdateSql = "SELECT " + getEntryList(entries) + " from " + tableName + " where " + idName + " = ?";
 		String valueString = " (" + getEntryList(entries) + ")";
 		insertSql = "insert into " + table + valueString + " values (" + getMarkerList(entries.size()) + ")";
 		deleteAllSql = "delete from " + table;
@@ -454,7 +480,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	{
 		for (SubStorage<T> subStorage:getSubStores())
 		{
-			subStorage.update(foreignId);
+			subStorage.updateWithForeignId(foreignId);
 		}
 	}
     

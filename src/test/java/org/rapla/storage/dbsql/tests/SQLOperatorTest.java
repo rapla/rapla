@@ -395,9 +395,12 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(allocatables.length, newReservation.getAllocatables().length);
             }
             {// UserStorage and UserGroupStorage
-                final User newUser = writeFacade.newUser();
+                final User user;
                 {
-                    newUser.getGroupList().clear();
+                    final User newUser = writeFacade.newUser();
+                    user = newUser;
+                    for (Category cat:newUser.getGroupList()) {newUser.removeGroup( cat);}
+                    //newUser.getGroupList().clear();
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
                     newUser.setAdmin(false);
                     String email = "123@456.de";
@@ -419,9 +422,13 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     Assert.assertEquals(email, addedUser.getEmail());
                     Assert.assertEquals(name, addedUser.getName());
                     Assert.assertEquals(username, addedUser.getUsername());
-                    Assert.assertEquals(writeFacade.getUserGroupsCategory().getCategories()[0], addedUser.getGroupList().iterator().next());
+                    final Category[] categories = writeFacade.getUserGroupsCategory().getCategories();
+                    final Collection<Category> groupList = addedUser.getGroupList();
+                    Assert.assertEquals(categories[0], groupList.iterator().next());
                 }
                 {// now change the group
+                    final User newUser = writeFacade.edit( user);
+                    newUser.removeGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[1]);
                     writeFacade.store(newUser);
                     readFacade.refresh();
@@ -433,7 +440,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     final Entity next = changed.iterator().next();
                     Assert.assertTrue(next instanceof User);
                     User changedUser = (User) next;
-                    Assert.assertEquals(writeFacade.getUserGroupsCategory().getCategories()[1], changedUser.getGroupList().iterator().next());
+                    final Category[] categories = writeFacade.getUserGroupsCategory().getCategories();
+                    final Collection<Category> groupList = changedUser.getGroupList();
+                    Assert.assertEquals(categories[1], groupList.iterator().next());
                 }
             }
             {// Delete of an resource

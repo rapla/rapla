@@ -234,7 +234,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 				throw new UnresolvableReferenceExcpetion( entityClass.getName() + ":" + id, toString() );
 			}
 		}
-		return entries;
+		return Collections.unmodifiableCollection(entries);
 	}
 
 	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass) 

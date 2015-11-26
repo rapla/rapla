@@ -522,7 +522,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         setString(stmt, 3, category.getKey());
         setText(stmt, 4, xml);
         setInt(stmt, 5, order);
-        setTimestamp( stmt,6, category.getLastChanged());
+        setTimestamp(stmt, 6, category.getLastChanged());
 		stmt.addBatch();
 		return 1;
     }
@@ -759,7 +759,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     protected void updateSubstores(String foreignId) throws SQLException
     {
         super.updateSubstores(foreignId);
-        appointmentStorage.update(foreignId);
+        appointmentStorage.updateWithForeignId(foreignId);
     }
 
     @Override
@@ -817,30 +817,14 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
     // TODO Write conversion script to update all old entries to new entries
     public final static String OLD_ANNOTATION_PREFIX = "annotation:";
   	public final static String ANNOTATION_PREFIX = "rapla:";
-  	private final String updateSql;
-	
+
     public AttributeValueStorage(RaplaXMLContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
     	super(context, tablename, new String[]{foreignKeyName + " VARCHAR(255) NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(255)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
         this.annotableMap = annotableMap;
-        updateSql = "SELECT * FROM " + tablename + " WHERE " + foreignKeyName + " = ?";
     }
     
-    public void update(String id) throws SQLException
-    {
-        final PreparedStatement stmt = con.prepareStatement(updateSql);
-        stmt.setString(1, id);
-        final ResultSet result = stmt.executeQuery();
-        if(result != null)
-        {
-            while(result.next())
-            {
-                load(result);
-            }
-        }
-    }
-
     @Override
 	protected int write(PreparedStatement stmt,T classifiable) throws EntityNotFoundException, SQLException {
         Classification classification =  ((Classifiable)classifiable).getClassification();
@@ -943,30 +927,11 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 
  class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  implements  SubStorage<T> {
     Map<String,T> referenceMap;
-    private final String updateSql;
     public PermissionStorage(RaplaXMLContext context,String type,Map<String,T> idMap) throws RaplaException {
         super(context,type+"_PERMISSION",new String[] {type + "_ID VARCHAR(255) NOT NULL KEY","USER_ID VARCHAR(255)","GROUP_ID VARCHAR(255)","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.referenceMap = idMap;
-        updateSql = "SELECT * FROM " + type+"_PERMISSION  WHERE " + type + "_ID = ? ";
     }
 
-     public void update( String id) throws SQLException
-    {
-        try(final PreparedStatement stmt = con.prepareStatement(updateSql))
-        {
-            stmt.setString(1, id);
-            final ResultSet result = stmt.executeQuery();
-            if(result == null)
-            {
-                return;
-            }
-            while(result.next())
-            {
-                load(result);
-            }
-        }
-    }
-    
     protected int write(PreparedStatement stmt, EntityPermissionContainer container) throws SQLException, RaplaException {
         int count = 0;
         Iterable<Permission> permissionList = container.getPermissionList();
@@ -1019,34 +984,19 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     AppointmentExceptionStorage appointmentExceptionStorage;
     AllocationStorage allocationStorage;
-    private final String updateSql;
-    public AppointmentStorage(RaplaXMLContext context) throws RaplaException {
-        super(context, Appointment.TYPE,"APPOINTMENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","EVENT_ID VARCHAR(255) NOT NULL KEY","APPOINTMENT_START DATETIME NOT NULL","APPOINTMENT_END DATETIME NOT NULL","REPETITION_TYPE VARCHAR(255)","REPETITION_NUMBER INTEGER","REPETITION_END DATETIME","REPETITION_INTERVAL INTEGER"});
-        updateSql = "SELECT * FROM APPOINTMENT WHERE EVENT_ID = ?";
-        deleteSql = "DELETE FROM APPOINTMENT WHERE EVENT_ID=?";
+    private String foreignId;
+
+    public AppointmentStorage(RaplaXMLContext context) throws RaplaException
+    {
+        super(context, Appointment.TYPE, "APPOINTMENT",
+                new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "EVENT_ID VARCHAR(255) NOT NULL KEY", "APPOINTMENT_START DATETIME NOT NULL",
+                        "APPOINTMENT_END DATETIME NOT NULL", "REPETITION_TYPE VARCHAR(255)", "REPETITION_NUMBER INTEGER", "REPETITION_END DATETIME",
+                        "REPETITION_INTERVAL INTEGER" });
+        setForeignId("EVENT_ID");
         appointmentExceptionStorage = new AppointmentExceptionStorage(context);
-        allocationStorage = new AllocationStorage( context);
+        allocationStorage = new AllocationStorage(context);
         addSubStorage(appointmentExceptionStorage);
         addSubStorage(allocationStorage);
-    }
-
-    public void update( String id) throws SQLException
-    {
-        try (final PreparedStatement stmt = con.prepareStatement(updateSql))
-        {
-            stmt.setString(1, id);
-            final ResultSet result = stmt.executeQuery();
-            if (result == null)
-            {
-                return;
-            }
-            while (result.next())
-            {
-                load(result);
-                String appointmentId = result.getString(1);
-                updateSubstores(appointmentId);
-            }
-        }
     }
 
     void deleteAppointments(Collection<String> reservationIds)
@@ -1155,6 +1105,8 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     	}
     	put( appointment );
     }
+
+
 }
 
 
@@ -1177,11 +1129,6 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
     		count++;
         }
         return count;
-    }
-
-    public void update( String id) throws SQLException
-    {
-        // FIXME
     }
 
     @Override
@@ -1214,29 +1161,10 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
  }
 
 class AppointmentExceptionStorage extends EntityStorage<Appointment> implements SubStorage<Appointment> {
-    private final String updateSql;
     public AppointmentExceptionStorage(RaplaXMLContext context) throws RaplaException {
         super(context,"APPOINTMENT_EXCEPTION",new String [] {"APPOINTMENT_ID VARCHAR(255) NOT NULL KEY","EXCEPTION_DATE DATETIME NOT NULL"});
-        updateSql = "SELECT * FROM APPOINTMENT_EXCEPTION WHERE APPOINTMENT_ID = ?";
     }
 
-    public void update( String reservationId) throws SQLException
-    {
-        try (final PreparedStatement stmt = con.prepareStatement(updateSql))
-        {
-            stmt.setString(1, reservationId);
-            final ResultSet result = stmt.executeQuery();
-            if (result == null)
-            {
-                return;
-            }
-            while (result.next())
-            {
-                load(result);
-            }
-        }
-    }
-    
     @Override
     protected int write(PreparedStatement stmt, Appointment entity) throws SQLException, RaplaException {
         Repeating repeating = entity.getRepeating();
@@ -1741,11 +1669,6 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
 class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
     public UserGroupStorage(RaplaXMLContext context) throws RaplaException {
         super(context,"RAPLA_USER_GROUP", new String [] {"USER_ID VARCHAR(255) NOT NULL KEY","CATEGORY_ID VARCHAR(255) NOT NULL"});
-    }
-    
-    public void update( String id) throws SQLException
-    {
-        // FIXME
     }
 
     @Override
