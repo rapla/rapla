@@ -62,11 +62,11 @@ import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
 abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
-    String insertSql;
-    String deleteSql;
-    String markDeleteSql;
-    String selectSql;
-    String deleteAllSql;
+    protected String insertSql;
+    protected String deleteSql;
+    protected String markDeleteSql;
+    protected String selectSql;
+    protected String deleteAllSql;
     private String containsSql;
     protected String loadAllUpdatesSql;
 	protected String selectUpdateSql;
@@ -77,29 +77,29 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected EntityStore entityStore;
     protected EntityStore deleteStore;
     private RaplaLocale raplaLocale;
-    
-    Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
+
+    protected Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
     protected Connection con;
-    int lastParameterIndex; /** first paramter is 1 */
+    private int lastParameterIndex; /** first paramter is 1 */
     protected final String tableName;
     protected final boolean hasLastChangedTimestamp;
 
     protected Logger logger;
-    String dbProductName = "";
+    private String dbProductName = "";
     protected Map<String,ColumnDef> columns = new LinkedHashMap<String,ColumnDef>();
 
-    Calendar datetimeCal;
+    private Calendar datetimeCal;
 	protected String idName;
 
 	protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
         this.context = context;
         if ( context.has( EntityStore.class))
         {
-            this.entityStore =  context.lookup( EntityStore.class); 
+            this.entityStore =  context.lookup( EntityStore.class);
         }
         if ( context.has( LocalCache.class))
         {
-            this.cache = context.lookup( LocalCache.class); 
+            this.cache = context.lookup( LocalCache.class);
         }
         // FIXME
         deleteStore = new EntityStore(new LocalCache(new HashMap<String, FunctionFactory>(), new PermissionController(new HashSet<PermissionExtension>())), getSuperCategory());
@@ -159,10 +159,10 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     {// default implementation is to ask the sub stores to update
 
     }*/
-    
+
 	protected Date getDate( ResultSet rset,int column) throws SQLException
 	{
-		
+
 		java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
 		if (rset.wasNull() || timestamp == null)
 		{
@@ -174,7 +174,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		Date returned = new Date(time + offset);
 		return returned;
 	}
-	
+
 	// Always use gmt for storing timestamps
 	protected Date getTimestampOrNow(ResultSet rset, int column) throws SQLException {
 	    Date currentTimestamp = getCurrentTimestamp();
@@ -197,6 +197,28 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
         return currentTimestamp;
 	}
+
+    protected Date getTimestamp(ResultSet rset, int column) throws SQLException {
+        Date currentTimestamp = getCurrentTimestamp();
+        java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
+        if (rset.wasNull() || timestamp == null)
+        {
+            return null;
+        }
+        Date date = new Date( timestamp.getTime());
+        if ( date != null)
+        {
+            if ( date.after( currentTimestamp))
+            {
+                getLogger().error("Timestamp in table " + tableName + " in the future. Something went wrong");
+            }
+            else
+            {
+                return date;
+            }
+        }
+        return null;
+    }
 
 	public Date getCurrentTimestamp() {
 		long time = System.currentTimeMillis();
@@ -222,9 +244,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	protected TimeZone getSystemTimeZone() {
 		return TimeZone.getDefault();
 	}
-	
+
 	protected void setDate(PreparedStatement stmt,int column, Date time) throws SQLException {
-    	if ( time != null) 
+    	if ( time != null)
         {
     		TimeZone systemTimeZone = getSystemTimeZone();
     		// same as TimeZoneConverterImpl.fromRaplaTime
@@ -237,9 +259,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             stmt.setObject(column, null, Types.TIMESTAMP);
         }
 	}
-	
+
 	protected void setTimestamp(PreparedStatement stmt,int column, Date time) throws SQLException {
-    	if ( time != null) 
+    	if ( time != null)
         {
     		//TimeZone systemTimeZone = getSystemTimeZone();
     		// same as TimeZoneConverterImpl.fromRaplaTime
@@ -254,7 +276,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             stmt.setObject(column, null, Types.TIMESTAMP);
         }
 	}
-		
+
 	protected void setId(PreparedStatement stmt, int column, Entity<?> entity) throws SQLException {
 	    setId( stmt, column, entity != null ? entity.getId() : null);
 	}
@@ -283,27 +305,57 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
 		return id;
 	}
-    
-    protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
+
+	protected static class ResolvedEntity<S extends Entity>
+	{
+		S entity;
+		private  boolean deleted;
+		private  boolean resolved;
+
+		public boolean isDeleted()
+		{
+			return deleted;
+		}
+
+		public boolean isResolved()
+		{
+			return resolved;
+		}
+
+        public S getEntity()
+        {
+            return entity;
+        }
+    }
+    protected <S extends Entity> ResolvedEntity<S> resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException
     {
-        String id = rset.getString( column );
+		ResolvedEntity<S> result = new ResolvedEntity<S>();
+		String id = rset.getString( column );
         if  (rset.wasNull() || id == null)
         {
-            return null;
+            return result;
         }
         try {
-            Entity resolved = entityStore.resolve(id, class1);
-            @SuppressWarnings("unchecked")
-            S casted = (S) resolved;
-            return casted;
+		    S resolved = deleteStore.tryResolve(id, class1);
+			if ( resolved != null)
+			{
+				result.deleted = true;
+			}
+            else
+            {
+                resolved = entityStore.resolve(id, class1);
+            }
+            result.resolved = resolved != null;
+			result.entity = resolved;
+			return result;
         }
         catch ( EntityNotFoundException ex)
         {
-            getLogger().warn("Could not find "  + class1.getName() +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
-            return null;
+			getLogger().warn("Could not find "  + class1.getName() +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
+            return result;
         }
     }
-	 
+
     protected void setInt(PreparedStatement stmt, int column, Integer number) throws SQLException {
     	if ( number != null) {
 		    stmt.setInt( column, number.intValue() );
@@ -311,7 +363,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			stmt.setObject(column, null, Types.INTEGER);
 		}
 	}
-	    
+
     protected String getString(ResultSet rset,int index, String defaultString) throws SQLException {
 		String value = rset.getString(index);
 		if (rset.wasNull() || value == null)
@@ -337,8 +389,8 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
 	}
 
-    
-    
+
+
     protected void setString(PreparedStatement stmt, int column, String object) throws SQLException {
 		if ( object == null)
 		{
@@ -349,12 +401,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			stmt.setString( column, object);
 		}
 	}
-    
+
     protected Logger getLogger() {
         return logger;
     }
 
-    public List<String> getCreateSQL() 
+    public List<String> getCreateSQL()
     {
     	List<String> createSQL = new ArrayList<String>();
     	StringBuffer buf = new StringBuffer();
@@ -367,7 +419,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			if (first)
 			{
 				first = false;
-			} 
+			}
 			else
 			{
 				buf.append( ", ");
@@ -389,9 +441,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		createSQL.addAll( keyCreates);
 		return createSQL;
 	}
-    
+
     protected void createSQL(Collection<ColumnDef> entries) {
-    	
+
         idName = entries.iterator().next().getName();
         String table = tableName;
 		selectSql = "select " + getEntryList(entries) + " from " + table ;
@@ -410,7 +462,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	private String createKeySQL(String table, String colName) {
 		return "create index KEY_"+ table + "_" + colName + " on " + table + "(" + colName +")";
 	}
-    
+
     public void createOrUpdateIfNecessary( Map<String,TableDef> schema) throws SQLException, RaplaException
     {
     	String tablename = tableName;
@@ -449,7 +501,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     	String name = col.getName();
 		TableDef tableDef = schema.get(tableName);
 
-		if (tableDef.getColumn(name) == null) 
+		if (tableDef.getColumn(name) == null)
         {
             getLogger().warn("Patching Database for table " + tableName + " adding column "+ name);
             {
@@ -464,7 +516,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     			{
     				stmt.close();
     			}
-            	
+
             	con.commit();
             }
 			if ( col.isKey() && !col.isPrimary())
@@ -492,7 +544,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			subStorage.updateWithForeignId(foreignId);
 		}
 	}
-    
+
     protected String getDatabaseProductType(String type) {
         if ( type.equals("TEXT"))
         {
@@ -541,7 +593,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
 
 	protected void checkAndRename( Map<String, TableDef> schema, String oldColumnName,
-			String newColumnName) throws  SQLException 
+			String newColumnName) throws  SQLException
     {
 		String errorPrefix = "Can't rename " + oldColumnName + " " + newColumnName + " in table " + tableName;
 		TableDef tableDef = schema.get(tableName);
@@ -562,11 +614,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		getLogger().warn("Patching Database for table " + tableName + " renaming column "+ oldColumnName + " to " + newColumnName);
         String sql = "ALTER TABLE " + tableName + " RENAME COLUMN " + oldColumnName + " TO " + newColumnName;
 		if ( isMysql())
-        {	
+        {
 			sql =   "ALTER TABLE " + tableName + " CHANGE COLUMN " +oldColumnName + " ";
 			String columnSql = getColumnCreateStatemet(newCol, false, true);
 			sql+= columnSql;
-            	
+
         }
 		Statement stmt = con.createStatement();
 		try
@@ -581,7 +633,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         tableDef.removeColumn( oldColumnName);
         tableDef.addColumn( newCol);
 	}
-	
+
 	protected void checkAndRetype(Map<String, TableDef> schema, String columnName) throws RaplaException
 	{
 		TableDef tableDef = schema.get(tableName);
@@ -599,7 +651,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		{
 			return;
 		}
-		
+
 		String columnSql = getColumnCreateStatemet(newDef, false, true);
 		getLogger().warn("Column "+ tableName + "."+ columnName + " change from '" + stmt1+  "' to new type '" + columnSql + "'");
 		getLogger().warn("You should patch the database accordingly.");
@@ -608,7 +660,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	//	sql+= columnSql;
     //    con.createStatement().execute(sql);
 	}
-	
+
 	protected String getColumnCreateStatemet(ColumnDef col, boolean includePrimaryKey, boolean includeDefaults) {
 		StringBuffer buf = new StringBuffer();
 		String colName = col.getName();
@@ -655,7 +707,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         boolean result = dbProductName.toLowerCase().indexOf("microsoft") >=0;
         return result;
     }
-	
+
 	protected boolean isHsqldb() {
 		boolean result = dbProductName.indexOf("hsql") >=0;
 		return result;
@@ -672,7 +724,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	}
 
 
-    protected void checkRenameTable( Map<String, TableDef> tableMap, String oldTableName) throws SQLException 
+    protected void checkRenameTable( Map<String, TableDef> tableMap, String oldTableName) throws SQLException
     {
         boolean isOldTableName = false;
 		if ( tableMap.get( oldTableName) != null)
@@ -689,61 +741,47 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	    {
 	    	getLogger().warn("Table " + tableName + " not found. Patching Database : Renaming " + oldTableName + " to "+ tableName);
 	    	String sql = "ALTER TABLE " + oldTableName + " RENAME TO " + tableName + "";
-	    	Statement stmt = con.createStatement();
-			try
+
+			try ( Statement stmt = con.createStatement())
 			{
 				stmt.execute( sql);
-			}
-			finally
-			{
-				stmt.close();
 			}
 			con.commit();
 			tableMap.put( tableName, tableMap.get( oldTableName));
 			tableMap.remove( oldTableName);
 	    }
 	}
-    
+
     protected void checkAndDrop(Map<String, TableDef> schema, String columnName) throws SQLException {
     	TableDef tableDef = schema.get(tableName);
-		if (tableDef.getColumn(columnName) != null) 
+		if (tableDef.getColumn(columnName) != null)
         {
 			String sql = "ALTER TABLE " + tableName + " DROP COLUMN " + columnName;
-		    Statement stmt = con.createStatement();
-			try
+			try ( Statement stmt = con.createStatement())
 			{
 				stmt.execute( sql);
-			}
-			finally
-			{
-				stmt.close();
 			}
 		}
 		con.commit();
 	}
-    
+
     @Override
     public void dropTable() throws SQLException
     {
         getLogger().info("Dropping table " + tableName);
         String sql = "DROP TABLE " + tableName ;
-        Statement stmt = con.createStatement();
-        try
+        try (Statement stmt = con.createStatement())
         {
             stmt.execute( sql);
-        }
-        finally
-        {
-            stmt.close();
         }
         con.commit();
     }
 
-    
+
     protected void addSubStorage(SubStorage<T> subStore) {
     	subStores.add(subStore);
     }
-    
+
     public Collection<SubStorage<T>> getSubStores() {
 		return subStores;
 	}
@@ -779,7 +817,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		}
 		return buf.toString();
     }
-    
+
     protected String getMarkerList(int length) {
 		StringBuffer buf = new StringBuffer();
 		for (int i=0;i<length; i++) {
@@ -805,24 +843,18 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     }
 
     public static void executeBatchedStatement(Connection con,String sql) throws SQLException {
-        Statement stmt = null;
-        try {
-		    stmt = con.createStatement();
+        try (Statement stmt= con.createStatement()){
 		    StringTokenizer tokenizer = new StringTokenizer(sql,";");
 		    while (tokenizer.hasMoreTokens())
 		        stmt.executeUpdate(tokenizer.nextToken());
-        } finally {
-            if (stmt!=null)
-                stmt.close();
         }
     }
 
     public boolean has(String id)
     {
-        PreparedStatement stmt = null;
-        try
+        try ( PreparedStatement stmt = con.prepareStatement(containsSql))
         {
-            stmt = con.prepareStatement(containsSql);
+
             stmt.setString(1, id);
             stmt.execute();
             final ResultSet resultSet = stmt.getResultSet();
@@ -830,52 +862,34 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
         catch(Exception e)
         {
-            
-        }
-        finally
-        {
-            if (stmt != null)
-            {
-                try
-                {
-                    stmt.close();
-                }
-                catch (SQLException e)
-                {
-                }
-            }
+
         }
         return false;
     }
 
 	public void loadAll() throws SQLException,RaplaException {
-	    Statement stmt = null;
-        ResultSet rset = null;
-        try {
-            stmt = con.createStatement();
-            rset = stmt.executeQuery(selectSql);
-            while (rset.next ()) {
-            	load(rset);
-            }
-        } finally {
-            if (rset != null)
-                rset.close();
-            if (stmt!=null)
-                stmt.close();
-        }
+
+        try (Statement stmt = con.createStatement())
+		{
+			try (ResultSet rset = stmt.executeQuery(selectSql))
+			{
+				while (rset.next())
+				{
+					load(rset);
+				}
+			}
+		}
         for (Storage storage: subStores) {
             storage.loadAll();
         }
     }
 
     public void insert(Iterable<T> entities) throws SQLException,RaplaException {
-        for (Storage<T> storage: subStores) 
+        for (Storage<T> storage: subStores)
         {
             storage.insert(entities);
         }
-        PreparedStatement stmt = null;
-        try {
-            stmt = con.prepareStatement(insertSql);
+        try (PreparedStatement stmt = con.prepareStatement(insertSql)){
             int count = 0;
             for ( T entity: entities)
             {
@@ -884,12 +898,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             if ( count > 0)
             {
                 stmt.executeBatch();
-            } 
+            }
         } catch (SQLException ex) {
             throw ex;
-        } finally {
-            if (stmt!=null)
-                stmt.close();
         }
     }
 
@@ -923,7 +934,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //        Collection<Entity>>  toInsert = new ArrayList<Entity>>();
 //        for (Entity entity:entities)
 //        {
-//            
+//
 //            if (cache.tryResolve( entity.getId())!= null) {
 //    		    toUpdate.add( entity );
 //    		} else {
@@ -944,7 +955,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         deleteEntities( entities, true );
         insert( entities );
     }
-	
+
     public void deleteEntities(Iterable<T> entities, boolean hard) throws SQLException, RaplaException {
         Set<String> ids = new HashSet<String>();
         for ( T entity: entities)
@@ -1010,7 +1021,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             deleteIds(ids);
         }
     }
-    
+
     protected void deleteFromSubStores(Set<String> ids) throws SQLException
     {
         for (SubStorage<T> storage : subStores)
@@ -1070,7 +1081,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             throw new RaplaException( e);
         }
     }
-    
+
     protected <S> S lookup( Class<S> role) throws RaplaException {
         try {
             return context.lookup( role);
@@ -1079,17 +1090,24 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
 
     }
-    protected void put( Entity entity)
+
+    protected void put( Entity entity, boolean deleted)
     {
-       entityStore.put( entity);
-        
+		if ( deleted)
+		{
+			deleteStore.put( entity );
+		}
+		else
+		{
+			entityStore.put(entity);
+		}
     }
-    
+
     protected EntityResolver getResolver()
     {
         return entityStore;
     }
-    
+
     protected void putPassword( String userId, String password )
     {
         entityStore.putPassword( userId, password);
@@ -1108,7 +1126,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         }
         return entityStore.getSuperCategory();
     }
-    
+
     protected void setText(PreparedStatement stmt, int columIndex, String xml)
 			throws SQLException {
     	if (  isHsqldb() || isH2())
@@ -1129,7 +1147,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 			stmt.setString( columIndex, xml);
 		}
 	}
-    
+
 	protected String getText(ResultSet rset, int columnIndex)
 			throws SQLException {
 		String xml = null;

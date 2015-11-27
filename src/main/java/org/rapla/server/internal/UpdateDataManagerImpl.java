@@ -20,6 +20,7 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.PermissionContainer.Util;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -134,8 +135,8 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
         {
             for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
             {
-                Entity removeEntity = (Entity) remove.getCurrent();
-                saveEvent.putRemove(removeEntity);
+                String removeEntity =  remove.getCurrentId();
+                saveEvent.putRemoveId(removeEntity);
             }
         }
         return saveEvent;
@@ -145,13 +146,62 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
     private Map<String, Long> needResourceRefresh = new ConcurrentHashMap<String, Long>();
     private SortedMap<Long, TimeInterval> invalidateMap = Collections.synchronizedSortedMap(new TreeMap<Long, TimeInterval>());
 
+
+    public TimeInterval calulateInvalidateInterval(UpdateResult result) {
+        TimeInterval currentInterval = null;
+        {
+            Collection<Change> operations = result.getOperations(Change.class);
+            for (Change change:operations)
+            {
+                currentInterval = expandInterval( change.getNew(), currentInterval);
+                currentInterval = expandInterval( change.getOld(), currentInterval);
+            }
+        }
+        {
+            Collection<UpdateResult.Add> operations = result.getOperations(UpdateResult.Add.class);
+            for (UpdateResult.Add change:operations)
+            {
+                currentInterval = expandInterval( change.getNew(), currentInterval);
+            }
+        }
+        {
+            Collection<Remove> operations = result.getOperations(Remove.class);
+            for (Remove change:operations)
+            {
+                currentInterval = expandInterval( change.getCurrent(), currentInterval);
+            }
+        }
+        return currentInterval;
+    }
+
+    private TimeInterval expandInterval(RaplaObject obj,
+            TimeInterval currentInterval)
+    {
+        RaplaType type = obj.getRaplaType();
+        if ( type == Reservation.TYPE)
+        {
+            for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
+            {
+                currentInterval = invalidateInterval( currentInterval, app);
+            }
+        }
+        return currentInterval;
+    }
+
+    private TimeInterval invalidateInterval(TimeInterval oldInterval,Appointment appointment)
+    {
+        Date start = appointment.getStart();
+        Date end = appointment.getMaxEnd();
+        TimeInterval interval = new TimeInterval(start, end).union( oldInterval);
+        return interval;
+    }
     // Implementation of StorageUpdateListener
     // 
     public void objectsUpdated(UpdateResult evt)
     {
         long repositoryVersion = operator.getCurrentTimestamp().getTime();
         // notify the client for changes
-        TimeInterval invalidateInterval = evt.calulateInvalidateInterval();
+        TimeInterval invalidateInterval = calulateInvalidateInterval(evt);
 
         if (invalidateInterval != null)
         {
@@ -213,19 +263,21 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
         {
             for (Remove operation : evt.getOperations(UpdateResult.Remove.class))
             {
-                Entity obj = operation.getCurrent();
-                if (obj instanceof User)
+                String id = operation.getCurrentId();
+                RaplaType type = operation.getRaplaType();
+                if (type == User.TYPE)
                 {
-                    String userId = obj.getId();
+                    String userId = id;
                     needConflictRefresh.remove(userId);
                     needResourceRefresh.remove(userId);
                     //addAllUsersToResourceRefresh = true;
                 }
+                Entity obj = operation.getCurrent();
                 if (!isTransferedToClient(obj))
                 {
                     continue;
                 }
-                if (obj instanceof DynamicType)
+                if (type == DynamicType.TYPE)
                 {
                     addAllUsersToResourceRefresh = true;
                     addAllUsersToConflictRefresh = true;

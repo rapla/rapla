@@ -28,6 +28,7 @@ import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -39,8 +40,8 @@ import org.rapla.storage.StorageOperator;
 
 class PeriodModelImpl implements PeriodModel,ModificationListener
 {
-    TreeSet<Period> m_periods = new TreeSet<Period>(new Comparator<Period>() {
-            public int compare(Period o1, Period o2) {
+    TreeSet<PeriodImpl> m_periods = new TreeSet<PeriodImpl>(new Comparator<PeriodImpl>() {
+            public int compare(PeriodImpl o1, PeriodImpl o2) {
 				int compareTo = o1.compareTo(o2);
 				return -compareTo;
             }
@@ -65,7 +66,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         	String name = (String)classification.getValue("name");
 			Date start = (Date) classification.getValue("start");
 			Date end = (Date) classification.getValue("end");
-			PeriodImpl period = new PeriodImpl(name,start,end);
+			PeriodImpl period = new PeriodImpl(name,start,end, alloc.getId());
         	m_periods.add(period);
         }
     }
@@ -87,16 +88,28 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 			}
 		}
 		
-		for (Entity changed:evt.getRemoved())
+		for (EntityReferencer.ReferenceInfo removed:evt.getRemovedReferences())
 		{
-			if ( isPeriod( changed))
+			if ( containsPeriodId(removed.getId()))
 			{
 				return true;
 			}
 		}
 		return false;
 	}
-    
+
+    private boolean containsPeriodId(String id) {
+        for (PeriodImpl period:m_periods)
+        {
+            if ( period.getId().equals( id))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     private boolean isPeriod(Entity entity) {
     	if  ( entity.getRaplaType() != Allocatable.TYPE)
     	{
@@ -124,8 +137,8 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     public Period getPeriodFor(Date date) {
         if (date == null)
             return null;
-        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date);
-        Iterator<Period> it = m_periods.tailSet(comparePeriod).iterator();
+        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date, "DUMMY");
+        Iterator<PeriodImpl> it = m_periods.tailSet(comparePeriod).iterator();
         while (it.hasNext()) {
             Period period = it.next();
             if (period.contains(date)) {
@@ -158,11 +171,11 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         return getNearestPeriodForEndDate( getPeriodsFor( date ), date);
     }
 
-    static private Period getNearestPeriodForStartDate(Collection<Period> periodList, Date date, Date endDate) {
+    static private Period getNearestPeriodForStartDate(Collection<? extends Period> periodList, Date date, Date endDate) {
         Period result = null;
         long min_from_start=Long.MAX_VALUE, min_from_end=0;
         long from_start, from_end=0;
-        Iterator<Period> it = periodList.iterator();
+        Iterator<? extends Period> it = periodList.iterator();
         while (it.hasNext()) 
         {
             Period period = it.next();
@@ -222,9 +235,9 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         if (date == null)
             return list;
 
-        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date);
-        SortedSet<Period> set = m_periods.tailSet(comparePeriod);
-        Iterator<Period> it = set.iterator();
+        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date,"DUMMY");
+        SortedSet<PeriodImpl> set = m_periods.tailSet(comparePeriod);
+        Iterator<PeriodImpl> it = set.iterator();
         while (it.hasNext()) {
             Period period = it.next();
             //System.out.println(m_periods[i].getStart() + " - " + m_periods[i].getEnd());
@@ -247,7 +260,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 
     public Object getElementAt(int index) {
         Assert.notNull(m_periods,"Componenet not setup!");
-        Iterator<Period> it = m_periods.iterator();
+        Iterator<PeriodImpl> it = m_periods.iterator();
         for (int i=0;it.hasNext();i++) {
             Object obj = it.next();
             if (i == index)

@@ -30,6 +30,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import microsoft.exchange.webservices.data.core.enumeration.property.ConflictType;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
@@ -57,6 +58,7 @@ import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -668,19 +670,16 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			updatedEntities.add(entity);	
 		}
 		Collection<String> removedIds = evt.getRemoveIds();
-		Collection<Entity> toRemove = new HashSet<Entity>();
+		Collection<ReferenceInfo> toRemove = new HashSet<ReferenceInfo>();
 		for (String id: removedIds) {
             Entity persistantVersion = cache.tryResolve(id );
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
-			    ((RefEntity)persistantVersion).setReadOnly();
-			    toRemove.add( persistantVersion);
+			    toRemove.add( new ReferenceInfo(id, persistantVersion.getRaplaType().getTypeClass()));
 			}
 			else if ( ConflictImpl.isConflictId( id ))
 			{
-			    Date today = getCurrentTimestamp();
-			    ConflictImpl conflict = new ConflictImpl( id, today);
-			    toRemove.add( conflict );
+			    toRemove.add( new ReferenceInfo(id, Conflict.class) );
 			}
 		}
 //		Collection<ConflictImpl> removedConflicts = evt.getRemoveConflicts();
@@ -704,7 +703,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected UpdateResult createUpdateResult(
 			Map<Entity,Entity> oldEntities,
 			Collection<Entity>updatedEntities,
-			Collection<Entity>toRemove, 
+			Collection<ReferenceInfo>toRemove,
 			TimeInterval invalidateInterval,
 			String userId) 
 					throws EntityNotFoundException {
@@ -729,9 +728,11 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			}
 		}
 		
-		for (Entity entity:toRemove)
+		for (ReferenceInfo entity:toRemove)
 		{
-			result.addOperation(new UpdateResult.Remove(entity));
+			final String id = entity.getId();
+			final RaplaType<? extends Entity> raplaType = RaplaType.get(entity.getType());
+			result.addOperation(new UpdateResult.Remove(id, raplaType));
 		}
 
 		return result;

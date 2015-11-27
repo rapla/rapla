@@ -115,7 +115,7 @@ class RaplaSQL {
     		storages.add( store);
     		@SuppressWarnings("unchecked")
 			Collection<Storage<?>> subStores = store.getSubStores();
-			storages.addAll( subStores);
+			storages.addAll(subStores);
     	}
 		return storages;
 	}
@@ -179,7 +179,7 @@ class RaplaSQL {
     	if ( Attribute.TYPE ==  entity.getRaplaType() )
 			return;
 		for (RaplaTypeStorage storage:stores) {
-		    if (storage.canStore(entity)) {
+		    if (storage.canDelete(entity)) {
 		    	storage.setConnection(con);
 		    	try
 		    	{
@@ -286,13 +286,7 @@ class RaplaSQL {
         return updateResult;
     }
 
-    public void storeDeleted(Connection connection, List<Entity> deletedEntities) throws RaplaException, SQLException
-    {
-        if(deletedEntities == null || deletedEntities.isEmpty())
-        {
-            return;
-        }
-    }
+
 }
 
 abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
@@ -304,6 +298,10 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	}
     boolean canStore(Entity entity) {
     	return entity.getRaplaType() == raplaType;
+    }
+
+    boolean canDelete(Entity entity) {
+        return canStore(entity);
     }
     
     abstract void insertAll() throws SQLException,RaplaException;
@@ -583,7 +581,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         final Date lastChanged = getTimestampOrNow(rset, 6);
         category.setLastChanged( lastChanged);
 		category.setId( id);
-        put( category );
+        final Date deleteTimestamp = getTimestamp(rset, 7);
+        put( category ,deleteTimestamp != null);
 
         orderMap.put( category, order);
         // parentId can also be null
@@ -640,7 +639,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage<Allocatable>( context, "RESOURCE",allocatableMap);
         addSubStorage(resourceAttributeStorage);
-        addSubStorage(permissionStorage );
+        addSubStorage(permissionStorage);
     }
 
     @Override
@@ -720,7 +719,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
         permissionStorage = new PermissionStorage<Reservation>( context,"EVENT", reservationMap);
-        addSubStorage(permissionStorage );
+        addSubStorage(permissionStorage);
     }
 
     @Override
@@ -789,43 +788,50 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     @Override
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
     	final Date createDate = getTimestampOrNow(rset,4);
-        final Date lastChanged = getTimestampOrNow(rset,5);
+        final Date lastChanged = getTimestampOrNow(rset, 5);
+        Date deleteTimestamp = getTimestamp(rset,7);
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
     	String id = readId(rset,1,Reservation.class);
 		event.setId( id);
-		event.setResolver( entityStore);
-		String typeKey = getString(rset,2,null);
-		DynamicType type = null;
-    	if ( typeKey != null)
-    	{
-    		type = getDynamicType(typeKey );
-    	}
-    	if ( type == null)
+        if ( deleteTimestamp == null)
         {
-            getLogger().error("Reservation with id " + id + " has an unknown type " + typeKey + ". Try ignoring it");
-            return;
+            event.setResolver(entityStore);
+            String typeKey = getString(rset, 2, null);
+            DynamicType type = null;
+            if (typeKey != null)
+            {
+                type = getDynamicType(typeKey);
+            }
+            if (type == null)
+            {
+                getLogger().error("Reservation with id " + id + " has an unknown type " + typeKey + ". Try ignoring it");
+                return;
+            }
+            {
+                ResolvedEntity<User> user = resolveFromId(rset, 3, User.class);
+                if (!user.isResolved() || user.isDeleted())
+                {
+                    return;
+                }
+                User entity = user.getEntity();
+                event.setOwner(entity);
+            }
+            {
+                ResolvedEntity<User> user = resolveFromId(rset, 6, User.class);
+                User entity = user.getEntity();
+                if ( user.isDeleted())
+                {
+                    entity = null;
+                }
+                event.setLastChangedBy( entity );
+            }
+
+            Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
+            event.setClassification( classification );
+            classificationMap.put( id, classification );
+            reservationMap.put(id, event);
         }
-    	User user = resolveFromId(rset, 3, User.class);
-    	if ( user == null )
-        {
-            return;
-        }
-        
-    	event.setOwner( user );
-        event.setLastChangedBy( resolveFromId(rset, 6, User.class) );
-        java.sql.Timestamp deleteTimestamp = rset.getTimestamp( 7, datetimeCal);
-    	if(deleteTimestamp != null)
-    	{
-    	    deleteStore.put(event);
-    	}
-    	else
-    	{
-    	    Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
-    	    event.setClassification( classification );
-    	    classificationMap.put( id, classification );
-    	    reservationMap.put( id, event );
-    	    put( event );
-    	}
+        put(event, deleteTimestamp != null);
     }
 
     @Override
@@ -837,7 +843,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     @Override protected void deleteFromSubStores(Set<String> ids) throws SQLException
     {
         super.deleteFromSubStores(ids);
-        appointmentStorage.deleteAppointments( ids);
+        appointmentStorage.deleteAppointments(ids);
     }
 
 }
@@ -975,9 +981,9 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
             int numericLevel = s.getAccessLevel().getNumericLevel();
             setInt(stmt,4, numericLevel);
 			setInt( stmt,5, s.getMinAdvance());
-			setInt( stmt,6, s.getMaxAdvance());
-			setDate(stmt,7, s.getStart());
-			setDate(stmt,8, s.getEnd());
+			setInt(stmt, 6, s.getMaxAdvance());
+			setDate(stmt, 7, s.getStart());
+			setDate(stmt, 8, s.getEnd());
 			stmt.addBatch();
 			count ++;
         }
@@ -1102,8 +1108,8 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     @Override
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
         String id = readId(rset, 1, Appointment.class);
-        Reservation event = resolveFromId(rset, 2, Reservation.class);
-        if ( event == null)
+        ResolvedEntity<Reservation> resolved = resolveFromId(rset, 2, Reservation.class);
+        if ( !resolved.isResolved())
         {
         	return;
         }
@@ -1111,9 +1117,9 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
         Date end = getDate(rset,4);
         boolean wholeDayAppointment = start.getTime() == DateTools.cutDate( start.getTime()) && end.getTime() == DateTools.cutDate( end.getTime());
     	AppointmentImpl appointment = new AppointmentImpl(start, end);
-    	appointment.setId( id);
-    	appointment.setWholeDays( wholeDayAppointment);
-    	event.addAppointment( appointment );
+    	appointment.setId(id);
+    	appointment.setWholeDays(wholeDayAppointment);
+    	resolved.getEntity().addAppointment(appointment);
     	String repeatingType = getString( rset,5, null);
     	if ( repeatingType != null ) {
     	    appointment.setRepeatingEnabled( true );
@@ -1135,7 +1141,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     	    if ( interval != null)
     	        repeating.setInterval( interval);
     	}
-    	put( appointment );
+        put(appointment,resolved.isDeleted());
     }
 
 
@@ -1146,7 +1152,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
 
     public AllocationStorage(RaplaXMLContext context) throws RaplaException
     {
-        super(context,"ALLOCATION",new String [] {"APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER"});
+        super(context, "ALLOCATION", new String[] { "APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER" });
     }
     
     @Override
@@ -1165,7 +1171,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	Appointment appointment =resolveFromId(rset,1, Appointment.class);
+    	Appointment appointment =resolveFromId(rset, 1, Appointment.class);
     	if ( appointment == null)
     	{
     		return;
@@ -1206,7 +1212,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
         }
 	    for (Date exception: repeating.getExceptions()) {
 	        setId( stmt, 1, entity );
-	        setDate( stmt,2, exception);
+	        setDate(stmt, 2, exception);
 	        stmt.addBatch();
 	        count++;
         }
@@ -1223,7 +1229,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
         Repeating repeating = appointment.getRepeating();
         if ( repeating != null) {
             Date date = getDate(rset,2 );
-            repeating.addException( date );
+            repeating.addException(date);
         }
     }
 
@@ -1417,7 +1423,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 				preferences.add( userPrefs);
 			}
 		}
-		insert( preferences);
+		insert(preferences);
 	}
 
     @Override
@@ -1439,7 +1445,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 
     private void insertEntry(PreparedStatement stmt, String userId, String role, Object entry, Date lastChanged) throws SQLException, RaplaException {
         setString( stmt, 1, userId);
-        setString( stmt,2, role);
+        setString(stmt, 2, role);
         String xml;
         String entryString;
         if ( entry instanceof String) {
@@ -1450,7 +1456,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             entryString = null;
         	xml = getXML( (RaplaObject)entry);
         }
-        setString( stmt,3, entryString);
+        setString(stmt, 3, entryString);
         setText(stmt, 4, xml);
         setTimestamp( stmt,5, lastChanged);
         setTimestamp(stmt, 6, null);
@@ -1562,7 +1568,7 @@ class UserStorage extends RaplaTypeStorage<User> {
         super( context,User.TYPE, "RAPLA_USER",
 	    new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","USERNAME VARCHAR(255) NOT NULL","PASSWORD VARCHAR(255)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY"});
         groupStorage = new UserGroupStorage( context );
-        addSubStorage( groupStorage );
+        addSubStorage(groupStorage);
     }
     
     @Override
@@ -1574,7 +1580,7 @@ class UserStorage extends RaplaTypeStorage<User> {
 
     @Override
 	void insertAll() throws SQLException, RaplaException {
-		insert( cache.getUsers());
+		insert(cache.getUsers());
 	}
 
     @Override
@@ -1633,8 +1639,9 @@ class UserStorage extends RaplaTypeStorage<User> {
 class ConflictStorage extends RaplaTypeStorage<Conflict> {
     
     public ConflictStorage(RaplaXMLContext context) throws RaplaException {
-        super( context,Conflict.TYPE, "RAPLA_CONFLICT",
-        new String [] {"RESOURCE_ID VARCHAR(255) NOT NULL","APPOINTMENT1 VARCHAR(255) NOT NULL","APPOINTMENT2 VARCHAR(255) NOT NULL","APP1ENABLED INTEGER NOT NULL","APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY"});
+        super(context, Conflict.TYPE, "RAPLA_CONFLICT",
+                new String[] { "RESOURCE_ID VARCHAR(255) NOT NULL", "APPOINTMENT1 VARCHAR(255) NOT NULL", "APPOINTMENT2 VARCHAR(255) NOT NULL",
+                        "APP1ENABLED INTEGER NOT NULL", "APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY" });
         this.deleteSql = "update " + tableName + " set DELETED = ? where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
     }
     
@@ -1647,7 +1654,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
 
     @Override
     void insertAll() throws SQLException, RaplaException {
-        insert( cache.getDisabledConflicts());
+        insert(cache.getDisabledConflicts());
     }
 
     public void deleteEntities(Iterable<Conflict> entities) throws SQLException, RaplaException {
@@ -1689,9 +1696,9 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         setId(stmt, 2, conflict.getAppointment1());
         setId(stmt, 3, conflict.getAppointment2());
         boolean appointment1Enabled = conflict.isAppointment1Enabled();
-        setInt(stmt, 4, appointment1Enabled ? 1:0);
+        setInt(stmt, 4, appointment1Enabled ? 1 : 0);
         boolean appointment2Enabled = conflict.isAppointment2Enabled();
-        setInt(stmt, 5, appointment2Enabled ? 1:0);
+        setInt(stmt, 5, appointment2Enabled ? 1 : 0);
         setTimestamp(stmt, 6, getCurrentTimestamp() );
         setTimestamp(stmt, 7, null );
         stmt.addBatch();
@@ -1725,7 +1732,7 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
 
     @Override
     protected int write(PreparedStatement stmt, User entity) throws SQLException, RaplaException {
-        setId( stmt,1, entity);
+        setId(stmt, 1, entity);
         int count = 0;
         for (Category category:entity.getGroupList()) {
             setId(stmt, 2, category);
@@ -1737,7 +1744,7 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        User user = resolveFromId(rset, 1,User.class);
+        User user = resolveFromId(rset, 1, User.class);
         if ( user == null)
         {
         	return;
@@ -1747,7 +1754,7 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
         {
         	return;
         }
-        user.addGroup( category);
+        user.addGroup(category);
     }
 }
 
@@ -1781,10 +1788,26 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         }
     }
 
-    @Override
-    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException
+    @Override boolean canDelete(Entity entity)
     {
-        // do nothing as should not happen
+        return true;
+    }
+
+    @Override boolean canStore(Entity entity)
+    {
+        return false;
+    }
+
+    @Override
+    public void deleteEntities(Iterable<T> entities,boolean hard) throws SQLException, RaplaException
+    {
+        try (PreparedStatement stmt = con.prepareStatement(insertSql))
+        {
+            for (T entity : entities)
+            {
+                write(stmt, entity);
+            }
+        }
     }
 
     @Override

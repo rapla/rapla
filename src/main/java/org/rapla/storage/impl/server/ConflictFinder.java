@@ -478,8 +478,6 @@ class ConflictFinder {
 	/**
 	 * Determines all conflicts which occur after a given start date.
 	 * if user is passed then only returns conflicts the user can modify
-	 * 
-	 * @param allocatables 
 	 */
 	public Collection<Conflict> getConflicts( User user) 
 	{
@@ -616,7 +614,7 @@ class ConflictFinder {
 				if  ( isRemoved )
 				{
 				    cache.fillConflictDisableInformation( evt.getUser(), conflict);
-					evt.addOperation( new UpdateResult.Remove(conflict));
+					evt.addOperation( new UpdateResult.Remove(conflict.getId(), Conflict.TYPE));
 				}
 			}
 			for ( Conflict conflict: conflictListAfter)
@@ -731,7 +729,7 @@ class ConflictFinder {
 				{
 					it.remove();
 					count++;
-					result.addOperation( new UpdateResult.Remove(conflict));
+					result.addOperation( new UpdateResult.Remove(conflict.getId(),Conflict.TYPE));
 				}
 			}
 		}

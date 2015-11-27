@@ -314,12 +314,12 @@ public class SynchronisationManager implements ModificationListener {
         
         for (UpdateOperation operation: evt.getOperations())
 		{
-			Entity<?> current = operation.getCurrent();
-			final RaplaType<?> raplaType = current.getRaplaType();
+			final RaplaType<?> raplaType = operation.getRaplaType();
             if ( raplaType ==  Reservation.TYPE )
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{
+					Entity<?> current = operation.getCurrent();
 					Reservation oldReservation = (Reservation) current;
 					for ( Appointment app: oldReservation.getAppointments() )
 					{
@@ -378,21 +378,32 @@ public class SynchronisationManager implements ModificationListener {
 			// the exported calendars could have changed
 			else if ( raplaType ==  Preferences.TYPE )
 			{
-				Preferences preferences = (Preferences)operation.getCurrent();
-				if ( !(operation instanceof UpdateResult.Remove))
+				final Preferences preferences;
+				if ( operation instanceof UpdateResult.Add)
 				{
-				    // CHANGE inspect if exports have changed 
+					preferences = (Preferences)((UpdateResult.Add) operation).getCurrent();
+				}
+				else if ( operation instanceof UpdateResult.Add)
+				{
+					preferences = (Preferences)((UpdateResult.Change) operation).getCurrent();
+				}
+				else
+				{
+					preferences = null;
+				}
+				if ( preferences != null)
+				{
 					User owner = preferences.getOwner();
-					if ( owner != null)
+					if (owner != null)
 					{
-						Collection<SynchronizationTask> result =  updateCalendarMap(owner );
+						Collection<SynchronizationTask> result = updateCalendarMap(owner);
 						tasks.addAll(result);
 					}
 				}
 			}
 			else if ( raplaType ==  User.TYPE )
 			{
-                String userId = current.getId();
+				String userId = operation.getCurrentId();
                 if (operation instanceof UpdateResult.Remove)
                 {
                     Lock lock = writeLock();
@@ -420,7 +431,7 @@ public class SynchronisationManager implements ModificationListener {
 			{
                 if (operation instanceof UpdateResult.Change)
                 {
-                    Allocatable allocatable = (Allocatable) current;
+                    Allocatable allocatable = (Allocatable) ((UpdateResult.Change)operation).getCurrent();
                     final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                     if (!isInternal)
                     {

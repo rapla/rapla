@@ -24,14 +24,16 @@ public class PeriodImpl implements Period
     String name;
     Date start;
     Date end;
+    String id;
 
     public PeriodImpl() {
     }
 
-    public PeriodImpl(String name,Date start, Date end) {
+    public PeriodImpl(String name,Date start, Date end, String id) {
         this.name = name;
     	this.start = start;
         this.end = end;
+        this.id = id;
     }
 
     final public RaplaType<Period> getRaplaType() {return TYPE;}
@@ -74,6 +76,20 @@ public class PeriodImpl implements Period
         return getName() + " " + getStart() + " - " + getEnd();
     }
 
+    @Override public boolean equals(Object obj)
+    {
+        if (!( obj instanceof PeriodImpl))
+        {
+            return false;
+        }
+        return id.equals(((PeriodImpl)obj).id);
+    }
+
+    @Override public int hashCode()
+    {
+        return id.hashCode();
+    }
+
     /*
     public int compareTo_(Date date) {
         final Date end2 = getEnd();
@@ -112,7 +128,7 @@ public class PeriodImpl implements Period
 
     public PeriodImpl clone()
     {
-    	return new PeriodImpl(name, start, end);
+    	return new PeriodImpl(name, start, end, id);
     }
 
 	public void setStart(Date start) {
@@ -122,6 +138,11 @@ public class PeriodImpl implements Period
 	public void setEnd(Date end) {
 		this.end = end;
 	}
+
+    public String getId()
+    {
+        return id;
+    }
 }
 
 

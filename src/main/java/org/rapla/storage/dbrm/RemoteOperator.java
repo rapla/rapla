@@ -13,23 +13,6 @@
 
 package org.rapla.storage.dbrm;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -80,6 +63,22 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteStorage.BindingMap;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.locks.Lock;
 
 
 /** This operator can be used to modify and access data over the
@@ -1093,7 +1092,12 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 			}
 		}
 		TimeInterval invalidateInterval = new TimeInterval( null,null);
-		result  = createUpdateResult(oldEntityMap, updated, toRemove, invalidateInterval, userId);
+        Collection<EntityReferencer.ReferenceInfo> removeInfo = new ArrayList<EntityReferencer.ReferenceInfo>();
+        for ( Entity entity:toRemove)
+        {
+            removeInfo.add( new EntityReferencer.ReferenceInfo(entity.getId(), entity.getRaplaType().getTypeClass()));
+        }
+		result  = createUpdateResult(oldEntityMap, updated, removeInfo, invalidateInterval, userId);
 		fireStorageUpdated(result);
 	}
     

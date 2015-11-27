@@ -265,7 +265,7 @@ class PeriodStorage extends OldEntityStorage {
 		}
 		java.util.Date von  = getDate(rset,3);
 		java.util.Date bis  = getDate(rset,4);
-		PeriodImpl period = new PeriodImpl(name,von,bis);
+		PeriodImpl period = new PeriodImpl(name,von,bis,id);
 		result.put(id, period);
     }
     

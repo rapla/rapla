@@ -66,6 +66,7 @@ import org.rapla.entities.dynamictype.internal.ParsedText.Variable;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
@@ -401,12 +402,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 }
             }
         }
-        for ( RaplaObject obj:evt.getRemoved())
+        for ( EntityReferencer.ReferenceInfo obj:evt.getRemovedReferences())
         {
-            if ( obj.getRaplaType() == DynamicType.TYPE)
+            if ( obj.getType().equals(DynamicType.class))
             {
-                DynamicType type = (DynamicType) obj;
-                config.commitRemove( type);
+                config.commitRemoveId( obj.getId());
             }
         }
     }

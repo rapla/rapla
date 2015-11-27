@@ -53,6 +53,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -457,9 +458,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<Entity> removed = modificationEvent.getRemoved();
+                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final Entity next = removed.iterator().next();
+                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(existingReservaton.getId(), next.getId());
             }
             {// Delete of an resource
@@ -470,9 +471,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<Entity> removed = modificationEvent.getRemoved();
+                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final Entity next = removed.iterator().next();
+                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(allocatable.getId(), next.getId());
             }
             {// Delete of an user
@@ -482,9 +483,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<Entity> removed = modificationEvent.getRemoved();
+                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final Entity next = removed.iterator().next();
+                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(newUser.getId(), next.getId());
             }
             {// Delete of a category
@@ -494,9 +495,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<Entity> removed = modificationEvent.getRemoved();
+                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final Entity next = removed.iterator().next();
+                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(newCategory.getId(), next.getId());
             }
         }

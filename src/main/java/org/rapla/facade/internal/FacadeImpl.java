@@ -99,6 +99,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbrm.RemoteOperator;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -213,7 +214,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 * Update-module *
 	 ******************************/
 	public void refresh() throws RaplaException {
-		if (operator.supportsActiveMonitoring()) {
+		if (operator.supportsActiveMonitoring())
+		{
 			operator.refresh();
 		}
 	}
@@ -268,7 +270,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 
 	public void addAllocationChangedListener(AllocationChangeListener listener) {
-		if ( operator.supportsActiveMonitoring())
+		if ( operator instanceof RemoteOperator)
 		{
 			throw new IllegalStateException("You can't add an allocation listener to a client facade because reservation objects are not updated");
 		}

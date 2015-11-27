@@ -57,6 +57,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -293,8 +294,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         	Set<Conflict> changed = RaplaType.retainObjects(evt.getChanged(), conflicts);;
         	removeAll( conflicts,changed);
         	
-     		Set<Conflict> removed = RaplaType.retainObjects(evt.getRemoved(), conflicts);
-        	removeAll( conflicts,removed);
+        	removeConflict(conflicts, evt.getRemovedReferences());
         	
         	conflicts.addAll( changed);
         	for (RaplaObject obj:evt.getAddObjects())
@@ -312,7 +312,24 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         	treeSelection.repaint();
         }
     }
-    
+
+    private void removeConflict(Collection<Conflict> conflicts, Set<EntityReferencer.ReferenceInfo> removedReferences)
+    {
+        Set<String> removedIds = new LinkedHashSet<String>();
+        for (EntityReferencer.ReferenceInfo removedReference : removedReferences)
+        {
+            removedIds.add(removedReference.getId());
+        }
+        Iterator<Conflict> it = conflicts.iterator();
+        while ( it.hasNext())
+        {
+            if ( removedIds.contains(it.next().getId()))
+            {
+                it.remove();
+            }
+        }
+    }
+
     private void removeAll(Collection<Conflict> list,
 			Set<Conflict> changed) {
     	Iterator<Conflict> it = list.iterator();

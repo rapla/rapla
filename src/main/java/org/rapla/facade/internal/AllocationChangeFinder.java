@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
@@ -30,11 +23,17 @@ import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.UpdateResult;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /** Converts updateResults into AllocationChangeEvents */
 public class AllocationChangeFinder 
 {
     ArrayList<AllocationChangeEvent> changeList = new ArrayList<AllocationChangeEvent>();
-    UpdateResult updateResult;
     Logger logger;
 
     private AllocationChangeFinder(Logger logger, UpdateResult updateResult) {
@@ -46,7 +45,7 @@ public class AllocationChangeFinder
             added(  addOp.getNew(), user );
         }
         for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
-            removed( removeOp.getCurrent(), user );
+            removed( removeOp.getCurrentId(),removeOp.getRaplaType(), user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
             Entity old =  changeOp.getOld();
@@ -78,12 +77,21 @@ public class AllocationChangeFinder
         }
     }
 
-    private void removed(RaplaObject entity,User user) {
-        RaplaType raplaType = entity.getRaplaType();
+    private void removed(String id,RaplaType raplaType, User user) {
         if ( raplaType ==  Reservation.TYPE ) {
             if (getLogger().isDebugEnabled())
-                getLogger().debug("Reservation removed: " + entity);
+                getLogger().debug("Reservation removed: " + id);
             Reservation oldRes = (Reservation) entity;
+            for (Allocatable allocatable:allocatables)
+            {
+                for (Appointment appointment:appointments)
+                {
+                    if (!oldRes.hasAllocated(allocatable,appointment))
+                        continue;
+
+                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));
+                }
+            }
             addAppointmentRemove(
                                  user
                                  ,oldRes

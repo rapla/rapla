@@ -74,7 +74,8 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     JLabel label = new JLabel();
     JList  selectedReservations = new JList();
     BooleanField singleChooser;
-    PeriodImpl customPeriod = new PeriodImpl("", null, null);
+    static final String CustomPeriodId = "CUSTOMPERIOD";
+    PeriodImpl customPeriod = new PeriodImpl("", null, null,CustomPeriodId);
 
     JPanel customSourcePanel = new JPanel();
     JPanel customDestPanel = new JPanel();
@@ -109,11 +110,11 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
        
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
 		Date today = getQuery().today();
-        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today, today);
+        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today, today,CustomPeriodId);
         sourceModel.insertElementAt(customSource, 0);
         
 		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
-        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today, null);
+        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today, null,CustomPeriodId);
         {
 	        destModel.insertElementAt(customDest, 0);
         }

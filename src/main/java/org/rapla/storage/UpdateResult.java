@@ -12,6 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.facade.ModificationEvent;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,21 +32,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.facade.ModificationEvent;
-
 public class UpdateResult implements ModificationEvent
 {
     private User user;
     private List<UpdateOperation> operations = new ArrayList<UpdateOperation>();
-	Set<RaplaType> modified = new HashSet<RaplaType>(); 
+	Set<RaplaType> modified = new HashSet<RaplaType>();
+    Set<EntityReferencer.ReferenceInfo> removedReferences = new HashSet<EntityReferencer.ReferenceInfo>();
 	boolean switchTemplateMode = false;
 	
 	public UpdateResult(User user) {
@@ -46,20 +48,23 @@ public class UpdateResult implements ModificationEvent
         if ( operation == null)
             throw new IllegalStateException( "Operation can't be null" );
         operations.add(operation);
-        Entity current = operation.getCurrent();
-        if ( current != null)
+        RaplaType raplaType = operation.getRaplaType();
+        if ( raplaType != null)
         {
-        	RaplaType raplaType = current.getRaplaType();
         	modified.add( raplaType);
+        }
+        if(operation instanceof Remove){
+            // FIXME
         }
     }
     
     public User getUser() {
         return user;
     }
-    
-    public Set<Entity> getRemoved() {
-        return getObject( Remove.class);
+
+    @Override public Set<EntityReferencer.ReferenceInfo> getRemovedReferences()
+    {
+        return removedReferences;
     }
 
     public Set<Entity> getChangeObjects() {
@@ -99,7 +104,14 @@ public class UpdateResult implements ModificationEvent
             throw new IllegalStateException( "OperationClass can't be null" );
         Collection<? extends UpdateOperation> it= getOperations( operationClass);
         for (UpdateOperation next:it ) {
-            Entity current = next.getCurrent();
+            // FIXME
+            Entity current = null;
+            if(next instanceof Change)
+                current = ((Change)next).getCurrent();
+			set.add( current);
+            if(next instanceof Add)
+                current = ((Add)next).getCurrent();
+            if(current != null)
 			set.add( current);
         }
         return set;
@@ -121,23 +133,44 @@ public class UpdateResult implements ModificationEvent
         {
         	return "Add " + newObj;
         }
+
+        @Override public String getCurrentId()
+        {
+            return newObj.getId();
+        }
+
+        @Override public RaplaType getRaplaType()
+        {
+            return newObj.getRaplaType();
+        }
     }
 
     static public class Remove implements UpdateOperation {
-    	Entity currentObj; // the actual represantation of the object
-        public Remove(Entity currentObj) {
-            this.currentObj = currentObj;
+        private String currentId;
+        private RaplaType type;
+
+        public Remove(String currentId, RaplaType type) {
+            this.currentId = currentId;
+            this.type = type;
         }
-        public Entity getCurrent() {
-            return currentObj;
+
+        @Override public String getCurrentId()
+        {
+            return currentId;
         }
+
+        @Override public RaplaType getRaplaType()
+        {
+            return type;
+        }
+
         public String toString()
         {
-        	return "Remove " + currentObj;
+        	return "Remove " + currentId;
         }
 
     }
-    
+
     static public class Change implements UpdateOperation{
     	Entity newObj; // the object in the state when it was changed
     	Entity oldObj; // the object in the state before it was changed
@@ -154,7 +187,17 @@ public class UpdateResult implements ModificationEvent
         public Entity getOld() {
             return oldObj;
         }
-        
+
+        @Override public String getCurrentId()
+        {
+            return newObj.getId();
+        }
+
+        @Override public RaplaType getRaplaType()
+        {
+            return newObj.getRaplaType();
+        }
+
         public String toString()
         {
         	return "Change " + oldObj  + " to " + newObj;
@@ -175,61 +218,13 @@ public class UpdateResult implements ModificationEvent
 	}
 
 
-    public TimeInterval calulateInvalidateInterval() {
-		TimeInterval currentInterval = null;
-		{
-			Collection<Change> operations = getOperations( Change.class);
-			for (Change change:operations)
-			{
-				currentInterval = expandInterval( change.getNew(), currentInterval);
-				currentInterval = expandInterval( change.getOld(), currentInterval);
-			}
-		}
-		{
-			Collection<Add> operations = getOperations( Add.class);
-			for (Add change:operations)
-			{
-	    		currentInterval = expandInterval( change.getNew(), currentInterval);
-			}
-		}
-		{
-			Collection<Remove> operations = getOperations( Remove.class);
-			for (Remove change:operations)
-			{
-	    		currentInterval = expandInterval( change.getCurrent(), currentInterval);
-			}
-		}
-		return currentInterval;
-    }
-    
-	private TimeInterval expandInterval(RaplaObject obj,
-			TimeInterval currentInterval) 
-	{
-		RaplaType type = obj.getRaplaType();
-		if ( type == Reservation.TYPE)
-		{
-			for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
-			{
-				currentInterval = invalidateInterval( currentInterval, app);
-			}
-		}
-		return currentInterval;
-	}
-    
-	private TimeInterval invalidateInterval(TimeInterval oldInterval,Appointment appointment) 
-    {
-		Date start = appointment.getStart();
-		Date end = appointment.getMaxEnd();
-		TimeInterval interval = new TimeInterval(start, end).union( oldInterval);
-    	return interval;
-    }
-
 	public boolean hasChanged(Entity object) {
 		return getChanged().contains(object);
 	}
 
 	public boolean isRemoved(Entity object) {
-		return getRemoved().contains( object);
+        final EntityReferencer.ReferenceInfo referenceInfo = new EntityReferencer.ReferenceInfo(object);
+        return getRemovedReferences().contains( referenceInfo);
 	}
 
 	public boolean isModified(Entity object) 
@@ -259,8 +254,8 @@ public class UpdateResult implements ModificationEvent
 	{
 		return modified.contains( raplaType) ;
 	}
-	
-	public boolean isModified() {
+
+    public boolean isModified() {
 		return !operations.isEmpty() || switchTemplateMode;
 	}
 

@@ -32,6 +32,10 @@ public interface EntityReferencer
         final private String id;
         final private Class<? extends Entity> type;
 
+        public ReferenceInfo(Entity entity) {
+            this(entity.getId(),entity.getRaplaType().getTypeClass());
+        }
+
         public ReferenceInfo(String id, Class<? extends Entity> type) {
             super();
             this.id = id;

@@ -84,16 +84,6 @@ public class LocalCache implements EntityResolver
 
     /** @return true if the entity has been removed and false if the entity was not found*/
     public boolean remove(Entity entity) {
-        RaplaType raplaType = entity.getRaplaType();
-        boolean bResult = true;
-        String entityId = entity.getId();
-        bResult = entities.remove(entityId) != null;
-        Map<String,? extends Entity> entitySet = getMap(raplaType);
-        if (entitySet != null) {
-            if (entityId == null)
-                return false;
-            entitySet.remove( entityId );
-        }
         if ( entity instanceof ParentEntity)
         {
             Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
@@ -102,9 +92,26 @@ public class LocalCache implements EntityResolver
                 remove( child);
             }
         }
-        if ( entity instanceof Conflict)
+        RaplaType raplaType = entity.getRaplaType();
+        String entityId = entity.getId();
+        return removeWithId(raplaType, entityId);
+    }
+
+
+    /** WARNING child entities will not be removed if you use this method */
+    public boolean removeWithId(RaplaType raplaType, String entityId)
+    {
+        boolean bResult = true;
+        bResult = entities.remove(entityId) != null;
+        Map<String,? extends Entity> entitySet = getMap(raplaType);
+        if (entitySet != null) {
+            if (entityId == null)
+                return false;
+            entitySet.remove( entityId );
+        }
+        if ( raplaType == Conflict.TYPE)
         {
-            conflicts.remove( entity.getId());
+            conflicts.remove( entityId);
         }
         return bResult;
     }
