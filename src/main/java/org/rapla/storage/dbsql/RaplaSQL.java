@@ -676,9 +676,10 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     	String typeKey = getString(rset,2 , null);
 		final Date createDate = getTimestampOrNow( rset, 4);
 		final Date lastChanged = getTimestampOrNow( rset, 5);
+		final Date deleteTimestamp = getTimestamp(rset, 7);
      	
     	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
-    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
+    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class).getEntity() );
     	allocatable.setId( id);
     	allocatable.setResolver( entityStore);
     	DynamicType type = null;
@@ -691,12 +692,26 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
             getLogger().error("Allocatable with id " + id + " has an unknown type " + typeKey + ". Try ignoring it");
             return;
         }
-		allocatable.setOwner( resolveFromId(rset, 3, User.class) );
+		{
+		    final org.rapla.storage.dbsql.EntityStorage.ResolvedEntity<User> resolved = resolveFromId(rset, 3, User.class);
+		    if(resolved.isResolved())
+		    {
+		        if(resolved.isDeleted())
+		        {
+                    getLogger().warn(
+                            "Allocatable with id " + id + " is referencing deleted user as owner (id " + resolved.getEntity().getId() + "). User is ignored.");
+		        }
+		        else
+		        {
+		            allocatable.setOwner( resolved.getEntity() );
+		        }
+		    }
+		}
     	Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
     	allocatable.setClassification( classification );
     	classificationMap.put( id, classification );
     	allocatableMap.put( id, allocatable);
-    	put( allocatable );
+    	put( allocatable, deleteTimestamp != null );
     }
     
     @Override
@@ -1000,8 +1015,27 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
         	return;
         }
         PermissionImpl permission = new PermissionImpl();
-        permission.setUser( resolveFromId(rset, 2, User.class));
-        permission.setGroup( resolveFromId(rset, 3, Category.class));
+        {
+            final org.rapla.storage.dbsql.EntityStorage.ResolvedEntity<User> resolved = resolveFromId(rset, 2, User.class);
+            permission.setUser( resolved.isDeleted() ? null : resolved.getEntity());
+            if(resolved.isDeleted() && resolved.isResolved()){
+                getLogger().warn("Permission is referencing user with id "+resolved.getEntity().getId() + " which is deleted. User will be ignored.");
+            }
+        }
+        {
+            final org.rapla.storage.dbsql.EntityStorage.ResolvedEntity<Category> resolveFromId = resolveFromId(rset, 3, Category.class);
+            if(resolveFromId.isResolved())
+            {
+                if(resolveFromId.isDeleted())
+                {
+                    getLogger().warn("Permission is referencing deleted category with id "+resolveFromId.getEntity().getId()+". Category will be ignored.");
+                }
+                else
+                {
+                    permission.setGroup( resolveFromId.getEntity());
+                }
+            }
+        }
         Integer accessLevel = getInt( rset, 4);
         if  ( accessLevel !=null)
         {
@@ -1171,13 +1205,13 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	Appointment appointment =resolveFromId(rset, 1, Appointment.class);
+    	Appointment appointment =resolveFromId(rset, 1, Appointment.class).getEntity();
     	if ( appointment == null)
     	{
     		return;
     	}
         ReservationImpl event = (ReservationImpl) appointment.getReservation();
-        Allocatable allocatable = resolveFromId(rset, 2, Allocatable.class);
+        Allocatable allocatable = resolveFromId(rset, 2, Allocatable.class).getEntity();
         if ( allocatable == null)
         {
         	return;
@@ -1221,7 +1255,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        Appointment appointment = resolveFromId( rset, 1, Appointment.class);
+        Appointment appointment = resolveFromId( rset, 1, Appointment.class).getEntity();
         if ( appointment == null)
         {
         	return;
@@ -1499,6 +1533,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         	return;
         }
         String value = getString( rset,3, null);
+        final Date deleteTimestamp = getTimestamp(rset, 6);
 //        if (PreferencesImpl.isServerEntry(configRole))
 //        {
 //        	entityStore.putServerPreferences(owner,configRole, value);
@@ -1512,7 +1547,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             preferences = new PreferencesImpl(now, now);
             preferences.setId(preferenceId);
             preferences.setOwner(owner);
-            put( preferences );
+            put( preferences, deleteTimestamp != null );
         }
       
         if ( value!= null) {
@@ -1617,6 +1652,7 @@ class UserStorage extends RaplaTypeStorage<User> {
         boolean isAdmin = rset.getInt(6) == 1;
         Date createDate = getTimestampOrNow( rset, 7);
 		Date lastChanged = getTimestampOrNow( rset, 8);
+		final Date deleteTimestamp = getTimestamp(rset, 9);
      	
         UserImpl user = new UserImpl(createDate, lastChanged);
 //        if ( personId != null)
@@ -1631,7 +1667,7 @@ class UserStorage extends RaplaTypeStorage<User> {
         if ( password != null) {
             putPassword(userId,password);
         }
-        put(user);
+        put(user, deleteTimestamp != null);
    }
 
 }
@@ -1711,7 +1747,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         String allocatableId = readId(rset,1, Allocatable.class );
         String appointment1Id = readId(rset,2, Appointment.class );
         String appointment2Id = readId(rset,3, Appointment.class );
-
+        final Date deleteTimestamp = getTimestamp(rset, 7);
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;
         
@@ -1720,7 +1756,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         ConflictImpl conflict = new ConflictImpl(id, today);
         conflict.setAppointment1Enabled(appointment1Enabled );
         conflict.setAppointment2Enabled(appointment2Enabled );
-        put(conflict);
+        put(conflict, deleteTimestamp != null);
    }
 
 }
@@ -1744,12 +1780,13 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        User user = resolveFromId(rset, 1, User.class);
+        // TODO think about return when user is deleted
+        User user = resolveFromId(rset, 1, User.class).getEntity();
         if ( user == null)
         {
         	return;
         }
-        Category category = resolveFromId(rset, 2,  Category.class);
+        Category category = resolveFromId(rset, 2,  Category.class).getEntity();
         if ( category == null)
         {
         	return;
