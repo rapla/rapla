@@ -108,7 +108,6 @@ public class UpdateResult implements ModificationEvent
             Entity current = null;
             if(next instanceof Change)
                 current = ((Change)next).getCurrent();
-			set.add( current);
             if(next instanceof Add)
                 current = ((Add)next).getCurrent();
             if(current != null)
