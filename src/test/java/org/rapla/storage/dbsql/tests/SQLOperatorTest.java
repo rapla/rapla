@@ -13,11 +13,14 @@
 package org.rapla.storage.dbsql.tests;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -27,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -540,7 +544,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
             reservation.addAllocatable(storedAllocatables[i * 3 + 1]);
             reservation.addAllocatable(storedAllocatables[i * 3 + 2]);
             storeObjects.add(reservation);
-            storeObjects.add(newAppointment);
         }
         writeFacade.storeObjects(storeObjects.toArray(new Entity[storeObjects.size()]));
         final AtomicReference<ClientFacade> initReference = new AtomicReference<ClientFacade>(null);
@@ -554,7 +557,99 @@ public class SQLOperatorTest extends AbstractOperatorTest
             };
         }).start();
         // and remove an new reservation and its allocations
+
         
+        final boolean tryAcquire = semaphore.tryAcquire(3, TimeUnit.MINUTES);
+        Assert.assertTrue(tryAcquire);
+    }
+    
+    /**
+     * Test update of the changes table 
+     */
+    @Test
+    public void updateChanges() throws Exception
+    {
+        // create a reading instance for the new table
+        final Connection readConnection = datasource.getConnection();
+        Calendar datetimeCal = Calendar.getInstance( TimeZone.getDefault());
+        final String select = "SELECT ID, CHANGED_AT, DATA, TYPE FROM CHANGES WHERE id = ?";
+        facade.login("homer", "duffs".toCharArray());
+        {// resources
+            final Allocatable newResource = facade.newResource();
+            final Classification classification = newResource.getClassification();
+            final Attribute attribute = classification.getAttributes()[0];
+            classification.setValue(attribute, "newValue");
+            facade.store(newResource);
+            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            {
+                stmt.setString(1, newResource.getId());
+                final ResultSet executeQuery = stmt.executeQuery();
+                Assert.assertTrue(executeQuery.next());
+                final Timestamp lastChangedAt = executeQuery.getTimestamp(2, datetimeCal);
+                Assert.assertEquals(newResource.getLastChanged().getTime(), lastChangedAt.getTime());
+                final String type = executeQuery.getString(4);
+                Assert.assertEquals("ALLOCATABLE", type);
+            }
+        }
+        {// events
+            final Reservation newReservation = facade.newReservation();
+            Date startDate = new Date();
+            Date endDate = new Date(startDate.getTime() + 120000);
+            newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+            final Classification classification = newReservation.getClassification();
+            final Attribute attribute = classification.getAttributes()[0];
+            classification.setValue(attribute, "newReservation");
+            facade.store(newReservation);
+            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            {
+                stmt.setString(1, newReservation.getId());
+                final ResultSet executeQuery = stmt.executeQuery();
+                Assert.assertTrue(executeQuery.next());
+                final Timestamp lastChangedAt = executeQuery.getTimestamp(2, datetimeCal);
+                Assert.assertEquals(newReservation.getLastChanged().getTime(), lastChangedAt.getTime());
+                final String type = executeQuery.getString(4);
+                Assert.assertEquals("RESERVATION", type);
+            }
+        }
+        {// category
+            final Category newCategory = facade.newCategory();
+            newCategory.setKey("new");
+            final Category superCategory = facade.edit(facade.getSuperCategory());
+            superCategory.addCategory(newCategory);
+            facade.store(superCategory);
+            // TODO think about other categories...
+            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            {
+                stmt.setString(1, newCategory.getId());
+                final ResultSet executeQuery = stmt.executeQuery();
+                Assert.assertTrue(executeQuery.next());
+                final Timestamp lastChangedAt = executeQuery.getTimestamp(2, datetimeCal);
+                Assert.assertEquals(newCategory.getLastChanged().getTime(), lastChangedAt.getTime());
+                final String type = executeQuery.getString(4);
+                Assert.assertEquals("RESERVATION", type);
+            }
+        }
+        {// user
+            final User newUser = facade.newUser();
+            newUser.setAdmin(false);
+            newUser.setEmail("123@456.789");
+            newUser.setName("newUser");
+            newUser.setUsername("new");
+            facade.store(newUser);
+            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            {
+                stmt.setString(1, newUser.getId());
+                final ResultSet executeQuery = stmt.executeQuery();
+                Assert.assertTrue(executeQuery.next());
+                final Timestamp lastChangedAt = executeQuery.getTimestamp(2, datetimeCal);
+                Assert.assertEquals(newUser.getLastChanged().getTime(), lastChangedAt.getTime());
+                final String type = executeQuery.getString(4);
+                Assert.assertEquals("RESERVATION", type);
+            }
+        }
+        {// preferences
+            
+        }
     }
 }
 
