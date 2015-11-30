@@ -311,7 +311,7 @@ public class SynchronisationManager implements ModificationListener {
 
 	private void synchronize(UpdateResult evt) throws RaplaException {
         Collection<SynchronizationTask> tasks = new ArrayList<SynchronizationTask>();
-        
+        //lock
         for (UpdateOperation operation: evt.getOperations())
 		{
 			final RaplaType<?> raplaType = operation.getRaplaType();
@@ -383,7 +383,7 @@ public class SynchronisationManager implements ModificationListener {
 				{
 					preferences = (Preferences)((UpdateResult.Add) operation).getCurrent();
 				}
-				else if ( operation instanceof UpdateResult.Add)
+				else if ( operation instanceof UpdateResult.Change)
 				{
 					preferences = (Preferences)((UpdateResult.Change) operation).getCurrent();
 				}
