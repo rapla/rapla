@@ -36,6 +36,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
@@ -57,8 +58,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
     private SecurityManager security;
 
-    private int cleanupPointVersion = 0;
-
     private Logger logger;
     private ClientFacade facade;
 
@@ -72,20 +71,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         this.operator = operator;
         this.permissionController = permissionController;
         this.security = securityManager;
-
-        Long repositoryVersion = operator.getCurrentTimestamp().getTime();
-        // Invalidate all clients
-        for (User user : operator.getUsers())
-        {
-            String userId = user.getId();
-            needResourceRefresh.put(userId, repositoryVersion);
-            needConflictRefresh.put(userId, repositoryVersion);
-        }
-
-        synchronized (invalidateMap)
-        {
-            invalidateMap.put(repositoryVersion, new TimeInterval(null, null));
-        }
     }
 
     public Logger getLogger()
@@ -140,38 +125,33 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         return saveEvent;
     }
 
-    private Map<String, Long> needConflictRefresh = new ConcurrentHashMap<String, Long>();
-    private Map<String, Long> needResourceRefresh = new ConcurrentHashMap<String, Long>();
-    private SortedMap<Long, TimeInterval> invalidateMap = Collections.synchronizedSortedMap(new TreeMap<Long, TimeInterval>());
-
-
-    public TimeInterval calulateInvalidateInterval(UpdateResult result) {
-        TimeInterval currentInterval = null;
-        {
-            Collection<Change> operations = result.getOperations(Change.class);
-            for (Change change:operations)
-            {
-                currentInterval = expandInterval( result.getLastKnown(change.getCurrentId()), currentInterval);
-                currentInterval = expandInterval( result.getLastEntryBeforeUpdate(change.getCurrentId()).getUnresolvedEntity(), currentInterval);
-            }
-        }
-        {
-            Collection<UpdateResult.Add> operations = result.getOperations(UpdateResult.Add.class);
-            for (UpdateResult.Add add:operations)
-            {
-                currentInterval = expandInterval( result.getLastKnown(add.getCurrentId()), currentInterval);
-            }
-        }
-
-        {
-            Collection<Remove> operations = result.getOperations(Remove.class);
-            for (Remove remove:operations)
-            {
-                currentInterval = expandInterval( result.getLastKnown(remove.getCurrentId()), currentInterval);
-            }
-        }
-        return currentInterval;
-    }
+//    public TimeInterval calulateInvalidateInterval(UpdateResult result) {
+//        TimeInterval currentInterval = null;
+//        {
+//            Collection<Change> operations = result.getOperations(Change.class);
+//            for (Change change:operations)
+//            {
+//                currentInterval = expandInterval( result.getLastKnown(change.getCurrentId()), currentInterval);
+//                currentInterval = expandInterval( result.getLastEntryBeforeUpdate(change.getCurrentId()).getUnresolvedEntity(), currentInterval);
+//            }
+//        }
+//        {
+//            Collection<UpdateResult.Add> operations = result.getOperations(UpdateResult.Add.class);
+//            for (UpdateResult.Add add:operations)
+//            {
+//                currentInterval = expandInterval( result.getLastKnown(add.getCurrentId()), currentInterval);
+//            }
+//        }
+//
+//        {
+//            Collection<Remove> operations = result.getOperations(Remove.class);
+//            for (Remove remove:operations)
+//            {
+//                currentInterval = expandInterval( result.getLastKnown(remove.getCurrentId()), currentInterval);
+//            }
+//        }
+//        return currentInterval;
+//    }
 
     private TimeInterval expandInterval(RaplaObject obj,
             TimeInterval currentInterval)
@@ -181,117 +161,12 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
             {
-                currentInterval = invalidateInterval( currentInterval, app);
+                Date start = app.getStart();
+                Date end = app.getMaxEnd();
+                currentInterval = new TimeInterval(start, end).union( currentInterval);
             }
         }
         return currentInterval;
-    }
-
-    private TimeInterval invalidateInterval(TimeInterval oldInterval,Appointment appointment)
-    {
-        Date start = appointment.getStart();
-        Date end = appointment.getMaxEnd();
-        TimeInterval interval = new TimeInterval(start, end).union( oldInterval);
-        return interval;
-    }
-    // Implementation of StorageUpdateListener
-    // FIXME replace with changes api
-    public void objectsUpdated(UpdateResult evt)
-    {
-        long repositoryVersion = operator.getCurrentTimestamp().getTime();
-        // notify the client for changes
-        TimeInterval invalidateInterval = calulateInvalidateInterval(evt);
-
-        if (invalidateInterval != null)
-        {
-            long oneHourAgo = repositoryVersion - DateTools.MILLISECONDS_PER_HOUR;
-            // clear the entries that are older than one hour and replace them with a clear_all
-            // that is set one hour in the past, to refresh all clients that have not been connected in the past hour on the next connect
-            synchronized (invalidateMap)
-            {
-                SortedMap<Long, TimeInterval> headMap = invalidateMap.headMap(oneHourAgo);
-                if (!headMap.isEmpty())
-                {
-                    Set<Long> toDelete = new TreeSet<Long>(headMap.keySet());
-                    for (Long key : toDelete)
-                    {
-                        invalidateMap.remove(key);
-                    }
-                    invalidateMap.put(oneHourAgo, new TimeInterval(null, null));
-                }
-                invalidateMap.put(repositoryVersion, invalidateInterval);
-            }
-        }
-
-        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent(evt, null);
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Storage was modified. Calling notify.");
-        boolean addAllUsersToConflictRefresh = false;
-        for (Iterator<Entity> it = safeResultEvent.getStoreObjects().iterator(); it.hasNext(); )
-        {
-            Entity obj = it.next();
-            if (!isTransferedToClient(obj))
-            {
-                continue;
-            }
-            //            if (  obj instanceof Conflict)
-            //            {
-            //                addAllUsersToConflictRefresh = true;
-            //            }
-            if (obj instanceof DynamicType)
-            {
-                addAllUsersToConflictRefresh = true;
-            }
-            //            RaplaType<?> raplaType = obj.getRaplaType();
-            //            if (raplaType == Conflict.TYPE)
-            //            {
-            //                String id = obj.getId();
-            //                updateMap.remove( id );
-            //                removeMap.remove( id );
-            //                updateMap.put( id, new Long( repositoryVersion ) );
-            //            }
-        }
-
-        // now we check if a the resources have changed in a way that a user needs to refresh all resources. That is the case, when 
-        // someone changes the permissions on one or more resource and that affects  the visibility of that resource to a user, 
-        // so its either pushed to the client or removed from it.
-        Set<Permission> invalidatePermissions = new HashSet<Permission>();
-        Set<Permission> invalidateEventPermissions = new HashSet<Permission>();
-
-        boolean addAllUsersToResourceRefresh = false;
-        {
-            for (Remove operation : evt.getOperations(UpdateResult.Remove.class))
-            {
-                String id = operation.getCurrentId();
-                RaplaType type = operation.getRaplaType();
-                if (type == User.TYPE)
-                {
-                    String userId = id;
-                    needConflictRefresh.remove(userId);
-                    needResourceRefresh.remove(userId);
-                    //addAllUsersToResourceRefresh = true;
-                }
-                // FIXME replace with changes API
-                //Entity obj = operation.getCurrent();
-//                if (!isTransferedToClient(obj))
-//                {
-//                    continue;
-//                }
-                if (type == DynamicType.TYPE)
-                {
-                    addAllUsersToResourceRefresh = true;
-                    addAllUsersToConflictRefresh = true;
-                }
-            }
-        }
-        if (addAllUsersToResourceRefresh || addAllUsersToConflictRefresh)
-        {
-            invalidateAll(repositoryVersion, addAllUsersToResourceRefresh, addAllUsersToConflictRefresh);
-        }
-        else
-        {
-            invalidate(evt, repositoryVersion, invalidatePermissions, invalidateEventPermissions);
-        }
     }
 
     public UpdateEvent createUpdateEvent(User user, Date lastSynced) throws RaplaException
@@ -308,46 +183,198 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         TimeZone systemTimeZone = operator.getTimeZone();
         int timezoneOffset = TimeZoneConverterImpl.getOffset(DateTools.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
         safeResultEvent.setTimezoneOffset(timezoneOffset);
+        TimeInterval timeInterval= null;
+        final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
+        boolean conflictRefresh = false;
+        boolean resourceRefresh = false;
+        for (Remove op : updateResult.getOperations(Remove.class))
+        {
+            if ( op.getRaplaType() == DynamicType.TYPE)
+            {
+                resourceRefresh = true;
+                conflictRefresh = true;
+            }
+        }
+        if ( !conflictRefresh)
+        {
+            for (UpdateOperation op : updateResult.getOperations(Change.class))
+            {
+                if (op.getRaplaType() == DynamicType.TYPE)
+                {
+                    conflictRefresh = true;
+                }
+            }
+            for (UpdateOperation op : updateResult.getOperations(UpdateResult.Add.class))
+            {
+                if (op.getRaplaType() == DynamicType.TYPE)
+                {
+                    conflictRefresh = true;
+                }
+            }
+        }
+
+        Set<Permission> invalidatePermissions = new HashSet<Permission>();
+        Set<Permission> invalidateEventPermissions = new HashSet<Permission>();
+
+        for (Change operation : updateResult.getOperations(UpdateResult.Change.class))
+        {
+            Entity newObject = updateResult.getLastKnown(operation.getCurrentId());
+            // we get all the permissions that have changed on an allocatable
+            if (newObject.getRaplaType().is(Allocatable.TYPE) && isTransferedToClient(newObject))
+            {
+                PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                PermissionContainer newObj = (PermissionContainer) newObject;
+                Util.addDifferences(invalidatePermissions, current, newObj);
+            }
+            // We trigger a resource refresh if the groups of the user have changed
+
+            if (newObject.getRaplaType().is(User.TYPE) && newObject.equals( user))
+            {
+                User newUser = (User) newObject;
+                User oldUser = (User) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                HashSet<Category> newGroups = new HashSet<Category>(newUser.getGroupList());
+                HashSet<Category> oldGroups = new HashSet<Category>(oldUser.getGroupList());
+                if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
+                {
+                    resourceRefresh = true;
+                }
+
+            }
+            // We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
+            // If that is the case we trigger an invalidate of the conflicts for a user
+            if (newObject instanceof Ownable)
+            {
+                Ownable newOwnable = (Ownable) newObject;
+                Ownable oldOwnable = (Ownable) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                User newOwner = newOwnable.getOwner();
+                User oldOwner = oldOwnable.getOwner();
+                if (newOwner != null && oldOwner != null && (!newOwner.equals(oldOwner)))
+                {
+                    if ( user.equals( newOwner) || user.equals( oldOwner))
+                    {
+                        if (!newObject.getRaplaType().is(Reservation.TYPE))
+                        {
+                            resourceRefresh = true;
+                        }
+                        conflictRefresh = true;
+                    }
+                }
+            }
+            if (newObject.getRaplaType().is(Reservation.TYPE))
+            {
+                PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                PermissionContainer newObj = (PermissionContainer) newObject;
+                Util.addDifferences(invalidateEventPermissions, current, newObj);
+            }
+        }
+        if (!invalidatePermissions.isEmpty() || !invalidateEventPermissions.isEmpty())
+        {
+            Set<Category> groupsResourceRefresh = new HashSet<Category>();
+            Set<Category> groupsConflictRefresh = new HashSet<Category>();
+            for (Permission permission : invalidatePermissions)
+            {
+                User permissionUser = permission.getUser();
+                if (permissionUser != null && permissionUser.equals(user))
+                {
+                    resourceRefresh = true;
+                    break;
+                }
+                Category group = permission.getGroup();
+                if (group != null)
+                {
+                    groupsResourceRefresh.add(group);
+                }
+                if (permissionUser == null && group == null)
+                {
+                    resourceRefresh = true;
+                    break;
+                }
+            }
+            if (!resourceRefresh)
+            {
+                for (Permission permission : invalidateEventPermissions)
+                {
+                    User permissionUser = permission.getUser();
+                    if (permissionUser != null && permissionUser.equals(user))
+                    {
+                        conflictRefresh = true;
+                        break;
+                    }
+                    Category group = permission.getGroup();
+                    if (group != null)
+                    {
+                        groupsConflictRefresh.add(group);
+                    }
+                    if (permissionUser == null && group == null)
+                    {
+                        conflictRefresh = true;
+                        break;
+                    }
+                }
+            }
+            // we add all users belonging to group marked for refresh
+            if (!resourceRefresh)
+            {
+                for (Category group : user.getGroupList())
+                {
+                    if (groupsResourceRefresh.contains(group))
+                    {
+                        resourceRefresh = true;
+                        break;
+                    }
+                    if (groupsConflictRefresh.contains(group))
+                    {
+                        conflictRefresh = true;
+                    }
+                }
+            }
+        }
+
+
         //if ( lastSynced.before( currentTimestamp ))
         {
             String userId = user.getId();
-            TimeInterval invalidateInterval;
-            {
-                Long lastVersion = needConflictRefresh.get(userId);
-                if (lastVersion != null && lastVersion > lastSynced.getTime())
-                {
-                    invalidateInterval = new TimeInterval(null, null);
-                }
-                else
-                {
-                    invalidateInterval = getInvalidateInterval(lastSynced.getTime());
-                }
-            }
-            boolean resourceRefresh;
-            {
-                Long lastVersion = needResourceRefresh.get(userId);
-                resourceRefresh = (lastVersion != null && lastVersion > lastSynced.getTime());
-            }
             safeResultEvent.setNeedResourcesRefresh(resourceRefresh);
-            safeResultEvent.setInvalidateInterval(invalidateInterval);
         }
-        if (!safeResultEvent.isNeedResourcesRefresh())
+        if (!resourceRefresh)
         {
-            Collection<Entity> updatedEntities = operator.getUpdatedEntities(user, lastSynced);
-            for (Entity obj : updatedEntities)
+            //Collection<Entity> updatedEntities = operator.getUpdatedEntities(user, lastSynced);
+
+            for (String id : updateResult.getAddedAndChangedIds())
             {
+                final Entity obj = updateResult.getLastKnown(id);
+                final RaplaType raplaType = obj.getRaplaType();
+                if ( raplaType == Reservation.TYPE)
+                {
+                    timeInterval = expandInterval(obj, timeInterval);
+                    final UpdateResult.HistoryEntry lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(id);
+                    timeInterval = expandInterval(lastEntryBeforeUpdate.getUnresolvedEntity(), timeInterval);
+                }
+                // Add entity to result
                 processClientReadable(user, safeResultEvent, obj, false);
             }
-            Collection<ReferenceInfo> removedEntities = operator.getDeletedEntities(user, lastSynced);
-            for (ReferenceInfo ref : removedEntities)
+            Collection<Remove> removedEntities = updateResult.getOperations(UpdateResult.Remove.class);
+            for (Remove ref : removedEntities)
             {
-                String id = ref.getId();
-                Class<? extends Entity> type = ref.getType();
+                String id = ref.getCurrentId();
+                Class<? extends Entity> type = ref.getRaplaType().getTypeClass();
                 if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class)
                 {
                     safeResultEvent.putRemoveId(id);
                 }
+                if ( type == Reservation.class)
+                {
+                    final UpdateResult.HistoryEntry lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(id);
+                    timeInterval = expandInterval(lastEntryBeforeUpdate.getUnresolvedEntity(), timeInterval);
+                }
             }
+        }
+        {
+            if (conflictRefresh || resourceRefresh)
+            {
+                timeInterval = new TimeInterval(null, null);
+            }
+            safeResultEvent.setInvalidateInterval(timeInterval);
         }
         return safeResultEvent;
     }
@@ -412,200 +439,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         }
     }
 
-    private void invalidateAll(long repositoryVersion, boolean resourceRefreh, boolean conflictRefresh)
-    {
-        Collection<String> allUserIds = new ArrayList<String>();
-        try
-        {
-            Collection<User> allUsers = operator.getUsers();
-            for (User user : allUsers)
-            {
-                String id = user.getId();
-                allUserIds.add(id);
-            }
-        }
-        catch (RaplaException ex)
-        {
-            getLogger().error(ex.getMessage(), ex);
-            // we stay with the old list.
-            // keySet iterator from concurrent hashmap is thread safe
-            Iterator<String> iterator = needResourceRefresh.keySet().iterator();
-            while (iterator.hasNext())
-            {
-                String id = iterator.next();
-                allUserIds.add(id);
-            }
-        }
-        for (String userId : allUserIds)
-        {
-            if (resourceRefreh)
-            {
-                needResourceRefresh.put(userId, repositoryVersion);
-            }
-            if (conflictRefresh)
-            {
-                needConflictRefresh.put(userId, repositoryVersion);
-            }
-        }
-    }
-
-    private void invalidate(UpdateResult evt, long repositoryVersion, Set<Permission> invalidatePermissions, Set<Permission> invalidateEventPermissions)
-    {
-        Collection<User> allUsers;
-        try
-        {
-            allUsers = operator.getUsers();
-        }
-        catch (RaplaException e)
-        {
-            // we need to invalidate all on an exception
-            invalidateAll(repositoryVersion, true, true);
-            return;
-        }
-        Set<User> usersResourceRefresh = new HashSet<User>();
-        Set<User> usersConflictRefresh = new HashSet<User>();
-
-        for (Change operation : evt.getOperations(UpdateResult.Change.class))
-        {
-            Entity newObject = evt.getLastKnown(operation.getCurrentId());
-            // we get all the permissions that have changed on an allocatable
-            if (newObject.getRaplaType().is(Allocatable.TYPE) && isTransferedToClient(newObject))
-            {
-                PermissionContainer current = (PermissionContainer) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
-                PermissionContainer newObj = (PermissionContainer) newObject;
-                Util.addDifferences(invalidatePermissions, current, newObj);
-            }
-            // We trigger a resource refresh if the groups of the user have changed
-            if (newObject.getRaplaType().is(User.TYPE))
-            {
-                User newUser = (User) newObject;
-                User oldUser = (User) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
-                HashSet<Category> newGroups = new HashSet<Category>(newUser.getGroupList());
-                HashSet<Category> oldGroups = new HashSet<Category>(oldUser.getGroupList());
-                if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
-                {
-                    usersResourceRefresh.add(newUser);
-                }
-
-            }
-            // We also check if a permission on a reservation has changed, so that it is no longer or new in the conflict list of a certain user.
-            // If that is the case we trigger an invalidate of the conflicts for a user
-            if (newObject instanceof Ownable)
-            {
-                Ownable newOwnable = (Ownable) newObject;
-                Ownable oldOwnable = (Ownable) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
-                User newOwner = newOwnable.getOwner();
-                User oldOwner = oldOwnable.getOwner();
-                if (newOwner != null && oldOwner != null && (!newOwner.equals(oldOwner)))
-                {
-                    if (!newObject.getRaplaType().is(Reservation.TYPE))
-                    {
-                        usersResourceRefresh.add(newOwner);
-                        usersResourceRefresh.add(oldOwner);
-                    }
-                    usersConflictRefresh.add(newOwner);
-                    usersConflictRefresh.add(oldOwner);
-                }
-            }
-            if (newObject.getRaplaType().is(Reservation.TYPE))
-            {
-                PermissionContainer current = (PermissionContainer) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
-                PermissionContainer newObj = (PermissionContainer) newObject;
-                Util.addDifferences(invalidateEventPermissions, current, newObj);
-            }
-        }
-        if (!invalidatePermissions.isEmpty() || !invalidateEventPermissions.isEmpty())
-        {
-            Set<Category> groupsResourceRefresh = new HashSet<Category>();
-            Set<Category> groupsConflictRefresh = new HashSet<Category>();
-            for (Permission permission : invalidatePermissions)
-            {
-                User user = permission.getUser();
-                if (user != null)
-                {
-                    usersResourceRefresh.add(user);
-                }
-                Category group = permission.getGroup();
-                if (group != null)
-                {
-                    groupsResourceRefresh.add(group);
-                }
-                if (user == null && group == null)
-                {
-                    usersResourceRefresh.addAll(allUsers);
-                    break;
-                }
-            }
-            for (Permission permission : invalidateEventPermissions)
-            {
-                User user = permission.getUser();
-                if (user != null)
-                {
-                    usersConflictRefresh.add(user);
-                }
-                Category group = permission.getGroup();
-                if (group != null)
-                {
-                    groupsConflictRefresh.add(group);
-                }
-                if (user == null && group == null)
-                {
-                    usersConflictRefresh.addAll(allUsers);
-                    break;
-                }
-            }
-            // we add all users belonging to group marked for refresh
-            for (User user : allUsers)
-            {
-                if (usersResourceRefresh.contains(user))
-                {
-                    continue;
-                }
-                for (Category group : user.getGroupList())
-                {
-                    if (groupsResourceRefresh.contains(group))
-                    {
-                        usersResourceRefresh.add(user);
-                        break;
-                    }
-                    if (groupsConflictRefresh.contains(group))
-                    {
-                        usersConflictRefresh.add(user);
-                    }
-                }
-            }
-        }
-
-        for (User user : usersResourceRefresh)
-        {
-            String userId = user.getId();
-            needResourceRefresh.put(userId, repositoryVersion);
-            needConflictRefresh.put(userId, repositoryVersion);
-        }
-        for (User user : usersConflictRefresh)
-        {
-            String userId = user.getId();
-            needConflictRefresh.put(userId, repositoryVersion);
-        }
-    }
-
-    private TimeInterval getInvalidateInterval(long clientRepositoryVersion)
-    {
-        TimeInterval interval = null;
-        synchronized (invalidateMap)
-        {
-            for (TimeInterval current : invalidateMap.tailMap(clientRepositoryVersion).values())
-            {
-                if (current != null)
-                {
-                    interval = current.union(interval);
-                }
-            }
-            return interval;
-        }
-
-    }
-
     static boolean isTransferedToClient(RaplaObject obj)
     {
         RaplaType<?> raplaType = obj.getRaplaType();
@@ -634,10 +467,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
     @Override public void dispose()
     {
 
-    }
-
-    public void storageDisconnected(String disconnectionMessage)
-    {
     }
 
     static public void convertToNewPluginConfig(ClientFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)

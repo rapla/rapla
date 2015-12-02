@@ -41,6 +41,7 @@ public interface CachableStorageOperator extends StorageOperator {
     void fillConflictDisableInformation(User user, Conflict conflict);
 
     UpdateResult getUpdateResult(Date since);
+    UpdateResult getUpdateResult(Date since,User user);
 }
 
 
