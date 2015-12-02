@@ -395,6 +395,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 }
                 else
                 {
+                    // TODO is this the right place?
+                    obj = conflict.clone();
                     operator.fillConflictDisableInformation(user, conflict);
                 }
 

@@ -45,7 +45,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.UpdateResult.Change;
 
 class ConflictFinder {
 	AllocationMap  allocationMap;
@@ -491,6 +490,7 @@ class ConflictFinder {
 				{
 					if (permissionController.canModify(conflict,user,resolver))
 					{
+					    conflict = conflict.clone();
 					    cache.fillConflictDisableInformation(user, conflict);
                         conflictList.add(conflict);
 					}
@@ -612,7 +612,6 @@ class ConflictFinder {
 				boolean isRemoved = !conflictListAfter.contains(conflict);
 				if  ( isRemoved )
 				{
-				    cache.fillConflictDisableInformation( result.getUser(), conflict);
 					result.addOperation(new UpdateResult.Remove(conflict.getId(), Conflict.TYPE));
 				}
 			}
@@ -621,7 +620,6 @@ class ConflictFinder {
 				boolean isNew = !conflictListBefore.contains(conflict);
 				if  ( isNew )
 				{
-				    cache.fillConflictDisableInformation( result.getUser(), conflict);
 					result.addOperation(new UpdateResult.Add(conflict));
 					added.add( conflict);
 				}
@@ -693,7 +691,6 @@ class ConflictFinder {
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
     		{
-    		    cache.fillConflictDisableInformation( result.getUser(), newConflict);
     			result.addOperation(new UpdateResult.Change(newConflict, oldConflict));
     		}
     	}
