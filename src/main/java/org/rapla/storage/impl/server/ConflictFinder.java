@@ -45,6 +45,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Change;
 
 class ConflictFinder {
 	AllocationMap  allocationMap;
@@ -556,14 +557,15 @@ class ConflictFinder {
 
 	
 
-	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult result, Changes changes, Date today,Collection<Allocatable> removedAllocatables)
+	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult result, Date today,Collection<Allocatable> removedAllocatables)
 	{
-		for (String nextId:changes.getChangedIds())
+		for (UpdateResult.Change change:result.getOperations(UpdateResult.Change.class))
 		{
-			RaplaObject current = (RaplaObject) changes.getLastKnown(nextId);
+		    String nextId = change.getCurrentId();
+			RaplaObject current = (RaplaObject) result.getLastKnown(nextId);
 			if ( current.getRaplaType() == Allocatable.TYPE)
 			{
-				Allocatable old = (Allocatable) changes.getLastEntryBeforeStart(nextId).getUnresolvedEntity();
+				Allocatable old = (Allocatable) result.getLastEntryBeforeUpdate(nextId);//.getUnresolvedEntity();
 				Allocatable newAlloc = (Allocatable) current;
 				if ( old != null && newAlloc != null )
 				{
@@ -620,7 +622,7 @@ class ConflictFinder {
 				boolean isNew = !conflictListBefore.contains(conflict);
 				if  ( isNew )
 				{
-					result.addOperation(new UpdateResult.Add(conflict));
+					result.addOperation(new UpdateResult.Add(conflict.getId(), conflict.getRaplaType()));
 					added.add( conflict);
 				}
 			}
@@ -632,9 +634,10 @@ class ConflictFinder {
     	
     	// first we create a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
     	Map<Allocatable, Set<String>> appointmentUpdateMap = new LinkedHashMap<Allocatable, Set<String>>();
-    	for (String id:changes.getChangedIds())
+    	for (Change change:result.getOperations(UpdateResult.Change.class))
     	{
-            final Entity obj = changes.getLastKnown(id).getUnresolvedEntity();
+    	    String id = change.getCurrentId();
+            final Entity obj = result.getLastKnown(id);//.getUnresolvedEntity();
             if ( obj.getRaplaType().equals( Reservation.TYPE))
     		{
     			Reservation reservation = (Reservation) obj;
@@ -691,7 +694,7 @@ class ConflictFinder {
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
     		{
-    			result.addOperation(new UpdateResult.Change(newConflict, oldConflict));
+    			result.addOperation(new UpdateResult.Change(newConflict.getId(), newConflict.getRaplaType()));
     		}
     	}
 

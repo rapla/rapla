@@ -357,7 +357,9 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         updateActions();
 		Entity preferences = getQuery().getPreferences();
 		UpdateResult modificationEvt = new UpdateResult();
-        modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
+		// FIXME what is deserved here?
+        //modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
+		modificationEvt.addOperation(new UpdateResult.Change(preferences.getId(), preferences.getRaplaType()));
         resourceSelection.dataChanged(modificationEvt);
         calendarContainer.update(modificationEvt);
         calendarContainer.getSelectedCalendar().scrollToStart();

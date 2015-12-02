@@ -107,7 +107,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict
                 reservation2Name = reservation.getName( Locale.getDefault());
             }
         }
-        
     }
     
     

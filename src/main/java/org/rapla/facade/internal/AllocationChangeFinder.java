@@ -41,14 +41,14 @@ public class AllocationChangeFinder
         if ( updateResult == null)
             return;
         for (UpdateResult.Add addOp: updateResult.getOperations( UpdateResult.Add.class )) {
-            added(  addOp.getNew(), user );
+            added(  updateResult.getLastKnown(addOp.getCurrentId()), user );
         }
         for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
             removed( removeOp.getCurrentId(),removeOp.getRaplaType(), user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
-            Entity old =  changeOp.getOld();
-            Entity newObj = changeOp.getNew();
+            Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getCurrentId()).getUnresolvedEntity();
+            Entity newObj = updateResult.getLastKnown(changeOp.getCurrentId());
             changed(old , newObj, user );
         }
     }

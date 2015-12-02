@@ -13,6 +13,31 @@
 
 package org.rapla.storage.impl.server;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
@@ -95,34 +120,11 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Add;
 import org.rapla.storage.UpdateResult.Change;
+import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
 
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator {
@@ -927,12 +929,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         conflictFinder.setConflictEnabledState(conflictId, date, appointment1Enabled, appointment2Enabled);
     }
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
-	private void updateIndizes(UpdateResult result, Changes changes) {
+	private void updateIndizes(UpdateResult result) {
 		Map<Allocatable,AllocationChange> toUpdate = new HashMap<Allocatable,AllocationChange>();
 		List<Allocatable> removedAllocatables = new ArrayList<Allocatable>();
-        for (String id : changes.getAddedIds())
+        for (Add add : result.getOperations(UpdateResult.Add.class))
         {
-            final Entity lastKnown = changes.getLastKnown(id).getUnresolvedEntity();
+            String id = add.getCurrentId();
+            final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
             if(lastKnown instanceof Reservation)
             {
                 Reservation newReservation = (Reservation) lastKnown;
@@ -943,13 +946,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             checkAndAddConflict(lastKnown);
         }
-        for(String id : changes.getChangedIds())
+        for(Change changes : result.getOperations(UpdateResult.Change.class))
         {
-            final Entity lastKnown = changes.getLastKnown(id).getUnresolvedEntity();
+            String id = changes.getCurrentId();
+            final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
             checkAndAddConflict(lastKnown);
             if ( lastKnown instanceof Reservation)
             {
-                Reservation oldReservation = (Reservation) changes.getLastEntryBeforeStart(id);
+                Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id);
                 Reservation newReservation =(Reservation) lastKnown;
                 Appointment[] oldAppointments =  oldReservation.getAppointments();
                 for ( Appointment oldApp: oldAppointments)
@@ -965,7 +969,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if(lastKnown instanceof DynamicType)
             {
                 DynamicType dynamicType = (DynamicType)lastKnown;
-                DynamicType old = (DynamicType)changes.getLastEntryBeforeStart(id);
+                DynamicType old = (DynamicType)result.getLastEntryBeforeUpdate(id);
                 String conflictsNew = dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_CONFLICTS);
                 String conflictsOld = old.getAnnotation( DynamicTypeAnnotations.KEY_CONFLICTS);
                 if ( conflictsNew != conflictsOld)
@@ -992,9 +996,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        for(String id : changes.getRemovedIds())
+        for(Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
-            final Entity lastKnown = changes.getLastKnown(id).getUnresolvedEntity();
+            String id = removed.getCurrentId();
+            final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
             if(lastKnown instanceof Reservation)
             {
                 Reservation old = (Reservation) lastKnown;
@@ -1022,21 +1027,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		}
 	   	Date today = today();
 	   	// processes the conflicts and adds the changes to the result
-		conflictFinder.updateConflicts(toUpdate,result, changes, today, removedAllocatables);
+		conflictFinder.updateConflicts(toUpdate,result, today, removedAllocatables);
 		checkAbandonedAppointments();
-        Collection<String> addedAndChangedIds = changes.getAddedAndChangedIds();
+        Collection<String> addedAndChangedIds = result.getAddedAndChangedIds();
         for (String id: addedAndChangedIds)
         {
-            final Entity newEntity = changes.getLastKnown(id).getUnresolvedEntity();
+            final Entity newEntity = result.getLastKnown(id);//.getUnresolvedEntity();
             final RaplaType raplaType = newEntity.getRaplaType();
             if(raplaType == Conflict.TYPE ||raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE )
             {
                 addToDeleteUpdate(newEntity, false);
             }
         }
-        for(String id : changes.getRemovedIds())
+        for(Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
-            final Entity newEntity = changes.getLastKnown(id).getUnresolvedEntity();
+            String id  = removed.getCurrentId();
+            final Entity newEntity = result.getLastKnown(id);//.getUnresolvedEntity();
             final RaplaType raplaType = newEntity.getRaplaType();
             if(raplaType == Conflict.TYPE ||raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE )
             {
@@ -1493,9 +1499,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override
 	protected UpdateResult update(UpdateEvent evt) throws RaplaException {
         UpdateResult update = super.update(evt);
-        // FIXME
-        Changes changes = null;
-	   	updateIndizes(update, changes);
+	   	updateIndizes(update);
 	   	processPermissionGroups();
 		return update;
 	}
@@ -1598,13 +1602,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
         for ( Change change:changes)
         {
-            Entity old = change.getOld();
+            Entity old = result.getLastEntryBeforeUpdate(change.getCurrentId()).getUnresolvedEntity();
             if (!( old instanceof Conflict))
             {
                 continue;
             }
             
-            Conflict conflict = (Conflict)change.getNew();
+            Conflict conflict = (Conflict)result.getLastKnown(change.getCurrentId());
             if (conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
             {
                 conflicts.add( conflict.getId());
@@ -2918,9 +2922,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	{
 	    cache.fillConflictDisableInformation(user, conflict);
 	}
+	
+	@Override
+	public UpdateResult getUpdateResult(Date since)
+	{
+	    // FIXME Auto-generated method stub
+	    return null;
+	}
 
-    @Override public Changes getChanges(Date since)
-    {
-        return null;
-    }
 }

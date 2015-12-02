@@ -270,7 +270,7 @@ class RaplaSQL {
 
     public UpdateResult update(Connection c, Date lastUpdated) throws SQLException
     {
-        final UpdateResult updateResult = new UpdateResult(null);
+        final UpdateResult updateResult = new UpdateResult();
         for (RaplaTypeStorage raplaTypeStorage : stores)
         {
             raplaTypeStorage.setConnection( c);
@@ -364,7 +364,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
                 final Entity<?> newEntity = entityStore.tryResolve(id);
                 if(oldEntity == null)
                 {// we have a new entity
-                    updateResult.addOperation(new UpdateResult.Add(newEntity));
+                    updateResult.addOperation(new UpdateResult.Add(newEntity.getId(), newEntity.getRaplaType()));
                 }
                 else
                 {// or a update
@@ -372,7 +372,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
                     final Date lastChangedNew = ((Timestamp)newEntity).getLastChanged();
                     if(lastChangedOld.before(lastChangedNew))
                     {
-                        updateResult.addOperation(new UpdateResult.Change(newEntity, oldEntity));
+                        updateResult.addOperation(new UpdateResult.Change(newEntity.getId(), newEntity.getRaplaType()));
                     }
                 }
             }
@@ -1870,5 +1870,46 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 }
 
 
-
-
+//class HistoryStorage<T> extends RaplaTypeStorage<HistoryEntry>
+//{
+//
+//    final RaplaType<T> outerType;
+//
+//    HistoryStorage(RaplaXMLContext context, RaplaType<T> outerType) throws RaplaException
+//    {
+//        super(context, HistoryEntry.RAPLA_TYPE, "CHANGES", new String[]{"VARCHAR(255) ID KEY", "VARCHAR(50) TYPE", "XML_VALUE DATA NOT NULL", "TIMESTAMP CHANGED_AT KEY"});
+//        this.outerType = outerType;
+//    }
+//    
+//    @Override
+//    void insertAll() throws SQLException, RaplaException
+//    {
+//        insert(cache.getHistory());
+//    }
+//
+//    @Override
+//    protected int write(PreparedStatement stmt, HistoryEntry entity) throws SQLException, RaplaException
+//    {
+//        stmt.setString(1, entity.getEntry().getId());
+//        stmt.setString(1, outerType.toString());
+//        setText(stmt, 3, getXML(entity.getEntry()));
+//        setTimestamp(stmt, 4, getCurrentTimestamp());
+//        return 1;
+//    }
+//
+//    @Override
+//    protected void load(ResultSet rs) throws SQLException, RaplaException
+//    {
+//        HistoryEntity result = new HistryEntry();
+//        final String text = getText(rs, 3);
+//        final String id = rs.getString(1);
+//        final Date lastChanged = getTimestamp(rs, 4);
+//        final String xml = getText(rs, 3);
+//        RaplaXMLReader contentHandler = processXML( outerType, xml );
+//        RaplaObject type = contentHandler.getType();
+//        result.setEntity(type);
+//        result.setLastChanged(lastChanged);
+//        put(result);
+//    }
+//    
+//}

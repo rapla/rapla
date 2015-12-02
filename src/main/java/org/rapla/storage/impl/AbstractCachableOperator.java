@@ -683,9 +683,9 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			Entity newEntity = toUpdate;
 			Entity oldEntity = oldEntities.get(toUpdate);
 			if (oldEntity != null) {
-				result.addOperation(new UpdateResult.Change( newEntity, oldEntity));
+				result.addOperation(new UpdateResult.Change( newEntity.getId(), newEntity.getRaplaType() ));
 			} else {
-				result.addOperation(new UpdateResult.Add( newEntity));
+				result.addOperation(new UpdateResult.Add( newEntity.getId(), newEntity.getRaplaType() ));
 			}
 		}
 		

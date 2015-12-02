@@ -316,8 +316,7 @@ public class SynchronisationManager  {
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{
-					// FIXME replace with changes api
-					Entity<?> current = null;//operation.getCurrent();
+				    Entity<?> current = evt.getLastKnown(operation.getCurrentId());
 					Reservation oldReservation = (Reservation) current;
 					for ( Appointment app: oldReservation.getAppointments() )
 					{
@@ -327,7 +326,8 @@ public class SynchronisationManager  {
 				}
 				else if ( operation instanceof UpdateResult.Add)
 				{
-					Reservation newReservation = (Reservation) ((UpdateResult.Add) operation).getNew();
+                    Entity<?> current = evt.getLastKnown(operation.getCurrentId());
+					Reservation newReservation = (Reservation) current;
 					for ( Appointment app: newReservation.getAppointments() )
 					{
 					    Collection<SynchronizationTask> result =  updateOrCreateTasks(app);
@@ -336,8 +336,8 @@ public class SynchronisationManager  {
 				}
 				else //if ( operation instanceof UpdateResult.Change)
 				{
-				    Reservation oldReservation = (Reservation) ((UpdateResult.Change) operation).getOld();
-					Reservation newReservation =(Reservation) ((UpdateResult.Change) operation).getNew();
+				    Reservation oldReservation = (Reservation) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
+					Reservation newReservation =(Reservation) evt.getLastKnown(operation.getCurrentId());
 					Map<String,Appointment> oldAppointments =  Appointment.AppointmentUtil.idMap(oldReservation.getAppointments());
 					Map<String,Appointment> newAppointments =  Appointment.AppointmentUtil.idMap(newReservation.getAppointments());
 					for ( Appointment oldApp: oldAppointments.values())
@@ -379,11 +379,11 @@ public class SynchronisationManager  {
 				final Preferences preferences;
 				if ( operation instanceof UpdateResult.Add)
 				{
-					preferences = (Preferences)((UpdateResult.Add) operation).getCurrent();
+					preferences = (Preferences)evt.getLastKnown(operation.getCurrentId());
 				}
 				else if ( operation instanceof UpdateResult.Change)
 				{
-					preferences = (Preferences)((UpdateResult.Change) operation).getCurrent();
+					preferences = (Preferences)evt.getLastKnown(operation.getCurrentId());
 				}
 				else
 				{
@@ -429,7 +429,7 @@ public class SynchronisationManager  {
 			{
                 if (operation instanceof UpdateResult.Change)
                 {
-                    Allocatable allocatable = (Allocatable) ((UpdateResult.Change)operation).getCurrent();
+                    Allocatable allocatable = (Allocatable) evt.getLastKnown(operation.getCurrentId());
                     final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                     if (!isInternal)
                     {

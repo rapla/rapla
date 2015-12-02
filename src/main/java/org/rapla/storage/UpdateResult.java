@@ -15,8 +15,10 @@ package org.rapla.storage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -33,6 +35,9 @@ public class UpdateResult implements ModificationEvent
 	Set<RaplaType> modified = new HashSet<RaplaType>();
     Set<EntityReferencer.ReferenceInfo> removedReferences = new HashSet<EntityReferencer.ReferenceInfo>();
 	boolean switchTemplateMode = false;
+	// FIXME determine
+	final Date since = null;
+	final Date untill = null;
 	
 	public UpdateResult() {
     }
@@ -87,6 +92,26 @@ public class UpdateResult implements ModificationEvent
     	return Collections.unmodifiableCollection(operations);
     }
 
+    public Collection<HistoryEntry> getUnresolvedHistoryEntry(String id)
+    {
+        // FIXME
+        return null;
+    }
+    
+    public HistoryEntry getLastEntryBeforeUpdate(String id)
+    {
+        // FIXME
+        // TODO Conflict resolution
+        return null;
+    }
+
+    public Entity getLastKnown(String id)
+    {
+        // FIXME
+        // TODO Conflict resolution
+        return null;
+    }
+
     protected <T extends UpdateOperation> Set<Entity> getObject( final Class<T> operationClass ) {
         Set<Entity> set = new HashSet<Entity>();
         if ( operationClass == null)
@@ -94,42 +119,35 @@ public class UpdateResult implements ModificationEvent
         Collection<? extends UpdateOperation> it= getOperations( operationClass);
         for (UpdateOperation next:it ) {
             // FIXME
-            Entity current = null;
-            if(next instanceof Change)
-                current = ((Change)next).getCurrent();
-            if(next instanceof Add)
-                current = ((Add)next).getCurrent();
-            if(current != null)
-			set.add( current);
+             String currentId =next.getCurrentId();
+             final Entity current = getLastKnown(currentId);
+             set.add( current);
         }
         return set;
     }
     
     static public class Add implements UpdateOperation {
-    	Entity newObj; // the object in the state when it was added
-        public Add( Entity newObj) {
-            this.newObj = newObj;
-        }
-        public Entity getCurrent() {
-            return newObj;
-        }
-        public Entity getNew() {
-            return newObj;
+        private final RaplaType<?> type;
+        private final String id;
+
+        public Add( String id, RaplaType<?> type) {
+            this.id = id;
+            this.type = type;
         }
         
         public String toString()
         {
-        	return "Add " + newObj;
+        	return "Add " + id;
         }
 
         @Override public String getCurrentId()
         {
-            return newObj.getId();
+            return id;
         }
 
         @Override public RaplaType getRaplaType()
         {
-            return newObj.getRaplaType();
+            return type;
         }
     }
 
@@ -160,35 +178,28 @@ public class UpdateResult implements ModificationEvent
     }
 
     static public class Change implements UpdateOperation{
-    	Entity newObj; // the object in the state when it was changed
-    	Entity oldObj; // the object in the state before it was changed
-        public Change( Entity newObj, Entity oldObj) {
-            this.newObj = newObj;
-            this.oldObj = oldObj;
-        }
-        public Entity getCurrent() {
-            return newObj;
-        }
-        public Entity getNew() {
-            return newObj;
-        }
-        public Entity getOld() {
-            return oldObj;
+        
+        private final String id;
+        private final RaplaType<?> type;
+
+        public Change( String id, RaplaType<?> type) {
+            this.id = id;
+            this.type = type;
         }
 
         @Override public String getCurrentId()
         {
-            return newObj.getId();
+            return id;
         }
 
-        @Override public RaplaType getRaplaType()
+        @Override public RaplaType<?> getRaplaType()
         {
-            return newObj.getRaplaType();
+            return type;
         }
 
         public String toString()
         {
-        	return "Change " + oldObj  + " to " + newObj;
+        	return "Change " + id;//  + " to " + newObj;
         }
     }
     
@@ -258,6 +269,49 @@ public class UpdateResult implements ModificationEvent
     
     public boolean isSwitchTemplateMode() {
         return switchTemplateMode;
+    }
+    
+
+    public static class HistoryEntry
+    {
+        //EntityReferencer.ReferenceInfo info;
+        Entity unresolvedEntity;
+        Date timestamp;
+
+        public Entity getUnresolvedEntity()
+        {
+            return unresolvedEntity;
+        }
+
+        public Date getTimestamp()
+        {
+            return timestamp;
+        }
+    }
+
+
+    public Collection<String> getAddedAndChangedIds()
+    {
+        Set<String> result = new LinkedHashSet<String>();
+        fillIds(result, Add.class);
+        fillIds(result, Change.class);
+        return result;
+    }
+
+    private <T extends UpdateOperation> void fillIds(Set<String> result, final Class<T> operationClass)
+    {
+        final Collection<T> operations = getOperations(operationClass);
+        for (UpdateOperation operation : operations)
+        {
+            result.add(operation.getCurrentId());
+        }
+    }
+
+    public <T extends UpdateOperation> Collection<String> getIds(final Class<T> operationClass)
+    {
+        final LinkedHashSet<String> result = new LinkedHashSet<String>();
+        fillIds(result, operationClass);
+        return result;
     }
 
 }

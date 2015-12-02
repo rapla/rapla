@@ -119,14 +119,14 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
             {
-                Entity newEntity = (Entity) (add).getNew();
+                Entity newEntity = (Entity) updateResult.getLastKnown(add.getCurrentId());
                 saveEvent.putStore(newEntity);
             }
         }
         {
             for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
             {
-                Entity newEntity = (Entity) change.getNew();
+                Entity newEntity = (Entity) updateResult.getLastKnown(change.getCurrentId());
                 saveEvent.putStore(newEntity);
             }
         }
@@ -151,26 +151,25 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             Collection<Change> operations = result.getOperations(Change.class);
             for (Change change:operations)
             {
-                currentInterval = expandInterval( change.getNew(), currentInterval);
-                currentInterval = expandInterval( change.getOld(), currentInterval);
+                currentInterval = expandInterval( result.getLastKnown(change.getCurrentId()), currentInterval);
+                currentInterval = expandInterval( result.getLastEntryBeforeUpdate(change.getCurrentId()).getUnresolvedEntity(), currentInterval);
             }
         }
         {
             Collection<UpdateResult.Add> operations = result.getOperations(UpdateResult.Add.class);
-            for (UpdateResult.Add change:operations)
+            for (UpdateResult.Add add:operations)
             {
-                currentInterval = expandInterval( change.getNew(), currentInterval);
+                currentInterval = expandInterval( result.getLastKnown(add.getCurrentId()), currentInterval);
             }
         }
 
-        // FIXME replace with changes API
-//        {
-//            Collection<Remove> operations = result.getOperations(Remove.class);
-//            for (Remove change:operations)
-//            {
-//                currentInterval = expandInterval( change.getCurrent(), currentInterval);
-//            }
-//        }
+        {
+            Collection<Remove> operations = result.getOperations(Remove.class);
+            for (Remove remove:operations)
+            {
+                currentInterval = expandInterval( result.getLastKnown(remove.getCurrentId()), currentInterval);
+            }
+        }
         return currentInterval;
     }
 
@@ -468,11 +467,11 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
         for (Change operation : evt.getOperations(UpdateResult.Change.class))
         {
-            Entity newObject = operation.getNew();
+            Entity newObject = evt.getLastKnown(operation.getCurrentId());
             // we get all the permissions that have changed on an allocatable
             if (newObject.getRaplaType().is(Allocatable.TYPE) && isTransferedToClient(newObject))
             {
-                PermissionContainer current = (PermissionContainer) operation.getOld();
+                PermissionContainer current = (PermissionContainer) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
                 PermissionContainer newObj = (PermissionContainer) newObject;
                 Util.addDifferences(invalidatePermissions, current, newObj);
             }
@@ -480,7 +479,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (newObject.getRaplaType().is(User.TYPE))
             {
                 User newUser = (User) newObject;
-                User oldUser = (User) operation.getOld();
+                User oldUser = (User) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
                 HashSet<Category> newGroups = new HashSet<Category>(newUser.getGroupList());
                 HashSet<Category> oldGroups = new HashSet<Category>(oldUser.getGroupList());
                 if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
@@ -494,7 +493,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (newObject instanceof Ownable)
             {
                 Ownable newOwnable = (Ownable) newObject;
-                Ownable oldOwnable = (Ownable) operation.getOld();
+                Ownable oldOwnable = (Ownable) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
                 User newOwner = newOwnable.getOwner();
                 User oldOwner = oldOwnable.getOwner();
                 if (newOwner != null && oldOwner != null && (!newOwner.equals(oldOwner)))
@@ -510,7 +509,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             }
             if (newObject.getRaplaType().is(Reservation.TYPE))
             {
-                PermissionContainer current = (PermissionContainer) operation.getOld();
+                PermissionContainer current = (PermissionContainer) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
                 PermissionContainer newObj = (PermissionContainer) newObject;
                 Util.addDifferences(invalidateEventPermissions, current, newObj);
             }
