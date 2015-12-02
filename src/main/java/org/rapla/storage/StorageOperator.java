@@ -110,8 +110,6 @@ public interface StorageOperator extends EntityResolver {
 
 	boolean canChangePassword() throws RaplaException;
 
-    void addStorageUpdateListener(StorageUpdateListener updateListener);
-    void removeStorageUpdateListener(StorageUpdateListener updateListener);
 
     /** returns the beginning of the current day. Uses getCurrentTimstamp. */
     Date today();

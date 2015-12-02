@@ -61,7 +61,7 @@ import java.util.TreeSet;
 
 
 @DefaultImplementation(of=ServerServiceContainer.class,context = InjectionContext.server,export = true)
-public class ServerServiceImpl implements StorageUpdateListener, ServerServiceContainer
+public class ServerServiceImpl implements ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
     final protected ClientFacade facade;
@@ -97,7 +97,6 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         this.facade = facade;
         ((FacadeImpl)facade).setOperator( operator);
         this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
-        operator.addStorageUpdateListener(this);
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
         //        else
@@ -331,29 +330,9 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         return factory;
     }
 
-    public void updateError(RaplaException ex)
-    {
-        if (getLogger() != null)
-            getLogger().error(ex.getMessage(), ex);
-        try
-        {
-            stop();
-        }
-        catch (Exception e)
-        {
-            if (getLogger() != null)
-                getLogger().error(e.getMessage());
-        }
-    }
-
-    public void objectsUpdated(UpdateResult evt)
-    {
-    }
-
     private void stop()
     {
         boolean wasConnected = operator.isConnected();
-        operator.removeStorageUpdateListener(this);
         Logger logger = getLogger();
         try
         {
@@ -382,17 +361,5 @@ public class ServerServiceImpl implements StorageUpdateListener, ServerServiceCo
         return operator;
     }
 
-    public void storageDisconnected(String message)
-    {
-        try
-        {
-            stop();
-        }
-        catch (Exception e)
-        {
-            if (getLogger() != null)
-                getLogger().error(e.getMessage());
-        }
-    }
 
 }

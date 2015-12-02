@@ -69,7 +69,7 @@ import org.rapla.storage.UpdateResult;
 
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 
-public class SynchronisationManager implements ModificationListener {
+public class SynchronisationManager  {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     // existing tasks in memory
 	private final ExchangeAppointmentStorage appointmentStorage;
@@ -107,7 +107,6 @@ public class SynchronisationManager implements ModificationListener {
         syncPeriodPast = config.getSyncPeriodPast();
         
         this.appointmentStorage = appointmentStorage;
-        facade.addModificationListener(this);
         for ( User user : facade.getUsers())
         {
         	updateCalendarMap( user );
@@ -155,10 +154,7 @@ public class SynchronisationManager implements ModificationListener {
 		    }
 		}
 	}
-	public synchronized void dataChanged(ModificationEvent evt) throws RaplaException {
-		synchronize((UpdateResult) evt);
-	}
-	
+
 	ConcurrentHashMap<String, Object> synchronizer = new ConcurrentHashMap<String, Object>();
 	public SynchronizeResult retry(User user) throws RaplaException  
 	{
@@ -268,6 +264,7 @@ public class SynchronisationManager implements ModificationListener {
 		try	{
 			for (String userId :calendarModels.keySet())
 			{
+				// TODO check wether the user can see the appointment or not
 				List<CalendarModelImpl> list = calendarModels.get(userId);
 				for ( CalendarModelImpl conf:list)
 				{
@@ -319,7 +316,8 @@ public class SynchronisationManager implements ModificationListener {
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{
-					Entity<?> current = operation.getCurrent();
+					// FIXME replace with changes api
+					Entity<?> current = null;//operation.getCurrent();
 					Reservation oldReservation = (Reservation) current;
 					for ( Appointment app: oldReservation.getAppointments() )
 					{

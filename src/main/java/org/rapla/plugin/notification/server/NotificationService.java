@@ -67,6 +67,7 @@ public class NotificationService
 
     Logger logger;
 
+    // FIXME same as synchronisation manager
     @Inject
     public NotificationService(ClientFacade facade,RaplaResources   i18nBundle,NotificationResources   notificationI18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
     {
@@ -76,7 +77,7 @@ public class NotificationService
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
         this.mailQueue = mailQueue;
-        clientFacade.addAllocationChangedListener(this);
+        //clientFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         getLogger().info("NotificationServer Plugin started");
     }
@@ -133,7 +134,7 @@ public class NotificationService
         }
     }
 
-    AllocationMail getAllocationMail(Collection<Allocatable> allocatables, AllocationChangeEvent[] changeEvents, User owner,boolean notifyIfOwner) throws RaplaException {
+    AllocationMail getAllocationMail(Collection<Allocatable> allocatablesTheUsersListensTo, AllocationChangeEvent[] changeEvents, User owner,boolean notifyIfOwner) throws RaplaException {
 
         HashMap<Reservation,List<AllocationChangeEvent>> reservationMap = null;
         HashSet<Allocatable> changedAllocatables = null;
@@ -143,7 +144,8 @@ public class NotificationService
             AllocationChangeEvent event = changeEvents[i];
             Reservation reservation = event.getNewReservation();
             Allocatable allocatable = event.getAllocatable();
-			if (!allocatables.contains(allocatable))
+            // Did the user opt in for the resource?
+			if (!allocatablesTheUsersListensTo.contains(allocatable))
                 continue;
             if (!notifyIfOwner && owner.equals(reservation.getOwner()))
                 continue;

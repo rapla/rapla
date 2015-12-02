@@ -85,7 +85,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 	protected RaplaLocale raplaLocale;
 	
-	final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
 	protected LocalCache cache;
 	protected RaplaResources i18n;
 	protected Logger logger;
@@ -349,17 +348,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 
 	
-	public synchronized void addStorageUpdateListener(StorageUpdateListener listener) {
-		storageUpdateListeners.add(listener);
-	}
-
-	public synchronized void removeStorageUpdateListener(StorageUpdateListener listener) {
-		storageUpdateListeners.remove(listener);
-	}
-
-	public synchronized StorageUpdateListener[] getStorageUpdateListeners() {
-		return storageUpdateListeners.toArray(new StorageUpdateListener[] {});
-	}
 
 	protected Lock writeLock() throws RaplaException {
 		return RaplaComponent.lock( lock.writeLock(), 60);
@@ -377,30 +365,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return i18n;
 	}
 	
-	protected void fireStorageUpdated(final UpdateResult evt) {
-		StorageUpdateListener[] listeners = getStorageUpdateListeners();
-		for (int i = 0; i < listeners.length; i++) {
-			listeners[i].objectsUpdated(evt);
-		}
-	}
-
-	protected void fireUpdateError(final RaplaException ex) {
-		if (storageUpdateListeners.size() == 0)
-			return;
-		StorageUpdateListener[] listeners = getStorageUpdateListeners();
-		for (int i = 0; i < listeners.length; i++) {
-			listeners[i].updateError(ex);
-		}
-	}
-
-	protected void fireStorageDisconnected(String message) {
-		if (storageUpdateListeners.size() == 0)
-			return;
-		StorageUpdateListener[] listeners = getStorageUpdateListeners();
-		for (int i = 0; i < listeners.length; i++) {
-			listeners[i].storageDisconnected(message);
-		}
-	}
 
 	
 	// End of StorageOperator interface

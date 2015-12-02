@@ -51,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @DefaultImplementation(of=UpdateDataManager.class, context = InjectionContext.server)
 @Singleton
-public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable, UpdateDataManager
+public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 {
     private CachableStorageOperator operator;
 
@@ -71,7 +71,6 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
         this.facade = facade;
         this.operator = operator;
         this.permissionController = permissionController;
-        this.operator.addStorageUpdateListener(this);
         this.security = securityManager;
 
         Long repositoryVersion = operator.getCurrentTimestamp().getTime();
@@ -164,13 +163,15 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
                 currentInterval = expandInterval( change.getNew(), currentInterval);
             }
         }
-        {
-            Collection<Remove> operations = result.getOperations(Remove.class);
-            for (Remove change:operations)
-            {
-                currentInterval = expandInterval( change.getCurrent(), currentInterval);
-            }
-        }
+
+        // FIXME replace with changes API
+//        {
+//            Collection<Remove> operations = result.getOperations(Remove.class);
+//            for (Remove change:operations)
+//            {
+//                currentInterval = expandInterval( change.getCurrent(), currentInterval);
+//            }
+//        }
         return currentInterval;
     }
 
@@ -196,7 +197,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
         return interval;
     }
     // Implementation of StorageUpdateListener
-    // 
+    // FIXME replace with changes api
     public void objectsUpdated(UpdateResult evt)
     {
         long repositoryVersion = operator.getCurrentTimestamp().getTime();
@@ -272,11 +273,12 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
                     needResourceRefresh.remove(userId);
                     //addAllUsersToResourceRefresh = true;
                 }
-                Entity obj = operation.getCurrent();
-                if (!isTransferedToClient(obj))
-                {
-                    continue;
-                }
+                // FIXME replace with changes API
+                //Entity obj = operation.getCurrent();
+//                if (!isTransferedToClient(obj))
+//                {
+//                    continue;
+//                }
                 if (type == DynamicType.TYPE)
                 {
                     addAllUsersToResourceRefresh = true;
@@ -352,6 +354,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
         return safeResultEvent;
     }
 
+    // adds an object to the update event if the client can see it
     protected void processClientReadable(User user, UpdateEvent safeResultEvent, Entity obj, boolean remove)
     {
         if (!UpdateDataManagerImpl.isTransferedToClient(obj))
@@ -631,11 +634,7 @@ public class UpdateDataManagerImpl implements StorageUpdateListener, Disposable,
 
     @Override public void dispose()
     {
-        operator.removeStorageUpdateListener(this);
-    }
 
-    public void updateError(RaplaException ex)
-    {
     }
 
     public void storageDisconnected(String disconnectionMessage)

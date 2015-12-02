@@ -12,24 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -101,6 +83,23 @@ import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteOperator;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
+
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
  * DB-Subsystem.
@@ -154,11 +153,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
     public void setOperator(StorageOperator operator)
     {
-        if (this.operator != null)
+        if (this.operator != null && this.operator instanceof RemoteOperator)
         {
-            this.operator.removeStorageUpdateListener( this );
+			((RemoteOperator)this.operator).removeStorageUpdateListener( this );
         }
-        operator.addStorageUpdateListener(this);
+		if ( operator instanceof  RemoteOperator)
+		{
+			((RemoteOperator)operator).addStorageUpdateListener(this);
+		}
         this.operator = operator;
     }
 
@@ -201,11 +203,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		fireUpdateEvent(evt);
 	}
 
-	public void updateError(RaplaException ex) {
-		getLogger().error(ex.getMessage(), ex);
-		fireUpdateError(ex);
-	}
-
 	public void storageDisconnected(String message) {
 		fireStorageDisconnected(message);
 	}
@@ -237,11 +234,19 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}
 	
 	public void addModificationListener(ModificationListener listener) {
+		if (!(operator instanceof RemoteOperator))
+		{
+			throw new IllegalStateException("only allowed with RemoteOpertator");
+		}
 		modificatonListenerList.add(listener);
 	}
 
 	public void addDirectModificationListener(ModificationListener listener) 
 	{
+		if (!(operator instanceof RemoteOperator))
+		{
+			throw new IllegalStateException("only allowed with RemoteOpertator");
+		}
 		directListenerList.add(listener);
 	}
 	
@@ -269,6 +274,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 
+	/*
 	public void addAllocationChangedListener(AllocationChangeListener listener) {
 		if ( operator instanceof RemoteOperator)
 		{
@@ -302,6 +308,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		List<AllocationChangeEvent> triggerEvents = AllocationChangeFinder.getTriggerEvents(evt, logger);
 		return triggerEvents.toArray( new AllocationChangeEvent[0]);
 	}
+	*/
 
 	public void addUpdateErrorListener(UpdateErrorListener listener) {
 		errorListenerList.add(listener);
@@ -329,39 +336,39 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 
-	final class UpdateCommandAllocation implements Runnable, Command {
-		Collection<AllocationChangeListener> listenerList;
-		AllocationChangeEvent[] allocationChangeEvents;
-
-		public UpdateCommandAllocation(Collection<AllocationChangeListener> allocationChangeListeners, UpdateResult evt) {
-			this.listenerList= new ArrayList<AllocationChangeListener>(allocationChangeListeners);
-			if ( allocationChangeListeners.size() > 0)
-			{
-				allocationChangeEvents = createAllocationChangeEvents(evt);
-			}
-		}
-
-		public void execute() {
-			run();
-		}
-
-		public void run() {
-			for (AllocationChangeListener listener: listenerList) 
-			{
-				try {
-					if (isAborting())
-						return;
-					if (getLogger().isDebugEnabled())
-						getLogger().debug("Notifying " + listener);
-					if (allocationChangeEvents.length > 0) {
-						listener.changed(allocationChangeEvents);
-					}
-				} catch (Exception ex) {
-					getLogger().error("update-exception", ex);
-				}
-			}
-		}
-	}
+//	final class UpdateCommandAllocation implements Runnable, Command {
+//		Collection<AllocationChangeListener> listenerList;
+//		AllocationChangeEvent[] allocationChangeEvents;
+//
+//		public UpdateCommandAllocation(Collection<AllocationChangeListener> allocationChangeListeners, UpdateResult evt) {
+//			this.listenerList= new ArrayList<AllocationChangeListener>(allocationChangeListeners);
+//			if ( allocationChangeListeners.size() > 0)
+//			{
+//				allocationChangeEvents = createAllocationChangeEvents(evt);
+//			}
+//		}
+//
+//		public void execute() {
+//			run();
+//		}
+//
+//		public void run() {
+//			for (AllocationChangeListener listener: listenerList)
+//			{
+//				try {
+//					if (isAborting())
+//						return;
+//					if (getLogger().isDebugEnabled())
+//						getLogger().debug("Notifying " + listener);
+//					if (allocationChangeEvents.length > 0) {
+//						listener.changed(allocationChangeEvents);
+//					}
+//				} catch (Exception ex) {
+//					getLogger().error("update-exception", ex);
+//				}
+//			}
+//		}
+//	}
 	
 	final class UpdateCommandModification implements Runnable, Command {
 		ModificationListener listenerList;
@@ -419,10 +426,10 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             {
 				notifyQueue.scheduleSynchronized(mod,new UpdateCommandModification(mod, evt),0);
 			}
-			Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
-			if (allocationChangeListeners.size() > 0) {
-				notifyQueue.schedule(new UpdateCommandAllocation(allocationChangeListeners, evt),0);
-			}
+//			Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
+//			if (allocationChangeListeners.size() > 0) {
+//				notifyQueue.schedule(new UpdateCommandAllocation(allocationChangeListeners, evt),0);
+//			}
 		}
 	}
 
@@ -988,9 +995,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			this.workingUserId = null;
 			// we need to remove the storage update listener, because the disconnect
 			// would trigger a restart otherwise
-			operator.removeStorageUpdateListener(this);
-			operator.disconnect();
-			operator.addStorageUpdateListener(this);
+			if ( operator instanceof RemoteOperator)
+			{
+				RemoteOperator remoteOperator = (RemoteOperator)operator;
+				remoteOperator.removeStorageUpdateListener(this);
+				remoteOperator.disconnect();
+				remoteOperator.addStorageUpdateListener(this);
+			}
 		} 
 		finally
 		{

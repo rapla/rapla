@@ -283,7 +283,9 @@ public class DBOperator extends LocalAbstractCachableOperator
             final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
             result = raplaSQLInput.update( c, lastUpdated );
             setResolver(result.getChanged());
-            fireStorageUpdated(result);
+
+            // TODO check if still needed
+            //fireStorageUpdated(result);
 
             //result = new UpdateResult(null);
             //fireStorageUpdated(result);
@@ -322,7 +324,6 @@ public class DBOperator extends LocalAbstractCachableOperator
             }
         }
         isConnected = false;
-        fireStorageDisconnected("");
     	getLogger().info("Disconnected");
     }
 
@@ -641,7 +642,8 @@ public class DBOperator extends LocalAbstractCachableOperator
         {
     		unlock( writeLock );
         }
-        fireStorageUpdated(result);
+        // TODO check if still needed
+        //fireStorageUpdated(result);
     }
 
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<String> removeObjects) throws RaplaException, RaplaDBException {

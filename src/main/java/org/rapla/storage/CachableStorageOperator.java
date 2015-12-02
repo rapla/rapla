@@ -14,15 +14,16 @@
  */
 package org.rapla.storage;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.TimeZone;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.impl.server.Changes;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.TimeZone;
 
 public interface CachableStorageOperator extends StorageOperator {
 	
@@ -39,7 +40,8 @@ public interface CachableStorageOperator extends StorageOperator {
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
     void fillConflictDisableInformation(User user, Conflict conflict);
-	
+
+    Changes getChanges(Date since);
 }
 
 

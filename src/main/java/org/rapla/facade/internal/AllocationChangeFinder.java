@@ -78,28 +78,30 @@ public class AllocationChangeFinder
     }
 
     private void removed(String id,RaplaType raplaType, User user) {
-        if ( raplaType ==  Reservation.TYPE ) {
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Reservation removed: " + id);
-            Reservation oldRes = (Reservation) entity;
-            for (Allocatable allocatable:allocatables)
-            {
-                for (Appointment appointment:appointments)
-                {
-                    if (!oldRes.hasAllocated(allocatable,appointment))
-                        continue;
-
-                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));
-                }
-            }
-            addAppointmentRemove(
-                                 user
-                                 ,oldRes
-                                 ,oldRes
-                                 ,Arrays.asList(oldRes.getAllocatables())
-                                 ,Arrays.asList(oldRes.getAppointments())
-                                );
-        }
+        // FIXME to be replaced with notification mechanism
+//
+//        if ( raplaType ==  Reservation.TYPE ) {
+//            if (getLogger().isDebugEnabled())
+//                getLogger().debug("Reservation removed: " + id);
+//            Reservation oldRes = (Reservation) entity;
+//            for (Allocatable allocatable:allocatables)
+//            {
+//                for (Appointment appointment:appointments)
+//                {
+//                    if (!oldRes.hasAllocated(allocatable,appointment))
+//                        continue;
+//
+//                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));
+//                }
+//            }
+//            addAppointmentRemove(
+//                                 user
+//                                 ,oldRes
+//                                 ,oldRes
+//                                 ,Arrays.asList(oldRes.getAllocatables())
+//                                 ,Arrays.asList(oldRes.getAppointments())
+//                                );
+//        }
     }
 
     private void changed(Entity oldEntity,Entity newEntity, User user) {

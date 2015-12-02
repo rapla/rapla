@@ -58,6 +58,7 @@ import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteStorage.BindingMap;
@@ -78,6 +79,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 
 
@@ -92,6 +94,8 @@ import java.util.concurrent.locks.Lock;
 @Singleton
 public class RemoteOperator  extends  AbstractCachableOperator implements  RestartServer,Disposable
 {
+    final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
+
     private boolean bSessionActive = false;
     String userId;
 	RemoteAuthentificationService remoteAuthentificationService;
@@ -1100,8 +1104,36 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		result  = createUpdateResult(oldEntityMap, updated, removeInfo, invalidateInterval, userId);
 		fireStorageUpdated(result);
 	}
-    
-	@Override
+
+    public synchronized void addStorageUpdateListener(StorageUpdateListener listener) {
+        storageUpdateListeners.add(listener);
+    }
+
+    public synchronized void removeStorageUpdateListener(StorageUpdateListener listener) {
+        storageUpdateListeners.remove(listener);
+    }
+
+    public synchronized StorageUpdateListener[] getStorageUpdateListeners() {
+        return storageUpdateListeners.toArray(new StorageUpdateListener[] {});
+    }
+
+    protected void fireStorageUpdated(final UpdateResult evt) {
+        StorageUpdateListener[] listeners = getStorageUpdateListeners();
+        for (int i = 0; i < listeners.length; i++) {
+            listeners[i].objectsUpdated(evt);
+        }
+    }
+
+    protected void fireStorageDisconnected(String message) {
+        if (storageUpdateListeners.size() == 0)
+            return;
+        StorageUpdateListener[] listeners = getStorageUpdateListeners();
+        for (int i = 0; i < listeners.length; i++) {
+            listeners[i].storageDisconnected(message);
+        }
+    }
+
+    @Override
 	public FutureResult<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings( final Collection<Allocatable> allocatables,	Collection<Appointment> appointments, Collection<Reservation> ignoreList){
 		final RemoteStorage serv = getRemoteStorage();
     	final String[] allocatableIds = getIdList(allocatables);

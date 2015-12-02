@@ -556,16 +556,15 @@ class ConflictFinder {
 
 	
 
-	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult evt, Date today,Collection<Allocatable> removedAllocatables)
+	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult result, Changes changes, Date today,Collection<Allocatable> removedAllocatables)
 	{
-		Iterable<Change> it = evt.getOperations(UpdateResult.Change.class);
-		for (Change next:it)
+		for (String nextId:changes.getChangedIds())
 		{
-			RaplaObject current = next.getNew();
+			RaplaObject current = (RaplaObject) changes.getLastKnown(nextId);
 			if ( current.getRaplaType() == Allocatable.TYPE)
 			{
-				Allocatable old = (Allocatable) next.getOld();
-				Allocatable newAlloc = (Allocatable) next.getNew();
+				Allocatable old = (Allocatable) changes.getLastEntryBeforeStart(nextId).getUnresolvedEntity();
+				Allocatable newAlloc = (Allocatable) current;
 				if ( old != null && newAlloc != null )
 				{
 					if (isConflictIgnored(old) != isConflictIgnored(newAlloc))
@@ -613,8 +612,8 @@ class ConflictFinder {
 				boolean isRemoved = !conflictListAfter.contains(conflict);
 				if  ( isRemoved )
 				{
-				    cache.fillConflictDisableInformation( evt.getUser(), conflict);
-					evt.addOperation( new UpdateResult.Remove(conflict.getId(), Conflict.TYPE));
+				    cache.fillConflictDisableInformation( result.getUser(), conflict);
+					result.addOperation(new UpdateResult.Remove(conflict.getId(), Conflict.TYPE));
 				}
 			}
 			for ( Conflict conflict: conflictListAfter)
@@ -622,8 +621,8 @@ class ConflictFinder {
 				boolean isNew = !conflictListBefore.contains(conflict);
 				if  ( isNew )
 				{
-				    cache.fillConflictDisableInformation( evt.getUser(), conflict);
-					evt.addOperation( new UpdateResult.Add(conflict));
+				    cache.fillConflictDisableInformation( result.getUser(), conflict);
+					result.addOperation(new UpdateResult.Add(conflict));
 					added.add( conflict);
 				}
 			}
@@ -635,9 +634,10 @@ class ConflictFinder {
     	
     	// first we create a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
     	Map<Allocatable, Set<String>> appointmentUpdateMap = new LinkedHashMap<Allocatable, Set<String>>();
-    	for (@SuppressWarnings("rawtypes") RaplaObject obj:evt.getChanged())
+    	for (String id:changes.getChangedIds())
     	{
-    		if ( obj.getRaplaType().equals( Reservation.TYPE))
+            final Entity obj = changes.getLastKnown(id).getUnresolvedEntity();
+            if ( obj.getRaplaType().equals( Reservation.TYPE))
     		{
     			Reservation reservation = (Reservation) obj;
     			for (Appointment app: reservation.getAppointments())
@@ -693,8 +693,8 @@ class ConflictFinder {
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
     		{
-    		    cache.fillConflictDisableInformation( evt.getUser(), newConflict);
-    			evt.addOperation( new UpdateResult.Change( newConflict, oldConflict));
+    		    cache.fillConflictDisableInformation( result.getUser(), newConflict);
+    			result.addOperation(new UpdateResult.Change(newConflict, oldConflict));
     		}
     	}
 

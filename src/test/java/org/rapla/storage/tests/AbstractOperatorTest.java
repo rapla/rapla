@@ -28,7 +28,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.impl.server.Changes;
 
+import java.util.Collection;
 import java.util.Date;
 
 public abstract class AbstractOperatorTest  {
@@ -186,6 +188,249 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(10, app.getRepeating().getNumber());
         }
     }
+
+	@Test
+	public void testChangesAddChangeDelete()
+	{
+		Date startAll = new Date();
+		CachableStorageOperator operator = getOperator();
+		ClientFacade facade = getFacade();
+		final String resourceId;
+		facade.login("homer", "duffs".toCharArray() );
+		{// resources
+			Date startDate=operator.getCurrentTimestamp();
+			Allocatable resource = facade.newResource();
+			resourceId = resource.getId();
+			final String newValue = "New resource";
+			resource.getClassification().setValue("name", newValue);
+			facade.store( resource);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertTrue(changes.getAddedIds().contains( resourceId));
+			Collection<Changes.HistoryEntry> historyEntries = changes.getUnresolvedHistoryEntry(resourceId);
+			Assert.assertEquals(1, historyEntries.size());
+			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof Allocatable);
+			final Allocatable allocUnresolved = (Allocatable) unresolvedEntity;
+			Assert.assertEquals(newValue, allocUnresolved.getClassification().getValue("name"));
+			Assert.assertEquals(1, changes.getAddedIds().size());
+			Assert.assertTrue(changes.getChangedIds().isEmpty());
+			Assert.assertTrue(changes.getRemovedIds().isEmpty());
+		}
+		final String reservationId;
+		{// Reservation
+			Date startDate=operator.getCurrentTimestamp();
+			Reservation reservation = facade.newReservation();
+			reservationId = reservation.getId();
+			final String newValue = "New resource";
+			reservation.getClassification().setValue("name", newValue);
+			Date appStartDate = new Date();
+			Date appEndDate = new Date(appStartDate.getTime() + 120000);
+			reservation.addAppointment(facade.newAppointment(appStartDate, appEndDate));
+			facade.store( reservation);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertTrue(changes.getAddedIds().contains( reservationId));
+			Collection<Changes.HistoryEntry> historyEntries = changes.getUnresolvedHistoryEntry(reservationId);
+			Assert.assertEquals(1, historyEntries.size());
+			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof Reservation);
+			final Reservation reservationUnresolved = (Reservation) unresolvedEntity;
+			Assert.assertEquals(newValue, reservationUnresolved.getClassification().getValue("name"));
+			Assert.assertEquals(1, changes.getAddedIds().size());
+			Assert.assertTrue(changes.getChangedIds().isEmpty());
+			Assert.assertTrue(changes.getRemovedIds().isEmpty());
+		}
+		final String userId;
+		{// user
+			Date startDate=operator.getCurrentTimestamp();
+			User user = facade.newUser();
+			userId = user.getId();
+			final String newValue = "New resource";
+			user.setName(newValue);
+			facade.store( user);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertTrue(changes.getAddedIds().contains( userId));
+			Collection<Changes.HistoryEntry> historyEntries = changes.getUnresolvedHistoryEntry(userId);
+			Assert.assertEquals(1, historyEntries.size());
+			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof User);
+			final User allocUnresolved = (User) unresolvedEntity;
+			Assert.assertEquals(newValue, allocUnresolved.getName());
+			Assert.assertEquals(1, changes.getAddedIds().size());
+			Assert.assertTrue(changes.getChangedIds().isEmpty());
+			Assert.assertTrue(changes.getRemovedIds().isEmpty());
+		}
+		final String categoryId;
+		{// Category
+			Date startDate=operator.getCurrentTimestamp();
+			Category category = facade.newCategory();
+			categoryId = category.getId();
+			final String newValue = "New resource";
+			Category superCategory = facade.edit(facade.getSuperCategory());
+			superCategory.addCategory(category);
+			facade.store( superCategory);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Collection<Changes.HistoryEntry> historyEntries = changes.getUnresolvedHistoryEntry(superCategory.getId());
+			Assert.assertEquals(1, historyEntries.size());
+			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof Category);
+			final Category categoryUnresolved = (Category) unresolvedEntity;
+			Assert.assertEquals(newValue, categoryUnresolved.hasCategory(category));
+			Assert.assertTrue(changes.getRemovedIds().isEmpty());
+		}
+		{// Preferences
+
+		}
+		// restart via disconnect and connect
+		{
+			operator.disconnect();
+			operator.connect();
+			final Changes changes = operator.getChanges(startAll);
+			// we expect all changes
+			Assert.assertEquals(3, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Assert.assertEquals(0, changes.getRemovedIds().size());
+		}
+		// Start changing
+		{// resource
+			Date startDate = new Date();
+			final Allocatable resource = facade.edit(facade.getOperator().tryResolve(resourceId, Allocatable.class));
+			final String newValue = "changedValue";
+			final String attributeId = "name";
+			resource.getClassification().setValue(attributeId, newValue);
+			facade.store(resource);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Assert.assertEquals(0, changes.getRemovedIds().size());
+			final String changedId = changes.getChangedIds().iterator().next();
+			final Collection<Changes.HistoryEntry> unresolvedHistoryEntry = changes.getUnresolvedHistoryEntry(changedId);
+			Assert.assertEquals(1, unresolvedHistoryEntry.size());
+			final Entity unresolvedEntity = changes.getLastKnown(changedId).getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof Allocatable);
+			final Allocatable unresolvedAllocatable = (Allocatable) unresolvedEntity;
+			Assert.assertEquals(newValue, unresolvedAllocatable.getClassification().getValue(attributeId));
+		}
+		{// Reservation
+			Date startDate = new Date();
+			final Reservation reservation = facade.edit(facade.getOperator().tryResolve(reservationId, Reservation.class));
+			final String newValue = "changedValue";
+			final String attributeId = "name";
+			reservation.getClassification().setValue(attributeId, newValue);
+			final Date newAppStart = new Date();
+			reservation.getAppointments()[0].move(newAppStart);
+			facade.store(reservation);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Assert.assertEquals(0, changes.getRemovedIds().size());
+			final String changedId = changes.getChangedIds().iterator().next();
+			final Collection<Changes.HistoryEntry> unresolvedHistoryEntry = changes.getUnresolvedHistoryEntry(changedId);
+			Assert.assertEquals(1, unresolvedHistoryEntry.size());
+			final Entity unresolvedEntity = changes.getLastKnown(changedId).getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof Reservation);
+			final Reservation unresolvedReservation = (Reservation) unresolvedEntity;
+			Assert.assertEquals(newValue, unresolvedReservation.getClassification().getValue(attributeId));
+			Assert.assertEquals(newAppStart, unresolvedReservation.getAppointments()[0].getStart());
+		}
+		{// User
+			Date startDate = new Date();
+			final User user = facade.edit(facade.getOperator().tryResolve(userId, User.class));
+			final String newValue = "changedValue";
+			user.setName(newValue);
+			facade.store(user);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Assert.assertEquals(0, changes.getRemovedIds().size());
+			final String changedId = changes.getChangedIds().iterator().next();
+			final Collection<Changes.HistoryEntry> unresolvedHistoryEntry = changes.getUnresolvedHistoryEntry(changedId);
+			Assert.assertEquals(1, unresolvedHistoryEntry.size());
+			final Entity unresolvedEntity = changes.getLastKnown(changedId).getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof User);
+			final User unresolvedUser = (User) unresolvedEntity;
+			Assert.assertEquals(newValue, unresolvedUser.getName());
+		}
+		{// Category
+			Date startDate = new Date();
+			final Category category = facade.edit(facade.getOperator().tryResolve(categoryId, Category.class));
+			final String newValue = "changedValue";
+			category.setKey(newValue);
+			facade.store(category);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Assert.assertEquals(0, changes.getRemovedIds().size());
+			final String changedId = changes.getChangedIds().iterator().next();
+			final Collection<Changes.HistoryEntry> unresolvedHistoryEntry = changes.getUnresolvedHistoryEntry(changedId);
+			Assert.assertEquals(2, unresolvedHistoryEntry.size());
+			final Entity unresolvedEntity = changes.getLastKnown(changedId).getUnresolvedEntity();
+			Assert.assertTrue(unresolvedEntity instanceof Category);
+			final Category unresolvedCategory = (Category) unresolvedEntity;
+			Assert.assertEquals(newValue, unresolvedCategory.getKey());
+		}
+		// start deletion
+		{// resource
+			final Date startDate = new Date();
+			final Entity entity = facade.getOperator().tryResolve(resourceId);
+			facade.remove(entity);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(0, changes.getChangedIds().size());
+			Assert.assertEquals(1, changes.getRemovedIds().size());
+			Assert.assertTrue(changes.getRemovedIds().contains(resourceId));
+		}
+		{// Reservation
+			final Date startDate = new Date();
+			final Entity entity = facade.getOperator().tryResolve(reservationId);
+			facade.remove(entity);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(0, changes.getChangedIds().size());
+			Assert.assertEquals(1, changes.getRemovedIds().size());
+			Assert.assertTrue(changes.getRemovedIds().contains(reservationId));
+		}
+		{// User
+			final Date startDate = new Date();
+			final Entity entity = facade.getOperator().tryResolve(userId);
+			facade.remove(entity);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(0, changes.getChangedIds().size());
+			Assert.assertEquals(1, changes.getRemovedIds().size());
+			Assert.assertTrue(changes.getRemovedIds().contains(userId));
+		}
+		{// Category
+			final Date startDate = new Date();
+			final Category entity = facade.getOperator().resolve(resourceId, Category.class);
+			final Category superCategory = facade.edit(facade.getSuperCategory());
+			superCategory.removeCategory(entity);
+			facade.store(superCategory);
+			operator.refresh();
+			final Changes changes = operator.getChanges(startDate);
+			Assert.assertEquals(0, changes.getAddedIds().size());
+			Assert.assertEquals(1, changes.getChangedIds().size());
+			Assert.assertEquals(0, changes.getRemovedIds().size());
+			Assert.assertFalse(((Category)changes.getLastKnown(superCategory.getId())).hasCategory(entity));
+		}
+		final Changes changes = operator.getChanges(startAll);
+		Assert.assertTrue(changes.getAddedIds().isEmpty());
+		Assert.assertTrue(changes.getRemovedIds().isEmpty());
+		Assert.assertEquals("Only super category expected to be changed.",1, changes.getChangedIds().size());
+
+	}
 }
 
 

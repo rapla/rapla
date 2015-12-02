@@ -218,7 +218,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
             getLogger().info("Disconnecting: " + getURL());
             cache.clearAll();
             isConnected = false;
-            fireStorageDisconnected("");
             getLogger().debug("Disconnected");
         }
     }
@@ -406,7 +405,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             unlock(writeLock);
         }
-        fireStorageUpdated(result);
+        // TODO check if still needed
+        //fireStorageUpdated(result);
     }
 
     protected void updateLastChanged(UpdateEvent evt) throws RaplaException {

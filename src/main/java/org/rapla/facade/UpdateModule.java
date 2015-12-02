@@ -66,8 +66,8 @@ public interface UpdateModule
     void addUpdateErrorListener(UpdateErrorListener listener);
     void removeUpdateErrorListener(UpdateErrorListener listener);
     
-    void addAllocationChangedListener(AllocationChangeListener triggerListener);
-    void removeAllocationChangedListener(AllocationChangeListener triggerListener);
+    //void addAllocationChangedListener(AllocationChangeListener triggerListener);
+    //void removeAllocationChangedListener(AllocationChangeListener triggerListener);
 }
 
 
