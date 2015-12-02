@@ -30,11 +30,14 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 
 import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
+@DefaultImplementation(context=InjectionContext.swing, of=StartActivityEventHandler.class)
 public class SwingActivityController extends RaplaComponent implements StartActivityEventHandler
 {
     
@@ -73,8 +76,8 @@ public class SwingActivityController extends RaplaComponent implements StartActi
                 final List<Reservation> singletonList = Collections.singletonList( r);
                 List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, facade.getUser());
                 String title = null;
-                // FIXME mainComponent
-                Component mainComponent = null;
+                // TODO think about a better solution
+                Component mainComponent = new RaplaGUIComponent(getClientFacade(), getI18n(), getRaplaLocale(), getLogger()).getMainComponent();
                 final PopupContext swingPopupContext = new SwingPopupContext(mainComponent, null);
                 EditController.EditCallback<List<Reservation>> callback = null;
                 editController.edit(list, title, swingPopupContext,callback);
