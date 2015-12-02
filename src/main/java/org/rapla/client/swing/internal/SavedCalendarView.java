@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -39,10 +38,8 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -359,7 +356,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             
         updateActions();
 		Entity preferences = getQuery().getPreferences();
-		UpdateResult modificationEvt = new UpdateResult( getUser());
+		UpdateResult modificationEvt = new UpdateResult();
         modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
         resourceSelection.dataChanged(modificationEvt);
         calendarContainer.update(modificationEvt);

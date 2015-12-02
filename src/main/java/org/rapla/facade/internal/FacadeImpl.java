@@ -12,6 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -58,7 +76,6 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
@@ -82,23 +99,6 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteOperator;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -1035,15 +1035,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		this.templateId = template != null ? template.getId() : null;
 		cachedReservations = null;
 		cacheValidString = null;
-		User workingUser;
-        try {
-            workingUser = getWorkingUser();
-        } catch (EntityNotFoundException e) {
-            // system user as change initiator won't hurt 
-            workingUser = null;
-            getLogger().error(e.getMessage(),e);
-        }
-		UpdateResult updateResult = new UpdateResult( workingUser);
+//		User workingUser;
+//        try {
+//            workingUser = getWorkingUser();
+//        } catch (EntityNotFoundException e) {
+//            // system user as change initiator won't hurt 
+//            workingUser = null;
+//            getLogger().error(e.getMessage(),e);
+//        }
+		UpdateResult updateResult = new UpdateResult();
 		updateResult.setSwitchTemplateMode(true);
 		updateResult.setInvalidateInterval( new TimeInterval(null, null));
 		fireUpdateEvent( updateResult);

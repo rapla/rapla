@@ -25,12 +25,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import microsoft.exchange.webservices.data.core.enumeration.property.ConflictType;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
@@ -67,7 +65,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 
@@ -671,12 +668,12 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			TimeInterval invalidateInterval,
 			String userId) 
 					throws EntityNotFoundException {
-		User user = null;
-		if (userId != null) {
-			user = resolve(cache,userId, User.class);
-		}
+//		User user = null;
+//		if (userId != null) {
+//			user = resolve(cache,userId, User.class);
+//		}
 
-		UpdateResult result = new UpdateResult(user);
+		UpdateResult result = new UpdateResult();
 		if ( invalidateInterval != null)
 		{
 			result.setInvalidateInterval( invalidateInterval);

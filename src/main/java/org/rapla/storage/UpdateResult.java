@@ -12,36 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
-import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.facade.ModificationEvent;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.facade.ModificationEvent;
+
 public class UpdateResult implements ModificationEvent
 {
-    private User user;
     private List<UpdateOperation> operations = new ArrayList<UpdateOperation>();
 	Set<RaplaType> modified = new HashSet<RaplaType>();
     Set<EntityReferencer.ReferenceInfo> removedReferences = new HashSet<EntityReferencer.ReferenceInfo>();
 	boolean switchTemplateMode = false;
 	
-	public UpdateResult(User user) {
-        this.user = user;
+	public UpdateResult() {
     }
 	
     public void addOperation(final UpdateOperation operation) {
@@ -58,10 +51,6 @@ public class UpdateResult implements ModificationEvent
         }
     }
     
-    public User getUser() {
-        return user;
-    }
-
     @Override public Set<EntityReferencer.ReferenceInfo> getRemovedReferences()
     {
         return removedReferences;

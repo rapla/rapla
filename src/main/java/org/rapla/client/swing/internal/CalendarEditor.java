@@ -125,7 +125,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		    	updateOwnReservationsSelected();
 		    	try {
 	               	Entity preferences = getQuery().getPreferences();
-	   		    	UpdateResult modificationEvt = new UpdateResult( getUser());
+	   		    	UpdateResult modificationEvt = new UpdateResult();
 	   		    	modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
 	   				resourceSelection.dataChanged(modificationEvt);
 	   				calendarContainer.update(modificationEvt);

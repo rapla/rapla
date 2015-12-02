@@ -36,11 +36,10 @@ public class AllocationChangeFinder
     ArrayList<AllocationChangeEvent> changeList = new ArrayList<AllocationChangeEvent>();
     Logger logger;
 
-    private AllocationChangeFinder(Logger logger, UpdateResult updateResult) {
+    private AllocationChangeFinder(Logger logger, UpdateResult updateResult, User user) {
         this.logger = logger;
         if ( updateResult == null)
             return;
-        User user = updateResult.getUser();
         for (UpdateResult.Add addOp: updateResult.getOperations( UpdateResult.Add.class )) {
             added(  addOp.getNew(), user );
         }
@@ -59,8 +58,8 @@ public class AllocationChangeFinder
         return logger;
     }
 
-    static public List<AllocationChangeEvent> getTriggerEvents(UpdateResult result,Logger logger) {
-    	AllocationChangeFinder finder = new AllocationChangeFinder(logger, result);
+    static public List<AllocationChangeEvent> getTriggerEvents(UpdateResult result, User user, Logger logger) {
+    	AllocationChangeFinder finder = new AllocationChangeFinder(logger, result, user);
     	return finder.changeList; 
     }
 

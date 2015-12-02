@@ -109,9 +109,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         return clone;
     }
 
-    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult)
+    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult, User user)
     {
-        User user = updateResult.getUser();
         UpdateEvent saveEvent = new UpdateEvent();
         if (user != null)
         {
@@ -225,7 +224,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             }
         }
 
-        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent(evt);
+        UpdateEvent safeResultEvent = createTransactionSafeUpdateEvent(evt, null);
         if (getLogger().isDebugEnabled())
             getLogger().debug("Storage was modified. Calling notify.");
         boolean addAllUsersToConflictRefresh = false;
@@ -395,7 +394,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 }
                 else
                 {
-                    // TODO is this the right place?
                     obj = conflict.clone();
                     operator.fillConflictDisableInformation(user, conflict);
                 }
