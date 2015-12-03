@@ -1156,29 +1156,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             if (entry.affectedGroupIds != null)
             {
-                for ( String id:entry.affectedGroupIds)
+				for ( String id:((UserImpl)user).getGroupIdList())
                 {
-                    // FIXME replace with ids in affectedGroupIds contains
-                    Category group = tryResolve(id, Category.class);
-                    if (group != null)
-                    {
-                        if ( user.belongsTo( group))
-                        {
-                            return true;
-                        }
-                    }
+                 	if ( entry.affectedGroupIds.contains( id))
+					{
+						return true;
+					}
                 }
             }
             if ( entry.affectedUserIds != null)
             {
                 String userId = user.getId();
-                for ( String id:entry.affectedUserIds)
-                {
-                    if ( id.equals( userId))
-                    {
-                        return true;
-                    }
-                }
+				if ( entry.affectedUserIds.contains( userId))
+				{
+					return true;
+				}
             }
         }
         return false;
@@ -1236,7 +1228,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             affectedUserIds.addAll( userIds);
         }
 
-        public void addGroupIds(Collection<String> groupIds) {
+        private void addGroupIds(Collection<String> groupIds) {
             if ( affectedGroupIds == null)
             {
                 affectedGroupIds = new HashSet<String>(1);
@@ -1292,11 +1284,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 if (group != null)
                 {
-                    if ( entry.affectedGroupIds == null)
-                    {
-                        entry.affectedGroupIds = new HashSet<String>(1);
-                    }
-                    entry.affectedGroupIds.add( group.getId() );
+					addGroupIds(entry, group);
                 } 
                 else if ( user != null)
                 {
@@ -1315,8 +1303,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
 
-    }
-	
+		private void addGroupIds(DeleteUpdateEntry entry, Category group)
+		{
+			if ( entry.affectedGroupIds == null)
+            {
+                entry.affectedGroupIds = new HashSet<String>(1);
+            }
+			entry.affectedGroupIds.add( group.getId() );
+			final Category parent = group.getParent();
+			if ( parent != null && !parent.equals( getSuperCategory()))
+			{
+				addGroupIds( entry, parent);
+			}
+		}
+
+	}
+
+
 	@Override
 	public Collection<Entity> getUpdatedEntities(final User user,final Date timestamp) throws RaplaException {
 	    boolean isDelete = false;
@@ -2922,7 +2925,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 	{
 	    cache.fillConflictDisableInformation(user, conflict);
 	}
-	
+
+	public UpdateResult getUpdateResult(Date since,User user)
+	{
+		return null;
+	}
+
 	@Override
 	public UpdateResult getUpdateResult(Date since)
 	{

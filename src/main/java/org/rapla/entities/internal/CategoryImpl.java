@@ -126,6 +126,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 		return childs;
 	}
 
+    /** returns true if this is a direct or transitive parent of the passed category*/
     public boolean isAncestorOf(Category category) {
         if (category == null)
             return false;

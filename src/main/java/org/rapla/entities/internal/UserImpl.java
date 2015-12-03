@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -25,6 +21,10 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
 
 public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 {
@@ -142,6 +142,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         }
     }
 
+
     public void addGroup(Category group) {
         checkWritable();
         if ( isRefering("groups", group.getId()))
@@ -167,6 +168,13 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         Collection<Category> groupList = getList("groups", Category.class);
         return groupList;
     }
+
+    public Collection<String> getGroupIdList()
+    {
+        Collection<String> groupList = getIds("groups");
+        return groupList;
+    }
+
     
 //    /** returns if the user or a group of the user is affected by the permission.
 //     * Groups are hierarchical. If the user belongs
@@ -179,8 +187,11 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 //        boolean result = getUserEffect(p)>=PermissionImpl.NO_PERMISSION;
 //        return result;
 //    }
-    
-    public boolean belongsTo( Category group ) 
+
+    /** returns true if group is in usergroup list or any parent of the categories in usergroups (transitive)
+     *  i.e. a user belongs to a group if the group or any transitive child of the group is in the usergroup list
+     */
+    public boolean belongsTo( Category group )
     {
     	for (Category uGroup:getGroupList())
     	{
