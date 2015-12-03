@@ -61,7 +61,7 @@ public class TestUpdateDataManager
         SecurityManager securityManager = new SecurityManager(logger, i18n, appointmentFormater, facade, permissionController);
         updateManager = new UpdateDataManagerImpl(logger, facade, operator, securityManager, permissionController);
     }
-    
+
     @Test
     public void testNothingChangeFastUpdate()
     {
@@ -75,7 +75,7 @@ public class TestUpdateDataManager
         Assert.assertTrue(updateEvent.getRemoveIds().isEmpty());
         Assert.assertTrue(updateEvent.getStoreObjects().isEmpty());
     }
-    
+
     @Test
     public void testInsertChangeAndDelete()
     {
@@ -87,57 +87,109 @@ public class TestUpdateDataManager
         final User writeUser = facade.getUser();
         // do an init so we don't get the resources and reservations from the test data
         Date lastSynced = updateManager.createUpdateEvent(readUser, new Date()).getLastValidated();
-        // create some Data
-        List<Entity> entitiesToStore = new ArrayList<Entity>();
-        Allocatable[] allocatables = facade.getAllocatables();
-        final int maxNumberGeneratedItems = 500;
-        for(int i = allocatables.length; i < maxNumberGeneratedItems; i++)
-        {
-            final Allocatable newResource = facade.newResource();
-            newResource.getClassification().setValue("name", "newResource"+i);
-            entitiesToStore.add(newResource);
-        }
-        final int storedAllocatables = entitiesToStore.size();
-        facade.storeObjects(entitiesToStore.toArray(new Entity[0]));
-        entitiesToStore.clear();
-        allocatables = facade.getAllocatables();
-        for(int i = 0; i < maxNumberGeneratedItems; i ++)
-        {
-            final Reservation newReservation = facade.newReservation();
-            newReservation.getClassification().setValue("name", "newReservation"+i);
-            Date startDate = new Date();
-            // half an hour duration
-            Date endDate = new Date(startDate.getTime() + 30000);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate));
-            // we take always another allocatable as we want no conflicts for now
-            newReservation.addAllocatable(allocatables[i]);
-            entitiesToStore.add(newReservation);
-        }
-        final int storedReservations = entitiesToStore.size();
-        // check the 
-        final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
-        final Collection<Entity> storeObjects = updateEvent.getStoreObjects();
-        Assert.assertEquals(storedAllocatables + storedReservations, storeObjects.size());
-        for (Entity<?> storeObject : storeObjects)
-        {
-            if(storeObject instanceof Allocatable)
+        final int storedReservations;
+        final int storedAllocatables;
+        {// create some Data
+            List<Entity> entitiesToStore = new ArrayList<Entity>();
+            Allocatable[] allocatables = facade.getAllocatables();
+            final int maxNumberGeneratedItems = 500;
+            for (int i = allocatables.length; i < maxNumberGeneratedItems; i++)
             {
-                final Object value = ((Allocatable) storeObject).getClassification().getValue("name");
-                Assert.assertTrue(value.toString().startsWith("newResource"));
+                final Allocatable newResource = facade.newResource();
+                newResource.getClassification().setValue("name", "newResource" + i);
+                entitiesToStore.add(newResource);
             }
-            else if(storeObject instanceof Reservation)
+            storedAllocatables = entitiesToStore.size();
+            facade.storeObjects(entitiesToStore.toArray(new Entity[0]));
+            entitiesToStore.clear();
+            allocatables = facade.getAllocatables();
+            for (int i = 0; i < maxNumberGeneratedItems; i++)
             {
-                final Object value = ((Reservation) storeObject).getClassification().getValue("name");
-                Assert.assertTrue(value.toString().startsWith("newReservation"));
+                final Reservation newReservation = facade.newReservation();
+                newReservation.getClassification().setValue("name", "newReservation" + i);
+                Date startDate = new Date();
+                // half an hour duration
+                Date endDate = new Date(startDate.getTime() + 30000);
+                newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+                // we take always another allocatable as we want no conflicts for now
+                newReservation.addAllocatable(allocatables[i]);
+                entitiesToStore.add(newReservation);
             }
-            else 
+            storedReservations = entitiesToStore.size();
+        }
+        {
+            // check the created entities
+            final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
+            lastSynced = updateEvent.getLastValidated();
+            final Collection<Entity> storeObjects = updateEvent.getStoreObjects();
+            Assert.assertEquals(storedAllocatables + storedReservations, storeObjects.size());
+            for (Entity<?> storeObject : storeObjects)
             {
-                Assert.fail("Only allocatables and reservations are created");
+                if (storeObject instanceof Allocatable)
+                {
+                    final Object value = ((Allocatable) storeObject).getClassification().getValue("name");
+                    Assert.assertTrue("name should start with newResource but found " + value, value.toString().startsWith("newResource"));
+                }
+                else if (storeObject instanceof Reservation)
+                {
+                    final Object value = ((Reservation) storeObject).getClassification().getValue("name");
+                    Assert.assertTrue("name should start with newReservation but found " + value, value.toString().startsWith("newReservation"));
+                }
+                else
+                {
+                    Assert.fail("Only allocatables and reservations are created but found " + storeObject);
+                }
             }
         }
-        // FIXME add change and delete to test
+        final int updatedAllocatables;
+        final int updatedReservations;
+        {// change some reservations and allocatables
+            final Allocatable[] allocatables = facade.getAllocatables();
+            final int maxChangesPerType = 100;
+            final ArrayList<Entity> changedEntities = new ArrayList<Entity>();
+            for(int i = 0; i < maxChangesPerType; i++)
+            {
+                final Allocatable allocatable = facade.edit(allocatables[i]);
+                allocatable.getClassification().setValue("name", "changedAllocatable"+i);
+                changedEntities.add(allocatable);
+            }
+            updatedAllocatables = changedEntities.size();
+            final Reservation[] reservations = facade.getReservations(allocatables, null, null);
+            for(int i = 0; i < maxChangesPerType; i++)
+            {
+                final Reservation reservation = facade.edit(reservations[i]);
+                reservation.getClassification().setValue("name", "changedReservation"+i);
+                changedEntities.add(reservation);
+            }
+            updatedReservations = changedEntities.size() - updatedAllocatables;
+            facade.storeObjects(changedEntities.toArray(new Entity[changedEntities.size()]));
+        }
+        {
+            final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
+            lastSynced = updateEvent.getLastValidated();
+            final Collection<Entity> storeObjects = updateEvent.getStoreObjects();
+            Assert.assertEquals(updatedAllocatables + updatedReservations, storeObjects.size());
+            for (Entity updatedObject : storeObjects)
+            {
+                if(updatedObject instanceof Allocatable)
+                {
+                    final Object value = ((Allocatable) updatedObject).getClassification().getValue("name");
+                    Assert.assertTrue("name should start with changedAllocatable but found " + value, value.toString().startsWith("changedAllocatable"));
+                }
+                else if (updatedObject instanceof Reservation)
+                {
+                    final Object value = ((Reservation) updatedObject).getClassification().getValue("name");
+                    Assert.assertTrue("name should start with changedReservation but found " + value, value.toString().startsWith("changedReservation"));
+                }
+                else
+                {
+                    Assert.fail("Only Allocatables and Reservations should been changed, but found " + updatedObject);
+                }
+            }
+        }
+        // FIXME add delete to test
     }
-    
+
     @Test
     public void testConflictUpdate()
     {
@@ -145,4 +197,11 @@ public class TestUpdateDataManager
         Assert.fail("Not implemented yet");
     }
     
+    @Test
+    public void testAllocationChange()
+    {
+        // FIXME add a test for conflicts (create, change and delete)
+        Assert.fail("Not implemented yet");
+    }
+
 }
