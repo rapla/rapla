@@ -20,32 +20,37 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.facade.ModificationEvent;
 
-public class UpdateResult implements ModificationEvent
+public class UpdateResult
 {
     private List<UpdateOperation> operations = new ArrayList<UpdateOperation>();
-	Set<RaplaType> modified = new HashSet<RaplaType>();
-    Set<EntityReferencer.ReferenceInfo> removedReferences = new HashSet<EntityReferencer.ReferenceInfo>();
-	boolean switchTemplateMode = false;
-	// FIXME determine
-	final Date since = null;
-	final Date untill = null;
-	
-	public UpdateResult() {
+	//Set<RaplaType> modified = new HashSet<RaplaType>();
+	private final Date since;
+	private final Date until;
+    private final Map<String, Entity> oldEntities;
+    private final Map<String, Entity> updatedEntities;
+
+
+    public UpdateResult(Date since, Date until, Map<String, Entity> oldEntities,Map<String, Entity> updatedEntities)
+    {
+        this.since = since;
+        this.until = until;
+        this.oldEntities = oldEntities;
+        this.updatedEntities= updatedEntities;
     }
-	
+
     public void addOperation(final UpdateOperation operation) {
         if ( operation == null)
             throw new IllegalStateException( "Operation can't be null" );
         operations.add(operation);
+        /*
         RaplaType raplaType = operation.getRaplaType();
         if ( raplaType != null)
         {
@@ -54,21 +59,19 @@ public class UpdateResult implements ModificationEvent
         if(operation instanceof Remove){
             // FIXME
         }
+        */
     }
-    
-    @Override public Set<EntityReferencer.ReferenceInfo> getRemovedReferences()
+
+    public Date getSince()
     {
-        return removedReferences;
+        return since;
     }
 
-    public Set<Entity> getChangeObjects() {
-        return getObject( Change.class);
+    public Date getUntil()
+    {
+        return until;
     }
 
-    public Set<Entity> getAddObjects() {
-        return getObject( Add.class);
-    }
-    
     @SuppressWarnings("unchecked")
 	public <T extends UpdateOperation> Collection<T> getOperations( final Class<T> operationClass) {
         Iterator<UpdateOperation> operationsIt =  operations.iterator();
@@ -100,32 +103,20 @@ public class UpdateResult implements ModificationEvent
     
     public HistoryEntry getLastEntryBeforeUpdate(String id)
     {
-        // FIXME
+        // FIXME remove history or add timestamp
         // TODO Conflict resolution
-        return null;
+        final Entity entity = oldEntities.get(id);
+        final HistoryEntry historyEntry = new HistoryEntry();
+        historyEntry.unresolvedEntity = entity;
+        return historyEntry;
     }
 
     public Entity getLastKnown(String id)
     {
-        // FIXME
         // TODO Conflict resolution
-        return null;
+        return updatedEntities.get( id );
     }
 
-    protected <T extends UpdateOperation> Set<Entity> getObject( final Class<T> operationClass ) {
-        Set<Entity> set = new HashSet<Entity>();
-        if ( operationClass == null)
-            throw new IllegalStateException( "OperationClass can't be null" );
-        Collection<? extends UpdateOperation> it= getOperations( operationClass);
-        for (UpdateOperation next:it ) {
-            // FIXME
-             String currentId =next.getCurrentId();
-             final Entity current = getLastKnown(currentId);
-             set.add( current);
-        }
-        return set;
-    }
-    
     static public class Add implements UpdateOperation {
         private final RaplaType<?> type;
         private final String id;
@@ -203,73 +194,6 @@ public class UpdateResult implements ModificationEvent
         }
     }
     
-    
-    TimeInterval timeInterval;
-    
-    public void setInvalidateInterval(TimeInterval timeInterval)
-    {
-    	this.timeInterval = timeInterval;
-    }
-    
-	public TimeInterval getInvalidateInterval() 
-	{
-		return timeInterval;
-	}
-
-
-	public boolean hasChanged(Entity object) {
-		return getChanged().contains(object);
-	}
-
-	public boolean isRemoved(Entity object) {
-        final EntityReferencer.ReferenceInfo referenceInfo = new EntityReferencer.ReferenceInfo(object);
-        return getRemovedReferences().contains( referenceInfo);
-	}
-
-	public boolean isModified(Entity object) 
-	{
-		return hasChanged(object) || isRemoved( object);
-	}
-
-	/** returns the modified objects from a given set.
-     * @deprecated use the retainObjects instead in combination with getChanged*/
-    public <T extends RaplaObject> Set<T> getChanged(Collection<T> col) {
-        return RaplaType.retainObjects(getChanged(),col);
-    }
-
-//    /** returns the modified objects from a given set.
-//     * @deprecated use the retainObjects instead in combination with getChanged*/
-//    public <T extends RaplaObject> Set<T> getRemoved(Collection<T> col) {
-//        return RaplaType.retainObjects(getRemoved(),col);
-//    }
-
-	public Set<Entity> getChanged() {
-		Set<Entity> result  = new HashSet<Entity>(getAddObjects());
-		result.addAll(getChangeObjects());
-		return result;
-	}
-
-	public boolean isModified(RaplaType raplaType) 
-	{
-		return modified.contains( raplaType) ;
-	}
-
-    public boolean isModified() {
-		return !operations.isEmpty() || switchTemplateMode;
-	}
-
-    public boolean isEmpty() {
-        return !isModified() && timeInterval == null;
-    }
-
-    public void setSwitchTemplateMode(boolean b) 
-    {
-        switchTemplateMode = b;
-    }
-    
-    public boolean isSwitchTemplateMode() {
-        return switchTemplateMode;
-    }
     
 
     public static class HistoryEntry

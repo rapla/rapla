@@ -50,7 +50,6 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
-import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
@@ -86,7 +85,6 @@ public class DBOperator extends LocalAbstractCachableOperator
     DataSource lookup;
     
     private String connectionName;
-    final AtomicReference<Date> dateReference = new AtomicReference<Date>();
 
     Provider<ImportExportManager> importExportManager;
     private final PermissionController permissionController;
@@ -272,7 +270,6 @@ public class DBOperator extends LocalAbstractCachableOperator
 
 
     final public void refresh() throws RaplaException {
-        final Date lastUpdated = dateReference.get();
         try
         {
             UpdateResult result;
@@ -282,14 +279,15 @@ public class DBOperator extends LocalAbstractCachableOperator
 
             final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
             result = raplaSQLInput.update( c, lastUpdated );
-            setResolver(result.getChanged());
+            // FIXME set resolver to changes
+            //setResolver(result.getChanged());
 
             // TODO check if still needed
             //fireStorageUpdated(result);
 
             //result = new UpdateResult(null);
             //fireStorageUpdated(result);
-            dateReference.set(updateStart);
+            lastUpdated = updateStart;
         }
         catch(Throwable e)
         {
@@ -630,13 +628,16 @@ public class DBOperator extends LocalAbstractCachableOperator
     	Lock writeLock = writeLock();
     	try
         {
+            Date since = lastUpdated;
     	    preprocessEventStorage(evt);
             updateLastChangedUser(evt);
-    	    Collection<Entity> storeObjects = evt.getStoreObjects();
+            Collection<Entity> storeObjects = evt.getStoreObjects();
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             Collection<String> removeObjects = evt.getRemoveIds();
-	        dbStore(storeObjects, preferencePatches, removeObjects);
-	        result = super.update(evt);
+            dbStore(storeObjects, preferencePatches, removeObjects);
+            // think about refresh?
+            Date until = lastUpdated;
+            result = super.refresh(evt, since, until);
         } 
     	finally
         {
@@ -663,7 +664,10 @@ public class DBOperator extends LocalAbstractCachableOperator
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-         } catch (Exception ex) {
+            final UpdateResult update = raplaSQLOutput.update(createConnection(), lastUpdated);
+            // FIXME call update
+            lastUpdated = update.getUntil();
+        } catch (Exception ex) {
              try {
                  if (bSupportsTransactions) {
                      connection.rollback();
@@ -796,7 +800,6 @@ public class DBOperator extends LocalAbstractCachableOperator
     }
 
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException {
-        dateReference.set(new Date());
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, this));
         raplaSQLInput.loadAll( connection );

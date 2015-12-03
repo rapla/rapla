@@ -182,7 +182,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	 * processing of this call, because it could have been locked by the store
 	 * method, causing deadlocks
 	 */
-	public void objectsUpdated(UpdateResult evt) {
+	public void objectsUpdated(ModificationEvent evt) {
 		if (getLogger().isDebugEnabled())
 			getLogger().debug("Objects updated");
 
@@ -374,7 +374,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		ModificationListener listenerList;
 		ModificationEvent modificationEvent;
 
-		public UpdateCommandModification(ModificationListener modificationListeners, UpdateResult evt) {
+		public UpdateCommandModification(ModificationListener modificationListeners, ModificationEvent evt) {
 			this.listenerList = modificationListeners;
 			this.modificationEvent = evt;
 		}
@@ -403,7 +403,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	}	/**
 	 * fires update event asynchronous.
 	 */
-	protected void fireUpdateEvent(UpdateResult evt) {
+	protected void fireUpdateEvent(ModificationEvent evt) {
 		if (periodModel != null) {
 			try {
 				periodModel.update();
@@ -1043,7 +1043,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //            workingUser = null;
 //            getLogger().error(e.getMessage(),e);
 //        }
-		UpdateResult updateResult = new UpdateResult();
+		ModificationEventImpl updateResult = new ModificationEventImpl();
 		updateResult.setSwitchTemplateMode(true);
 		updateResult.setInvalidateInterval( new TimeInterval(null, null));
 		fireUpdateEvent( updateResult);

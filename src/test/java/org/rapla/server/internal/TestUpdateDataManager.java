@@ -42,17 +42,19 @@ public class TestUpdateDataManager
     public void setUp()
     {
         logger = RaplaTestCase.initLoger();
-        JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
-        datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
-        datasource.setUser("db_user");
-        datasource.setPassword("your_pwd");
+//        JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
+//        datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
+//        datasource.setUser("db_user");
+//        datasource.setPassword("your_pwd");
         String xmlFile = "testdefault.xml";
-        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+//        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         CachableStorageOperator operator = (CachableStorageOperator) facade.getOperator();
         operator.connect();
-        ((DBOperator) operator).removeAll();
-        operator.disconnect();
-        operator.connect();
+//        ((DBOperator) operator).removeAll();
+//        operator.disconnect();
+//        operator.connect();
+
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -71,7 +73,9 @@ public class TestUpdateDataManager
         final long start = System.currentTimeMillis();
         final UpdateEvent updateEvent = updateManager.createUpdateEvent(user, lastSynced);
         final long end = System.currentTimeMillis();
-        Assert.assertTrue(50 > (end - start));
+        final long l = end - start;
+        logger.info("Update took " + l);
+        Assert.assertTrue(50 > l);
         Assert.assertTrue(updateEvent.getRemoveIds().isEmpty());
         Assert.assertTrue(updateEvent.getStoreObjects().isEmpty());
     }
@@ -114,6 +118,7 @@ public class TestUpdateDataManager
             entitiesToStore.add(newReservation);
         }
         final int storedReservations = entitiesToStore.size();
+        facade.storeObjects(entitiesToStore.toArray(new Entity[0]));
         // check the 
         final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
         final Collection<Entity> storeObjects = updateEvent.getStoreObjects();

@@ -13,25 +13,6 @@
 
 package org.rapla.client.swing.internal;
 
-import java.awt.BorderLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JSplitPane;
-import javax.swing.JToolBar;
-import javax.swing.UIManager;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
@@ -52,12 +33,30 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.UpdateResult;
+
+import javax.inject.Inject;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JToolBar;
+import javax.swing.UIManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Set;
 
 final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget {
 	public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
@@ -125,8 +124,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		    	updateOwnReservationsSelected();
 		    	try {
 	               	Entity preferences = getQuery().getPreferences();
-	   		    	UpdateResult modificationEvt = new UpdateResult();
-	   		    	modificationEvt.addOperation( new UpdateResult.Change(preferences.getId(), preferences.getRaplaType()));
+	   		    	ModificationEventImpl modificationEvt = new ModificationEventImpl();
+	   		    	modificationEvt.addChanged( preferences );
 	   				resourceSelection.dataChanged(modificationEvt);
 	   				calendarContainer.update(modificationEvt);
 	   				conflictsView.dataChanged( modificationEvt);

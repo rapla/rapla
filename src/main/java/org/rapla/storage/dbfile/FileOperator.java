@@ -61,7 +61,6 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 
-import javax.imageio.stream.FileImageOutputStream;
 import javax.inject.Named;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -184,6 +183,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             getLogger().info("Connecting: " + getURL());
             cache.clearAll();
             addInternalTypes(cache);
+            lastUpdated = getCurrentTimestamp();
             loadData(cache);
             initIndizes();
             isConnected = true;
@@ -394,12 +394,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
         final Lock writeLock = writeLock();
         try
         {
+            Date since = lastUpdated;
             preprocessEventStorage(evt);
             updateLastChanged( evt);
+            Date until = getCurrentTimestamp();
             // call of update must be first to update the cache.
             // then saveData() saves all the data in the cache
-            result = update(evt);
+            result = refresh(evt, since, until);
             saveData(cache, null, includeIds);
+            lastUpdated = until;
         }
         finally
         {

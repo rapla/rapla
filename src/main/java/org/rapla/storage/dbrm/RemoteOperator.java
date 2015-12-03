@@ -42,8 +42,10 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -600,6 +602,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
     private User loadFromEvent(UpdateEvent evt) throws EntityNotFoundException, RaplaException {
         Lock writeLock = writeLock();
+        lastUpdated = evt.getLastValidated();
         try
         {
             this.userId = evt.getUserId();
@@ -1018,6 +1021,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
    
     synchronized private void refresh(UpdateEvent evt) throws RaplaException
     {
+
     	updateTimestamps(evt);		
     	if ( evt.isNeedResourcesRefresh())
     	{
@@ -1029,13 +1033,16 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	setResolver(evt.getStoreObjects());
     	// we don't test the references of the removed objects
     	//setResolver(evt.getRemoveObjects());
-    	if ( bSessionActive  &&   !evt.isEmpty()  ) 
+        Date since = lastUpdated;
+        lastUpdated = evt.getLastValidated();
+        Date until = lastUpdated;
+    	if ( bSessionActive  &&   !evt.isEmpty()  )
     	{
     	    getLogger().debug("Objects updated!");
     	    Lock writeLock = writeLock();
     	    try
     	    {
-    	        result = update(evt);
+    	        result = update(evt, since, until);
     	    }
     	    finally
     	    {
@@ -1043,7 +1050,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	    }
         }
 	
-		if ( result != null && !result.isEmpty())
+		if ( result != null )
         {
             fireStorageUpdated(result);
         }
@@ -1084,15 +1091,15 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		updated.removeAll( toRemove);
 		toUpdate.retainAll(newEntities);
 		
-		HashMap<Entity,Entity> oldEntityMap = new HashMap<Entity,Entity>();
-		for ( Entity update: toUpdate)
+		HashMap<String,Entity> oldEntityMap = new HashMap<String,Entity>();
+		for ( Entity oldEntity: toUpdate)
 		{
 			@SuppressWarnings("unchecked")
-            Class<? extends Entity> typeClass = update.getRaplaType().getTypeClass();
-            Entity newEntity = cache.tryResolve( update.getId(), typeClass);
+            Class<? extends Entity> typeClass = oldEntity.getRaplaType().getTypeClass();
+            Entity newEntity = cache.tryResolve( oldEntity.getId(), typeClass);
 			if ( newEntity != null)
 			{
-				oldEntityMap.put( newEntity, update);
+				oldEntityMap.put( newEntity.getId(), oldEntity);
 			}
 		}
 		TimeInterval invalidateInterval = new TimeInterval( null,null);
@@ -1101,7 +1108,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
             removeInfo.add( new EntityReferencer.ReferenceInfo(entity.getId(), entity.getRaplaType().getTypeClass()));
         }
-		result  = createUpdateResult(oldEntityMap, updated, removeInfo, invalidateInterval, userId);
+        Date since = null;
+        Date until = lastUpdated;
+		result  = createUpdateResult(oldEntityMap, updated, removeInfo, since,until);
 		fireStorageUpdated(result);
 	}
 
@@ -1117,8 +1126,13 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         return storageUpdateListeners.toArray(new StorageUpdateListener[] {});
     }
 
-    protected void fireStorageUpdated(final UpdateResult evt) {
+    protected void fireStorageUpdated(final UpdateResult updateResult) {
         StorageUpdateListener[] listeners = getStorageUpdateListeners();
+        final ModificationEventImpl evt = new ModificationEventImpl(updateResult);
+        if ( evt.isEmpty())
+        {
+            return;
+        }
         for (int i = 0; i < listeners.length; i++) {
             listeners[i].objectsUpdated(evt);
         }

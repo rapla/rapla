@@ -87,7 +87,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	protected final Map<String,FunctionFactory> functionFactoryMap;
-
+	protected volatile Date lastUpdated;
 
 	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, PermissionController permissionController)  {
 		this.logger = logger;
@@ -562,8 +562,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
     }
 
 	/** Writes the UpdateEvent in the cache */
-	protected UpdateResult update(final UpdateEvent evt) throws RaplaException {
-		HashMap<Entity,Entity> oldEntities = new HashMap<Entity,Entity>();
+	final protected UpdateResult update(final UpdateEvent evt, Date since,Date until) throws RaplaException {
+		HashMap<String,Entity> oldEntities = new HashMap<String,Entity>();
 		// First make a copy of the old entities
 		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(evt.getStoreObjects());
 		for (Entity entity : storeObjects) 
@@ -587,7 +587,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			else
 			{
 				Entity oldEntity = persistantEntity;
-				oldEntities.put(persistantEntity, oldEntity);
+				oldEntities.put(persistantEntity.getId(), oldEntity);
 			}
 
 		}
@@ -606,7 +606,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
                 clone = oldEntity.clone();
             }
             clone.applyPatch( patch);
-            oldEntities.put(clone, oldEntity);
+            oldEntities.put(clone.getId(), oldEntity);
             storeObjects.add( clone);
 
 		}
@@ -649,9 +649,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 //	           toRemove.add( conflict );
 //		}
 		setResolver(updatedEntities);
-		TimeInterval invalidateInterval = evt.getInvalidateInterval();
-		String userId = evt.getUserId();
-		return createUpdateResult(oldEntities, updatedEntities, toRemove, invalidateInterval, userId);
+		return createUpdateResult(oldEntities, updatedEntities, toRemove,  since, until);
 	}
 
     protected Entity findPersistant(Entity entity) {
@@ -662,26 +660,29 @@ public abstract class AbstractCachableOperator implements StorageOperator {
     }
 
 	protected UpdateResult createUpdateResult(
-			Map<Entity,Entity> oldEntities,
+			Map<String,Entity> oldEntities,
 			Collection<Entity>updatedEntities,
 			Collection<ReferenceInfo>toRemove,
-			TimeInterval invalidateInterval,
-			String userId) 
+			Date since,
+			Date until
+	)
 					throws EntityNotFoundException {
 //		User user = null;
 //		if (userId != null) {
 //			user = resolve(cache,userId, User.class);
 //		}
 
-		UpdateResult result = new UpdateResult();
-		if ( invalidateInterval != null)
+		Map<String,Entity> updatedEntityMap = new LinkedHashMap<String,Entity>();
+		for (Entity toUpdate:updatedEntities)
 		{
-			result.setInvalidateInterval( invalidateInterval);
+			updatedEntityMap.put(toUpdate.getId(), toUpdate);
 		}
-		for (Entity toUpdate:updatedEntities) 
+		UpdateResult result = new UpdateResult(since, until, oldEntities, updatedEntityMap);
+
+		for (Entity toUpdate:updatedEntities)
 		{
 			Entity newEntity = toUpdate;
-			Entity oldEntity = oldEntities.get(toUpdate);
+			Entity oldEntity = oldEntities.get(toUpdate.getId());
 			if (oldEntity != null) {
 				result.addOperation(new UpdateResult.Change( newEntity.getId(), newEntity.getRaplaType() ));
 			} else {

@@ -179,12 +179,12 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             lastSynced = currentTimestamp;
         }
         UpdateEvent safeResultEvent = new UpdateEvent();
-        safeResultEvent.setLastValidated(currentTimestamp);
         TimeZone systemTimeZone = operator.getTimeZone();
         int timezoneOffset = TimeZoneConverterImpl.getOffset(DateTools.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
         safeResultEvent.setTimezoneOffset(timezoneOffset);
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
+        safeResultEvent.setLastValidated(updateResult.getUntil());
         boolean conflictRefresh = false;
         boolean resourceRefresh = false;
         for (Remove op : updateResult.getOperations(Remove.class))

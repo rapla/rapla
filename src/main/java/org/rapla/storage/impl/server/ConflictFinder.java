@@ -37,6 +37,7 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -716,9 +717,9 @@ class ConflictFinder {
 //		return foundAppointment;
 //	}
 
-	public int removeOldConflicts(UpdateResult result, Date today) 
+	public Set<String> removeOldConflicts(Date today)
 	{
-	    int count = 0;
+        Set<String> result = new LinkedHashSet<String>();
 		for (Set<Conflict> sortedSet: conflictMap.values())
 		{
 			Iterator<Conflict> it = sortedSet.iterator();
@@ -728,12 +729,11 @@ class ConflictFinder {
 				if ( endsBefore( conflict,today))
 				{
 					it.remove();
-					count++;
-					result.addOperation( new UpdateResult.Remove(conflict.getId(),Conflict.TYPE));
+					result.add(conflict.getId());
 				}
 			}
 		}
-		return count;
+		return result;
 		
 	}
 

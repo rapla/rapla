@@ -44,7 +44,9 @@ public interface ModificationEvent
 
 	boolean isModified();
 
-	
+    /** @Deprecated not supported in 2.1*/
+    @Deprecated
+    boolean isSwitchTemplateMode();
 
 }
 

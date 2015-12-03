@@ -270,7 +270,8 @@ class RaplaSQL {
 
     public UpdateResult update(Connection c, Date lastUpdated) throws SQLException
     {
-        final UpdateResult updateResult = new UpdateResult();
+        // FIXME instanciate or change return type
+        final UpdateResult updateResult = null;
         for (RaplaTypeStorage raplaTypeStorage : stores)
         {
             raplaTypeStorage.setConnection( c);
