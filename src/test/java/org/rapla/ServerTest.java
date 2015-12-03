@@ -79,9 +79,10 @@ public class ServerTest
     protected RaplaLocale raplaLocale;
     protected ServerServiceImpl serverService;
 
+
     @Before public void setUp() throws Exception
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         int port = 8052;
         ServerContainerContext container = createContext();
         serverService = (ServerServiceImpl)RaplaTestCase.createServer( logger, container);

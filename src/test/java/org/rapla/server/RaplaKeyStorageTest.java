@@ -21,7 +21,7 @@ public class RaplaKeyStorageTest  {
 	@Test
 	public void testKeyStore() throws RaplaException
 	{
-		Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+		Logger logger = RaplaTestCase.initLoger();
 		ClientFacade facade = RaplaTestCase.createFacadeWithFile(logger,"testdefault.xml");
 		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(facade,logger);
         User user = facade.newUser();

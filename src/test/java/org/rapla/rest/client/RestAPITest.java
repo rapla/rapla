@@ -12,6 +12,7 @@ import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 
 import junit.framework.TestCase;
+import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
 
@@ -24,7 +25,8 @@ public class RestAPITest  {
     @Before
     public void setUp() throws Exception
     {
-        final ServerServiceContainer servlet = RaplaTestCase.createServer(RaplaBootstrapLogger.createRaplaLogger(), "testdefault.xml");
+        Logger logger = RaplaTestCase.initLoger();
+        final ServerServiceContainer servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
         server = ServletTestBase.createServer(servlet, port);
     }
 

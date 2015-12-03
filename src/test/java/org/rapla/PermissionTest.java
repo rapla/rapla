@@ -52,7 +52,7 @@ public class PermissionTest  {
     public void setUp() throws Exception
     {
         locale = Locale.getDefault();
-        Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+        Logger logger = RaplaTestCase.initLoger();
         int port = 8052;
         servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
         this.server = ServletTestBase.createServer(servlet, port);

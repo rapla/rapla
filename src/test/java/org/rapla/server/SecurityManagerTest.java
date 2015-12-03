@@ -38,7 +38,7 @@ public class SecurityManagerTest  {
 
 	@Before public void setUp() throws Exception
 	{
-		logger = RaplaBootstrapLogger.createRaplaLogger();
+		logger = RaplaTestCase.initLoger();
 		int port = 8052;
 		serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
 		server = ServletTestBase.createServer( serverService, port);

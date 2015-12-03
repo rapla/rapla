@@ -41,7 +41,7 @@ public class TestUpdateDataManager
     @Before
     public void setUp()
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");

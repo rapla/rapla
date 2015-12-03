@@ -37,7 +37,7 @@ public class CommunicatorTest
     @Before
     public void setUp() throws Exception
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         int port = 8052;
         final ServerServiceContainer servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
         this.server = ServletTestBase.createServer(servlet, port);

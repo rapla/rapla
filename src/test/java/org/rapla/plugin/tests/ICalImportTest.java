@@ -41,7 +41,7 @@ public class ICalImportTest {
     @Before
     public void setUp()
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         facade = RaplaTestCase.createFacadeWithFile(logger, "testdefault.xml");
         facade.login("homer","duffs".toCharArray());
     }
