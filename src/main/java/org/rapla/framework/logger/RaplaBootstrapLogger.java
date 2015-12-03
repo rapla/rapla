@@ -16,6 +16,7 @@ public class RaplaBootstrapLogger implements Provider<Logger> {
         return createRaplaLogger();
     }
 
+
     public static Logger createRaplaLogger()
     {
         Logger logger;

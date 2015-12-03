@@ -55,6 +55,12 @@ import java.util.Map;
 
 public abstract class RaplaTestCase
 {
+    public static Logger initLoger()
+    {
+        System.setProperty("jetty.home", "target/test");
+        return RaplaBootstrapLogger.createRaplaLogger();
+    }
+
     public static ServerServiceContainer createServer( Logger logger, String xmlFile) throws Exception
     {
         ServerContainerContext containerContext = new ServerContainerContext();

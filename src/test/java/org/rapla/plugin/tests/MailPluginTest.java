@@ -37,7 +37,7 @@ public class MailPluginTest {
 
     @Before
     public void setUp() throws Exception {
-        Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+        Logger logger = RaplaTestCase.initLoger();
         raplaServer = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
         // start the server
         // start the client service

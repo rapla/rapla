@@ -53,7 +53,7 @@ public class NotificationPluginTest
     public void setUp() throws Exception
     {
         // start the server
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         raplaServer = (ServerServiceImpl)RaplaTestCase.createServer(logger,"testdefault.xml");
 
         // start the client service

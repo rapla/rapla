@@ -43,7 +43,7 @@ public class UserTest  {
     @Before
     public void setUp() throws Exception {
         int port = 8052;
-        final Logger raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
+        final Logger raplaLogger = RaplaTestCase.initLoger();
         final ServerServiceContainer servlet = RaplaTestCase.createServer(raplaLogger, "testdefault.xml");
         server = ServletTestBase.createServer(servlet, port);
         // start the client service

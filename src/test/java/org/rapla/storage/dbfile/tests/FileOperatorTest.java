@@ -61,7 +61,7 @@ public class FileOperatorTest extends AbstractOperatorTest {
     @Before
     public void setUp() throws IOException
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         String file = "testdefault.xml";
         String resolvedPath = RaplaTestCase.getTestDataFile(file);
         facade = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath,logger));

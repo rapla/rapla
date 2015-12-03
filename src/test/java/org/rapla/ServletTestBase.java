@@ -39,7 +39,6 @@ public abstract class ServletTestBase
     }
     static private Server createServer(HttpServlet mainServlet,int port) throws Exception
     {
-
         File webappFolder = new File("test");
         Server jettyServer = new Server(port);
         String contextPath = "rapla";

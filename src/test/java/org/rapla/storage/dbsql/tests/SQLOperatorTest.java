@@ -80,7 +80,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     @Before
     public void setUp() throws SQLException
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger = RaplaTestCase.initLoger();
         datasource = new org.hsqldb.jdbc.JDBCDataSource();
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
