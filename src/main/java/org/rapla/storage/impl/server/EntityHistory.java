@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
@@ -37,7 +39,7 @@ public class EntityHistory
             this.json = json;
             this.type = type;
         }
-        
+
         public String getId()
         {
             return id;
@@ -73,7 +75,8 @@ public class EntityHistory
         emptyEntryWithTimestamp.timestamp = since.getTime();
         int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, new Comparator<EntityHistory.HistoryEntry>()
         {
-            @Override public int compare(EntityHistory.HistoryEntry o1, EntityHistory.HistoryEntry o2)
+            @Override
+            public int compare(EntityHistory.HistoryEntry o1, EntityHistory.HistoryEntry o2)
             {
                 return (int) (o1.timestamp - o2.timestamp);
             }
@@ -132,7 +135,7 @@ public class EntityHistory
             {
                 // Do nothing as already inserted... maybe check it
             }
-            else 
+            else
             {
                 historyEntries.add(index, newEntry);
             }
@@ -151,7 +154,7 @@ public class EntityHistory
     {
         map.clear();
     }
-    
+
     List<HistoryEntry> getHistoryList(String key)
     {
         return map.get(key);
@@ -159,6 +162,15 @@ public class EntityHistory
 
     public void removeUnneeded(Date date)
     {
-        // FIXME implement method
+        final Set<String> keySet = map.keySet();
+        final long time = date.getTime();
+        for (String key : keySet)
+        {
+            final List<HistoryEntry> list = map.get(key);
+            while (list.size() > 2 && list.get(1).timestamp < time)
+            {
+                list.remove(0);
+            }
+        }
     }
 }
