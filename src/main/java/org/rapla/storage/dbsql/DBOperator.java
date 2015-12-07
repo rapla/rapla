@@ -273,16 +273,19 @@ public class DBOperator extends LocalAbstractCachableOperator
     final public void refresh() throws RaplaException {
         try
         {
-            UpdateResult result;
             final Connection c = createConnection();
             final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-            final Date updateStart = new Date();
-
+            Date updateStart = new Date();
+            while(!updateStart.after(lastUpdated))
+            {
+                updateStart = new Date();
+            }
             final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
-            result = raplaSQLInput.update( c, lastUpdated );
+            // FIXME update 
+            UpdateResult result = raplaSQLInput.update( c, lastUpdated );
             // FIXME set resolver to changes
             //setResolver(result.getChanged());
-
+            
             // TODO check if still needed
             //fireStorageUpdated(result);
 
@@ -667,12 +670,7 @@ public class DBOperator extends LocalAbstractCachableOperator
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-            final Date start = new Date();
-            EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-            final UpdateResult update = new RaplaSQL(createInputContext(entityStore, this)).update(createConnection(), lastUpdated);
-            // FIXME call update and set lastUpdated
-//            lastUpdated = update.getUntil();
-            lastUpdated = start;
+            refresh();
         } catch (Exception ex) {
              try {
                  if (bSupportsTransactions) {
