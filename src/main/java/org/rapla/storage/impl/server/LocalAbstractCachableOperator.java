@@ -3156,11 +3156,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             /*
             * possible results:
             * we get an index >= 0 -> We found an entry, which has the timestamp of the last update from the client. We need to get this one
-            * we get an index < 0 -> We have no entry within the list, which has the timestamp. Corresponding to the binary search API -index -1 is the index where to insert a entry having this timestamp. So we need -index -1 -1 to get the last one.
+            * we get an index < 0 -> We have no entry within the list, which has the timestamp. Corresponding to the binary search API -index -1 is the index where to insert a entry having this timestamp. So we need -index -1 to get the last one with an timestamp smaller than the requested one.
             */
             if (index < 0)
             {
-                index = -index - 2;
+                index = -index - 1;
             }
             if (index < 0)
             {
