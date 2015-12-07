@@ -121,7 +121,11 @@ public class EntityHistory
             {
                 insert(historyEntries, newEntry, index - 1);
             }
-            else
+            else if (timestamp == newEntry.timestamp)
+            {
+                // Do nothing as already inserted... maybe check it
+            }
+            else 
             {
                 historyEntries.add(index, newEntry);
             }
