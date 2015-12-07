@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,6 +30,7 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.dbsql.DBOperator;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager
@@ -41,18 +43,18 @@ public class TestUpdateDataManager
     public void setUp()
     {
         logger = RaplaTestCase.initLoger();
-//        JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
-//        datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
-//        datasource.setUser("db_user");
-//        datasource.setPassword("your_pwd");
+        JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
+        datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
+        datasource.setUser("db_user");
+        datasource.setPassword("your_pwd");
         String xmlFile = "testdefault.xml";
-//        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+        //        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
         facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         CachableStorageOperator operator = (CachableStorageOperator) facade.getOperator();
         operator.connect();
-//        ((DBOperator) operator).removeAll();
-//        operator.disconnect();
-//        operator.connect();
+        //        ((DBOperator) operator).removeAll();
+        //        operator.disconnect();
+        //        operator.connect();
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -77,7 +79,18 @@ public class TestUpdateDataManager
     }
 
     @Test
+    public void testInsertChangeAndDeleteSimple()
+    {
+        testInsertChangeAndDelete(10, 1);
+    }
+
+    @Test
     public void testInsertChangeAndDelete()
+    {
+        testInsertChangeAndDelete(500, 150);
+    }
+
+    private void testInsertChangeAndDelete(int countInsert, int countDelete)
     {
         // create second user first
         Assert.assertTrue(facade.login("monty", "burns".toCharArray()));
@@ -86,14 +99,16 @@ public class TestUpdateDataManager
         Assert.assertTrue(facade.login("homer", "duffs".toCharArray()));
         final User writeUser = facade.getUser();
         // do an init so we don't get the resources and reservations from the test data
+        final int startAllocatables;
         Date lastSynced = updateManager.createUpdateEvent(readUser, new Date()).getLastValidated();
         final int storedReservations;
         final int storedAllocatables;
         {// create some Data
             List<Entity> entitiesToStore = new ArrayList<Entity>();
             Allocatable[] allocatables = facade.getAllocatables();
-            final int maxNumberGeneratedItems = 500;
-            for (int i = allocatables.length; i < maxNumberGeneratedItems; i++)
+            startAllocatables = allocatables.length;
+            final int maxNumberGeneratedItems = countInsert;
+            for (int i = 0; i < maxNumberGeneratedItems; i++)
             {
                 final Allocatable newResource = facade.newResource();
                 newResource.getClassification().setValue("name", "newResource" + i);
@@ -123,7 +138,7 @@ public class TestUpdateDataManager
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             lastSynced = updateEvent.getLastValidated();
             final Collection<Entity> storeObjects = updateEvent.getStoreObjects();
-//            Assert.assertEquals(storedAllocatables + storedReservations, storeObjects.size());
+            //            Assert.assertEquals(storedAllocatables + storedReservations, storeObjects.size());
             Assert.assertEquals(storeObjects.toString(), storedAllocatables, storeObjects.size());
             for (Entity<?> storeObject : storeObjects)
             {
@@ -132,15 +147,16 @@ public class TestUpdateDataManager
                     final Object value = ((Allocatable) storeObject).getClassification().getValue("name");
                     Assert.assertTrue("name should start with newResource but found " + value, value.toString().startsWith("newResource"));
                 }
-//                else if (storeObject instanceof Reservation)
-//                {
-//                    final Object value = ((Reservation) storeObject).getClassification().getValue("name");
-//                    Assert.assertTrue("name should start with newReservation but found " + value, value.toString().startsWith("newReservation"));
-//                    Assert.fail("Only allocatables and reservations are created but found " + storeObject);
-//                }
+                //                else if (storeObject instanceof Reservation)
+                //                {
+                //                    final Object value = ((Reservation) storeObject).getClassification().getValue("name");
+                //                    Assert.assertTrue("name should start with newReservation but found " + value, value.toString().startsWith("newReservation"));
+                //                    Assert.fail("Only allocatables and reservations are created but found " + storeObject);
+                //                }
                 else
                 {
-                    Assert.fail("Only allocatables and reservations are created and reservations should not be within the update event but found " + storeObject);
+                    Assert.fail(
+                            "Only allocatables and reservations are created and reservations should not be within the update event but found " + storeObject);
                 }
             }
         }
@@ -148,20 +164,20 @@ public class TestUpdateDataManager
         final int updatedReservations;
         {// change some reservations and allocatables
             final Allocatable[] allocatables = facade.getAllocatables();
-            final int maxChangesPerType = 100;
+            final int maxChangesPerType = countInsert;
             final ArrayList<Entity> changedEntities = new ArrayList<Entity>();
-            for(int i = 0; i < maxChangesPerType; i++)
+            for (int i = 0; i < maxChangesPerType; i++)
             {
-                final Allocatable allocatable = facade.edit(allocatables[i+50]);
-                allocatable.getClassification().setValue("name", "changedAllocatable"+i);
+                final Allocatable allocatable = facade.edit(allocatables[i + startAllocatables]);
+                allocatable.getClassification().setValue("name", "changedAllocatable" + i);
                 changedEntities.add(allocatable);
             }
             updatedAllocatables = changedEntities.size();
             final Reservation[] reservations = facade.getReservations(allocatables, null, null);
-            for(int i = 0; i < maxChangesPerType; i++)
+            for (int i = 0; i < maxChangesPerType; i++)
             {
                 final Reservation reservation = facade.edit(reservations[i]);
-                reservation.getClassification().setValue("name", "changedReservation"+i);
+                reservation.getClassification().setValue("name", "changedReservation" + i);
                 changedEntities.add(reservation);
             }
             updatedReservations = changedEntities.size() - updatedAllocatables;
@@ -174,16 +190,16 @@ public class TestUpdateDataManager
             Assert.assertEquals(updatedAllocatables /*+ updatedReservations*/, storeObjects.size());
             for (Entity updatedObject : storeObjects)
             {
-                if(updatedObject instanceof Allocatable)
+                if (updatedObject instanceof Allocatable)
                 {
                     final Object value = ((Allocatable) updatedObject).getClassification().getValue("name");
                     Assert.assertTrue("name should start with changedAllocatable but found " + value, value.toString().startsWith("changedAllocatable"));
                 }
-//                else if (updatedObject instanceof Reservation)
-//                {
-//                    final Object value = ((Reservation) updatedObject).getClassification().getValue("name");
-//                    Assert.assertTrue("name should start with changedReservation but found " + value, value.toString().startsWith("changedReservation"));
-//                }
+                //                else if (updatedObject instanceof Reservation)
+                //                {
+                //                    final Object value = ((Reservation) updatedObject).getClassification().getValue("name");
+                //                    Assert.assertTrue("name should start with changedReservation but found " + value, value.toString().startsWith("changedReservation"));
+                //                }
                 else
                 {
                     Assert.fail("Only Allocatables and Reservations should been changed, but found " + updatedObject);
@@ -192,23 +208,24 @@ public class TestUpdateDataManager
         }
         {
             final Allocatable[] allocatables = facade.getAllocatables();
-            final int maxToDelete = 150;
+            final int maxToDelete = countDelete;
             List<Entity> toDelete = new ArrayList<Entity>();
             Set<String> removedIds = new HashSet<String>();
-            for(int i = allocatables.length - 1; i > allocatables.length-1-maxToDelete; i--)
+            for (int i = allocatables.length - 1; i > allocatables.length - 1 - maxToDelete; i--)
             {
                 toDelete.add(allocatables[i]);
                 removedIds.add(allocatables[i].getId());
             }
             final Reservation[] reservations = facade.getReservations(toDelete.toArray(new Allocatable[0]), null, null);
-            toDelete.addAll(0, Arrays.asList(reservations));
+            toDelete.addAll(Arrays.asList(reservations));
             facade.removeObjects(toDelete.toArray(new Entity[0]));
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             final Collection<String> removeIds = updateEvent.getRemoveIds();
+            Assert.assertFalse(removeIds.isEmpty());
             for (String removedId : removeIds)
             {
                 Assert.assertTrue("found removed id (" + removedId + ") which is not in the list of deleted resources: " + removedIds,
-                        removedIds.contains(removeIds));
+                        removedIds.contains(removedId));
             }
         }
     }
@@ -219,7 +236,7 @@ public class TestUpdateDataManager
         // FIXME add a test for conflicts (create, change and delete)
         Assert.fail("Not implemented yet");
     }
-    
+
     @Test
     public void testAllocationChange()
     {
