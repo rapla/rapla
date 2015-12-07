@@ -1447,8 +1447,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         allocatablesToProcess.add(null);
         if (reservation != null)
         {
-            Allocatable[] allocatablesFor = reservation.getAllocatablesFor(app);
-            allocatablesToProcess.addAll(Arrays.asList(allocatablesFor));
+            if(remove)
+            {
+                final Collection<String> ids = ((ReservationImpl)reservation).getAllocatableIdsFor(app);
+                for (String id : ids)
+                {
+                    final Allocatable allocatable = tryResolve(id, Allocatable.class);
+                    if(allocatable != null)
+                    {
+                        allocatablesToProcess.add(allocatable);
+                    }
+                }
+            }
+            else
+            {
+                Allocatable[] allocatablesFor = reservation.getAllocatablesFor(app);
+                allocatablesToProcess.addAll(Arrays.asList(allocatablesFor));
+            }
             // This double check is very imperformant and will be removed in the future, if it doesnt show in test runs
             //			if ( remove)
             //			{

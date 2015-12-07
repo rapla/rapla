@@ -593,34 +593,45 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return set.toArray( Allocatable.ALLOCATABLE_ARRAY);
     }
 
-    public Allocatable[] getAllocatablesFor(Appointment appointment) {
-        HashSet<Allocatable> set = new HashSet<Allocatable>();
+    public Collection<String> getAllocatableIdsFor(Appointment appointment)
+    {
+        HashSet<String> set = new HashSet<String>();
         Collection<String> list = getIds("resources");
         String id = appointment.getId();
         for (String allocatableId:list) {
-        	boolean found = false;
+            boolean found = false;
             List<String> restriction = getRestrictionPrivate( allocatableId );
             if ( restriction.size() == 0)
             {
-            	found = true;
+                found = true;
             }
             else
             {
                 for (String rest:restriction) {
-    				if ( rest.equals( id ) ) {
-    					found = true;
+                    if ( rest.equals( id ) ) {
+                        found = true;
                     }
                 }
             }
             if (found )
             {
-            	Allocatable alloc = getResolver().tryResolve( allocatableId, Allocatable.class);
-            	if ( alloc == null)
-        		{
-        			throw new UnresolvableReferenceExcpetion( Allocatable.class.getName() + ":" + allocatableId, toString());
-        		}
-            	set.add( alloc);
+                set.add( allocatableId);
             }
+        }
+        return set;
+    }
+
+    public Allocatable[] getAllocatablesFor(Appointment appointment) {
+        final Collection<String> allocatableIds = getAllocatableIdsFor(appointment);
+        HashSet<Allocatable> set = new HashSet<Allocatable>();
+        for(String id : allocatableIds)
+        {
+            final Allocatable alloc = getResolver().tryResolve(id, Allocatable.class);
+            if ( alloc == null)
+            {
+                throw new UnresolvableReferenceExcpetion( Allocatable.class.getName() + ":" + id, toString());
+            }
+            set.add( alloc);
         }
         return  set.toArray( Allocatable.ALLOCATABLE_ARRAY);
     }
