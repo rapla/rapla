@@ -1003,7 +1003,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             checkAndAddConflict(lastKnown);
             if (lastKnown instanceof Reservation)
             {
-                Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id);
+                Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
                 Reservation newReservation = (Reservation) lastKnown;
                 Appointment[] oldAppointments = oldReservation.getAppointments();
                 for (Appointment oldApp : oldAppointments)
@@ -1019,7 +1019,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (lastKnown instanceof DynamicType)
             {
                 DynamicType dynamicType = (DynamicType) lastKnown;
-                DynamicType old = (DynamicType) result.getLastEntryBeforeUpdate(id);
+                DynamicType old = (DynamicType) result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
                 String conflictsNew = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
                 String conflictsOld = old.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
                 if (conflictsNew != conflictsOld)

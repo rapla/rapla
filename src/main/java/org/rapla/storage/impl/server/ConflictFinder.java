@@ -37,7 +37,6 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -566,7 +565,7 @@ class ConflictFinder {
 			RaplaObject current = (RaplaObject) result.getLastKnown(nextId);
 			if ( current.getRaplaType() == Allocatable.TYPE)
 			{
-				Allocatable old = (Allocatable) result.getLastEntryBeforeUpdate(nextId);//.getUnresolvedEntity();
+				Allocatable old = (Allocatable) result.getLastEntryBeforeUpdate(nextId).getUnresolvedEntity();
 				Allocatable newAlloc = (Allocatable) current;
 				if ( old != null && newAlloc != null )
 				{
