@@ -38,8 +38,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
@@ -49,7 +47,6 @@ import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Category;
@@ -129,6 +126,9 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -1093,7 +1093,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
             String id = removed.getCurrentId();
-            final Entity newEntity = result.getLastKnown(id);//.getUnresolvedEntity();
+            final Entity newEntity = result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
             final RaplaType raplaType = newEntity.getRaplaType();
             if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
                     || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE)
@@ -1137,7 +1137,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 getLogger().warn("Can't remove entry for id " + id);
             }
         }
-        if (!isDelete && current instanceof LastChangedTimestamp)
+        if (/*!isDelete && */current instanceof LastChangedTimestamp)
         {
             entry.timestamp = ((LastChangedTimestamp) current).getLastChanged();
         }

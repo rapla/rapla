@@ -636,6 +636,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
             Entity persistantVersion = cache.tryResolve(id );
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
+			    oldEntities.put(id, persistantVersion);
 			    toRemove.add( new ReferenceInfo(id, persistantVersion.getRaplaType().getTypeClass()));
 			}
 			else if ( ConflictImpl.isConflictId( id ))
