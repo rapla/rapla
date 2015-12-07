@@ -104,6 +104,7 @@ class RaplaSQL {
 		stores.add(appointmentStorage);
 		stores.add(new ConflictStorage( context));
 		stores.add(new DeleteStorage( context));
+        stores.add(new HistoryStorage( context));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
@@ -1837,46 +1838,70 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 }
 
 
-//class HistoryStorage<T> extends RaplaTypeStorage<HistoryEntry>
-//{
-//
-//    final RaplaType<T> outerType;
-//
-//    HistoryStorage(RaplaXMLContext context, RaplaType<T> outerType) throws RaplaException
-//    {
-//        super(context, HistoryEntry.RAPLA_TYPE, "CHANGES", new String[]{"VARCHAR(255) ID KEY", "VARCHAR(50) TYPE", "XML_VALUE DATA NOT NULL", "TIMESTAMP CHANGED_AT KEY"});
-//        this.outerType = outerType;
-//    }
-//    
-//    @Override
-//    void insertAll() throws SQLException, RaplaException
-//    {
+class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
+{
+
+    HistoryStorage(RaplaXMLContext context) throws RaplaException
+    {
+        super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY"});
+    }
+    
+    @Override
+    void insertAll() throws SQLException, RaplaException
+    {
+        // No need for
 //        insert(cache.getHistory());
-//    }
-//
-//    @Override
-//    protected int write(PreparedStatement stmt, HistoryEntry entity) throws SQLException, RaplaException
-//    {
-//        stmt.setString(1, entity.getEntry().getId());
-//        stmt.setString(1, outerType.toString());
-//        setText(stmt, 3, getXML(entity.getEntry()));
-//        setTimestamp(stmt, 4, getCurrentTimestamp());
-//        return 1;
-//    }
-//
-//    @Override
-//    protected void load(ResultSet rs) throws SQLException, RaplaException
-//    {
-//        HistoryEntity result = new HistryEntry();
-//        final String text = getText(rs, 3);
-//        final String id = rs.getString(1);
-//        final Date lastChanged = getTimestamp(rs, 4);
-//        final String xml = getText(rs, 3);
-//        RaplaXMLReader contentHandler = processXML( outerType, xml );
-//        RaplaObject type = contentHandler.getType();
-//        result.setEntity(type);
-//        result.setLastChanged(lastChanged);
-//        put(result);
-//    }
-//    
-//}
+    }
+    
+    @Override
+    boolean canDelete(@SuppressWarnings("rawtypes") Entity entity)
+    {
+        return true;
+    }
+    
+    @Override
+    boolean canStore(@SuppressWarnings("rawtypes") Entity entity)
+    {
+        return true;
+    }
+
+    @Override
+    protected int write(PreparedStatement stmt, T entity) throws SQLException, RaplaException
+    {
+        stmt.setString(1, entity.getId());
+        stmt.setString(2, entity.getRaplaType().getLocalName());
+        stmt.setString(3, entity.getClass().getCanonicalName());
+        setText(stmt, 4, getXML(entity));
+        setTimestamp(stmt, 5, getCurrentTimestamp());
+        stmt.addBatch();
+        return 1;
+    }
+    
+    @Override
+    public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
+    {
+        // FIXME implement me
+    }
+
+    @Override
+    protected void load(ResultSet rs) throws SQLException, RaplaException
+    {
+        final String id = rs.getString(1);
+        final String raplaTypeLocalName = rs.getString(2);
+        final RaplaType raplaType = RaplaType.find(raplaTypeLocalName);
+        final String className = getString(rs, 3, null);
+        final String xml = getText(rs, 4);
+        final Date lastChanged = getTimestamp(rs, 5);
+        RaplaXMLReader contentHandler = processXML( raplaType, xml );
+        RaplaObject type = contentHandler.getType();
+        try
+        {
+            cache.addHistoryEntry(id, xml, (Class<? extends Entity>) Class.forName(className), lastChanged);
+        }
+        catch (ClassNotFoundException e)
+        {
+            throw new RaplaException("found history entry (" + id + ") with classname " + className + " which is not defined in java");
+        }
+    }
+    
+}

@@ -64,7 +64,6 @@ import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -110,7 +109,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -126,9 +124,6 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -148,7 +143,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private CommandScheduler scheduler;
     private Cancelable cleanConflictsTask;
     private PermissionController permissionController;
-    final protected EntityHistory history = new EntityHistory();
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -1173,7 +1167,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 entry.addUserIds(Collections.singletonList(owner));
             }
         }
-        history.addHistoryEntry(current, entry.timestamp);
+        cache.getHistory().addHistoryEntry(current, entry.timestamp);
         deleteUpdateSet.put(entry.getId(), entry);
     }
 
@@ -3102,7 +3096,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (ReferenceInfo update : toUpdate)
         {
             String id = update.getId();
-            Entity oldEntity = history.get(id, since);
+            Entity oldEntity = cache.getHistory().get(id, since);
             Entity newEntity = resolve(id);
             updatedEntities.add(newEntity);
             oldEntities.put(id, oldEntity);
@@ -3111,7 +3105,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (ReferenceInfo update : toRemove)
         {
             String id = update.getId();
-            Entity entity = history.get(id, since);
+            Entity entity = cache.getHistory().get(id, since);
             oldEntities.put(id, entity);
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
@@ -3120,111 +3114,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @Override public UpdateResult getUpdateResult(Date since)
     {
-        // FIXME Auto-generated method stub
         return null;
-    }
-
-    public static class EntityHistory
-    {
-        private final Map<String, List<HistoryEntry>> map = new LinkedHashMap<String, List<HistoryEntry>>();
-        private final Gson gson;
-
-        public EntityHistory()
-        {
-            Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
-            final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
-            gson = gsonBuilder.create();
-        }
-
-        public Entity get(String id, Date since)
-        {
-            final List<HistoryEntry> historyEntries = map.get(id);
-            if (historyEntries == null)
-            {
-                // FIXME handle history ends
-                throw new RaplaException("History not available for id " + id);
-            }
-            final HistoryEntry emptyEntryWithTimestamp = new HistoryEntry();
-            emptyEntryWithTimestamp.timestamp = since.getTime();
-            int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, new Comparator<HistoryEntry>()
-            {
-                @Override public int compare(HistoryEntry o1, HistoryEntry o2)
-                {
-                    return (int) (o1.timestamp - o2.timestamp);
-                }
-            });
-            /*
-            * possible results:
-            * we get an index >= 0 -> We found an entry, which has the timestamp of the last update from the client. We need to get this one
-            * we get an index < 0 -> We have no entry within the list, which has the timestamp. Corresponding to the binary search API -index -1 is the index where to insert a entry having this timestamp. So we need -index -1 to get the last one with an timestamp smaller than the requested one.
-            */
-            if (index < 0)
-            {
-                index = -index - 1;
-            }
-            if (index < 0)
-            {
-                // FIXME handle history ends
-                throw new RaplaException("History does not support your request for timestamp " + since);
-            }
-            HistoryEntry entry = historyEntries.get(index);
-            String json = entry.json;
-            Class<? extends Entity> type = entry.type;
-            final Entity entity = gson.fromJson(json, type);
-            return entity;
-        }
-
-        public void addHistoryEntry(String id, String json, Class<? extends Entity> entityClass, Date timestamp)
-        {
-            List<HistoryEntry> historyEntries = map.get(id);
-            if (historyEntries == null)
-            {
-                historyEntries = new ArrayList<HistoryEntry>();
-                map.put(id, historyEntries);
-            }
-            final HistoryEntry newEntry = new HistoryEntry();
-            newEntry.timestamp = timestamp.getTime();
-            newEntry.json = json;
-            newEntry.type = entityClass;
-            int index = historyEntries.size();
-            insert(historyEntries, newEntry, index);
-        }
-
-        private void insert(List<HistoryEntry> historyEntries, HistoryEntry newEntry, int index)
-        {
-            if (index == 0)
-            {
-                historyEntries.add(0, newEntry);
-            }
-            else
-            {
-                final long timestamp = historyEntries.get(index - 1).timestamp;
-                if (timestamp > newEntry.timestamp)
-                {
-                    insert(historyEntries, newEntry, index - 1);
-                }
-                else
-                {
-                    historyEntries.add(index, newEntry);
-                }
-            }
-        }
-
-        public void addHistoryEntry(Entity entity, Date timestamp)
-        {
-            final String id = entity.getId();
-            final String json = gson.toJson(entity);
-            final Class<? extends Entity> entityClass = entity.getClass();
-            addHistoryEntry(id, json, entityClass, timestamp);
-        }
-    }
-
-    public static class HistoryEntry
-    {
-        long timestamp;
-        String json;
-        Class<? extends Entity> type;
-
     }
 
 }
