@@ -565,7 +565,7 @@ class ConflictFinder {
 			RaplaObject current = (RaplaObject) result.getLastKnown(nextId);
 			if ( current.getRaplaType() == Allocatable.TYPE)
 			{
-				Allocatable old = (Allocatable) result.getLastEntryBeforeUpdate(nextId).getUnresolvedEntity();
+				Allocatable old = (Allocatable) result.getLastEntryBeforeUpdate(nextId);
 				Allocatable newAlloc = (Allocatable) current;
 				if ( old != null && newAlloc != null )
 				{

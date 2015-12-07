@@ -998,7 +998,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             checkAndAddConflict(lastKnown);
             if (lastKnown instanceof Reservation)
             {
-                Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
+                Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id);
                 Reservation newReservation = (Reservation) lastKnown;
                 Appointment[] oldAppointments = oldReservation.getAppointments();
                 for (Appointment oldApp : oldAppointments)
@@ -1014,7 +1014,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (lastKnown instanceof DynamicType)
             {
                 DynamicType dynamicType = (DynamicType) lastKnown;
-                DynamicType old = (DynamicType) result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
+                DynamicType old = (DynamicType) result.getLastEntryBeforeUpdate(id);
                 String conflictsNew = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
                 String conflictsOld = old.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
                 if (conflictsNew != conflictsOld)
@@ -1044,7 +1044,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
             String id = removed.getCurrentId();
-            final Entity lastKnown = result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
+            final Entity lastKnown = result.getLastEntryBeforeUpdate(id);
             if (lastKnown instanceof Reservation)
             {
                 Reservation old = (Reservation) lastKnown;
@@ -1088,7 +1088,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
             String id = removed.getCurrentId();
-            final Entity newEntity = result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
+            final Entity newEntity = result.getLastEntryBeforeUpdate(id);
             final RaplaType raplaType = newEntity.getRaplaType();
             if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
                     || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE)
@@ -1676,7 +1676,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Collection<Change> changes = result.getOperations(UpdateResult.Change.class);
         for (Change change : changes)
         {
-            Entity old = result.getLastEntryBeforeUpdate(change.getCurrentId()).getUnresolvedEntity();
+            Entity old = result.getLastEntryBeforeUpdate(change.getCurrentId());
             if (!(old instanceof Conflict))
             {
                 continue;
@@ -3115,14 +3115,20 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Entity oldEntity = history.get(id, since);
             Entity newEntity = resolve(id);
             updatedEntities.add(newEntity);
-            oldEntities.put(id, oldEntity);
+            if ( oldEntity  != null)
+            {
+                oldEntities.put(id, oldEntity);
+            }
         }
         Collection<ReferenceInfo> toRemove = getEntities(user, since, true);
         for (ReferenceInfo update : toRemove)
         {
             String id = update.getId();
             Entity entity = history.get(id, since);
-            oldEntities.put(id, entity);
+            if ( entity != null)
+            {
+                oldEntities.put(id, entity);
+            }
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
         return updateResult;

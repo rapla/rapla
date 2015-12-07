@@ -100,15 +100,13 @@ public class UpdateResult
         // FIXME
         return null;
     }
-    
-    public HistoryEntry getLastEntryBeforeUpdate(String id)
+
+    /** returns null if no entity exisits before update*/
+    public Entity getLastEntryBeforeUpdate(String id)
     {
-        // FIXME remove history or add timestamp
         // TODO Conflict resolution
         final Entity entity = oldEntities.get(id);
-        final HistoryEntry historyEntry = new HistoryEntry();
-        historyEntry.unresolvedEntity = entity;
-        return historyEntry;
+        return entity;
     }
 
     public Entity getLastKnown(String id)

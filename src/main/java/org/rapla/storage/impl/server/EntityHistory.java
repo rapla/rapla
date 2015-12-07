@@ -54,6 +54,7 @@ public class EntityHistory
         gson = gsonBuilder.create();
     }
 
+    /** returns the history entry with a timestamp<= since or null if no such entry exists*/
     public Entity get(String id, Date since)
     {
         final List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
@@ -78,12 +79,11 @@ public class EntityHistory
         */
         if (index < 0)
         {
-            index = -index - 1;
+            index = -index - 2;
         }
         if (index < 0)
         {
-            // FIXME handle history ends
-            throw new RaplaException("History does not support your request for timestamp " + since);
+            return null;
         }
         EntityHistory.HistoryEntry entry = historyEntries.get(index);
         String json = entry.json;

@@ -219,12 +219,12 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
         for (Change operation : updateResult.getOperations(UpdateResult.Change.class))
         {
-            Entity newObject = updateResult.getLastKnown(operation.getCurrentId());
+            final String currentId = operation.getCurrentId();
+            Entity newObject = updateResult.getLastKnown(currentId);
             // we get all the permissions that have changed on an allocatable
             if (newObject.getRaplaType().is(Allocatable.TYPE) && isTransferedToClient(newObject))
             {
-                final HistoryEntry historyEntry = updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
-                PermissionContainer current = (PermissionContainer) historyEntry.getUnresolvedEntity();
+                PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
                 PermissionContainer newObj = (PermissionContainer) newObject;
                 Util.addDifferences(invalidatePermissions, current, newObj);
             }
@@ -233,7 +233,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (newObject.getRaplaType().is(User.TYPE) && newObject.equals( user))
             {
                 User newUser = (User) newObject;
-                User oldUser = (User) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                User oldUser = (User) updateResult.getLastEntryBeforeUpdate(currentId);
                 HashSet<Category> newGroups = new HashSet<Category>(newUser.getGroupList());
                 HashSet<Category> oldGroups = new HashSet<Category>(oldUser.getGroupList());
                 if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
@@ -247,13 +247,12 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (newObject instanceof Ownable)
             {
                 Ownable newOwnable = (Ownable) newObject;
-                final HistoryEntry historyEntry = updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
-                Ownable oldOwnable = (Ownable) historyEntry.getUnresolvedEntity();
+                Ownable oldOwnable = (Ownable) updateResult.getLastEntryBeforeUpdate(currentId);
                 String newOwnerId = newOwnable.getOwnerId();
                 String oldOwnerId = oldOwnable.getOwnerId();
                 if (newOwnerId != null && oldOwnerId != null && (!newOwnerId.equals(oldOwnerId)))
                 {
-                    if ( user.getId().equals( newOwnerId) || user.getId().equals( oldOwnerId))
+                    if ( user.getId().equals(newOwnerId) || user.getId().equals(oldOwnerId))
                     {
                         if (!newObject.getRaplaType().is(Reservation.TYPE))
                         {
@@ -265,8 +264,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             }
             if (newObject.getRaplaType().is(Reservation.TYPE))
             {
-                final HistoryEntry historyEntry = updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
-                PermissionContainer current = (PermissionContainer) historyEntry.getUnresolvedEntity();
+                PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
                 PermissionContainer newObj = (PermissionContainer) newObject;
                 Util.addDifferences(invalidateEventPermissions, current, newObj);
             }
@@ -351,8 +349,11 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 if ( raplaType == Reservation.TYPE)
                 {
                     timeInterval = expandInterval(obj, timeInterval);
-                    final UpdateResult.HistoryEntry lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(id);
-                    timeInterval = expandInterval(lastEntryBeforeUpdate.getUnresolvedEntity(), timeInterval);
+                    final Entity entity  = updateResult.getLastEntryBeforeUpdate(id);
+                    if ( entity != null)
+                    {
+                        timeInterval = expandInterval(entity, timeInterval);
+                    }
                 }
                 // Add entity to result
                 processClientReadable(user, safeResultEvent, obj, false);
@@ -368,8 +369,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 }
                 if ( type == Reservation.class)
                 {
-                    final UpdateResult.HistoryEntry lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(id);
-                    timeInterval = expandInterval(lastEntryBeforeUpdate.getUnresolvedEntity(), timeInterval);
+                    final Entity entity = updateResult.getLastEntryBeforeUpdate(id);
+                    timeInterval = expandInterval(entity, timeInterval);
                 }
             }
         }

@@ -31,6 +31,9 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.UpdateResult;
+import org.rapla.storage.impl.AbstractCachableOperator;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager
@@ -38,6 +41,7 @@ public class TestUpdateDataManager
     private Logger logger;
     private ClientFacade facade;
     private UpdateDataManager updateManager;
+    CachableStorageOperator operator;
 
     @Before
     public void setUp()
@@ -50,7 +54,7 @@ public class TestUpdateDataManager
         String xmlFile = "testdefault.xml";
         //        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
         facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
-        CachableStorageOperator operator = (CachableStorageOperator) facade.getOperator();
+        operator = (CachableStorageOperator) facade.getOperator();
         operator.connect();
         //        ((DBOperator) operator).removeAll();
         //        operator.disconnect();
@@ -118,7 +122,7 @@ public class TestUpdateDataManager
             facade.storeObjects(entitiesToStore.toArray(new Entity[0]));
             entitiesToStore.clear();
             allocatables = facade.getAllocatables();
-            for (int i = 0; i < maxNumberGeneratedItems; i++)
+            for (int i = 0; i <maxNumberGeneratedItems; i++)
             {
                 final Reservation newReservation = facade.newReservation();
                 newReservation.getClassification().setValue("name", "newReservation" + i);
@@ -135,10 +139,13 @@ public class TestUpdateDataManager
         }
         {
             // check the created entities
+            final UpdateResult updateResult = operator.getUpdateResult(lastSynced,readUser);
+            Assert.assertEquals(storedAllocatables + storedReservations,updateResult.getOperations(UpdateResult.Add.class).size());
+
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             lastSynced = updateEvent.getLastValidated();
             final Collection<Entity> storeObjects = updateEvent.getStoreObjects();
-            //            Assert.assertEquals(storedAllocatables + storedReservations, storeObjects.size());
+            Assert.assertEquals(storedAllocatables , storeObjects.size());
             Assert.assertEquals(storeObjects.toString(), storedAllocatables, storeObjects.size());
             for (Entity<?> storeObject : storeObjects)
             {
@@ -187,7 +194,7 @@ public class TestUpdateDataManager
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             lastSynced = updateEvent.getLastValidated();
             final Collection<Entity> storeObjects = updateEvent.getStoreObjects();
-            Assert.assertEquals(updatedAllocatables /*+ updatedReservations*/, storeObjects.size());
+            Assert.assertEquals(updatedAllocatables , storeObjects.size());
             for (Entity updatedObject : storeObjects)
             {
                 if (updatedObject instanceof Allocatable)
@@ -218,8 +225,15 @@ public class TestUpdateDataManager
             }
             final Reservation[] reservations = facade.getReservations(toDelete.toArray(new Allocatable[0]), null, null);
             toDelete.addAll(Arrays.asList(reservations));
+            Date beforeRemove = ((AbstractCachableOperator)operator).getLastUpdated();
             facade.removeObjects(toDelete.toArray(new Entity[0]));
-            final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
+            {
+                final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
+                final Collection<String> removeIds = updateEvent.getRemoveIds();
+                Assert.assertTrue(removeIds.isEmpty());
+
+            }
+            final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, beforeRemove);
             final Collection<String> removeIds = updateEvent.getRemoveIds();
             Assert.assertFalse(removeIds.isEmpty());
             for (String removedId : removeIds)
