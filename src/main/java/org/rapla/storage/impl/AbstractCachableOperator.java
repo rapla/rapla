@@ -104,7 +104,12 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	public Logger getLogger() {
 		return logger;
 	}
-	
+
+	public Date getLastUpdated()
+	{
+		return lastUpdated;
+	}
+
 	public User connect() throws RaplaException
 	{
 	    try {
@@ -653,6 +658,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return createUpdateResult(oldEntities, updatedEntities, toRemove,  since, until);
 	}
 
+
     protected Entity findPersistant(Entity entity) {
         @SuppressWarnings("unchecked")
         Class<? extends Entity> typeClass = entity.getRaplaType().getTypeClass();
@@ -687,6 +693,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			if (oldEntity != null) {
 				result.addOperation(new UpdateResult.Change( newEntity.getId(), newEntity.getRaplaType() ));
 			} else {
+
 				result.addOperation(new UpdateResult.Add( newEntity.getId(), newEntity.getRaplaType() ));
 			}
 		}

@@ -47,7 +47,7 @@ public class AllocationChangeFinder
             removed( removeOp.getCurrentId(),removeOp.getRaplaType(), user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
-            Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getCurrentId()).getUnresolvedEntity();
+            Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getCurrentId());
             Entity newObj = updateResult.getLastKnown(changeOp.getCurrentId());
             changed(old , newObj, user );
         }
