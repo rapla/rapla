@@ -1049,7 +1049,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
             String id = removed.getCurrentId();
-            final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
+            final Entity lastKnown = result.getLastEntryBeforeUpdate(id).getUnresolvedEntity();
             if (lastKnown instanceof Reservation)
             {
                 Reservation old = (Reservation) lastKnown;
