@@ -42,6 +42,12 @@ public class EntityHistory
         {
             return id;
         }
+
+        @Override
+        public String toString()
+        {
+            return "HistoryEntry [timestamp=" + timestamp + ", id=" + id + "]";
+        }
     }
 
     private final Map<String, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<String, List<EntityHistory.HistoryEntry>>();
@@ -104,6 +110,7 @@ public class EntityHistory
         newEntry.timestamp = timestamp.getTime();
         newEntry.json = json;
         newEntry.type = entityClass;
+        newEntry.id = id;
         int index = historyEntries.size();
         insert(historyEntries, newEntry, index);
     }
@@ -143,5 +150,15 @@ public class EntityHistory
     public void clear()
     {
         map.clear();
+    }
+    
+    List<HistoryEntry> getHistoryList(String key)
+    {
+        return map.get(key);
+    }
+
+    public void removeUnneeded(Date date)
+    {
+        // FIXME implement method
     }
 }
