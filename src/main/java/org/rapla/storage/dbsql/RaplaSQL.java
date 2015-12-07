@@ -103,6 +103,7 @@ class RaplaSQL {
 	    AppointmentStorage appointmentStorage = new AppointmentStorage( context);
 		stores.add(appointmentStorage);
 		stores.add(new ConflictStorage( context));
+		stores.add(new DeleteStorage( context));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
@@ -178,6 +179,7 @@ class RaplaSQL {
 	synchronized public void remove(Connection con,Entity entity) throws SQLException,RaplaException {
     	if ( Attribute.TYPE ==  entity.getRaplaType() )
 			return;
+    	boolean couldDelete = false;
 		for (RaplaTypeStorage storage:stores) {
 		    if (storage.canDelete(entity)) {
 		    	storage.setConnection(con);
@@ -185,16 +187,19 @@ class RaplaSQL {
 		    	{
 			    	List<Entity>list = new ArrayList<Entity>();
 			    	list.add( entity);
-	                storage.deleteEntities(list, false);
+	                storage.deleteEntities(list);
+	                couldDelete = true;
 		    	}
 		    	finally
 		    	{
 		    		storage.setConnection(null);
 		    	}
-		    	return;
 		    }
 		}
-		throw new RaplaException("No Storage-Sublass matches this object: " + entity.getClass());
+		if(!couldDelete)
+		{
+		    throw new RaplaException("No Storage-Sublass matches this object: " + entity.getClass());
+		}
     }
 
     @SuppressWarnings("unchecked")
@@ -270,8 +275,9 @@ class RaplaSQL {
 
     public UpdateResult update(Connection c, Date lastUpdated) throws SQLException
     {
+        Date start = new Date(System.currentTimeMillis());
         // FIXME instanciate or change return type
-        final UpdateResult updateResult = null;
+        final UpdateResult updateResult = new UpdateResult(lastUpdated, start, null, null);
         for (RaplaTypeStorage raplaTypeStorage : stores)
         {
             raplaTypeStorage.setConnection( c);
@@ -344,7 +350,6 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
         {
             stmt = con.prepareStatement(loadAllUpdatesSql);
             setTimestamp(stmt, 1, lastUpdated);
-            setTimestamp(stmt, 2, lastUpdated);
             stmt.execute();
             final ResultSet resultSet = stmt.getResultSet();
             int count =0;
@@ -356,10 +361,19 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
             {
                 count ++;
                 final String id = resultSet.getString(1);
+                if(id == null)
+                {
+                    continue;
+                }
 
-                // deletion of entities must be handled somewhere else
-
+                // deletion of entities is handled in DeleteStorage
                 final Entity<?> oldEntity = entityStore.tryResolve(id);
+                if(oldEntity != null)
+                {
+                    // TODO think about do not load if the lastChanged timestamp has not changed
+//                    int lastChangedColumn = resultSet.;
+//                    getTimestamp(resultSet, lastChangedColumn);
+                }
                 load(resultSet);
                 updateSubstores(id);
                 final Entity<?> newEntity = entityStore.tryResolve(id);
@@ -444,7 +458,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     );
 
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
-    	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY"});
+    	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY"});
     }
 
     @Override
@@ -452,17 +466,17 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     {
         super.createOrUpdateIfNecessary( schema);
         checkAndAdd(schema, "LAST_CHANGED");
-        checkAndAdd(schema, "DELETED");
+        checkAndDrop(schema, "DELETED");
     }
 
     @Override
-    public void deleteEntities(Iterable<Category> entities, boolean hard) throws SQLException,RaplaException {
+    public void deleteEntities(Iterable<Category> entities) throws SQLException,RaplaException {
         Set<Category> transitiveCategories = new HashSet<Category>();
     	for ( Category cat:entities)
     	{
     		transitiveCategories.addAll(getTransitiveCategories(cat));
     	}
-        super.deleteEntities( transitiveCategories, hard );
+        super.deleteEntities( transitiveCategories );
     }
     
     @Override
@@ -529,7 +543,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         setText(stmt, 4, xml);
         setInt(stmt, 5, order);
         setTimestamp(stmt, 6, category.getLastChanged());
-        setTimestamp(stmt, 7, null);
 		stmt.addBatch();
 		return 1;
     }
@@ -582,8 +595,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         final Date lastChanged = getTimestampOrNow(rset, 6);
         category.setLastChanged( lastChanged);
 		category.setId( id);
-        final Date deleteTimestamp = getTimestamp(rset, 7);
-        put( category ,deleteTimestamp != null);
+        put( category );
 
         orderMap.put( category, order);
         // parentId can also be null
@@ -636,7 +648,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     PermissionStorage<Allocatable> permissionStorage;
 
     public AllocatableStorage(RaplaXMLContext context ) throws RaplaException {
-        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL", "DELETED TIMESTAMP KEY"});  
+        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});  
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage<Allocatable>( context, "RESOURCE",allocatableMap);
         addSubStorage(resourceAttributeStorage);
@@ -647,7 +659,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
     {
         super.createOrUpdateIfNecessary(schema);
-        checkAndAdd(schema, "DELETED");
+        checkAndDrop(schema, "DELETED");
     }
     
 	@Override
@@ -667,7 +679,6 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
         ((ModifiableTimestamp)allocatable).setLastChangedWithoutCheck(getCurrentTimestamp());
 		setTimestamp(stmt, 5,timestamp.getLastChanged() );
 		setId( stmt,6,timestamp.getLastChangedBy() );
-        setTimestamp(stmt, 7, null);
 		stmt.addBatch();
       	return 1;
     }
@@ -677,10 +688,9 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     	String typeKey = getString(rset,2 , null);
 		final Date createDate = getTimestampOrNow( rset, 4);
 		final Date lastChanged = getTimestampOrNow( rset, 5);
-		final Date deleteTimestamp = getTimestamp(rset, 7);
      	
     	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
-    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class).getEntity() );
+    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
     	allocatable.setId( id);
     	allocatable.setResolver( entityStore);
     	DynamicType type = null;
@@ -694,25 +704,14 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
             return;
         }
 		{
-		    final org.rapla.storage.dbsql.EntityStorage.ResolvedEntity<User> resolved = resolveFromId(rset, 3, User.class);
-		    if(resolved.isResolved())
-		    {
-		        if(resolved.isDeleted())
-		        {
-                    getLogger().warn(
-                            "Allocatable with id " + id + " is referencing deleted user as owner (id " + resolved.getEntity().getId() + "). User is ignored.");
-		        }
-		        else
-		        {
-		            allocatable.setOwner( resolved.getEntity() );
-		        }
-		    }
+		    final User user = resolveFromId(rset, 3, User.class);
+		    allocatable.setOwner( user );
 		}
     	Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
     	allocatable.setClassification( classification );
     	classificationMap.put( id, classification );
     	allocatableMap.put( id, allocatable);
-    	put( allocatable, deleteTimestamp != null );
+    	put( allocatable );
     }
     
     @Override
@@ -731,7 +730,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	PermissionStorage<Reservation> permissionStorage;
 
     public ReservationStorage(RaplaXMLContext context) throws RaplaException {
-        super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL", "DELETED TIMESTAMP KEY"});
+        super(context,Reservation.TYPE, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
         permissionStorage = new PermissionStorage<Reservation>( context,"EVENT", reservationMap);
@@ -742,7 +741,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
     {
         super.createOrUpdateIfNecessary(schema);
-        checkAndAdd(schema, "DELETED");
+        checkAndDrop(schema, "DELETED");
     }
     
     public void setAppointmentStorage(AppointmentStorage appointmentStorage)
@@ -784,7 +783,6 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         setTimestamp( stmt,4,createTime);
         setTimestamp( stmt,5,timestamp.getLastChanged());
         setId(stmt, 6, timestamp.getLastChangedBy());
-        setTimestamp(stmt, 7, null);
         stmt.addBatch();
         return 1;
     }
@@ -805,49 +803,39 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
     	final Date createDate = getTimestampOrNow(rset,4);
         final Date lastChanged = getTimestampOrNow(rset, 5);
-        Date deleteTimestamp = getTimestamp(rset,7);
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
     	String id = readId(rset,1,Reservation.class);
 		event.setId( id);
-        if ( deleteTimestamp == null)
+        event.setResolver(entityStore);
+        String typeKey = getString(rset, 2, null);
+        DynamicType type = null;
+        if (typeKey != null)
         {
-            event.setResolver(entityStore);
-            String typeKey = getString(rset, 2, null);
-            DynamicType type = null;
-            if (typeKey != null)
+            type = getDynamicType(typeKey);
+        }
+        if (type == null)
+        {
+            getLogger().error("Reservation with id " + id + " has an unknown type " + typeKey + ". Try ignoring it");
+            return;
+        }
+        {
+            User user = resolveFromId(rset, 3, User.class);
+            if (user == null)
             {
-                type = getDynamicType(typeKey);
-            }
-            if (type == null)
-            {
-                getLogger().error("Reservation with id " + id + " has an unknown type " + typeKey + ". Try ignoring it");
                 return;
             }
-            {
-                ResolvedEntity<User> user = resolveFromId(rset, 3, User.class);
-                if (!user.isResolved() || user.isDeleted())
-                {
-                    return;
-                }
-                User entity = user.getEntity();
-                event.setOwner(entity);
-            }
-            {
-                ResolvedEntity<User> user = resolveFromId(rset, 6, User.class);
-                User entity = user.getEntity();
-                if ( user.isDeleted())
-                {
-                    entity = null;
-                }
-                event.setLastChangedBy( entity );
-            }
-
-            Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
-            event.setClassification( classification );
-            classificationMap.put( id, classification );
-            reservationMap.put(id, event);
+            event.setOwner(user);
         }
-        put(event, deleteTimestamp != null);
+        {
+            User user = resolveFromId(rset, 6, User.class);
+            event.setLastChangedBy( user );
+        }
+
+        Classification classification = ((DynamicTypeImpl)type).newClassificationWithoutCheck(false);
+        event.setClassification( classification );
+        classificationMap.put( id, classification );
+        reservationMap.put(id, event);
+        put(event);
     }
 
     @Override
@@ -1016,27 +1004,8 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
         	return;
         }
         PermissionImpl permission = new PermissionImpl();
-        {
-            final org.rapla.storage.dbsql.EntityStorage.ResolvedEntity<User> resolved = resolveFromId(rset, 2, User.class);
-            permission.setUser( resolved.isDeleted() ? null : resolved.getEntity());
-            if(resolved.isDeleted() && resolved.isResolved()){
-                getLogger().warn("Permission is referencing user with id "+resolved.getEntity().getId() + " which is deleted. User will be ignored.");
-            }
-        }
-        {
-            final org.rapla.storage.dbsql.EntityStorage.ResolvedEntity<Category> resolveFromId = resolveFromId(rset, 3, Category.class);
-            if(resolveFromId.isResolved())
-            {
-                if(resolveFromId.isDeleted())
-                {
-                    getLogger().warn("Permission is referencing deleted category with id "+resolveFromId.getEntity().getId()+". Category will be ignored.");
-                }
-                else
-                {
-                    permission.setGroup( resolveFromId.getEntity());
-                }
-            }
-        }
+        permission.setUser( resolveFromId(rset, 2, User.class));
+        permission.setGroup( resolveFromId(rset, 3, Category.class));
         Integer accessLevel = getInt( rset, 4);
         if  ( accessLevel !=null)
         {
@@ -1143,8 +1112,8 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     @Override
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
         String id = readId(rset, 1, Appointment.class);
-        ResolvedEntity<Reservation> resolved = resolveFromId(rset, 2, Reservation.class);
-        if ( !resolved.isResolved())
+        Reservation reservation = resolveFromId(rset, 2, Reservation.class);
+        if ( reservation == null)
         {
         	return;
         }
@@ -1154,7 +1123,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     	AppointmentImpl appointment = new AppointmentImpl(start, end);
     	appointment.setId(id);
     	appointment.setWholeDays(wholeDayAppointment);
-    	resolved.getEntity().addAppointment(appointment);
+    	reservation.addAppointment(appointment);
     	String repeatingType = getString( rset,5, null);
     	if ( repeatingType != null ) {
     	    appointment.setRepeatingEnabled( true );
@@ -1176,7 +1145,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     	    if ( interval != null)
     	        repeating.setInterval( interval);
     	}
-        put(appointment,resolved.isDeleted());
+        put(appointment);
     }
 
 
@@ -1206,13 +1175,13 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	Appointment appointment =resolveFromId(rset, 1, Appointment.class).getEntity();
+    	Appointment appointment =resolveFromId(rset, 1, Appointment.class);
     	if ( appointment == null)
     	{
     		return;
     	}
         ReservationImpl event = (ReservationImpl) appointment.getReservation();
-        Allocatable allocatable = resolveFromId(rset, 2, Allocatable.class).getEntity();
+        Allocatable allocatable = resolveFromId(rset, 2, Allocatable.class);
         if ( allocatable == null)
         {
         	return;
@@ -1256,7 +1225,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        Appointment appointment = resolveFromId( rset, 1, Appointment.class).getEntity();
+        Appointment appointment = resolveFromId( rset, 1, Appointment.class);
         if ( appointment == null)
         {
         	return;
@@ -1339,7 +1308,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 {
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Preferences.TYPE,"PREFERENCE",
-	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY"});
+	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"});
     }
 
     @Override
@@ -1347,7 +1316,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     {
         super.createOrUpdateIfNecessary( schema);
         checkAndAdd(schema, "LAST_CHANGED");
-        checkAndAdd(schema, "DELETED");
+        checkAndDrop(schema, "DELETED");
     }
     
 	public void storePatches(List<PreferencePatch> preferencePatches) throws RaplaException, SQLException 
@@ -1494,7 +1463,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         setString(stmt, 3, entryString);
         setText(stmt, 4, xml);
         setTimestamp( stmt,5, lastChanged);
-        setTimestamp(stmt, 6, null);
 
         stmt.addBatch();
     }
@@ -1534,7 +1502,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         	return;
         }
         String value = getString( rset,3, null);
-        final Date deleteTimestamp = getTimestamp(rset, 6);
 //        if (PreferencesImpl.isServerEntry(configRole))
 //        {
 //        	entityStore.putServerPreferences(owner,configRole, value);
@@ -1548,7 +1515,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             preferences = new PreferencesImpl(now, now);
             preferences.setId(preferenceId);
             preferences.setOwner(owner);
-            put( preferences, deleteTimestamp != null );
+            put( preferences );
         }
       
         if ( value!= null) {
@@ -1565,7 +1532,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     }
 
     @Override
-    public void deleteEntities( Iterable<Preferences> entities, boolean hard) throws SQLException {
+    public void deleteEntities( Iterable<Preferences> entities) throws SQLException {
         PreparedStatement stmt = null;
         boolean deleteNullUserPreference = false;
         try {
@@ -1602,7 +1569,7 @@ class UserStorage extends RaplaTypeStorage<User> {
     
     public UserStorage(RaplaXMLContext context) throws RaplaException {
         super( context,User.TYPE, "RAPLA_USER",
-	    new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","USERNAME VARCHAR(255) NOT NULL","PASSWORD VARCHAR(255)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY"});
+	    new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","USERNAME VARCHAR(255) NOT NULL","PASSWORD VARCHAR(255)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL", "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP KEY"});
         groupStorage = new UserGroupStorage( context );
         addSubStorage(groupStorage);
     }
@@ -1611,7 +1578,7 @@ class UserStorage extends RaplaTypeStorage<User> {
     public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
     {
         super.createOrUpdateIfNecessary(schema);
-        checkAndAdd(schema, "DELETED");
+        checkAndDrop(schema, "DELETED");
     }
 
     @Override
@@ -1633,7 +1600,6 @@ class UserStorage extends RaplaTypeStorage<User> {
         final Date currentTimestamp = getCurrentTimestamp();
         ((ModifiableTimestamp)user).setLastChangedWithoutCheck(currentTimestamp);
    		setTimestamp(stmt, 8, user.getLastChanged() );
-        setTimestamp(stmt, 9, null);
    		stmt.addBatch();
    		return 1;
     }
@@ -1653,7 +1619,6 @@ class UserStorage extends RaplaTypeStorage<User> {
         boolean isAdmin = rset.getInt(6) == 1;
         Date createDate = getTimestampOrNow( rset, 7);
 		Date lastChanged = getTimestampOrNow( rset, 8);
-		final Date deleteTimestamp = getTimestamp(rset, 9);
      	
         UserImpl user = new UserImpl(createDate, lastChanged);
 //        if ( personId != null)
@@ -1668,7 +1633,7 @@ class UserStorage extends RaplaTypeStorage<User> {
         if ( password != null) {
             putPassword(userId,password);
         }
-        put(user, deleteTimestamp != null);
+        put(user);
    }
 
 }
@@ -1678,15 +1643,15 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     public ConflictStorage(RaplaXMLContext context) throws RaplaException {
         super(context, Conflict.TYPE, "RAPLA_CONFLICT",
                 new String[] { "RESOURCE_ID VARCHAR(255) NOT NULL", "APPOINTMENT1 VARCHAR(255) NOT NULL", "APPOINTMENT2 VARCHAR(255) NOT NULL",
-                        "APP1ENABLED INTEGER NOT NULL", "APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY" });
-        this.deleteSql = "update " + tableName + " set DELETED = ? where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
+                        "APP1ENABLED INTEGER NOT NULL", "APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY" });
+        this.deleteSql = "delete from " + tableName + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
     }
     
     @Override
     public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
     {
         super.createOrUpdateIfNecessary(schema);
-        checkAndAdd(schema, "DELETED");
+        checkAndDrop(schema, "DELETED");
     }
 
     @Override
@@ -1707,11 +1672,10 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
                 String allocatableId = conflict.getAllocatableId();
                 String appointment1Id = conflict.getAppointment1();
                 String appointment2Id = conflict.getAppointment2();
-                setTimestamp(stmt, 1, getCurrentTimestamp());
-                stmt.setString(2,allocatableId);
-                stmt.setString(3,appointment1Id);
-                stmt.setString(4,appointment2Id);
-                setTimestamp(stmt, 5, lastChanged);
+                stmt.setString(1,allocatableId);
+                stmt.setString(2,appointment1Id);
+                stmt.setString(3,appointment2Id);
+                setTimestamp(stmt, 4, lastChanged);
                 stmt.addBatch();
                 execute = true;
             }
@@ -1737,7 +1701,6 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         boolean appointment2Enabled = conflict.isAppointment2Enabled();
         setInt(stmt, 5, appointment2Enabled ? 1 : 0);
         setTimestamp(stmt, 6, getCurrentTimestamp() );
-        setTimestamp(stmt, 7, null );
         stmt.addBatch();
         return 1;
     }
@@ -1748,7 +1711,6 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         String allocatableId = readId(rset,1, Allocatable.class );
         String appointment1Id = readId(rset,2, Appointment.class );
         String appointment2Id = readId(rset,3, Appointment.class );
-        final Date deleteTimestamp = getTimestamp(rset, 7);
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;
         
@@ -1757,7 +1719,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         ConflictImpl conflict = new ConflictImpl(id, today);
         conflict.setAppointment1Enabled(appointment1Enabled );
         conflict.setAppointment2Enabled(appointment2Enabled );
-        put(conflict, deleteTimestamp != null);
+        put(conflict);
    }
 
 }
@@ -1781,13 +1743,12 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        // TODO think about return when user is deleted
-        User user = resolveFromId(rset, 1, User.class).getEntity();
+        User user = resolveFromId(rset, 1, User.class);
         if ( user == null)
         {
         	return;
         }
-        Category category = resolveFromId(rset, 2,  Category.class).getEntity();
+        Category category = resolveFromId(rset, 2,  Category.class);
         if ( category == null)
         {
         	return;
@@ -1808,7 +1769,6 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
             setTimestamp(stmt, 1, lastUpdated);
-            setTimestamp(stmt, 2, lastUpdated);
             final ResultSet result = stmt.executeQuery();
             if(result == null)
             {
@@ -1837,13 +1797,19 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     }
 
     @Override
-    public void deleteEntities(Iterable<T> entities,boolean hard) throws SQLException, RaplaException
+    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException
     {
         try (PreparedStatement stmt = con.prepareStatement(insertSql))
         {
+            boolean execute = false;
             for (T entity : entities)
             {
                 write(stmt, entity);
+                execute = true;
+            }
+            if(execute )
+            {
+                stmt.executeBatch();
             }
         }
     }

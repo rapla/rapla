@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,10 +41,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -64,7 +60,6 @@ import org.rapla.storage.xml.RaplaXMLWriter;
 abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected String insertSql;
     protected String deleteSql;
-    protected String markDeleteSql;
     protected String selectSql;
     protected String deleteAllSql;
     private String containsSql;
@@ -75,7 +70,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     RaplaXMLContext context;
     protected LocalCache cache;
     protected EntityStore entityStore;
-    protected EntityStore deleteStore;
     private RaplaLocale raplaLocale;
 
     protected Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
@@ -101,8 +95,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         {
             this.cache = context.lookup( LocalCache.class);
         }
-        // FIXME
-        deleteStore = new EntityStore(new LocalCache(new HashMap<String, FunctionFactory>(), new PermissionController(new HashSet<PermissionExtension>())), getSuperCategory());
         this.raplaLocale = context.lookup( RaplaLocale.class);
         datetimeCal =Calendar.getInstance( getSystemTimeZone());
         logger = context.lookup( Logger.class);
@@ -306,53 +298,21 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return id;
 	}
 
-	protected static class ResolvedEntity<S extends Entity>
-	{
-		S entity;
-		private  boolean deleted;
-		private  boolean resolved;
-
-		public boolean isDeleted()
-		{
-			return deleted;
-		}
-
-		public boolean isResolved()
-		{
-			return resolved;
-		}
-
-        public S getEntity()
-        {
-            return entity;
-        }
-    }
-    protected <S extends Entity> ResolvedEntity<S> resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException
+    protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException
     {
-		ResolvedEntity<S> result = new ResolvedEntity<S>();
 		String id = rset.getString( column );
         if  (rset.wasNull() || id == null)
         {
-            return result;
+            return null;
         }
         try {
-		    S resolved = deleteStore.tryResolve(id, class1);
-			if ( resolved != null)
-			{
-				result.deleted = true;
-			}
-            else
-            {
-                resolved = entityStore.resolve(id, class1);
-            }
-            result.resolved = resolved != null;
-			result.entity = resolved;
-			return result;
+            S resolved = entityStore.resolve(id, class1);
+			return resolved;
         }
         catch ( EntityNotFoundException ex)
         {
 			getLogger().warn("Could not find "  + class1.getName() +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
-            return result;
+            return null;
         }
     }
 
@@ -453,8 +413,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		String valueString = " (" + getEntryList(entries) + ")";
 		insertSql = "insert into " + table + valueString + " values (" + getMarkerList(entries.size()) + ")";
 		deleteAllSql = "delete from " + table;
-		loadAllUpdatesSql = hasLastChangedTimestamp ? selectSql + " where LAST_CHANGED > ? or DELETED > ?" : null;
-        markDeleteSql = hasLastChangedTimestamp ? "update " + table + " set DELETED = ? WHERE " + idName + " = ? and LAST_CHANGED = ?" : null;
+		loadAllUpdatesSql = hasLastChangedTimestamp ? selectSql + " where LAST_CHANGED > ? " : null;
 		//searchForIdSql = "select id from " + table + " where id = ?";
 	}
 
@@ -952,11 +911,11 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 //    }
 
     public void save( Iterable<T> entities ) throws RaplaException, SQLException{
-        deleteEntities( entities, true );
+        deleteEntities( entities );
         insert( entities );
     }
 
-    public void deleteEntities(Iterable<T> entities, boolean hard) throws SQLException, RaplaException {
+    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException {
         Set<String> ids = new HashSet<String>();
         for ( T entity: entities)
         {
@@ -972,7 +931,6 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
             PreparedStatement stmt = null;
             try
             {
-                final String deleteSql = hard ? this.deleteSql:this.markDeleteSql;
                 stmt = con.prepareStatement(deleteSql);
                 boolean commitNeeded = false;
                 for (T entity : entities)
@@ -980,17 +938,8 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
                     final Timestamp castedEntity = (Timestamp)entity;
                     if(has(entity.getId()))
                     {
-                        if(hard)
-                        {
-                            stmt.setString(1, entity.getId());
-                            setTimestamp(stmt, 2, castedEntity.getLastChanged());
-                        }
-                        else
-                        {
-                            setTimestamp(stmt, 1, getCurrentTimestamp());
-                            stmt.setString(2, entity.getId());
-                            setTimestamp(stmt, 3, castedEntity.getLastChanged());
-                        }
+                        stmt.setString(1, entity.getId());
+                        setTimestamp(stmt, 2, castedEntity.getLastChanged());
                         stmt.addBatch();
                         commitNeeded = true;
                     }
@@ -1091,16 +1040,9 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     }
 
-    protected void put( Entity entity, boolean deleted)
+    protected void put( Entity entity )
     {
-		if ( deleted)
-		{
-			deleteStore.put( entity );
-		}
-		else
-		{
-			entityStore.put(entity);
-		}
+		entityStore.put(entity);
     }
 
     protected EntityResolver getResolver()

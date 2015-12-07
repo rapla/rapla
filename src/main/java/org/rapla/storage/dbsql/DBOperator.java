@@ -330,6 +330,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         Connection c = null;
     	Lock writeLock = writeLock();
         try {
+            lastUpdated = new Date();
         	c = createConnection();
         	connectionName = c.getMetaData().getURL();
 			getLogger().info("Using datasource " + c.getMetaData().getDatabaseProductName() +": " +  connectionName);
@@ -664,9 +665,12 @@ public class DBOperator extends LocalAbstractCachableOperator
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-            final UpdateResult update = raplaSQLOutput.update(createConnection(), lastUpdated);
-            // FIXME call update
-            lastUpdated = update.getUntil();
+            final Date start = new Date();
+            EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+            final UpdateResult update = new RaplaSQL(createInputContext(entityStore, this)).update(createConnection(), lastUpdated);
+            // FIXME call update and set lastUpdated
+//            lastUpdated = update.getUntil();
+            lastUpdated = start;
         } catch (Exception ex) {
              try {
                  if (bSupportsTransactions) {
