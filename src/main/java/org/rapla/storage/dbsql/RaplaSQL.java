@@ -47,6 +47,7 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.EntityPermissionContainer;
@@ -74,6 +75,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.xml.CategoryReader;
@@ -81,6 +83,9 @@ import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -1841,9 +1846,14 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 {
 
+    private Gson gson;
+
     HistoryStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY"});
+        Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
+        final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
+        gson = gsonBuilder.create();
     }
     
     @Override
@@ -1871,7 +1881,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(1, entity.getId());
         stmt.setString(2, entity.getRaplaType().getLocalName());
         stmt.setString(3, entity.getClass().getCanonicalName());
-        setText(stmt, 4, getXML(entity));
+        setText(stmt, 4, gson.toJson(entity));
         setTimestamp(stmt, 5, getCurrentTimestamp());
         stmt.addBatch();
         return 1;
@@ -1890,13 +1900,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final String raplaTypeLocalName = rs.getString(2);
         final RaplaType raplaType = RaplaType.find(raplaTypeLocalName);
         final String className = getString(rs, 3, null);
-        final String xml = getText(rs, 4);
+        final String json = getText(rs, 4);
         final Date lastChanged = getTimestamp(rs, 5);
-        RaplaXMLReader contentHandler = processXML( raplaType, xml );
-        RaplaObject type = contentHandler.getType();
         try
         {
-            cache.addHistoryEntry(id, xml, (Class<? extends Entity>) Class.forName(className), lastChanged);
+            cache.addHistoryEntry(id, json, (Class<? extends Entity>) Class.forName(className), lastChanged);
         }
         catch (ClassNotFoundException e)
         {
