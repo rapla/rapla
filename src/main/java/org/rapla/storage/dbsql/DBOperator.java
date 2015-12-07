@@ -305,6 +305,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 
         cache.clearAll();
         //idTable.setCache( cache );
+        history.clear();
 
         // HSQLDB Special
         if ( hsqldb ) 

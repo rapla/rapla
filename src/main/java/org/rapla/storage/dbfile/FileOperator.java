@@ -217,6 +217,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             getLogger().info("Disconnecting: " + getURL());
             cache.clearAll();
+            history.clear();
             isConnected = false;
             getLogger().debug("Disconnected");
         }

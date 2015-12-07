@@ -135,4 +135,9 @@ public class EntityHistory
         final Class<? extends Entity> entityClass = entity.getClass();
         addHistoryEntry(id, json, entityClass, timestamp);
     }
+
+    public void clear()
+    {
+        map.clear();
+    }
 }
