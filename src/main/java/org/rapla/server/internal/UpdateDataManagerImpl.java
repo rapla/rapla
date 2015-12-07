@@ -39,6 +39,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
+import org.rapla.storage.UpdateResult.HistoryEntry;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.xml.RaplaXMLContextException;
 
@@ -222,7 +223,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             // we get all the permissions that have changed on an allocatable
             if (newObject.getRaplaType().is(Allocatable.TYPE) && isTransferedToClient(newObject))
             {
-                PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                final HistoryEntry historyEntry = updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                PermissionContainer current = (PermissionContainer) historyEntry.getUnresolvedEntity();
                 PermissionContainer newObj = (PermissionContainer) newObject;
                 Util.addDifferences(invalidatePermissions, current, newObj);
             }
@@ -245,12 +247,13 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (newObject instanceof Ownable)
             {
                 Ownable newOwnable = (Ownable) newObject;
-                Ownable oldOwnable = (Ownable) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
-                User newOwner = newOwnable.getOwner();
-                User oldOwner = oldOwnable.getOwner();
-                if (newOwner != null && oldOwner != null && (!newOwner.equals(oldOwner)))
+                final HistoryEntry historyEntry = updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                Ownable oldOwnable = (Ownable) historyEntry.getUnresolvedEntity();
+                String newOwnerId = newOwnable.getOwnerId();
+                String oldOwnerId = oldOwnable.getOwnerId();
+                if (newOwnerId != null && oldOwnerId != null && (!newOwnerId.equals(oldOwnerId)))
                 {
-                    if ( user.equals( newOwner) || user.equals( oldOwner))
+                    if ( user.getId().equals( newOwnerId) || user.getId().equals( oldOwnerId))
                     {
                         if (!newObject.getRaplaType().is(Reservation.TYPE))
                         {
@@ -262,7 +265,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             }
             if (newObject.getRaplaType().is(Reservation.TYPE))
             {
-                PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                final HistoryEntry historyEntry = updateResult.getLastEntryBeforeUpdate(operation.getCurrentId());
+                PermissionContainer current = (PermissionContainer) historyEntry.getUnresolvedEntity();
                 PermissionContainer newObj = (PermissionContainer) newObject;
                 Util.addDifferences(invalidateEventPermissions, current, newObj);
             }
