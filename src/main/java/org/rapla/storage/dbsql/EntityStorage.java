@@ -50,6 +50,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.PreferenceWriter;
 import org.rapla.storage.xml.RaplaXMLContext;
@@ -71,7 +72,8 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
     protected LocalCache cache;
     protected EntityStore entityStore;
     private RaplaLocale raplaLocale;
-
+    
+    protected final EntityHistory history;
     protected Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
     protected Connection con;
     private int lastParameterIndex; /** first paramter is 1 */
@@ -94,6 +96,14 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         if ( context.has( LocalCache.class))
         {
             this.cache = context.lookup( LocalCache.class);
+        }
+        if(context.has(EntityHistory.class))
+        {
+            this.history = context.lookup(EntityHistory.class);
+        }
+        else
+        {
+            this.history = null;
         }
         this.raplaLocale = context.lookup( RaplaLocale.class);
         datetimeCal =Calendar.getInstance( getSystemTimeZone());

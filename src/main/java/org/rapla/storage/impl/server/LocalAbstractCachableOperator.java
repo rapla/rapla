@@ -143,6 +143,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private CommandScheduler scheduler;
     private Cancelable cleanConflictsTask;
     private PermissionController permissionController;
+    protected final EntityHistory history;
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -289,7 +290,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.scheduler = scheduler;
         //context.lookupDeprecated( CommandScheduler.class);
         this.permissionController = permissionController;
-
+        this.history = new EntityHistory();
     }
 
     @Override public FutureResult<User> connectAsync()
@@ -1167,7 +1168,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 entry.addUserIds(Collections.singletonList(owner));
             }
         }
-        cache.getHistory().addHistoryEntry(current, entry.timestamp);
+        history.addHistoryEntry(current, entry.timestamp);
         deleteUpdateSet.put(entry.getId(), entry);
     }
 
@@ -3096,7 +3097,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (ReferenceInfo update : toUpdate)
         {
             String id = update.getId();
-            Entity oldEntity = cache.getHistory().get(id, since);
+            Entity oldEntity = history.get(id, since);
             Entity newEntity = resolve(id);
             updatedEntities.add(newEntity);
             oldEntities.put(id, oldEntity);
@@ -3105,7 +3106,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (ReferenceInfo update : toRemove)
         {
             String id = update.getId();
-            Entity entity = cache.getHistory().get(id, since);
+            Entity entity = history.get(id, since);
             oldEntities.put(id, entity);
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);

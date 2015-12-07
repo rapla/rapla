@@ -64,6 +64,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
@@ -873,6 +874,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         RaplaDefaultXMLContext inputContext =  new IOContext().createInputContext(logger,raplaLocale,i18n, store, idCreator);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class,xmlAdapter);
+        inputContext.put(EntityHistory.class, history);
         return inputContext;
     }
     

@@ -1904,7 +1904,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final Date lastChanged = getTimestamp(rs, 5);
         try
         {
-            cache.addHistoryEntry(id, json, (Class<? extends Entity>) Class.forName(className), lastChanged);
+            history.addHistoryEntry(id, json, (Class<? extends Entity>) Class.forName(className), lastChanged);
         }
         catch (ClassNotFoundException e)
         {

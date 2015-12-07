@@ -14,7 +14,6 @@ package org.rapla.storage;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,7 +45,6 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.storage.impl.server.EntityHistory;
 
 public class LocalCache implements EntityResolver
 {
@@ -59,7 +57,6 @@ public class LocalCache implements EntityResolver
     Map<String,UserImpl> users;
     Map<String,AllocatableImpl> resources;
     Map<String,ReservationImpl> reservations;
-    EntityHistory history;
     
     private String clientUserId;
     Map<String,FunctionFactory> functionFactoryMap;
@@ -72,7 +69,6 @@ public class LocalCache implements EntityResolver
         users = new LinkedHashMap<String,UserImpl>();
         resources = new LinkedHashMap<String,AllocatableImpl>();
         dynamicTypes = new LinkedHashMap<String,DynamicTypeImpl>();
-        history = new EntityHistory();
         this.functionFactoryMap = functionFactoryMap;
         initSuperCategory();
     }
@@ -461,16 +457,6 @@ public class LocalCache implements EntityResolver
             disabled.add( conflict);
         }
         return disabled;
-    }
-
-    public void addHistoryEntry(String id, String json, Class<? extends Entity> entityClass, Date timestamp)
-    {
-        history.addHistoryEntry(id, json, entityClass, timestamp);
-    }
-
-    public EntityHistory getHistory()
-    {
-        return history;
     }
 
 }
