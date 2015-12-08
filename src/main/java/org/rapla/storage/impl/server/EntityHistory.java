@@ -167,7 +167,7 @@ public class EntityHistory
         for (String key : keySet)
         {
             final List<HistoryEntry> list = map.get(key);
-            while (list.size() > 2 && list.get(1).timestamp < time)
+            while (list.size() >= 2 && list.get(1).timestamp < time)
             {
                 list.remove(0);
             }

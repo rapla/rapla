@@ -30,11 +30,14 @@ public class TestEntityHistory
             entityHistory.addHistoryEntry(key, "test" + i, Allocatable.class, new Date(timestamp.getTime() + i));
         }
         // remove unneeded for next ms. So no one should be removed
-        entityHistory.removeUnneeded(new Date(timestamp.getTime()+1));
-        Assert.assertEquals(""+entityHistory.getHistoryList(key), 10, entityHistory.getHistoryList(key).size());
+        entityHistory.removeUnneeded(new Date(timestamp.getTime() + 1));
+        Assert.assertEquals("" + entityHistory.getHistoryList(key), 10, entityHistory.getHistoryList(key).size());
         // now delete all 6 ms in future. as we expect to have one left before, the size must be 5
-        entityHistory.removeUnneeded(new Date(timestamp.getTime()+6));
-        Assert.assertEquals(""+entityHistory.getHistoryList(key), 5, entityHistory.getHistoryList(key).size());
+        entityHistory.removeUnneeded(new Date(timestamp.getTime() + 6));
+        Assert.assertEquals("" + entityHistory.getHistoryList(key), 5, entityHistory.getHistoryList(key).size());
+        // delete all 
+        entityHistory.removeUnneeded(new Date(timestamp.getTime() + 50));
+        Assert.assertEquals(""+entityHistory.getHistoryList(key), 1, entityHistory.getHistoryList(key).size());
     }
     
     @Test
