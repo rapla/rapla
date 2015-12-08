@@ -27,7 +27,7 @@ public class TestEntityHistory
         final String key = "testId";
         for(int i = 0; i < 10; i++)
         {
-            entityHistory.addHistoryEntry(key, "test" + i, Allocatable.class, new Date(timestamp.getTime() + i));
+            entityHistory.addHistoryEntry(key, "test" + i, Allocatable.class, new Date(timestamp.getTime() + i), false);
         }
         // remove unneeded for next ms. So no one should be removed
         entityHistory.removeUnneeded(new Date(timestamp.getTime() + 1));
@@ -45,9 +45,9 @@ public class TestEntityHistory
     {
         final Date timestamp = new Date();
         final String key = "test";
-        entityHistory.addHistoryEntry(key, "test", Allocatable.class, timestamp);
+        entityHistory.addHistoryEntry(key, "test", Allocatable.class, timestamp, false);
         Assert.assertEquals(entityHistory.getHistoryList(key)+"", 1, entityHistory.getHistoryList(key).size());
-        entityHistory.addHistoryEntry(key, "test", Allocatable.class, timestamp);
+        entityHistory.addHistoryEntry(key, "test", Allocatable.class, timestamp, false);
         Assert.assertEquals(entityHistory.getHistoryList(key)+"", 1, entityHistory.getHistoryList(key).size());
     }
 }
