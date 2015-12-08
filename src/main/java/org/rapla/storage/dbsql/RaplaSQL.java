@@ -1701,7 +1701,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         setInt(stmt, 4, appointment1Enabled ? 1 : 0);
         boolean appointment2Enabled = conflict.isAppointment2Enabled();
         setInt(stmt, 5, appointment2Enabled ? 1 : 0);
-        setTimestamp(stmt, 6, getCurrentTimestamp() );
+        setTimestamp(stmt, 6, conflict.getLastChanged() );
         stmt.addBatch();
         return 1;
     }
@@ -1712,12 +1712,13 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         String allocatableId = readId(rset,1, Allocatable.class );
         String appointment1Id = readId(rset,2, Appointment.class );
         String appointment2Id = readId(rset,3, Appointment.class );
+
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;
-        
+        Date timestamp = getTimestamp(rset, 6);
         Date today = getCurrentTimestamp();
         String id = ConflictImpl.createId(allocatableId, appointment1Id, appointment2Id); 
-        ConflictImpl conflict = new ConflictImpl(id, today);
+        ConflictImpl conflict = new ConflictImpl(id, today, timestamp);
         conflict.setAppointment1Enabled(appointment1Enabled );
         conflict.setAppointment2Enabled(appointment2Enabled );
         put(conflict);

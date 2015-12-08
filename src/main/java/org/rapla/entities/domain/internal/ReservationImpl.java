@@ -209,10 +209,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return lastChanged;
     }
     
-    public Date getLastChangeTime() {
-        return lastChanged;
-    }
-
     public Date getCreateTime() {
         return createDate;
     }

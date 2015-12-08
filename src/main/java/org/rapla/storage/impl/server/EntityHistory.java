@@ -1,6 +1,7 @@
 package org.rapla.storage.impl.server;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -21,6 +22,11 @@ import com.google.gson.GsonBuilder;
 
 public class EntityHistory
 {
+    public Collection<String> getAllIds()
+    {
+        return map.keySet();
+    }
+
     public static class HistoryEntry
     {
         private long timestamp;
@@ -42,9 +48,19 @@ public class EntityHistory
             this.type = type;
         }
 
+        public Class<? extends Entity> getType()
+        {
+            return type;
+        }
+
         public String getId()
         {
             return id;
+        }
+
+        public long getTimestamp()
+        {
+            return timestamp;
         }
 
         @Override
@@ -97,13 +113,18 @@ public class EntityHistory
             return null;
         }
         EntityHistory.HistoryEntry entry = historyEntries.get(index);
+        return getEntity(entry);
+    }
+
+    public Entity getEntity(HistoryEntry entry)
+    {
         String json = entry.json;
         Class<? extends Entity> type = entry.type;
         final Entity entity = gson.fromJson(json, type);
         return entity;
     }
 
-    public void addHistoryEntry(String id, String json, Class<? extends Entity> entityClass, Date timestamp, boolean isDelete)
+    public EntityHistory.HistoryEntry addHistoryEntry(String id, String json, Class<? extends Entity> entityClass, Date timestamp, boolean isDelete)
     {
         List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
@@ -119,6 +140,7 @@ public class EntityHistory
         int index = historyEntries.size();
         newEntry.isDelete = isDelete;
         insert(historyEntries, newEntry, index);
+        return newEntry;
     }
 
     private void insert(List<EntityHistory.HistoryEntry> historyEntries, EntityHistory.HistoryEntry newEntry, int index)
@@ -145,12 +167,12 @@ public class EntityHistory
         }
     }
 
-    public void addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)
+    public EntityHistory.HistoryEntry addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)
     {
         final String id = entity.getId();
         final String json = gson.toJson(entity);
         final Class<? extends Entity> entityClass = entity.getClass();
-        addHistoryEntry(id, json, entityClass, timestamp,isDelete);
+        return addHistoryEntry(id, json, entityClass, timestamp,isDelete);
     }
 
     public void clear()

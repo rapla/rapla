@@ -561,6 +561,7 @@ public class ParsedText implements Serializable
 
 
 
+    /** we need proxies to pass additional information to the evalToStringMethod*/
     static Object getProxy(Classification classification, final Attribute attribute)
     {
         final Collection<Object> values = classification.getValues(attribute);
@@ -606,6 +607,7 @@ public class ParsedText implements Serializable
         }
     }
 
+    /** */
     public static class CategoryProxy implements Category
     {
         private final Category parent;
@@ -646,11 +648,6 @@ public class ParsedText implements Serializable
         public String getAnnotation(String key)
         {
             return parent.getAnnotation(key);
-        }
-
-        public Date getLastChangeTime()
-        {
-            return parent.getLastChangeTime();
         }
 
         public User getLastChangedBy()

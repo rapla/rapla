@@ -284,6 +284,7 @@ public class DBOperator extends LocalAbstractCachableOperator
             final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
             // FIXME update 
             UpdateResult result = raplaSQLInput.update( c, lastUpdated );
+
             // FIXME set resolver to changes
             //setResolver(result.getChanged());
             

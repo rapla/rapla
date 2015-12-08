@@ -77,6 +77,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
@@ -900,12 +901,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void initIndizes()
     {
         deleteUpdateSet = new DualTreeBidiMap<String, DeleteUpdateEntry>();
-
-        timestampSetAddAll(cache.getDynamicTypes());
-        timestampSetAddAll(cache.getReservations());
-        timestampSetAddAll(cache.getAllocatables());
-        timestampSetAddAll(cache.getUsers());
         // The appointment map
+
         appointmentMap = new HashMap<String, SortedSet<Appointment>>();
         for (Reservation r : cache.getReservations())
         {
@@ -951,16 +948,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 removeOldHistory();
             }
         };
-        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, period);
-    }
-
-    private void timestampSetAddAll(Collection<? extends Entity> entities)
-    {
-        for (Entity entity : entities)
+        for(String id:history.getAllIds())
         {
-            boolean isDelete = false;
-            addToDeleteUpdate(entity, isDelete);
+            for (EntityHistory.HistoryEntry entry:history.getHistoryList( id))
+            {
+                addToDeleteUpdate( entry);
+            }
         }
+        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, period);
     }
 
     private void checkAndAddConflict(Entity entity)
@@ -974,7 +969,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Date date = getCurrentTimestamp();
         boolean appointment1Enabled = conflict.isAppointment1Enabled();
         boolean appointment2Enabled = conflict.isAppointment2Enabled();
-        conflictFinder.setConflictEnabledState(conflictId, date, appointment1Enabled, appointment2Enabled);
+        conflictFinder.setConflictEnabledState(conflictId, date, appointment1Enabled, appointment2Enabled,conflict.getLastChanged());
     }
 
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
@@ -1080,6 +1075,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         conflictFinder.updateConflicts(toUpdate, result, today, removedAllocatables);
         checkAbandonedAppointments();
         Collection<String> addedAndChangedIds = result.getAddedAndChangedIds();
+
         for (String id : addedAndChangedIds)
         {
             final Entity newEntity = result.getLastKnown(id);//.getUnresolvedEntity();
@@ -1087,7 +1083,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
                     || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE)
             {
-                addToDeleteUpdate(newEntity, false);
+                Date timestamp =((LastChangedTimestamp) newEntity).getLastChanged();
+                boolean isDelete = false;
+                final EntityHistory.HistoryEntry historyEntry = history.addHistoryEntry(newEntity, timestamp, isDelete);
+                addToDeleteUpdate(historyEntry);
             }
         }
         for (Remove removed : result.getOperations(UpdateResult.Remove.class))
@@ -1098,7 +1097,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
                     || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE)
             {
-                addToDeleteUpdate(newEntity, true);
+                boolean isDelete = false;
+                Date timestamp =((LastChangedTimestamp) newEntity).getLastChanged();
+                final EntityHistory.HistoryEntry historyEntry = history.addHistoryEntry(newEntity, timestamp, isDelete);
+                addToDeleteUpdate(historyEntry);
             }
         }
         // Order is important. Can't remove from database if removed from cache first
@@ -1121,20 +1123,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
-    private void addToDeleteUpdate(final Entity current, boolean isDelete)
+    protected void addToDeleteUpdate(EntityHistory.HistoryEntry historyEntry)
     {
-        Date timestamp;
-        if (/*!isDelete && */current instanceof LastChangedTimestamp)
-        {
-           timestamp = ((LastChangedTimestamp) current).getLastChanged();
-        }
-        else
-        {
-            throw new IllegalArgumentException("Only timestamped entities are supported. Object not timestamped: " + current);
-        }
-
-        history.addHistoryEntry(current, timestamp,isDelete);
-        String id = current.getId();
+        String id = historyEntry.getId();
         DeleteUpdateEntry entry = deleteUpdateSet.get(id);
         if (entry == null)
         {
@@ -1143,22 +1134,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         else
         {
             DeleteUpdateEntry remove = deleteUpdateSet.remove(id);
-            if (isDelete && remove == null)
+            if (historyEntry.isDelete && remove == null)
             {
                 getLogger().warn("Can't remove entry for id " + id);
             }
         }
-        entry.timestamp = timestamp;
-        ReferenceInfo ref = new ReferenceInfo(current);
-        entry.isDelete = isDelete;
+        entry.timestamp = new Date(historyEntry.getTimestamp());
+        final Class<? extends Entity> type = historyEntry.getType();
+        ReferenceInfo ref = new ReferenceInfo( id,type);
+        entry.isDelete = historyEntry.isDelete;
         entry.reference = ref;
+        Entity current = history.getEntity( historyEntry);
+
         if (current instanceof EntityPermissionContainer)
         {
             entry.addPermissions((EntityPermissionContainer) current, Permission.READ_NO_ALLOCATION);
         }
         else if (current instanceof Conflict)
         {
-            if (isDelete)
+            if (entry.isDelete)
             {
                 entry.affectAll = true;
             }
@@ -1336,24 +1330,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Collection<Permission> permissions = current.getPermissionList();
             for (Permission p : permissions)
             {
-                Category group = p.getGroup();
-                User user = p.getUser();
+                String groupId = ((PermissionImpl)p).getGroupId();
+                String userId = ((PermissionImpl) p).getUserId();
                 Permission.AccessLevel accessLevel = p.getAccessLevel();
                 if (minimumLevel.includes(accessLevel))
                 {
                     continue;
                 }
-                if (group != null)
+                if (groupId != null)
                 {
-                    addGroupIds(entry, group);
+                    addGroupIds(entry, groupId);
                 }
-                else if (user != null)
+                else if (userId != null)
                 {
                     if (entry.affectedUserIds == null)
                     {
                         entry.affectedUserIds = new HashSet<String>(1);
                     }
-                    entry.affectedUserIds.add(user.getId());
+                    entry.affectedUserIds.add(userId);
                 }
                 else
                 {
@@ -1364,17 +1358,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
 
-        private void addGroupIds(DeleteUpdateEntry entry, Category group)
+        private void addGroupIds(DeleteUpdateEntry entry, String groupId)
         {
+            final Entity entity = tryResolve(groupId);
+            if ( entity == null)
+            {
+                return;
+            }
             if (entry.affectedGroupIds == null)
             {
                 entry.affectedGroupIds = new HashSet<String>(1);
             }
-            entry.affectedGroupIds.add(group.getId());
-            final Category parent = group.getParent();
+            entry.affectedGroupIds.add(groupId);
+            final Category parent = ((Category) entity).getParent();
             if (parent != null && !parent.equals(getSuperCategory()))
             {
-                addGroupIds(entry, parent);
+                addGroupIds(entry, parent.getId());
             }
         }
 

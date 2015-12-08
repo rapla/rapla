@@ -241,11 +241,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
     }
     
-    @Deprecated
-    public Date getLastChangeTime() {
-        return lastChanged;
-    }
-    
     @Override
     public Date getLastChanged() {
     	return lastChanged;

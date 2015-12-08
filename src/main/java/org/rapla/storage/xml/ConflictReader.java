@@ -43,7 +43,9 @@ public class ConflictReader extends RaplaXMLReader
         Date today = getReadTimestamp();
         ConflictImpl conflict;
         try {
-            conflict = new ConflictImpl(id, today);
+            final Date lastChanged = readTimestamps(atts).changeTime;
+            conflict = new ConflictImpl(id, today, lastChanged);
+
         } catch (RaplaException e) {
             throw new RaplaSAXParseException(e.getMessage(), e);
         }

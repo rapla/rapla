@@ -74,15 +74,17 @@ class ConflictFinder {
     
     public Conflict findConflict(String id,Date date)
     {
-        ConflictImpl conflict;
+        Date dummyLastChanged = new Date();
+        ConflictImpl dummyConflict;
         try {
-            conflict = new ConflictImpl(id, date);
+            //
+            dummyConflict = new ConflictImpl(id, date, dummyLastChanged);
         } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
             return null;
         }
-        conflict.setResolver( resolver);
-        Allocatable allocatable = conflict.getAllocatable();
+        dummyConflict.setResolver(resolver);
+        Allocatable allocatable = dummyConflict.getAllocatable();
         Set<Conflict> set = conflictMap.get( allocatable);
         if ( set == null)
         {
@@ -101,11 +103,12 @@ class ConflictFinder {
         return null;
     }
     
-    public void setConflictEnabledState( String conflictId,Date date, boolean appointment1Enabled,boolean appointment2Enabled)
+    public void setConflictEnabledState( String conflictId,Date date, boolean appointment1Enabled,boolean appointment2Enabled, Date lastChanged)
     {
         ConflictImpl conflict = (ConflictImpl)findConflict(conflictId, date);
         conflict.setAppointment1Enabled( appointment1Enabled);
         conflict.setAppointment2Enabled( appointment2Enabled);
+        conflict.setLastChanged( lastChanged);
     }
     
     private Set<Conflict> calculateConflicts(Allocatable allocatable,Date today ) 

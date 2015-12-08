@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -29,7 +30,7 @@ import org.rapla.entities.domain.Appointment;
  * two allocating appointments. 
  */
 
-public interface Conflict extends Named, Entity<Conflict>
+public interface Conflict extends Named, Entity<Conflict>, Timestamp
 {
     static public final RaplaType<Conflict> TYPE = new RaplaType<Conflict>(Conflict.class,"conflict");
     /** @return the allocatable, allocated for the same time by two different reservations. */

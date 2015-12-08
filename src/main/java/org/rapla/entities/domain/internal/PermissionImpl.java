@@ -146,6 +146,16 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         return getEntity("group", Category.class);
     }
 
+    public String getGroupId()
+    {
+        return  getId("group");
+    }
+
+    public String getUserId()
+    {
+        return  getId("user");
+    }
+
     public Date getMinAllowed(Date today) {
         if ( pStart != null )
             return pStart;

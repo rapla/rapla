@@ -93,11 +93,6 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         return lastChanged;
     }
     
-    @Deprecated
-    public Date getLastChangeTime() {
-        return lastChanged;
-    }
-
     public Date getCreateTime() {
         return createDate;
     }

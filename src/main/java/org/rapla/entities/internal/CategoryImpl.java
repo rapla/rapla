@@ -71,11 +71,6 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         return lastChanged;
     }
     
-    @Deprecated
-    public Date getLastChangeTime() {
-        return lastChanged;
-    }
-
     public Date getCreateTime() {
         return createDate;
     }

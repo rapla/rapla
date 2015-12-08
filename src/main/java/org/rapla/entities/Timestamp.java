@@ -17,8 +17,6 @@ import java.util.Date;
 public interface Timestamp extends LastChangedTimestamp {
     /** returns the creation date of the object. */
     Date getCreateTime();
-    /**@deprecated use getLastChanged instead */
-    Date getLastChangeTime();
     User getLastChangedBy();
     //String getId();
 }
