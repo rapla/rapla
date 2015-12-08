@@ -127,7 +127,11 @@ import org.rapla.storage.impl.EntityStore;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
-
+    /**
+     * The duration which the history must support, only one older Entry than the specified time are needed.
+     * FIXME think about a delay when every old entry must not be within the history (e.g. one week)
+     */
+    public static final long HISTORY_DURATION = 1000l*60l*60l;
     /**
      * set encryption if you want to enable password encryption. Possible values
      * are "sha" or "md5".
@@ -936,6 +940,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // The conflict map
         Logger logger = getLogger();
         conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, cache, permissionController);
+        // FIXME really update every millisecond?
         long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         long period = DateTools.MILLISECONDS_PER_HOUR;
         Command cleanUpConflicts = new Command()

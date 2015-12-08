@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1847,19 +1848,30 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 {
 
     private Gson gson;
+    private final Date supportTimestamp;
 
     HistoryStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY"});
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
+        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
+        selectSql += " ORDER BY CHANGED_AT DESC";
         gson = gsonBuilder.create();
+        if(context.has(Date.class))
+        {
+            supportTimestamp = context.lookup(Date.class);
+        }
+        else
+        {
+            supportTimestamp = null;
+        }
     }
     
     @Override
     void insertAll() throws SQLException, RaplaException
     {
-        // No need for
+        // FIXME is there a need to insert at startup? 
 //        insert(cache.getHistory());
     }
     
@@ -1874,7 +1886,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     {
         return true;
     }
-
+    
     @Override
     protected int write(PreparedStatement stmt, T entity) throws SQLException, RaplaException
     {
@@ -1882,7 +1894,16 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(2, entity.getRaplaType().getLocalName());
         stmt.setString(3, entity.getClass().getCanonicalName());
         setText(stmt, 4, gson.toJson(entity));
-        setTimestamp(stmt, 5, getCurrentTimestamp());
+        final Date lastChanged;
+        if(entity instanceof Timestamp)
+        {
+            lastChanged = Timestamp.class.cast(entity).getLastChanged();
+        }
+        else
+        {
+            lastChanged = getCurrentTimestamp();
+        }
+        setTimestamp(stmt, 5, lastChanged);
         stmt.addBatch();
         return 1;
     }
@@ -1894,6 +1915,27 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     }
 
     @Override
+    public void loadAll() throws SQLException, RaplaException
+    {
+        try (Statement stmt = con.createStatement(); ResultSet rset = stmt.executeQuery(selectSql))
+        {
+            final HashSet<String> finishedIdsToLoad = new HashSet<String>();
+            while (rset.next())
+            {
+                if(finishedIdsToLoad.contains(rset.getString(1)))
+                {
+                    continue;
+                }
+                load(rset);
+                if(supportTimestamp != null && getTimestamp(rset, 5).getTime() < supportTimestamp.getTime())
+                {
+                    finishedIdsToLoad.add(rset.getString(1));
+                }
+            }
+        }
+    }
+    
+    @Override
     protected void load(ResultSet rs) throws SQLException, RaplaException
     {
         final String id = rs.getString(1);
@@ -1904,7 +1946,9 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final Date lastChanged = getTimestamp(rs, 5);
         try
         {
-            history.addHistoryEntry(id, json, (Class<? extends Entity>) Class.forName(className), lastChanged);
+            @SuppressWarnings({ "rawtypes", "unchecked" })
+            final Class<? extends Entity> entityClass = (Class<? extends Entity>) Class.forName(className);
+            history.addHistoryEntry(id, json, entityClass, lastChanged);
         }
         catch (ClassNotFoundException e)
         {

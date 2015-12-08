@@ -271,6 +271,7 @@ public class DBOperator extends LocalAbstractCachableOperator
 
 
     final public void refresh() throws RaplaException {
+        final Lock writeLock = writeLock();
         try
         {
             final Connection c = createConnection();
@@ -296,6 +297,10 @@ public class DBOperator extends LocalAbstractCachableOperator
         catch(Throwable e)
         {
             logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
+        }
+        finally
+        {
+            unlock(writeLock);
         }
     }
 
@@ -874,6 +879,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class,xmlAdapter);
         inputContext.put(EntityHistory.class, history);
+        inputContext.put(Date.class, new Date(lastUpdated.getTime() - HISTORY_DURATION));
         return inputContext;
     }
     
