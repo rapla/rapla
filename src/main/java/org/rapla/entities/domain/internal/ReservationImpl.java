@@ -219,13 +219,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     public void setLastChanged(Date date) {
     	checkWritable();
-    	setLastChangedWithoutCheck(date);
-    }
-    
-    @Override
-    public void setLastChangedWithoutCheck(Date date)
-    {
-        lastChanged = date;
+    	lastChanged = date;
     }
     
     public void setCreateDate(Date createDate)

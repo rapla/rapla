@@ -82,19 +82,13 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 
     public void setLastChanged(Date date) {
         checkWritable();
-        setLastChangedWithoutCheck(date);
-    }
-    
-    @Override
-    public void setLastChangedWithoutCheck(Date date)
-    {
         lastChanged = date;
         for ( CategoryImpl child:childs)
         {
-            child.setLastChangedWithoutCheck(date);
+            child.setLastChanged(date);
         }
     }
-
+    
     public RaplaType<Category> getRaplaType() {return TYPE;}
 
 	void setParent(CategoryImpl parent) {

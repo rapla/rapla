@@ -12,6 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -21,10 +25,6 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
 
 public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 {
@@ -63,12 +63,6 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 
     public void setLastChanged(Date date) {
         checkWritable();
-        setLastChangedWithoutCheck(lastChanged);
-    }
-    
-    @Override
-    public void setLastChangedWithoutCheck(Date date)
-    {
         lastChanged = date;
     }
     

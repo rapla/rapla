@@ -257,12 +257,6 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public void setLastChanged(Date date) {
         checkWritable();
-        setLastChangedWithoutCheck(date);
-    }
-    
-    @Override
-    public void setLastChangedWithoutCheck(Date date)
-    {
         lastChanged = date;
     }
     
