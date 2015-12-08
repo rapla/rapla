@@ -940,7 +940,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // The conflict map
         Logger logger = getLogger();
         conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, cache, permissionController);
-        // FIXME really update every millisecond?
         long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         long period = DateTools.MILLISECONDS_PER_HOUR;
         Command cleanUpConflicts = new Command()
@@ -949,6 +948,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             @Override public void execute() throws Exception
             {
                 removeOldConflicts();
+                removeOldHistory();
             }
         };
         cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, period);
@@ -1584,6 +1584,20 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         updateIndizes(update);
         processPermissionGroups();
         return update;
+    }
+
+    private void removeOldHistory()
+    {
+        final Lock writeLock = writeLock();
+        try
+        {
+            Date date = new Date(lastUpdated.getTime() - HISTORY_DURATION);
+            history.removeUnneeded(date);
+        }
+        finally
+        {
+            unlock(writeLock);
+        }
     }
 
     private void removeOldConflicts() throws RaplaException
