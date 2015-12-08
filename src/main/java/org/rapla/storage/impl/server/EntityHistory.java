@@ -27,14 +27,16 @@ public class EntityHistory
         private String id;
         private String json;
         private Class<? extends Entity> type;
+        boolean isDelete;
 
         public HistoryEntry()
         {
         }
 
-        public HistoryEntry(long timestamp, String json, Class<? extends Entity> type)
+        public HistoryEntry(long timestamp, String json, Class<? extends Entity> type, boolean isDelete)
         {
             super();
+            this.isDelete = isDelete;
             this.timestamp = timestamp;
             this.json = json;
             this.type = type;
@@ -101,7 +103,7 @@ public class EntityHistory
         return entity;
     }
 
-    public void addHistoryEntry(String id, String json, Class<? extends Entity> entityClass, Date timestamp)
+    public void addHistoryEntry(String id, String json, Class<? extends Entity> entityClass, Date timestamp, boolean isDelete)
     {
         List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
@@ -115,6 +117,7 @@ public class EntityHistory
         newEntry.type = entityClass;
         newEntry.id = id;
         int index = historyEntries.size();
+        newEntry.isDelete = isDelete;
         insert(historyEntries, newEntry, index);
     }
 
@@ -142,12 +145,12 @@ public class EntityHistory
         }
     }
 
-    public void addHistoryEntry(Entity entity, Date timestamp)
+    public void addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)
     {
         final String id = entity.getId();
         final String json = gson.toJson(entity);
         final Class<? extends Entity> entityClass = entity.getClass();
-        addHistoryEntry(id, json, entityClass, timestamp);
+        addHistoryEntry(id, json, entityClass, timestamp,isDelete);
     }
 
     public void clear()

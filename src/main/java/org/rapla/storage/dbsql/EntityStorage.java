@@ -42,6 +42,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -922,6 +923,14 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     public void save( Iterable<T> entities ) throws RaplaException, SQLException{
         deleteEntities( entities );
+		for (Entity entity:entities)
+		{
+			if (entity instanceof ModifiableTimestamp)
+			{
+				final Date currentTimestamp = getCurrentTimestamp();
+				((ModifiableTimestamp)entity).setLastChanged(currentTimestamp );
+			}
+		}
         insert( entities );
     }
 

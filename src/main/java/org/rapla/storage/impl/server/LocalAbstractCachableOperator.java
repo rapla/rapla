@@ -1123,6 +1123,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void addToDeleteUpdate(final Entity current, boolean isDelete)
     {
+        Date timestamp;
+        if (/*!isDelete && */current instanceof LastChangedTimestamp)
+        {
+           timestamp = ((LastChangedTimestamp) current).getLastChanged();
+        }
+        else
+        {
+            throw new IllegalArgumentException("Only timestamped entities are supported. Object not timestamped: " + current);
+        }
+
+        history.addHistoryEntry(current, timestamp,isDelete);
         String id = current.getId();
         DeleteUpdateEntry entry = deleteUpdateSet.get(id);
         if (entry == null)
@@ -1137,14 +1148,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 getLogger().warn("Can't remove entry for id " + id);
             }
         }
-        if (/*!isDelete && */current instanceof LastChangedTimestamp)
-        {
-            entry.timestamp = ((LastChangedTimestamp) current).getLastChanged();
-        }
-        else
-        {
-            throw new IllegalArgumentException("Only timestamped entities are supported. Object not timestamped: " + current);
-        }
+        entry.timestamp = timestamp;
         ReferenceInfo ref = new ReferenceInfo(current);
         entry.isDelete = isDelete;
         entry.reference = ref;
@@ -1173,7 +1177,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 entry.addUserIds(Collections.singletonList(owner));
             }
         }
-        history.addHistoryEntry(current, entry.timestamp);
         deleteUpdateSet.put(entry.getId(), entry);
     }
 

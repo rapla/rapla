@@ -110,7 +110,7 @@ class RaplaSQL {
 	    AppointmentStorage appointmentStorage = new AppointmentStorage( context);
 		stores.add(appointmentStorage);
 		stores.add(new ConflictStorage( context));
-		stores.add(new DeleteStorage( context));
+		//stores.add(new DeleteStorage( context));
         stores.add(new HistoryStorage( context, false));
         stores.add(new HistoryStorage( context, true));
 		// now set delegate because reservation storage should also use appointment storage
@@ -472,8 +472,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
                     return 1;
                 }
             }
-        
-        }    
+        }
     );
 
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
@@ -540,7 +539,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     @Override
 	protected int write(PreparedStatement stmt,Category category) throws SQLException, RaplaException {
     	Category root = getSuperCategory();
-        ((ModifiableTimestamp)category).setLastChangedWithoutCheck(getCurrentTimestamp());
         if ( category.equals( root ))
             return 0;
         setId( stmt,1, category);
@@ -685,7 +683,6 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
 		org.rapla.entities.Timestamp timestamp = allocatable;
 		setId(stmt,3, allocatable.getOwner() );
         setTimestamp(stmt, 4,timestamp.getCreateTime() );
-        ((ModifiableTimestamp)allocatable).setLastChangedWithoutCheck(getCurrentTimestamp());
 		setTimestamp(stmt, 5,timestamp.getLastChanged() );
 		setId( stmt,6,timestamp.getLastChangedBy() );
 		stmt.addBatch();
@@ -788,7 +785,6 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	setId(stmt,3, event.getOwner() );
     	org.rapla.entities.Timestamp timestamp = event;
         Date createTime = timestamp.getCreateTime();
-        ((ModifiableTimestamp)event).setLastChangedWithoutCheck(getCurrentTimestamp());
         setTimestamp( stmt,4,createTime);
         setTimestamp( stmt,5,timestamp.getLastChanged());
         setId(stmt, 6, timestamp.getLastChangedBy());
@@ -1268,7 +1264,6 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 		{
 			return 0;
 		}
-		((ModifiableTimestamp)type).setLastChangedWithoutCheck(getCurrentTimestamp());
         setId(stmt,1,type);
         setString(stmt,2, type.getKey());
         setText(stmt,3,  getXML( type) );
@@ -1302,7 +1297,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
         RaplaXMLReader reader = processXML( DynamicType.TYPE, xml );
 //    	final Date createDate = getDate( rset, 4);
     	final Date lastChanged = getTimestampOrNow(rset, 4);
-    	((ModifiableTimestamp)reader.getStore().resolve(id)).setLastChangedWithoutCheck(lastChanged);
+    	((ModifiableTimestamp)reader.getStore().resolve(id)).setLastChanged(lastChanged);
 //    	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
 //    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
     	
@@ -1448,7 +1443,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         for (String role:preferences.getPreferenceEntries()) {
             Object entry = preferences.getEntry(role);
             final Date lastChanged = getCurrentTimestamp();
-            ((ModifiableTimestamp)preferences).setLastChangedWithoutCheck(lastChanged);
             insertEntry(stmt, userId, role, entry,lastChanged);
             count++;
         }
@@ -1606,8 +1600,6 @@ class UserStorage extends RaplaTypeStorage<User> {
     	setString(stmt,5,user.getEmail());
     	stmt.setInt(6,user.isAdmin()?1:0);
         setTimestamp(stmt, 7, user.getCreateTime() );
-        final Date currentTimestamp = getCurrentTimestamp();
-        ((ModifiableTimestamp)user).setLastChangedWithoutCheck(currentTimestamp);
    		setTimestamp(stmt, 8, user.getLastChanged() );
    		stmt.addBatch();
    		return 1;
@@ -1765,7 +1757,7 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>{
         user.addGroup(category);
     }
 }
-
+/*
 class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 {
     protected DeleteStorage(RaplaXMLContext context) throws RaplaException
@@ -1844,6 +1836,7 @@ class DeleteStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         // no initialization needed
     }
 }
+*/
 
 
 class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
@@ -1855,11 +1848,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     HistoryStorage(RaplaXMLContext context, boolean asDeletion) throws RaplaException
     {
-        super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY"});
+        super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY", "ISDELETE INTEGER" });
         this.asDeletion = asDeletion;
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
-        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
+        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
         selectSql += " ORDER BY CHANGED_AT DESC";
         gson = gsonBuilder.create();
         if(context.has(Date.class))
@@ -1974,6 +1967,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(2, entity.getRaplaType().getLocalName());
         stmt.setString(3, entity.getClass().getCanonicalName());
         setText(stmt, 4, gson.toJson(entity));
+        setInt(stmt,5, asDeletion? 1:0);
         Date lastChanged;
         if(entity instanceof Timestamp)
         {
@@ -2048,11 +2042,13 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final String className = getString(rs, 3, null);
         final String json = getText(rs, 4);
         final Date lastChanged = getTimestamp(rs, 5);
+        final Integer isDelete = getInt( rs, 6);
         try
         {
             @SuppressWarnings({ "rawtypes", "unchecked" })
             final Class<? extends Entity> entityClass = (Class<? extends Entity>) Class.forName(className);
-            history.addHistoryEntry(id, json, entityClass, lastChanged);
+            history.addHistoryEntry(id, json, entityClass, lastChanged, isDelete != null && isDelete == 1);
+
         }
         catch (ClassNotFoundException e)
         {
