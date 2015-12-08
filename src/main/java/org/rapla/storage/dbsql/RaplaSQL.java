@@ -1911,7 +1911,19 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
     {
-        // FIXME implement me
+        try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
+        {
+            setTimestamp(stmt, 1, lastUpdated);
+            final ResultSet result = stmt.executeQuery();
+            if(result == null)
+            {
+                return;
+            }
+            while(result.next())
+            {
+                load(result);
+            }
+        }
     }
 
     @Override
