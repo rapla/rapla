@@ -52,13 +52,13 @@ public class TestUpdateDataManager
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
         String xmlFile = "testdefault.xml";
-        //        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
-        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
+                facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+//        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         operator = (CachableStorageOperator) facade.getOperator();
         operator.connect();
-        //        ((DBOperator) operator).removeAll();
-        //        operator.disconnect();
-        //        operator.connect();
+                ((DBOperator) operator).removeAll();
+                operator.disconnect();
+                operator.connect();
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -225,15 +225,8 @@ public class TestUpdateDataManager
             }
             final Reservation[] reservations = facade.getReservations(toDelete.toArray(new Allocatable[0]), null, null);
             toDelete.addAll(Arrays.asList(reservations));
-            Date beforeRemove = ((AbstractCachableOperator)operator).getLastUpdated();
             facade.removeObjects(toDelete.toArray(new Entity[0]));
-            {
-                final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
-                final Collection<String> removeIds = updateEvent.getRemoveIds();
-                Assert.assertTrue(removeIds.isEmpty());
-
-            }
-            final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, beforeRemove);
+            final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             final Collection<String> removeIds = updateEvent.getRemoveIds();
             Assert.assertFalse(removeIds.isEmpty());
             for (String removedId : removeIds)
@@ -242,6 +235,37 @@ public class TestUpdateDataManager
                         removedIds.contains(removedId));
             }
         }
+    }
+    
+    /**
+     * Test weather insert and deletion of the same resource in one updateEvent are
+     * removed, so not affected by the client.
+     */
+    @Test
+    public void testInsertDeleteInOne()
+    {
+        // create second user first
+        Date lastSynced = new Date();
+        Assert.assertTrue(facade.login("monty", "burns".toCharArray()));
+        final User readUser = facade.getUser();
+        facade.logout();
+        Assert.assertTrue(facade.login("homer", "duffs".toCharArray()));
+        final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
+        lastSynced = updateEvent.getLastValidated();
+        final Allocatable newResource = facade.newResource();
+        newResource.getClassification().setValue("name", "newResource");
+        facade.store(newResource);
+        final UpdateEvent updateWithInsert = updateManager.createUpdateEvent(readUser, lastSynced);
+        final Date lastValidatedAfterInsert = updateWithInsert.getLastValidated();
+        Assert.assertEquals(1, updateWithInsert.getStoreObjects().size());
+        Assert.assertEquals(0, updateWithInsert.getRemoveIds().size());
+        facade.remove(newResource);
+        final UpdateEvent updateWithInsertAndDelete = updateManager.createUpdateEvent(readUser, lastSynced);
+        Assert.assertEquals(0, updateWithInsertAndDelete.getStoreObjects().size());
+        Assert.assertEquals(0, updateWithInsertAndDelete.getRemoveIds().size());
+        final UpdateEvent updateEventWithRemove = updateManager.createUpdateEvent(readUser, lastValidatedAfterInsert);
+        Assert.assertEquals(0, updateEventWithRemove.getStoreObjects().size());
+        Assert.assertEquals(1, updateEventWithRemove.getRemoveIds().size());
     }
 
     @Test
