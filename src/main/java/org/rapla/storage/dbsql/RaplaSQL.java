@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +111,8 @@ class RaplaSQL {
 		stores.add(appointmentStorage);
 		stores.add(new ConflictStorage( context));
 		stores.add(new DeleteStorage( context));
-        stores.add(new HistoryStorage( context));
+        stores.add(new HistoryStorage( context, false));
+        stores.add(new HistoryStorage( context, true));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
@@ -429,6 +431,16 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 //        sb.append(")");
 //        return sb;
 //    }
+    protected Collection<Category> getTransitiveCategories(Category cat) {
+        Set<Category> allChilds = new LinkedHashSet<Category>();
+        allChilds.add( cat);
+        for ( Category child: cat.getCategories())
+        {
+            allChilds.addAll(getTransitiveCategories(child));
+        }
+        return allChilds;
+    }
+
 }
 
 class CategoryStorage extends RaplaTypeStorage<Category> {
@@ -496,16 +508,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         super.insert(transitiveCategories);
     }
     
-    private Collection<Category> getTransitiveCategories(Category cat) {
-        Set<Category> allChilds = new LinkedHashSet<Category>();
-        allChilds.add( cat);
-        for ( Category child: cat.getCategories())
-        {
-            allChilds.addAll(getTransitiveCategories(child));
-        }
-        return allChilds;
-    }
-
     // get
     private Collection<String> getTransitiveIds(String parentId) throws SQLException, RaplaException {
 		Set<String> childIds = new HashSet<String>();
@@ -1849,10 +1851,12 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     private Gson gson;
     private final Date supportTimestamp;
+    private final boolean asDeletion;
 
-    HistoryStorage(RaplaXMLContext context) throws RaplaException
+    HistoryStorage(RaplaXMLContext context, boolean asDeletion) throws RaplaException
     {
         super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY"});
+        this.asDeletion = asDeletion;
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
         loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
@@ -1871,20 +1875,96 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     void insertAll() throws SQLException, RaplaException
     {
-        // FIXME is there a need to insert at startup? 
-//        insert(cache.getHistory());
+        if(asDeletion)
+        {
+            return;
+        }
+        final Collection<Entity> entites = new LinkedList<Entity>();
+        entites.addAll(cache.getAllocatables());
+        entites.addAll(cache.getDynamicTypes());
+        entites.addAll(cache.getReservations());
+        entites.addAll(cache.getUsers());
+        entites.addAll(getTransitiveCategories(getSuperCategory()));
+        if(entites.isEmpty())
+        {
+            return;
+        }
+        try(PreparedStatement stmt = con.prepareStatement(insertSql))
+        {
+            for (Entity entity : entites)
+            {
+                write(stmt, (T) entity);
+                if(entity instanceof User)
+                {
+                    final String userId = entity.getId();
+                    final PreferencesImpl preferencesForUserId = cache.getPreferencesForUserId(userId);
+                    if(preferencesForUserId != null)
+                    {
+                        write(stmt, (T) preferencesForUserId);
+                    }
+                }
+            }
+            stmt.executeBatch();
+        }
     }
     
     @Override
-    boolean canDelete(@SuppressWarnings("rawtypes") Entity entity)
+    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException
     {
-        return true;
+        if(asDeletion)
+        {
+            Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
+            super.insert(entitiesWithTransitiveCategories);
+        }
+    }
+    
+    @Override
+    public void insert(Iterable<T> entities) throws SQLException, RaplaException
+    {
+        if(!asDeletion)
+        {
+            Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
+            super.insert(entitiesWithTransitiveCategories);
+        }
+    }
+
+    protected Collection<T> getEntitiesWithTransitiveCategories(Iterable<T> entities)
+    {
+        Collection<T> entitiesWithTransitiveCategories = new LinkedList<T>();
+        for(T entity : entities)
+        {
+            if(entity instanceof Category)
+            {
+                final Collection<Category> transitiveCategories = getTransitiveCategories((Category) entity);
+                for (Category category : transitiveCategories)
+                {
+                    entitiesWithTransitiveCategories.add((T) category);
+                }
+            }
+            else
+            {
+                entitiesWithTransitiveCategories.add(entity);
+            }
+        }
+        return entitiesWithTransitiveCategories;
+    }
+    
+    @Override
+    boolean canDelete(Entity entity)
+    {
+        return asDeletion && isSupportedEntity(entity);
     }
     
     @Override
     boolean canStore(@SuppressWarnings("rawtypes") Entity entity)
     {
-        return true;
+        return !asDeletion && isSupportedEntity(entity);
+    }
+
+    private boolean isSupportedEntity(Entity entity)
+    {
+        return (entity instanceof Allocatable) || (entity instanceof DynamicType) || (entity instanceof Reservation) || (entity instanceof User)
+                || (entity instanceof Category) || (entity instanceof Preferences);
     }
     
     @Override
@@ -1894,10 +1974,14 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(2, entity.getRaplaType().getLocalName());
         stmt.setString(3, entity.getClass().getCanonicalName());
         setText(stmt, 4, gson.toJson(entity));
-        final Date lastChanged;
+        Date lastChanged;
         if(entity instanceof Timestamp)
         {
             lastChanged = Timestamp.class.cast(entity).getLastChanged();
+            if(lastChanged == null)
+            {
+                lastChanged = getCurrentTimestamp();
+            }
         }
         else
         {
@@ -1911,6 +1995,10 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
     {
+        if(asDeletion)
+        {
+            return;
+        }
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
             setTimestamp(stmt, 1, lastUpdated);
@@ -1929,6 +2017,10 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     public void loadAll() throws SQLException, RaplaException
     {
+        if(asDeletion)
+        {
+            return;
+        }
         try (Statement stmt = con.createStatement(); ResultSet rset = stmt.executeQuery(selectSql))
         {
             final HashSet<String> finishedIdsToLoad = new HashSet<String>();
