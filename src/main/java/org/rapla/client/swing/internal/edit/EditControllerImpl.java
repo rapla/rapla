@@ -39,7 +39,7 @@ import org.rapla.inject.InjectionContext;
 
 /** This class handles the edit-ui for all entities (except reservations). */
 
-@DefaultImplementation(of=EditController.class, context = InjectionContext.client)
+@DefaultImplementation(of=EditController.class, context = InjectionContext.swing)
 @Singleton
 public class EditControllerImpl implements
 		EditController {
