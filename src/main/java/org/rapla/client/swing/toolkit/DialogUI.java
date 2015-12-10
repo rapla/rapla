@@ -505,7 +505,7 @@ public class DialogUI extends JDialog
         @Override
         public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException
         {
-            DialogUI dlg = (DialogUI) create(popupContext, modal, title, text, DialogUiFactoryInterface.getDefaultOptions());
+            DialogUI dlg = (DialogUI) create(popupContext, modal, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
             dlg.useDefaultOptions = true;
             return dlg;
         }
@@ -567,7 +567,7 @@ public class DialogUI extends JDialog
                 {
                     dialog.showWarningDialog(getHTML((DependencyException) ex), owner);
                 }
-                else if (DialogUiFactoryInterface.isWarningOnly(ex))
+                else if (DialogUiFactoryInterface.Util.isWarningOnly(ex))
                 {
                     dialog.showWarningDialog(ex.getMessage(), owner);
                 }

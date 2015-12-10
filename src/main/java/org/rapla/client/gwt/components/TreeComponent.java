@@ -279,8 +279,8 @@ public class TreeComponent extends Div
         plugins.set(1, new JSONString("checkbox"));
         plugins.set(2, new JSONString("contextmenu"));
         options.setPlugins(plugins.getJavaScriptObject());
-        options.setCore(JS.createObject());
-        options.setContextmenu(JS.createObject());
+        options.setCore((JsTreeCore)JS.createObject());
+        options.setContextmenu((JsTreeContextMenu)JS.createObject());
         options.getContextmenu().setItems(new JsTreeContextMenuFunction()
         {
             @Override
@@ -292,7 +292,7 @@ public class TreeComponent extends Div
         options.getContextmenu().setSelect_node(false);
         JsTreeCore core = options.getCore();
         core.setDataType("JSON");
-        core.setThemes(JS.createObject());
+        core.setThemes((JsTreeThemes)JS.createObject());
         core.setCheck_callback(true);
         JsTreeThemes themes = core.getThemes();
         themes.setName("proton");

@@ -512,7 +512,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         ClientFacade writeFacade = this.facade;
         writeFacade.login("homer", "duffs".toCharArray());
-        String xmlFile = null;
+        final String xmlFile = null;
         // create init data
         final DynamicType dynamicType = writeFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
         List<Entity> storeObjects = new ArrayList<Entity>();

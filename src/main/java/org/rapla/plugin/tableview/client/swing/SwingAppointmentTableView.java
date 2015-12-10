@@ -139,7 +139,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 int rowIndex = rowAtPoint(e.getPoint());
                 AppointmentBlock app = appointmentTableModel.getAppointmentAt(sorter.modelIndex(rowIndex));
                 Reservation reservation = app.getAppointment().getReservation();
-                return infoFactory.getToolTip(reservation);
+                return SwingAppointmentTableView.this.infoFactory.getToolTip(reservation);
             }
         };
         scrollpane = new JScrollPane(table);
@@ -195,7 +195,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 }
                 catch (RaplaException ex)
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+                    SwingAppointmentTableView.this.dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
             }
         });
@@ -240,7 +240,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             protected Void doInBackground() throws Exception
             {
 //                Thread.sleep(4000);
-                final List<AppointmentBlock> blocks = model.getBlocks();
+                final List<AppointmentBlock> blocks = SwingAppointmentTableView.this.model.getBlocks();
                 SwingUtilities.invokeLater(new Runnable()
                 {
                     @Override

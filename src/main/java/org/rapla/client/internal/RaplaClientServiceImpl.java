@@ -498,7 +498,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         try {
 			final Logger logger = getLogger();
 			final LanguageChooser languageChooser = new LanguageChooser(logger,i18n,raplaLocale);
-            DefaultBundleManager localeSelector = (DefaultBundleManager)bundleManager;
+            final DefaultBundleManager localeSelector = (DefaultBundleManager)bundleManager;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent(), frameControllerList);
             
             Action languageChanged = new AbstractAction()

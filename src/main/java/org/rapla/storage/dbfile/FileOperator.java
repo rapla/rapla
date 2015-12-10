@@ -464,7 +464,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     synchronized final private void saveData(LocalCache cache, String version, boolean includeIds) throws RaplaException
     {
-        RaplaMainWriter raplaMainWriter = getMainWriter(cache, version, includeIds);
+        final RaplaMainWriter raplaMainWriter = getMainWriter(cache, version, includeIds);
         try
         {
             FileIO.write(new RaplaWriter()

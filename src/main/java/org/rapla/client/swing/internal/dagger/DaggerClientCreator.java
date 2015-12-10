@@ -55,7 +55,7 @@ public class DaggerClientCreator
             client = component.getClientService();
         }
         userClientServiceProvider.setClient( (UserClientService) client );
-        URL downloadURL = startupEnvironment.getDownloadURL();
+        final URL downloadURL = startupEnvironment.getDownloadURL();
         BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
         {
             @Override public String getEntryPoint(String interfaceName, String relativePath)

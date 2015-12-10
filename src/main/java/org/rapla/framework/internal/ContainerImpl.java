@@ -792,7 +792,7 @@ public class ContainerImpl implements Disposable
         return p;
     }
 
-    private Object resolveParameterized(int depth, ParameterizedType parameterizedType) throws RaplaContainerContextException
+    private Object resolveParameterized(final int depth, ParameterizedType parameterizedType) throws RaplaContainerContextException
     {
         final Object result;
         String typeName = parameterizedType.getRawType().getTypeName();

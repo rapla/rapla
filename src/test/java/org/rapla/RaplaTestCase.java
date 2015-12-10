@@ -16,6 +16,7 @@ import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -51,7 +52,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class RaplaTestCase
 {
@@ -107,7 +110,9 @@ public abstract class RaplaTestCase
         functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
 
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
-        PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
+        Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
+        permissionExtensions.add(defaultPermission);
+        PermissionController permissionController = new PermissionController(permissionExtensions);
         FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
                 DefaultPermissionControllerSupport.getController());
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
@@ -146,7 +151,9 @@ public abstract class RaplaTestCase
         functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
 
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
-        PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
+        Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
+        permissionExtensions.add(defaultPermission);
+        PermissionController permissionController = new PermissionController(permissionExtensions);
 
 
         MyImportExportManagerProvider importExportManager = new MyImportExportManagerProvider();
@@ -167,7 +174,7 @@ public abstract class RaplaTestCase
         return facade;
     }
 
-    public static Provider<ClientFacade> createFacadeWithRemote(Logger logger, int port)
+    public static Provider<ClientFacade> createFacadeWithRemote(final Logger logger, int port)
     {
         final String serverURL = "http://localhost:" + port + "/";
 
@@ -180,18 +187,20 @@ public abstract class RaplaTestCase
             }
         });
 
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
-        RaplaResources i18n = new RaplaResources(bundleManager);
+        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final RaplaResources i18n = new RaplaResources(bundleManager);
 
-        CommandScheduler scheduler = new DefaultScheduler(logger);
-        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        final CommandScheduler scheduler = new DefaultScheduler(logger);
+        final RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
 
 
-        Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
-        StandardFunctions functions = new StandardFunctions(raplaLocale);
+        final Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
+        final StandardFunctions functions = new StandardFunctions(raplaLocale);
         functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
-        RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
-        PermissionController permissionController = new PermissionController(Collections.singleton(defaultPermission));
+        final RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
+        Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
+        permissionExtensions.add(defaultPermission);
+        final PermissionController permissionController = new PermissionController(permissionExtensions);
         Provider<ClientFacade> clientFacadeProvider = new Provider<ClientFacade>()
         {
             @Override public ClientFacade get()

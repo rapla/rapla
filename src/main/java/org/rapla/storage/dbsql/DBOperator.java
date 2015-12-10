@@ -90,7 +90,7 @@ public class DBOperator extends LocalAbstractCachableOperator
     Provider<ImportExportManager> importExportManager;
     private final PermissionController permissionController;
     @Inject
-    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler, Map<String,FunctionFactory> functionFactoryMap,Provider<ImportExportManager> importExportManager, DataSource dataSource, PermissionController permissionController) {
+    public DBOperator( Logger logger,RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String,FunctionFactory> functionFactoryMap,Provider<ImportExportManager> importExportManager, DataSource dataSource, PermissionController permissionController) {
         super(  logger, i18n, locale, scheduler, functionFactoryMap, permissionController);
         lookup = dataSource;
         this.importExportManager = importExportManager;

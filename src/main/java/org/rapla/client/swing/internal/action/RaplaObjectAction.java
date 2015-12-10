@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
@@ -346,7 +344,7 @@ public class RaplaObjectAction extends RaplaAction {
  		if (objectList == null || objectList.size() == 0)
  			return;
         String title = null;
-        List<Entity> list = new ArrayList<>(objectList);
+        List<Entity> list = new ArrayList<Entity>(objectList);
         EditController.EditCallback<List<Entity>> callback = null;
         editController.edit(list,title, popupContext, callback);
  	}
