@@ -41,7 +41,7 @@
             <artifactId>rapla</artifactId>
             <version>${rapla.version}</version>
             <classifier>tests</classifier>
-            <scope>provided</scope>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <profiles>
@@ -80,13 +80,6 @@
                                     </artifactItems>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <version>2.10</version>
-                        <executions>
                             <execution>
                                 <id>copy</id>
                                 <phase>prepare-package</phase>
