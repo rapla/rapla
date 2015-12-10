@@ -41,7 +41,7 @@
             <artifactId>rapla</artifactId>
             <version>${rapla.version}</version>
             <classifier>tests</classifier>
-            <scope>test</scope>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <profiles>
