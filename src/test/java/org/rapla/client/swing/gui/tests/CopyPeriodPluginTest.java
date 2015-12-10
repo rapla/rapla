@@ -85,8 +85,8 @@ public class CopyPeriodPluginTest {
     }
     @SuppressWarnings("null")
     public void test() throws Exception {
-        CalendarSelectionModel model = facade.newCalendarModel( facade.getUser());
-        ClassificationFilter filter = facade.getDynamicType("room").newClassificationFilter();
+        final CalendarSelectionModel model = facade.newCalendarModel( facade.getUser());
+        final ClassificationFilter filter = facade.getDynamicType("room").newClassificationFilter();
         filter.addEqualsRule("name","erwin");
         Allocatable allocatable = facade.getAllocatables( new ClassificationFilter[] { filter})[0];
         model.setSelectedObjects( Collections.singletonList(allocatable ));
@@ -105,17 +105,17 @@ public class CopyPeriodPluginTest {
         Assert.assertNotNull("Period not found ", sourcePeriod);
         Assert.assertNotNull("Period not found ", destPeriod);
         BundleManager bundleManager= new DefaultBundleManager();
-        PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
+        final PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
         final Logger logger = getLogger();
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         final RaplaResources rr = new RaplaResources(bundleManager);
-        DateRenderer dateRenderer = new RaplaDateRenderer(getFacade(), rr, getRaplaLocale(), getLogger());
-        RaplaResources raplaResources = rr;
+        final DateRenderer dateRenderer = new RaplaDateRenderer(getFacade(), rr, getRaplaLocale(), getLogger());
+        final RaplaResources raplaResources = rr;
         final RaplaImages raplaImages = new RaplaImages(logger);
-        FrameControllerList frameList = new FrameControllerList(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList, logger );
-        BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
-        IOInterface t = new DefaultIO(logger);
+        final FrameControllerList frameList = new FrameControllerList(logger);
+        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList, logger );
+        final BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
+        final IOInterface t = new DefaultIO(logger);
         Provider<CopyDialog> copyDialogProvider = new Provider<CopyDialog>(){
             @Override
             public CopyDialog get()

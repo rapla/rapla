@@ -274,7 +274,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     @Override
     public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException
     {
-        final DialogInterface di = create(popupContext, modal, title, text, DialogUiFactoryInterface.getDefaultOptions());
+        final DialogInterface di = create(popupContext, modal, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
         return di;
     }
 
@@ -320,7 +320,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
                 {
                     message = getHTML((DependencyException) ex);
                 }
-                else if (DialogUiFactoryInterface.isWarningOnly(ex))
+                else if (DialogUiFactoryInterface.Util.isWarningOnly(ex))
                 {
                     message = ex.getMessage();
                 }

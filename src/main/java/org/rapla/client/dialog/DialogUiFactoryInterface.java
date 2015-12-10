@@ -26,15 +26,17 @@ public interface DialogUiFactoryInterface
     /** Creates a new ErrorDialog with the specified owner and displays the waring */
     void showWarning(String warning, PopupContext popupContext);
 
-    static public boolean isWarningOnly(Throwable ex)
+    public static class Util
     {
-        return ex instanceof RaplaNewVersionException || ex instanceof RaplaSecurityException || ex instanceof WrongRaplaVersionException
-                || ex instanceof RaplaConnectException;
-    }
+        static public boolean isWarningOnly(Throwable ex)
+        {
+            return ex instanceof RaplaNewVersionException || ex instanceof RaplaSecurityException || ex instanceof WrongRaplaVersionException
+                    || ex instanceof RaplaConnectException;
+        }
 
-    public static String[] getDefaultOptions()
-    {
-        return new String[] { "OK" };
+        public static String[] getDefaultOptions()
+        {
+            return new String[] { "OK" };
+        }
     }
-
 }

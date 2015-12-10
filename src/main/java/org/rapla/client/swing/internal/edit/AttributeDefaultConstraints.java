@@ -111,7 +111,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
     private final PermissionController permissionController;
 
     @Inject
-    public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface, PermissionController permissionController) throws RaplaException
+    public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface, PermissionController permissionController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;

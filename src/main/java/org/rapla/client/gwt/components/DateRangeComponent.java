@@ -203,7 +203,7 @@ public class DateRangeComponent extends Input
         options.setTimePicker(withTime);
         options.setTimePicker24Hour(!formats.isAmPmFormat());
         options.setTimePickerIncrement(5);
-        options.setLocale(JS.createObject());
+        options.setLocale((Locale)JS.createObject());
         Locale locale = options.getLocale();
         locale.setFirstDay(1);
         locale.setApplyLabel(i18n.getString("apply"));

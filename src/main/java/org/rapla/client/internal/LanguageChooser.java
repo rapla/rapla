@@ -36,7 +36,7 @@ final public class LanguageChooser implements RaplaWidget
     Logger logger;
 
     @Inject
-    public LanguageChooser(Logger logger,RaplaResources i18n, RaplaLocale raplaLocale) throws RaplaException {
+    public LanguageChooser(Logger logger, final RaplaResources i18n, final RaplaLocale raplaLocale) throws RaplaException {
         this.logger = logger;
         country = raplaLocale.getLocale().getCountry();
         String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);

@@ -24,7 +24,7 @@ import com.google.web.bindery.event.shared.EventBus;
 public class GwtActivityManagerImpl extends ActivityManager
 {
     @Inject
-    public GwtActivityManagerImpl( EventBus eventBus, Logger logger)
+    public GwtActivityManagerImpl( EventBus eventBus, final Logger logger)
     {
         super( eventBus, logger);
         History.addValueChangeHandler(new ValueChangeHandler<String>()

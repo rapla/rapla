@@ -18,7 +18,7 @@ import org.rapla.storage.ImportExportManager;
 public class ArchiverServiceTask  implements ServerExtension
 {
     @Inject
-	public ArchiverServiceTask(  CommandScheduler timer, Logger logger, ClientFacade facade, ImportExportManager importExportManager)
+	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final ClientFacade facade, final ImportExportManager importExportManager)
             throws RaplaException
     {
         final RaplaConfiguration config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());

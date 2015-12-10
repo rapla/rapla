@@ -64,7 +64,7 @@ public class PrintAction extends RaplaAction {
         Component parent = getMainComponent();
         try {
             boolean modal = true;
-            CalendarPrintDialog dialog = calendarPringDialogProvider.get();
+            final CalendarPrintDialog dialog = calendarPringDialogProvider.get();
 
             dialog.init(modal,factoryMap,model,m_pageFormat);
             final Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();

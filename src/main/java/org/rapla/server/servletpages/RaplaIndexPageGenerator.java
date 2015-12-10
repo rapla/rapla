@@ -37,7 +37,7 @@ public class RaplaIndexPageGenerator implements RaplaPageExtension
     {
         this.i18n = i18n;
         this.facade = facade;
-        this.entries = new LinkedHashSet<>(entries);
+        this.entries = new LinkedHashSet<RaplaMenuGenerator>(entries);
     }
 
     public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response )

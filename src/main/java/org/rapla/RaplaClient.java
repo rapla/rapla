@@ -88,7 +88,7 @@ public class RaplaClient extends ContainerImpl
     public RaplaClient(  StartupEnvironment env) throws Exception
     {
         super(env.getBootstrapLogger());
-        URL downloadURL = env.getDownloadURL();
+        final URL downloadURL = env.getDownloadURL();
         BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
         {
             @Override public String getEntryPoint(String interfaceName, String relativePath)
