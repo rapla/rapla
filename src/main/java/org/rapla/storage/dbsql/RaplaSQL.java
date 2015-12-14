@@ -1667,9 +1667,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
             boolean execute = false;
             for (Conflict conflict : entities)
             {
-                String id = conflict.getId();
-                // FIXME add timestamp to conflicts
-                Date lastChanged = conflict.getStartDate();
+                Date lastChanged = conflict.getLastChanged();
                 String allocatableId = conflict.getAllocatableId();
                 String appointment1Id = conflict.getAppointment1();
                 String appointment2Id = conflict.getAppointment2();
