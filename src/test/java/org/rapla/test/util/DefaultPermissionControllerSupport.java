@@ -1,7 +1,9 @@
-package org.rapla.entities.domain.permission;
+package org.rapla.test.util;
 
 import java.util.LinkedHashSet;
 
+import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 
 public class DefaultPermissionControllerSupport

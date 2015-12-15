@@ -16,7 +16,6 @@ import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
@@ -26,6 +25,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.storage.LocalCache;
+import org.rapla.test.util.DefaultPermissionControllerSupport;
 
 @RunWith(JUnit4.class)
 public class ParsedTextTest 
