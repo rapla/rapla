@@ -57,6 +57,7 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class DynamicTypeTest  {

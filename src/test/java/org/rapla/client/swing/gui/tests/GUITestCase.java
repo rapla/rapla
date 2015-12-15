@@ -17,7 +17,6 @@ import java.util.concurrent.Semaphore;
 
 import javax.swing.JComponent;
 
-import org.rapla.RaplaTestCase;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ErrorDialog;
@@ -29,6 +28,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.test.util.RaplaTestCase;
 
 public abstract class GUITestCase  {
 

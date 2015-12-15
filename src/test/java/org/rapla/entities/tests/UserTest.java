@@ -20,7 +20,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -29,6 +28,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.test.util.RaplaTestCase;
 
 import javax.inject.Provider;
 

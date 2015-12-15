@@ -56,6 +56,7 @@ import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.StorageOperator;
+import org.rapla.test.util.RaplaTestCase;
 
 import javax.inject.Provider;
 import java.util.Arrays;

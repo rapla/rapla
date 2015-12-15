@@ -18,13 +18,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaTestCase;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.test.util.RaplaTestCase;
 
 import java.util.ArrayList;
 import java.util.Date;

@@ -15,7 +15,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaTestCase;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -28,6 +27,7 @@ import org.rapla.facade.UpdateModule;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class AttributeTest  {

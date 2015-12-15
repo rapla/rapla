@@ -18,7 +18,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaTestCase;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.DependencyException;
@@ -46,6 +45,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.test.util.RaplaTestCase;
 
 import java.util.ArrayList;
 import java.util.Arrays;

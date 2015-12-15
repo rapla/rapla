@@ -17,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaTestCase;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -35,6 +34,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Collections;
 import java.util.Iterator;

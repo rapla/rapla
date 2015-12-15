@@ -18,6 +18,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.test.util.RaplaTestCase;
 
 import javax.inject.Provider;
 import java.util.Date;

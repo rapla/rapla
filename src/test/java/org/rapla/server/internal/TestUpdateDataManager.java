@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.RaplaTestCase;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -34,6 +33,7 @@ import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager

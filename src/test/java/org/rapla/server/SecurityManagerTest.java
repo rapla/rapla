@@ -6,7 +6,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
@@ -20,6 +19,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.test.util.RaplaTestCase;
 
 import javax.inject.Provider;
 import java.util.Date;

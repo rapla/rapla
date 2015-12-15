@@ -21,7 +21,6 @@ import javax.inject.Provider;
 import org.junit.Assert;
 import org.junit.Before;
 import org.rapla.RaplaResources;
-import org.rapla.RaplaTestCase;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
@@ -45,6 +44,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
+import org.rapla.test.util.RaplaTestCase;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest {

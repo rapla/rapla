@@ -10,8 +10,9 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla;
+package org.rapla.test.util;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.domain.permission.DefaultPermissionControllerSupport;

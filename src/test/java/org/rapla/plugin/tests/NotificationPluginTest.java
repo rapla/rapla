@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
-import org.rapla.RaplaTestCase;
 import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
@@ -38,6 +37,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.test.util.RaplaTestCase;
 
 /** listens for allocation changes */
 @RunWith(JUnit4.class)
