@@ -219,11 +219,11 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		}
 		Assert.notNull(field, "Unknown AttributeType");
 		final User user = getUser();
-        final boolean canRead = permissionController.canRead(attribute, user);
+        final boolean canRead = permissionController.canRead(objectList, attribute, user);
         field.getComponent().setVisible(canRead);
         if(canRead)
         {
-            final boolean canWrite = permissionController.canWrite(attribute, user);
+            final boolean canWrite = permissionController.canWrite(objectList, attribute, user);
             field.getComponent().setEnabled(canWrite);
         }
 		return field;

@@ -14,12 +14,13 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.inject.Extension;
 
 @Extension(id = "org.rapla.entities.domain.permission.RaplaDefault", provides = PermissionExtension.class)
 public class RaplaDefaultPermissionImpl implements PermissionExtension
 {
-    
+
     @Inject
     public RaplaDefaultPermissionImpl()
     {
@@ -82,11 +83,10 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
         boolean granted = maxAccessLevel.includes(accessLevel);
         return granted;
     }
-    
+
     @Override
-    public boolean hasAccess(Attribute attribute, User user, AccessLevel edit)
+    public boolean hasAccess(Collection<? extends Classification> objectList, Attribute attribute, User user, AccessLevel edit)
     {
         return true;
     }
-
 }

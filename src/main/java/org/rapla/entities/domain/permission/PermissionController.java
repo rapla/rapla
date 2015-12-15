@@ -288,11 +288,11 @@ public class PermissionController
         return false;
     }
 
-    private boolean hasAccess(Attribute attribute, User user, AccessLevel edit)
+    private boolean hasAccess(Collection<? extends Classification> objectList, Attribute attribute, User user, AccessLevel edit)
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
         {
-            if (!permissionExtension.hasAccess(attribute, user, edit))
+            if (!permissionExtension.hasAccess(objectList, attribute, user, edit))
             {
                 return false;
             }
@@ -728,22 +728,22 @@ public class PermissionController
         return false;
     }
 
-    public boolean canWrite(Attribute attribute, User user)
+    public boolean canWrite(Collection<? extends Classification> objectList, Attribute attribute, User user)
     {
         if(user.isAdmin())
         {
             return true;
         }
-        return hasAccess(attribute, user, Permission.AccessLevel.EDIT);
+        return hasAccess(objectList, attribute, user, Permission.AccessLevel.EDIT);
     }
     
-    public boolean canRead(Attribute attribute, User user)
+    public boolean canRead(Collection<? extends Classification> objectList, Attribute attribute, User user)
     {
         if(user.isAdmin())
         {
             return true;
         }
-        return hasAccess(attribute, user, Permission.AccessLevel.READ);
+        return hasAccess(objectList, attribute, user, Permission.AccessLevel.READ);
     }
 
 }
