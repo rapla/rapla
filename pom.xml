@@ -131,6 +131,7 @@
                             <finalName>raplabootstrap</finalName>
                             <includes>
                                 <include>org/rapla/bootstrap/*.*</include>
+                                <include>org/rapla/test/util/*.*</include>
                             </includes>
                         </configuration>
                     </execution>
