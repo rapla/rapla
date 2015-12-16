@@ -1849,7 +1849,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     HistoryStorage(RaplaXMLContext context, boolean asDeletion) throws RaplaException
     {
-        super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY", "ISDELETE INTEGER" });
+        super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY", "ISDELETE INTEGER NOT NULL" });
         this.asDeletion = asDeletion;
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
@@ -1968,7 +1968,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(2, entity.getRaplaType().getLocalName());
         stmt.setString(3, entity.getClass().getCanonicalName());
         setText(stmt, 4, gson.toJson(entity));
-        setInt(stmt,5, asDeletion? 1:0);
         Date lastChanged;
         if(entity instanceof Timestamp)
         {
@@ -1983,6 +1982,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             lastChanged = getCurrentTimestamp();
         }
         setTimestamp(stmt, 5, lastChanged);
+        setInt(stmt,6, asDeletion? 1:0);
         stmt.addBatch();
         return 1;
     }
