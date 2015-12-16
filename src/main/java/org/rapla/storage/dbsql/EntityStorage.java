@@ -87,6 +87,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
     private Calendar datetimeCal;
 	protected String idName;
+	private Date connectionTimestamp;
 
 	protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
         this.context = context;
@@ -180,7 +181,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 
 	// Always use gmt for storing timestamps
 	protected Date getTimestampOrNow(ResultSet rset, int column) throws SQLException {
-	    Date currentTimestamp = getCurrentTimestamp();
+	    Date currentTimestamp = getConnectionTimestamp();
 	    java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
         if (rset.wasNull() || timestamp == null)
         {
@@ -202,7 +203,7 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 	}
 
     protected Date getTimestamp(ResultSet rset, int column) throws SQLException {
-        Date currentTimestamp = getCurrentTimestamp();
+        Date currentTimestamp = getConnectionTimestamp();
         java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
         if (rset.wasNull() || timestamp == null)
         {
@@ -223,9 +224,14 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
         return null;
     }
 
-	public Date getCurrentTimestamp() {
-		long time = System.currentTimeMillis();
-		return new Date( time);
+	public void removeConnection()
+	{
+		con = null;
+	}
+
+	public Date getConnectionTimestamp()
+	{
+		return connectionTimestamp;
 	}
 
 	public String getIdColumn() {
@@ -756,10 +762,12 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		return subStores;
 	}
 
-    public void setConnection(Connection con) throws SQLException {
+
+    public void setConnection(Connection con, Date connectionTimestamp) throws SQLException {
+		this.connectionTimestamp = connectionTimestamp;
 		this.con= con;
 		for (Storage<T> subStore: subStores) {
-		    subStore.setConnection(con);
+		    subStore.setConnection(con, connectionTimestamp);
 		}
 		if ( con != null)
 		{
@@ -927,12 +935,18 @@ abstract class EntityStorage<T extends Entity<T>> implements Storage<T> {
 		{
 			if (entity instanceof ModifiableTimestamp)
 			{
-				final Date currentTimestamp = getCurrentTimestamp();
-				((ModifiableTimestamp)entity).setLastChanged(currentTimestamp );
+				final ModifiableTimestamp timestamp = (ModifiableTimestamp) entity;
+				updateTimestamp( timestamp );
 			}
 		}
         insert( entities );
     }
+
+	protected void updateTimestamp(ModifiableTimestamp timestamp)
+	{
+		final Date currentTimestamp = getConnectionTimestamp();
+		timestamp.setLastChanged(currentTimestamp);
+	}
 
     public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException {
         Set<String> ids = new HashSet<String>();

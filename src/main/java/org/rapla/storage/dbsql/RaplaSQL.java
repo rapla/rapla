@@ -142,58 +142,68 @@ class RaplaSQL {
     synchronized public void createAll(Connection con)
         throws SQLException,RaplaException
     {
+        Date connectionTimestamp = getDatabaseTime(con);
 		for (RaplaTypeStorage storage: stores) {
-			storage.setConnection(con);
+			storage.setConnection(con, connectionTimestamp);
 			try
 			{
 				storage.insertAll();
 			}
 			finally
 			{
-				storage.setConnection( null);
+				storage.removeConnection();
 			}
 		}
+    }
+
+    synchronized public Date getDatabaseTime(Connection con)
+    {
+        //    TODO replace with database query
+        Date connectionTimestamp = new Date(System.currentTimeMillis());
+        return connectionTimestamp;
     }
 
     synchronized public void removeAll(Connection con)
     throws SQLException
     {
+        Date connectionTimestamp = getDatabaseTime(con);
 		for (RaplaTypeStorage storage: stores) {
-            storage.setConnection(con);
+            storage.setConnection(con, connectionTimestamp);
             try
             {
             	storage.deleteAll();
             }
             finally
             {
-            	storage.setConnection( null);
+            	storage.removeConnection();
             }
         }
     }
 
     synchronized public void loadAll(Connection con) throws SQLException,RaplaException {
+        Date connectionTimestamp = getDatabaseTime(con);
 		for (Storage storage:stores)
 		{
-			storage.setConnection(con);
+			storage.setConnection(con, connectionTimestamp);
 			try
 			{
 				storage.loadAll();
 			}
 			finally
 			{
-				storage.setConnection( null);
+				storage.removeConnection();
 			}
 		}
     }
 
     @SuppressWarnings("unchecked")
-	synchronized public void remove(Connection con,Entity entity) throws SQLException,RaplaException {
+	synchronized public void remove(Connection con, Entity entity, Date connectionTimestamp) throws SQLException,RaplaException {
     	if ( Attribute.TYPE ==  entity.getRaplaType() )
 			return;
     	boolean couldDelete = false;
 		for (RaplaTypeStorage storage:stores) {
 		    if (storage.canDelete(entity)) {
-		    	storage.setConnection(con);
+		    	storage.setConnection(con, connectionTimestamp);
 		    	try
 		    	{
 			    	List<Entity>list = new ArrayList<Entity>();
@@ -203,7 +213,7 @@ class RaplaSQL {
 		    	}
 		    	finally
 		    	{
-		    		storage.setConnection(null);
+		    		storage.removeConnection();
 		    	}
 		    }
 		}
@@ -214,7 +224,7 @@ class RaplaSQL {
     }
 
     @SuppressWarnings("unchecked")
-	synchronized public void store(Connection con, Collection<Entity>entities) throws SQLException,RaplaException {
+	synchronized public void store(Connection con, Collection<Entity> entities, Date connectionTimestamp) throws SQLException,RaplaException {
 
         Map<Storage,List<Entity>> store = new LinkedHashMap<Storage, List<Entity>>();
         for ( Entity entity:entities)
@@ -242,7 +252,7 @@ class RaplaSQL {
         }
         for ( Storage storage: store.keySet())
         {
-            storage.setConnection(con);
+            storage.setConnection(con,connectionTimestamp);
             try
             {
             	List<Entity>list = store.get( storage);
@@ -250,55 +260,58 @@ class RaplaSQL {
             }
             finally
             {
-            	storage.setConnection( null);
+            	storage.removeConnection();
             }
         }
     }
 
 	public void createOrUpdateIfNecessary(Connection con, Map<String, TableDef> schema) throws SQLException, RaplaException {
+
+        // We dont't need a timestamp for createOrUpdate
+        Date connectionTimestamp = null;
 		   // Upgrade db if necessary
     	for (Storage<?> storage:getStoresWithChildren())
 		{
-    		storage.setConnection(con);
+    		storage.setConnection(con, connectionTimestamp);
     		try
     		{
     			storage.createOrUpdateIfNecessary( schema);
     		}
     		finally
     		{
-    			storage.setConnection( null);
+    			storage.removeConnection();
     		}
 		}
 	}
 
-    public void storePatches(Connection connection, List<PreferencePatch> preferencePatches) throws SQLException, RaplaException {
+    public void storePatches(Connection connection, List<PreferencePatch> preferencePatches, Date connectionTimestamp) throws SQLException, RaplaException {
         PreferenceStorage storage = preferencesStorage;
-        storage.setConnection( connection);
+        storage.setConnection( connection, connectionTimestamp);
         try
         {
             preferencesStorage.storePatches( preferencePatches);
         }
         finally
         {
-            storage.setConnection( null);
+            storage.removeConnection();
         }
     }
 
-    public UpdateResult update(Connection c, Date lastUpdated) throws SQLException
+    public UpdateResult update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
     {
         Date start = new Date(System.currentTimeMillis());
         // FIXME instanciate or change return type
         final UpdateResult updateResult = new UpdateResult(lastUpdated, start, null, null);
         for (RaplaTypeStorage raplaTypeStorage : stores)
         {
-            raplaTypeStorage.setConnection( c);
+            raplaTypeStorage.setConnection( c, connectionTimestamp);
             try
             {
                 raplaTypeStorage.update(lastUpdated, updateResult);
             }
             finally
             {
-                raplaTypeStorage.setConnection( null);
+                raplaTypeStorage.removeConnection();
             }
         }
         return updateResult;
@@ -774,9 +787,9 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	}
 	
 	@Override
-	public void setConnection(Connection con) throws SQLException {
-		super.setConnection(con);
-		appointmentStorage.setConnection(con);
+	public void setConnection(Connection con, Date connectionTimestamp) throws SQLException {
+		super.setConnection(con, connectionTimestamp);
+		appointmentStorage.setConnection(con, connectionTimestamp);
 	}
 
     @Override
@@ -1388,7 +1401,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         try {
             stmt = con.prepareStatement(insertSql);
             int count = 0;
-            Date lastChanged = getCurrentTimestamp();
+            Date lastChanged = getConnectionTimestamp();
             for ( PreferencePatch patch:preferencePatches)
             {
                 String userId = patch.getUserId();
@@ -1444,7 +1457,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         int count = 0;
         for (String role:preferences.getPreferenceEntries()) {
             Object entry = preferences.getEntry(role);
-            final Date lastChanged = getCurrentTimestamp();
+            final Date lastChanged = getConnectionTimestamp();
             insertEntry(stmt, userId, role, entry,lastChanged);
             count++;
         }
@@ -1516,7 +1529,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId, Preferences.class ): null;
         if ( preferences == null) 
         {
-            Date now =getCurrentTimestamp();
+            Date now = getConnectionTimestamp();
             preferences = new PreferencesImpl(now, now);
             preferences.setId(preferenceId);
             preferences.setOwner(owner);
@@ -1716,7 +1729,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;
         Date timestamp = getTimestamp(rset, 6);
-        Date today = getCurrentTimestamp();
+        Date today = getConnectionTimestamp();
         String id = ConflictImpl.createId(allocatableId, appointment1Id, appointment2Id); 
         ConflictImpl conflict = new ConflictImpl(id, today, timestamp);
         conflict.setAppointment1Enabled(appointment1Enabled );
@@ -1901,7 +1914,13 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             stmt.executeBatch();
         }
     }
-    
+
+    // Don't update timestamp in historystorage it is already updated  in the storage of the entity itself
+    @Override protected void updateTimestamp(ModifiableTimestamp timestamp)
+    {
+
+    }
+
     @Override
     public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException
     {
@@ -1974,12 +1993,12 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             lastChanged = Timestamp.class.cast(entity).getLastChanged();
             if(lastChanged == null)
             {
-                lastChanged = getCurrentTimestamp();
+                lastChanged = getConnectionTimestamp();
             }
         }
         else
         {
-            lastChanged = getCurrentTimestamp();
+            lastChanged = getConnectionTimestamp();
         }
         setTimestamp(stmt, 5, lastChanged);
         setInt(stmt,6, asDeletion? 1:0);
@@ -2084,7 +2103,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
         setInt(stmt, 4, entity.getDirection());
         setText(stmt, 5, entity.getData());
         setText(stmt, 6, entity.getContext());
-        setTimestamp(stmt, 7, getCurrentTimestamp());
+        setTimestamp(stmt, 7, getConnectionTimestamp());
         return 0;
     }
 
