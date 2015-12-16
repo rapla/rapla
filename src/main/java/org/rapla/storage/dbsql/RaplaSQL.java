@@ -80,6 +80,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.server.ImportExportEntity;
+import org.rapla.storage.server.ImportExportEntityImpl;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.RaplaXMLContext;
@@ -2053,6 +2055,50 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         {
             throw new RaplaException("found history entry (" + id + ") with classname " + className + " which is not defined in java");
         }
+    }
+    
+}
+
+class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
+{
+    
+    public ImportExportStorage(RaplaXMLContext context) throws RaplaException
+    {
+        super(context, ImportExportEntityImpl.raplaType, "IMPORT_EXPORT",
+                new String[] { "FOREIGN_ID VARCHAR(255) KEY", "EXTERNAL_SYSTEM VARCHAR(255) KEY", "RAPLA_ID VARCHAR(255)", "DIRECTION INTEGER NOT NULL", "DATA TEXT NOT NULL",
+                "CONTEXT TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY" });
+    }
+
+    @Override
+    void insertAll() throws SQLException, RaplaException
+    {
+        // do nothing
+    }
+
+    @Override
+    protected int write(PreparedStatement stmt, ImportExportEntity entity) throws SQLException, RaplaException
+    {
+        stmt.setString(1, entity.getId());
+        stmt.setString(2, entity.getExternalSystem());
+        stmt.setString(3, entity.getRaplaId());
+        setInt(stmt, 4, entity.getDirection());
+        setText(stmt, 5, entity.getData());
+        setText(stmt, 6, entity.getContext());
+        setTimestamp(stmt, 7, getCurrentTimestamp());
+        return 0;
+    }
+
+    @Override
+    protected void load(ResultSet rs) throws SQLException, RaplaException
+    {
+        final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
+        importExportEntityImpl.setId(rs.getString(1));
+        importExportEntityImpl.setExternalSystem(rs.getString(2));
+        importExportEntityImpl.setRaplaId(rs.getString(3));
+        importExportEntityImpl.setDirection(rs.getInt(4));
+        importExportEntityImpl.setData(getText(rs, 5));
+        importExportEntityImpl.setContext(getText(rs, 6));
+        put(importExportEntityImpl);
     }
     
 }
