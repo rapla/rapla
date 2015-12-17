@@ -513,4 +513,86 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
         semaphore.acquire(2);
     }
 
+    @Test public void testLockTimestamp() throws Throwable
+    {
+        con1.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        con2.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        final Semaphore semaphore = new Semaphore(0);
+        final AtomicReference<Timestamp> at = new AtomicReference<Timestamp>();
+        final AtomicReference<Throwable> error  = new AtomicReference<Throwable>();
+        // Both threads will try to do a update
+        // so every thread will first delete the entry with its time stamp and then create a new one
+        final Thread t1 = new Thread(new Runnable()
+        {
+            private Connection con = con1;
+
+            public void run()
+            {
+                try
+                {
+                    final PreparedStatement stmt = con.prepareStatement("INSERT INTO LOCK (ID, LAST_CHANGED) VALUES (?, CURRENT_TIMESTAMP)");
+                    stmt.setString(1, "TEST");
+                    stmt.addBatch();
+                    stmt.executeBatch();
+                    con.commit();
+                    Thread.sleep(300);
+                    final PreparedStatement ustmt = con.prepareStatement("UPDATE LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE ID = ? ");
+                    ustmt.setString(1, "TEST");
+                    ustmt.executeUpdate();
+                    final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM LOCK WHERE ID = ?");
+                    rstmt.setString(1, "TEST");
+                    final ResultSet result = rstmt.executeQuery();
+                    Assert.assertTrue(result.next());
+                    final Timestamp timestamp = result.getTimestamp(1);
+                    Assert.assertTrue(timestamp.after(at.get()));
+                }
+                catch (Throwable e)
+                {
+                    error.set(e);
+                }
+                finally {
+                    semaphore.release();
+                }
+            }
+        });
+        t1.start();
+
+        final Thread t2 = new Thread(new Runnable()
+        {
+            private Connection con = con2;
+
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(200);
+                    final PreparedStatement ustmt = con.prepareStatement("UPDATE LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE ID = ? ");
+                    ustmt.setString(1, "TEST");
+                    ustmt.executeUpdate();
+                    Thread.sleep(300);
+                    final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM LOCK WHERE ID = ?");
+                    rstmt.setString(1, "TEST");
+                    final ResultSet executeQuery = rstmt.executeQuery();
+                    Assert.assertTrue(executeQuery.next());
+                    final Timestamp timestamp = executeQuery.getTimestamp(1);
+                    at.set(timestamp);
+                    con.commit();
+                }
+                catch (Throwable e)
+                {
+                    error.set(e);
+                }
+                finally {
+                    semaphore.release();
+                }
+            }
+        });
+        t2.start();
+        semaphore.acquire(2);
+        if(error.get()!=null)
+        {
+            throw error.get();
+        }
+    }
+
 }
