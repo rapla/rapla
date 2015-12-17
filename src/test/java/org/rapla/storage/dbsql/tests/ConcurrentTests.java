@@ -421,7 +421,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                             Assert.assertTrue(resultSet.next());
                             timestamp1 = resultSet.getTimestamp(3);
                         }
-                        logger.info("T1 read table1 " + timestamp1);
+                        logger.info("T1 read table 1 " + timestamp1);
                     }
                     Thread.sleep(3000);
                     {
@@ -433,7 +433,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                             Assert.assertTrue(resultSet.next());
                             timestamp2 = resultSet.getTimestamp(3);
                         }
-                        logger.info("T1 read table2 " + timestamp2);
+                        logger.info("T1 read table 2 " + timestamp2);
                     }
                     con.commit();
                     //Thread.sleep(400);
@@ -446,7 +446,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                         {
                             Assert.assertTrue(resultSet.next());
                             timestamp3 = resultSet.getTimestamp(3);
-                            logger.info("T1 read table1 " + timestamp1);
+                            logger.info("T1 read table 1 " + timestamp1);
                         }
                     }
                     final Timestamp newValue = x.get();
@@ -482,9 +482,9 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                         stmt.setString(2, t1Obj.id);
                         stmt.setTimestamp( 1, newValue);
                         stmt.addBatch();
-                        logger.info("T2 updating table T1");
+                        logger.info("T2 updating table 1");
                         stmt.executeBatch();
-                        logger.info("T2 updated table T1 " + newValue);
+                        logger.info("T2 updated table 1 " + newValue);
                     }
                     {
                         final PreparedStatement stmt = con.prepareStatement(updateT2);
@@ -492,9 +492,9 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                         stmt.setString(2, t2Obj.id);
                         stmt.setTimestamp( 1, newValue);
                         stmt.addBatch();
-                        logger.info("T2 updating table T1");
+                        logger.info("T2 updating table 2");
                         stmt.executeBatch();
-                        logger.info("T2 updated table T2" + newValue);
+                        logger.info("T2 updated table 2" + newValue);
                     }
                     con.commit();
                     logger.info("T2 commited");
