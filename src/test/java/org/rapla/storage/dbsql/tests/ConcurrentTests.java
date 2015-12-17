@@ -18,6 +18,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 
 @RunWith(JUnit4.class) public class ConcurrentTests
 {
@@ -32,6 +34,7 @@ import org.junit.runners.JUnit4;
     private String deleteT2 = "DELETE FROM T2 WHERE ID = ? and LAST_CHANGED = ?";
     private String updateT1 = "UPDATE T1 set LAST_CHANGED = ? where ID = ? ";
     private String updateT2 = "UPDATE T2 set LAST_CHANGED = ? where ID = ? ";
+    Logger logger = RaplaBootstrapLogger.createRaplaLogger();
 
     private static class T1Obj
     {
@@ -407,6 +410,7 @@ import org.junit.runners.JUnit4;
                     final Timestamp timestamp1;
                     final Timestamp timestamp2;
                     final Timestamp timestamp3;
+                    logger.info("T1 start reading");
                     //con.setSavepoint();
                     {
                         final PreparedStatement stmt = con.prepareStatement(selectT1);
@@ -417,8 +421,9 @@ import org.junit.runners.JUnit4;
                             Assert.assertTrue(resultSet.next());
                             timestamp1 = resultSet.getTimestamp(3);
                         }
+                        logger.info("T1 read table1 " + timestamp1);
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(3000);
                     {
                         final PreparedStatement stmt = con.prepareStatement(selectT2);
                         final T2Obj t1Obj = t2Objs.get(0);
@@ -428,8 +433,10 @@ import org.junit.runners.JUnit4;
                             Assert.assertTrue(resultSet.next());
                             timestamp2 = resultSet.getTimestamp(3);
                         }
+                        logger.info("T1 read table2 " + timestamp2);
                     }
                     con.commit();
+                    //Thread.sleep(400);
                     Assert.assertEquals( timestamp1, timestamp2);
                     {
                         final PreparedStatement stmt = con.prepareStatement(selectT2);
@@ -439,6 +446,7 @@ import org.junit.runners.JUnit4;
                         {
                             Assert.assertTrue(resultSet.next());
                             timestamp3 = resultSet.getTimestamp(3);
+                            logger.info("T1 read table1 " + timestamp1);
                         }
                     }
                     final Timestamp newValue = x.get();
@@ -465,6 +473,7 @@ import org.junit.runners.JUnit4;
                 try
                 {
                     Thread.sleep(200);
+                    logger.info("T2 start writing");
                     final Timestamp newValue = new Timestamp(System.currentTimeMillis());
                     x.set(newValue);
                     {
@@ -473,7 +482,9 @@ import org.junit.runners.JUnit4;
                         stmt.setString(2, t1Obj.id);
                         stmt.setTimestamp( 1, newValue);
                         stmt.addBatch();
+                        logger.info("T2 updating table T1");
                         stmt.executeBatch();
+                        logger.info("T2 updated table T1 " + newValue);
                     }
                     {
                         final PreparedStatement stmt = con.prepareStatement(updateT2);
@@ -481,9 +492,12 @@ import org.junit.runners.JUnit4;
                         stmt.setString(2, t2Obj.id);
                         stmt.setTimestamp( 1, newValue);
                         stmt.addBatch();
+                        logger.info("T2 updating table T1");
                         stmt.executeBatch();
+                        logger.info("T2 updated table T2" + newValue);
                     }
                     con.commit();
+                    logger.info("T2 commited");
                 }
                 catch (Exception e)
                 {
