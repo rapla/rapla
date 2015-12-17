@@ -209,6 +209,7 @@ public class DBOperator extends LocalAbstractCachableOperator
                  if (bSupportsTransactions)
                  {
                      connection.setAutoCommit( false );
+                     connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE);
                  }
                  else
                  {
@@ -282,7 +283,7 @@ public class DBOperator extends LocalAbstractCachableOperator
                 updateStart = new Date();
             }
             final RaplaSQL raplaSQLInput =  new RaplaSQL(createInputContext(entityStore, DBOperator.this));
-            Date connectionTime = raplaSQLInput.getDatabaseTime( c );
+            Date connectionTime = raplaSQLInput.getLastUpdated( c );
             // FIXME update 
             UpdateResult result = raplaSQLInput.update( c, lastUpdated , connectionTime);
 
@@ -664,7 +665,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         Connection connection = createConnection();
         try {
             RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
-            Date connectionTimestamp =raplaSQLOutput.getDatabaseTime( connection);
+            Date connectionTimestamp =raplaSQLOutput.getLock(connection);
             for (String id: removeObjects) {
                 Entity entity = cache.get(id);
                 if (entity != null)
@@ -678,7 +679,6 @@ public class DBOperator extends LocalAbstractCachableOperator
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-            refresh();
         } catch (Exception ex) {
              try {
                  if (bSupportsTransactions) {
@@ -700,6 +700,7 @@ public class DBOperator extends LocalAbstractCachableOperator
         } finally {
             close( connection );
         }
+        refresh();
     }
     
     @Override

@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -96,10 +97,12 @@ class RaplaSQL {
     private final Logger logger;
     RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
+    LockStorage lockStorage;
     
     RaplaSQL( RaplaXMLContext context) throws RaplaException{
     	this.context = context;
         logger =  context.lookup( Logger.class);
+        lockStorage = new LockStorage(logger);
         // The order is important. e.g. appointments can only be loaded if the reservation they are refering to are already loaded.
 	    stores.add(new CategoryStorage( context));
 	    stores.add(new UserStorage( context));
@@ -119,7 +122,7 @@ class RaplaSQL {
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
     
-    private List<Storage<?>> getStoresWithChildren() 
+    private List<Storage<?>> getStoresWithChildren()
     {
     	List<Storage<?>> storages = new ArrayList<Storage<?>>();
     	for ( RaplaTypeStorage store:stores)
@@ -143,6 +146,7 @@ class RaplaSQL {
         throws SQLException,RaplaException
     {
         Date connectionTimestamp = getDatabaseTime(con);
+        lockStorage.setConnection(con, connectionTimestamp);
 		for (RaplaTypeStorage storage: stores) {
 			storage.setConnection(con, connectionTimestamp);
 			try
@@ -156,7 +160,7 @@ class RaplaSQL {
 		}
     }
 
-    synchronized public Date getDatabaseTime(Connection con)
+    synchronized private Date getDatabaseTime(Connection con)
     {
         //    TODO replace with database query
         Date connectionTimestamp = new Date(System.currentTimeMillis());
@@ -270,7 +274,8 @@ class RaplaSQL {
         // We dont't need a timestamp for createOrUpdate
         Date connectionTimestamp = null;
 		   // Upgrade db if necessary
-    	for (Storage<?> storage:getStoresWithChildren())
+        final List<TableStorage> storesWithChildren = getTableStorages();
+        for (TableStorage storage: storesWithChildren)
 		{
     		storage.setConnection(con, connectionTimestamp);
     		try
@@ -283,6 +288,14 @@ class RaplaSQL {
     		}
 		}
 	}
+
+    @NotNull public List<TableStorage> getTableStorages()
+    {
+        final List<TableStorage> storesWithChildren = new ArrayList<>();
+        storesWithChildren.addAll(getStoresWithChildren());
+        storesWithChildren.add( lockStorage);
+        return storesWithChildren;
+    }
 
     public void storePatches(Connection connection, List<PreferencePatch> preferencePatches, Date connectionTimestamp) throws SQLException, RaplaException {
         PreferenceStorage storage = preferencesStorage;
@@ -317,9 +330,80 @@ class RaplaSQL {
         return updateResult;
     }
 
+    public Date getLastUpdated(Connection c)
+    {
+        return lockStorage.readLockTimestamp(c);
+    }
 
+    public Date getLock(Connection connection)
+    {
+        return lockStorage.getLock( connection);
+    }
 }
 
+class LockStorage extends AbstractTableStorage
+{
+    final String GLOBAL_LOCK = "GLOBAL_LOCK";
+    public LockStorage(Logger logger)
+    {
+        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
+    }
+
+    public Date getLock(Connection con) throws RaplaException
+    {
+        final Date lastLocked = readLockTimestamp(con, GLOBAL_LOCK);
+        final Date lockTimestamp = requestLock(con, GLOBAL_LOCK, lastLocked);
+        return lockTimestamp;
+    }
+
+    private Date requestLock(Connection con, String lockId, Date lastLocked)
+    {
+        // update moeglich
+        String updateSql = "update " + tableName + " set ";
+        try(final PreparedStatement ustmt = con.prepareStatement(updateSql))
+        {
+            ustmt.setString(1, lockId);
+            ustmt.executeUpdate();
+            final Date newLockTimestamp = readLockTimestamp(con, lockId);
+            if(!newLockTimestamp.after(lastLocked))
+            {
+                Thread.sleep(1);
+                return requestLock(con, lockId, lastLocked);
+            }
+            else
+            {
+                return newLockTimestamp;
+            }
+        }
+        catch(Exception e)
+        {
+            throw new RaplaException("Error receiving lock for " + lockId);
+        }
+    }
+
+    Date readLockTimestamp(Connection con) throws RaplaException
+    {
+        return readLockTimestamp(con, GLOBAL_LOCK);
+    }
+
+    private Date readLockTimestamp(Connection con, String lockId) throws RaplaException
+    {
+        try(final PreparedStatement rstmt = con.prepareStatement(selectSql); )
+        {
+            rstmt.setString(1, lockId);
+            try(final ResultSet result = rstmt.executeQuery())
+            {
+                result.next();
+                Date date = getTimestamp( result, 1);
+                return date;
+            }
+        }
+        catch( Exception e)
+        {
+            throw new RaplaException("Error receiving actual lock timestamp for "+lockId);
+        }
+    }
+}
 abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	RaplaType raplaType;
 
@@ -1369,7 +1453,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	            }
 	            else
 	            {
-	                deleteSqlWithRole = "delete from " + tableName + " where user_id IS null and role=?";
+	                deleteSqlWithRole = "delete from " + getTableName() + " where user_id IS null and role=?";
                     stmt = con.prepareStatement(deleteSqlWithRole);
                     for ( String role: patch.getRemovedEntries())
                     {
@@ -1576,7 +1660,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
         if ( deleteNullUserPreference )
         {
-            PreparedStatement deleteNullStmt = con.prepareStatement("DELETE FROM " + tableName + " WHERE USER_ID IS NULL OR USER_ID=0");
+            PreparedStatement deleteNullStmt = con.prepareStatement("DELETE FROM " + getTableName() + " WHERE USER_ID IS NULL OR USER_ID=0");
             deleteNullStmt.execute();
         }
     }
@@ -1660,7 +1744,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         super(context, Conflict.TYPE, "RAPLA_CONFLICT",
                 new String[] { "RESOURCE_ID VARCHAR(255) NOT NULL", "APPOINTMENT1 VARCHAR(255) NOT NULL", "APPOINTMENT2 VARCHAR(255) NOT NULL",
                         "APP1ENABLED INTEGER NOT NULL", "APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY" });
-        this.deleteSql = "delete from " + tableName + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
+        this.deleteSql = "delete from " + getTableName() + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
     }
     
     @Override
