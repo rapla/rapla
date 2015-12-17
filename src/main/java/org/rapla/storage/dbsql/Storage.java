@@ -12,27 +12,21 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
 
-interface Storage<T extends Entity<T>> {
+interface Storage<T extends Entity<T>> extends TableStorage
+{
     void loadAll() throws SQLException,RaplaException;
     void deleteAll() throws SQLException;
-    void setConnection(Connection con, Date connectionTimestamp) throws SQLException;
-    void removeConnection();
+
+    void dropTable() throws SQLException;
+
     void save( Iterable<T> entities) throws SQLException,RaplaException ;
     void insert( Iterable<T> entities) throws SQLException,RaplaException ;
-   // void update( Collection<Entity>> entities) throws SQLException,RaplaException ;
-    public List<String> getCreateSQL();
-	void createOrUpdateIfNecessary( Map<String, TableDef> schema) throws SQLException, RaplaException;
-    void dropTable() throws SQLException;
+
     //void update( String id) throws SQLException;
 }
 

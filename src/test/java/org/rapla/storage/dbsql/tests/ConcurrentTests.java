@@ -385,10 +385,12 @@ import org.junit.runners.JUnit4;
         }
     }
 
-    Timestamp x;
+
 
     @Test public void testReadWriteLock() throws Exception
     {
+
+        final AtomicReference<Timestamp> x = new AtomicReference<>();
         con1.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         con2.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         final Semaphore semaphore = new Semaphore(0);
@@ -404,7 +406,8 @@ import org.junit.runners.JUnit4;
                 {
                     final Timestamp timestamp1;
                     final Timestamp timestamp2;
-                    con.setSavepoint();
+                    final Timestamp timestamp3;
+                    //con.setSavepoint();
                     {
                         final PreparedStatement stmt = con.prepareStatement(selectT1);
                         final T1Obj t1Obj = t1Objs.get(0);
@@ -428,6 +431,18 @@ import org.junit.runners.JUnit4;
                     }
                     con.commit();
                     Assert.assertEquals( timestamp1, timestamp2);
+                    {
+                        final PreparedStatement stmt = con.prepareStatement(selectT2);
+                        final T2Obj t1Obj = t2Objs.get(0);
+                        stmt.setString(1, t1Obj.id);
+                        try (final ResultSet resultSet = stmt.executeQuery())
+                        {
+                            Assert.assertTrue(resultSet.next());
+                            timestamp3 = resultSet.getTimestamp(3);
+                        }
+                    }
+                    final Timestamp newValue = x.get();
+                    Assert.assertEquals( timestamp3, newValue);
                 }
                 catch (Exception e)
                 {
@@ -450,12 +465,13 @@ import org.junit.runners.JUnit4;
                 try
                 {
                     Thread.sleep(200);
-                    x = new Timestamp(System.currentTimeMillis());
+                    final Timestamp newValue = new Timestamp(System.currentTimeMillis());
+                    x.set(newValue);
                     {
                         final PreparedStatement stmt = con.prepareStatement(updateT1);
                         final T1Obj t1Obj = t1Objs.get(0);
                         stmt.setString(2, t1Obj.id);
-                        stmt.setTimestamp( 1, x);
+                        stmt.setTimestamp( 1, newValue);
                         stmt.addBatch();
                         stmt.executeBatch();
                     }
@@ -463,7 +479,7 @@ import org.junit.runners.JUnit4;
                         final PreparedStatement stmt = con.prepareStatement(updateT2);
                         final T2Obj t2Obj = t2Objs.get(0);
                         stmt.setString(2, t2Obj.id);
-                        stmt.setTimestamp( 1, x);
+                        stmt.setTimestamp( 1, newValue);
                         stmt.addBatch();
                         stmt.executeBatch();
                     }
