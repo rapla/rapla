@@ -25,6 +25,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
 {
     private Connection con1;
     private Connection con2;
+    private Connection con3;
     private String insertT1 = "INSERT INTO T1 (ID, NAME, LAST_CHANGED) VALUES (?, ?, ?)";
     private String insertT2 = "INSERT INTO T2 (ID, T1_ID, LAST_CHANGED) VALUES (?, ?, ?)";
     private String selectT1 = "SELECT * FROM T1 WHERE ID = ?";
@@ -61,6 +62,8 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
         con1.setAutoCommit(false);
         con2 = DriverManager.getConnection("jdbc:hsqldb:target/test/db", "sa", "");
         con2.setAutoCommit(false);
+        con3 = DriverManager.getConnection("jdbc:hsqldb:target/test/db", "sa", "");
+        con3.setAutoCommit(false);
         { // delete old
             final Statement stmt = con1.createStatement();
             stmt.addBatch("DROP TABLE IF EXISTS T1 CASCADE;");
@@ -112,6 +115,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
     {
         con1.close();
         con2.close();
+        con3.close();
     }
 
     private void insert(PreparedStatement ps, T2Obj t21) throws Exception
@@ -396,75 +400,12 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
         final AtomicReference<Timestamp> x = new AtomicReference<>();
         con1.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         con2.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        con3.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         final Semaphore semaphore = new Semaphore(0);
         // Both threads will try to do a update
         // so every thread will first delete the entry with its time stamp and then create a new one
-        final Thread t1 = new Thread(new Runnable()
-        {
-            private Connection con = con1;
 
-            public void run()
-            {
-                try
-                {
-                    final Timestamp timestamp1;
-                    final Timestamp timestamp2;
-                    final Timestamp timestamp3;
-                    logger.info("T1 start reading");
-                    //con.setSavepoint();
-                    {
-                        final PreparedStatement stmt = con.prepareStatement(selectT1);
-                        final T1Obj t1Obj = t1Objs.get(0);
-                        stmt.setString(1, t1Obj.id);
-                        try (final ResultSet resultSet = stmt.executeQuery())
-                        {
-                            Assert.assertTrue(resultSet.next());
-                            timestamp1 = resultSet.getTimestamp(3);
-                        }
-                        logger.info("T1 read table 1 " + timestamp1);
-                    }
-                    Thread.sleep(3000);
-                    {
-                        final PreparedStatement stmt = con.prepareStatement(selectT2);
-                        final T2Obj t1Obj = t2Objs.get(0);
-                        stmt.setString(1, t1Obj.id);
-                        try (final ResultSet resultSet = stmt.executeQuery())
-                        {
-                            Assert.assertTrue(resultSet.next());
-                            timestamp2 = resultSet.getTimestamp(3);
-                        }
-                        logger.info("T1 read table 2 " + timestamp2);
-                    }
-                    con.commit();
-                    //Thread.sleep(400);
-                    Assert.assertEquals( timestamp1, timestamp2);
-                    {
-                        final PreparedStatement stmt = con.prepareStatement(selectT2);
-                        final T2Obj t1Obj = t2Objs.get(0);
-                        stmt.setString(1, t1Obj.id);
-                        try (final ResultSet resultSet = stmt.executeQuery())
-                        {
-                            Assert.assertTrue(resultSet.next());
-                            timestamp3 = resultSet.getTimestamp(3);
-                            logger.info("T1 read table 1 " + timestamp1);
-                        }
-                    }
-                    final Timestamp newValue = x.get();
-                    Assert.assertEquals( timestamp3, newValue);
-                }
-                catch (Exception e)
-                {
-                    Assert.fail("Exception should not happen: " + e.getMessage());
-                }
-                finally
-                {
-                    semaphore.release();
-                }
-            }
-        });
-        t1.start();
-
-        final Thread t2 = new Thread(new Runnable()
+        final Runnable writer = new Runnable()
         {
             private Connection con = con2;
 
@@ -480,7 +421,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                         final PreparedStatement stmt = con.prepareStatement(updateT1);
                         final T1Obj t1Obj = t1Objs.get(0);
                         stmt.setString(2, t1Obj.id);
-                        stmt.setTimestamp( 1, newValue);
+                        stmt.setTimestamp(1, newValue);
                         stmt.addBatch();
                         logger.info("T2 updating table 1");
                         stmt.executeBatch();
@@ -490,7 +431,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                         final PreparedStatement stmt = con.prepareStatement(updateT2);
                         final T2Obj t2Obj = t2Objs.get(0);
                         stmt.setString(2, t2Obj.id);
-                        stmt.setTimestamp( 1, newValue);
+                        stmt.setTimestamp(1, newValue);
                         stmt.addBatch();
                         logger.info("T2 updating table 2");
                         stmt.executeBatch();
@@ -508,13 +449,23 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
                     semaphore.release();
                 }
             }
-        });
+        };
+        final Thread t1 = new Thread(new MyRunnable("T1",con1,x, semaphore));
+        t1.start();
+        final Thread t2 = new Thread(writer);
         t2.start();
-        semaphore.acquire(2);
+        final Thread t3 = new Thread(new MyRunnable("T3",con3,x, semaphore));
+        t3.start();
+        semaphore.acquire(3);
     }
 
     @Test public void testLockTimestamp() throws Throwable
     {
+        final PreparedStatement stmt = con1.prepareStatement("INSERT INTO LOCK (ID, LAST_CHANGED) VALUES (?, CURRENT_TIMESTAMP)");
+        stmt.setString(1, "TEST");
+        stmt.addBatch();
+        stmt.executeBatch();
+        con1.commit();
         con1.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         con2.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         final Semaphore semaphore = new Semaphore(0);
@@ -530,11 +481,6 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
             {
                 try
                 {
-                    final PreparedStatement stmt = con.prepareStatement("INSERT INTO LOCK (ID, LAST_CHANGED) VALUES (?, CURRENT_TIMESTAMP)");
-                    stmt.setString(1, "TEST");
-                    stmt.addBatch();
-                    stmt.executeBatch();
-                    con.commit();
                     Thread.sleep(300);
                     final PreparedStatement ustmt = con.prepareStatement("UPDATE LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE ID = ? ");
                     ustmt.setString(1, "TEST");
@@ -595,4 +541,80 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
         }
     }
 
+    private class MyRunnable implements Runnable
+    {
+        private final AtomicReference<Timestamp> x;
+        private final Semaphore semaphore;
+        private Connection con;
+        final String threadname ;
+
+        public MyRunnable(String threadname,Connection con,AtomicReference<Timestamp> x, Semaphore semaphore)
+        {
+            this.threadname = threadname;
+            this.x = x;
+            this.semaphore = semaphore;
+            this.con = con;
+        }
+
+        public void run()
+        {
+            try
+            {
+                final Timestamp timestamp1;
+                final Timestamp timestamp2;
+                final Timestamp timestamp3;
+
+                logger.info(threadname + " start reading");
+                //con.setSavepoint();
+                {
+                    final PreparedStatement stmt = con.prepareStatement(selectT1);
+                    final T1Obj t1Obj = t1Objs.get(0);
+                    stmt.setString(1, t1Obj.id);
+                    try (final ResultSet resultSet = stmt.executeQuery())
+                    {
+                        Assert.assertTrue(resultSet.next());
+                        timestamp1 = resultSet.getTimestamp(3);
+                    }
+                    logger.info(threadname +" read table 1 " + timestamp1);
+                }
+                Thread.sleep(600);
+                {
+                    final PreparedStatement stmt = con.prepareStatement(selectT2);
+                    final T2Obj t1Obj = t2Objs.get(0);
+                    stmt.setString(1, t1Obj.id);
+                    try (final ResultSet resultSet = stmt.executeQuery())
+                    {
+                        Assert.assertTrue(resultSet.next());
+                        timestamp2 = resultSet.getTimestamp(3);
+                    }
+                    logger.info(threadname +" read table 2 " + timestamp2);
+                }
+                con.commit();
+                Thread.sleep(400);
+                Assert.assertEquals(timestamp1, timestamp2);
+                {
+                    final PreparedStatement stmt = con.prepareStatement(selectT2);
+                    final T2Obj t2Obj = t2Objs.get(0);
+                    stmt.setString(1, t2Obj.id);
+                    try (final ResultSet resultSet = stmt.executeQuery())
+                    {
+                        Assert.assertTrue(resultSet.next());
+                        timestamp3 = resultSet.getTimestamp(3);
+                        logger.info(threadname +" read table 2 again " + timestamp1);
+                    }
+                }
+                con.commit();
+                final Timestamp newValue = x.get();
+                Assert.assertEquals(timestamp3, newValue);
+            }
+            catch (Exception e)
+            {
+                Assert.fail("Exception should not happen: " + e.getMessage());
+            }
+            finally
+            {
+                semaphore.release();
+            }
+        }
+    }
 }
