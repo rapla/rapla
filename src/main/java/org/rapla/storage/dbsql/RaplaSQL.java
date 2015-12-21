@@ -363,7 +363,7 @@ class LockStorage extends AbstractTableStorage
         deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
     }
 
-    public void removeLocks(Connection connection, Collection<String> ids)
+    public void removeLocks(Connection connection, Collection<String> ids) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
@@ -383,8 +383,40 @@ class LockStorage extends AbstractTableStorage
             throw new RaplaException("Could not free locks");
         }
     }
+    
+    void cleanupOldLocks(Connection connection) throws RaplaException
+    {
+        final String deleteSql = "delete from WRITE_LOCK WHERE LAST_CHANGED < ? AND LOCKID <> " + GLOBAL_LOCK + " OR LAST_CHANGED < ? AND LOCKID = "+GLOBAL_LOCK;
+        final Date now;
+        {
+            final String requestTimestampSql = "SELECT CURRENT_TIMESTAMP FROM LAST_CHANGED";
+            try(final PreparedStatement stmt = connection.prepareStatement(requestTimestampSql))
+            {
+                final ResultSet result = stmt.executeQuery();
+                result.next();
+                now = getTimestamp(result, 1);
+            }
+            catch(Exception e)
+            {
+                throw new RaplaException("Could not get current Timestamp from DB");
+            }
+        }
+        try(final PreparedStatement deleteStmt = connection.prepareStatement(deleteSql))
+        {
+            // max 60 sec wait
+            Date maxValidLockTimestamp = new Date(now.getTime() - 60000l);
+            setTimestamp(deleteStmt, 1, maxValidLockTimestamp);
+            // max 5 min wait
+            Date maxValidLockTimestampGlobalTimestamp = new Date(now.getTime() - 300000l);
+            setTimestamp(deleteStmt, 2, maxValidLockTimestampGlobalTimestamp);
+        }
+        catch(Exception e)
+        {
+            throw new RaplaException("could not delete old locks: " + e.getMessage(), e);
+        }
+    }
 
-    public void getLocks(Connection connection, Collection<String> ids)
+    public void getLocks(Connection connection, Collection<String> ids) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
@@ -451,7 +483,33 @@ class LockStorage extends AbstractTableStorage
 
     Date readLockTimestamp(Connection con) throws RaplaException
     {
-        return readLockTimestamp(con, GLOBAL_LOCK);
+        final String sql = "SELECT LAST_CHANGED FROM WRITE_LOCK ORDER BY LAST_CHANGED ASC LIMIT 1";
+        try(PreparedStatement stmt = con.prepareStatement(sql))
+        {
+            final ResultSet result = stmt.executeQuery();
+            while(result.next())
+            {
+                Date now = result.getTimestamp(1);
+                return now;
+            }
+        }
+        catch(Exception e)
+        {
+        }
+        final String tssql = "values (CURRENT_TIMESTAMP)";
+        try(PreparedStatement stmt = con.prepareStatement(tssql))
+        {
+            final ResultSet result = stmt.executeQuery();
+            while(result.next())
+            {
+                Date now = result.getTimestamp(1);
+                return now;
+            }
+        }
+        catch(Exception e2)
+        {
+        }
+        throw new RaplaException("Could not read Timestamp from DB");
     }
 
     private Date readLockTimestamp(Connection con, String lockId) throws RaplaException

@@ -682,7 +682,6 @@ public class DBOperator extends LocalAbstractCachableOperator
             final Collection<String> ids = getIds(new Collection[]{storeObjects, removeObjects, preferencePatches});
             raplaSQLOutput.getLocks(connection, ids);
             Date connectionTimestamp = raplaSQLOutput.getLastUpdated(connection);
-            raplaSQLOutput.getLastUpdated(connection);
             for (String id: removeObjects) {
                 Entity entity = cache.get(id);
                 if (entity != null)
