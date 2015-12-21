@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.rapla.components.calendarview.html.HTMLBlock;
 import org.rapla.components.util.xml.XMLWriter;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
@@ -78,13 +79,13 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         return getColorsAsHex()[0];
     }
 
-    public String toString() {
+    public String printHtml() {
         StringBuffer buf = new StringBuffer();
         String label = XMLWriter.encode(getReservationName( ));
         String timeString = getTimeString(false);
 
         if ( getContext().isAnonymous()) {
-            String anonymous = "&#160;&#160;&#160;&#160;???";
+            String anonymous = getContext().getNotVisibleString();
             if ( timeString != null) {
                 return timeString + " " + anonymous;
             } else {
@@ -152,7 +153,8 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         {
 
             buf.append( "<span class=\"tooltip\">");
-            buf.append(reservationInfo.getTooltip(getAppointment()));
+            User user = getContext().getBuildContext().getUser();
+            buf.append(reservationInfo.getTooltip(getAppointment(), user));
             buf.append( "</span>");
         }
 

@@ -536,11 +536,13 @@ public abstract class RaplaBuilder extends RaplaComponent
 		private boolean isResourceColoring;
 		private boolean isEventColoring;
         private boolean showTooltips;
+        private String notVisibleString;
 
         @SuppressWarnings("unchecked")
 		public BuildContext(RaplaBuilder builder, List<Block> blocks)
         {
         	this.blocks = blocks;
+        	this.notVisibleString = builder.getString("not_visible");
             this.raplaLocale = builder.getRaplaLocale();
             this.bResourceVisible = builder.bResourceVisible;
             this.bPersonVisible= builder.bPersonVisible;
@@ -560,6 +562,15 @@ public abstract class RaplaBuilder extends RaplaComponent
                 this.showTooltips = true;
                 getLogger().error(e.getMessage(), e);
             }
+        }
+        
+        public User getUser()
+        {
+            return user;
+        }
+        
+        public String getNotVisibleString() {
+            return notVisibleString;
         }
 
         public RaplaLocale getRaplaLocale() {
@@ -724,6 +735,10 @@ public abstract class RaplaBuilder extends RaplaComponent
 
         public boolean isAnonymous() {
         	return isAnonymous;
+        }
+        
+        public String getNotVisibleString() {
+            return buildContext.getNotVisibleString();
         }
 
     }
