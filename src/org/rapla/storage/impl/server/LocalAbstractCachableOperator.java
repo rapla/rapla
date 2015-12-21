@@ -148,8 +148,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setKey(key);
 			type.setId( key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{p->type(p)}");
-			type.getName().setName("en", "anonymous");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+			final MultiLanguageName name = type.getName();
+	        for (String lang:raplaLocale.getAvailableLanguages())
+	        {
+	            name.setName(lang, i18n.getString("not_visible"));
+	        }
 			type.setResolver( this);
 			{
                 Permission newPermission =type.newPermission();
@@ -166,7 +170,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setId( key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{p->type(p)}");
 			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-			type.getName().setName("en", "anonymous");
+			final MultiLanguageName name = type.getName();
+			for (String lang:raplaLocale.getAvailableLanguages())
+			{
+			    name.setName(lang, i18n.getString("not_visible"));
+			}
 			type.setResolver( this);
 		    {
                 Permission newPermission =type.newPermission();
