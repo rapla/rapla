@@ -210,7 +210,6 @@ public class DBOperator extends LocalAbstractCachableOperator
                  if (bSupportsTransactions)
                  {
                      connection.setAutoCommit( false );
-                     connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE);
                  }
                  else
                  {

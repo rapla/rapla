@@ -360,6 +360,7 @@ class LockStorage extends AbstractTableStorage
     {
         super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
         insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
+        deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
     }
 
     public void removeLocks(Connection connection, Collection<String> ids)
@@ -375,7 +376,7 @@ class LockStorage extends AbstractTableStorage
                 stmt.setString(1, id);
                 stmt.addBatch();
             }
-            stmt.executeQuery();
+            stmt.executeBatch();
         }
         catch(Exception e)
         {
@@ -397,7 +398,10 @@ class LockStorage extends AbstractTableStorage
                 stmt.addBatch();
             }
             stmt.executeBatch();
-            connection.commit();
+            if(connection.getMetaData().supportsTransactions())
+            {
+                connection.commit();
+            }
         }
         catch(Exception e)
         {
