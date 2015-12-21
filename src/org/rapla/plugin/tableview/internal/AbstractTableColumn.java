@@ -11,6 +11,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
@@ -25,11 +26,14 @@ abstract class AbstractTableColumn<T> implements RaplaTableColumn<T>
 {
     private final TableColumnConfig column;
     RaplaLocale raplaLocale;
+    User user;
 
-    AbstractTableColumn(TableColumnConfig column,RaplaLocale raplaLocale)
+    AbstractTableColumn(TableColumnConfig column,RaplaLocale raplaLocale, User user)
     {
         this.column = column;
         this.raplaLocale = raplaLocale;
+        this.user = user;
+
     }
 
     protected Locale getLocale()
@@ -40,6 +44,11 @@ abstract class AbstractTableColumn<T> implements RaplaTableColumn<T>
     protected RaplaLocale getRaplaLocale()
     { 
         return raplaLocale;
+    }
+    
+    public User getUser()
+    {
+        return user;
     }
 
     @Override
@@ -60,8 +69,9 @@ abstract class AbstractTableColumn<T> implements RaplaTableColumn<T>
     protected Object format(Object object) 
     {
         final Locale locale = getLocale();
+        User user = getUser();
         final String annotationName = getAnnotationName();
-        final ParsedText.EvalContext context = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(object));
+        final ParsedText.EvalContext context = new ParsedText.EvalContext(locale, annotationName, Collections.singletonList(object), user);
         final Classification classification = ParsedText.guessClassification( object);
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName);

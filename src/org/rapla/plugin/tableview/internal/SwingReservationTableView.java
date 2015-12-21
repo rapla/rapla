@@ -38,6 +38,7 @@ import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
@@ -125,8 +126,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.model = model;
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
-       	
-       	List<RaplaTableColumn<Reservation>> reservationColumnPlugins = TableConfig.loadColumns(getContainer(), "events", TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
+        User user = model.getUser();
+       	List<RaplaTableColumn<Reservation>> reservationColumnPlugins = TableConfig.loadColumns(getContainer(), "events", TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, user);
        	reservationTableModel = new ReservationTableModel( getLocale(),getI18n(), reservationColumnPlugins );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);

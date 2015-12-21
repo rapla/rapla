@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.TimeZone;
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.RaplaComponent;
@@ -35,7 +36,7 @@ import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ValidationException;
 
-public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>, ICalExport
+public class RaplaICalExport extends RaplaComponent implements RemoteMethodFactory<ICalExport>
 {
     
     public RaplaICalExport( RaplaContext context) {
@@ -43,7 +44,7 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
     }
 
     
-    public void export(String[] appointmentIds, OutputStream out ) throws RaplaException, IOException 
+    private void export(String[] appointmentIds, OutputStream out, User user ) throws RaplaException, IOException 
     {
         TimeZone timeZone = getContext().lookup( TimeZoneConverter.class).getImportExportTimeZone();
         
@@ -59,7 +60,7 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
         	Appointment app = operator.resolve( id , Appointment.class);
         	appointments.add( app );
         }
-        Calendar iCal = converter.createiCalender(appointments);
+        Calendar iCal = converter.createiCalender(appointments, user);
         if (null != iCal) {
             export(iCal, out);
         }
@@ -76,25 +77,33 @@ public class RaplaICalExport extends RaplaComponent implements RemoteMethodFacto
        
     }
     
-    @Override
-	public String export( String[] appointmentIds) throws RaplaException
+	private String export_( String[] appointmentIds, User user) throws RaplaException
     {
     	ByteArrayOutputStream out = new ByteArrayOutputStream();
     	try {
-			export(appointmentIds, out);
+			export(appointmentIds, out, user);
 		} catch (IOException e) {
 			throw new RaplaException( e.getMessage() , e);
 		}
     	return out.toString();
     }
 
-    public ICalExport createService(RemoteSession remoteSession) throws RaplaContextException {
+    public ICalExport createService(final RemoteSession remoteSession) throws RaplaContextException {
         if ( !remoteSession.isAuthentified())
         {
             RaplaSecurityException ex = new RaplaSecurityException("User not authentified for ical export");
             throw new RaplaContextException(ex.getMessage(), ex);
         }
-        return RaplaICalExport.this;
+        return new ICalExport()
+                {
+                    @Override
+                    public String export(String[] appointments) throws RaplaException
+                    {
+                        return export_(appointments, remoteSession.getUser());
+                    }
+            
+                }
+        ;
     }
 }
 

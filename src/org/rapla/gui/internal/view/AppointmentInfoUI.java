@@ -13,6 +13,7 @@
 package org.rapla.gui.internal.view;
 
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContext;
@@ -26,13 +27,13 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
         parent = new ReservationInfoUI( sm);
     }
 
-    public String getTooltip(Appointment appointment) {
+    public String getTooltip(Appointment appointment, User user) {
         Reservation reservation =  appointment.getReservation();
         StringBuffer buf = new StringBuffer();
         parent.insertModificationRow( reservation, buf );
         insertAppointmentSummary( appointment, buf );
         parent.insertClassificationTitle( reservation, buf );
-        createTable( parent.getAttributes( reservation, null, null, true),buf,false);
+        createTable( parent.getAttributes( reservation, null, user, true),buf,false);
         return buf.toString();
     }
     

@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 
 import org.rapla.RaplaMainContainer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaContext;
@@ -81,14 +82,15 @@ public class CSVExportMenu extends RaplaGUIComponent implements IdentifiableMenu
 	    
 	    Collection< ? extends RaplaTableColumn<?>> columns;
 	    List<Object> objects = new ArrayList<Object>();
+	    User user = model.getUser();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
-	    	columns = TableConfig.loadColumns(getContainer(),"events",TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
+	    	columns = TableConfig.loadColumns(getContainer(),"events",TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, user);
 		    objects.addAll(Arrays.asList( model.getReservations())); 
 	    }
 	    else
 	    {
-	        columns = TableConfig.loadColumns(getContainer(),"appointments",TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
+	        columns = TableConfig.loadColumns(getContainer(),"appointments",TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, user);
 		    final List<AppointmentBlock> blocks = model.getBlocks();
             objects.addAll( blocks); 
 	    }

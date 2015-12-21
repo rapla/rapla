@@ -34,6 +34,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentStartComparator;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -2519,18 +2520,36 @@ public class ParsedText implements Serializable
         }
         else if (object instanceof Classifiable || object instanceof Classification)
         {
+            User user = context != null ? context.user : null; 
             Classification classification;
+            boolean readable= true;
             if (object instanceof Classification)
             {
                 classification = (Classification) object;
             }
             else
             {
-                classification = (Classification) ((Classifiable) object).getClassification();
+                final Classifiable classifiable = (Classifiable) object;
+                if ( user != null)
+                {
+                    if ( classifiable instanceof Allocatable)
+                    {
+                        readable = PermissionContainer.Util.canRead((Allocatable)classifiable, user);
+                    }
+                    if ( classifiable instanceof Reservation)
+                    {
+                        readable = PermissionContainer.Util.canRead((Reservation)classifiable, user);
+                    }
+                }
+                classification = classifiable.getClassification();
+            }
+            if ( !readable)
+            {
+                return "???";
             }
             final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
-            EvalContext contextClone = new EvalContext(locale, annotationName, contextObjects, callStackDepth + 1);
+            EvalContext contextClone = new EvalContext(locale, annotationName, contextObjects, user, callStackDepth + 1);
             final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             ParsedText parsedAnnotation;
             //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());
@@ -2574,15 +2593,22 @@ public class ParsedText implements Serializable
         private String annotationName;
         private List<?> contextObjects;
         private EvalContext parent;
-
+        User user;
+        
         public EvalContext(Locale locale, String annotationName, List contextObjects)
         {
-            this(locale, annotationName, contextObjects, 0);
+            this(locale, annotationName, contextObjects, null);
         }
 
-        private EvalContext(Locale locale, String annotationName, List contextObjects, int callStackDepth)
+        public EvalContext(Locale locale, String annotationName, List contextObjects, User user)
+        {
+            this(locale, annotationName, contextObjects, user,0);
+        }
+
+        private EvalContext(Locale locale, String annotationName, List contextObjects, User user,int callStackDepth)
         {
             this.locale = locale;
+            this.user = user;
             this.callStackDepth = callStackDepth;
             this.annotationName = annotationName;
             this.contextObjects = contextObjects;
@@ -2591,6 +2617,7 @@ public class ParsedText implements Serializable
         private EvalContext(List<Object> contextObjects, EvalContext parent)
         {
             this.locale = parent.locale;
+            this.user = parent.user;
             this.callStackDepth = parent.callStackDepth + 1;
             this.annotationName = parent.annotationName;
             this.contextObjects = contextObjects;
@@ -2615,6 +2642,7 @@ public class ParsedText implements Serializable
             }
             clone.contextObjects = contextObjects;
             clone.locale = locale;
+            clone.user = user;
             clone.callStackDepth = callStackDepth;
             return clone;
         }

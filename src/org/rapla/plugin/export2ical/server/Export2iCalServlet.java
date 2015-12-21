@@ -143,7 +143,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 			final Reservation[] reserv = isAllAppointmentsSet ? getAllReservations(calModel) : calModel.getReservations();
 			Allocatable[] allocatables = calModel.getSelectedAllocatables();
 			Collection<Appointment> appointments = AppointmentImpl.getAppointments(Arrays.asList( reserv), Arrays.asList(allocatables));
-			write(response, appointments, filename, null);
+			write(response, user,appointments, filename, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -222,7 +222,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		return calModel.getReservations();
 	}
 
-	private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, final Preferences preferences) throws RaplaException, IOException {
+	private void write(final HttpServletResponse response,User user, final Collection<Appointment> appointments, String filename, final Preferences preferences) throws RaplaException, IOException {
 
 	    if (filename == null )
 	    {
@@ -238,7 +238,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 		final RaplaContext context = getContext();
 		TimeZone timezone = context.lookup( TimeZoneConverter.class).getImportExportTimeZone();
 		final Export2iCalConverter converter = new Export2iCalConverter(context,timezone, preferences);
-		final Calendar iCal = converter.createiCalender(appointments);
+		final Calendar iCal = converter.createiCalender(appointments, user);
 		final CalendarOutputter calOutputter = new CalendarOutputter();
 		final PrintWriter responseWriter = response.getWriter();
 		try {

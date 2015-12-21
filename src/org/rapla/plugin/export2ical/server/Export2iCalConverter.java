@@ -25,6 +25,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.ConfigurationException;
@@ -33,6 +34,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.storage.StorageOperator;
 
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ComponentList;
@@ -76,11 +78,13 @@ public class Export2iCalConverter extends RaplaComponent {
     TimeZoneConverter timezoneConverter;
     boolean hasLocationType;
     RaplaLocale raplaLocale;
+    EntityResolver resolver;
     
     public Export2iCalConverter(RaplaContext context, TimeZone zone, Preferences preferences) throws RaplaException {
         super(context);
         timezoneConverter = context.lookup( TimeZoneConverter.class);
         raplaLocale = context.lookup(RaplaLocale.class);
+        resolver = context.lookup(StorageOperator.class);
         calendar = raplaLocale.createCalendar();
         doExportAsMeeting = false;
         DynamicType[] dynamicTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
@@ -124,7 +128,7 @@ public class Export2iCalConverter extends RaplaComponent {
     }
 
 
-    public Calendar createiCalender(Collection<Appointment> appointments) 
+    public Calendar createiCalender(Collection<Appointment> appointments, User user) 
     {
         Calendar calendar = initiCalendar();
         addICalMethod(calendar, Method.PUBLISH);
@@ -132,7 +136,7 @@ public class Export2iCalConverter extends RaplaComponent {
         ComponentList components = calendar.getComponents();
         for (Appointment app:appointments) 
         {
-			VEvent event = createVEvent(app);
+			VEvent event = createVEvent(app, user);
 			components.add(event);
         }
         return calendar;
@@ -163,10 +167,6 @@ public class Export2iCalConverter extends RaplaComponent {
         iCalendar.getProperties().add(method);
     }
 
-    public void addVEvent(Calendar iCalendar, Appointment appointment) {
-        iCalendar.getComponents().add(createVEvent(appointment));
-    }
-
     /**
      * Erstellt anhand des &uuml;bergebenen Appointment-Objekts einen
      * iCalendar-Event.
@@ -174,10 +174,9 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment Ein Rapla Appointment.
      * @return Ein iCalendar-Event mit den Daten des Appointments.
      */
-    private VEvent createVEvent(Appointment appointment) {
+    private VEvent createVEvent(Appointment appointment, User user) {
 
         PropertyList properties = new PropertyList();
-
 
         boolean isAllDayEvent = appointment.isWholeDaysSet() ;
         addDateStampToEvent(appointment, properties);
@@ -185,18 +184,24 @@ public class Export2iCalConverter extends RaplaComponent {
         addStartDateToEvent(appointment, properties, isAllDayEvent);
         addLastModifiedDateToEvent(appointment, properties);
         addEndDateToEvent(appointment, properties, isAllDayEvent);
-        addEventNameToEvent(appointment, properties);
-        addDescriptionToEvent(appointment, properties);
+        
         addUidToEvent(appointment, properties);
-        addLocationToEvent(appointment, properties);
-        addCategories(appointment, properties);
-        addOrganizer(appointment, properties);
-        addAttendees(appointment, properties);
+        boolean canRead = RaplaComponent.canRead(appointment, user, resolver);
+        addEventNameToEvent(appointment, properties, canRead);
         addRepeatings(appointment, properties);
-
-
+        if (canRead)
+        {
+            addDescriptionToEvent(appointment, properties);
+            addLocationToEvent(appointment, properties,user);
+            addCategories(appointment, properties);
+            addOrganizer(appointment, properties);
+            addAttendees(appointment, properties,user);
+        }
+        else
+        {
+        }
         VEvent event = new VEvent(properties);
-
+        
         return event;
     }
 
@@ -240,7 +245,7 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment
      * @param properties
      */
-    private void addAttendees(Appointment appointment, PropertyList properties) {
+    private void addAttendees(Appointment appointment, PropertyList properties, User user) {
         if (!doExportAsMeeting)
             return;
 
@@ -260,7 +265,7 @@ public class Export2iCalConverter extends RaplaComponent {
                 try {
                     Attendee attendee = new Attendee(new URI(email));
                     attendee.getParameters().add(Role.REQ_PARTICIPANT);
-                    attendee.getParameters().add(new Cn(person.getName(raplaLocale.getLocale())));
+                    attendee.getParameters().add(new Cn(getResourceName(person,user)));
                     attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
                     properties.add(attendee);
                 } catch (URISyntaxException e) {
@@ -455,10 +460,11 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment
      * @param event
      */
-    private void addLocationToEvent(Appointment appointment, PropertyList properties) {
+    private void addLocationToEvent(Appointment appointment, PropertyList properties, User user) {
         Allocatable[] allocatables = appointment.getReservation().getAllocatablesFor(appointment);
         StringBuffer buffer = new StringBuffer();
         for (Allocatable alloc:allocatables) {
+            
             if ( hasLocationType)
             {
         		if (alloc.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_LOCATION) == null )
@@ -473,10 +479,23 @@ public class Export2iCalConverter extends RaplaComponent {
             if (buffer.length() > 0) {
                 buffer.append(", ");
             }
-            buffer.append(alloc.getName(raplaLocale.getLocale()));
+            buffer.append(getResourceName(alloc, user));
         }
 
         properties.add(new Location(buffer.toString()));
+    }
+
+
+    private String getResourceName(Allocatable alloc, User user)
+    {
+        if ( RaplaComponent.canRead(alloc, user, resolver))
+        {
+            return alloc.getName(raplaLocale.getLocale());
+        }
+        else
+        {
+            return getString("not_visible");
+        }
     }
 
     /**
@@ -510,17 +529,25 @@ public class Export2iCalConverter extends RaplaComponent {
      * @param appointment
      * @param event
      */
-    private void addEventNameToEvent(Appointment appointment, PropertyList properties) {
+    private void addEventNameToEvent(Appointment appointment, PropertyList properties, boolean canRead) {
         Reservation reservation = appointment.getReservation();
         final Locale locale = raplaLocale.getLocale();
-        String eventDescription = NameFormatUtil.getExportName(appointment, locale); 
-        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) == null)
+        String eventDescription;
+        if (!canRead)
         {
-            eventDescription += getAttendeeString(appointment);
+            eventDescription = getString("not_visible");
+        }
+        else
+        {
+            eventDescription = NameFormatUtil.getExportName(appointment, locale); 
+            if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) == null)
+            {
+                eventDescription += getAttendeeString(appointment);
+            }
         }
         properties.add(new Summary(eventDescription));
     }
-
+    
     private void addDescriptionToEvent(Appointment appointment, PropertyList properties) {
 
         Reservation reservation = appointment.getReservation();

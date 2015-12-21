@@ -35,6 +35,7 @@ import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -125,8 +126,8 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             container = scrollpane;
         }
         this.model = model;
-        
-        List<RaplaTableColumn<AppointmentBlock>> columnPlugins = TableConfig.loadColumns(getContainer(), "appointments", TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
+        User user = model.getUser();
+        List<RaplaTableColumn<AppointmentBlock>> columnPlugins = TableConfig.loadColumns(getContainer(), "appointments", TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN,user);
        	
        	appointmentTableModel = new AppointmentTableModel( getLocale(),getI18n(), columnPlugins );
         sorter =  SwingReservationTableView.createAndSetSorter(model, table, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION, appointmentTableModel);

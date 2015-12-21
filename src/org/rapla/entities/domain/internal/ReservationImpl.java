@@ -33,6 +33,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -182,7 +183,8 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             return "";
         }
-        EvalContext evalContext = appointment != null ? createEvalContext(locale, annotationName, appointment ) : createEvalContext(locale, annotationName, this);
+        Object contextObject = appointment != null ? appointment : this;
+        EvalContext evalContext =  createEvalContext(locale, annotationName, contextObject ) ;
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
@@ -195,14 +197,16 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             return "";
         }
-        EvalContext evalContext = block != null ? createEvalContext(locale,  annotationName, block ) : createEvalContext(locale,  annotationName, this);
+        Object contextObject = block != null ? block : this;
+        EvalContext evalContext = createEvalContext(locale,  annotationName, contextObject);
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
     
     private EvalContext createEvalContext(Locale locale, String annotationName, Object object)
     {
-        return new EvalContext(locale, annotationName, Collections.singletonList(object));
+        User user = null;
+        return new EvalContext(locale, annotationName, Collections.singletonList(object), user);
     }
     
     public Date getLastChanged() {

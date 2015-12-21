@@ -148,7 +148,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 			type.setKey(key);
 			type.setId( key);
 			type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{p->type(p)}");
-			type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+			//type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
 			final MultiLanguageName name = type.getName();
 	        for (String lang:raplaLocale.getAvailableLanguages())
 	        {

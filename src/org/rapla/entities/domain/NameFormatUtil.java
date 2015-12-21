@@ -3,6 +3,7 @@ package org.rapla.entities.domain;
 import java.util.Locale;
 
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.EntityResolver;
 
 public class NameFormatUtil
 {

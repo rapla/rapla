@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
@@ -35,8 +36,9 @@ public class ReservationTableViewPage extends TableViewPage<Reservation>
     String getCalendarHTML() throws RaplaException {
         final Date startDate = model.getStartDate();
         final Date endDate = model.getEndDate();
+        User user = model.getUser();
         final List<Reservation> reservations = Arrays.asList(model.getReservations(startDate, endDate));           
-        List<RaplaTableColumn<Reservation>> columnPlugins = TableConfig.loadColumns(getContainer(), "events", TableViewExtensionPoints.RESERVATION_TABLE_COLUMN);
+        List<RaplaTableColumn<Reservation>> columnPlugins = TableConfig.loadColumns(getContainer(), "events", TableViewExtensionPoints.RESERVATION_TABLE_COLUMN, user);
         return getCalendarHTML( columnPlugins, reservations,TableViewPlugin.EVENTS_SORTING_STRING_OPTION );
     }
 

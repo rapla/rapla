@@ -14,6 +14,7 @@ package org.rapla.plugin.tableview.internal.server;
 
 import java.util.List;
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaContext;
@@ -31,9 +32,10 @@ public class AppointmentTableViewPage extends TableViewPage<AppointmentBlock>
     }
     
     public String getCalendarHTML() throws RaplaException {
-       List<RaplaTableColumn<AppointmentBlock>> appointmentColumnPlugins = TableConfig.loadColumns(getContainer(), "appointments", TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN);
-       final List<AppointmentBlock> blocks = model.getBlocks();
-       return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
+        User user = model.getUser();
+        List<RaplaTableColumn<AppointmentBlock>> appointmentColumnPlugins = TableConfig.loadColumns(getContainer(), "appointments", TableViewExtensionPoints.APPOINTMENT_TABLE_COLUMN, user);
+        final List<AppointmentBlock> blocks = model.getBlocks();
+        return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
     }
 
     int compareTo(AppointmentBlock object1, AppointmentBlock object2) 

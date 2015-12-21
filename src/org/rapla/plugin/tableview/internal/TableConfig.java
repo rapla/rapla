@@ -16,6 +16,7 @@ import java.util.Set;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.internal.ParsedText;
@@ -281,14 +282,14 @@ public class TableConfig
 
     static final class MyTableColumn<T> extends AbstractTableColumn<T> implements  RaplaTableColumn<T>
     {
-        public MyTableColumn(TableColumnConfig column,RaplaLocale raplaLocale)
+        public MyTableColumn(TableColumnConfig column,RaplaLocale raplaLocale, User user)
         {
-           super( column, raplaLocale);
+           super( column, raplaLocale, user);
         }
         
-        public Object getValue(T reservation)
+        public Object getValue(T object)
         {
-            return format(reservation);
+            return format(object);
         }
         
         public String getHtmlValue(T object)
@@ -516,7 +517,7 @@ public class TableConfig
     }
 
     public static <T> List<RaplaTableColumn<T>> loadColumns(Container container, final String viewKey,
-            final Class<? extends RaplaTableColumn<T>> extensionPoint) throws RaplaException, RaplaContextException
+            final Class<? extends RaplaTableColumn<T>> extensionPoint, User user) throws RaplaException, RaplaContextException
     {
         List<RaplaTableColumn<T>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<T>>();
         final RaplaContext context = container.getContext();
@@ -526,7 +527,7 @@ public class TableConfig
         for ( final TableColumnConfig column: columns)
         {
             final RaplaLocale raplaLocale = context.lookup(RaplaLocale.class);
-            reservationColumnPlugins.add( new MyTableColumn<T>(column, raplaLocale));
+            reservationColumnPlugins.add( new MyTableColumn<T>(column, raplaLocale, user));
         }
         final Collection<? extends RaplaTableColumn<T>> lookupServicesFor = container.lookupServicesFor(extensionPoint);
         for (RaplaTableColumn<T>  column:lookupServicesFor)
