@@ -134,6 +134,7 @@ public final class ReservationControllerTest extends GUITestCase {
 		classification.setValue("start",startDate);
 		classification.setValue("start",new Date(startDate.getTime() + 3
 				* DateTools.MILLISECONDS_PER_DAY));
+		classification.setValue("name", "test");
 		facade.store(period);
 		Thread.sleep(500);
 	}
