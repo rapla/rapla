@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -660,12 +661,29 @@ public class DBOperator extends LocalAbstractCachableOperator
         // TODO check if still needed
         //fireStorageUpdated(result);
     }
+    
+    private Collection<String> getIds(Collection<Entity>[] collectionArray)
+    {
+        final LinkedHashSet<String> ids = new LinkedHashSet<String>();
+        for (Collection<Entity> collection : collectionArray)
+        {
+            for (Entity entity : collection)
+            {
+                ids.add(entity.getId());
+            }
+        }
+        return ids;
+    }
 
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<String> removeObjects) throws RaplaException, RaplaDBException {
         Connection connection = createConnection();
         try {
             RaplaSQL raplaSQLOutput =  new RaplaSQL(createOutputContext(cache));
-            Date connectionTimestamp =raplaSQLOutput.getLock(connection);
+            // TODO check if global lock is needed
+            final Collection<String> ids = getIds(new Collection[]{storeObjects, removeObjects, preferencePatches});
+            raplaSQLOutput.getLocks(connection, ids);
+            Date connectionTimestamp = raplaSQLOutput.getLastUpdated(connection);
+            raplaSQLOutput.getLastUpdated(connection);
             for (String id: removeObjects) {
                 Entity entity = cache.get(id);
                 if (entity != null)
@@ -675,6 +693,7 @@ public class DBOperator extends LocalAbstractCachableOperator
             }
             raplaSQLOutput.store( connection, storeObjects, connectionTimestamp);
             raplaSQLOutput.storePatches( connection, preferencePatches, connectionTimestamp);
+            raplaSQLOutput.removeLocks(connection, ids);
             if (bSupportsTransactions) {
                 getLogger().debug("Commiting");
                 connection.commit();

@@ -23,6 +23,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -334,22 +335,77 @@ class RaplaSQL {
     {
         return lockStorage.readLockTimestamp(c);
     }
-
-    public Date getLock(Connection connection)
+    
+    public void getLocks(Connection connection, Collection<String> ids)
     {
-        return lockStorage.getLock( connection);
+        lockStorage.getLocks(connection, ids);
+    }
+    
+    public Date getGlobalLock(Connection connection)
+    {
+        return lockStorage.getGlobalLock( connection);
+    }
+
+    public void removeLocks(Connection connection, Collection<String> ids)
+    {
+        lockStorage.removeLocks(connection, ids);
     }
 }
 
 class LockStorage extends AbstractTableStorage
 {
     final String GLOBAL_LOCK = "GLOBAL_LOCK";
+    private final String countLocksSql = "SELECT COUNT(LOCKID) FROM LOCKID WHERE LOCKID <> " + GLOBAL_LOCK;
     public LockStorage(Logger logger)
     {
         super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
+        insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
     }
 
-    public Date getLock(Connection con) throws RaplaException
+    public void removeLocks(Connection connection, Collection<String> ids)
+    {
+        if (ids == null || ids.isEmpty())
+        {
+            return;
+        }
+        try(final PreparedStatement stmt = connection.prepareStatement(deleteSql))
+        {
+            for(String id : ids)
+            {
+                stmt.setString(1, id);
+                stmt.addBatch();
+            }
+            stmt.executeQuery();
+        }
+        catch(Exception e)
+        {
+            throw new RaplaException("Could not free locks");
+        }
+    }
+
+    public void getLocks(Connection connection, Collection<String> ids)
+    {
+        if (ids == null || ids.isEmpty())
+        {
+            return;
+        }
+        try(final PreparedStatement stmt = connection.prepareStatement(insertSql))
+        {
+            for (String id : ids)
+            {
+                stmt.setString(1, id);
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+            connection.commit();
+        }
+        catch(Exception e)
+        {
+            throw new RaplaException("Could not get Locks");
+        }
+    }
+
+    public Date getGlobalLock(Connection con) throws RaplaException
     {
         final Date lastLocked = readLockTimestamp(con, GLOBAL_LOCK);
         final Date lockTimestamp = requestLock(con, GLOBAL_LOCK, lastLocked);
@@ -358,20 +414,28 @@ class LockStorage extends AbstractTableStorage
 
     private Date requestLock(Connection con, String lockId, Date lastLocked)
     {
-        // update moeglich
-        String updateSql = "update " + tableName + " set ";
-        try(final PreparedStatement ustmt = con.prepareStatement(updateSql))
+        try(final PreparedStatement stmt = con.prepareStatement(insertSql))
         {
-            ustmt.setString(1, lockId);
-            ustmt.executeUpdate();
+            stmt.setString(1, lockId);
+            stmt.executeQuery();
             final Date newLockTimestamp = readLockTimestamp(con, lockId);
             if(!newLockTimestamp.after(lastLocked))
             {
                 Thread.sleep(1);
+                // remove it so we can request a new
+                removeLocks(con, Collections.singletonList(GLOBAL_LOCK));
                 return requestLock(con, lockId, lastLocked);
             }
             else
             {
+                // FIXME wait for other locks to be removed
+//                try(PreparedStatement cstmt = con.prepareStatement(countLocksSql))
+//                {
+//                    while(cstmt.executeQuery())
+//                    {
+//                        
+//                    }
+//                }
                 return newLockTimestamp;
             }
         }
@@ -388,19 +452,21 @@ class LockStorage extends AbstractTableStorage
 
     private Date readLockTimestamp(Connection con, String lockId) throws RaplaException
     {
-        try(final PreparedStatement rstmt = con.prepareStatement(selectSql); )
+        try (final PreparedStatement rstmt = con.prepareStatement(selectSql))
         {
             rstmt.setString(1, lockId);
             try(final ResultSet result = rstmt.executeQuery())
             {
                 result.next();
-                Date date = getTimestamp( result, 1);
+                Date date = getTimestamp( result, 2);
                 return date;
             }
         }
         catch( Exception e)
         {
-            throw new RaplaException("Error receiving actual lock timestamp for "+lockId);
+            // TODO change to read from db
+            return new Date();
+//            throw new RaplaException("Error receiving actual lock timestamp for "+lockId);
         }
     }
 }
