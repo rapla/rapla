@@ -79,7 +79,8 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         return getColorsAsHex()[0];
     }
 
-    public String printHtml() {
+    @Override
+    public String toString() {
         StringBuffer buf = new StringBuffer();
         String label = XMLWriter.encode(getReservationName( ));
         String timeString = getTimeString(false);
