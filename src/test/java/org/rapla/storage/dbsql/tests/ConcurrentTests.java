@@ -74,9 +74,9 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
             con1.commit();
         }
         final Statement stmt = con1.createStatement();
-        stmt.addBatch("CREATE TABLE T1 (ID VARCHAR(20) PRIMARY KEY, NAME VARCHAR(20), LAST_CHANGED TIMESTAMP)");
-        stmt.addBatch("CREATE TABLE T2 (ID VARCHAR(20) PRIMARY KEY, T1_ID VARCHAR(20), LAST_CHANGED TIMESTAMP)");
-        stmt.addBatch("CREATE TABLE WRITE_LOCK (ID VARCHAR(20) PRIMARY KEY, LAST_CHANGED TIMESTAMP)");
+        stmt.addBatch("CREATE TABLE T1 (ID VARCHAR(255) PRIMARY KEY, NAME VARCHAR(255), LAST_CHANGED TIMESTAMP)");
+        stmt.addBatch("CREATE TABLE T2 (ID VARCHAR(255) PRIMARY KEY, T1_ID VARCHAR(255), LAST_CHANGED TIMESTAMP)");
+        stmt.addBatch("CREATE TABLE WRITE_LOCK (LOCKID VARCHAR(255) PRIMARY KEY, LAST_CHANGED TIMESTAMP)");
         stmt.executeBatch();
         con1.commit();
         Date lastChanged =  new Date(getNow());
@@ -370,7 +370,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
     {
         con1.setSavepoint();
         {
-            final PreparedStatement stmt = con1.prepareStatement("INSERT INTO WRITE_LOCK (ID,LAST_CHANGED) VALUES (?,CURRENT_TIMESTAMP )");
+            final PreparedStatement stmt = con1.prepareStatement("INSERT INTO WRITE_LOCK (LOCKID,LAST_CHANGED) VALUES (?,CURRENT_TIMESTAMP )");
             stmt.setString(1, "TEST");
             stmt.addBatch();
             stmt.executeBatch();
@@ -378,7 +378,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
         Thread.sleep(500);
         final Timestamp timestamp;
         {
-            final PreparedStatement stmt = con1.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ID=?");
+            final PreparedStatement stmt = con1.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE LOCKID=?");
             stmt.setString(1, "TEST");
             try (final ResultSet resultSet = stmt.executeQuery())
             {
@@ -388,7 +388,7 @@ import org.rapla.framework.logger.RaplaBootstrapLogger;
         }
         con1.commit();
         {
-            final PreparedStatement stmt = con1.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ID=?");
+            final PreparedStatement stmt = con1.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE LOCKID=?");
             stmt.setString(1, "TEST");
             try (final ResultSet resultSet = stmt.executeQuery())
             {

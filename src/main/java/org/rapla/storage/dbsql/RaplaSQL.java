@@ -355,17 +355,36 @@ class RaplaSQL {
     {
         lockStorage.removeLocks(connection, ids);
     }
+
+    public void removeGlobalLock(Connection connection)
+    {
+        lockStorage.removeLocks(connection, Collections.singleton(LockStorage.GLOBAL_LOCK));
+    }
 }
 
 class LockStorage extends AbstractTableStorage
 {
-    final String GLOBAL_LOCK = "GLOBAL_LOCK";
+    static final String GLOBAL_LOCK = "GLOBAL_LOCK";
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM LOCKID WHERE LOCKID <> " + GLOBAL_LOCK;
+    final String cleanupSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
+    final String readTimestampInclusiveLockedSql;
+    final String requestTimestampSql;
     public LockStorage(Logger logger)
     {
         super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
         insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
         deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
+        if ( isHsqldb())
+        {
+            requestTimestampSql = "VALUES(CURRENT_TIMESTAMP)";
+        }
+        else
+        {
+            requestTimestampSql = "SELECT CURRENT_TIMESTAMP";
+        }
+        readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
+
+
     }
 
     public void removeLocks(Connection connection, Collection<String> ids) throws RaplaException
@@ -391,10 +410,8 @@ class LockStorage extends AbstractTableStorage
     
     void cleanupOldLocks(Connection connection) throws RaplaException
     {
-        final String deleteSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
         final Date now;
         {
-            final String requestTimestampSql = "VALUES (CURRENT_TIMESTAMP)";
             try(final PreparedStatement stmt = connection.prepareStatement(requestTimestampSql))
             {
                 final ResultSet result = stmt.executeQuery();
@@ -406,7 +423,7 @@ class LockStorage extends AbstractTableStorage
                 throw new RaplaException("Could not get current Timestamp from DB");
             }
         }
-        try(final PreparedStatement deleteStmt = connection.prepareStatement(deleteSql))
+        try(final PreparedStatement deleteStmt = connection.prepareStatement(cleanupSql))
         {
             // max 60 sec wait
             Date maxValidLockTimestamp = new Date(now.getTime() - 60000l);
@@ -416,7 +433,7 @@ class LockStorage extends AbstractTableStorage
             deleteStmt.setTimestamp(2, new java.sql.Timestamp(maxValidLockTimestampGlobalTimestamp.getTime()));
             deleteStmt.addBatch();
             final int[] executeBatch = deleteStmt.executeBatch();
-            logger.debug("deleted logs: "+executeBatch);
+            logger.debug("deleted logs: " + executeBatch);
         }
         catch(Exception e)
         {
@@ -445,7 +462,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch(Exception e)
         {
-            throw new RaplaException("Could not get Locks");
+            throw new RaplaException("Could not get Locks", e);
         }
     }
 
@@ -461,7 +478,7 @@ class LockStorage extends AbstractTableStorage
         try(final PreparedStatement stmt = con.prepareStatement(insertSql))
         {
             stmt.setString(1, lockId);
-            stmt.executeQuery();
+            stmt.executeUpdate();
             final Date newLockTimestamp = readLockTimestamp(con, lockId);
             if(!newLockTimestamp.after(lastLocked))
             {
@@ -491,8 +508,7 @@ class LockStorage extends AbstractTableStorage
 
     Date readLockTimestamp(Connection con) throws RaplaException
     {
-        final String sql = "SELECT LAST_CHANGED FROM WRITE_LOCK UNION VALUES(CURRENT_TIMESTAMP) ORDER BY LAST_CHANGED ASC LIMIT 1";
-        try(PreparedStatement stmt = con.prepareStatement(sql))
+        try(PreparedStatement stmt = con.prepareStatement(readTimestampInclusiveLockedSql))
         {
             final ResultSet result = stmt.executeQuery();
             while(result.next())
