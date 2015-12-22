@@ -483,7 +483,7 @@ class LockStorage extends AbstractTableStorage
 
     Date readLockTimestamp(Connection con) throws RaplaException
     {
-        final String sql = "SELECT LAST_CHANGED FROM WRITE_LOCK ORDER BY LAST_CHANGED ASC LIMIT 1";
+        final String sql = "SELECT LAST_CHANGED FROM WRITE_LOCK UNION VALUES(CURRENT_TIMESTAMP) ORDER BY LAST_CHANGED ASC LIMIT 1";
         try(PreparedStatement stmt = con.prepareStatement(sql))
         {
             final ResultSet result = stmt.executeQuery();
@@ -494,19 +494,6 @@ class LockStorage extends AbstractTableStorage
             }
         }
         catch(Exception e)
-        {
-        }
-        final String tssql = "values (CURRENT_TIMESTAMP)";
-        try(PreparedStatement stmt = con.prepareStatement(tssql))
-        {
-            final ResultSet result = stmt.executeQuery();
-            while(result.next())
-            {
-                Date now = result.getTimestamp(1);
-                return now;
-            }
-        }
-        catch(Exception e2)
         {
         }
         throw new RaplaException("Could not read Timestamp from DB");
