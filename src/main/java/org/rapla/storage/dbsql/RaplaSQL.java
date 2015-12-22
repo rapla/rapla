@@ -146,7 +146,7 @@ class RaplaSQL {
     synchronized public void createAll(Connection con)
         throws SQLException,RaplaException
     {
-        Date connectionTimestamp = getDatabaseTime(con);
+        Date connectionTimestamp = getDatabaseTimestamp(con);
         lockStorage.setConnection(con, connectionTimestamp);
 		for (RaplaTypeStorage storage: stores) {
 			storage.setConnection(con, connectionTimestamp);
@@ -161,17 +161,11 @@ class RaplaSQL {
 		}
     }
 
-    synchronized private Date getDatabaseTime(Connection con)
-    {
-        //    TODO replace with database query
-        Date connectionTimestamp = new Date(System.currentTimeMillis());
-        return connectionTimestamp;
-    }
 
     synchronized public void removeAll(Connection con)
     throws SQLException
     {
-        Date connectionTimestamp = getDatabaseTime(con);
+        Date connectionTimestamp = getDatabaseTimestamp(con);
 		for (RaplaTypeStorage storage: stores) {
             storage.setConnection(con, connectionTimestamp);
             try
@@ -186,7 +180,7 @@ class RaplaSQL {
     }
 
     synchronized public void loadAll(Connection con) throws SQLException,RaplaException {
-        Date connectionTimestamp = getDatabaseTime(con);
+        Date connectionTimestamp = getDatabaseTimestamp(con);
 		for (Storage storage:stores)
 		{
 			storage.setConnection(con, connectionTimestamp);
@@ -340,7 +334,12 @@ class RaplaSQL {
     {
         return lockStorage.readLockTimestamp(c);
     }
-    
+
+    synchronized public Date getDatabaseTimestamp(Connection con)
+    {
+        return lockStorage.getDatabaseTimestamp(con);
+    }
+
     public void getLocks(Connection connection, Collection<String> ids)
     {
         lockStorage.getLocks(connection, ids);
@@ -410,19 +409,7 @@ class LockStorage extends AbstractTableStorage
     
     void cleanupOldLocks(Connection connection) throws RaplaException
     {
-        final Date now;
-        {
-            try(final PreparedStatement stmt = connection.prepareStatement(requestTimestampSql))
-            {
-                final ResultSet result = stmt.executeQuery();
-                result.next();
-                now = result.getTimestamp(1);
-            }
-            catch(Exception e)
-            {
-                throw new RaplaException("Could not get current Timestamp from DB");
-            }
-        }
+        final Date now = getDatabaseTimestamp(connection);
         try(final PreparedStatement deleteStmt = connection.prepareStatement(cleanupSql))
         {
             // max 60 sec wait
@@ -437,6 +424,24 @@ class LockStorage extends AbstractTableStorage
         {
             throw new RaplaException("could not delete old locks: " + e.getMessage(), e);
         }
+    }
+
+    Date getDatabaseTimestamp(Connection connection)
+    {
+        final Date now;
+        {
+            try(final PreparedStatement stmt = connection.prepareStatement(requestTimestampSql))
+            {
+                final ResultSet result = stmt.executeQuery();
+                result.next();
+                now = result.getTimestamp(1);
+            }
+            catch(Exception e)
+            {
+                throw new RaplaException("Could not get current Timestamp from DB");
+            }
+        }
+        return now;
     }
 
     public void getLocks(Connection connection, Collection<String> ids) throws RaplaException
@@ -1576,33 +1581,35 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	                for ( String role: patch.getRemovedEntries())
 	                {
 	                    setId(stmt, 1, userId);
-	                    setString(stmt,2,role);
-	                    stmt.addBatch();
+                        setTimestamp(stmt, 2, patch.getLastChanged());
+                        setString(stmt, 3, role);
+                        stmt.addBatch();
 	                    count++;
 	                }
 	                for ( String role: patch.keySet())
 	                {
 	                    setId(stmt, 1, userId);
-	                    setString(stmt,2,role);
-	                    stmt.addBatch();
+                        setTimestamp(stmt, 2, patch.getLastChanged());
+                        setString(stmt, 3, role);
+                        stmt.addBatch();
 	                    count++;
 	                }
 	            }
 	            else
 	            {
-	                deleteSqlWithRole = "delete from " + getTableName() + " where user_id IS null and role=?";
+	                deleteSqlWithRole = "delete from " + getTableName() + " where user_id IS null and LAST_CHANGED = ? and role=?";
                     stmt = con.prepareStatement(deleteSqlWithRole);
                     for ( String role: patch.getRemovedEntries())
                     {
-                        //setId(stmt, 1, userId);
-                        setString(stmt,1,role);
+                        setTimestamp( stmt,1, patch.getLastChanged());
+                        setString(stmt,2,role);
                         stmt.addBatch();
                         count++;
                     }
                     for ( String role: patch.keySet())
                     {
-                        //setId(stmt, 1, userId);
-                        setString(stmt,1,role);
+                        setTimestamp( stmt,1, patch.getLastChanged());
+                        setString(stmt,2,role);
                         stmt.addBatch();
                         count++;
                     }
@@ -1784,7 +1791,9 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                 	deleteNullUserPreference = true;
                 }
                 empty = false;
-            	setId( stmt,1, user);
+                setId(stmt, 1, user);
+                final Date lastChanged = preferences.getLastChanged();
+                setTimestamp( stmt, 2, lastChanged);
                 stmt.addBatch();
             }
             if ( !empty)

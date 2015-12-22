@@ -720,7 +720,7 @@ import java.util.concurrent.locks.Lock;
                 }
                 raplaSQLOutput.getLocks(connection, ids);
             }
-            Date connectionTimestamp = raplaSQLOutput.getLastUpdated(connection);
+            Date connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
             for (String id : removeObjects)
             {
                 Entity entity = cache.get(id);
