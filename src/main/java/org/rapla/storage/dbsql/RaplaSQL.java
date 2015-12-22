@@ -331,6 +331,11 @@ class RaplaSQL {
         return updateResult;
     }
 
+    public void cleanupOldLocks(Connection c)
+    {
+        lockStorage.cleanupOldLocks(c);
+    }
+    
     public Date getLastUpdated(Connection c)
     {
         return lockStorage.readLockTimestamp(c);
@@ -386,15 +391,15 @@ class LockStorage extends AbstractTableStorage
     
     void cleanupOldLocks(Connection connection) throws RaplaException
     {
-        final String deleteSql = "delete from WRITE_LOCK WHERE LAST_CHANGED < ? AND LOCKID <> " + GLOBAL_LOCK + " OR LAST_CHANGED < ? AND LOCKID = "+GLOBAL_LOCK;
+        final String deleteSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
         final Date now;
         {
-            final String requestTimestampSql = "SELECT CURRENT_TIMESTAMP FROM LAST_CHANGED";
+            final String requestTimestampSql = "VALUES (CURRENT_TIMESTAMP)";
             try(final PreparedStatement stmt = connection.prepareStatement(requestTimestampSql))
             {
                 final ResultSet result = stmt.executeQuery();
                 result.next();
-                now = getTimestamp(result, 1);
+                now = result.getTimestamp(1);
             }
             catch(Exception e)
             {
@@ -405,10 +410,13 @@ class LockStorage extends AbstractTableStorage
         {
             // max 60 sec wait
             Date maxValidLockTimestamp = new Date(now.getTime() - 60000l);
-            setTimestamp(deleteStmt, 1, maxValidLockTimestamp);
+            deleteStmt.setTimestamp(1, new java.sql.Timestamp(maxValidLockTimestamp.getTime()));
             // max 5 min wait
             Date maxValidLockTimestampGlobalTimestamp = new Date(now.getTime() - 300000l);
-            setTimestamp(deleteStmt, 2, maxValidLockTimestampGlobalTimestamp);
+            deleteStmt.setTimestamp(2, new java.sql.Timestamp(maxValidLockTimestampGlobalTimestamp.getTime()));
+            deleteStmt.addBatch();
+            final int[] executeBatch = deleteStmt.executeBatch();
+            logger.debug("deleted logs: "+executeBatch);
         }
         catch(Exception e)
         {

@@ -122,6 +122,16 @@ public class DBOperator extends LocalAbstractCachableOperator
             @Override
             public void execute() throws Exception
             {
+                try(final Connection connection = createConnection())
+                {
+                    final RaplaDefaultXMLContext context = createOutputContext(cache);
+                    new RaplaSQL(context).cleanupOldLocks(connection);
+                    connection.commit();
+                }
+                catch(Throwable t)
+                {
+                    DBOperator.this.logger.info("Could not release old locks");
+                }
                 scheduler.schedule(this, delay);
             }
         }, delay);
