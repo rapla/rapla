@@ -426,14 +426,12 @@ class LockStorage extends AbstractTableStorage
         try(final PreparedStatement deleteStmt = connection.prepareStatement(cleanupSql))
         {
             // max 60 sec wait
-            Date maxValidLockTimestamp = new Date(now.getTime() - 60000l);
-            deleteStmt.setTimestamp(1, new java.sql.Timestamp(maxValidLockTimestamp.getTime()));
+            deleteStmt.setTimestamp(1, new java.sql.Timestamp(now.getTime() - 60000l));
             // max 5 min wait
-            Date maxValidLockTimestampGlobalTimestamp = new Date(now.getTime() - 300000l);
-            deleteStmt.setTimestamp(2, new java.sql.Timestamp(maxValidLockTimestampGlobalTimestamp.getTime()));
+            deleteStmt.setTimestamp(2, new java.sql.Timestamp(now.getTime() - 300000l));
             deleteStmt.addBatch();
             final int[] executeBatch = deleteStmt.executeBatch();
-            logger.debug("deleted logs: " + executeBatch);
+            logger.debug("deleted logs: "+Arrays.toString(executeBatch));
         }
         catch(Exception e)
         {

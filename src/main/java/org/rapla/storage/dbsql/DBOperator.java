@@ -125,7 +125,8 @@ import java.util.concurrent.locks.Lock;
                 try (final Connection connection = createConnection())
                 {
                     final RaplaDefaultXMLContext context = createOutputContext(cache);
-                    new RaplaSQL(context).cleanupOldLocks(connection);
+                    final RaplaSQL raplaSQL = new RaplaSQL(context);
+                    raplaSQL.cleanupOldLocks(connection);
                     connection.commit();
                 }
                 catch (Throwable t)
