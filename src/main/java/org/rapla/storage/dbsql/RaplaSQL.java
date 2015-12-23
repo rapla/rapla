@@ -2388,17 +2388,24 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             final Date connectionTimestamp = getConnectionTimestamp();
             for (String id : allIds)
             {
-                final Entity<?> entity = cache.get(id);
+                final Entity<?> entity = entityStore.resolve(id);
                 if(entity instanceof Timestamp)
                 {
                     final Date lastChanged = ((Timestamp) entity).getLastChanged();
-                    if(!lastChanged.before(connectionTimestamp))
-                    {// we need to restore from history
-                        final HistoryEntry before = history.getBefore(id, connectionTimestamp);
-                        if(before != null)
-                        {
-                            cache.put(history.getEntity(before));
+                    if(lastChanged != null)
+                    {
+                        if (!lastChanged.before(connectionTimestamp))
+                        {// we need to restore from history
+                            final HistoryEntry before = history.getBefore(id, connectionTimestamp);
+                            if (before != null)
+                            {
+                                put(history.getEntity(before));
+                            }
                         }
+                    }
+                    else
+                    {
+                        logger.debug("Ignoring entity without timestamp " + entity);
                     }
                 }
             }
