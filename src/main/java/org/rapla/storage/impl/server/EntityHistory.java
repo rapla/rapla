@@ -62,6 +62,11 @@ public class EntityHistory
         {
             return timestamp;
         }
+        
+        public boolean isDelete()
+        {
+            return isDelete;
+        }
 
         @Override
         public String toString()

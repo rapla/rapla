@@ -66,6 +66,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
+import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
@@ -299,16 +300,31 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         {
             final Connection c = createConnection();
             final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-            Date updateStart = new Date();
-            while (!updateStart.after(lastUpdated))
-            {
-                updateStart = new Date();
-            }
             final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
             Date connectionTime = raplaSQLInput.getLastUpdated(c);
-            // FIXME update 
+            if (!connectionTime.after(lastUpdated))
+            {
+               return; 
+            }
             EntityHistory history = raplaSQLInput.update(c, lastUpdated, connectionTime);
-
+            final Collection<String> allIds = history.getAllIds();
+            // FIXME
+            final UpdateEvent updateResult = new UpdateEvent();
+            for (String id : allIds)
+            {
+                final HistoryEntry before = history.getBefore(id, connectionTime);
+                if(before.isDelete())
+                {
+                    updateResult.putRemoveId(before.getId());
+                }
+                else
+                {
+                    final Entity entity = history.getEntity(before);
+                    setResolver(Collections.singleton(entity));
+                }
+            }
+            refresh(updateResult, lastUpdated, connectionTime);
+            
             // FIXME set resolver to changes
             //setResolver(result.getChanged());
 
@@ -317,7 +333,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
 
             //result = new UpdateResult(null);
             //fireStorageUpdated(result);
-            lastUpdated = updateStart;
+            lastUpdated = connectionTime;
         }
         catch (Throwable e)
         {
