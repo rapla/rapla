@@ -198,4 +198,25 @@ public class EntityHistory
             }
         }
     }
+
+    /**
+     * Returns the entity with the given id where timestamp >= last_changed from the entity.
+     * @param id
+     * @param timestamp
+     * @return 
+     */
+    public HistoryEntry getBefore(String id, Date timestamp)
+    {
+        final long time = timestamp.getTime();
+        final List<HistoryEntry> list = map.get(id);
+        for(int i = list.size() -1; i >= 0; i--)
+        {
+            final HistoryEntry historyEntry = list.get(i);
+            if(historyEntry.getTimestamp() <= time)
+            {
+                return historyEntry;
+            }
+        }
+        return null;
+    }
 }

@@ -58,6 +58,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.server.ImportExportEntityImpl;
 import org.rapla.storage.xml.CategoryReader;
@@ -2379,6 +2380,26 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 if(supportTimestamp != null && getTimestamp(rset, 5).getTime() < supportTimestamp.getTime())
                 {
                     finishedIdsToLoad.add(rset.getString(1));
+                }
+            }
+        }
+        {
+            final Collection<String> allIds = history.getAllIds();
+            final Date connectionTimestamp = getConnectionTimestamp();
+            for (String id : allIds)
+            {
+                final Entity<?> entity = cache.get(id);
+                if(entity instanceof Timestamp)
+                {
+                    final Date lastChanged = ((Timestamp) entity).getLastChanged();
+                    if(!lastChanged.before(connectionTimestamp))
+                    {// we need to restore from history
+                        final HistoryEntry before = history.getBefore(id, connectionTimestamp);
+                        if(before != null)
+                        {
+                            cache.put(history.getEntity(before));
+                        }
+                    }
                 }
             }
         }
