@@ -12,6 +12,30 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -42,33 +66,11 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
+import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.storage.xml.RaplaXMLContextException;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
@@ -298,16 +300,31 @@ import java.util.concurrent.locks.Lock;
         {
             final Connection c = createConnection();
             final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-            Date updateStart = new Date();
-            while (!updateStart.after(lastUpdated))
-            {
-                updateStart = new Date();
-            }
             final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
             Date connectionTime = raplaSQLInput.getLastUpdated(c);
-            // FIXME update 
-            UpdateResult result = raplaSQLInput.update(c, lastUpdated, connectionTime);
-
+            if (!connectionTime.after(lastUpdated))
+            {
+               return; 
+            }
+            EntityHistory history = raplaSQLInput.update(c, lastUpdated, connectionTime);
+            final Collection<String> allIds = history.getAllIds();
+            // FIXME
+            final UpdateEvent updateResult = new UpdateEvent();
+            for (String id : allIds)
+            {
+                final HistoryEntry before = history.getBefore(id, connectionTime);
+                if(before.isDelete())
+                {
+                    updateResult.putRemoveId(before.getId());
+                }
+                else
+                {
+                    final Entity entity = history.getEntity(before);
+                    setResolver(Collections.singleton(entity));
+                }
+            }
+            refresh(updateResult, lastUpdated, connectionTime);
+            
             // FIXME set resolver to changes
             //setResolver(result.getChanged());
 
@@ -316,7 +333,7 @@ import java.util.concurrent.locks.Lock;
 
             //result = new UpdateResult(null);
             //fireStorageUpdated(result);
-            lastUpdated = updateStart;
+            lastUpdated = connectionTime;
         }
         catch (Throwable e)
         {
