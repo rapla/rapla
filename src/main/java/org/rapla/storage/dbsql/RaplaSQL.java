@@ -12,8 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -57,7 +80,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.UpdateResult;
+import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.server.ImportExportEntityImpl;
@@ -69,30 +92,8 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -308,21 +309,19 @@ class RaplaSQL {
         }
     }
 
-    public UpdateResult update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
+    public EntityHistory update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
     {
-        Date start = new Date(System.currentTimeMillis());
-        // FIXME instanciate or change return type
-        final UpdateResult updateResult = new UpdateResult(lastUpdated, start, null, null);
         history.setConnection( c, connectionTimestamp);
         try
         {
-            history.update(lastUpdated, updateResult);
+            history.update(lastUpdated);
         }
         finally
         {
             history.removeConnection();
         }
-        return updateResult;
+        EntityHistory entityHistory = history.history;
+        return entityHistory;
     }
 
     public void cleanupOldLocks(Connection c) throws SQLException
@@ -685,68 +684,68 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	    //return raplaXMLReader;
 	}
 
-    public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
-    {
-        if (!hasLastChangedTimestamp)
-        {
-            return;
-        }
-        PreparedStatement stmt = null;
-        try
-        {
-            stmt = con.prepareStatement(loadAllUpdatesSql);
-            setTimestamp(stmt, 1, lastUpdated);
-            stmt.execute();
-            final ResultSet resultSet = stmt.getResultSet();
-            int count =0;
-            if (resultSet == null)
-            {
-                return;
-            }
-            while(resultSet.next())
-            {
-                count ++;
-                final String id = resultSet.getString(1);
-                if(id == null)
-                {
-                    continue;
-                }
-
-                // deletion of entities is handled in DeleteStorage
-                final Entity<?> oldEntity = entityStore.tryResolve(id);
-                if(oldEntity != null)
-                {
-                    // TODO think about do not load if the lastChanged timestamp has not changed
-//                    int lastChangedColumn = resultSet.;
-//                    getTimestamp(resultSet, lastChangedColumn);
-                }
-                load(resultSet);
-                updateSubstores(id);
-                final Entity<?> newEntity = entityStore.tryResolve(id);
-                if(oldEntity == null)
-                {// we have a new entity
-                    updateResult.addOperation(new UpdateResult.Add(newEntity.getId(), newEntity.getRaplaType()));
-                }
-                else
-                {// or a update
-                    final Date lastChangedOld = ((Timestamp)oldEntity).getLastChanged();
-                    final Date lastChangedNew = ((Timestamp)newEntity).getLastChanged();
-                    if(lastChangedOld.before(lastChangedNew))
-                    {
-                        updateResult.addOperation(new UpdateResult.Change(newEntity.getId(), newEntity.getRaplaType()));
-                    }
-                }
-            }
-            getLogger().debug("Updated " + count);
-        }
-        finally
-        {
-            if (stmt != null)
-            {
-                stmt.close();
-            }
-        }
-    }
+//    public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
+//    {
+//        if (!hasLastChangedTimestamp)
+//        {
+//            return;
+//        }
+//        PreparedStatement stmt = null;
+//        try
+//        {
+//            stmt = con.prepareStatement(loadAllUpdatesSql);
+//            setTimestamp(stmt, 1, lastUpdated);
+//            stmt.execute();
+//            final ResultSet resultSet = stmt.getResultSet();
+//            int count =0;
+//            if (resultSet == null)
+//            {
+//                return;
+//            }
+//            while(resultSet.next())
+//            {
+//                count ++;
+//                final String id = resultSet.getString(1);
+//                if(id == null)
+//                {
+//                    continue;
+//                }
+//
+//                // deletion of entities is handled in DeleteStorage
+//                final Entity<?> oldEntity = entityStore.tryResolve(id);
+//                if(oldEntity != null)
+//                {
+//                    // TODO think about do not load if the lastChanged timestamp has not changed
+////                    int lastChangedColumn = resultSet.;
+////                    getTimestamp(resultSet, lastChangedColumn);
+//                }
+//                load(resultSet);
+//                updateSubstores(id);
+//                final Entity<?> newEntity = entityStore.tryResolve(id);
+//                if(oldEntity == null)
+//                {// we have a new entity
+//                    updateResult.addOperation(new UpdateResult.Add(newEntity.getId(), newEntity.getRaplaType()));
+//                }
+//                else
+//                {// or a update
+//                    final Date lastChangedOld = ((Timestamp)oldEntity).getLastChanged();
+//                    final Date lastChangedNew = ((Timestamp)newEntity).getLastChanged();
+//                    if(lastChangedOld.before(lastChangedNew))
+//                    {
+//                        updateResult.addOperation(new UpdateResult.Change(newEntity.getId(), newEntity.getRaplaType()));
+//                    }
+//                }
+//            }
+//            getLogger().debug("Updated " + count);
+//        }
+//        finally
+//        {
+//            if (stmt != null)
+//            {
+//                stmt.close();
+//            }
+//        }
+//    }
 
 
     //    protected StringBuilder createQueryString(final Collection<String> ids, final String startQueryString)
@@ -1126,11 +1125,6 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         return 1;
     }
 
-    @Override public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
-    {
-        super.update(lastUpdated, updateResult);
-    }
-    
     @Override
     protected void updateSubstores(String foreignId) throws SQLException
     {
@@ -1406,12 +1400,6 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 //        }
 //        // and delete them
 //        deleteIds(ids);
-    }
-
-    @Override public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
-    {
-        //
-        //super.update(lastUpdated, updateResult);
     }
 
     @Override
@@ -2336,8 +2324,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         return 1;
     }
     
-    @Override
-    public void update(Date lastUpdated, UpdateResult updateResult) throws SQLException
+    public void update(Date lastUpdated) throws SQLException
     {
         if(asDeletion)
         {
