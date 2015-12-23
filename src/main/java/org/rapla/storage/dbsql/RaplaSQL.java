@@ -364,15 +364,16 @@ class RaplaSQL {
 class LockStorage extends AbstractTableStorage
 {
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
-    private final String countLocksSql = "SELECT COUNT(LOCKID) FROM LOCKID WHERE LOCKID <> " + GLOBAL_LOCK;
-    final String cleanupSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
-    final String readTimestampInclusiveLockedSql;
-    final String requestTimestampSql;
+    private final String countLocksSql = "SELECT COUNT(LOCKID) FROM LOCKID WHERE LOCKID <> '" + GLOBAL_LOCK + "'";
+    private final String cleanupSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
+    private final String readTimestampInclusiveLockedSql;
+    private final String requestTimestampSql;
     public LockStorage(Logger logger)
     {
         super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
         insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
         deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
+        // FIXME connection in constructor
         if ( isHsqldb())
         {
             requestTimestampSql = "VALUES(CURRENT_TIMESTAMP)";
@@ -446,6 +447,7 @@ class LockStorage extends AbstractTableStorage
 
     public void getLocks(Connection connection, Collection<String> ids) throws RaplaException
     {
+        // FIXME check global lock before and after locking
         if (ids == null || ids.isEmpty())
         {
             return;
@@ -487,19 +489,31 @@ class LockStorage extends AbstractTableStorage
             {
                 Thread.sleep(1);
                 // remove it so we can request a new
-                removeLocks(con, Collections.singletonList(GLOBAL_LOCK));
+                removeLocks(con, Collections.singleton(GLOBAL_LOCK));
                 return requestLock(con, lockId, lastLocked);
             }
             else
             {
-                // FIXME wait for other locks to be removed
-//                try(PreparedStatement cstmt = con.prepareStatement(countLocksSql))
-//                {
-//                    while(cstmt.executeQuery())
-//                    {
-//                        
-//                    }
-//                }
+                if(con.getMetaData().supportsTransactions())
+                {// Commit so others see the global lock and do not get locks by their own
+                    con.commit();
+                }
+                final long startWaitingTime = System.currentTimeMillis();
+                try(PreparedStatement cstmt = con.prepareStatement(countLocksSql))
+                {
+                    final ResultSet result = cstmt.executeQuery();
+                    while(result.getInt(1) > 0)
+                    {
+                        // wait for max 30 seconds
+                        final long actualTime = System.currentTimeMillis();
+                        if((actualTime - startWaitingTime) > 30000l)
+                        {
+                            removeLocks(con, Collections.singleton(GLOBAL_LOCK));
+                            throw new RaplaException("Global lock timed out");
+                        }
+                        Thread.sleep(100);
+                    }
+                }
                 return newLockTimestamp;
             }
         }
@@ -540,9 +554,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch( Exception e)
         {
-            // TODO change to read from db
-            return new Date();
-//            throw new RaplaException("Error receiving actual lock timestamp for "+lockId);
+            throw new RaplaException("Error receiving actual lock timestamp for "+lockId);
         }
     }
 }
