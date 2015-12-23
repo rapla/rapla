@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -293,47 +294,13 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         return isConnected;
     }
 
-    final public void refresh() throws RaplaException
+    @Override
+    public void refresh() throws RaplaException
     {
         final Lock writeLock = writeLock();
-        try
+        try(Connection c = createConnection() )
         {
-            final Connection c = createConnection();
-            final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-            final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
-            Date connectionTime = raplaSQLInput.getLastUpdated(c);
-            if (!connectionTime.after(lastUpdated))
-            {
-               return; 
-            }
-            EntityHistory history = raplaSQLInput.update(c, lastUpdated, connectionTime);
-            final Collection<String> allIds = history.getAllIds();
-            // FIXME
-            final UpdateEvent updateResult = new UpdateEvent();
-            for (String id : allIds)
-            {
-                final HistoryEntry before = history.getBefore(id, connectionTime);
-                if(before.isDelete())
-                {
-                    updateResult.putRemoveId(before.getId());
-                }
-                else
-                {
-                    final Entity entity = history.getEntity(before);
-                    setResolver(Collections.singleton(entity));
-                }
-            }
-            refresh(updateResult, lastUpdated, connectionTime);
-            
-            // FIXME set resolver to changes
-            //setResolver(result.getChanged());
-
-            // TODO check if still needed
-            //fireStorageUpdated(result);
-
-            //result = new UpdateResult(null);
-            //fireStorageUpdated(result);
-            lastUpdated = connectionTime;
+            refreshWithoutLock(c);
         }
         catch (Throwable e)
         {
@@ -343,6 +310,40 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         {
             unlock(writeLock);
         }
+    }
+
+    private void refreshWithoutLock(Connection c) throws SQLException
+    {
+        final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+        final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
+        Date connectionTime = raplaSQLInput.getLastUpdated(c);
+        if (!connectionTime.after(lastUpdated))
+        {
+            return;
+        }
+        EntityHistory history = raplaSQLInput.update(c, lastUpdated, connectionTime);
+        final Collection<String> allIds = history.getAllIds();
+        Collection<Entity> toStore = new LinkedHashSet<Entity>();
+        Set<String> toRemove = new HashSet<>();
+        List<PreferencePatch> patches = new ArrayList<>();
+        // FIXME
+        for (String id : allIds)
+        {
+            final HistoryEntry before = history.getBefore(id, connectionTime);
+            if(before.isDelete())
+            {
+                toRemove.add( before.getId());
+            }
+            else
+            {
+                final Entity entity = history.getEntity(before);
+                setResolver(Collections.singleton(entity));
+                toStore.add( entity);
+            }
+        }
+        refresh( lastUpdated, connectionTime,toStore, patches, toRemove);
+        lastUpdated = connectionTime;
+        return;
     }
 
     synchronized public void disconnect() throws RaplaException
@@ -679,7 +680,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
 
     public void dispatch(UpdateEvent evt) throws RaplaException
     {
-        UpdateResult result;
         Lock writeLock = writeLock();
         try
         {
@@ -690,9 +690,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             Collection<String> removeObjects = evt.getRemoveIds();
             dbStore(storeObjects, preferencePatches, removeObjects);
-            // think about refresh?
-            Date until = lastUpdated;
-            result = super.refresh(evt, since, until);
         }
         finally
         {
@@ -710,16 +707,16 @@ import org.rapla.storage.xml.RaplaXMLContextException;
             return;
         }
         Connection connection = createConnection();
+        RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
+        final LinkedHashSet<String> ids = new LinkedHashSet<String>();
+        for (Entity entity : storeObjects)
+        {
+            ids.add(entity.getId());
+        }
+        ids.addAll( removeObjects);
+        final boolean needsGlobalLock = containsDynamicType(ids) ;
         try
         {
-            RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
-            final LinkedHashSet<String> ids = new LinkedHashSet<String>();
-            for (Entity entity : storeObjects)
-            {
-                ids.add(entity.getId());
-            }
-            ids.addAll( removeObjects);
-            final boolean needsGlobalLock = containsDynamicType(ids) ;
             if ( needsGlobalLock)
             {
                 raplaSQLOutput.getGlobalLock(connection);
@@ -748,19 +745,12 @@ import org.rapla.storage.xml.RaplaXMLContextException;
             }
             raplaSQLOutput.store(connection, storeObjects, connectionTimestamp);
             raplaSQLOutput.storePatches(connection, preferencePatches, connectionTimestamp);
-            if ( needsGlobalLock)
-            {
-                raplaSQLOutput.removeGlobalLock(connection);
-            }
-            else
-            {
-                raplaSQLOutput.removeLocks(connection, ids);
-            }
             if (bSupportsTransactions)
             {
                 getLogger().debug("Commiting");
                 connection.commit();
             }
+            refreshWithoutLock(connection);
         }
         catch (Exception ex)
         {
@@ -790,9 +780,23 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         }
         finally
         {
+            try
+            {
+                if (needsGlobalLock)
+                {
+                    raplaSQLOutput.removeGlobalLock(connection);
+                }
+                else
+                {
+                    raplaSQLOutput.removeLocks(connection, ids);
+                }
+            }
+            catch (Exception ex) {
+                getLogger().error("Could noe remove locks. They will be removed during next cleanup. ", ex);
+            }
             close(connection);
         }
-        refresh();
+
     }
 
     private boolean containsDynamicType(Set<String> ids)

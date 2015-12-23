@@ -115,6 +115,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -1579,10 +1580,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return set;
     }
 
-    protected UpdateResult refresh(UpdateEvent evt, Date since, Date until) throws RaplaException
+    protected UpdateResult refresh(Date since, Date until, UpdateEvent evt) throws RaplaException
+    {
+        final Collection<String> removeIds = evt.getRemoveIds();
+        final List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+        final Collection<Entity> storeObjects = evt.getStoreObjects();
+        return refresh(since, until, storeObjects, preferencePatches, removeIds);
+    }
+    protected UpdateResult refresh(Date since, Date until, Collection<Entity> storeObjects, Collection<PreferencePatch> preferencePatches,
+            Collection<String> removedIds) throws RaplaException
     {
 
-        UpdateResult update = super.update(evt, since, until);
+        UpdateResult update = super.update( since, until, storeObjects, preferencePatches, removedIds);
         updateIndizes(update);
         processPermissionGroups();
         return update;

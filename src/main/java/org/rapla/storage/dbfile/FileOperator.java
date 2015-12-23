@@ -401,7 +401,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             Date until = getCurrentTimestamp();
             // call of update must be first to update the cache.
             // then saveData() saves all the data in the cache
-            result = refresh(evt, since, until);
+            result = refresh( since, until, evt);
             saveData(cache, null, includeIds);
             lastUpdated = until;
         }

@@ -566,12 +566,13 @@ public abstract class AbstractCachableOperator implements StorageOperator {
         return resolver.tryResolve(id, entityClass);
     }
 
-	/** Writes the UpdateEvent in the cache */
-	final protected UpdateResult update(final UpdateEvent evt, Date since,Date until) throws RaplaException {
+	final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
+			Collection<String> removedIds)
+	{
 		HashMap<String,Entity> oldEntities = new HashMap<String,Entity>();
 		// First make a copy of the old entities
-		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(evt.getStoreObjects());
-		for (Entity entity : storeObjects) 
+		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(storeObjects1);
+		for (Entity entity : storeObjects)
 		{
 			Entity persistantEntity = findPersistant(entity);
 			if ( persistantEntity == null)
@@ -584,7 +585,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				getLogger().debug("Storing old: " + entity);
 			}
 
-			if ( persistantEntity instanceof Appointment  || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
+			if ( persistantEntity instanceof Appointment || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
 			{
 				throw new RaplaException( persistantEntity.getRaplaType() + " can only be stored via parent entity ");
 				// we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
@@ -596,7 +597,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			}
 
 		}
-		Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
 		for ( PreferencePatch patch:preferencePatches)
 		{
 		    String userId = patch.getUserId();
@@ -615,7 +615,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
             storeObjects.add( clone);
 
 		}
-		List<Entity>updatedEntities = new ArrayList<Entity>();
+		List<Entity> updatedEntities = new ArrayList<Entity>();
 		// Then update the new entities
 		for (Entity entity : storeObjects) {
 			Entity persistant = findPersistant(entity);
@@ -633,9 +633,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				}
 			}
 			cache.put(entity);
-			updatedEntities.add(entity);	
+			updatedEntities.add(entity);
 		}
-		Collection<String> removedIds = evt.getRemoveIds();
 		Collection<ReferenceInfo> toRemove = new HashSet<ReferenceInfo>();
 		for (String id: removedIds) {
             Entity persistantVersion = cache.tryResolve(id );
@@ -644,22 +643,21 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			    oldEntities.put(id, persistantVersion);
 			    toRemove.add( new ReferenceInfo(id, persistantVersion.getRaplaType().getTypeClass()));
 			}
-			else if ( ConflictImpl.isConflictId( id ))
+			else if ( ConflictImpl.isConflictId(id))
 			{
 			    toRemove.add( new ReferenceInfo(id, Conflict.class) );
 			}
 		}
-//		Collection<ConflictImpl> removedConflicts = evt.getRemoveConflicts();
-//		for (Conflict conflict: removedConflicts)
-//		{
-//	           toRemove.add( conflict );
-//		}
+		//		Collection<ConflictImpl> removedConflicts = evt.getRemoveConflicts();
+		//		for (Conflict conflict: removedConflicts)
+		//		{
+		//	           toRemove.add( conflict );
+		//		}
 		setResolver(updatedEntities);
 		return createUpdateResult(oldEntities, updatedEntities, toRemove,  since, until);
 	}
 
-
-    protected Entity findPersistant(Entity entity) {
+	protected Entity findPersistant(Entity entity) {
         @SuppressWarnings("unchecked")
         Class<? extends Entity> typeClass = entity.getRaplaType().getTypeClass();
         Entity persistantEntity = cache.tryResolve(entity.getId(), typeClass);

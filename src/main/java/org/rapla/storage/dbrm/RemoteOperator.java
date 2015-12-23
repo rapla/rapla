@@ -58,6 +58,7 @@ import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.jsonrpc.common.VoidResult;
+import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
@@ -1042,7 +1043,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	    Lock writeLock = writeLock();
     	    try
     	    {
-    	        result = update(evt, since, until);
+                final Collection<Entity> storeObjects1 = evt.getStoreObjects();
+                Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+                Collection<String> removedIds = evt.getRemoveIds();
+    	        result = update( since, until, storeObjects1, preferencePatches, removedIds);
     	    }
     	    finally
     	    {
