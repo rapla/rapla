@@ -24,3 +24,4 @@ src/main/main.iml
 src/test/test.iml
 custom/target/
 parent/target/
+/.apt_generated/
