@@ -97,6 +97,7 @@ import java.util.TreeMap;
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
     private final Logger logger;
+    private final HistoryStorage history;
     RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
     LockStorage lockStorage;
@@ -118,7 +119,8 @@ class RaplaSQL {
 		stores.add(appointmentStorage);
 		stores.add(new ConflictStorage( context));
 		//stores.add(new DeleteStorage( context));
-        stores.add(new HistoryStorage( context, false));
+        history = new HistoryStorage( context, false);
+        stores.add(history);
         stores.add(new HistoryStorage( context, true));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
@@ -311,17 +313,14 @@ class RaplaSQL {
         Date start = new Date(System.currentTimeMillis());
         // FIXME instanciate or change return type
         final UpdateResult updateResult = new UpdateResult(lastUpdated, start, null, null);
-        for (RaplaTypeStorage raplaTypeStorage : stores)
+        history.setConnection( c, connectionTimestamp);
+        try
         {
-            raplaTypeStorage.setConnection( c, connectionTimestamp);
-            try
-            {
-                raplaTypeStorage.update(lastUpdated, updateResult);
-            }
-            finally
-            {
-                raplaTypeStorage.removeConnection();
-            }
+            history.update(lastUpdated, updateResult);
+        }
+        finally
+        {
+            history.removeConnection();
         }
         return updateResult;
     }
@@ -2427,7 +2426,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             @SuppressWarnings({ "rawtypes", "unchecked" })
             final Class<? extends Entity> entityClass = (Class<? extends Entity>) Class.forName(className);
             history.addHistoryEntry(id, json, entityClass, lastChanged, isDelete != null && isDelete == 1);
-
         }
         catch (ClassNotFoundException e)
         {
