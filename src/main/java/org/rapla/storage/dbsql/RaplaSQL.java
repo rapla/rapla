@@ -2177,6 +2177,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     private Gson gson;
     private final Date supportTimestamp;
     private final boolean asDeletion;
+    private final String loadAllUpdatesSql;
 
     HistoryStorage(RaplaXMLContext context, boolean asDeletion) throws RaplaException
     {

@@ -39,7 +39,6 @@ public class AbstractTableStorage implements TableStorage
 	protected String selectSql;
 	protected String deleteAllSql;
 	protected String containsSql;
-	protected String loadAllUpdatesSql;
 	protected String selectUpdateSql;
 	protected String idName;
 	private Calendar datetimeCal;
@@ -65,7 +64,6 @@ public class AbstractTableStorage implements TableStorage
 			getLogger().debug(selectSql);
 			getLogger().debug(deleteAllSql);
 			getLogger().debug(containsSql);
-			getLogger().debug(loadAllUpdatesSql);
 		}
 	}
 
@@ -541,7 +539,6 @@ public class AbstractTableStorage implements TableStorage
 		String valueString = " (" + getEntryList(entries) + ")";
 		insertSql = "insert into " + table + valueString + " values (" + getMarkerList(entries.size()) + ")";
 		deleteAllSql = "delete from " + table;
-		loadAllUpdatesSql = hasLastChangedTimestamp ? selectSql + " where LAST_CHANGED > ? " : null;
 		//searchForIdSql = "select id from " + table + " where id = ?";
 	}
 
