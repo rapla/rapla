@@ -325,34 +325,82 @@ class RaplaSQL {
         return updateResult;
     }
 
-    public void cleanupOldLocks(Connection c)
+    public void cleanupOldLocks(Connection c) throws SQLException
     {
-        lockStorage.cleanupOldLocks(c);
+        try
+        {
+            lockStorage.setConnection(c, null);
+            lockStorage.cleanupOldLocks(c);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
     }
     
-    public Date getLastUpdated(Connection c)
+    public Date getLastUpdated(Connection c) throws SQLException
     {
-        return lockStorage.readLockTimestamp(c);
+        try
+        {
+            lockStorage.setConnection(c, null);
+            return lockStorage.readLockTimestamp(c);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
     }
 
-    synchronized public Date getDatabaseTimestamp(Connection con)
+    synchronized public Date getDatabaseTimestamp(Connection con) throws SQLException
     {
-        return lockStorage.getDatabaseTimestamp(con);
+        try
+        {
+            lockStorage.setConnection(con, null);
+            return lockStorage.getDatabaseTimestamp(con);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
     }
 
-    public void getLocks(Connection connection, Collection<String> ids)
+    public void getLocks(Connection connection, Collection<String> ids) throws SQLException
     {
-        lockStorage.getLocks(connection, ids);
+        try
+        {
+            lockStorage.setConnection(connection, null);
+            lockStorage.getLocks(connection, ids);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
     }
     
-    public Date getGlobalLock(Connection connection)
+    public Date getGlobalLock(Connection connection) throws SQLException
     {
-        return lockStorage.getGlobalLock( connection);
+        try
+        {
+            lockStorage.setConnection(connection, null);
+            return lockStorage.getGlobalLock( connection);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
     }
 
-    public void removeLocks(Connection connection, Collection<String> ids)
+    public void removeLocks(Connection connection, Collection<String> ids) throws SQLException
     {
-        lockStorage.removeLocks(connection, ids);
+        try
+        {
+            lockStorage.setConnection(connection, null);
+            lockStorage.removeLocks(connection, ids);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
     }
 
     public void removeGlobalLock(Connection connection)
@@ -366,14 +414,19 @@ class LockStorage extends AbstractTableStorage
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM LOCKID WHERE LOCKID <> '" + GLOBAL_LOCK + "'";
     private final String cleanupSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
-    private final String readTimestampInclusiveLockedSql;
-    private final String requestTimestampSql;
+    private String readTimestampInclusiveLockedSql;
+    private String requestTimestampSql;
     public LockStorage(Logger logger)
     {
         super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
         insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
         deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
-        // FIXME connection in constructor
+    }
+    
+    @Override
+    public void setConnection(Connection con, Date connectionTimestamp) throws SQLException
+    {
+        super.setConnection(con, connectionTimestamp);
         if ( isHsqldb())
         {
             requestTimestampSql = "VALUES(CURRENT_TIMESTAMP)";
@@ -383,8 +436,6 @@ class LockStorage extends AbstractTableStorage
             requestTimestampSql = "SELECT CURRENT_TIMESTAMP";
         }
         readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
-
-
     }
 
     public void removeLocks(Connection connection, Collection<String> ids) throws RaplaException
