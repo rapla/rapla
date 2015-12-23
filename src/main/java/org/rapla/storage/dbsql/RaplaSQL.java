@@ -288,7 +288,7 @@ class RaplaSQL {
 		}
 	}
 
-    @NotNull public List<TableStorage> getTableStorages()
+    private List<TableStorage> getTableStorages()
     {
         final List<TableStorage> storesWithChildren = new ArrayList<>();
         storesWithChildren.addAll(getStoresWithChildren());
@@ -649,12 +649,11 @@ class LockStorage extends AbstractTableStorage
 }
 abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	RaplaType raplaType;
-    RaplaNonValidatedInput parser;
 
 	RaplaTypeStorage( RaplaXMLContext context, RaplaType raplaType, String tableName, String[] entries) throws RaplaException {
 		super( context,tableName, entries );
 		this.raplaType = raplaType;
-        parser = context.lookup(RaplaNonValidatedInput.class);
+
 	}
     boolean canStore(Entity entity) {
     	return entity.getRaplaType() == raplaType;
@@ -684,7 +683,8 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	    if ( xml== null ||  xml.trim().length() <= 10) {
 	        throw new RaplaException("Can't load empty xml"  );
 	    }
-	    String xmlWithNamespaces = RaplaXMLReader.wrapRaplaDataTag(xml); 
+	    String xmlWithNamespaces = RaplaXMLReader.wrapRaplaDataTag(xml);
+        RaplaNonValidatedInput parser = context.lookup(RaplaNonValidatedInput.class);
 		parser.read(xmlWithNamespaces, raplaXMLReader, logger);
 	    //return raplaXMLReader;
 	}

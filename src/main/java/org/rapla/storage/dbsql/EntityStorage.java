@@ -60,9 +60,11 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
     protected final EntityHistory history;
     protected Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
 	private int lastParameterIndex;
+    RaplaXMLContext context;
 
 	protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
 		super(table,context.lookup(Logger.class), entries);
+        this.context = context;
         if ( context.has( EntityStore.class))
         {
             this.entityStore =  context.lookup( EntityStore.class);
