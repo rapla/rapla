@@ -19,36 +19,27 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
-import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
-import org.rapla.storage.xml.CategoryReader;
-import org.rapla.storage.xml.PreferenceReader;
-import org.rapla.storage.xml.PreferenceWriter;
 import org.rapla.storage.xml.RaplaXMLContext;
-import org.rapla.storage.xml.RaplaXMLContextException;
-import org.rapla.storage.xml.RaplaXMLReader;
-import org.rapla.storage.xml.RaplaXMLWriter;
 
 abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage implements Storage<T> {
 	//String searchForIdSql;
@@ -62,8 +53,11 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 	private int lastParameterIndex;
     RaplaXMLContext context;
 
-	protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
-		super(table,context.lookup(Logger.class), entries);
+    protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
+        this(context,table,entries, Arrays.asList( entries).contains("LAST_CHANGED"));
+    }
+    protected EntityStorage( RaplaXMLContext context, String table,String[] entries, boolean checkLastChanged) throws RaplaException {
+		super(table,context.lookup(Logger.class), entries, checkLastChanged);
         this.context = context;
         if ( context.has( EntityStore.class))
         {
@@ -324,7 +318,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
             return;
         }
         deleteFromSubStores(ids);
-        if(hasLastChangedTimestamp)
+        if(checkLastChanged)
         {
             PreparedStatement stmt = null;
             try

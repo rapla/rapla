@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
@@ -21,41 +22,48 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 
-public class SaveableToggleAction extends RaplaAction {
-	
-   TypedComponentRole<Boolean> configEntry;
-   String name;
+public class SaveableToggleAction extends RaplaAction
+{
+
+    TypedComponentRole<Boolean> configEntry;
+    String name;
     private final DialogUiFactoryInterface dialogUiFactory;
-   
-   public SaveableToggleAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,String name,TypedComponentRole<Boolean> configEntry, DialogUiFactoryInterface dialogUiFactory)  
-   {
+
+    public SaveableToggleAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String name,
+            TypedComponentRole<Boolean> configEntry, DialogUiFactoryInterface dialogUiFactory)
+    {
         super(facade, i18n, raplaLocale, logger);
         this.name = name;
         this.dialogUiFactory = dialogUiFactory;
-        putValue( NAME, getString( name));
+        putValue(NAME, getString(name));
         this.configEntry = configEntry;
         //putValue(SMALL_ICON,getIcon("icon.unchecked"));
     }
-   
+
     public String getName()
     {
         return name;
     }
-   
-   public void actionPerformed() {
- 	   	if ( isModifyPreferencesAllowed())
- 	   	{
- 	   	    try {
- 	                Preferences prefs = this.newEditablePreferences();
- 	               boolean newSelected = !prefs.getEntryAsBoolean(configEntry, false);
- 	                prefs.putEntry( configEntry, newSelected);
- 	                getModification().store( prefs);
- 	            } catch (Exception ex) {
- 	               dialogUiFactory.showException(  ex, new SwingPopupContext(null, null) );
- 	                return;
- 	            }
- 	   }
- 	}
+
+    public void actionPerformed()
+    {
+        if (isModifyPreferencesAllowed())
+        {
+            try
+            {
+                Preferences prefs = this.newEditablePreferences();
+                final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
+                boolean newSelected = !oldEntry;
+                prefs.putEntry(configEntry, newSelected);
+                getModification().store(prefs);
+            }
+            catch (Exception ex)
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(null, null));
+                return;
+            }
+        }
+    }
 
     public TypedComponentRole<Boolean> getConfigEntry()
     {

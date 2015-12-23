@@ -29,7 +29,7 @@ public class AbstractTableStorage implements TableStorage
 {
 	/** first paramter is 1 */
     protected final String tableName;
-	protected final boolean hasLastChangedTimestamp;
+	protected final boolean checkLastChanged;
 	protected Connection con;
 	protected Logger logger;
 	private String dbProductName = "";
@@ -45,7 +45,7 @@ public class AbstractTableStorage implements TableStorage
 	private Date connectionTimestamp;
 
 
-	public AbstractTableStorage(String table, Logger logger, String[] entries)
+	public AbstractTableStorage(String table, Logger logger, String[] entries,boolean checkLastChanged)
 	{
 		tableName = table;
 		this.logger = logger;
@@ -55,7 +55,7 @@ public class AbstractTableStorage implements TableStorage
 			columns.put( col.getName(), col);
 		}
 
-		this.hasLastChangedTimestamp = columns.keySet().contains("LAST_CHANGED");
+		this.checkLastChanged = checkLastChanged;//
 		datetimeCal =Calendar.getInstance( getSystemTimeZone());
 		createSQL(columns.values());
 		if (getLogger().isDebugEnabled()) {
@@ -534,7 +534,7 @@ public class AbstractTableStorage implements TableStorage
         String table = tableName;
 		selectSql = "select " + getEntryList(entries) + " from " + table ;
         containsSql = "select count(" + idName + ") from " + table + " where " + idName + "= ?";
-        deleteSql = "delete from " + table + " where " + idName + "= ?" + (hasLastChangedTimestamp ? " AND LAST_CHANGED = ?" : "");
+        deleteSql = "delete from " + table + " where " + idName + "= ?" + (checkLastChanged ? " AND LAST_CHANGED = ?" : "");
 		selectUpdateSql = "SELECT " + getEntryList(entries) + " from " + tableName + " where " + idName + " = ?";
 		String valueString = " (" + getEntryList(entries) + ")";
 		insertSql = "insert into " + table + valueString + " values (" + getMarkerList(entries.size()) + ")";

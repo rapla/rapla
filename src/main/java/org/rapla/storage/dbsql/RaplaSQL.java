@@ -425,7 +425,7 @@ class LockStorage extends AbstractTableStorage
     private String requestTimestampSql;
     public LockStorage(Logger logger)
     {
-        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"});
+        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"}, false);
         insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
         deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
         selectSql += " WHERE LOCKID = ?";
@@ -648,8 +648,12 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	RaplaTypeStorage( RaplaXMLContext context, RaplaType raplaType, String tableName, String[] entries) throws RaplaException {
 		super( context,tableName, entries );
 		this.raplaType = raplaType;
-
 	}
+
+    RaplaTypeStorage( RaplaXMLContext context, RaplaType raplaType, String tableName, String[] entries, boolean checkLastChanged) throws RaplaException {
+        super( context,tableName, entries, checkLastChanged );
+        this.raplaType = raplaType;
+    }
     boolean canStore(Entity entity) {
     	return entity.getRaplaType() == raplaType;
     }
@@ -1637,7 +1641,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 {
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Preferences.TYPE,"PREFERENCE",
-	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"});
+	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"}, false);
     }
 
     @Override
@@ -1665,35 +1669,35 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	                for ( String role: patch.getRemovedEntries())
 	                {
 	                    setId(stmt, 1, userId);
-                        setTimestamp(stmt, 2, patch.getLastChanged());
-                        setString(stmt, 3, role);
+                        //setTimestamp(stmt, 2, patch.getLastChanged());
+                        setString(stmt, 2, role);
                         stmt.addBatch();
 	                    count++;
 	                }
 	                for ( String role: patch.keySet())
 	                {
 	                    setId(stmt, 1, userId);
-                        setTimestamp(stmt, 2, patch.getLastChanged());
-                        setString(stmt, 3, role);
+                        //setTimestamp(stmt, 2, patch.getLastChanged());
+                        setString(stmt, 2, role);
                         stmt.addBatch();
 	                    count++;
 	                }
 	            }
 	            else
 	            {
-	                deleteSqlWithRole = "delete from " + getTableName() + " where user_id IS null and LAST_CHANGED = ? and role=?";
+	                deleteSqlWithRole = "delete from " + getTableName() + " where user_id IS null and role=?";
                     stmt = con.prepareStatement(deleteSqlWithRole);
                     for ( String role: patch.getRemovedEntries())
                     {
-                        setTimestamp( stmt,1, patch.getLastChanged());
-                        setString(stmt,2,role);
+                        //setTimestamp( stmt,1, patch.getLastChanged());
+                        setString(stmt,1,role);
                         stmt.addBatch();
                         count++;
                     }
                     for ( String role: patch.keySet())
                     {
-                        setTimestamp( stmt,1, patch.getLastChanged());
-                        setString(stmt,2,role);
+                        //setTimestamp( stmt,1, patch.getLastChanged());
+                        setString(stmt,1,role);
                         stmt.addBatch();
                         count++;
                     }
@@ -1796,7 +1800,6 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         setString(stmt, 3, entryString);
         setText(stmt, 4, xml);
         setTimestamp( stmt,5, lastChanged);
-
         stmt.addBatch();
     }
 
@@ -2296,7 +2299,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     private boolean isSupportedEntity(Entity entity)
     {
         return (entity instanceof Allocatable) || (entity instanceof DynamicType) || (entity instanceof Reservation) || (entity instanceof User)
-                || (entity instanceof Category) || (entity instanceof Preferences);
+                || (entity instanceof Category);
     }
     
     @Override

@@ -325,7 +325,8 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         final Collection<String> allIds = history.getAllIds();
         Collection<Entity> toStore = new LinkedHashSet<Entity>();
         Set<String> toRemove = new HashSet<>();
-        List<PreferencePatch> patches = new ArrayList<>();
+        List<PreferencePatch> patches = new ArrayList<PreferencePatch>();
+        //raplaSQLInput.getPatches( );
         // FIXME
         for (String id : allIds)
         {

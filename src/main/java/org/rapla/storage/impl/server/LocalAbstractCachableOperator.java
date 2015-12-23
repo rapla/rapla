@@ -1192,12 +1192,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    /*
     @Override public Collection<ReferenceInfo> getDeletedEntities(User user, final Date timestamp) throws RaplaException
     {
         boolean isDelete = true;
         Collection<ReferenceInfo> result = getEntities(user, timestamp, isDelete);
         return result;
     }
+    */
 
     private boolean isAffected(DeleteUpdateEntry entry, User user)
     {
@@ -1380,6 +1382,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
+    /*
     @Override public Collection<Entity> getUpdatedEntities(final User user, final Date timestamp) throws RaplaException
     {
         boolean isDelete = false;
@@ -1413,6 +1416,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         return result;
     }
+    */
 
     private Collection<ReferenceInfo> getEntities(User user, final Date timestamp, boolean isDelete) throws RaplaException
     {
