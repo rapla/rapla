@@ -78,6 +78,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
@@ -85,8 +86,11 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.server.ImportExportEntityImpl;
 import org.rapla.storage.xml.CategoryReader;
+import org.rapla.storage.xml.DynamicTypeReader;
 import org.rapla.storage.xml.PreferenceReader;
+import org.rapla.storage.xml.PreferenceWriter;
 import org.rapla.storage.xml.RaplaXMLContext;
+import org.rapla.storage.xml.RaplaXMLContextException;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
@@ -645,10 +649,12 @@ class LockStorage extends AbstractTableStorage
 }
 abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	RaplaType raplaType;
+    RaplaNonValidatedInput parser;
 
 	RaplaTypeStorage( RaplaXMLContext context, RaplaType raplaType, String tableName, String[] entries) throws RaplaException {
 		super( context,tableName, entries );
 		this.raplaType = raplaType;
+        parser = context.lookup(RaplaNonValidatedInput.class);
 	}
     boolean canStore(Entity entity) {
     	return entity.getRaplaType() == raplaType;
@@ -660,14 +666,13 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
     
     abstract void insertAll() throws SQLException,RaplaException;
 
-    protected String getXML(RaplaObject type) throws RaplaException {
-		RaplaXMLWriter dynamicTypeWriter = getWriterFor( type.getRaplaType());
+    protected String getXML(RaplaXMLWriter writer,RaplaObject raplaObject) throws RaplaException {
 		StringWriter stringWriter = new StringWriter();
 	    BufferedWriter bufferedWriter = new BufferedWriter(stringWriter);
-	    dynamicTypeWriter.setWriter( bufferedWriter );
-	    dynamicTypeWriter.setSQL( true );
+	    writer.setWriter(bufferedWriter);
+	    writer.setSQL(true);
 	    try {
-	        dynamicTypeWriter.writeObject(type);
+	        writer.writeObject(raplaObject);
 	        bufferedWriter.flush();
 	    } catch (IOException ex) {
 	        throw new RaplaException( ex);
@@ -675,15 +680,13 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	    return stringWriter.getBuffer().toString();
 	}
 
-	protected RaplaXMLReader processXML(RaplaType type, String xml) throws RaplaException {
-	    RaplaXMLReader reader = getReaderFor( type);
+    protected void processXML(RaplaXMLReader raplaXMLReader, String xml) throws RaplaException {
 	    if ( xml== null ||  xml.trim().length() <= 10) {
-	        throw new RaplaException("Can't load " + type);
+	        throw new RaplaException("Can't load empty xml"  );
 	    }
 	    String xmlWithNamespaces = RaplaXMLReader.wrapRaplaDataTag(xml); 
-	    RaplaNonValidatedInput parser = getReader();
-		parser.read(xmlWithNamespaces, reader, logger);
-	    return reader;
+		parser.read(xmlWithNamespaces, raplaXMLReader, logger);
+	    //return raplaXMLReader;
 	}
 
     public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
@@ -813,8 +816,15 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         }
     );
 
+    CategoryReader categoryReader;
+    RaplaXMLWriter categoryWriter;
+
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,Category.TYPE, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY"});
+        categoryReader = (CategoryReader )context.lookup(PreferenceReader.READERMAP).get(Category.TYPE);
+        categoryReader.setReadOnlyThisCategory( true);
+        Map<RaplaType,RaplaXMLWriter> writerMap = context.lookup( PreferenceWriter.WRITERMAP );
+        categoryWriter = writerMap.get(Category.TYPE);
     }
 
     @Override
@@ -883,7 +893,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 		setId( stmt,2, category.getParent());
         int order = getOrder( category);
 
-        String xml = getXML( category );
+        String xml = getXML( categoryWriter,category );
         setString(stmt, 3, category.getKey());
         setText(stmt, 4, xml);
         setInt(stmt, 5, order);
@@ -911,14 +921,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         return 0;
     }
 
-    public RaplaXMLReader getReaderFor( RaplaType type) throws RaplaException {
-        RaplaXMLReader reader = super.getReaderFor( type );
-        if ( type.equals( Category.TYPE ) ) {
-            ((CategoryReader) reader).setReadOnlyThisCategory( true);
-        }
-        return reader;
-    }
-
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
     	String id = readId(rset, 1, Category.class);
@@ -929,7 +931,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         CategoryImpl category;
     	if ( xml != null && xml.length() > 10 )
     	{
-    	    category = ((CategoryReader)processXML( Category.TYPE, xml )).getCurrentCategory();
+            processXML( categoryReader, xml );
+    	    category = categoryReader.getCurrentCategory();
             //cache.remove( category );
     	}
     	else
@@ -1583,9 +1586,15 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
 }
 
 class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
-    
+
+    DynamicTypeReader typeReader;
+    RaplaXMLWriter typeWriter;
+
     public DynamicTypeStorage(RaplaXMLContext context) throws RaplaException {
         super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","LAST_CHANGED TIMESTAMP KEY", "DELETED TIMESTAMP KEY"});//, "CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
+        typeReader = (DynamicTypeReader)context.lookup(PreferenceReader.READERMAP).get(DynamicType.TYPE);
+        Map<RaplaType,RaplaXMLWriter> writerMap = context.lookup( PreferenceWriter.WRITERMAP );
+        typeWriter = writerMap.get(DynamicType.TYPE);
     }
 
     @Override
@@ -1604,7 +1613,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 		}
         setId(stmt,1,type);
         setString(stmt,2, type.getKey());
-        setText(stmt,3,  getXML( type) );
+        setText(stmt,3,  getXML( typeWriter,type) );
         setDate(stmt, 4,type.getLastChanged() );
         setTimestamp(stmt, 5, null);
 //    	setDate(stmt, 5,timestamp.getLastChanged() );
@@ -1631,11 +1640,11 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
     	@SuppressWarnings("unused")
         String id = readId(rset, 1, DynamicType.class);
 	    String xml = getText(rset,3);
-    	@SuppressWarnings("unused")
-        RaplaXMLReader reader = processXML( DynamicType.TYPE, xml );
+        processXML(typeReader, xml);
 //    	final Date createDate = getDate( rset, 4);
     	final Date lastChanged = getTimestampOrNow(rset, 4);
-    	((ModifiableTimestamp)reader.getStore().resolve(id)).setLastChanged(lastChanged);
+        final Entity entity = typeReader.getStore().resolve(id);
+        ((ModifiableTimestamp) entity).setLastChanged(lastChanged);
 //    	AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
 //    	allocatable.setLastChangedBy( resolveFromId(rset, 6, User.class) );
     	
@@ -1648,9 +1657,13 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
 class PreferenceStorage extends RaplaTypeStorage<Preferences> 
 {
+    PreferenceReader preferenceReader;
+    Map<RaplaType,RaplaXMLWriter> writerMap;
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Preferences.TYPE,"PREFERENCE",
 	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"});
+        preferenceReader = (PreferenceReader )context.lookup(PreferenceReader.READERMAP).get(Preferences.TYPE);
+        writerMap = context.lookup( PreferenceWriter.WRITERMAP );
     }
 
     @Override
@@ -1801,7 +1814,9 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         } else {
         	//System.out.println("Role " + role + " CHILDREN " + conf.getChildren().length);
             entryString = null;
-        	xml = getXML( (RaplaObject)entry);
+            final RaplaObject raplaObject = (RaplaObject) entry;
+            final RaplaXMLWriter raplaXMLWriter = writerMap.get(raplaObject.getRaplaType());
+            xml = getXML(raplaXMLWriter,raplaObject);
         }
         setString(stmt, 3, entryString);
         setText(stmt, 4, xml);
@@ -1867,8 +1882,8 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         	String xml = getText(rset, 4);
 	        if ( xml != null && xml.length() > 0)
 	        {
-		        PreferenceReader contentHandler = (PreferenceReader) processXML( Preferences.TYPE, xml );
-		        RaplaObject type = contentHandler.getChildType();
+		        processXML( preferenceReader, xml );
+		        RaplaObject type = preferenceReader.getChildType();
 		        preferences.putEntryPrivate(configRole, type);
 	        }
         }

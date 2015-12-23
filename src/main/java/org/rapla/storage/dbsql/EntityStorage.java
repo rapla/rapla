@@ -42,6 +42,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
+import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.PreferenceReader;
 import org.rapla.storage.xml.PreferenceWriter;
 import org.rapla.storage.xml.RaplaXMLContext;
@@ -52,7 +53,6 @@ import org.rapla.storage.xml.RaplaXMLWriter;
 abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage implements Storage<T> {
 	//String searchForIdSql;
 
-    RaplaXMLContext context;
     protected LocalCache cache;
     protected EntityStore entityStore;
     private RaplaLocale raplaLocale;
@@ -63,7 +63,6 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 
 	protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
 		super(table,context.lookup(Logger.class), entries);
-		this.context = context;
         if ( context.has( EntityStore.class))
         {
             this.entityStore =  context.lookup( EntityStore.class);
@@ -404,38 +403,6 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
     }
     abstract protected int write(PreparedStatement stmt,T entity) throws SQLException,RaplaException;
     abstract protected void load(ResultSet rs) throws SQLException,RaplaException;
-
-    public RaplaNonValidatedInput getReader() throws RaplaException {
-        return lookup( RaplaNonValidatedInput.class);
-
-    }
-
-    public RaplaXMLReader getReaderFor( RaplaType type) throws RaplaException {
-		Map<RaplaType,RaplaXMLReader> readerMap = lookup( PreferenceReader.READERMAP);
-        return readerMap.get( type);
-    }
-
-    public RaplaXMLWriter getWriterFor( RaplaType type) throws RaplaException {
-		Map<RaplaType,RaplaXMLWriter> writerMap = lookup( PreferenceWriter.WRITERMAP );
-        return writerMap.get( type);
-    }
-
-    protected <S> S lookup( TypedComponentRole<S> role) throws RaplaException {
-        try {
-            return context.lookup( role);
-        } catch (RaplaXMLContextException e) {
-            throw new RaplaException( e);
-        }
-    }
-
-    protected <S> S lookup( Class<S> role) throws RaplaException {
-        try {
-            return context.lookup( role);
-        } catch (RaplaXMLContextException e) {
-            throw new RaplaException( e);
-        }
-
-    }
 
     protected void put( Entity entity )
     {
