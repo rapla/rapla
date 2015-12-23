@@ -82,7 +82,7 @@ public class ContainerImpl implements Disposable
     private Logger logger;
     //protected CommandScheduler commandQueue;
     private Map<String, Object> singletonMap = new ConcurrentHashMap<>();
-    private Map<Class, Semaphore> instanciating = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Class, Semaphore> instanciating = new ConcurrentHashMap<>();
 
     public ContainerImpl(Logger logger)
     {
@@ -761,7 +761,7 @@ public class ContainerImpl implements Disposable
         }
         if (!(type instanceof Class))
         {
-            throw new IllegalStateException("Param of type " + type.getTypeName() + " can't be injected it is not a class ");
+            throw new IllegalStateException("Param of type " + type.toString() + " can't be injected it is not a class ");
         }
         Class guessedRole = (Class) type;
         if (has(guessedRole, null))
@@ -795,7 +795,7 @@ public class ContainerImpl implements Disposable
     private Object resolveParameterized(final int depth, ParameterizedType parameterizedType) throws RaplaContainerContextException
     {
         final Object result;
-        String typeName = parameterizedType.getRawType().getTypeName();
+        String typeName = parameterizedType.getRawType().toString();
         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
         if (actualTypeArguments.length == 0)
         {
@@ -843,7 +843,7 @@ public class ContainerImpl implements Disposable
             else if (valueParam instanceof ParameterizedType)
             {
                 final ParameterizedType paramType = (ParameterizedType) valueParam;
-                if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
+                if (!paramType.getRawType().toString().equals("javax.inject.Provider"))
                 {
                     if (paramType.getRawType() instanceof Class)
                     {
@@ -884,7 +884,7 @@ public class ContainerImpl implements Disposable
                     else if (valueParam instanceof ParameterizedType)
                     {
                         final ParameterizedType paramType = (ParameterizedType) valueParam;
-                        if (!paramType.getRawType().getTypeName().equals("javax.inject.Provider"))
+                        if (!paramType.getRawType().toString().equals("javax.inject.Provider"))
                         {
                             if (paramType.getRawType() instanceof Class)
                             {
@@ -1090,7 +1090,7 @@ public class ContainerImpl implements Disposable
         return result;
     }
 
-    private static Collection<String> getImplementingIds(Class interfaceClass, Extension... clazzAnnot)
+    private static Collection<String> getImplementingIds(Class interfaceClass, Collection<Extension> clazzAnnot)
     {
         Set<String> ids = new LinkedHashSet<>();
         for (Extension ext : clazzAnnot)
@@ -1105,7 +1105,7 @@ public class ContainerImpl implements Disposable
         return ids;
     }
 
-    private boolean isImplementing(Class interfaceClass, DefaultImplementation... clazzAnnot)
+    private boolean isImplementing(Class interfaceClass, Collection<DefaultImplementation> clazzAnnot)
     {
         for (DefaultImplementation ext : clazzAnnot)
         {
@@ -1162,7 +1162,8 @@ public class ContainerImpl implements Disposable
                     }
                     // load class for implementation or extension
                     final Class<T> clazz = (Class<T>) Class.forName(implementationClassName);
-                    final Extension[] extensions = clazz.getAnnotationsByType(Extension.class);
+                    final Class<Extension> annotationClass = Extension.class;
+                    final Collection<Extension> extensions = getAnnotationsByType(clazz, annotationClass);
 
                     Collection<String> idList = getImplementingIds(interfaceClass, extensions);
                     // add extension implmentations
@@ -1185,7 +1186,8 @@ public class ContainerImpl implements Disposable
                         }
                     }
                     // add default implmentations
-                    final DefaultImplementation[] defaultImplementations = clazz.getAnnotationsByType(DefaultImplementation.class);
+                    final Class<DefaultImplementation> annotationClass2 = DefaultImplementation.class;
+                    final Collection<DefaultImplementation> defaultImplementations = getAnnotationsByType(clazz, annotationClass2);
                     final boolean implementing = isImplementing(interfaceClass, defaultImplementations);
                     if (implementing)
                     {
@@ -1229,6 +1231,20 @@ public class ContainerImpl implements Disposable
                 //logger.warn( "No DefaultImplemenation found for " + interfaceName + " Interface will not be available in the supported Contexts " + supportedContexts  + " ");
             }
         }
+    }
+
+    private <T> Collection<T> getAnnotationsByType(final Class clazz, final Class<T> annotationClass2)
+    {
+        final Annotation[] annotations = clazz.getAnnotations();
+        List<T> annotationList = new ArrayList<T>();
+        for ( Annotation annotation:annotations)
+        {
+            if ( annotation.getClass().equals( annotationClass2))
+            {
+                annotationList.add( (T)annotation);
+            }
+        }
+        return annotationList;
     }
 
 }
