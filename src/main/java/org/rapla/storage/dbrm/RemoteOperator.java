@@ -1052,7 +1052,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	
 		if ( result != null )
         {
-            fireStorageUpdated(result);
+            fireStorageUpdated(result,evt.getInvalidateInterval());
         }
     }
 
@@ -1111,7 +1111,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         Date since = null;
         Date until = lastUpdated;
 		result  = createUpdateResult(oldEntityMap, updated, removeInfo, since,until);
-		fireStorageUpdated(result);
+		fireStorageUpdated(result, new TimeInterval( null, null));
 	}
 
     public synchronized void addStorageUpdateListener(StorageUpdateListener listener) {
@@ -1126,9 +1126,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         return storageUpdateListeners.toArray(new StorageUpdateListener[] {});
     }
 
-    protected void fireStorageUpdated(final UpdateResult updateResult) {
+    protected void fireStorageUpdated(final UpdateResult updateResult, TimeInterval timeInterval) {
         StorageUpdateListener[] listeners = getStorageUpdateListeners();
-        final ModificationEventImpl evt = new ModificationEventImpl(updateResult);
+        final ModificationEventImpl evt = new ModificationEventImpl(updateResult, timeInterval);
         if ( evt.isEmpty())
         {
             return;

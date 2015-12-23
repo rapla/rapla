@@ -27,8 +27,9 @@ public class ModificationEventImpl implements ModificationEvent
 
     }
 
-    public ModificationEventImpl(UpdateResult updateResult)
+    public ModificationEventImpl(UpdateResult updateResult, TimeInterval timeInterval)
     {
+        this.timeInterval = timeInterval;
         final Iterable<UpdateOperation> operations = updateResult.getOperations();
         for (UpdateOperation op : operations)
         {
