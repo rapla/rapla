@@ -2435,7 +2435,16 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             final Date connectionTimestamp = getConnectionTimestamp();
             for (String id : allIds)
             {
-                final Entity<?> entity = entityStore.resolve(id);
+                final Entity<?> entity = entityStore.tryResolve(id);
+                if(entity == null)
+                {
+                    final HistoryEntry before = history.getBefore(id, connectionTimestamp);
+                    if (before != null)
+                    {
+                        put(history.getEntity(before));
+                    }
+                    continue;
+                }
                 if(entity instanceof Timestamp)
                 {
                     final Date lastChanged = ((Timestamp) entity).getLastChanged();
