@@ -1108,7 +1108,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
                     || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE)
             {
-                boolean isDelete = false;
+                boolean isDelete = true;
                 Date timestamp =((LastChangedTimestamp) newEntity).getLastChanged();
                 final EntityHistory.HistoryEntry historyEntry = history.addHistoryEntry(newEntity, timestamp, isDelete);
                 addToDeleteUpdate(historyEntry);
@@ -1145,15 +1145,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         else
         {
             DeleteUpdateEntry remove = deleteUpdateSet.remove(id);
-            if (historyEntry.isDelete && remove == null)
+            if (historyEntry.isDelete() && remove == null)
             {
                 getLogger().warn("Can't remove entry for id " + id);
             }
         }
         entry.timestamp = new Date(historyEntry.getTimestamp());
-        final Class<? extends Entity> type = historyEntry.getType();
+        final Class<? extends Entity> type = historyEntry.getType().getTypeClass();
         ReferenceInfo ref = new ReferenceInfo( id,type);
-        entry.isDelete = historyEntry.isDelete;
+        entry.isDelete = historyEntry.isDelete();
         entry.reference = ref;
         Entity current = history.getEntity( historyEntry);
 

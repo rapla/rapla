@@ -2482,16 +2482,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             return;
         }
         final Integer isDelete = getInt( rs, 6);
-        try
-        {
-            @SuppressWarnings({ "rawtypes", "unchecked" })
-            final Class<? extends Entity> entityClass = (Class<? extends Entity>) Class.forName(className);
-            history.addHistoryEntry(id, json, entityClass, lastChanged, isDelete != null && isDelete == 1);
-        }
-        catch (ClassNotFoundException e)
-        {
-            throw new RaplaException("found history entry (" + id + ") with classname " + className + " which is not defined in java");
-        }
+        history.addHistoryEntry(id, json, raplaType, lastChanged, isDelete != null && isDelete == 1);
     }
     
 }
