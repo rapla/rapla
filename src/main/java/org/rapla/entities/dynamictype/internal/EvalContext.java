@@ -1,5 +1,8 @@
 package org.rapla.entities.dynamictype.internal;
 
+import org.rapla.entities.User;
+import org.rapla.storage.PermissionController;
+
 import java.util.List;
 import java.util.Locale;
 
@@ -11,15 +14,19 @@ final public class EvalContext
     private String annotationName;
     private List<?> contextObjects;
     private EvalContext parent;
+    private PermissionController permissionController;
+    private User user;
 
-    public EvalContext(Locale locale, String annotationName, List contextObjects)
+    public EvalContext(Locale locale, String annotationName, PermissionController permissionController,User user,List contextObjects)
     {
-        this(locale, annotationName, contextObjects, 0);
+        this(locale, annotationName,permissionController, user, contextObjects, 0);
     }
 
-    EvalContext(Locale locale, String annotationName, List contextObjects, int callStackDepth)
+    EvalContext(Locale locale, String annotationName, PermissionController permissionController,User user,List contextObjects, int callStackDepth)
     {
         this.locale = locale;
+        this.user = user;
+        this.permissionController = permissionController;
         this.callStackDepth = callStackDepth;
         this.annotationName = annotationName;
         this.contextObjects = contextObjects;
@@ -28,10 +35,21 @@ final public class EvalContext
     public EvalContext(List<Object> contextObjects, EvalContext parent)
     {
         this.locale = parent.locale;
+        this.user = parent.user;
         this.callStackDepth = parent.callStackDepth + 1;
         this.annotationName = parent.annotationName;
         this.contextObjects = contextObjects;
         this.parent = parent;
+    }
+
+    public User getUser()
+    {
+        return user;
+    }
+
+    PermissionController getPermissionController()
+    {
+        return  permissionController;
     }
 
     EvalContext getParent()
@@ -41,7 +59,7 @@ final public class EvalContext
 
     public EvalContext clone(Locale locale)
     {
-        EvalContext clone = new EvalContext(locale, annotationName, contextObjects, callStackDepth);
+        EvalContext clone = new EvalContext(locale, annotationName, permissionController,user,contextObjects, callStackDepth);
         return clone;
     }
 

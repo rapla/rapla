@@ -35,7 +35,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -57,14 +57,14 @@ public class SecurityManager
     private final PermissionController permissionController;
 
     @Inject
-    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ClientFacade facade, PermissionController permissionController)
+    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ClientFacade facade)
     {
         this.logger = logger;
         this.i18n = i18n;
         this.appointmentFormater = appointmentFormater;
         this.facade = facade;
-        this.permissionController = permissionController;
         operator = facade.getOperator();
+        permissionController = operator.getPermissionController();
     }
     
     void checkWritePermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException {
@@ -149,7 +149,7 @@ public class SecurityManager
         if (!permitted && entity instanceof Conflict)
         {
             Conflict conflict = (Conflict) entity;
-            if (permissionController.canModify(conflict, user, operator))
+            if (permissionController.canModify(conflict, user))
             {
                 permitted = true;
             }
@@ -157,7 +157,7 @@ public class SecurityManager
 
         if (!permitted && entity instanceof Annotatable)
         {
-            permitted = permissionController.canWriteTemplate(( Annotatable)entity, user, operator );
+            permitted = permissionController.canWriteTemplate(( Annotatable)entity, user );
         }
         
         if (!permitted)

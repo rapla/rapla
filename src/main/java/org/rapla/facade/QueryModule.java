@@ -11,10 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -27,6 +23,11 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 /** Methods for quering the various entities of the backend
 */
 
@@ -137,8 +138,6 @@ public interface QueryModule
      * at least admin privileges for one allocatable. He can only exchange or remove or insert allocatables he has admin privileges on.
      * The User cannot change appointments.*/
     boolean canExchangeAllocatables(Reservation reservation);
-    
-    boolean canCreateReservations(DynamicType type, User user);
     
 	public Collection<Allocatable> getTemplates() throws RaplaException;
 	

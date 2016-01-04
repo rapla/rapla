@@ -79,7 +79,7 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -148,7 +148,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
     private Cancelable cleanConflictsTask;
-    private PermissionController permissionController;
     protected final EntityHistory history;
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
@@ -159,9 +158,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setKey(key);
             type.setId(key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{p->type(p)}");
-            type.getName().setName("en", "anonymous");
-            type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
+            final MultiLanguageName name = type.getName();
+
+
+            type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
             type.setResolver(this);
+            for (String lang:raplaLocale.getAvailableLanguages())
+            {
+                Locale locale = new Locale(lang);
+                name.setName(lang,i18n.getString("not_visible", locale));
+            }
             {
                 Permission newPermission = type.newPermission();
                 newPermission.setAccessLevel(Permission.READ_TYPE);
@@ -177,8 +183,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setId(key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{p->type(p)}");
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-            type.getName().setName("en", "anonymous");
+            final MultiLanguageName name = type.getName();
             type.setResolver(this);
+            for (String lang:raplaLocale.getAvailableLanguages())
+            {
+                Locale locale = new Locale(lang);
+                name.setName(lang,i18n.getString("not_visible", locale));
+            }
             {
                 Permission newPermission = type.newPermission();
                 newPermission.setAccessLevel(Permission.READ_TYPE);
@@ -290,12 +301,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
-            Map<String, FunctionFactory> functionFactoryMap, PermissionController permissionController)
+            Map<String, FunctionFactory> functionFactoryMap,  Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, raplaLocale, functionFactoryMap, permissionController);
+        super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions);
         this.scheduler = scheduler;
         //context.lookupDeprecated( CommandScheduler.class);
-        this.permissionController = permissionController;
         this.history = new EntityHistory();
     }
 

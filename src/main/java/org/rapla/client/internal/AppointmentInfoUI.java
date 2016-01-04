@@ -16,10 +16,10 @@ package org.rapla.client.internal;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -30,21 +30,22 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
 	AppointmentFormater appointmentFormater;
 	
     @Inject
-    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
+    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super( i18n, raplaLocale, facade, logger);
-        parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater, permissionController);
+        parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater);
         this.appointmentFormater = appointmentFormater;
     }
     
 
-    public String getTooltip(Appointment appointment) {
+    @Override
+    public String getTooltip(Appointment appointment,User user) {
         Reservation reservation =  appointment.getReservation();
         StringBuffer buf = new StringBuffer();
         parent.insertModificationRow( reservation, buf );
         insertAppointmentSummary( appointment, buf );
         parent.insertClassificationTitle( reservation, buf );
-        createTable( parent.getAttributes( reservation, null, null, true),buf,false);
+        createTable( parent.getAttributes( reservation, null, user, true),buf,false);
         return buf.toString();
     }
     

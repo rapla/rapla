@@ -64,7 +64,6 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -75,11 +74,12 @@ import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
@@ -159,14 +159,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
-            PermissionController permissionController, FrameControllerList frameControllerList) throws RaplaException
+             FrameControllerList frameControllerList) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
         this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
@@ -415,8 +415,9 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
         final ClientFacade clientFacade = getClientFacade();
-        deleteButton.setEnabled( permissionController.canAdmin( reservation, clientFacade ));
-        if ( !permissionController.canModify( reservation, clientFacade) ) 
+        final User user = clientFacade.getUser();
+        deleteButton.setEnabled( permissionController.canAdmin( reservation, user ));
+        if ( !permissionController.canModify( reservation, user) )
         {
             disableComponentAndAllChildren(appointmentEdit.getComponent());
             disableComponentAndAllChildren(reservationInfo.getComponent());

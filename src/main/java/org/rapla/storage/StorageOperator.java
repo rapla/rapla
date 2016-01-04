@@ -23,10 +23,6 @@
  */
 package org.rapla.storage;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-
 import org.rapla.ConnectInfo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -38,10 +34,15 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
 
 public interface StorageOperator extends EntityResolver {
 	public static final int MAX_DEPENDENCY = 20;
@@ -127,8 +128,9 @@ public interface StorageOperator extends EntityResolver {
     
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 
+    PermissionController getPermissionController();
 	//Collection<String> getTemplateNames() throws RaplaException;
 
-	
+    FunctionFactory getFunctionFactory(String functionName);
 
 }

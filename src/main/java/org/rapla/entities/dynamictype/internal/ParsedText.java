@@ -22,8 +22,11 @@ import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -34,7 +37,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 
-/** 
+/**
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
  * Also some functions like {substring(name,1,2)} are available for simple text processing  
  *
@@ -111,9 +114,9 @@ public class ParsedText implements Serializable
 
     public String getExternalRepresentation(ParseContext context)
     {
-        if (nonVariablesList == null )
+        if (nonVariablesList == null)
         {
-            if ( formatString != null)
+            if (formatString != null)
             {
                 return formatString;
             }
@@ -227,7 +230,7 @@ public class ParsedText implements Serializable
         }
         for (int i = 0; i < content.length(); i++)
         {//{p->f1(...)}
-         // parsed will contain the name of the function. parameters will be parsed later.
+            // parsed will contain the name of the function. parameters will be parsed later.
             char c = content.charAt(i);
             if (c == '(')
             {
@@ -290,12 +293,12 @@ public class ParsedText implements Serializable
             String constant = variableName.substring(1, variableName.length() - 1);
             return new StringVariable(constant);
         }
-        
-        if ( variableName.equals("true") )
+
+        if (variableName.equals("true"))
         {
             return new BooleanVariable(true);
         }
-        if ( variableName.equals("false") )
+        if (variableName.equals("false"))
         {
             return new BooleanVariable(false);
         }
@@ -325,9 +328,9 @@ public class ParsedText implements Serializable
         }
     }
 
+
     private static final class BoundParseContext implements ParseContext
     {
-
         private static final class BoundParameterFunction extends Function
         {
             private final String variableName;
@@ -340,8 +343,7 @@ public class ParsedText implements Serializable
                 this.indexOf = indexOf;
             }
 
-            @Override
-            public Object eval(EvalContext context)
+            @Override public Object eval(EvalContext context)
             {
                 final Object contextObject = context.getContextObject(indexOf);
                 return contextObject;
@@ -366,8 +368,7 @@ public class ParsedText implements Serializable
 
             }
 
-            @Override
-            public Object eval(EvalContext context)
+            @Override public Object eval(EvalContext context)
             {
                 final EvalContext parent = context.getParent();
                 if (parent != null)
@@ -392,10 +393,8 @@ public class ParsedText implements Serializable
             this.boundParameters = boundParameters;
             this.context = parent;
         }
-        
 
-        @Override
-        public Function resolveVariableFunction(final String variableName) throws IllegalAnnotationException
+        @Override public Function resolveVariableFunction(final String variableName) throws IllegalAnnotationException
         {
             final int indexOf = boundParameters.indexOf(variableName);
             if (indexOf >= 0)
@@ -417,7 +416,7 @@ public class ParsedText implements Serializable
 
         @Override public FunctionFactory getFunctionFactory(String functionName)
         {
-            return context.getFunctionFactory( functionName );
+            return context.getFunctionFactory(functionName);
         }
     }
 
@@ -473,8 +472,7 @@ public class ParsedText implements Serializable
             return sb.toString();
         }
 
-        @Override
-        public Object eval(EvalContext context)
+        @Override public Object eval(EvalContext context)
         {
             return next.eval(context);
         }
@@ -517,7 +515,7 @@ public class ParsedText implements Serializable
 
         String namespace;
         String name;
-        if ( split.length>1)
+        if (split.length > 1)
         {
             namespace = split[0];
             name = split[1];
@@ -530,7 +528,7 @@ public class ParsedText implements Serializable
         final FunctionFactory functionFactory = context.getFunctionFactory(namespace);
         if (functionFactory != null)
         {
-            return functionFactory.createFunction( name,args);
+            return functionFactory.createFunction(name, args);
         }
         else
         {
@@ -542,24 +540,19 @@ public class ParsedText implements Serializable
     {
         return Collections.emptyList();
     }
-    
+
     static public abstract class Variable extends Function
     {
         public Variable(String string)
         {
             super(string, emptyList());
         }
-        
-        @Override
-        public String getRepresentation(ParseContext context)
+
+        @Override public String getRepresentation(ParseContext context)
         {
             return getName();
         }
     }
-    
-
-
-
 
     /** we need proxies to pass additional information to the evalToStringMethod*/
     static Object getProxy(Classification classification, final Attribute attribute)
@@ -601,7 +594,7 @@ public class ParsedText implements Serializable
         {
             return Boolean.parseBoolean(multiSelectConstraint.toString());
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             return false;
         }
@@ -745,28 +738,24 @@ public class ParsedText implements Serializable
             return parent.compareTo(o);
         }
 
-        @Override
-        public Category clone()
+        @Override public Category clone()
         {
             throw new IllegalStateException();
         }
 
-        @Override
-        public void setAnnotation(String key, String annotation) throws IllegalAnnotationException
-        {
-            throw new IllegalStateException();
-
-        }
-
-        @Override
-        public void addCategory(Category category)
+        @Override public void setAnnotation(String key, String annotation) throws IllegalAnnotationException
         {
             throw new IllegalStateException();
 
         }
 
-        @Override
-        public void setKey(String key)
+        @Override public void addCategory(Category category)
+        {
+            throw new IllegalStateException();
+
+        }
+
+        @Override public void setKey(String key)
         {
             throw new IllegalStateException();
         }
@@ -777,20 +766,17 @@ public class ParsedText implements Serializable
             return constraint;
         }
 
-        @Override
-        public boolean equals(Object obj)
+        @Override public boolean equals(Object obj)
         {
             return parent.equals(obj);
         }
 
-        @Override
-        public int hashCode()
+        @Override public int hashCode()
         {
             return parent.hashCode();
         }
 
     }
-
 
     // filter(resources(),u->equals("test", getAttribute(u,"name")))
     public static boolean evalBoolean(final Function condition, EvalContext context)
@@ -824,11 +810,11 @@ public class ParsedText implements Serializable
             final long result = Long.parseLong(obj.toString());
             return result;
         }
-        catch ( NumberFormatException ex)
+        catch (NumberFormatException ex)
         {
             return null;
         }
-        
+
     }
 
     public static DynamicType guessType(Object object)
@@ -870,7 +856,6 @@ public class ParsedText implements Serializable
         return null;
     }
 
-
     class IntVariable extends Variable
     {
         Long l;
@@ -881,8 +866,7 @@ public class ParsedText implements Serializable
             this.l = l;
         }
 
-        @Override
-        public Long eval(EvalContext context)
+        @Override public Long eval(EvalContext context)
         {
             return l;
         }
@@ -909,8 +893,7 @@ public class ParsedText implements Serializable
             this.s = s;
         }
 
-        @Override
-        public String eval(EvalContext context)
+        @Override public String eval(EvalContext context)
         {
             return s;
         }
@@ -926,24 +909,21 @@ public class ParsedText implements Serializable
         }
 
     }
-    
+
     class BooleanVariable extends Variable
     {
         boolean value;
 
         public BooleanVariable(boolean value)
         {
-            super(value ? "true": "false");
+            super(value ? "true" : "false");
             this.value = value;
         }
 
-        @Override
-        public Boolean eval(EvalContext context)
+        @Override public Boolean eval(EvalContext context)
         {
             return value;
         }
-
-        
 
     }
 
@@ -1033,17 +1013,34 @@ public class ParsedText implements Serializable
         else if (object instanceof Classifiable || object instanceof Classification)
         {
             Classification classification;
+            boolean readable = true;
+            User user = context.getUser();
+            PermissionController permissionController = context.getPermissionController();
+
             if (object instanceof Classification)
             {
                 classification = (Classification) object;
             }
             else
             {
-                classification = (Classification) ((Classifiable) object).getClassification();
+                final Classifiable classifiable = (Classifiable) object;
+                if (user != null)
+                {
+                    if (classifiable instanceof PermissionContainer)
+                    {
+                        readable = permissionController.canRead((Allocatable) classifiable, user);
+                    }
+                }
+                classification = classifiable.getClassification();
             }
+            if (!readable)
+            {
+                return "???";
+            }
+
             final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
-            EvalContext contextClone = new EvalContext(locale, annotationName, contextObjects, callStackDepth + 1);
+            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController,user,contextObjects, callStackDepth + 1);
             final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             ParsedText parsedAnnotation;
             //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());
@@ -1075,8 +1072,7 @@ public class ParsedText implements Serializable
         return object.toString();
     }
 
-    @Override
-    public String toString()
+    @Override public String toString()
     {
         return formatString;
     }

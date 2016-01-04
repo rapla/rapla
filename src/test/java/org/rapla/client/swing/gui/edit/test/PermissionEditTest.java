@@ -38,15 +38,12 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 public final class PermissionEditTest extends GUITestCase
 {
@@ -57,13 +54,12 @@ public final class PermissionEditTest extends GUITestCase
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
         IOInterface ioInterface = new DefaultIO(logger);
-        PermissionController permissionController = DefaultPermissionControllerSupport.getController();
         ClientFacade facade = getFacade();
         final RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger );
-        InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, permissionController, raplaImages, dialogUiFactory);
-        TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), permissionController, infoFactory, raplaImages);
+        InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
+        TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), infoFactory, raplaImages);
         DateRenderer dateRenderer = new RaplaDateRenderer(getFacade(), i18n, getRaplaLocale(), getLogger());
         RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages);
         DateFieldFactory dateFieldFactory = new DateFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), dateRenderer, ioInterface);

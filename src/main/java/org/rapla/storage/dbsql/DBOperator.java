@@ -46,7 +46,8 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
@@ -64,7 +65,6 @@ import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
@@ -90,13 +90,12 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     private String connectionName;
 
     Provider<ImportExportManager> importExportManager;
-    private final PermissionController permissionController;
 
     @Inject public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Provider<ImportExportManager> importExportManager, DataSource dataSource,
-            PermissionController permissionController)
+            Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, locale, scheduler, functionFactoryMap, permissionController);
+        super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
         this.importExportManager = importExportManager;
         //        String backupFile = config.getChild("backup").getValue("");
@@ -104,7 +103,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         //        	backupFileName = ContextTools.resolveContext( backupFile, context);
         //
         //        backupEncoding = config.getChild( "encoding" ).getValue( "utf-8" );
-        this.permissionController = permissionController;
 
         //        datasourceName = config.getChild("datasource").getValue(null);
         //        // dont use datasource (we have to configure a driver )
@@ -493,7 +491,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
             {
                 throw new RaplaException("Can't export old db data, because no data export is set.");
             }
-            LocalCache cache = new LocalCache(functionFactoryMap, permissionController);
+            LocalCache cache = new LocalCache( permissionController);
             cache.clearAll();
             addInternalTypes(cache);
             loadOldData(c, cache);

@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -43,7 +42,9 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.storage.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -88,8 +89,9 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	protected final Map<String,FunctionFactory> functionFactoryMap;
 	protected volatile Date lastUpdated;
+	protected PermissionController permissionController;
 
-	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, PermissionController permissionController)  {
+	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)  {
 		this.logger = logger;
 		this.raplaLocale = raplaLocale;
 		this.i18n = i18n;
@@ -98,7 +100,13 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 //		i18n = context.lookupDeprecated(RaplaComponent.RAPLA_RESOURCES);
 
 		Assert.notNull(raplaLocale.getLocale());
-		cache = new LocalCache(functionFactoryMap, permissionController);
+		this.permissionController = new PermissionController( permissionExtensions, this);
+		cache = new LocalCache(permissionController);
+	}
+
+	public PermissionController getPermissionController()
+	{
+		return permissionController;
 	}
 
 	public Logger getLogger() {
@@ -428,6 +436,10 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	 */
 	protected void setResolver(Collection<? extends Entity> entities) throws RaplaException {
 		for (Entity entity: entities) {
+			if (entity instanceof  DynamicType)
+			{
+				((DynamicTypeImpl) entity).setOperator( this);
+			}
 		    if (entity instanceof EntityReferencer)
             {
 		        ((EntityReferencer)entity).setResolver(this);
@@ -452,10 +464,15 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		    }
 		}
 		for (Entity entity: entities) {
-		    if (entity instanceof EntityReferencer)
+			if (entity instanceof  DynamicType)
+			{
+				((DynamicTypeImpl) entity).setOperator( this);
+			}
+			if (entity instanceof EntityReferencer)
             {
 		        testResolve(store, (EntityReferencer)entity);
             }
+
 		}
 	}
 

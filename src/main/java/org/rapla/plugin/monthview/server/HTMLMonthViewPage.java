@@ -22,7 +22,6 @@ import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLMonthView;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -39,9 +38,9 @@ public class HTMLMonthViewPage extends AbstractHTMLCalendarPage
 {
     @Inject
     public HTMLMonthViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
-            AppointmentFormater appointmentFormater, PermissionController permissionController)
+            AppointmentFormater appointmentFormater)
     {
-        super(raplaLocale, raplaResources, facade, logger, appointmentFormater, permissionController);
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
     protected AbstractHTMLView createCalendarView() {

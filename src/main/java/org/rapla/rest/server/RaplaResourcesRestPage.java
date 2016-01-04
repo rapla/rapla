@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.jws.WebParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -19,14 +18,13 @@ import javax.ws.rs.QueryParam;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
@@ -37,13 +35,11 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(new String[] { DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON });
-    private final PermissionController permissionController;
 	private final User user;
 
 	@Inject
-	public RaplaResourcesRestPage(ClientFacade facade,PermissionController permissionController, RemoteSession session) throws RaplaException {
+	public RaplaResourcesRestPage(ClientFacade facade, RemoteSession session) throws RaplaException {
 		super(facade);
-        this.permissionController = permissionController;
 		this.user = session.getUser();
 	}
 
@@ -53,8 +49,9 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 		ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
 		List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
+		PermissionController permissionController = facade.getPermissionController();
 		for (Allocatable r : resources) {
-			if (permissionController.canRead(r, user, getEntityResolver())) {
+			if (permissionController.canRead(r, user)) {
 				result.add((AllocatableImpl) r);
 			}
 		}
@@ -65,7 +62,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 	@Path("{id}")
 	public AllocatableImpl get( @PathParam("id") String id) throws RaplaException {
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
-		if (!permissionController.canRead(resource, user, getEntityResolver())) {
+		PermissionController permissionController = facade.getPermissionController();
+		if (!permissionController.canRead(resource, user)) {
 			throw new RaplaSecurityException("User " + user + " can't read  " + resource);
 		}
 		return resource;
@@ -73,7 +71,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 
 	@PUT
 	public AllocatableImpl update( AllocatableImpl resource) throws RaplaException {
-		if (!permissionController.canModify(resource, user, getEntityResolver())) {
+		PermissionController permissionController = facade.getPermissionController();
+		if (!permissionController.canModify(resource, user)) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
 		resource.setResolver(operator);
@@ -87,7 +86,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 		resource.setResolver(operator);
 		Classification classification = resource.getClassification();
 		DynamicType type = classification.getType();
-		if (!getQuery().canCreateReservations(type, user)) {
+		if (!facade.getPermissionController().canCreate(type, user)) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
 		if (resource.getId() != null) {

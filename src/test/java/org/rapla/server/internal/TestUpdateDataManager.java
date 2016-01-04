@@ -22,7 +22,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -30,9 +29,6 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.impl.AbstractCachableOperator;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
@@ -63,9 +59,8 @@ public class TestUpdateDataManager
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
-        PermissionController permissionController = DefaultPermissionControllerSupport.getController();
-        SecurityManager securityManager = new SecurityManager(logger, i18n, appointmentFormater, facade, permissionController);
-        updateManager = new UpdateDataManagerImpl(logger, facade, operator, securityManager, permissionController);
+        SecurityManager securityManager = new SecurityManager(logger, i18n, appointmentFormater, facade);
+        updateManager = new UpdateDataManagerImpl(logger, operator, securityManager);
     }
 
     @Test

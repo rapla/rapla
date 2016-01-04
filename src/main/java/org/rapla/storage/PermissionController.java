@@ -1,12 +1,4 @@
-package org.rapla.entities.domain.permission;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
+package org.rapla.storage;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Annotatable;
@@ -22,6 +14,7 @@ import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -30,22 +23,26 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 
-@Singleton
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
 public class PermissionController
 {
     private final Set<PermissionExtension> permissionExtensions;
+    StorageOperator operator;
 
-    @Inject
-    public PermissionController(Set<PermissionExtension> permissionExtensions)
+    public PermissionController(Set<PermissionExtension> permissionExtensions, StorageOperator operator)
     {
         super();
         this.permissionExtensions = permissionExtensions;
+        this.operator = operator;
     }
 
     public static boolean isOwner(Ownable classifiable, User user)
@@ -382,9 +379,8 @@ public class PermissionController
     }
 
     /** returns if the session user is a registerer */
-    final public boolean isRegisterer(DynamicType type, ClientFacade clientFacade)
+    final public boolean isRegisterer(DynamicType type, User user)
     {
-        final User user = clientFacade.getUser();
         if (user.isAdmin())
         {
             return true;
@@ -393,16 +389,10 @@ public class PermissionController
         {
             if (type == null)
             {
-                for (DynamicType type1 : clientFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
+                for (DynamicType type1 : operator.getDynamicTypes())
                 {
-                    if (canCreate(type1, user))
-                    {
-                        return true;
-                    }
-                }
-                for (DynamicType type1 : clientFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
-                {
-                    if (canCreate(type1, user))
+                    final String annotation = type1.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+                    if ((annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)  || annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)) && canCreate(type1, user))
                     {
                         return true;
                     }
@@ -422,15 +412,15 @@ public class PermissionController
     }
 
     /** returns if the user has allocation rights for one or more resource */
-    final public boolean canUserAllocateSomething(User user, ClientFacade clientFacade) throws RaplaException
+    final public boolean canUserAllocateSomething(User user) throws RaplaException
     {
         if (user.isAdmin())
             return true;
-        if (!canCreateReservation(user, clientFacade))
+        if (!canCreateReservation(user))
         {
             return false;
         }
-        Allocatable[] allocatables = clientFacade.getAllocatables();
+        Collection<Allocatable> allocatables = operator.getAllocatables(null);
         for (Allocatable a : allocatables)
         {
             if (hasPermissionToAllocate(user, a))
@@ -441,26 +431,14 @@ public class PermissionController
         return false;
     }
 
-    final public boolean canCreateReservation(ClientFacade clientFacade)
+    final public boolean canCreateReservation(User user)
     {
         try
         {
-            User user = clientFacade.getUser();
-            return canCreateReservation(user, clientFacade);
-        }
-        catch (RaplaException ex)
-        {
-            return false;
-        }
-    }
-
-    final public boolean canCreateReservation(User user, ClientFacade clientFacade)
-    {
-        try
-        {
-            for (DynamicType type1 : clientFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
+            for (DynamicType type1 : operator.getDynamicTypes())
             {
-                if (canCreate(type1, user))
+                final String annotation = type1.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+                if (annotation.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION) && canCreate(type1, user))
                 {
                     return true;
                 }
@@ -473,7 +451,7 @@ public class PermissionController
         return false;
     }
 
-    public boolean canAllocate(Date start, Date end, Allocatable allocatables, ClientFacade clientFacade)
+    public boolean canAllocate(Date start, Date end, Allocatable allocatables, User user)
     {
         if (allocatables == null)
         {
@@ -481,8 +459,7 @@ public class PermissionController
         }
         try
         {
-            User user = clientFacade.getUser();
-            Date today = clientFacade.today();
+            Date today = operator.today();
             return canAllocate(allocatables, user, start, end, today);
         }
         catch (RaplaException ex)
@@ -491,16 +468,16 @@ public class PermissionController
         }
     }
 
-    public boolean canAllocate(CalendarModel model, ClientFacade clientFacade, RaplaLocale raplaLocale)
+    public boolean canAllocate(CalendarModel model, User user, RaplaLocale raplaLocale)
     {
         //Date start, Date end,
         Collection<Allocatable> allocatables = model.getMarkedAllocatables();
         boolean canAllocate = true;
-        Date start = RaplaComponent.getStartDate(model, clientFacade, raplaLocale);
+        Date start = RaplaComponent.getStartDate(model, operator,user, raplaLocale);
         Date end = RaplaComponent.calcEndDate(model, start);
         for (Allocatable allo : allocatables)
         {
-            if (!canAllocate(start, end, allo, clientFacade))
+            if (!canAllocate(start, end, allo, user))
             {
                 canAllocate = false;
             }
@@ -508,28 +485,7 @@ public class PermissionController
         return canAllocate;
     }
 
-    /** returns if the current user is allowed to modify the object. */
-    final public boolean canModify(Object object, ClientFacade clientFacade)
-    {
-        try
-        {
-            User user = clientFacade.getUser();
-            EntityResolver entityResolver = clientFacade.getOperator();
-            return canModify(object, user, entityResolver);
-        }
-        catch (RaplaException ex)
-        {
-            return false;
-        }
-    }
-
-    final public boolean canRead(User user, Reservation reservation, ClientFacade clientFacade)
-    {
-        EntityResolver entityResolver = clientFacade.getOperator();
-        return canRead(reservation, user, entityResolver);
-    }
-
-    public boolean canModify(Conflict conflict, User user, EntityResolver resolver)
+    public boolean canModify(Conflict conflict, User user)
     {
         Allocatable allocatable = conflict.getAllocatable();
         if (user == null || user.isAdmin())
@@ -538,11 +494,11 @@ public class PermissionController
         }
         if (canRead(allocatable, user))
         {
-            if (canModifyEvent(conflict.getReservation1(), user, resolver))
+            if (canModifyEvent(conflict.getReservation1(), user))
             {
                 return true;
             }
-            if (canModifyEvent(conflict.getReservation2(), user, resolver))
+            if (canModifyEvent(conflict.getReservation2(), user))
             {
                 return true;
             }
@@ -550,28 +506,15 @@ public class PermissionController
         return false;
     }
 
-    public boolean canModifyEvent(String reservationId, User user, EntityResolver resolver)
+    public boolean canModifyEvent(String reservationId, User user)
     {
+        EntityResolver resolver = operator;
         Reservation reservation = resolver.tryResolve(reservationId, Reservation.class);
-        boolean canModify = reservation != null && canModify(reservation, user, resolver);
+        boolean canModify = reservation != null && canModify(reservation, user);
         return canModify;
     }
 
-    final public boolean canAdmin(Object object, ClientFacade clientFacade)
-    {
-        try
-        {
-            User user = clientFacade.getUser();
-            EntityResolver entityResolver = clientFacade.getOperator();
-            return canAdmin(object, user, entityResolver);
-        }
-        catch (RaplaException ex)
-        {
-            return false;
-        }
-    }
-
-    public boolean canModify(Object object, User user, EntityResolver resolver)
+    public boolean canModify(Object object, User user)
     {
         if (object == null || !(object instanceof RaplaObject))
         {
@@ -607,22 +550,23 @@ public class PermissionController
                 return true;
             }
         }
-        if (object instanceof Annotatable && canWriteTemplate((Annotatable) object, user, resolver))
+        if (object instanceof Annotatable && canWriteTemplate((Annotatable) object, user))
         {
             return true;
         }
         return false;
     }
 
-    public boolean canWriteTemplate(Annotatable entity, User user, EntityResolver resolver)
+    public boolean canWriteTemplate(Annotatable entity, User user)
     {
+        EntityResolver resolver = this.operator;
         String templateId = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
         if (templateId != null)
         {
             Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
             if (template != null)
             {
-                if (canModify(template, user, resolver))
+                if (canModify(template, user))
                 {
                     return true;
                 }
@@ -631,15 +575,16 @@ public class PermissionController
         return false;
     }
 
-    public boolean canReadTemplate(Annotatable entity, User user, EntityResolver resolver)
+    public boolean canReadTemplate(Annotatable entity, User user)
     {
         String templateId = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+        EntityResolver resolver = this.operator;
         if (templateId != null)
         {
             Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
             if (template != null)
             {
-                if (canRead(template, user, resolver))
+                if (canRead(template, user))
                 {
                     return true;
                 }
@@ -648,9 +593,10 @@ public class PermissionController
         return false;
     }
 
-    public boolean canAdmin(Object object, User user, EntityResolver resolver)
+    public boolean canAdmin(Object object, User user)
     {
-        if (!canModify(object, user, resolver))
+        EntityResolver resolver =operator;
+        if (!canModify(object, user))
         {
             return false;
         }
@@ -680,31 +626,31 @@ public class PermissionController
                 return true;
             }
         }
-        if (object instanceof Annotatable && canWriteTemplate((Annotatable) object, user, resolver))
+        if (object instanceof Annotatable && canWriteTemplate((Annotatable) object, user))
         {
             return true;
         }
         return false;
     }
 
-    public boolean canRead(Appointment appointment, User user, EntityResolver resolver)
+    public boolean canRead(Appointment appointment, User user)
     {
         Reservation reservation = appointment.getReservation();
-        boolean result = canRead(reservation, user, resolver);
+        boolean result = canRead(reservation, user);
         return result;
     }
 
-    public boolean canRead(Reservation reservation, User user, EntityResolver resolver)
+    public boolean canRead(Reservation reservation, User user)
     {
         if (user == null)
         {
             return true;
         }
-        if (canModify(reservation, user, resolver))
+        if (canModify(reservation, user))
         {
             return true;
         }
-        if (canReadTemplate(reservation, user, resolver))
+        if (canReadTemplate(reservation, user))
         {
             return true;
         }
@@ -715,9 +661,9 @@ public class PermissionController
         return false;
     }
 
-    public boolean canRead(Allocatable allocatable, User user, EntityResolver resolver)
+    public boolean canRead(Allocatable allocatable, User user)
     {
-        if (canModify(allocatable, user, resolver))
+        if (canModify(allocatable, user))
         {
             return true;
         }

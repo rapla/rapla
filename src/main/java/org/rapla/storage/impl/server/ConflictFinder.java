@@ -35,7 +35,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
@@ -492,7 +492,7 @@ class ConflictFinder {
 			{
 				for ( Conflict conflict: set)
 				{
-					if (permissionController.canModify(conflict,user,resolver))
+					if (permissionController.canModify(conflict,user))
 					{
 					    conflict = conflict.clone();
 					    cache.fillConflictDisableInformation(user, conflict);

@@ -149,7 +149,7 @@ public class Export2iCalServlet  implements RaplaPageExtension
 			final Reservation[] reserv = isAllAppointmentsSet ? getAllReservations(calModel) : calModel.getReservations();
 			Allocatable[] allocatables = calModel.getSelectedAllocatables();
 			Collection<Appointment> appointments = AppointmentImpl.getAppointments(Arrays.asList( reserv), Arrays.asList(allocatables));
-			write(response, appointments, filename, null);
+			write(response, appointments, filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -226,7 +226,7 @@ public class Export2iCalServlet  implements RaplaPageExtension
 		return calModel.getReservations();
 	}
 
-	private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, final Preferences preferences) throws RaplaException, IOException {
+	private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, User user,final Preferences preferences) throws RaplaException, IOException {
 
 	    if (filename == null )
 	    {
@@ -238,7 +238,7 @@ public class Export2iCalServlet  implements RaplaPageExtension
 		if (appointments == null) {
 			throw new RaplaException("Error with returning '" + filename);
 		}
-		final Calendar iCal = converter.createiCalender(appointments, preferences);
+		final Calendar iCal = converter.createiCalender(appointments,preferences, user);
 		final CalendarOutputter calOutputter = new CalendarOutputter();
 		final PrintWriter responseWriter = response.getWriter();
 		try {

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -22,13 +21,12 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
@@ -39,13 +37,11 @@ import org.rapla.storage.RaplaSecurityException;
 public class RaplaEventsRestPage extends AbstractRestPage 
 {
 
-	private final PermissionController permissionController;
     private final User user;
 
     @Inject
-    public RaplaEventsRestPage(ClientFacade facade,  PermissionController permissionController, RemoteSession session) throws RaplaException {
+    public RaplaEventsRestPage(ClientFacade facade,   RemoteSession session) throws RaplaException {
 		super(facade);
-        this.permissionController = permissionController;
         user = session.getUser();
 	}
 
@@ -66,10 +62,10 @@ public class RaplaEventsRestPage extends AbstractRestPage
         User owner = null;
         Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery).get();
         List<ReservationImpl> result = new ArrayList<ReservationImpl>();
+        PermissionController permissionController = facade.getPermissionController();
         for ( Reservation r:reservations)
         {
-            EntityResolver entityResolver = getEntityResolver();
-            if ( permissionController.canRead(r, user, entityResolver))
+            if ( permissionController.canRead(r, user))
             {
                 result.add((ReservationImpl) r);
             }
@@ -82,7 +78,8 @@ public class RaplaEventsRestPage extends AbstractRestPage
 	public ReservationImpl get( @PathParam("id") String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        if (!permissionController.canRead(event, user, getEntityResolver()))
+        PermissionController permissionController = facade.getPermissionController();
+        if (!permissionController.canRead(event, user))
         {
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
@@ -92,7 +89,8 @@ public class RaplaEventsRestPage extends AbstractRestPage
 	@PUT
     public ReservationImpl update( ReservationImpl event) throws RaplaException
     {
-        if (!permissionController.canModify(event, user, getEntityResolver()))
+        PermissionController permissionController = facade.getPermissionController();
+        if (!permissionController.canModify(event, user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }
@@ -106,7 +104,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
     public ReservationImpl create( ReservationImpl event) throws RaplaException
     {
         event.setResolver( operator);
-        if (!getQuery().canCreateReservations(event.getClassification().getType(), user))
+        if (!facade.getPermissionController().canCreate(event.getClassification().getType(), user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }

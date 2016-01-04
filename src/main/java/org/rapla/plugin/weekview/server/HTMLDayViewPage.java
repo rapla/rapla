@@ -12,13 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview.server;
 
-import java.util.Calendar;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
@@ -27,13 +22,16 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
+import javax.inject.Inject;
+import java.util.Calendar;
+
 @Extension(provides = HTMLViewPage.class,id = WeekviewPlugin.DAY_VIEW)
 public class HTMLDayViewPage extends HTMLWeekViewPage
 {
     @Inject
-    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
+    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
-        super(raplaLocale, raplaResources, facade, logger, appointmentFormater, permissionController);
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
     @Override

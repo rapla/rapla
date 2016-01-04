@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
 /** A collection of all module-interfaces
@@ -25,6 +26,8 @@ public interface ClientFacade
 	,UpdateModule
 {
     StorageOperator getOperator();
+
+    PermissionController getPermissionController();
 }
 
 

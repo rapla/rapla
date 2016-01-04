@@ -21,11 +21,10 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.PermissionContainer.Util;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -34,19 +33,16 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
-import org.rapla.storage.UpdateResult.HistoryEntry;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.xml.RaplaXMLContextException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -60,17 +56,14 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
     private SecurityManager security;
 
     private Logger logger;
-    private ClientFacade facade;
 
     private final PermissionController permissionController;
 
-    @Inject public UpdateDataManagerImpl(Logger logger, ClientFacade facade, CachableStorageOperator operator, SecurityManager securityManager,
-             PermissionController permissionController) throws RaplaException
+    @Inject public UpdateDataManagerImpl(Logger logger, CachableStorageOperator operator, SecurityManager securityManager) throws RaplaException
     {
         this.logger = logger;
-        this.facade = facade;
         this.operator = operator;
-        this.permissionController = permissionController;
+        this.permissionController = operator.getPermissionController();
         this.security = securityManager;
     }
 
@@ -419,7 +412,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             else if (obj instanceof Conflict)
             {
                 Conflict conflict = (Conflict) obj;
-                if (!permissionController.canModify(conflict, user, operator))
+                if (!permissionController.canModify(conflict, user))
                 {
                     clientStore = false;
                 }

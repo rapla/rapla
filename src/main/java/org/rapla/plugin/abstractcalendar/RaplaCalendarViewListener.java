@@ -30,7 +30,6 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -39,16 +38,16 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.NamedComparator;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
 
@@ -66,10 +65,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final PermissionController permissionController;
+    final PermissionController permissionController;
 
     public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
@@ -82,7 +81,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
+        permissionController = facade.getPermissionController();
     }
 
     protected CalendarModel getModel()
@@ -122,8 +121,8 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
             MenuContext context = new MenuContext( focusedObject);
             menuFactory.addReservationWizards(menu, context, null);
 
-            final ClientFacade clientFacade = getClientFacade();
-            if (permissionController.canCreateReservation(clientFacade))
+            User user = getUser();
+            if (permissionController.canCreateReservation(user))
             {
                 //	        	 User user = getUserFromRequest();
                 //	 	        Date today = getQuery().today();
@@ -135,7 +134,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
                 //	 	        }
                 //	 	       canAllocate || (selectedAllocatables.size() == 0 &&
 
-                if (permissionController.canUserAllocateSomething(getUser(), clientFacade))
+                if (permissionController.canUserAllocateSomething(user))
                 {
                     ReservationEdit[] editWindows = reservationController.getEditWindows();
                     if (editWindows.length > 0)
@@ -197,7 +196,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         try
         {
-            if (!permissionController.canModify(b.getReservation(), getClientFacade()))
+            if (!permissionController.canModify(b.getReservation(), getUser()))
                 return;
             final AppointmentBlock appointmentBlock = b.getAppointmentBlock();
             reservationController.edit(appointmentBlock);
@@ -329,7 +328,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+        AppointmentAction action = new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
         menu.add(action);
         return action;
     }

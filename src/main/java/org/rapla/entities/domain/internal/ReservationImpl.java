@@ -202,7 +202,8 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     private EvalContext createEvalContext(Locale locale, String annotationName, Object object)
     {
-        return new EvalContext(locale, annotationName, Collections.singletonList(object));
+        DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
+        return type.createEvalContext(locale, annotationName, object);
     }
     
     public Date getLastChanged() {

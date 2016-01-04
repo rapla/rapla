@@ -12,18 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.awt.event.ActionEvent;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -54,7 +42,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -62,6 +49,15 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.util.HashMap;
+import java.util.Map;
 
 /** The factory can creatres an information-panel or dialog for
 the entities of rapla.
@@ -77,14 +73,14 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public InfoFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, PermissionController permissionController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public InfoFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.ioInterface = ioInterface;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         views.put( DynamicType.TYPE, new DynamicTypeInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( Reservation.TYPE, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
-        views.put( Appointment.TYPE, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater, permissionController) );
+        views.put( Reservation.TYPE, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
+        views.put( Appointment.TYPE, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
         views.put( Allocatable.TYPE, new AllocatableInfoUI(facade, i18n, raplaLocale, logger) );
         views.put( User.TYPE, new UserInfoUI(facade, i18n, raplaLocale, logger) );
         views.put( Period.TYPE, new PeriodInfoUI(facade, i18n, raplaLocale, logger) );
@@ -127,7 +123,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
             {
             	return null;
             }
-            String text = createView( o ).getTooltip( o);
+            String text = createView( o ).getTooltip( o, getUser());
             if (wrapHtml && text != null)
                 return HTMLView.createHTMLPage( text );
             else

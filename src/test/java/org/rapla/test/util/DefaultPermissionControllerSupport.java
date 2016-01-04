@@ -2,23 +2,26 @@ package org.rapla.test.util;
 
 import java.util.LinkedHashSet;
 
-import org.rapla.entities.domain.permission.PermissionController;
+import org.jetbrains.annotations.NotNull;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
+import org.rapla.storage.StorageOperator;
 
 public class DefaultPermissionControllerSupport
 {
     
-    public static PermissionController getController()
+    public static PermissionController getController(StorageOperator operator)
+    {
+        final LinkedHashSet<PermissionExtension> permissionExtensions = getPermissionExtensions();
+        return new PermissionController(permissionExtensions, operator);
+    }
+
+    @NotNull public static LinkedHashSet<PermissionExtension> getPermissionExtensions()
     {
         final LinkedHashSet<PermissionExtension> permissionExtensions = new LinkedHashSet<PermissionExtension>();
         permissionExtensions.add(new RaplaDefaultPermissionImpl());
-        return getController(permissionExtensions);
-    }
-
-    public static PermissionController getController(final LinkedHashSet<PermissionExtension> permissionExtensions)
-    {
-        return new PermissionController(permissionExtensions);
+        return permissionExtensions;
     }
 
 }

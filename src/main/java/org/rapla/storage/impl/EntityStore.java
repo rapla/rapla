@@ -77,11 +77,6 @@ public class EntityStore implements EntityResolver {
         return type;
     }
 
-    @Override public FunctionFactory getFunctionFactory(String functionName)
-    {
-        return parent.getFunctionFactory( functionName);
-    }
-
     public Collection<Entity>getList() {
         return entities.values();
     }

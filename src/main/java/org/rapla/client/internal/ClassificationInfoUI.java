@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Locale;
 
 import org.rapla.RaplaResources;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
@@ -43,14 +44,7 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         buf.append( "</strong>");
     }
 
-    protected void insertClassification( Classifiable classifiable, StringBuffer buf ) {
-        insertClassificationTitle( classifiable, buf );
-        Collection<Row> att = new ArrayList<Row>();
-        att.addAll(getClassificationAttributes(classifiable, false, null));
-        createTable(att,buf,false);
-    }
-
-    protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller) {
+    protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller, User user) {
         Collection<Row> att = new ArrayList<Row>();
         Classification classification = classifiable.getClassification();
 
@@ -95,10 +89,10 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     }
     
     @Override
-    public String getTooltip(Classifiable classifiable) {
+    public String getTooltip(Classifiable classifiable, User user) {
         StringBuffer buf = new StringBuffer();
         Collection<Row> att = new ArrayList<Row>();
-        att.addAll(getClassificationAttributes(classifiable, false,null));
+        att.addAll(getClassificationAttributes(classifiable, false,null,user));
         createTable(att,buf,false);
         return buf.toString();
     }
@@ -106,7 +100,11 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     @Override
     public String createHTMLAndFillLinks(Classifiable classifiable,LinkController controller) {
         StringBuffer buf = new StringBuffer();
-        insertClassification( classifiable, buf );
+        insertClassificationTitle( classifiable, buf );
+        Collection<Row> att = new ArrayList<Row>();
+        final User user = getClientFacade().getUser();
+        att.addAll(getClassificationAttributes(classifiable, false, null, user));
+        createTable(att,buf,false);
         return buf.toString();
     }
    

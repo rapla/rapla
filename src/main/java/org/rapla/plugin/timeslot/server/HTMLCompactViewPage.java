@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot.server;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
@@ -27,7 +19,6 @@ import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -41,15 +32,22 @@ import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
+import javax.inject.Inject;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Set;
+
 @Extension(provides = HTMLViewPage.class, id = TimeslotPlugin.WEEK_TIMESLOT)
 public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTMLViewPage
 {
     private final TimeslotProvider timeslotProvider;
     @Inject
     public HTMLCompactViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
-            AppointmentFormater appointmentFormater , final TimeslotProvider timeslotProvider, PermissionController permissionController)
+            AppointmentFormater appointmentFormater , final TimeslotProvider timeslotProvider)
     {
-        super(raplaLocale, raplaResources, facade, logger, appointmentFormater, permissionController);
+        super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
         this.timeslotProvider = timeslotProvider;
     }
 

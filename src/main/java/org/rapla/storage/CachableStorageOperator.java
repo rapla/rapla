@@ -20,7 +20,6 @@ import java.util.TimeZone;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
@@ -42,6 +41,7 @@ public interface CachableStorageOperator extends StorageOperator {
 
     UpdateResult getUpdateResult(Date since);
     UpdateResult getUpdateResult(Date since,User user);
+
 }
 
 

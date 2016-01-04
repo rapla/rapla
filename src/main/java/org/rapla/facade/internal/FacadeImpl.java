@@ -62,7 +62,7 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -97,7 +97,6 @@ import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
-import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteOperator;
 
 /**
@@ -138,17 +137,23 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	Logger logger;
 	
 	String templateId;
-    private final PermissionController permissionController;
-	
+
 	@Inject
-	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger, PermissionController permissionController) {
+	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger) {
 	    
 		this.logger = logger;
 		this.i18n = i18n;
 		this.notifyQueue = notifyQueue;
-        this.permissionController = permissionController;
 		locale = i18n.getLocale();
+	}
 
+	public PermissionController getPermissionController()
+	{
+		if ( operator== null)
+		{
+			throw new RaplaException("Dependency Cycle detected. Please use provider for facade ");
+		}
+		return operator.getPermissionController() ;
 	}
 
     public void setOperator(StorageOperator operator)
@@ -440,6 +445,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         User workingUser = getWorkingUser();
 		Collection<Allocatable> objects = operator.getAllocatables(filters);
 		Iterator<Allocatable> it = objects.iterator();
+		PermissionController permissionController = getPermissionController();
 		while (it.hasNext()) {
 			Allocatable allocatable = it.next();
 			if (workingUser == null || workingUser.isAdmin())
@@ -501,6 +507,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		try {
 			Allocatable[] all = getAllocatables(null);
 			User user = getUser();
+			PermissionController permissionController = getPermissionController();
 			for (int i = 0; i < all.length; i++) {
 				if (permissionController.canModify(all[i], user)) {
 					return true;
@@ -672,6 +679,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			throws RaplaException {
 		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
 		Collection<DynamicType> collection = operator.getDynamicTypes();
+		PermissionController permissionController = getPermissionController();
 		for (DynamicType type: collection) {
 			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 			// ignore internal types for backward compatibility
@@ -815,12 +823,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 //		}
 //		return false;
 //	}
-	
-	public boolean canCreateReservations(DynamicType type, User user) {
-	    boolean result = permissionController.canCreate(type, user);
-	    return result;
-		//return hasGroupRights(user, Permission.GROUP_CAN_CREATE_EVENTS);
-	}
 
 	@Deprecated
 	public Allocatable[] getAllocatableBindings(Appointment forAppointment)	throws RaplaException {
@@ -1084,7 +1086,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	
 	public Reservation newReservation(Classification classification,User user) throws RaplaException 
     {
-        if (!canCreateReservations( classification.getType(),user))
+        if (!getPermissionController().canCreate(classification.getType(), user))
         {
             throw new RaplaException("User not allowed to create events");
         }
@@ -1290,7 +1292,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	    {
 	        throw new RaplaException("Can't create a calendar model for a different user.");
 	    }
-	    return new CalendarModelImpl( locale, user, this, permissionController);
+	    return new CalendarModelImpl( locale, user, this);
     }
 
 	private String createDynamicTypeKey(String classificationType)

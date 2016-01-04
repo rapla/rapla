@@ -76,13 +76,14 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( allocatable, buf );
         insertClassificationTitle( allocatable, buf );
-        createTable( getAttributes( allocatable, controller, false),buf,false);
+        final User user = getClientFacade().getUser();
+        createTable( getAttributes( allocatable, controller, false, user),buf,false);
         return buf.toString();
     }
     
-    public List<Row> getAttributes(Allocatable allocatable,LinkController controller,  boolean excludeAdditionalInfos) {
+    public List<Row> getAttributes(Allocatable allocatable,LinkController controller,  boolean excludeAdditionalInfos, User user) {
         ArrayList<Row> att = new ArrayList<Row>();
-        att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos, controller ));
+        att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos, controller, user) );
         final Locale locale = getLocale();
         User owner = allocatable.getOwner();
         User lastChangeBy = allocatable.getLastChangedBy();
@@ -108,12 +109,12 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     }
 
     @Override
-    public String getTooltip(Allocatable allocatable) {
+    public String getTooltip(Allocatable allocatable, User user) {
         StringBuffer buf = new StringBuffer();
         insertClassificationTitle( allocatable, buf );
         insertModificationRow( allocatable, buf );
         Collection<Row> att = new ArrayList<Row>();
-        att.addAll(getAttributes(allocatable,  null,  true));
+        att.addAll(getAttributes(allocatable,  null,  true, user));
         createTable(att,buf);
         insertPermissions( allocatable, buf );
         return buf.toString();

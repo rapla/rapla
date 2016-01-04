@@ -32,7 +32,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -50,7 +50,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
@@ -480,7 +479,7 @@ public class ServerTest
     @Test
     public void testChangeGroup() throws Exception
     {
-        final PermissionController permissionController = DefaultPermissionControllerSupport.getController();
+        final PermissionController permissionController = DefaultPermissionControllerSupport.getController(facade1.getOperator());
         User user = facade1.edit(facade1.getUser("monty"));
         Category[] groups = user.getGroupList().toArray(new Category[] {});
         Assert.assertTrue("No groups found!", groups.length > 0);

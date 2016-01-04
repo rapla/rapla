@@ -39,6 +39,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PermissionController;
+import org.rapla.storage.StorageOperator;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -88,7 +90,9 @@ public class LocalCacheTest  {
 
     @Test
     public void testAllocatable() throws Exception {
-        LocalCache cache = new LocalCache(new HashMap<String,FunctionFactory>(), DefaultPermissionControllerSupport.getController());
+        StorageOperator operator = null;
+        final PermissionController controller = DefaultPermissionControllerSupport.getController(operator);
+        LocalCache cache = new LocalCache(controller);
 
         DynamicTypeImpl type = createDynamicType();
         type.setResolver( cache);

@@ -28,11 +28,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
@@ -194,7 +193,7 @@ public class PermissionTest  {
     }
 
     private void clientReadPermissions() throws Exception {
-        final PermissionController permissionController = DefaultPermissionControllerSupport.getController();
+        final PermissionController permissionController = DefaultPermissionControllerSupport.getController(testFacade.getOperator());
         User user = testFacade.getUser();
         Allocatable a = getTestResource();
         Assert.assertNotNull(a);
@@ -205,7 +204,7 @@ public class PermissionTest  {
     }
 
     private void clientAllocatePermissions() throws Exception {
-        final PermissionController permissionController = DefaultPermissionControllerSupport.getController();
+        final PermissionController permissionController = DefaultPermissionControllerSupport.getController(testFacade.getOperator());
         Allocatable allocatable = getTestResource();
         User user = testFacade.getUser();
         Assert.assertNotNull(allocatable);

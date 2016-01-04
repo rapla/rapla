@@ -26,7 +26,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -37,11 +37,11 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     AppointmentFormater appointmentFormater;
 
     @Inject
-    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController)
+    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(i18n, raplaLocale, facade, logger);
         this.appointmentFormater = appointmentFormater;
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
     }
 
     private void addRestriction(Reservation reservation, Allocatable allocatable, StringBuffer buf) {
@@ -78,11 +78,11 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     }
     
     @Override
-    public String getTooltip(Reservation reservation) {
+    public String getTooltip(Reservation reservation, User user) {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( reservation, buf );
         insertClassificationTitle( reservation, buf );
-        createTable( getAttributes( reservation, null, null, true),buf,false);
+        createTable( getAttributes( reservation, null, user, true),buf,false);
         return buf.toString();
     }
     
@@ -98,7 +98,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     
     public List<Row> getAttributes(Reservation reservation,LinkController controller, User user, boolean excludeAdditionalInfos) {
         ArrayList<Row> att = new ArrayList<Row>();
-        att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,controller ));
+        att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,controller, user ));
         User owner = reservation.getOwner();
         final Locale locale = getLocale();
         if ( owner != null)

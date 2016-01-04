@@ -33,7 +33,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -42,7 +42,6 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.facade.internal.ModificationEventImpl;
@@ -112,8 +111,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     RemoteConnectionInfo connectionInfo;
 	
     @Inject
-    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,Map<String, FunctionFactory> functionFactoryMap,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo, PermissionController permissionController) {
-        super(  logger, i18n,locale, functionFactoryMap, permissionController);
+    public RemoteOperator( Logger logger, RaplaResources i18n,RaplaLocale locale, CommandScheduler scheduler,Map<String, FunctionFactory> functionFactoryMap,RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage, RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions) {
+        super(  logger, i18n,locale, functionFactoryMap, permissionExtensions);
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.remoteStorage = remoteStorage;
     	commandQueue = scheduler;
@@ -133,7 +132,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     {
         return connectionInfo;
     }
-    
+
+    User user;
+
     synchronized public User connect(ConnectInfo connectInfo) throws RaplaException {
        
         if (isConnected())
@@ -169,8 +170,14 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    {
 	        user = loadData();
 	    }
+        this.user = user;
 		initRefresh();
 		return user;
+    }
+
+    public User getUser()
+    {
+        return user;
     }
     
     @Override
@@ -569,10 +576,15 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         };
         store.addAll( entities);
         for (Entity entity: entities) {
+            if (entity instanceof  DynamicType)
+            {
+                ((DynamicTypeImpl) entity).setOperator( this);
+            }
             if (entity instanceof EntityReferencer)
             {
                 ((EntityReferencer)entity).setResolver(store);
             }
+
         }
         for (Entity entity: entities) {
             if (entity instanceof EntityReferencer)

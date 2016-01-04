@@ -12,22 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.abstractcalendar.server;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.ParseDateException;
@@ -37,7 +21,6 @@ import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
@@ -48,6 +31,21 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.server.extensionpoints.HTMLViewPage;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 {
@@ -60,15 +58,13 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     final protected ClientFacade facade;
     final protected Logger logger;
     final protected AppointmentFormater appointmentFormater;
-    private final PermissionController permissionController;
 
-    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater, PermissionController permissionController) {
+    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
         this.raplaResources = raplaResources;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.facade = facade;
         this.appointmentFormater = appointmentFormater;
-        this.permissionController = permissionController;
     }
 
     protected RaplaLocale getRaplaLocale()
@@ -83,7 +79,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     }
 
     protected RaplaBuilder createBuilder() throws RaplaException {
-        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater, permissionController);
+        RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater);
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
 		builder.setFromModel( model, startDate, endDate  );

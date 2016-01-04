@@ -23,7 +23,6 @@ import javax.inject.Inject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -43,15 +42,13 @@ public class RaplaICalExport implements ICalExport
     ClientFacade facade;
     RemoteSession session;
     Export2iCalConverter iCalConverter;
-    private final PermissionController permissionController;
 
     @Inject
-    public RaplaICalExport(  ClientFacade facade, RemoteSession session, Export2iCalConverter iCalConverter, PermissionController permissionController)
+    public RaplaICalExport(  ClientFacade facade, RemoteSession session, Export2iCalConverter iCalConverter)
     {
         this.facade = facade;
         this.session = session;
         this.iCalConverter = iCalConverter;
-        this.permissionController = permissionController;
     }
 
     public void export(User user,String[] appointmentIds, OutputStream out ) throws RaplaException, IOException
@@ -65,7 +62,7 @@ public class RaplaICalExport implements ICalExport
         for ( String id:appointmentIds)
         {
         	Appointment app = operator.resolve(id, Appointment.class);
-            boolean canRead = permissionController.canRead(app, user, facade.getOperator());
+            boolean canRead = facade.getPermissionController().canRead(app, user);
             if (canRead)
             {
                 appointments.add(app);
@@ -73,7 +70,7 @@ public class RaplaICalExport implements ICalExport
 
         }
         Preferences preferences =facade.getPreferences( user);
-        Calendar iCal = iCalConverter.createiCalender(appointments, preferences);
+        Calendar iCal = iCalConverter.createiCalender(appointments, preferences, user);
         if (null != iCal) {
             export(iCal, out);
         }

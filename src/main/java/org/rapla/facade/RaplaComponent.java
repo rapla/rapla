@@ -35,6 +35,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.StorageOperator;
 
 import java.util.Collection;
 import java.util.Date;
@@ -149,23 +150,27 @@ public class RaplaComponent
     }
 
     static public CalendarOptions getCalendarOptions(final User user, final ClientFacade clientFacade) {
+        return getCalendarOptions(user, clientFacade.getOperator());
+    }
+
+    static public CalendarOptions getCalendarOptions(final User user, final StorageOperator operator) {
         RaplaConfiguration conf = null;
         try {
             // check if user has calendar options
             if ( user != null)
             {
-                conf = clientFacade.getPreferences( user ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = operator.getPreferences( user, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             // check if system has calendar options
             if ( conf == null)
             {
-                conf = clientFacade.getPreferences( null ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = operator.getPreferences( null, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             if ( conf != null)
             {
                 return new CalendarOptionsImpl( conf );
             }
-            
+
         } catch (RaplaException ex) {
 
         }
@@ -354,6 +359,34 @@ public class RaplaComponent
             selectedDate = clientFacade.today();
         }
         final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(clientFacade.getUser(), clientFacade);
+        Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
+        startDate = raplaLocale.toDate(selectedDate,time);
+        return startDate;
+    }
+
+    public static Date getStartDate(CalendarModel model, StorageOperator operator,User user, RaplaLocale raplaLocale) {
+        Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+        Date startDate = null;
+        if ( markedIntervals.size() > 0)
+        {
+            TimeInterval first = markedIntervals.iterator().next();
+            startDate = first.getStart();
+        }
+        if ( startDate != null)
+        {
+            return startDate;
+        }
+
+        Date selectedDate = model.getSelectedDate();
+        if ( selectedDate == null)
+        {
+            selectedDate = model.getStartDate();
+        }
+        if ( selectedDate == null)
+        {
+            selectedDate = operator.today();
+        }
+        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, operator);
         Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
         startDate = raplaLocale.toDate(selectedDate,time);
         return startDate;

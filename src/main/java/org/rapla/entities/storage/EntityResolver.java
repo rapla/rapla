@@ -36,7 +36,9 @@ public interface EntityResolver
     
     public DynamicType getDynamicType(String key);
 
-    FunctionFactory getFunctionFactory(String functionName);
+    //FunctionFactory getFunctionFactory(String functionName);
+
+    //PermissionController getPermissionController();
 }
 
 

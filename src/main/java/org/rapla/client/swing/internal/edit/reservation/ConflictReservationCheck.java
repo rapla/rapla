@@ -39,7 +39,7 @@ import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -57,9 +57,9 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public ConflictReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public ConflictReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;

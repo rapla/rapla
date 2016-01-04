@@ -35,7 +35,7 @@ import org.rapla.client.swing.internal.edit.fields.PermissionListField.Permissio
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -59,9 +59,9 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 
     @SuppressWarnings("unchecked")
     @Inject
-    public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
+    public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
         
@@ -144,7 +144,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             String annotation = alloc.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
 			boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
 			values.add(holdBackConflicts);
-			if ( !permissionController.canAdmin( alloc, clientFacade))
+			if ( !permissionController.canAdmin( alloc, clientFacade.getUser()))
 			{
 			    canAdmin = false;
 			}

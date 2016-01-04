@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
-import java.awt.Component;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -24,12 +23,11 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -62,7 +60,7 @@ public class AppointmentAction extends RaplaAction {
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     
-	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController)
+	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
@@ -71,7 +69,7 @@ public class AppointmentAction extends RaplaAction {
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
     }
 
     public AppointmentAction setAddTo(ReservationEdit reservationEdit) 
@@ -85,7 +83,7 @@ public class AppointmentAction extends RaplaAction {
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.new"));
         final ClientFacade clientFacade = getClientFacade();
         final RaplaLocale raplaLocale = getRaplaLocale();
-        boolean canAllocate = permissionController.canAllocate(calendarSelectionModel, clientFacade, raplaLocale);
+        boolean canAllocate = permissionController.canAllocate(calendarSelectionModel, getUser(), raplaLocale);
         setEnabled( canAllocate);
         return this;
     }
@@ -96,8 +94,7 @@ public class AppointmentAction extends RaplaAction {
         this.contextAllocatables = contextAllocatables;
         putValue(NAME, getString("copy"));
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.copy"));
-        final ClientFacade clientFacade = getClientFacade();
-        setEnabled(permissionController.canCreateReservation(clientFacade));
+        setEnabled(permissionController.canCreateReservation(getUser()));
         return this;
     }
 
@@ -107,8 +104,7 @@ public class AppointmentAction extends RaplaAction {
         this.contextAllocatables = contextAllocatables;
         putValue(NAME, getString("cut"));
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.cut"));
-        final ClientFacade clientFacade = getClientFacade();
-        setEnabled(permissionController.canCreateReservation(clientFacade));
+        setEnabled(permissionController.canCreateReservation(getUser()));
         return this;
     }
 
@@ -117,8 +113,7 @@ public class AppointmentAction extends RaplaAction {
         this.type = PASTE;
         putValue(NAME, getString("paste_into_existing_event"));
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.paste"));
-        final ClientFacade clientFacade = getClientFacade();
-        setEnabled(isAppointmentOnClipboard() && permissionController.canCreateReservation(clientFacade));
+        setEnabled(isAppointmentOnClipboard() && permissionController.canCreateReservation(getUser()));
         return this;
     }
 
@@ -127,7 +122,7 @@ public class AppointmentAction extends RaplaAction {
         putValue(NAME, getString("paste_as") + " " + getString( "new_reservation" ) );
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.paste_new"));
         final ClientFacade clientFacade = getClientFacade();
-        setEnabled(isAppointmentOnClipboard() && permissionController.canCreateReservation(clientFacade));
+        setEnabled(isAppointmentOnClipboard() && permissionController.canCreateReservation(clientFacade.getUser()));
         return this;
     }
 
@@ -140,8 +135,7 @@ public class AppointmentAction extends RaplaAction {
     	this.type = DELETE;
     	putValue(NAME, getI18n().format("delete.format", getString("appointment")));
     	putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.delete"));
-        final ClientFacade clientFacade = getClientFacade();
-    	setEnabled(permissionController.canModify(appointment.getReservation(), clientFacade));
+    	setEnabled(permissionController.canModify(appointment.getReservation(), getUser()));
     	return this;
     }
     
@@ -164,7 +158,7 @@ public class AppointmentAction extends RaplaAction {
              if (blockList != null && blockList.size() > 0 ) {
                  Iterator<AppointmentBlock> it = blockList.iterator();
                  while (it.hasNext()) {
-                     if (!permissionController.canModify(it.next().getAppointment().getReservation(), clientFacade)){
+                     if (!permissionController.canModify(it.next().getAppointment().getReservation(), getUser())){
                          enabled = false;
                          break;
                      }
@@ -185,7 +179,7 @@ public class AppointmentAction extends RaplaAction {
         try 
         {
         	User user = getUser();
-            boolean canRead = permissionController.canRead(appointment, user, getEntityResolver());
+            boolean canRead = permissionController.canRead(appointment, user);
             setEnabled( canRead);
         } 
         catch (RaplaException ex)
@@ -201,8 +195,7 @@ public class AppointmentAction extends RaplaAction {
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.edit"));
         Appointment appointment = appointmentBlock.getAppointment();
         boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(appointment.getReservation());
-        final ClientFacade clientFacade = getClientFacade();
-		boolean canModify = permissionController.canModify(appointment.getReservation(), clientFacade);
+		boolean canModify = permissionController.canModify(appointment.getReservation(), getUser());
 		String text = !canModify && canExchangeAllocatables ?  getString("exchange_allocatables") : getString("edit");
 		putValue(NAME, text);
 		setEnabled(canModify || canExchangeAllocatables );

@@ -118,8 +118,12 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
             String key = entry.getKey();
             Attribute attribute = type.getAttribute(key);
+            if ( attribute == null)
+            {
+                continue;
+            }
             RaplaType refType = attribute.getRefType();
-            if ( attribute == null || refType == null)
+            if ( refType == null)
             {
                 continue;
             }
@@ -188,10 +192,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
             return "";
         }
-        EvalContext evalContext = new EvalContext(locale, annotationName, Collections.singletonList(this));
+        EvalContext evalContext = type.createEvalContext(locale, annotationName, this);
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
+
 
 //    public String getNamePlaning(Locale locale) {
 //        if ( namePlaning == null)

@@ -50,7 +50,6 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -84,11 +83,11 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     
-	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController)  {
+	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
 		super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory, permissionController);
+		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override
@@ -330,11 +329,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
         private final Logger logger;
         private final TextFieldFactory textFieldFactory;
         private final LongFieldFactory longFieldFactory;
-        private final PermissionController permissionController;
-	    
+
 	    @Inject
         public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
-                DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, PermissionController permissionController)
+                DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)
         {
             super();
             this.facade = facade;
@@ -348,12 +346,11 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
             this.booleanFieldFactory = booleanFieldFactory;
             this.textFieldFactory = textFieldFactory;
             this.longFieldFactory = longFieldFactory;
-            this.permissionController = permissionController;
         }
 
         public ClassificationField create()
 	    {
-	        return new ClassificationField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory, permissionController);
+	        return new ClassificationField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 	    }
 	}
 }

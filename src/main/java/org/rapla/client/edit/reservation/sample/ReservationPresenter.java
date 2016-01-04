@@ -13,7 +13,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -41,10 +41,10 @@ public class ReservationPresenter implements ReservationController, Presenter
     private final PermissionController permissionController;
 
     @Inject
-    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view, PermissionController permissionController)
+    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view)
     {
         this.facade = facade;
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         this.eventBus = eventBus;

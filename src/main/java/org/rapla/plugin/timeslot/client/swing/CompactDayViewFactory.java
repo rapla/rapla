@@ -32,7 +32,6 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -57,7 +56,6 @@ public class CompactDayViewFactory implements SwingViewFactory
     private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final PermissionController permissionController;
     private final ClientFacade facade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
@@ -70,7 +68,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     public CompactDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
             ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
-            DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController, IOInterface ioInterface, AppointmentFormater appointmentFormater)
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -86,7 +84,6 @@ public class CompactDayViewFactory implements SwingViewFactory
         this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
         config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
@@ -95,7 +92,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         return new SwingCompactDayCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, calendarSelectionModel,
-                clipboard, timeslotProvider, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, permissionController, ioInterface, appointmentFormater);
+                clipboard, timeslotProvider, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
     }
     
     @Override

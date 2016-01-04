@@ -17,7 +17,6 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.AbstractAction;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.ListSelectionModel;
@@ -41,7 +40,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
@@ -63,13 +62,13 @@ public class TemplateEdit extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     
-    private TemplateEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController) throws RaplaException {
+    private TemplateEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
-        allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory, permissionController)
+        this.permissionController = facade.getPermissionController();
+        allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
         {
             protected void mapFromObjects() throws RaplaException {
                 super.mapFromObjects();
@@ -198,7 +197,7 @@ public class TemplateEdit extends RaplaGUIComponent
             final ClientFacade clientFacade = getClientFacade();
             for ( Allocatable template:originals)
             {
-                if ( permissionController.canModify( template, clientFacade))
+                if ( permissionController.canModify( template, clientFacade.getUser()))
                 {
                     editableTemplates.add( template);
                 }
@@ -318,7 +317,7 @@ public class TemplateEdit extends RaplaGUIComponent
         public TemplateEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
                 ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-                RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController)
+                RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory)
         {
             this.facade = facade;
             this.i18n = i18n;
@@ -331,13 +330,13 @@ public class TemplateEdit extends RaplaGUIComponent
             this.permissionListFieldFactory = permissionListFieldFactory;
             this.raplaListEditFactory = raplaListEditFactory;
             this.booleanFieldFactory = booleanFieldFactory;
-            this.permissionController = permissionController;
+            this.permissionController = facade.getPermissionController();
         }
 
         public TemplateEdit create()
         {
             return new TemplateEdit(facade, i18n, raplaLocale, logger, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory,
-                    permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory, permissionController);
+                    permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory);
         }
     }
 

@@ -45,7 +45,7 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
@@ -91,7 +91,6 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final PermissionController permissionController;
     private final RaplaMenuBarContainer menuBar;
 	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
@@ -105,7 +104,6 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -260,10 +258,11 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
                  || type ==Period.TYPE 
                )
             {
-            	
+
                 RaplaObjectAction editAction = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
-                        createPopupContext(getComponent(), null), editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
-                if (permissionController.canModify( focusedObject, getClientFacade()))
+                        createPopupContext(getComponent(), null), editController, infoFactory, raplaImages, dialogUiFactory);
+                PermissionController permissionController = getClientFacade().getPermissionController();
+                if (permissionController.canModify( focusedObject, getClientFacade().getUser()))
                 {
                     editAction.setEdit((Entity<?>)focusedObject);
                     editAction.actionPerformed();
@@ -378,7 +377,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
                 TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory,
                 RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
-                PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory,
+                TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
         {
             this.facade = facade;
@@ -394,7 +393,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
             this.booleanFieldFactory = booleanFieldFactory;
-            this.permissionController = permissionController;
+            this.permissionController = facade.getPermissionController();
             this.textFieldFactory = textFieldFactory;
             this.longFieldFactory = longFieldFactory;
             this.filterEditButtonFactory = filterEditButtonFactory;

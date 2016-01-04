@@ -24,6 +24,7 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
+import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
@@ -203,7 +204,7 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         }
         return buf.toString();
     }
-    public String getTooltip(T object) {
+    public String getTooltip(T object, User user) {
         if (object instanceof Named)
             return ((Named) object).getName(getI18n().getLocale());
         return null;

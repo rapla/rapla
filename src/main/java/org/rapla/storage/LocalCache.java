@@ -12,15 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Provider;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -34,10 +25,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
@@ -45,6 +34,14 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
+
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class LocalCache implements EntityResolver
 {
@@ -59,9 +56,8 @@ public class LocalCache implements EntityResolver
     Map<String,ReservationImpl> reservations;
     
     private String clientUserId;
-    Map<String,FunctionFactory> functionFactoryMap;
     private final PermissionController permissionController;
-    public LocalCache(Map<String,FunctionFactory> functionFactoryMap, PermissionController permissionController) {
+    public LocalCache(PermissionController permissionController) {
         this.permissionController = permissionController;   
         entities = new HashMap<String,Entity>();
         // top-level-entities
@@ -69,7 +65,6 @@ public class LocalCache implements EntityResolver
         users = new LinkedHashMap<String,UserImpl>();
         resources = new LinkedHashMap<String,AllocatableImpl>();
         dynamicTypes = new LinkedHashMap<String,DynamicTypeImpl>();
-        this.functionFactoryMap = functionFactoryMap;
         initSuperCategory();
     }
     
@@ -304,14 +299,6 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    @Override public FunctionFactory getFunctionFactory(String functionName)
-    {
-        if ( functionFactoryMap == null)
-        {
-            return null;
-        }
-        return functionFactoryMap.get( functionName);
-    }
 
     public List<Entity> getVisibleEntities(final User user) {
         List<Entity> result = new ArrayList<Entity>();
@@ -415,8 +402,8 @@ public class LocalCache implements EntityResolver
         EntityResolver cache = this;
         if ( user != null)
         {
-            ((ConflictImpl)conflict).setAppointment1Editable( permissionController.canModifyEvent(conflict.getReservation1(), user, cache));
-            ((ConflictImpl)conflict).setAppointment2Editable( permissionController.canModifyEvent(conflict.getReservation2(), user, cache));
+            ((ConflictImpl)conflict).setAppointment1Editable( permissionController.canModifyEvent(conflict.getReservation1(), user));
+            ((ConflictImpl)conflict).setAppointment2Editable( permissionController.canModifyEvent(conflict.getReservation2(), user));
         }
     }
 

@@ -39,7 +39,7 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
@@ -63,9 +63,9 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
     private final DialogUiFactoryInterface dialogUiFactory;
     private final EventBus eventBus;
     @Inject
-	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
+	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
         this.raplaImages = raplaImages;
@@ -79,9 +79,9 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
  	public MenuElement getMenuElement() {
  		typeMap.clear();
 		List<DynamicType> eventTypes = new ArrayList<DynamicType>();
-		try {
+        final User user = getUser();
+        try {
 			DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-            User user = getUser();
 			for ( DynamicType type: types)
 			{
                 if (permissionController.canCreate( type, user))
@@ -100,7 +100,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         if ( eventTypes.size() == 1)
 		{
 		    RaplaMenuItem item = new RaplaMenuItem( getId());
-            item.setEnabled( permissionController.canAllocate(model, clientFacade, raplaLocale) && canCreateReservation);
+            item.setEnabled( permissionController.canAllocate(model, user, raplaLocale) && canCreateReservation);
             DynamicType type = eventTypes.get(0);
             String name = type.getName( getLocale());
             if ( newEventText.endsWith( name))
@@ -120,7 +120,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( permissionController.canAllocate(model, clientFacade, raplaLocale) && canCreateReservation);
+			item.setEnabled( permissionController.canAllocate(model, user, raplaLocale) && canCreateReservation);
 			item.setText(newEventText);
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			for ( DynamicType type:eventTypes)

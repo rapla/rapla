@@ -27,7 +27,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -73,6 +73,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
 /** Use this Operator to keep the data stored in an XML-File.
@@ -145,9 +146,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
-            PermissionController permissionController) throws RaplaException
+            Set<PermissionExtension> permissionExtensions) throws RaplaException
     {
-        super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionController);
+        super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);
         try
         {
             storageURL = new File(resolvedPath).getCanonicalFile().toURI();

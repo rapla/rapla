@@ -12,17 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
@@ -42,19 +31,27 @@ import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.Collection;
+import java.util.Collections;
 
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
@@ -68,17 +65,17 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     @Inject
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            PermissionController permissionController, InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
+            InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
             DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
             DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
 
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
-                appointmentFormater, permissionController, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
+                appointmentFormater, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
                 booleanFieldFactory, filterEditButtonFactory, frameControllerList)
         {
             public boolean isRestrictionVisible() {return false;}
@@ -169,7 +166,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         final ClientFacade clientFacade = getClientFacade();
         for ( Reservation event:objectList)
         {
-            if ( !permissionController.canAdmin( event, clientFacade))
+            if ( !permissionController.canAdmin( event, clientFacade.getUser()))
             {
                 canAdmin = false;
             }

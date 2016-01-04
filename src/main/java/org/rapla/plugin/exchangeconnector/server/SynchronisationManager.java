@@ -36,17 +36,13 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
@@ -87,15 +83,13 @@ public class SynchronisationManager  {
     private final String exchangeAppointmentCategory;
     
     private final int syncPeriodPast;
-    private final PermissionController permissionController;
-    
+
     @Inject
-	public SynchronisationManager(ClientFacade facade,RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger, TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage, CommandScheduler scheduler, PermissionController permissionController, ConfigReader config) throws RaplaException {
+	public SynchronisationManager(ClientFacade facade,RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger, TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage, CommandScheduler scheduler, ConfigReader config) throws RaplaException {
 		super();
 		this.converter = converter;
 		this.logger = logger;
 		this.facade = facade;
-        this.permissionController = permissionController;
 		this.i18n = new CompoundI18n(i18nRapla, i18nExchange);
 		this.appointmentFormater = appointmentFormater;
 		this.keyStorage = keyStorage;
@@ -556,7 +550,7 @@ public class SynchronisationManager  {
 		
 		Set<SynchronizationTask> result = new HashSet<SynchronizationTask>();
 		final Locale locale = i18n.getLocale();
-        CalendarModelImpl calendarModelImpl = new CalendarModelImpl(locale, user, facade, permissionController);
+        CalendarModelImpl calendarModelImpl = new CalendarModelImpl(locale, user, facade);
 		Map<String, String> alternativOptions = null;
 		calendarModelImpl.setConfiguration( modelConfig, alternativOptions);
 		configList.add( calendarModelImpl);

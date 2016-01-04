@@ -15,23 +15,10 @@ package org.rapla.storage.dbfile.tests;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.RaplaResources;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.entities.domain.permission.PermissionController;
-import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
-import org.rapla.entities.dynamictype.internal.StandardFunctions;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.DefaultScheduler;
-import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
-import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 import org.xml.sax.InputSource;
 
@@ -47,9 +34,6 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Future;
 
 @RunWith(JUnit4.class)

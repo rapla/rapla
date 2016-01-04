@@ -34,7 +34,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -70,18 +70,18 @@ public class RaplaObjectAction extends RaplaAction {
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
 
-    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController) {
-        this(facade, i18n, raplaLocale, logger, null, editController, infoFactory, raplaImages, dialogUiFactory, permissionController);
+    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+        this(facade, i18n, raplaLocale, logger, null, editController, infoFactory, raplaImages, dialogUiFactory);
     }
 
-    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PopupContext popupContext, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, PermissionController permissionController)  {
+    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PopupContext popupContext, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)  {
         super(facade, i18n, raplaLocale, logger);
         this.editController = editController;
         this.popupContext = popupContext;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
     }
     
     protected PopupContext getPopupContext()
@@ -156,17 +156,17 @@ public class RaplaObjectAction extends RaplaAction {
 
     protected void update() {
         boolean enabled = true;
-        final ClientFacade clientFacade = getClientFacade();
+        User user = getUser();
         if (type == EDIT || type == DELETE) {
-            enabled = permissionController.canModify(object, clientFacade);
+            enabled = permissionController.canModify(object, user);
 
         } else if (type == NEW ) {
-            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && permissionController.isRegisterer(null, clientFacade)) || isAdmin();
+            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && permissionController.isRegisterer(null, user)) || isAdmin();
         } else if (type == EDIT_SELECTION || type == DELETE_SELECTION) {
             if (objectList != null && objectList.size() > 0 ) {
                 Iterator<Entity<?>> it = objectList.iterator();
                 while (it.hasNext()) {
-                    if (!permissionController.canModify(it.next(), clientFacade)){
+                    if (!permissionController.canModify(it.next(), user)){
                         enabled = false;
                         break;
                     }

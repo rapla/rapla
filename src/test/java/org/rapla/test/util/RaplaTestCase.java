@@ -15,14 +15,13 @@ package org.rapla.test.util;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.CommandScheduler;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -33,7 +32,6 @@ import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.ServerContainerContext;
-import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.MyCustomConnector;
@@ -50,7 +48,6 @@ import org.xml.sax.InputSource;
 import javax.inject.Provider;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -112,10 +109,9 @@ public abstract class RaplaTestCase
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        PermissionController permissionController = new PermissionController(permissionExtensions);
         FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
-                DefaultPermissionControllerSupport.getController());
-        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
+                permissionExtensions);
+        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
         operator.setFileIO(fileIO);
         operator.connect();
@@ -153,22 +149,20 @@ public abstract class RaplaTestCase
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        PermissionController permissionController = new PermissionController(permissionExtensions);
-
 
         MyImportExportManagerProvider importExportManager = new MyImportExportManagerProvider();
         DBOperator operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,dataSource,
-                DefaultPermissionControllerSupport.getController());
+                DefaultPermissionControllerSupport.getPermissionExtensions());
         if ( xmlFile != null)
         {
             String resolvedPath = getTestDataFile(xmlFile);
             FileOperator fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
-                    DefaultPermissionControllerSupport.getController());
+                    DefaultPermissionControllerSupport.getPermissionExtensions());
             fileOperator.setFileIO(new VoidFileIO());
             importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));
         }
 
-        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
+        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
         operator.connect();
         return facade;
@@ -200,7 +194,6 @@ public abstract class RaplaTestCase
         final RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        final PermissionController permissionController = new PermissionController(permissionExtensions);
         Provider<ClientFacade> clientFacadeProvider = new Provider<ClientFacade>()
         {
             @Override public ClientFacade get()
@@ -213,8 +206,8 @@ public abstract class RaplaTestCase
                 RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
                 RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,
-                        remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getController());
-                FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger, permissionController);
+                        remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getPermissionExtensions());
+                FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
                 facade.setOperator(remoteOperator);
                 return facade;
             }

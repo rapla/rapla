@@ -34,10 +34,12 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.UniqueKeyException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -53,6 +55,9 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.PermissionController;
+import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbrm.RemoteOperator;
 
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
@@ -71,7 +76,8 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public DynamicTypeImpl() {
     	this( new Date(),new Date());
     }
-    
+    transient StorageOperator operator;
+
     public DynamicTypeImpl(Date createDate, Date lastChanged) {
     	this.createDate = createDate;
     	this.lastChanged = lastChanged;
@@ -79,6 +85,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
+        // TODO replace with seperate method for setting StorageOperator
+        if ( resolver instanceof StorageOperator)
+        {
+            operator = (StorageOperator) resolver;
+        }
         for (AttributeImpl child:attributes)
         {
         	child.setParent( this);
@@ -94,6 +105,16 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     	{
     	    p.setResolver( resolver);
     	}
+    }
+
+    public void setOperator(StorageOperator operator)
+    {
+        this.operator = operator;
+    }
+
+    StorageOperator getOperator()
+    {
+        return operator;
     }
     
     public DynamicTypeParseContext getParseContext()
@@ -478,6 +499,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public DynamicTypeImpl clone() {
         DynamicTypeImpl clone = new DynamicTypeImpl();
         super.deepClone(clone);
+        clone.operator = operator;
         clone.permissions.clear();
         for (PermissionImpl perm:permissions) {
             PermissionImpl permClone = perm.clone();
@@ -620,6 +642,24 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     }
 
+
+    public EvalContext createEvalContext(Locale locale, String annotationName, Object object)
+    {
+        User user = null;
+        if (  operator instanceof RemoteOperator)
+        {
+            user = ((RemoteOperator)operator).getUser();
+        }
+        return createEvalContext(user,locale, annotationName, object);
+    }
+
+    public EvalContext createEvalContext(User user,Locale locale, String annotationName, Object object)
+    {
+        PermissionController permissionController = getOperator().getPermissionController();
+        List list = ( object instanceof List) ? (List)object : Collections.singletonList( object);
+        return new EvalContext(locale, annotationName,permissionController, user, list);
+    }
+
     static private Classification getRootClassification(EvalContext context)
     {
         EvalContext parent = context.getParent();
@@ -683,7 +723,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
         @Override public FunctionFactory getFunctionFactory(String functionName)
         {
-            final EntityResolver resolver = type.getResolver();
+            final StorageOperator resolver = type.getOperator();
             final FunctionFactory functionFactory = resolver.getFunctionFactory(functionName);
             return functionFactory;
         }

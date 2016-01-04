@@ -2,6 +2,7 @@ package org.rapla.plugin.tableview.client.swing;
 
 import javax.inject.Inject;
 
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -13,17 +14,19 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 public class SwingRaplaTableColumnFactory implements RaplaTableColumnFactory
 {
 
+    final ClientFacade facade;
     @Inject
-    public SwingRaplaTableColumnFactory()
+    public SwingRaplaTableColumnFactory(ClientFacade facade)
     {
         super();
+        this.facade = facade;
     }
     
     @SuppressWarnings("rawtypes")
     @Override
     public RaplaTableColumn createColumn(TableColumnConfig column, RaplaLocale raplaLocale)
     {
-        return new RaplaTableColumnImpl(column, raplaLocale);
+        return new RaplaTableColumnImpl(column, raplaLocale, facade);
     }
 
 }

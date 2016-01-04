@@ -57,7 +57,6 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -73,7 +72,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -95,7 +93,6 @@ import org.rapla.storage.StorageOperator;
 @Singleton
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
-    private final PermissionController permissionController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     
@@ -115,9 +112,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     Font bigFont =  normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
     
     @Inject
-    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PermissionController permissionController, InfoFactory infoFactory, RaplaImages raplaImages) {
+    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory, RaplaImages raplaImages) {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = permissionController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         bigFolderUsers = raplaImages.getIconFromKey("icon.big_folder_users");
@@ -999,7 +995,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 Allocatable allocatable = (Allocatable) object;
                 try {
     				User user = getUser();
-    				if ( !permissionController.canAllocate(allocatable, user,  today))
+    				if ( !getClientFacade().getPermissionController().canAllocate(allocatable, user, today))
     				{
     					icon = forbiddenIcon;
     				}

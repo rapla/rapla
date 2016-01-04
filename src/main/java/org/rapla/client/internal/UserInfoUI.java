@@ -49,7 +49,7 @@ public class UserInfoUI extends HTMLInfo<User> {
         else
         {
             // no links for user resource to its person so we pass null as link controller
-            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,null);
+            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,null,getClientFacade().getUser());
 			att.addAll(classificationAttributes);
         }
         createTable(att,buf,false);
@@ -77,7 +77,7 @@ public class UserInfoUI extends HTMLInfo<User> {
     }
     
     @Override
-    public String getTooltip(User user) {
+    public String getTooltip(User user, User forUser) {
         return createHTMLAndFillLinks(user, null );
     }
 

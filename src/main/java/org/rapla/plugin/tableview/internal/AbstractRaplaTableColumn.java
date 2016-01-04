@@ -1,34 +1,38 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.Locale;
-
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+
+import java.util.Collections;
+import java.util.Date;
+import java.util.Locale;
 
 public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn<T, C>
 {
 
     protected final TableColumnConfig column;
     protected RaplaLocale raplaLocale;
+    final ClientFacade facade;
 
-    public AbstractRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale)
+    public AbstractRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale, ClientFacade facade)
     {
         this.column = column;
         this.raplaLocale = raplaLocale;
+        this.facade = facade;
     }
 
     protected Locale getLocale()
@@ -63,10 +67,11 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
     {
         final Locale locale = getLocale();
         final String annotationName = getAnnotationName();
-        final EvalContext context = new EvalContext(locale, annotationName, Collections.singletonList(object));
         final Classification classification = ParsedText.guessClassification(object);
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
+        User user = facade.getUser();
+        final EvalContext context = type.createEvalContext(user,locale, annotationName, Collections.singletonList(object));
         if (parsedAnnotation == null)
         {
             final String defaultValue = column.getDefaultValue();

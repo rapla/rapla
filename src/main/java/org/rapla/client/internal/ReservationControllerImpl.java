@@ -12,22 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -48,7 +32,6 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -56,6 +39,21 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
 {
@@ -72,8 +70,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     private RaplaResources i18n;
     private CalendarSelectionModel calendarModel;
     private RaplaClipboard clipboard;
-    private final PermissionController permissionController;
-    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, PermissionController permissionController)
+    public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale,Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
@@ -82,7 +79,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         this.calendarModel = calendarModel;
         this.appointmentFormater=appointmentFormater; 
         this.clipboard = clipboard;
-        this.permissionController = permissionController;
         facade.addModificationListener(this);
     }
     
@@ -672,7 +668,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         // copy info text to system clipboard
         {
 	        StringBuffer buf = new StringBuffer();
-	        ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(),getRaplaLocale(), getFacade(),logger,appointmentFormater, permissionController);
+	        ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(),getRaplaLocale(), getFacade(),logger,appointmentFormater);
 	    	boolean excludeAdditionalInfos = false;
 	    
 			List<Row> attributes = reservationInfoUI.getAttributes(sourceReservation, null, null, excludeAdditionalInfos);

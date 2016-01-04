@@ -58,7 +58,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.permission.PermissionController;
+import org.rapla.storage.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -106,7 +106,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions, final boolean editable, boolean printing,
             TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
             final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory,
-            PermissionController permissionController, IOInterface ioInterface) throws RaplaException
+            IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = menuBar;
@@ -115,7 +115,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = permissionController;
+        this.permissionController = facade.getPermissionController();
         this.ioInterface = ioInterface;
         cutListener.setCut(true);
         table = new JTable() {
@@ -305,10 +305,10 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 			updateMenu(editMenu,newMenu, p);
 			final User user = getUser();
             final ClientFacade clientFacade = getClientFacade();
-            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(user, clientFacade);
+            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(user);
 			boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
 			newMenu.setEnabled(enableNewMenu);
-			editMenu.setEnabled(permissionController.canUserAllocateSomething(user, clientFacade));
+			editMenu.setEnabled(permissionController.canUserAllocateSomething(user));
 		} catch (RaplaException ex) {
 		    dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
 		}
@@ -390,7 +390,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 	            RaplaMenu newMenu = new RaplaMenu("EDIT_BEGIN");
 	            newMenu.setText(getString("new"));
 	            menu.add(newMenu);
-	            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser(), getClientFacade());
+	            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser());
 	            updateMenu(menu,newMenu, p);
 	            boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
 	            newMenu.setEnabled(enableNewMenu);
@@ -418,7 +418,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             if (me.getClickCount() > 1  && selectedEvents.size() == 1 )
             {
                 Reservation reservation = selectedEvents.get( 0);
-                if (!permissionController.canModify( reservation, getClientFacade() ))
+                if (!permissionController.canModify( reservation, getUser()))
                 {
                     return;
                 }
