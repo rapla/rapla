@@ -137,6 +137,21 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 scheduler.schedule(this, delay);
             }
         }, delay);
+        scheduler.schedule(new Command()
+        {
+            @Override public void execute() throws Exception
+            {
+                try
+                {
+                    refresh();
+                }
+                catch (Throwable t)
+                {
+                    DBOperator.this.logger.info("Could not refresh data");
+                }
+                scheduler.schedule(this, delay);
+            }
+        }, delay);
     }
 
     public boolean supportsActiveMonitoring()
@@ -747,7 +762,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-            refreshWithoutLock(connection);
+//            refreshWithoutLock(connection);
         }
         catch (Exception ex)
         {
@@ -787,13 +802,24 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 {
                     raplaSQLOutput.removeLocks(connection, ids);
                 }
+                if(connection.getMetaData().supportsTransactions())
+                {
+                    connection.commit();
+                }
             }
             catch (Exception ex) {
                 getLogger().error("Could noe remove locks. They will be removed during next cleanup. ", ex);
             }
+            try
+            {
+                refreshWithoutLock(connection);
+            }
+            catch (SQLException e)
+            {
+                getLogger().error("Could not load update from db. Will be loaded afterwards", e);
+            }
             close(connection);
         }
-
     }
 
     private boolean containsDynamicType(Set<String> ids)
@@ -924,7 +950,9 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException
     {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-        RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, this));
+        final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
+        inputContext.put(EntityHistory.class, history);
+        RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
         cache.putAll(list);
@@ -997,7 +1025,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
-        inputContext.put(EntityHistory.class, history);
         inputContext.put(Date.class, new Date(lastUpdated.getTime() - HISTORY_DURATION));
         return inputContext;
     }
