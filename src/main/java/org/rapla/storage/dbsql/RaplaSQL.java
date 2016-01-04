@@ -414,6 +414,19 @@ class RaplaSQL {
             lockStorage.setConnection(null, null);
         }
     }
+
+    public List<PreferencePatch> getPatches(Connection c, Date lastUpdated) throws SQLException
+    {
+        try
+        {
+            preferencesStorage.setConnection(c, null);
+            return preferencesStorage.getPatches(lastUpdated);
+        }
+        finally
+        {
+            preferencesStorage.setConnection(null, null);
+        }
+    }
 }
 
 class LockStorage extends AbstractTableStorage
@@ -1639,9 +1652,52 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
 class PreferenceStorage extends RaplaTypeStorage<Preferences> 
 {
+    private final String updateSql ;
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
         super(context,Preferences.TYPE,"PREFERENCE",
 	    new String [] {"USER_ID VARCHAR(255) KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT","LAST_CHANGED TIMESTAMP KEY"}, false);
+        this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED > ?";
+    }
+
+    public List<PreferencePatch> getPatches(Date lastUpdated) throws SQLException
+    {
+        Map<String, PreferencePatch> userIdToPatch = new HashMap<String, PreferencePatch>();
+        final ArrayList<PreferencePatch> patches = new ArrayList<PreferencePatch>();
+        try(final PreparedStatement stmt = con.prepareStatement(updateSql))
+        {
+            stmt.setTimestamp(1, new java.sql.Timestamp(lastUpdated.getTime()));
+            final ResultSet result = stmt.executeQuery();
+            while(result.next())
+            {
+                final String userId = result.getString(1);
+                final String role = result.getString(2);
+                PreferencePatch preferencePatch =userIdToPatch.get(userId);
+                if(preferencePatch == null)
+                {
+                    preferencePatch = new PreferencePatch();
+                    patches.add(preferencePatch);
+                    preferencePatch.setUserId(userId);
+                    userIdToPatch.put(userId, preferencePatch);
+                }
+                final String entityAsString = getString(result, 3, null);
+                if(entityAsString == null)
+                {
+                    final String entityXml = getText(result, 4);
+                    if ( entityXml != null && entityXml.length() > 0)
+                    {
+                        PreferenceReader preferenceReader = (PreferenceReader )context.lookup(PreferenceReader.READERMAP).get(Preferences.TYPE);
+                        processXML( preferenceReader, entityXml );
+                        RaplaObject type = preferenceReader.getChildType();
+                        preferencePatch.putPrivate(role, type);
+                    }
+                }
+                else
+                {
+                    preferencePatch.putPrivate(role, entityAsString);
+                }
+            }
+        }
+        return patches;
     }
 
     @Override
