@@ -952,7 +952,9 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException
     {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-        RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, this));
+        final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
+        inputContext.put(EntityHistory.class, history);
+        RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
         cache.putAll(list);

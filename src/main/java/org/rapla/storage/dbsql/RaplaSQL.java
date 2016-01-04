@@ -508,7 +508,7 @@ class LockStorage extends AbstractTableStorage
             {
                 final ResultSet result = stmt.executeQuery();
                 result.next();
-                now = result.getTimestamp(1);
+                now = new Date(result.getTimestamp(1).getTime());
             }
             catch(Exception e)
             {
@@ -647,7 +647,7 @@ class LockStorage extends AbstractTableStorage
             while(result.next())
             {
                 Date now = result.getTimestamp(1);
-                return now;
+                return new Date(now.getTime());
             }
         }
         catch(Exception e)
