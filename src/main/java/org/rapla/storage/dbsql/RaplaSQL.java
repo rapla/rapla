@@ -472,7 +472,8 @@ class LockStorage extends AbstractTableStorage
                 stmt.setString(1, id);
                 stmt.addBatch();
             }
-            stmt.executeBatch();
+            final int[] result = stmt.executeBatch();
+            logger.debug("removed logs: "+Arrays.toString(result));
         }
         catch(Exception e)
         {
@@ -626,7 +627,7 @@ class LockStorage extends AbstractTableStorage
                             throw new RaplaException("Global lock timed out");
                         }
                         // wait
-                        Thread.sleep(100);
+                        Thread.sleep(1000);
                     }
                 }
                 return newLockTimestamp;
@@ -2467,6 +2468,10 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final String className = getString(rs, 3, null);
         final String json = getText(rs, 4);
         final Date lastChanged = getTimestamp(rs, 5);
+        if(lastChanged == null)
+        {// an event beyond update, will be updated next time
+            return;
+        }
         final Integer isDelete = getInt( rs, 6);
         try
         {

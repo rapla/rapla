@@ -139,6 +139,21 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 scheduler.schedule(this, delay);
             }
         }, delay);
+        scheduler.schedule(new Command()
+        {
+            @Override public void execute() throws Exception
+            {
+                try
+                {
+                    refresh();
+                }
+                catch (Throwable t)
+                {
+                    DBOperator.this.logger.info("Could not refresh data");
+                }
+                scheduler.schedule(this, delay);
+            }
+        }, delay);
     }
 
     public boolean supportsActiveMonitoring()
@@ -749,7 +764,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-            refreshWithoutLock(connection);
+//            refreshWithoutLock(connection);
         }
         catch (Exception ex)
         {
@@ -789,13 +804,24 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 {
                     raplaSQLOutput.removeLocks(connection, ids);
                 }
+                if(connection.getMetaData().supportsTransactions())
+                {
+                    connection.commit();
+                }
             }
             catch (Exception ex) {
                 getLogger().error("Could noe remove locks. They will be removed during next cleanup. ", ex);
             }
+            try
+            {
+                refreshWithoutLock(connection);
+            }
+            catch (SQLException e)
+            {
+                getLogger().error("Could not load update from db. Will be loaded afterwards", e);
+            }
             close(connection);
         }
-
     }
 
     private boolean containsDynamicType(Set<String> ids)
@@ -999,7 +1025,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
-        inputContext.put(EntityHistory.class, history);
         inputContext.put(Date.class, new Date(lastUpdated.getTime() - HISTORY_DURATION));
         return inputContext;
     }

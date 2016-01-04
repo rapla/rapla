@@ -67,14 +67,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         {
             this.cache = context.lookup( LocalCache.class);
         }
-        if(context.has(EntityHistory.class))
-        {
-            this.history = context.lookup(EntityHistory.class);
-        }
-        else
-        {
-            this.history = null;
-        }
+        this.history = new EntityHistory();
         this.raplaLocale = context.lookup( RaplaLocale.class);
 		lastParameterIndex = entries.length;
 
