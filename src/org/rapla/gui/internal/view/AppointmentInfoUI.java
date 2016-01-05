@@ -27,6 +27,22 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
         parent = new ReservationInfoUI( sm);
     }
 
+    
+    @Override
+    public String getTooltip(Appointment appointment) {
+        User user;
+        try
+        {
+            user = getUser();
+            return getTooltip(appointment, user);
+        }
+        catch (RaplaException e)
+        {
+            return "";
+        }
+        
+    }
+    
     public String getTooltip(Appointment appointment, User user) {
         Reservation reservation =  appointment.getReservation();
         StringBuffer buf = new StringBuffer();
