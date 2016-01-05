@@ -1995,7 +1995,7 @@ public class ParsedText implements Serializable
                 for ( Reservation event:reservations){
                     result.addAll(event.getSortedAppointments());
                 }
-                result.sort( new AppointmentStartComparator());
+                Collections.sort(result,new AppointmentStartComparator());
                 return result;
             }
             
