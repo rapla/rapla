@@ -2243,10 +2243,9 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     {
         super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY", "ISDELETE INTEGER NOT NULL" });
         this.asDeletion = asDeletion;
+        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
-        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
-        selectSql += " ORDER BY CHANGED_AT DESC";
         gson = gsonBuilder.create();
         if(context.has(Date.class))
         {
@@ -2256,6 +2255,15 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         {
             supportTimestamp = null;
         }
+    }
+    
+    @Override
+    protected void createSQL(Collection<ColumnDef> entries)
+    {
+        super.createSQL(entries);
+        String valueString = " (" + getEntryList(entries) + ")";
+        insertSql = "insert into " + getTableName() + valueString + " values (?,?,?,?,CURRENT_TIMESTAMP,?)";
+        selectSql += " ORDER BY CHANGED_AT DESC";
     }
     
     @Override
@@ -2366,21 +2374,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(2, entity.getRaplaType().getLocalName());
         stmt.setString(3, entity.getClass().getCanonicalName());
         setText(stmt, 4, gson.toJson(entity));
-        Date lastChanged;
-        if(entity instanceof Timestamp)
-        {
-            lastChanged = Timestamp.class.cast(entity).getLastChanged();
-            if(lastChanged == null)
-            {
-                lastChanged = getConnectionTimestamp();
-            }
-        }
-        else
-        {
-            lastChanged = getConnectionTimestamp();
-        }
-        setTimestamp(stmt, 5, lastChanged);
-        setInt(stmt,6, asDeletion? 1:0);
+        setInt(stmt,5, asDeletion? 1:0);
         stmt.addBatch();
         return 1;
     }
