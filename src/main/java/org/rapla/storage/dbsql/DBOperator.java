@@ -39,6 +39,7 @@ import javax.sql.DataSource;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
+import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -46,7 +47,6 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -88,8 +88,10 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     DataSource lookup;
 
     private String connectionName;
-
+    Cancelable cleanupOldLocks;
+    Cancelable refreshTask;
     Provider<ImportExportManager> importExportManager;
+    CommandScheduler scheduler;
 
     @Inject public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Provider<ImportExportManager> importExportManager, DataSource dataSource,
@@ -97,6 +99,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     {
         super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
+        this.scheduler = scheduler;
         this.importExportManager = importExportManager;
         //        String backupFile = config.getChild("backup").getValue("");
         //        if (backupFile != null)
@@ -118,8 +121,13 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         //	        	throw new RaplaDBException("Datasource " + datasourceName + " not found");
         //	        }
         //        }
+
+    }
+
+    public void scheduleCleanupAndRefresh(final CommandScheduler scheduler)
+    {
         final int delay = 15000;
-        scheduler.schedule(new Command()
+        cleanupOldLocks = scheduler.schedule(new Command()
         {
             @Override public void execute() throws Exception
             {
@@ -137,7 +145,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 scheduler.schedule(this, delay);
             }
         }, delay);
-        scheduler.schedule(new Command()
+        refreshTask = scheduler.schedule(new Command()
         {
             @Override public void execute() throws Exception
             {
@@ -285,6 +293,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
             initIndizes();
             isConnected = true;
             getLogger().debug("Connected");
+            scheduleCleanupAndRefresh(scheduler);
         }
         if (connectInfo != null)
         {
@@ -360,6 +369,16 @@ import org.rapla.storage.xml.RaplaXMLContextException;
 
     synchronized public void disconnect() throws RaplaException
     {
+        if ( cleanupOldLocks != null)
+        {
+            cleanupOldLocks.cancel();
+            cleanupOldLocks = null;
+        }
+        if ( refreshTask != null)
+        {
+            refreshTask.cancel();
+            refreshTask = null;
+        }
         if (!isConnected())
             return;
         //        backupData();

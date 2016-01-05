@@ -355,7 +355,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             for (Remove ref : removedEntities)
             {
                 String id = ref.getCurrentId();
-                Class<? extends Entity> type = ref.getRaplaType().getTypeClass();
+                final RaplaType raplaType = ref.getRaplaType();
+                Class<? extends Entity> type = raplaType.getTypeClass();
                 if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class)
                 {
                     safeResultEvent.putRemoveId(id);
