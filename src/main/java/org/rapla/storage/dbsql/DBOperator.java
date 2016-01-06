@@ -343,8 +343,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         {
             return;
         }
-        EntityHistory history = raplaSQLInput.update(c, lastUpdated, connectionTime);
-        final Collection<String> allIds = history.getAllIds();
+        final Collection<String> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
         Collection<Entity> toStore = new LinkedHashSet<Entity>();
         Set<String> toRemove = new HashSet<>();
         List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated );
@@ -970,7 +969,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
-        inputContext.put(EntityHistory.class, history);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
@@ -1045,6 +1043,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
         inputContext.put(Date.class, new Date(lastUpdated.getTime() - HISTORY_DURATION));
+        inputContext.put(EntityHistory.class, history);
         return inputContext;
     }
 

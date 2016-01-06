@@ -80,7 +80,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.server.ImportExportEntityImpl;
@@ -309,19 +308,17 @@ class RaplaSQL {
         }
     }
 
-    public EntityHistory update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
+    public Collection<String> update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
     {
         history.setConnection( c, connectionTimestamp);
         try
         {
-            history.update(lastUpdated);
+            return history.update(lastUpdated);
         }
         finally
         {
             history.removeConnection();
         }
-        EntityHistory entityHistory = history.history;
-        return entityHistory;
     }
 
     public void cleanupOldLocks(Connection c) throws SQLException
@@ -2379,11 +2376,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         return 1;
     }
     
-    public void update(Date lastUpdated) throws SQLException
+    public Collection<String> update(Date lastUpdated) throws SQLException
     {
         if(asDeletion)
         {
-            return;
+            return Collections.emptyList();
         }
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
@@ -2391,12 +2388,16 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             final ResultSet result = stmt.executeQuery();
             if(result == null)
             {
-                return;
+                return Collections.emptyList();
             }
+            Collection<String> ids = new HashSet<String>();
             while(result.next())
             {
                 load(result);
+                final String id = result.getString(1);
+                ids.add(id);
             }
+            return ids;
         }
     }
 
