@@ -41,6 +41,8 @@ import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.xml.RaplaXMLContext;
 
+import com.ibm.icu.util.BytesTrie.Entry;
+
 abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage implements Storage<T> {
 	//String searchForIdSql;
 
@@ -54,7 +56,18 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
     RaplaXMLContext context;
 
     protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {
-        this(context,table,entries, Arrays.asList( entries).contains("LAST_CHANGED"));
+        this(context,table,entries, containsLastChangedColumn(entries));
+    }
+    private static boolean containsLastChangedColumn(String[] entries)
+    {
+        for (String columnDef : entries)
+        {
+            if(columnDef.startsWith("LAST_CHANGED"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
     protected EntityStorage( RaplaXMLContext context, String table,String[] entries, boolean checkLastChanged) throws RaplaException {
 		super(table,context.lookup(Logger.class), entries, checkLastChanged);
