@@ -131,6 +131,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         {
             @Override public void execute() throws Exception
             {
+                final Lock writeLock = writeLock();
                 try (final Connection connection = createConnection())
                 {
                     final RaplaDefaultXMLContext context = createOutputContext(cache);
@@ -141,6 +142,10 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 catch (Throwable t)
                 {
                     DBOperator.this.logger.info("Could not release old locks");
+                }
+                finally 
+                {
+                    unlock(writeLock);
                 }
                 scheduler.schedule(this, delay);
             }
