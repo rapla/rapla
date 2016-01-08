@@ -166,6 +166,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
     public UpdateEvent createUpdateEvent(User user, Date lastSynced) throws RaplaException
     {
         Date currentTimestamp = operator.getCurrentTimestamp();
+        Date historyValidStart = operator.getHistoryValidStart();
+        Date conflictValidStart = operator.getConnectStart();
         if (lastSynced.after(currentTimestamp))
         {
             long diff = lastSynced.getTime() - currentTimestamp.getTime();
@@ -178,9 +180,11 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         safeResultEvent.setTimezoneOffset(timezoneOffset);
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
+        // FIMXE If lastSynced is before historyStart then set conflict und resourceRefresh true
         safeResultEvent.setLastValidated(updateResult.getUntil());
-        boolean conflictRefresh = false;
-        boolean resourceRefresh = false;
+        // FIMXE If lastSynced is before serverStart then set conflictRefresh true
+        boolean resourceRefresh = lastSynced.before( historyValidStart);
+        boolean conflictRefresh = lastSynced.before( conflictValidStart);
         for (Remove op : updateResult.getOperations(Remove.class))
         {
             if ( op.getRaplaType() == DynamicType.TYPE)
@@ -417,12 +421,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 {
                     clientStore = false;
                 }
-                else
-                {
-                    obj = conflict.clone();
-                    operator.fillConflictDisableInformation(user, conflict);
-                }
-
             }
         }
         if (clientStore)

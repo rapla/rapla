@@ -12,21 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaType;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.storage.EntityReferencer;
 
 public class UpdateResult
 {
@@ -50,16 +47,6 @@ public class UpdateResult
         if ( operation == null)
             throw new IllegalStateException( "Operation can't be null" );
         operations.add(operation);
-        /*
-        RaplaType raplaType = operation.getRaplaType();
-        if ( raplaType != null)
-        {
-        	modified.add( raplaType);
-        }
-        if(operation instanceof Remove){
-            // FIXME
-        }
-        */
     }
 
     public Date getSince()
@@ -104,15 +91,33 @@ public class UpdateResult
     /** returns null if no entity exisits before update*/
     public Entity getLastEntryBeforeUpdate(String id)
     {
-        // TODO Conflict resolution
+        // FIXME Conflict resolution
         final Entity entity = oldEntities.get(id);
         return entity;
     }
 
     public Entity getLastKnown(String id)
     {
-        // TODO Conflict resolution
+        // FIXME Conflict resolution
         return updatedEntities.get( id );
+    }
+
+    public void addOperation(Entity<?> newEntity, Entity<?> oldEntity, UpdateOperation operation)
+    {
+        addOperation(operation);
+        if(operation instanceof Remove)
+        {
+            oldEntities.put(oldEntity.getId(), oldEntity);
+        }
+        else if(operation instanceof Change)
+        {
+            oldEntities.put(oldEntity.getId(), oldEntity);
+            updatedEntities.put(newEntity.getId(), newEntity);
+        }
+        else if(operation instanceof Add)
+        {
+            updatedEntities.put(newEntity.getId(), newEntity);
+        }
     }
 
     static public class Add implements UpdateOperation {

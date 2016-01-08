@@ -16,6 +16,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 
@@ -96,6 +98,17 @@ public class EntityHistory
         gson = gsonBuilder.create();
     }
 
+    public HistoryEntry getLatest(String id)
+    {
+        final List<HistoryEntry> historyEntries = map.get(id);
+        if (historyEntries == null || historyEntries.isEmpty())
+        {
+            // FIXME handle history ends
+            throw new RaplaException("History not available for id " + id);
+        }
+        return historyEntries.get(historyEntries.size()-1);
+    }
+
     /** returns the history entry with a timestamp<= since or null if no such entry exists*/
     public Entity get(String id, Date since)
     {
@@ -139,6 +152,7 @@ public class EntityHistory
         addMap(Allocatable.class, AllocatableImpl.class);
         addMap(Category.class, CategoryImpl.class);
         addMap(User.class, UserImpl.class);
+        addMap(Conflict.class, ConflictImpl.class);
         addMap(DynamicType.class, DynamicTypeImpl.class);
 
     }
@@ -233,7 +247,7 @@ public class EntityHistory
      * @param timestamp
      * @return 
      */
-    public HistoryEntry getBefore(String id, Date timestamp)
+    public HistoryEntry getLastChangedUntil(String id, Date timestamp)
     {
         final long time = timestamp.getTime();
         final List<HistoryEntry> list = map.get(id);

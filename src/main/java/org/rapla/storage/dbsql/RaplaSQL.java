@@ -2434,7 +2434,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 final Entity<?> entity = entityStore.tryResolve(id);
                 if(entity == null)
                 {
-                    final HistoryEntry before = history.getBefore(id, connectionTimestamp);
+                    final HistoryEntry before = history.getLastChangedUntil(id, connectionTimestamp);
                     if (before != null)
                     {
                         put(history.getEntity(before));
@@ -2448,7 +2448,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                     {
                         if (!lastChanged.before(connectionTimestamp))
                         {// we need to restore from history
-                            final HistoryEntry before = history.getBefore(id, connectionTimestamp);
+                            final HistoryEntry before = history.getLastChangedUntil(id, connectionTimestamp);
                             if (before != null)
                             {
                                 put(history.getEntity(before));
@@ -2472,11 +2472,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final RaplaType raplaType = RaplaType.find(raplaTypeLocalName);
         final String className = getString(rs, 3, null);
         final String json = getText(rs, 4);
-        final Date lastChanged = getTimestamp(rs, 5);
-        if(lastChanged == null)
-        {// an event beyond update, will be updated next time
-            return;
-        }
+        final Date lastChanged = new Date(rs.getTimestamp( 5).getTime());
         final Integer isDelete = getInt( rs, 6);
         history.addHistoryEntry(id, json, raplaType, lastChanged, isDelete != null && isDelete == 1);
     }

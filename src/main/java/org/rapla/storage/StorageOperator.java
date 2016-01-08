@@ -53,10 +53,6 @@ public interface StorageOperator extends EntityResolver {
 	public final static String DEFAULT_USER_TYPE = "rapla:defaultUser";
 	public final static String PERIOD_TYPE = "rapla:period";
 	public final static String RAPLA_TEMPLATE = "rapla:template";
-	
-    User connect(ConnectInfo connectInfo) throws RaplaException;
-    User connect() throws RaplaException;
-    FutureResult<User> connectAsync();
     
     boolean isConnected();
     /** Refreshes the data. This could be helpful if the storage

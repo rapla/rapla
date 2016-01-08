@@ -38,53 +38,64 @@ import org.rapla.facade.internal.ConflictImpl;
 import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class LocalCache implements EntityResolver
 {
-    Map<String,String> passwords = new HashMap<String,String>();
-    Map<String,Entity> entities;
-    
-    Map<String,ConflictImpl> conflicts = new HashMap<String,ConflictImpl>();
+    Map<String, String> passwords = new HashMap<String, String>();
+    Map<String, Entity> entities;
 
-    Map<String,DynamicTypeImpl> dynamicTypes;
-    Map<String,UserImpl> users;
-    Map<String,AllocatableImpl> resources;
-    Map<String,ReservationImpl> reservations;
-    
+    //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
+    Set<String> disabledConflictApp1 = new HashSet<String>();
+    Set<String> disabledConflictApp2 = new HashSet<String>();
+    Map<String,Date> conflictLastChanged = new HashMap<String,Date>();
+
+    Map<String, DynamicTypeImpl> dynamicTypes;
+    Map<String, UserImpl> users;
+    Map<String, AllocatableImpl> resources;
+    Map<String, ReservationImpl> reservations;
+
     private String clientUserId;
     private final PermissionController permissionController;
-    public LocalCache(PermissionController permissionController) {
-        this.permissionController = permissionController;   
-        entities = new HashMap<String,Entity>();
+
+    public LocalCache(PermissionController permissionController)
+    {
+        this.permissionController = permissionController;
+        entities = new HashMap<String, Entity>();
         // top-level-entities
-        reservations = new LinkedHashMap<String,ReservationImpl>();
-        users = new LinkedHashMap<String,UserImpl>();
-        resources = new LinkedHashMap<String,AllocatableImpl>();
-        dynamicTypes = new LinkedHashMap<String,DynamicTypeImpl>();
+        reservations = new LinkedHashMap<String, ReservationImpl>();
+        users = new LinkedHashMap<String, UserImpl>();
+        resources = new LinkedHashMap<String, AllocatableImpl>();
+        dynamicTypes = new LinkedHashMap<String, DynamicTypeImpl>();
         initSuperCategory();
     }
-    
-	public String getClientUserId() {
+
+    public String getClientUserId()
+    {
         return clientUserId;
     }
 
-	/** use this to prohibit reservations and preferences (except from system and current user) to be stored in the cache*/ 
-    public void setClientUserId(String clientUserId) {
+    /** use this to prohibit reservations and preferences (except from system and current user) to be stored in the cache*/
+    public void setClientUserId(String clientUserId)
+    {
         this.clientUserId = clientUserId;
     }
 
     /** @return true if the entity has been removed and false if the entity was not found*/
-    public boolean remove(Entity entity) {
-        if ( entity instanceof ParentEntity)
+    public boolean remove(Entity entity)
+    {
+        if (entity instanceof ParentEntity)
         {
             Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
-            for (Entity child:subEntities)
+            for (Entity child : subEntities)
             {
-                remove( child);
+                remove(child);
             }
         }
         RaplaType raplaType = entity.getRaplaType();
@@ -92,191 +103,204 @@ public class LocalCache implements EntityResolver
         return removeWithId(raplaType, entityId);
     }
 
-
     /** WARNING child entities will not be removed if you use this method */
     public boolean removeWithId(RaplaType raplaType, String entityId)
     {
         boolean bResult = true;
         bResult = entities.remove(entityId) != null;
-        Map<String,? extends Entity> entitySet = getMap(raplaType);
-        if (entitySet != null) {
+        Map<String, ? extends Entity> entitySet = getMap(raplaType);
+        if (entitySet != null)
+        {
             if (entityId == null)
                 return false;
-            entitySet.remove( entityId );
+            entitySet.remove(entityId);
         }
-        if ( raplaType == Conflict.TYPE)
+        else if (raplaType == Conflict.TYPE)
         {
-            conflicts.remove( entityId);
+            disabledConflictApp1.remove(entityId);
+            disabledConflictApp2.remove(entityId);
         }
         return bResult;
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String,Entity> getMap(RaplaType type)
+    @SuppressWarnings("unchecked") private Map<String, Entity> getMap(RaplaType type)
     {
-        if ( type == Reservation.TYPE)
+        if (type == Reservation.TYPE)
         {
-            return (Map)reservations;
+            return (Map) reservations;
         }
-        if ( type == Allocatable.TYPE)
+        if (type == Allocatable.TYPE)
         {
-            return (Map)resources;
+            return (Map) resources;
         }
-        if ( type == Conflict.TYPE)
+        if (type == DynamicType.TYPE)
         {
-            return (Map)conflicts;
+            return (Map) dynamicTypes;
         }
-        if ( type == DynamicType.TYPE)
+        if (type == User.TYPE)
         {
-            return (Map)dynamicTypes;
-        }
-        if ( type == User.TYPE)
-        {
-            return (Map)users;
+            return (Map) users;
         }
         return null;
     }
-    
-    public void put(Entity entity) {
+
+    public void put(Entity entity)
+    {
         Assert.notNull(entity);
-       
+
         RaplaType raplaType = entity.getRaplaType();
-       
+
         String entityId = entity.getId();
         if (entityId == null)
             throw new IllegalStateException("ID can't be null");
 
         String clientUserId = getClientUserId();
-        if ( clientUserId != null )
+        if (clientUserId != null)
         {
-            if (raplaType == Reservation.TYPE || raplaType == Appointment.TYPE )
+            if (raplaType == Reservation.TYPE || raplaType == Appointment.TYPE)
             {
                 throw new IllegalArgumentException("Can't store reservations, appointments or conflicts in client cache");
             }
             // we ignore client stores for now
-            if ( raplaType == Conflict.TYPE)
+            if (raplaType == Conflict.TYPE)
             {
                 return;
             }
-            if (raplaType == Preferences.TYPE  )
+            if (raplaType == Preferences.TYPE)
             {
-                String owner = ((PreferencesImpl)entity).getId("owner");
-                if ( owner != null && !owner.equals( clientUserId))
+                String owner = ((PreferencesImpl) entity).getId("owner");
+                if (owner != null && !owner.equals(clientUserId))
                 {
-                    throw new IllegalArgumentException("Can't store non system preferences for other users in client cache"); 
+                    throw new IllegalArgumentException("Can't store non system preferences for other users in client cache");
                 }
             }
         }
-            
+
         // first remove the old children from the map
-        Entity oldEntity = entities.get( entity);
+        Entity oldEntity = entities.get(entity);
         if (oldEntity != null && oldEntity instanceof ParentEntity)
         {
-        	Collection<Entity> subEntities = ((ParentEntity) oldEntity).getSubEntities();
-        	for (Entity child:subEntities)
-        	{
-        		remove( child);
-        	}
+            Collection<Entity> subEntities = ((ParentEntity) oldEntity).getSubEntities();
+            for (Entity child : subEntities)
+            {
+                remove(child);
+            }
         }
-        
-        entities.put(entityId,entity);
-		Map<String,Entity> entitySet =  getMap(raplaType);
-        if (entitySet != null) {
-            boolean enabledForAll = false;
-            if ( entity instanceof Conflict ) 
+
+        entities.put(entityId, entity);
+        Map<String, Entity> entitySet = getMap(raplaType);
+        if (entitySet != null)
+        {
+            entitySet.put(entityId, entity);
+        }
+        else if (entity instanceof Conflict)
+        {
+            Conflict conflict = (Conflict) entity;
+            if (conflict.isAppointment1Enabled())
             {
-                Conflict conflict = (Conflict) entity;
-                enabledForAll = conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled();
-                if ( enabledForAll)
-                {
-                    conflicts.remove( entityId);
-                }
-                else
-                {
-                    conflicts.put( entityId, (ConflictImpl)conflict);
-                }
+                disabledConflictApp1.remove(entityId);
             }
-            if ( !enabledForAll)
+            else
             {
-                entitySet.put( entityId ,entity);
+                disabledConflictApp1.add(entityId);
             }
-        } 
-        else 
+            if (conflict.isAppointment2Enabled())
+            {
+                disabledConflictApp2.remove(entityId);
+            }
+            else
+            {
+                disabledConflictApp2.add(entityId);
+            }
+            final Date lastChanged = conflict.getLastChanged();
+            conflictLastChanged.put( entityId, lastChanged);
+            if ( conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
+            {
+                conflictLastChanged.remove( entityId);
+            }
+        }
+        else
         {
             //throw new RuntimeException("UNKNOWN TYPE. Can't store object in cache: " + entity.getRaplaType());
         }
         // then put the new children
-        if ( entity instanceof ParentEntity)
+        if (entity instanceof ParentEntity)
         {
-        	Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
-        	for (Entity child:subEntities)
-        	{
-        		put( child);
-        	}
+            Collection<Entity> subEntities = ((ParentEntity) entity).getSubEntities();
+            for (Entity child : subEntities)
+            {
+                put(child);
+            }
         }
     }
 
-
-    public Entity get(Comparable id) {
+    public Entity get(Comparable id)
+    {
         if (id == null)
             throw new RuntimeException("id is null");
         return entities.get(id);
     }
 
-//    @SuppressWarnings("unchecked")
-//    private <T extends Entity> Collection<T> getCollection(RaplaType type) {
-//        Map<String,? extends Entity> entities =  entityMap.get(type);
-//       
-//        if (entities != null) {
-//            return (Collection<T>) entities.values();
-//        } else {
-//            throw new RuntimeException("UNKNOWN TYPE. Can't get collection: "
-//                                       +  type);
-//        }
-//    }
-//    
-//    @SuppressWarnings("unchecked")
-//    private <T extends RaplaObject> Collection<T> getCollection(Class<T> clazz) {
-//    	RaplaType type = RaplaType.get(clazz);
-//		Collection<T> collection = (Collection<T>) getCollection(type);
-//		return new LinkedHashSet(collection);
-//    }
-	
-    public void clearAll() {
+    //    @SuppressWarnings("unchecked")
+    //    private <T extends Entity> Collection<T> getCollection(RaplaType type) {
+    //        Map<String,? extends Entity> entities =  entityMap.get(type);
+    //
+    //        if (entities != null) {
+    //            return (Collection<T>) entities.values();
+    //        } else {
+    //            throw new RuntimeException("UNKNOWN TYPE. Can't get collection: "
+    //                                       +  type);
+    //        }
+    //    }
+    //
+    //    @SuppressWarnings("unchecked")
+    //    private <T extends RaplaObject> Collection<T> getCollection(Class<T> clazz) {
+    //    	RaplaType type = RaplaType.get(clazz);
+    //		Collection<T> collection = (Collection<T>) getCollection(type);
+    //		return new LinkedHashSet(collection);
+    //    }
+
+    public void clearAll()
+    {
         passwords.clear();
         reservations.clear();
         users.clear();
         resources.clear();
         dynamicTypes.clear();
         entities.clear();
-        conflicts.clear();
+        disabledConflictApp1.clear();
+        disabledConflictApp2.clear();
+        conflictLastChanged.clear();
         initSuperCategory();
     }
-    
-    private void initSuperCategory() {
-    	CategoryImpl superCategory = new CategoryImpl(null, null);
+
+    private void initSuperCategory()
+    {
+        CategoryImpl superCategory = new CategoryImpl(null, null);
         superCategory.setId(Category.SUPER_CATEGORY_ID);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
-        entities.put (Category.SUPER_CATEGORY_ID, superCategory);
+        entities.put(Category.SUPER_CATEGORY_ID, superCategory);
         Category[] childs = superCategory.getCategories();
-        for (int i=0;i<childs.length;i++) {
-            superCategory.removeCategory( childs[i] );
+        for (int i = 0; i < childs.length; i++)
+        {
+            superCategory.removeCategory(childs[i]);
         }
     }
 
-    public CategoryImpl getSuperCategory() 
+    public CategoryImpl getSuperCategory()
     {
         return (CategoryImpl) get(Category.SUPER_CATEGORY_ID);
     }
 
-    public UserImpl getUser(String username) {
-        for (UserImpl user:users.values())
+    public UserImpl getUser(String username)
+    {
+        for (UserImpl user : users.values())
         {
             if (user.getUsername().equals(username))
                 return user;
         }
-        for (UserImpl user:users.values())
+        for (UserImpl user : users.values())
         {
             if (user.getUsername().equalsIgnoreCase(username))
                 return user;
@@ -284,164 +308,184 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    public PreferencesImpl getPreferencesForUserId(String userId) {
-		String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
-		PreferencesImpl pref = (PreferencesImpl) tryResolve( preferenceId, Preferences.class);
-		return pref; 	
+    public PreferencesImpl getPreferencesForUserId(String userId)
+    {
+        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        PreferencesImpl pref = (PreferencesImpl) tryResolve(preferenceId, Preferences.class);
+        return pref;
     }
-    
-   
-    public DynamicType getDynamicType(String elementKey) {
-        for (DynamicType dt:dynamicTypes.values()) {
+
+    public DynamicType getDynamicType(String elementKey)
+    {
+        for (DynamicType dt : dynamicTypes.values())
+        {
             if (dt.getKey().equals(elementKey))
                 return dt;
         }
         return null;
     }
 
-
-    public List<Entity> getVisibleEntities(final User user) {
+    public List<Entity> getVisibleEntities(final User user)
+    {
         List<Entity> result = new ArrayList<Entity>();
-        result.add( getSuperCategory());
+        result.add(getSuperCategory());
         result.addAll(getDynamicTypes());
         result.addAll(getUsers());
-        for (Allocatable alloc: getAllocatables())
+        for (Allocatable alloc : getAllocatables())
         {
-            if (user == null || user.isAdmin() || permissionController.canReadOnlyInformation( alloc, user))
+            if (user == null || user.isAdmin() || permissionController.canReadOnlyInformation(alloc, user))
             {
-                result.add( alloc);
+                result.add(alloc);
             }
         }
         // add system preferences
         {
-            PreferencesImpl preferences = getPreferencesForUserId( null );
-            if ( preferences != null)
+            PreferencesImpl preferences = getPreferencesForUserId(null);
+            if (preferences != null)
             {
-                result.add( preferences);
+                result.add(preferences);
             }
         }
         // add user preferences
-        if ( user != null)
+        if (user != null)
         {
             String userId = user.getId();
-            Assert.notNull( userId);
-            PreferencesImpl preferences = getPreferencesForUserId( userId );
-            if ( preferences != null)
+            Assert.notNull(userId);
+            PreferencesImpl preferences = getPreferencesForUserId(userId);
+            if (preferences != null)
             {
-                result.add( preferences);
+                result.add(preferences);
             }
         }
         return result;
     }
 
     // Implementation of EntityResolver
-    @Override
-    public Entity resolve(String id) throws EntityNotFoundException {
+    @Override public Entity resolve(String id) throws EntityNotFoundException
+    {
         return resolve(id, null);
     }
-    
-    public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException {
+
+    public <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException
+    {
         T entity = tryResolve(id, entityClass);
         SimpleEntity.checkResolveResult(id, entityClass, entity);
         return entity;
     }
-    
-    @Override
-    public Entity tryResolve(String id) {
+
+    @Override public Entity tryResolve(String id)
+    {
         return tryResolve(id, null);
     }
-    
-    @Override
-    public <T extends Entity> T tryResolve(String id,Class<T> entityClass)  {
+
+    @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
+    {
         if (id == null)
             throw new RuntimeException("id is null");
         Entity entity = entities.get(id);
-        @SuppressWarnings("unchecked")
-        T casted = (T) entity;
+        @SuppressWarnings("unchecked") T casted = (T) entity;
         return casted;
     }
 
-    public String getPassword(String userId) {
-        return  passwords.get(userId);
-    }
-
-    public void putPassword(String userId, String password) {
-        passwords.put(userId,password);
-    }
-
-    public void putAll( Collection<? extends Entity> list )
+    public String getPassword(String userId)
     {
-    	for ( Entity entity: list)
-    	{
-    		put( entity);
-    	}
+        return passwords.get(userId);
     }
 
-	public Provider<Category> getSuperCategoryProvider() {
-		return new Provider<Category>() {
+    public void putPassword(String userId, String password)
+    {
+        passwords.put(userId, password);
+    }
 
-			public Category get() {
-				return getSuperCategory();
-			}
-		};
-	}
-
-	@SuppressWarnings("unchecked")
-    public Collection<User> getUsers() 	{
-		return (Collection)users.values();
-	}
-	
-	public void fillConflictDisableInformation( User user, Conflict conflict) {
-        String id = conflict.getId();
-        Conflict disabledConflict = conflicts.get( id);
-        if (disabledConflict != null)
+    public void putAll(Collection<? extends Entity> list)
+    {
+        for (Entity entity : list)
         {
-            ((ConflictImpl)conflict).setAppointment1Enabled( disabledConflict.isAppointment1Enabled() );
-            ((ConflictImpl)conflict).setAppointment2Enabled( disabledConflict.isAppointment2Enabled() );
-        }
-        EntityResolver cache = this;
-        if ( user != null)
-        {
-            ((ConflictImpl)conflict).setAppointment1Editable( permissionController.canModifyEvent(conflict.getReservation1(), user));
-            ((ConflictImpl)conflict).setAppointment2Editable( permissionController.canModifyEvent(conflict.getReservation2(), user));
+            put(entity);
         }
     }
 
-	
-	@SuppressWarnings("unchecked")
-    public Collection<Conflict> getConflicts()  {
-	    return (Collection) conflicts.values();
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Collection<String> getConflictIds()  {
-	        return (Collection) conflicts.keySet();
-	}
-	
-	@SuppressWarnings("unchecked")
-    public Collection<Allocatable> getAllocatables() {
-	    return (Collection)resources.values();
-	}
-
-	@SuppressWarnings("unchecked")
-    public Collection<Reservation> getReservations() {
-	    return (Collection)reservations.values();
-	}
-
-	@SuppressWarnings("unchecked")
-    public Collection<DynamicType> getDynamicTypes() {
-		return (Collection)dynamicTypes.values();
-	}
-
-    public Iterable<Conflict> getDisabledConflicts() {
-        List<Conflict> disabled = new ArrayList<Conflict>();
-        for ( Conflict conflict:getConflicts())
+    public Provider<Category> getSuperCategoryProvider()
+    {
+        return new Provider<Category>()
         {
-            if ( conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
+
+            public Category get()
             {
-                continue;
+                return getSuperCategory();
             }
-            disabled.add( conflict);
+        };
+    }
+
+    @SuppressWarnings("unchecked") public Collection<User> getUsers()
+    {
+        return (Collection) users.values();
+    }
+
+    public Conflict fillConflictDisableInformation(User user, Conflict orig)
+    {
+        ConflictImpl conflict = (ConflictImpl) orig.clone();
+        String id = conflict.getId();
+        conflict.setAppointment1Enabled(!disabledConflictApp1.contains(id));
+        conflict.setAppointment2Enabled(!disabledConflictApp2.contains(id));
+        Date lastChangedInCache = conflictLastChanged.get(id);
+        Date origLastChanged = conflict.getLastChanged();
+
+        Date lastChanged = origLastChanged;
+        if ( lastChanged == null || (lastChangedInCache != null && lastChangedInCache.after( lastChanged)) )
+        {
+            lastChanged = lastChangedInCache;
+        }
+        if ( lastChanged == null)
+        {
+            lastChanged = new Date();
+        }
+        conflict.setLastChanged(lastChanged);
+        EntityResolver cache = this;
+        if (user != null)
+        {
+            conflict.setAppointment1Editable(permissionController.canModifyEvent(conflict.getReservation1(), user));
+            conflict.setAppointment2Editable(permissionController.canModifyEvent(conflict.getReservation2(), user));
+        }
+        return conflict;
+    }
+
+    @SuppressWarnings("unchecked") public Collection<String> getConflictIds()
+    {
+        final HashSet result = new HashSet(disabledConflictApp1);
+        result.addAll(disabledConflictApp2);
+        return result;
+    }
+
+    @SuppressWarnings("unchecked") public Collection<Allocatable> getAllocatables()
+    {
+        return (Collection) resources.values();
+    }
+
+    @SuppressWarnings("unchecked") public Collection<Reservation> getReservations()
+    {
+        return (Collection) reservations.values();
+    }
+
+    @SuppressWarnings("unchecked") public Collection<DynamicType> getDynamicTypes()
+    {
+        return (Collection) dynamicTypes.values();
+    }
+
+
+    public Collection<Conflict> getDisabledConflicts()
+    {
+        List<Conflict> disabled = new ArrayList<Conflict>();
+        for (String conflictId : getConflictIds())
+        {
+            Date lastChanged = conflictLastChanged.get( conflictId);
+            if ( lastChanged == null)
+            {
+                lastChanged = new Date();
+            }
+            Conflict conflict = new ConflictImpl( conflictId, lastChanged, lastChanged);
+            Conflict conflictClone = fillConflictDisableInformation( null, conflict);
+            disabled.add(conflictClone);
         }
         return disabled;
     }

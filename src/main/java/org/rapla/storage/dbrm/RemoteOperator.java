@@ -180,8 +180,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         return user;
     }
     
-    @Override
-    public FutureResult<User> connectAsync() 
+    public FutureResult<User> connectAsync()
     {
         return new FutureResult<User>() {
 
@@ -212,7 +211,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                     public void onSuccess(UpdateEvent evt) {
                         
                         try {
-                            User user = loadFromEvent( evt);
+                            User user = loadData(evt);
                             initRefresh();
                             callback.onSuccess( user );
                         } catch (RaplaException e) {
@@ -601,7 +600,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
             getLogger().debug("Getting Data..");
             UpdateEvent evt = resources.get();
-	        return loadFromEvent(evt);
+	        return loadData(evt);
         }
 	    catch (RaplaException ex)
 	    {
@@ -613,9 +612,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    }		
     }
 
-    private User loadFromEvent(UpdateEvent evt) throws EntityNotFoundException, RaplaException {
+    private User loadData(UpdateEvent evt) throws EntityNotFoundException, RaplaException {
         Lock writeLock = writeLock();
-        lastUpdated = evt.getLastValidated();
+        Date lastUpdated = evt.getLastValidated();
+        setLastUpdated( lastUpdated);
         try
         {
             this.userId = evt.getUserId();
@@ -1046,9 +1046,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	setResolver(evt.getStoreObjects());
     	// we don't test the references of the removed objects
     	//setResolver(evt.getRemoveObjects());
-        Date since = lastUpdated;
-        lastUpdated = evt.getLastValidated();
-        Date until = lastUpdated;
+        Date since = getLastUpdated();
+        Date until = evt.getLastValidated();
     	if ( bSessionActive  &&   !evt.isEmpty()  )
     	{
     	    getLogger().debug("Objects updated!");
@@ -1125,7 +1124,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             removeInfo.add( new EntityReferencer.ReferenceInfo(entity.getId(), entity.getRaplaType().getTypeClass()));
         }
         Date since = null;
-        Date until = lastUpdated;
+        Date until = getLastUpdated();
 		result  = createUpdateResult(oldEntityMap, updated, removeInfo, since,until);
 		fireStorageUpdated(result, new TimeInterval( null, null));
 	}

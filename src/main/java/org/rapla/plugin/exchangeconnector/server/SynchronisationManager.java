@@ -761,7 +761,10 @@ public class SynchronisationManager  {
                  result.changed ++;
              }
 		}
-	    appointmentStorage.storeAndRemove(toStore, toRemove);
+		if ( !toStore.isEmpty() || !toRemove.isEmpty())
+		{
+			appointmentStorage.storeAndRemove(toStore, toRemove);
+		}
 	    return result;
 	}
 

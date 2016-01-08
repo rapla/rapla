@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
-import org.jetbrains.annotations.NotNull;
-import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaContentHandler;
@@ -34,7 +32,6 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
@@ -45,7 +42,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -72,6 +68,7 @@ import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -144,6 +141,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
 
+
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
             Set<PermissionExtension> permissionExtensions) throws RaplaException
@@ -176,20 +174,28 @@ final public class FileOperator extends LocalAbstractCachableOperator
         return false;
     }
 
+    @Override public Date getHistoryValidStart()
+    {
+        Date connectStart = getConnectStart();
+        final Date date = new Date(Math.max(getLastUpdated().getTime() - HISTORY_DURATION, connectStart.getTime()));
+        return date;
+    }
+
     /** Sets the isConnected-flag and calls loadData.*/
-    final public User connect(ConnectInfo connectInfo) throws RaplaException
+    @Override
+    final public void connect() throws RaplaException
     {
         if (!isConnected)
         {
             getLogger().info("Connecting: " + getURL());
             cache.clearAll();
             addInternalTypes(cache);
-            lastUpdated = getCurrentTimestamp();
             loadData(cache);
             initIndizes();
             isConnected = true;
             getLogger().debug("Connected");
         }
+        /*
         if ( connectInfo != null)
         {
             final String username = connectInfo.getUsername();
@@ -203,7 +209,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         else
         {
             return null;
-        }
+        }*/
     }
 
     final public boolean isConnected()
@@ -229,10 +235,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
         getLogger().warn("Incremental refreshs are not supported");
     }
 
+
+
     final protected void loadData(LocalCache cache) throws RaplaException
     {
         if (getLogger().isDebugEnabled())
             getLogger().debug("Reading data from file:" + getURL());
+
+        Date lastUpdated = getCurrentTimestamp();
+        setLastUpdated( lastUpdated );
+        setConnectStart(lastUpdated);
 
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this);
@@ -392,19 +404,21 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public void dispatch(final UpdateEvent evt) throws RaplaException
     {
-        final UpdateResult result;
+
         final Lock writeLock = writeLock();
         try
         {
-            Date since = lastUpdated;
+            Date since = evt.getLastValidated();
             preprocessEventStorage(evt);
-            updateLastChanged( evt);
+            updateHistory(evt);
             Date until = getCurrentTimestamp();
             // call of update must be first to update the cache.
             // then saveData() saves all the data in the cache
-            result = refresh( since, until, evt);
+            final Collection<String> removeIds = evt.getRemoveIds();
+            final List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+            final Collection<Entity> storeObjects = evt.getStoreObjects();
+            UpdateResult result = refresh(since, until, storeObjects, preferencePatches, removeIds);
             saveData(cache, null, includeIds);
-            lastUpdated = until;
         }
         finally
         {
@@ -414,29 +428,33 @@ final public class FileOperator extends LocalAbstractCachableOperator
         //fireStorageUpdated(result);
     }
 
-    protected void updateLastChanged(UpdateEvent evt) throws RaplaException {
-        Date currentTime = getCurrentTimestamp();
+    private void updateHistory(UpdateEvent evt) throws RaplaException {
         String userId = evt.getUserId();
         User lastChangedBy =  ( userId != null) ?  resolve(userId,User.class) : null;
-
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e1) {
+            throw new RaplaException( e1.getMessage(), e1);
+        }
+        Date currentTime = getCurrentTimestamp();
         for ( Entity e: evt.getStoreObjects())
         {
+            final boolean isDelete = false;
             if ( e instanceof ModifiableTimestamp)
             {
                 ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
-                Date lastChangeTime = modifiableTimestamp.getLastChanged();
-                if ( lastChangeTime != null && lastChangeTime.equals( currentTime))
-                {
-                    // wait 1 ms to increase timestamp
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e1) {
-                        throw new RaplaException( e1.getMessage(), e1);
-                    }
-                    currentTime = getCurrentTimestamp();
-                }
                 modifiableTimestamp.setLastChanged( currentTime);
                 modifiableTimestamp.setLastChangedBy( lastChangedBy );
+                history.addHistoryEntry(e,currentTime, isDelete);
+            }
+        }
+        for ( String id: evt.getRemoveIds())
+        {
+            final Entity e = tryResolve(id);
+            final boolean isDelete = true;
+            if ( e instanceof ModifiableTimestamp)
+            {
+                history.addHistoryEntry(e,currentTime, isDelete);
             }
         }
         for ( PreferencePatch patch: evt.getPreferencePatches())
@@ -444,6 +462,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             patch.setLastChanged( currentTime );
         }
     }
+
 
     synchronized final public void saveData() throws RaplaException
     {
@@ -486,18 +505,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
     /**
      * Override for custom read
      */
-
     public interface RaplaWriter
     {
         void write(BufferedWriter writer) throws IOException;
     }
 
-    /**
-     * Override for custom write
-     */
-
-
-    @NotNull private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds)
+    private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds)
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
         RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache);

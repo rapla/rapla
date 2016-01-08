@@ -44,27 +44,27 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 
 class ConflictFinder {
 	AllocationMap  allocationMap;
-    Map<Allocatable,Set<Conflict>> conflictMap;
+    // stores all conflicts (can be without enable/disable information)
+    private Map<Allocatable,Map<String,Conflict>> conflictMap;
     Logger logger;
     EntityResolver resolver;
-    LocalCache cache;
     private final PermissionController permissionController;
-    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver, LocalCache cache, PermissionController permissionController)  {
+    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver,  PermissionController permissionController)  {
     	this.logger = logger;
-    	this.cache = cache;
     	this.allocationMap = allocationMap;
         this.permissionController = permissionController;
-    	conflictMap = new HashMap<Allocatable, Set<Conflict>>();
+    	conflictMap = new HashMap<Allocatable, Map<String,Conflict>>();
     	long startTime = System.currentTimeMillis();
     	int conflictSize = 0;
         for (Allocatable allocatable:allocationMap.getAllocatables())
 		{
-        	Set<Conflict> newConflicts = calculateConflicts(allocatable, today);
+        	Map<String,Conflict> newConflicts = calculateConflicts(allocatable, today);
         	conflictMap.put( allocatable, newConflicts);
         	conflictSize+= newConflicts.size();
 		}
@@ -72,12 +72,13 @@ class ConflictFinder {
         this.resolver = resolver;
 	}
     
-    public Conflict findConflict(String id,Date date)
+    public Conflict findConflict(String id)
     {
         Date dummyLastChanged = new Date();
         ConflictImpl dummyConflict;
         try {
             //
+            Date date = new Date();
             dummyConflict = new ConflictImpl(id, date, dummyLastChanged);
         } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
@@ -85,37 +86,23 @@ class ConflictFinder {
         }
         dummyConflict.setResolver(resolver);
         Allocatable allocatable = dummyConflict.getAllocatable();
-        Set<Conflict> set = conflictMap.get( allocatable);
+        Map<String,Conflict> set = conflictMap.get( allocatable);
         if ( set == null)
         {
             return null;
         }
         else
         {
-            for ( Conflict c:set)
-            {
-                if ( c.getId().equals( id))
-                {
-                    return c;
-                }
-            }
+            final Conflict conflict = set.get(id);
+            return conflict;
         }
-        return null;
     }
-    
-    public void setConflictEnabledState( String conflictId,Date date, boolean appointment1Enabled,boolean appointment2Enabled, Date lastChanged)
-    {
-        ConflictImpl conflict = (ConflictImpl)findConflict(conflictId, date);
-        conflict.setAppointment1Enabled( appointment1Enabled);
-        conflict.setAppointment2Enabled( appointment2Enabled);
-        conflict.setLastChanged( lastChanged);
-    }
-    
-    private Set<Conflict> calculateConflicts(Allocatable allocatable,Date today ) 
+
+    private Map<String,Conflict> calculateConflicts(Allocatable allocatable,Date today )
     {
         if ( isConflictIgnored(allocatable))
         {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
         Set<Appointment> allAppointments = allocationMap.getAppointments(allocatable);
 //        Set<Appointment> changedAppointments;
@@ -132,7 +119,7 @@ class ConflictFinder {
 //        }
         if (allAppointments.isEmpty() /*|| changedAppointments.isEmpty()*/)
         {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
       //  Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
 //        {
@@ -147,11 +134,11 @@ class ConflictFinder {
 //                conflictList.add( conflict );
 //            }
 //        }
-        Set<Conflict> conflictList =   updateConflicts(allocatable, today, allAppointments);
+        Map<String,Conflict> conflictList =   updateConflicts(allocatable, today, allAppointments);
         //updateConflictsOld(allocatable, today, allAppointments, changedAppointments, conflictList);
         if ( conflictList.isEmpty())
         {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
         return conflictList;
     }
@@ -246,7 +233,7 @@ class ConflictFinder {
 //        }
 //    }
     
-    private  Set<Conflict>  updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments) {
+    private  Map<String,Conflict>  updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments) {
         Collection<AppointmentBlock> allAppointmentBlocks =new LinkedList<AppointmentBlock>(); 
         createBlocks(today,allAppointments,allAppointmentBlocks, null);
 //        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
@@ -285,8 +272,8 @@ class ConflictFinder {
 
 
     // the sweep-line algorithm
-    public static Set<Conflict> sweepLine(Allocatable allocatable, Date today, Collection<AppointmentBlock> intervals) {
-        Set<Conflict> conflictList =  new HashSet<Conflict>( );//conflictMap.get(allocatable);
+    public static Map<String,Conflict> sweepLine(Allocatable allocatable, Date today, Collection<AppointmentBlock> intervals) {
+        Map<String,Conflict> conflictList =  new HashMap<String,Conflict>( );//conflictMap.get(allocatable);
         Set<String> foundConflictIds = new HashSet<String>();
         // generate N random intervals
 
@@ -329,8 +316,9 @@ class ConflictFinder {
                         // Add appointments to conflict list
                         if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
                         {
+                            // create a new conflict
                             final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
-                            conflictList.add(conflict);
+                            conflictList.put(conflict.getId(), conflict);
                             foundConflictIds.add( id);
 //                            System.out.println("Conflict " + appointment1 + " and " + appointment2);
                         }                       
@@ -398,7 +386,8 @@ class ConflictFinder {
 //
 //    }
 
-    
+
+    /*
     public Set<String> getIds(Collection<? extends Entity> list) {
         if ( list.isEmpty())
         {
@@ -411,6 +400,7 @@ class ConflictFinder {
         }
         return idList;
     }
+    */
 
 
 	private boolean isConflictIgnored(Allocatable allocatable) 
@@ -482,20 +472,18 @@ class ConflictFinder {
 	 * Determines all conflicts which occur after a given start date.
 	 * if user is passed then only returns conflicts the user can modify
 	 */
-	public Collection<Conflict> getConflicts( User user) 
+	public Collection<Conflict> getConflicts( User user)
 	{
 		Collection<Conflict> conflictList = new HashSet<Conflict>();
 		for ( Allocatable allocatable: conflictMap.keySet())
 		{
-			Set<Conflict> set = conflictMap.get( allocatable);
+			Map<String,Conflict> set = conflictMap.get( allocatable);
 			if ( set != null)
 			{
-				for ( Conflict conflict: set)
+				for ( Conflict conflict: set.values())
 				{
-					if (permissionController.canModify(conflict,user))
+					if (user == null || permissionController.canModify(conflict,user))
 					{
-					    conflict = conflict.clone();
-					    cache.fillConflictDisableInformation(user, conflict);
                         conflictList.add(conflict);
 					}
 				}
@@ -504,7 +492,7 @@ class ConflictFinder {
 		return conflictList;
 	}
 
-    
+
 	private boolean endsBefore(Conflict conflict,Date date )
 	{
 		Appointment appointment1 = getAppointment( conflict.getAppointment1());
@@ -558,17 +546,47 @@ class ConflictFinder {
 		return resolver.tryResolve(id, Appointment.class);
 	}
 
-	
+	public static class ConflictChangeOperation
+    {
+        private final UpdateOperation operation;
+        private final Conflict oldConflict;
+        private final Conflict newConflict;
 
-	public void updateConflicts(Map<Allocatable, AllocationChange> toUpdate,UpdateResult result, Date today,Collection<Allocatable> removedAllocatables)
+        private ConflictChangeOperation(UpdateOperation operation, Conflict oldConflict, Conflict newConflict)
+        {
+            this.operation = operation;
+            this.oldConflict = oldConflict;
+            this.newConflict = newConflict;
+        }
+
+        public UpdateOperation getOperation()
+        {
+            return operation;
+        }
+
+        public Conflict getOldConflict()
+        {
+            return oldConflict;
+        }
+
+        public Conflict getNewConflict()
+        {
+            return newConflict;
+        }
+    }
+
+	public Collection<ConflictChangeOperation> updateConflicts(LocalAbstractCachableOperator.UpdateBindingsResult bindingsResult,UpdateResult currentUpdateResult, Date today)
 	{
-		for (UpdateResult.Change change:result.getOperations(UpdateResult.Change.class))
+        Collection<ConflictChangeOperation> conflictChanges = new ArrayList<ConflictChangeOperation>();
+        Map<Allocatable, AllocationChange> toUpdate = bindingsResult.toUpdate;
+        Collection<Allocatable> removedAllocatables = bindingsResult.removedAllocatables;
+		for (UpdateResult.Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
 		{
 		    String nextId = change.getCurrentId();
-			RaplaObject current = (RaplaObject) result.getLastKnown(nextId);
+			RaplaObject current = (RaplaObject) currentUpdateResult.getLastKnown(nextId);
 			if ( current.getRaplaType() == Allocatable.TYPE)
 			{
-				Allocatable old = (Allocatable) result.getLastEntryBeforeUpdate(nextId);
+				Allocatable old = (Allocatable) currentUpdateResult.getLastEntryBeforeUpdate(nextId);
 				Allocatable newAlloc = (Allocatable) current;
 				if ( old != null && newAlloc != null )
 				{
@@ -583,7 +601,7 @@ class ConflictFinder {
 		
 		for ( Allocatable alloc: removedAllocatables)
 		{
-		    Set<Conflict> sortedSet = conflictMap.get( alloc);
+		    Map<String,Conflict> sortedSet = conflictMap.get( alloc);
 		    if ( sortedSet != null && !sortedSet.isEmpty())
 		    {
 		        logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
@@ -603,29 +621,36 @@ class ConflictFinder {
 				conflictMap.remove( allocatable);
 			}
 			
-    		Set<Conflict> conflictListBefore =  conflictMap.get(allocatable);
+    		Map<String,Conflict> conflictListBefore =  conflictMap.get(allocatable);
     		if ( conflictListBefore == null)
     		{
-    			conflictListBefore = new LinkedHashSet<Conflict>();
+    			conflictListBefore = new LinkedHashMap<String,Conflict>();
     		}
-			Set<Conflict> conflictListAfter = calculateConflicts( allocatable , today);
+			Map<String,Conflict> conflictListAfter = calculateConflicts( allocatable , today);
 			conflictMap.put( allocatable, conflictListAfter);
 			//User user = evt.getUserFromRequest();
 		
-			for ( Conflict conflict: conflictListBefore)
+			for ( String conflictId: conflictListBefore.keySet())
 			{
-				boolean isRemoved = !conflictListAfter.contains(conflict);
+				boolean isRemoved = !conflictListAfter.containsKey(conflictId);
 				if  ( isRemoved )
 				{
-					result.addOperation(new UpdateResult.Remove(conflict.getId(), Conflict.TYPE));
+                    final UpdateResult.Remove operation = new UpdateResult.Remove(conflictId, Conflict.TYPE);
+                    Conflict oldConflict = conflictListBefore.get(conflictId);
+                    Conflict newConflict = null;
+                    conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
 				}
 			}
-			for ( Conflict conflict: conflictListAfter)
+			for ( Conflict conflict: conflictListAfter.values())
 			{
-				boolean isNew = !conflictListBefore.contains(conflict);
+                final String conflictId = conflict.getId();
+                boolean isNew = !conflictListBefore.containsKey(conflictId);
 				if  ( isNew )
 				{
-					result.addOperation(new UpdateResult.Add(conflict.getId(), conflict.getRaplaType()));
+                    final UpdateResult.Add operation = new UpdateResult.Add(conflictId, conflict.getRaplaType());
+                    Conflict oldConflict = null;
+                    Conflict newConflict = conflictListAfter.get(conflictId);
+                    conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
 					added.add( conflict);
 				}
 			}
@@ -637,10 +662,10 @@ class ConflictFinder {
     	
     	// first we create a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
     	Map<Allocatable, Set<String>> appointmentUpdateMap = new LinkedHashMap<Allocatable, Set<String>>();
-    	for (Change change:result.getOperations(UpdateResult.Change.class))
+    	for (Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
     	{
     	    String id = change.getCurrentId();
-            final Entity obj = result.getLastKnown(id);//.getUnresolvedEntity();
+            final Entity obj = currentUpdateResult.getLastKnown(id);//.getUnresolvedEntity();
             if ( obj.getRaplaType().equals( Reservation.TYPE))
     		{
     			Reservation reservation = (Reservation) obj;
@@ -664,10 +689,10 @@ class ConflictFinder {
     	for ( Allocatable alloc: appointmentUpdateMap.keySet())
     	{
     		Set<String> changedAppointments = appointmentUpdateMap.get( alloc);
-    		Set<Conflict> conflicts = conflictMap.get( alloc);
+    		Map<String,Conflict> conflicts = conflictMap.get( alloc);
     		if ( conflicts != null)
     		{
-	    		for ( Conflict conflict:conflicts)
+	    		for ( Conflict conflict:conflicts.values())
 	    		{
 	    			String appointment1Id = conflict.getAppointment1();
 	    			String appointment2Id = conflict.getAppointment2();
@@ -690,17 +715,18 @@ class ConflictFinder {
     	for ( Conflict oldConflict:updateList)
     	{
     		Conflict newConflict = toUpdateConflicts.get( oldConflict);
-    		Set<Conflict> conflicts = conflictMap.get( oldConflict.getAllocatable());
-    		conflicts.remove( oldConflict);
-    		conflicts.add( newConflict);
+    		Map<String,Conflict> conflicts = conflictMap.get( oldConflict.getAllocatable());
+    		conflicts.remove( oldConflict.getId());
+    		conflicts.put(newConflict.getId(), newConflict);
     		// we add a change operation 
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
     		{
-    			result.addOperation(new UpdateResult.Change(newConflict.getId(), newConflict.getRaplaType()));
+                final Change operation = new Change(newConflict.getId(), newConflict.getRaplaType());
+                conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
     		}
     	}
-
+        return conflictChanges;
 	}
 
 //	private SortedSet<Appointment> getAndCreateListId(Map<Allocatable,SortedSet<Appointment>> appointmentMap,Allocatable alloc) {
@@ -722,12 +748,13 @@ class ConflictFinder {
 	public Set<String> removeOldConflicts(Date today)
 	{
         Set<String> result = new LinkedHashSet<String>();
-		for (Set<Conflict> sortedSet: conflictMap.values())
+		for (Map<String,Conflict> conflictMap: this.conflictMap.values())
 		{
-			Iterator<Conflict> it = sortedSet.iterator();
+			Iterator<Map.Entry<String,Conflict>> it = conflictMap.entrySet().iterator();
 			while (it.hasNext())
 			{
-				Conflict conflict = it.next();
+                Map.Entry<String,Conflict> conflictEntry = it.next();
+                Conflict conflict = conflictEntry.getValue();
 				if ( endsBefore( conflict,today))
 				{
 					it.remove();

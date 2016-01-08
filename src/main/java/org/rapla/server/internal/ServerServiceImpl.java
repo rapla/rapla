@@ -100,6 +100,8 @@ public class ServerServiceImpl implements ServerServiceContainer
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
         //        else
+
+        // Start database or file connection and read data
         operator.connect();
         Preferences preferences = operator.getPreferences(null, true);
         //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);

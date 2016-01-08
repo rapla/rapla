@@ -88,7 +88,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	protected final Map<String,FunctionFactory> functionFactoryMap;
-	protected volatile Date lastUpdated;
+	private volatile Date lastUpdated;
 	protected PermissionController permissionController;
 
 	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)  {
@@ -118,17 +118,11 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return lastUpdated;
 	}
 
-	public User connect() throws RaplaException
+	protected void setLastUpdated(Date lastUpdated)
 	{
-	    try {
-            User user = connectAsync().get();
-            return user;
-        } catch (RaplaException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RaplaException(e.getMessage(),e);
-        }
+		this.lastUpdated = lastUpdated;
 	}
+
 	
 	// Implementation of StorageOperator
 	public <T extends Entity> T editObject(T o, User user)throws RaplaException {
@@ -671,7 +665,9 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		//	           toRemove.add( conflict );
 		//		}
 		setResolver(updatedEntities);
-		return createUpdateResult(oldEntities, updatedEntities, toRemove,  since, until);
+		final UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
+		setLastUpdated( until );
+		return updateResult;
 	}
 
 	protected Entity findPersistant(Entity entity) {

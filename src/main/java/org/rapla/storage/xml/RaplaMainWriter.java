@@ -83,7 +83,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println();
         printReservations();
         println();
-        Collection<Conflict> conflicts = cache.getConflicts();
+        Collection<Conflict> conflicts = cache.getDisabledConflicts();
         if ( conflicts.size() > 0)
         {
             printDisabledConflicts(conflicts);

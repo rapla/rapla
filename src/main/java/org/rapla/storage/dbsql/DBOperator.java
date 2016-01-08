@@ -143,7 +143,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 {
                     DBOperator.this.logger.info("Could not release old locks");
                 }
-                finally 
+                finally
                 {
                     unlock(writeLock);
                 }
@@ -289,17 +289,20 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         }
     }
 
-    synchronized public User connect(ConnectInfo connectInfo) throws RaplaException
+    @Override
+    synchronized public void connect() throws RaplaException
     {
         if (!isConnected())
         {
             getLogger().debug("Connecting: " + getConnectionName());
             loadData();
+
             initIndizes();
             isConnected = true;
             getLogger().debug("Connected");
             scheduleCleanupAndRefresh(scheduler);
         }
+        /*
         if (connectInfo != null)
         {
             final String username = connectInfo.getUsername();
@@ -313,7 +316,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         else
         {
             return null;
-        }
+        }*/
     }
 
     public boolean isConnected()
@@ -321,16 +324,16 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         return isConnected;
     }
 
-    @Override
-    public void refresh() throws RaplaException
+    @Override public void refresh() throws RaplaException
     {
         final Lock writeLock = writeLock();
-        try(Connection c = createConnection() )
+        try (Connection c = createConnection())
         {
             refreshWithoutLock(c);
         }
         catch (Throwable e)
         {
+            Date lastUpdated = getLastUpdated();
             logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
         }
         finally
@@ -343,7 +346,9 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     {
         final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
+        Date lastUpdated = getLastUpdated();
         Date connectionTime = raplaSQLInput.getLastUpdated(c);
+
         if (!connectionTime.after(lastUpdated))
         {
             return;
@@ -351,34 +356,33 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         final Collection<String> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
         Collection<Entity> toStore = new LinkedHashSet<Entity>();
         Set<String> toRemove = new HashSet<>();
-        List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated );
+        List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
         for (String id : allIds)
         {
-            final HistoryEntry before = history.getBefore(id, connectionTime);
-            if(before.isDelete())
+            final HistoryEntry before = history.getLastChangedUntil(id, connectionTime);
+            if (before.isDelete())
             {
-                toRemove.add( before.getId());
+                toRemove.add(before.getId());
             }
             else
             {
                 final Entity entity = history.getEntity(before);
                 setResolver(Collections.singleton(entity));
-                toStore.add( entity);
+                toStore.add(entity);
             }
         }
-        refresh( lastUpdated, connectionTime,toStore, patches, toRemove);
-        lastUpdated = connectionTime;
+        refresh(lastUpdated, connectionTime, toStore, patches, toRemove);
         return;
     }
 
     synchronized public void disconnect() throws RaplaException
     {
-        if ( cleanupOldLocks != null)
+        if (cleanupOldLocks != null)
         {
             cleanupOldLocks.cancel();
             cleanupOldLocks = null;
         }
-        if ( refreshTask != null)
+        if (refreshTask != null)
         {
             refreshTask.cancel();
             refreshTask = null;
@@ -419,7 +423,6 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         Lock writeLock = writeLock();
         try
         {
-            lastUpdated = new Date();
             c = createConnection();
             connectionName = c.getMetaData().getURL();
             getLogger().info("Using datasource " + c.getMetaData().getDatabaseProductName() + ": " + connectionName);
@@ -529,7 +532,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
             {
                 throw new RaplaException("Can't export old db data, because no data export is set.");
             }
-            LocalCache cache = new LocalCache( permissionController);
+            LocalCache cache = new LocalCache(permissionController);
             cache.clearAll();
             addInternalTypes(cache);
             loadOldData(c, cache);
@@ -718,13 +721,33 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         Lock writeLock = writeLock();
         try
         {
-            Date since = lastUpdated;
+            //Date since = lastUpdated;
             preprocessEventStorage(evt);
             updateLastChangedUser(evt);
             Collection<Entity> storeObjects = evt.getStoreObjects();
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             Collection<String> removeObjects = evt.getRemoveIds();
-            dbStore(storeObjects, preferencePatches, removeObjects);
+            if (storeObjects.isEmpty() && preferencePatches.isEmpty() && removeObjects.isEmpty())
+            {
+                return;
+            }
+            Connection connection = createConnection();
+            try
+            {
+                dbStore(storeObjects, preferencePatches, removeObjects, connection);
+                try
+                {
+                    refreshWithoutLock(connection);
+                }
+                catch (SQLException e)
+                {
+                    getLogger().error("Could not load update from db. Will be loaded afterwards", e);
+                }
+            }
+            finally
+            {
+                close(connection);
+            }
         }
         finally
         {
@@ -734,38 +757,32 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         //fireStorageUpdated(result);
     }
 
-    private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<String> removeObjects)
-            throws RaplaException, RaplaDBException
+    private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<String> removeObjects, Connection connection)
     {
-        if ( storeObjects.isEmpty() && preferencePatches.isEmpty() && removeObjects.isEmpty())
-        {
-            return;
-        }
-        Connection connection = createConnection();
         RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
         final LinkedHashSet<String> ids = new LinkedHashSet<String>();
         for (Entity entity : storeObjects)
         {
             ids.add(entity.getId());
         }
-        ids.addAll( removeObjects);
-        final boolean needsGlobalLock = containsDynamicType(ids) ;
+        ids.addAll(removeObjects);
+        final boolean needsGlobalLock = containsDynamicType(ids);
         try
         {
-            if ( needsGlobalLock)
+            if (needsGlobalLock)
             {
                 raplaSQLOutput.getGlobalLock(connection);
             }
             else
             {
-                for ( PreferencePatch patch:preferencePatches)
+                for (PreferencePatch patch : preferencePatches)
                 {
                     String userId = patch.getUserId();
-                    if ( userId == null)
+                    if (userId == null)
                     {
                         userId = Preferences.SYSTEM_PREFERENCES_ID;
                     }
-                    ids.add( userId);
+                    ids.add(userId);
                 }
                 raplaSQLOutput.getLocks(connection, ids);
             }
@@ -785,7 +802,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-//            refreshWithoutLock(connection);
+            //            refreshWithoutLock(connection);
         }
         catch (Exception ex)
         {
@@ -825,32 +842,25 @@ import org.rapla.storage.xml.RaplaXMLContextException;
                 {
                     raplaSQLOutput.removeLocks(connection, ids);
                 }
-                if(connection.getMetaData().supportsTransactions())
+                if (connection.getMetaData().supportsTransactions())
                 {
                     connection.commit();
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 getLogger().error("Could noe remove locks. They will be removed during next cleanup. ", ex);
             }
-            try
-            {
-                refreshWithoutLock(connection);
-            }
-            catch (SQLException e)
-            {
-                getLogger().error("Could not load update from db. Will be loaded afterwards", e);
-            }
-            close(connection);
         }
     }
 
     private boolean containsDynamicType(Set<String> ids)
     {
-        for ( String id:ids)
+        for (String id : ids)
         {
             final Entity entity = tryResolve(id);
-            if (entity != null && entity.getRaplaType() == DynamicType.TYPE){
+            if (entity != null && entity.getRaplaType() == DynamicType.TYPE)
+            {
                 return true;
             }
         }
@@ -871,11 +881,11 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         {
             removeObjects.add(id);
         }
-        try
+        try (Connection connection = createConnection())
         {
-            dbStore(storeObjects, preferencePatches, removeObjects);
+            dbStore(storeObjects, preferencePatches, removeObjects, connection);
         }
-        catch (RaplaException ex)
+        catch (Exception ex)
         {
             getLogger().warn("disabled conflicts could not be removed from database due to ", ex);
         }
@@ -970,11 +980,20 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         }
     }
 
+    @Override public Date getHistoryValidStart()
+    {
+        final Date date = new Date(getLastUpdated().getTime() - HISTORY_DURATION);
+        return date;
+    }
+
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException
     {
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
+        final Date lastUpdated = raplaSQLInput.getLastUpdated(connection);
+        setLastUpdated( lastUpdated );
+        setConnectStart( lastUpdated );
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
         cache.putAll(list);
@@ -984,7 +1003,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         cache.putAll(migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
         Collection<String> removeObjects = Collections.emptyList();
-        dbStore(migratedTemplates, preferencePatches, removeObjects);
+        dbStore(migratedTemplates, preferencePatches, removeObjects, connection);
         // It is important to do the read only later because some resolve might involve write to referenced objects
         for (Entity entity : list)
         {
@@ -1047,7 +1066,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
-        inputContext.put(Date.class, new Date(lastUpdated.getTime() - HISTORY_DURATION));
+        inputContext.put(Date.class, new Date(getLastUpdated().getTime() - HISTORY_DURATION));
         inputContext.put(EntityHistory.class, history);
         return inputContext;
     }

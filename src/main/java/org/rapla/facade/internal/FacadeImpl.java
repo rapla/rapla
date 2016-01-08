@@ -62,6 +62,7 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.jsonrpc.client.gwt.internal.impl.FutureResultImpl;
 import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -914,7 +915,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			throws RaplaException {
        User user = null;
        try {
-           user = operator.connect( connectInfo);
+		   if ( operator instanceof RemoteOperator)
+		   {
+			   user = ((RemoteOperator)operator).connect(connectInfo);
+		   }
+		   else
+		   {
+			   throw new RaplaException("Login only possible with remoteOperator");
+		   }
        } catch (RaplaSecurityException ex) {
 			return false;
        } finally {
@@ -939,7 +947,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
    
    public FutureResult<VoidResult> load()
    {
-       final FutureResult<User> connect = operator.connectAsync();
+	   if (( operator instanceof RemoteOperator))
+	   {
+		   return new ResultImpl<VoidResult>(new RaplaException("Only RemoteOperator supports async loading"));
+	   }
+       final FutureResult<User> connect = ((RemoteOperator)operator).connectAsync();
        return new FutureResult<VoidResult>() {
 
         @Override

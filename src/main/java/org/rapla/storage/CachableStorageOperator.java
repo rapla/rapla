@@ -24,7 +24,8 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
 public interface CachableStorageOperator extends StorageOperator {
-	
+
+    void connect() throws RaplaException;
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
     void dispatch(UpdateEvent evt) throws RaplaException;
     String authenticate(String username,String password) throws RaplaException;
@@ -37,11 +38,12 @@ public interface CachableStorageOperator extends StorageOperator {
     TimeZone getTimeZone();
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
-    void fillConflictDisableInformation(User user, Conflict conflict);
 
     UpdateResult getUpdateResult(Date since);
     UpdateResult getUpdateResult(Date since,User user);
 
+    Date getHistoryValidStart();
+    Date getConnectStart();
 }
 
 
