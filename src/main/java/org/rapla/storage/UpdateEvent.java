@@ -43,6 +43,8 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.storage.server.ImportExportEntity;
+import org.rapla.storage.server.ImportExportEntityImpl;
 
 public class UpdateEvent
 {
@@ -56,6 +58,7 @@ public class UpdateEvent
 	List<AllocatableImpl> resources;
 	List<ReservationImpl> reservations;
 	List<ConflictImpl> conflicts;
+	List<ImportExportEntityImpl> importExports;
 	
 	private Set<String> removeSet;
 	private Set<String> storeSet;
@@ -174,6 +177,11 @@ public class UpdateEvent
                 conflicts = new ArrayList<ConflictImpl>();
                 list = conflicts;
             } 
+            else if (class1.equals(ImportExportEntity.class))
+            {
+                importExports = new ArrayList<ImportExportEntityImpl>();
+                list = importExports;
+            }
             else
             {
                 throw new IllegalArgumentException(entity.getRaplaType() + " can't be stored ");

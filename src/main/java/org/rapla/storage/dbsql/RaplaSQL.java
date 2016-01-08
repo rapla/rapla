@@ -122,6 +122,7 @@ class RaplaSQL {
         history = new HistoryStorage( context, false);
         stores.add(history);
         stores.add(new HistoryStorage( context, true));
+        stores.add(new ImportExportStorage(context));
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
@@ -2489,7 +2490,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
     {
         super(context, ImportExportEntityImpl.raplaType, "IMPORT_EXPORT",
                 new String[] { "FOREIGN_ID VARCHAR(255) KEY", "EXTERNAL_SYSTEM VARCHAR(255) KEY", "RAPLA_ID VARCHAR(255)", "DIRECTION INTEGER NOT NULL", "DATA TEXT NOT NULL",
-                "CONTEXT TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY" });
+                "CONTEXT TEXT", "CHANGED_AT TIMESTAMP KEY" });
     }
 
     @Override
@@ -2508,7 +2509,8 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
         setText(stmt, 5, entity.getData());
         setText(stmt, 6, entity.getContext());
         setTimestamp(stmt, 7, getConnectionTimestamp());
-        return 0;
+        stmt.addBatch();
+        return 1;
     }
 
     @Override
