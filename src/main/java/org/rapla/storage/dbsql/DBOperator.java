@@ -985,15 +985,23 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         final Date date = new Date(getLastUpdated().getTime() - HISTORY_DURATION);
         return date;
     }
+    
+    private Date loadInitialLastUpdateFromDb(Connection connection) throws SQLException
+    {
+        final RaplaDefaultXMLContext createOutputContext = createOutputContext(cache);
+        final RaplaSQL raplaSQL = new RaplaSQL(createOutputContext);
+        final Date lastUpdated = raplaSQL.getLastUpdated(connection);
+        return lastUpdated;
+    }
 
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException
     {
+        final Date lastUpdated = loadInitialLastUpdateFromDb(connection);
+        setLastUpdated( lastUpdated );
+        setConnectStart( lastUpdated );
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
-        final Date lastUpdated = raplaSQLInput.getLastUpdated(connection);
-        setLastUpdated( lastUpdated );
-        setConnectStart( lastUpdated );
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
         cache.putAll(list);
