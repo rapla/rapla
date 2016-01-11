@@ -706,6 +706,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 ((EntityReferencer) entity).setResolver(resolver);
             }
+            if (entity instanceof DynamicType)
+            {
+                ((DynamicTypeImpl)entity).setOperator( this );
+            }
         }
         processUserPersonLink(entities);
     }
