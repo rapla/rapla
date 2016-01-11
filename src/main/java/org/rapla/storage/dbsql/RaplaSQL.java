@@ -2362,7 +2362,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     private boolean isSupportedEntity(Entity entity)
     {
         return (entity instanceof Allocatable) || (entity instanceof DynamicType) || (entity instanceof Reservation) || (entity instanceof User)
-                || (entity instanceof Category);
+                || (entity instanceof Category) || (entity instanceof Conflict);
     }
     
     @Override
