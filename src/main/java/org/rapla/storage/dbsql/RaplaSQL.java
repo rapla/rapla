@@ -2435,7 +2435,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 if(entity == null)
                 {
                     final HistoryEntry before = history.getLastChangedUntil(id, connectionTimestamp);
-                    if (before != null)
+                    if (before != null && before.getTimestamp() >= connectionTimestamp.getTime())
                     {
                         put(history.getEntity(before));
                     }
@@ -2446,7 +2446,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                     final Date lastChanged = ((Timestamp) entity).getLastChanged();
                     if(lastChanged != null)
                     {
-                        if (!lastChanged.before(connectionTimestamp))
+                        if (lastChanged.after(connectionTimestamp))
                         {// we need to restore from history
                             final HistoryEntry before = history.getLastChangedUntil(id, connectionTimestamp);
                             if (before != null)
