@@ -21,6 +21,7 @@ import java.util.List;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
@@ -41,7 +42,14 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     
     public SimpleEntity() {
     }
-    
+
+    public abstract <T extends Entity> RaplaType<T> getRaplaType();
+
+    public ReferenceInfo getReference()
+    {
+        return new ReferenceInfo(id,getRaplaType().getTypeClass());
+    }
+
     public void checkWritable() {
         if ( readOnly )
             throw new ReadOnlyException( this );

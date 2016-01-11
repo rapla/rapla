@@ -35,6 +35,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
@@ -635,7 +636,7 @@ class ConflictFinder {
 				boolean isRemoved = !conflictListAfter.containsKey(conflictId);
 				if  ( isRemoved )
 				{
-                    final UpdateResult.Remove operation = new UpdateResult.Remove(conflictId, Conflict.TYPE);
+                    final UpdateResult.Remove operation = new UpdateResult.Remove(new EntityReferencer.ReferenceInfo(conflictId, Conflict.class));
                     Conflict oldConflict = conflictListBefore.get(conflictId);
                     Conflict newConflict = null;
                     conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
@@ -647,7 +648,7 @@ class ConflictFinder {
                 boolean isNew = !conflictListBefore.containsKey(conflictId);
 				if  ( isNew )
 				{
-                    final UpdateResult.Add operation = new UpdateResult.Add(conflictId, conflict.getRaplaType());
+                    final UpdateResult.Add operation = new UpdateResult.Add(new EntityReferencer.ReferenceInfo(conflictId, Conflict.class));
                     Conflict oldConflict = null;
                     Conflict newConflict = conflictListAfter.get(conflictId);
                     conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
@@ -722,7 +723,7 @@ class ConflictFinder {
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
     		{
-                final Change operation = new Change(newConflict.getId(), newConflict.getRaplaType());
+                final Change operation = new Change(newConflict.getReference());
                 conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
     		}
     	}

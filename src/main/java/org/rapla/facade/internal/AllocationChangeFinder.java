@@ -44,7 +44,7 @@ public class AllocationChangeFinder
             added(  updateResult.getLastKnown(addOp.getCurrentId()), user );
         }
         for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
-            removed( removeOp.getCurrentId(),removeOp.getRaplaType(), user );
+            removed( removeOp.getCurrentId(),removeOp.getType(), user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
             Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getCurrentId());
@@ -76,7 +76,7 @@ public class AllocationChangeFinder
         }
     }
 
-    private void removed(String id,RaplaType raplaType, User user) {
+    private void removed(String id,Class<?extends Entity> raplaType, User user) {
         // FIXME to be replaced with notification mechanism
 //
 //        if ( raplaType ==  Reservation.TYPE ) {

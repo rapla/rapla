@@ -33,11 +33,10 @@ public class ModificationEventImpl implements ModificationEvent
         final Iterable<UpdateOperation> operations = updateResult.getOperations();
         for (UpdateOperation op : operations)
         {
-            final RaplaType raplaType = op.getRaplaType();
-            modified.add(raplaType);
+            final Class<? extends Entity> typeClass = op.getType();
+            modified.add(RaplaType.get( typeClass));
             if(op instanceof UpdateResult.Remove)
             {
-                final Class<Entity> typeClass = raplaType.getTypeClass();
                 removedReferences.add(new EntityReferencer.ReferenceInfo(op.getCurrentId(), typeClass));
             }
             else if(op instanceof UpdateResult.Change)

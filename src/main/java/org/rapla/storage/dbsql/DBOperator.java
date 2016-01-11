@@ -1076,7 +1076,8 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
         inputContext.put(Date.class, new Date(getLastUpdated().getTime() - HISTORY_DURATION));
         inputContext.put(EntityHistory.class, history);
-        return inputContext;
+        final RaplaDefaultXMLContext inputContext1 = inputContext;
+        return inputContext1;
     }
 
     private RaplaDefaultXMLContext createOutputContext(LocalCache cache) throws RaplaException

@@ -305,8 +305,8 @@ public class SynchronisationManager  {
         //lock
         for (UpdateOperation operation: evt.getOperations())
 		{
-			final RaplaType<?> raplaType = operation.getRaplaType();
-            if ( raplaType ==  Reservation.TYPE )
+			final Class<? extends Entity> raplaType = operation.getType();
+            if ( raplaType ==  Reservation.class )
 			{
 				if ( operation instanceof UpdateResult.Remove)
 				{
@@ -368,7 +368,7 @@ public class SynchronisationManager  {
 				}
 			}
 			// the exported calendars could have changed
-			else if ( raplaType ==  Preferences.TYPE )
+			else if ( raplaType ==  Preferences.class )
 			{
 				final Preferences preferences;
 				if ( operation instanceof UpdateResult.Add)
@@ -393,7 +393,7 @@ public class SynchronisationManager  {
 					}
 				}
 			}
-			else if ( raplaType ==  User.TYPE )
+			else if ( raplaType ==  User.class )
 			{
 				String userId = operation.getCurrentId();
                 if (operation instanceof UpdateResult.Remove)
@@ -419,7 +419,7 @@ public class SynchronisationManager  {
                     }
                 }   
 			}
-			else if ( raplaType ==  Allocatable.TYPE )
+			else if ( raplaType ==  Allocatable.class )
 			{
                 if (operation instanceof UpdateResult.Change)
                 {

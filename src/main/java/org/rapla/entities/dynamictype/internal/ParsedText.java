@@ -26,6 +26,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -671,6 +672,11 @@ public class ParsedText implements Serializable
         public RaplaType<Category> getRaplaType()
         {
             return parent.getRaplaType();
+        }
+
+        @Override public EntityReferencer.ReferenceInfo getReference()
+        {
+            return parent.getReference();
         }
 
         public void removeCategory(Category category)

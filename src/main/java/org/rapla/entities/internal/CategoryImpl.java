@@ -83,7 +83,8 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
             child.setLastChanged(date);
         }
     }
-    
+
+    @Override
     public RaplaType<Category> getRaplaType() {return TYPE;}
 
 	void setParent(CategoryImpl parent) {

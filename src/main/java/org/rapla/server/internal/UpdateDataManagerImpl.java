@@ -187,7 +187,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         boolean conflictRefresh = lastSynced.before( conflictValidStart);
         for (Remove op : updateResult.getOperations(Remove.class))
         {
-            if ( op.getRaplaType() == DynamicType.TYPE)
+            if ( op.getType() == DynamicType.class)
             {
                 resourceRefresh = true;
                 conflictRefresh = true;
@@ -197,14 +197,14 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             for (UpdateOperation op : updateResult.getOperations(Change.class))
             {
-                if (op.getRaplaType() == DynamicType.TYPE)
+                if (op.getType() == DynamicType.class)
                 {
                     conflictRefresh = true;
                 }
             }
             for (UpdateOperation op : updateResult.getOperations(UpdateResult.Add.class))
             {
-                if (op.getRaplaType() == DynamicType.TYPE)
+                if (op.getType() == DynamicType.class)
                 {
                     conflictRefresh = true;
                 }
@@ -359,8 +359,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             for (Remove ref : removedEntities)
             {
                 String id = ref.getCurrentId();
-                final RaplaType raplaType = ref.getRaplaType();
-                Class<? extends Entity> type = raplaType.getTypeClass();
+                Class<? extends Entity> type = ref.getType();
                 if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class)
                 {
                     safeResultEvent.putRemoveId(id);

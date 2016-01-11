@@ -1006,13 +1006,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Collection<Conflict> conflicts = conflictFinder.getConflicts(null);
         for (Conflict conflict : conflicts)
         {
-            final String currentId = conflict.getId();
-            final Class<? extends Entity> typeClass = Conflict.class;
-            ReferenceInfo referenceInfo = new ReferenceInfo(currentId, typeClass);
+            ReferenceInfo referenceInfo =conflict.getReference();
             boolean isDelete = false;
             Date timestamp = conflict.getLastChanged();
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, conflict);
         }
+
+        final Collection<User> users = cache.getUsers();
+        final Set<User> systemUser = Collections.singleton(null);
+        for (User user: new IterableChain<>(users, systemUser))
+        {
+            String userId = user != null ? user.getId() : null;
+            Preferences preference = cache.getPreferencesForUserId(userId);
+            if (preference == null)
+            {
+                continue;
+            }
+            ReferenceInfo referenceInfo = preference.getReference();
+            boolean isDelete = false;
+            Date timestamp = preference.getLastChanged();
+            addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
+        }
+
         cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, period);
     }
 
@@ -1065,7 +1080,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             final RaplaType raplaType = newEntity.getRaplaType();
             if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
-                    || raplaType == User.TYPE || raplaType == Preferences.TYPE || raplaType == Category.TYPE)
+                    || raplaType == User.TYPE|| raplaType == Category.TYPE)
             {
                 //history.getBefore(id, now);
                 //Date timestamp = ((LastChangedTimestamp) newEntity).getLastChanged();
@@ -1073,6 +1088,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 //final EntityHistory.HistoryEntry historyEntry = history.addHistoryEntry(newEntity, timestamp, isDelete);
                 final EntityHistory.HistoryEntry historyEntry = history.getLatest(id);
                 addToDeleteUpdate(historyEntry);
+            }
+            else if (raplaType == Preferences.TYPE)
+            {
+                ReferenceInfo referenceInfo = op.getReference();
+                boolean isDelete = op instanceof Remove;
+                Entity current = tryResolve( referenceInfo.getId());
+                if ( current != null)
+                {
+                    Date timestamp =((Preferences)current).getLastChanged();
+                    addToDeleteUpdate(referenceInfo,timestamp,isDelete, current);
+                }
             }
             if (raplaType == Conflict.TYPE)
             {
@@ -1119,9 +1145,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             final UpdateOperation operation = updateOperation.getOperation();
             final String currentId = operation.getCurrentId();
-            final RaplaType raplaType = operation.getRaplaType();
-            final Class<? extends Entity> typeClass = raplaType.getTypeClass();
-            ReferenceInfo referenceInfo = new ReferenceInfo(currentId, typeClass);
+            ReferenceInfo referenceInfo = operation.getReference();
             final Conflict conflict;
             boolean isDelete;
             Date timestamp;
@@ -3265,11 +3289,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             String id = update.getId();
             Entity oldEntity;
             Entity newEntity;
-            if (update.getType() == Conflict.class)
+            final Class<? extends Entity> type = update.getType();
+            if (type == Conflict.class)
             {
                 final Conflict conflict = conflictFinder.findConflict(id);
                 newEntity = cache.fillConflictDisableInformation(user, conflict);
                 oldEntity = null;
+            }
+            else if (type == Preferences.class)
+            {
+                newEntity = resolve(id);
+                oldEntity = newEntity;
             }
             else
             {

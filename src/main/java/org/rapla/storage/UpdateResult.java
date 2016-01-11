@@ -13,7 +13,9 @@
 package org.rapla.storage;
 
 import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.storage.EntityReferencer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -121,79 +123,87 @@ public class UpdateResult
     }
 
     static public class Add implements UpdateOperation {
-        private final RaplaType<?> type;
-        private final String id;
+        EntityReferencer.ReferenceInfo info;
 
-        public Add( String id, RaplaType<?> type) {
-            this.id = id;
-            this.type = type;
+        public Add( EntityReferencer.ReferenceInfo info) {
+            this.info = info;
+        }
+
+        @Override public EntityReferencer.ReferenceInfo getReference()
+        {
+            return info;
         }
         
         public String toString()
         {
-        	return "Add " + id;
+        	return "Add " + getCurrentId();
         }
 
         @Override public String getCurrentId()
         {
-            return id;
+            return info.getId();
         }
 
-        @Override public RaplaType getRaplaType()
+        @Override public Class<? extends Entity> getType()
         {
-            return type;
+            return info.getType();
         }
     }
 
     static public class Remove implements UpdateOperation {
-        private String currentId;
-        private RaplaType type;
+        EntityReferencer.ReferenceInfo info;
 
-        public Remove(String currentId, RaplaType type) {
-            this.currentId = currentId;
-            this.type = type;
+        public Remove(EntityReferencer.ReferenceInfo info) {
+            this.info = info;
+        }
+
+        @Override public EntityReferencer.ReferenceInfo getReference()
+        {
+            return info;
         }
 
         @Override public String getCurrentId()
         {
-            return currentId;
+            return info.getId();
         }
 
-        @Override public RaplaType getRaplaType()
+        @Override public Class<? extends Entity> getType()
         {
-            return type;
+            return info.getType();
         }
 
         public String toString()
         {
-        	return "Remove " + currentId;
+        	return "Remove " + getCurrentId();
         }
 
     }
 
     static public class Change implements UpdateOperation{
         
-        private final String id;
-        private final RaplaType<?> type;
+        EntityReferencer.ReferenceInfo info;
 
-        public Change( String id, RaplaType<?> type) {
-            this.id = id;
-            this.type = type;
+        public Change( EntityReferencer.ReferenceInfo info) {
+            this.info = info;
         }
 
+        @Override public EntityReferencer.ReferenceInfo getReference()
+        {
+            return info;
+        }
         @Override public String getCurrentId()
         {
-            return id;
+            return info.getId();
         }
 
-        @Override public RaplaType<?> getRaplaType()
+        @Override public Class<? extends Entity> getType()
         {
-            return type;
+            return info.getType();
         }
 
         public String toString()
         {
-        	return "Change " + id;//  + " to " + newObj;
+        	return "Change " + getCurrentId();//  + " to " + newObj;
         }
     }
     
