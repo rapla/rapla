@@ -456,12 +456,13 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		    {
 		        ((EntityReferencer)entity).setResolver(store);
 		    }
-		}
-		for (Entity entity: entities) {
 			if (entity instanceof  DynamicType)
 			{
 				((DynamicTypeImpl) entity).setOperator( this);
 			}
+		}
+		for (Entity entity: entities) {
+
 			if (entity instanceof EntityReferencer)
             {
 		        testResolve(store, (EntityReferencer)entity);
