@@ -57,7 +57,7 @@ public class RaplaClipboard implements ModificationListener
     {
         if ( appointment == null )
             return;
-        if ( evt.isRemoved(  appointment) || evt.isRemoved( appointment.getReservation()))
+        if ( evt.isRemoved(  appointment) || (appointment.getReservation() != null && evt.isRemoved( appointment.getReservation())))
         {
             clearAppointment();
         }
