@@ -269,6 +269,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    @Override
+    public String getUsername(String userId)
+    {
+        User user = tryResolve(userId, User.class);
+        if ( user == null)
+        {
+            return "unknown";
+        }
+        Locale locale = raplaLocale.getLocale();
+        String name =user.getName(locale);
+        return name;
+    }
+
     protected void processPermissionGroups() throws RaplaException
     {
         Category userCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);

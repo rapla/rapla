@@ -77,6 +77,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -593,6 +594,19 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }  
     }
 
+    protected void testResolve(EntityResolver resolver, EntityReferencer obj, EntityReferencer.ReferenceInfo reference) throws EntityNotFoundException {
+        Class<? extends Entity> class1 = reference.getType();
+        String id = reference.getId();
+        if (tryResolve(resolver,id, class1) == null)
+        {
+            if ( class1 != User.class || (userId == null || userId.equals(id)))
+            {
+                String prefix = (class1 != null) ? class1.getName() : " unkown type";
+                throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
+            }
+        }
+    }
+
     public User loadData() throws RaplaException {
         RemoteStorage serv = getRemoteStorage();
         FutureResult<UpdateEvent> resources = serv.getResources();
@@ -740,6 +754,30 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
         	throw new RaplaException(ex);
         }
+    }
+
+    @Override
+    public String getUsername(String userId) throws RaplaException
+    {
+        User user = tryResolve(userId, User.class);
+        if ( user == null)
+        {
+            RemoteStorage remoteMethod = getRemoteStorage();
+            final FutureResult<String> result = remoteMethod.getUsername(userId);
+            try
+            {
+                String    username = result.get();
+                return username;
+            }
+            catch (Exception e)
+            {
+                throw new RaplaException( e.getMessage(),e );
+            }
+
+        }
+        Locale locale = raplaLocale.getLocale();
+        String name =user.getName(locale);
+        return name;
     }
 
     @Override

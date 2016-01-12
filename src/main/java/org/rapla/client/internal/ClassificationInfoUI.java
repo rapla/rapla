@@ -46,14 +46,8 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
 
     public String getUsername(String userId)
     {
-        Locale locale = getLocale();
-        User owner = getClientFacade().getOperator().tryResolve(userId, User.class);
-        if ( owner == null)
-        {
-            // FIXME resolve username for client
-            return "unknown";
-        }
-        String name =owner.getName(locale);
+        final ClientFacade clientFacade = getClientFacade();
+        String name = clientFacade.getUsername(userId);
         return name;
     }
 

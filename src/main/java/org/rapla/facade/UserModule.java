@@ -36,6 +36,8 @@ public interface UserModule {
     /** throws an Exception if no user has loged in.
         @return the user that has loged in. */
     User getUser() throws RaplaException;
+
+    String getUsername(String id) throws RaplaException;
     
     void changePassword(User user,char[] oldPassword,char[] newPassword) throws RaplaException;
     boolean canChangePassword();
