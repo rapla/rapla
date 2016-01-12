@@ -593,6 +593,19 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }  
     }
 
+    protected void testResolve(EntityResolver resolver, EntityReferencer obj, EntityReferencer.ReferenceInfo reference) throws EntityNotFoundException {
+        Class<? extends Entity> class1 = reference.getType();
+        String id = reference.getId();
+        if (tryResolve(resolver,id, class1) == null)
+        {
+            if ( class1 != User.class || (userId == null || userId.equals(id)))
+            {
+                String prefix = (class1 != null) ? class1.getName() : " unkown type";
+                throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
+            }
+        }
+    }
+
     public User loadData() throws RaplaException {
         RemoteStorage serv = getRemoteStorage();
         FutureResult<UpdateEvent> resources = serv.getResources();

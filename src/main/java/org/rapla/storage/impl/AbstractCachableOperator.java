@@ -479,7 +479,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
         }
     }
 
-	private void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {
+	protected void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {
         Class<? extends Entity> class1 = reference.getType();
         String id = reference.getId();
         if (tryResolve(resolver,id, class1) == null)
