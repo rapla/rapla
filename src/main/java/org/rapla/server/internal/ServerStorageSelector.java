@@ -40,7 +40,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     final Set<PermissionExtension> permissionExtensions;
     ImportExportManager manager;
 
-    @Inject ServerStorageSelector(ServerContainerContext context, ServerContainerContext containerContext, Logger logger,
+    @Inject ServerStorageSelector(ServerContainerContext containerContext, Logger logger,
             RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions)
     {
