@@ -12,6 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Named;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaContentHandler;
@@ -47,6 +65,7 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.storage.xml.RaplaMainReader;
@@ -56,22 +75,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
-
-import javax.inject.Named;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 /** Use this Operator to keep the data stored in an XML-File.
  @see AbstractCachableOperator
@@ -526,6 +529,46 @@ final public class FileOperator extends LocalAbstractCachableOperator
     public String toString()
     {
         return "FileOpertator for " + getURL();
+    }
+    
+    private static class SystemLock
+    {
+        private Date lastRequested;
+        private boolean active;
+    }
+    private final Map<String, SystemLock> locks = new HashMap<String, SystemLock>();
+    @Override
+    public Date getLock(String id) throws RaplaException
+    {
+        SystemLock systemLock = locks.get(id);
+        if(systemLock == null)
+        {
+            systemLock = new SystemLock();
+            locks.put(id, systemLock);
+        }
+        if(systemLock.active){
+            throw new RaplaException("Lock already in use");
+        }
+        systemLock.lastRequested = new Date();
+        systemLock.active = true;
+        return systemLock.lastRequested;
+    }
+    
+    @Override
+    public void releaseLock(String id, Date lockReceivedTimestamp)
+    {
+        final SystemLock systemLock = locks.get(id);
+        if(systemLock != null)
+        {
+            systemLock.active = false;
+        }
+    }
+    
+    @Override
+    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection)
+    {
+        // FIXME implement me
+        return null;
     }
 
 }

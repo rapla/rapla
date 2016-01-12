@@ -55,6 +55,7 @@ public interface CachableStorageOperator extends StorageOperator {
      * @throws RaplaException if the lock can not be received
      */
     Date getLock(String id) throws RaplaException;
+    void releaseLock(String id, Date lockReceivedTimestamp);
 }
 
 

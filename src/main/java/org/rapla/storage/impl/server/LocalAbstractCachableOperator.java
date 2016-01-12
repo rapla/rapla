@@ -3347,18 +3347,4 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         return getUpdateResult(since, null);
     }
-    
-    @Override
-    public Date getLock(String id) throws RaplaException
-    {
-        // FIXME implement me
-        return null;
-    }
-
-    @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection)
-    {
-        // FIXME implement me
-        return null;
-    }
 }

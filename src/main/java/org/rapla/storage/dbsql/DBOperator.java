@@ -69,6 +69,7 @@ import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 import org.rapla.storage.xml.RaplaXMLContextException;
@@ -1086,6 +1087,27 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         outputContext.put(LocalCache.class, cache);
         return outputContext;
 
+    }
+
+    @Override
+    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection)
+    {
+        // FIXME implement me
+        return null;
+    }
+
+    @Override
+    public Date getLock(String id) throws RaplaException
+    {
+        // FIXME implement me
+        return null;
+    }
+
+    @Override
+    public void releaseLock(String id, Date lockReceivedTimestamp)
+    {
+        // FIXME implement me
+        
     }
 
     //implement backup at disconnect

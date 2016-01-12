@@ -119,16 +119,24 @@ public class SynchronisationManager  {
             @Override
             public void execute() throws Exception
             {
+                final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator)SynchronisationManager.this.facade.getOperator();
+                Date lastUpdated = null;
                 try
                 {
-                    final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator)SynchronisationManager.this.facade.getOperator();
-                    Date lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
+                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                     synchronize(updateResult);
                 }
                 catch(Throwable t)
                 {
                     SynchronisationManager.this.logger.debug("Error updating exchange queue");
+                }
+                finally
+                {
+                    if(lastUpdated != null)
+                    {
+                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, lastUpdated);
+                    }
                 }
             }
         }, delay, 2000);
