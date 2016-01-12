@@ -97,10 +97,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     public boolean isReadOnly() {
         return readOnly;
     }
-
-    public User getOwner() {
-        return getEntity("owner", User.class);
-    }
     
     public String getOwnerId()
     {
@@ -111,8 +107,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         putEntity("owner",owner);
     }
     
-	public User getLastChangedBy() {
-		return getEntity("last_changed_by", User.class);
+	public String getLastChangedBy() {
+		return getId("last_changed_by");
 	}
 
 	public void setLastChangedBy(User user) {
@@ -138,7 +134,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
      * the same type). Once set, the identifier for an object should
      * not change. The identifier is necessary to store the relationsships
      * between enties.
-     * @see SimpleIdentifier
      */
     public void setId(String id)  {
     	if ( id != null)

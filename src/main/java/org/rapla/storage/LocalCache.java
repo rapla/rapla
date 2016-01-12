@@ -325,15 +325,21 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    public List<Entity> getVisibleEntities(final User user)
+    public List<Entity> getVisibleEntities(final User forUser)
     {
         List<Entity> result = new ArrayList<Entity>();
         result.add(getSuperCategory());
         result.addAll(getDynamicTypes());
-        result.addAll(getUsers());
+        for ( User user:getUsers())
+        {
+            if ( forUser == null || forUser.isAdmin() || forUser.getId().equals( user.getId()) )
+            {
+                result.add(user);
+            }
+        }
         for (Allocatable alloc : getAllocatables())
         {
-            if (user == null || user.isAdmin() || permissionController.canReadOnlyInformation(alloc, user))
+            if (forUser == null || forUser.isAdmin() || permissionController.canReadOnlyInformation(alloc, forUser))
             {
                 result.add(alloc);
             }
@@ -346,10 +352,10 @@ public class LocalCache implements EntityResolver
                 result.add(preferences);
             }
         }
-        // add user preferences
-        if (user != null)
+        // add forUser preferences
+        if (forUser != null)
         {
-            String userId = user.getId();
+            String userId = forUser.getId();
             Assert.notNull(userId);
             PreferencesImpl preferences = getPreferencesForUserId(userId);
             if (preferences != null)

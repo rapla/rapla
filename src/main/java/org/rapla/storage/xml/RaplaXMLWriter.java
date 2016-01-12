@@ -99,10 +99,10 @@ abstract public class RaplaXMLWriter extends XMLWriter
         {
             att("last-changed", SerializableDateTimeFormat.INSTANCE.formatTimestamp( lastChangeTime));
         }
-        User user = stamp.getLastChangedBy();
-        if ( user != null) 
+        String userId = stamp.getLastChangedBy();
+        if ( userId != null)
         {  
-            att("last-changed-by", getId(user));
+            att("last-changed-by", userId);
         }
     }
     protected void printTranslation(MultiLanguageName name) throws IOException {
@@ -249,10 +249,10 @@ abstract public class RaplaXMLWriter extends XMLWriter
 
 
     protected void printOwner(Ownable obj) throws IOException {
-        User user = obj.getOwner();
-        if (user == null)
+        String userId = obj.getOwnerId();
+        if (userId == null)
             return;
-        att("owner", getId(user));
+        att("owner", userId);
     }
 
 

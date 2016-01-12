@@ -118,7 +118,9 @@ public class NotificationService
                 if ( allocatableMap != null && allocatableMap.size()> 0)
                 {
                     boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
-                    AllocationMail mail = getAllocationMail( new HashSet<Allocatable>(allocatableMap.values()), changeEvents, preferences.getOwner(),notifyIfOwner);
+                    final String ownerId = preferences.getOwnerId();
+                    final User owner = ownerId != null ? clientFacade.getOperator().resolve( ownerId, User.class) : null;
+                    AllocationMail mail = getAllocationMail( new HashSet<Allocatable>(allocatableMap.values()), changeEvents, owner,notifyIfOwner);
                     if (mail != null) {
                         mailList.add(mail);
                     }
@@ -147,7 +149,7 @@ public class NotificationService
             // Did the user opt in for the resource?
 			if (!allocatablesTheUsersListensTo.contains(allocatable))
                 continue;
-            if (!notifyIfOwner && owner.equals(reservation.getOwner()))
+            if (!notifyIfOwner && owner.getId().equals(reservation.getOwnerId()))
                 continue;
             List<AllocationChangeEvent> eventList = reservationMap.get(reservation);
             if (eventList == null) {
@@ -242,11 +244,12 @@ public class NotificationService
             Reservation newReservation = event.getNewReservation();
 			if ( newReservation != null && changed == false) {
 				User eventUser = event.getUser();
-				User lastChangedBy = newReservation.getLastChangedBy();
+				String lastChangedBy = newReservation.getLastChangedBy();
 				String name;  
 				if ( lastChangedBy != null)
             	{
-					name =  lastChangedBy.getName();
+                    final User user = clientFacade.getOperator().tryResolve(lastChangedBy, User.class);
+                    name =  user != null ? user.getName() : "unknown";
             	}
 				else if ( eventUser != null)
 				{
@@ -272,13 +275,19 @@ public class NotificationService
         buf.append("-----------");
         buf.append("\n");
         buf.append("\n");
-        buf.append(raplaI18n.getString("reservation.owner"));
-        buf.append(": ");
-        buf.append(reservation.getOwner().getUsername());
-        buf.append(" <");
-        buf.append(reservation.getOwner().getName());
-        buf.append(">");
-        buf.append("\n");
+
+        String ownerId = reservation.getOwnerId();
+        User owner = ownerId != null ? clientFacade.getOperator().tryResolve( ownerId, User.class) : null;
+        if ( owner != null)
+        {
+            buf.append(raplaI18n.getString("reservation.owner"));
+            buf.append(": ");
+            buf.append(owner.getUsername());
+            buf.append(" <");
+            buf.append(owner.getName());
+            buf.append(">");
+            buf.append("\n");
+        }
         buf.append(raplaI18n.getString("reservation_type"));
         buf.append(": ");
         Classification classification = reservation.getClassification();

@@ -163,10 +163,15 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Allocatable[] allocatables = appointment == null ? reservation.getAllocatables() : reservation.getAllocatablesFor(appointment);
         HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>( Arrays.asList(allocatables));
         hashSet.add( reservation.getClassification().getType());
-        final User owner = reservation.getOwner();
-        if ( owner != null)
+        final String ownerId = reservation.getOwnerId();
+        if ( ownerId != null)
         {
-            hashSet.add( owner);
+            User resolvedOwner = facade.getOperator().tryResolve( ownerId, User.class);
+            // only admins can see calendar models from other users so its ok if resolvedOwner is null for non admin users
+            if ( resolvedOwner != null)
+            {
+                hashSet.add(resolvedOwner);
+            }
         }
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
         hashSet.retainAll( selectedObjectsAndChildren);
@@ -928,11 +933,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             reservationFilter = null;
         }
-        Set<User> users = getUserRestrictions();
+        Set<String> users = getUserRestrictions();
         for ( Iterator<Reservation> it = reservations.iterator();it.hasNext();) 
         {
             Reservation event = it.next();
-            if ( !users.isEmpty()  && !users.contains( event.getOwner() )) {
+            if ( !users.isEmpty()  && !users.contains( event.getOwnerId() )) {
                 it.remove();
             }
             else if (reservationFilter != null && !ClassificationFilter.Util.matches( reservationFilter,event))
@@ -943,15 +948,21 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return reservations;
     }
     
-    private Set<User> getUserRestrictions() {
+    private Set<String> getUserRestrictions() {
         User currentUser = getUser();
         if (  currentUser != null &&  isOnlyCurrentUserSelected() ) 
         {
-            return Collections.singleton( currentUser );
+            return Collections.singleton( currentUser.getId() );
         }
         else if ( currentUser != null && currentUser.isAdmin())
         {
-            return getSelected(User.TYPE);
+            final Set<User> selected = getSelected(User.TYPE);
+            final Set<String> selectedUserIs = new HashSet<String>();
+            for ( User user:selected)
+            {
+                selectedUserIs.add( user.getId());
+            }
+            return selectedUserIs;
         }
         else
         {

@@ -99,22 +99,17 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     public List<Row> getAttributes(Reservation reservation,LinkController controller, User user, boolean excludeAdditionalInfos) {
         ArrayList<Row> att = new ArrayList<Row>();
         att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,controller, user ));
-        User owner = reservation.getOwner();
-        final Locale locale = getLocale();
-        if ( owner != null)
+        String ownerId = reservation.getOwnerId();
+        if ( ownerId != null)
         {
-            final String ownerName = owner.getName(locale);
+            final String ownerName = getUsername( ownerId);
             String ownerText = encode(ownerName);
-            if (controller != null)
-                ownerText = controller.createLink(owner,ownerName);
             att.add( new Row(getString("reservation.owner"), ownerText));
         }
-        User lastChangeBy = reservation.getLastChangedBy();
-        if ( lastChangeBy != null && (owner == null ||! lastChangeBy.equals(owner))) {
-        	final String lastChangedName = lastChangeBy.getName(locale);
+        String lastChangeById = reservation.getLastChangedBy();
+        if ( lastChangeById != null && (ownerId == null ||! lastChangeById.equals(ownerId))) {
+        	final String lastChangedName = getUsername(lastChangeById);
             String lastChangeByText = encode(lastChangedName);
-            if (controller != null)
-            	lastChangeByText = controller.createLink(lastChangeBy,lastChangedName);
             att.add( new Row(getString("last_changed_by"), lastChangeByText));
         }
 

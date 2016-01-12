@@ -40,7 +40,7 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     */
     Date getMaxEnd();
     
-    User getOwner();
+    String getOwnerId();
 
     /** returns the reservation that owns the appointment.
     @return the reservation that owns the appointment or null if

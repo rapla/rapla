@@ -140,7 +140,9 @@ public class PermissionTest  {
         final Reservation[] reservationsForAllocatable = testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter });
         Assert.assertEquals(1, reservationsForAllocatable.length);
         Reservation evt = reservationsForAllocatable[0];
-        final String ownerUsername = evt.getOwner().getUsername();
+        String ownerId = evt.getOwnerId();
+        final User owner = testFacade.getOperator().tryResolve(ownerId, User.class);
+        final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         evt =  testFacade.edit( evt );
         evt.removeAllocatable( allocatable );
@@ -216,7 +218,9 @@ public class PermissionTest  {
         Assert.assertTrue(permissionController.canAllocate(allocatable, user, null, null, testFacade.today()));
 
         Reservation r1 = testFacade.newReservation();
-        final String ownerUsername = r1.getOwner().getUsername();
+        final String ownerId = r1.getOwnerId();
+        final User owner = testFacade.getOperator().tryResolve(ownerId, User.class);
+        final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         r1.getClassification().setValue("name","R1");
 		Appointment a1 = testFacade.newAppointment( start1, end1 );

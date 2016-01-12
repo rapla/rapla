@@ -768,9 +768,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
                 toStore.add(r);
-                if (owner == null)
+                final String ownerId = r.getOwnerId();
+                if (owner == null && ownerId != null)
                 {
-                    owner = r.getOwner();
+                    owner = tryResolve( ownerId, User.class);
                 }
             }
             getLogger().info("Migrating " + templateKey);
@@ -2090,8 +2091,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 // remove all internal resources (e.g. templates) that have the user as owner
                 if (((DynamicTypeImpl) type).isInternal())
                 {
-                    User owner = ((Ownable) entity).getOwner();
-                    if (owner != null && owner.equals(user))
+                    String ownerId = ((Ownable) entity).getOwnerId();
+                    if (ownerId != null && ownerId.equals(user.getId()))
                     {
                         updateEvt.putRemove(entity);
                         if (type.getKey().equals(StorageOperator.RAPLA_TEMPLATE))
@@ -2106,16 +2107,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (entity instanceof Timestamp)
             {
                 Timestamp timestamp = (Timestamp) entity;
-                User lastChangedBy = timestamp.getLastChangedBy();
-                if (lastChangedBy == null || !lastChangedBy.equals(user))
+                String lastChangedBy = timestamp.getLastChangedBy();
+                if (lastChangedBy == null || !lastChangedBy.equals(user.getId()))
                 {
                     continue;
                 }
                 if (entity instanceof Ownable)
                 {
-                    User owner = ((Ownable) entity).getOwner();
+                    String ownerId = ((Ownable) entity).getOwnerId();
                     // we do nothing if the user is also owner,  that dependencies need to be resolved manually
-                    if (owner != null && owner.equals(user))
+                    if (ownerId != null && ownerId.equals(user.getId()))
                     {
                         continue;
                     }
@@ -2698,10 +2699,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     String name = templateObj.getName(locale);
                     buf.append(" in template " + name);
-                    User owner = templateObj.getOwner();
-                    if (owner != null)
+                    String ownerId = templateObj.getOwnerId();
+                    if (ownerId != null)
                     {
-                        buf.append(" of user " + owner.getUsername());
+                        User user = tryResolve( ownerId,User.class);
+                        if ( user != null)
+                        {
+                            buf.append(" of user " + user.getUsername());
+                        }
+                        else
+                        {
+                            buf.append(" with userId " + ownerId);
+                        }
                     }
                 }
                 else

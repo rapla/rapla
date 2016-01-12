@@ -419,7 +419,9 @@ public class RaplaICalImport implements ICalImport {
         final List<Appointment> appointments = new ArrayList<Appointment>();
         for (Recur recur : recurList) {
         	// FIXME need to implement UTC mapping
-            final Appointment appointment = facade.newAppointment(start.getStart(), start.getEnd(), start.getOwner());
+			String ownerId = start.getOwnerId();
+			User owner = facade.getOperator().tryResolve( ownerId, User.class) ;
+            final Appointment appointment = facade.newAppointment(start.getStart(), start.getEnd(), owner);
             appointment.setRepeatingEnabled(true);
             WeekDayList dayList = recur.getDayList();
             if (dayList.size() > 1 || (dayList.size() == 1 && !recur.getFrequency().equals(Recur.WEEKLY)  ))

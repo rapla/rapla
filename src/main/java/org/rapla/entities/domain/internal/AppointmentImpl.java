@@ -830,7 +830,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 	
 	        if ( !appointment.overlaps(start,end, excludeExceptions))
 	            continue;
-	        if (user == null || user.equals(appointment.getOwner()) ) {
+	        if (user == null || user.getId().equals(appointment.getOwnerId()) ) {
 	            appointmentSet.add(appointment);
 	        }
 	    }
@@ -901,13 +901,13 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 	        return true;
 	    }
 
-	 public User getOwner()
+	 public String getOwnerId()
 	 {
 		 Reservation reservation = getReservation();
 		 if ( reservation != null)
 		 {
-			 User owner = reservation.getOwner();
-			return owner;
+			 String ownerId = reservation.getOwnerId();
+             return ownerId;
 		 }
 		 return null;
 	 }

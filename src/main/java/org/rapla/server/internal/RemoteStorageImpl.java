@@ -103,8 +103,8 @@ public class RemoteStorageImpl implements RemoteStorage
                     if (entity instanceof Preferences)
                     {
                         Preferences preferences = (Preferences) entity;
-                        User owner = preferences.getOwner();
-                        if (owner == null && !user.isAdmin())
+                        String ownerId = preferences.getOwnerId();
+                        if (ownerId == null && !user.isAdmin())
                         {
                             entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
                         }
@@ -243,8 +243,8 @@ public class RemoteStorageImpl implements RemoteStorage
 
     protected boolean isAllocatablesVisible(User sessionUser, Reservation res)
     {
-        User owner = res.getOwner();
-        if (sessionUser.isAdmin() || owner == null || owner.equals(sessionUser))
+        String ownerId = res.getOwnerId();
+        if (sessionUser.isAdmin() || ownerId == null || ownerId.equals(sessionUser.getId()))
         {
             return true;
         }

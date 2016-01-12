@@ -113,8 +113,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         Reservation reservation2 = app2.getReservation();
         putEntity("reservation1", reservation1);
         putEntity("reservation2", reservation2);
-        putEntity("owner1", reservation1.getOwner());
-        putEntity("owner2", reservation2.getOwner());
+        putId("owner1", reservation1.getOwnerId());
+        putId("owner2", reservation2.getOwnerId());
         this.reservation1Name = reservation1.getName(Locale.getDefault());
         this.reservation2Name = reservation2.getName(Locale.getDefault());
         setResolver(((AllocatableImpl) allocatable).getResolver());

@@ -1422,8 +1422,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				T persistant = persistantVersions.get( entity);
 				if ( persistant != null)
 				{
-					User lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-					if (lastChangedBy != null && !getUser().equals(lastChangedBy))
+					String lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+					if (lastChangedBy != null && !getUser().getId().equals(lastChangedBy))
 					{
 						final Locale locale = i18n.getLocale();
 						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();

@@ -84,35 +84,39 @@ public class SecurityManager
 
         boolean ownable = entity instanceof Ownable;
 		if (ownable || entity instanceof Appointment) {
-            User entityOwner;
+            String entityOwnerId;
             if ( ownable)
             {
-            	entityOwner = ((Ownable) entity).getOwner();
+            	entityOwnerId = ((Ownable) entity).getOwnerId();
             }
             else
             {
-            	entityOwner = ((Appointment) entity).getOwner();
+            	entityOwnerId = ((Appointment) entity).getOwnerId();
             }
             if (original == null) {
-                permitted = entityOwner != null && user.isIdentical(entityOwner);
+                permitted = entityOwnerId != null && user.getId().equals(entityOwnerId);
                 if (getLogger().isDebugEnabled())
-                    getLogger().debug("Permissions for new object " + entity
-                                    + "\nUser check: " + user  + " = " + entityOwner);
+                {
+                    getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerId, User.class));
+                }
             } else {
-            	User originalOwner;
+            	String originalOwnerId;
                 if ( ownable)
                 {
-                	originalOwner = ((Ownable) original).getOwner();
+                	originalOwnerId = ((Ownable) original).getOwnerId();
                 }
                 else
                 {
-                	originalOwner = ((Appointment) original).getOwner();
+                	originalOwnerId = ((Appointment) original).getOwnerId();
                 }
 
                 if (getLogger().isDebugEnabled())
-                    getLogger().debug("Permissions for existing object " + entity
-                            + "\nUser check: " + user  + " = " + entityOwner + " = " + originalOwner);
-                permitted = (originalOwner != null) && originalOwner.isIdentical(user) && originalOwner.isIdentical(entityOwner);
+                {
+                    final User entityOwner = operator.tryResolve(entityOwnerId, User.class);
+                    final User originalOwner = operator.tryResolve(originalOwnerId, User.class);
+                    getLogger().debug("Permissions for existing object " + entity + "\nUser check: " + user + " = " + entityOwner + " = " + originalOwner);
+                }
+                permitted = (originalOwnerId != null) && originalOwnerId.equals(user.getId()) && originalOwnerId.equals(entityOwnerId);
                 if ( !permitted && !admin) {
                 	canExchange = canExchange( user, entity, original );
                 	permitted = canExchange;
@@ -403,8 +407,8 @@ public class SecurityManager
 		if ( raplaType == Preferences.TYPE)
 		{
 		    Ownable ownable = (Preferences) entity;
-		    User owner = ownable.getOwner();
-		    if (  user != null && !user.isAdmin() && (owner == null || !user.equals( owner)))
+		    String ownerId = ownable.getOwnerId();
+		    if (  user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals( ownerId)))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
 			}

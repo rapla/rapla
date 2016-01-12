@@ -143,7 +143,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         {
 			addId( key, entity.getId());
         }
-	}    
+	}
 
     public void putIds(String key,Collection<String> ids) {
         synchronized (this) 
@@ -154,10 +154,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	        }
 	
 	        List<String> entries = new ArrayList<String>();
-	        for (String id:ids)
-	        {
-	        	entries.add( id);
-	        }
+			entries.addAll( ids);
 	        links.put(key, entries);
         }
     }
@@ -186,7 +183,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	}	
 
     public void putEntity(String key,Entity entity) {
-        synchronized (this) 
+        synchronized (this)
         {
 	        if (entity == null) {
 	            links.remove(key);

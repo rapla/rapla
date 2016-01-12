@@ -396,8 +396,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (obj instanceof Preferences)
             {
                 Preferences preferences = (Preferences) obj;
-                User owner = preferences.getOwner();
-                if (owner != null && !owner.equals(user))
+                String ownerId = preferences.getOwnerId();
+                if (ownerId != null && !ownerId.equals(user.getId()))
                 {
                     clientStore = false;
                 }

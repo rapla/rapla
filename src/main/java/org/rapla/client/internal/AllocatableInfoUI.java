@@ -84,23 +84,17 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     public List<Row> getAttributes(Allocatable allocatable,LinkController controller,  boolean excludeAdditionalInfos, User user) {
         ArrayList<Row> att = new ArrayList<Row>();
         att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos, controller, user) );
-        final Locale locale = getLocale();
-        User owner = allocatable.getOwner();
-        User lastChangeBy = allocatable.getLastChangedBy();
-        if ( owner != null)
+        String ownerId = allocatable.getOwnerId();
+        String lastChangeById = allocatable.getLastChangedBy();
+        if ( ownerId != null)
         {
-            final String ownerName = owner.getName(locale);
+            final String ownerName = getUsername(ownerId);
             String ownerText = encode(ownerName);
-            if (controller != null)
-                ownerText = controller.createLink(owner,ownerName);
-            
             att.add( new Row(getString("resource.owner"), ownerText));
         }
-        if ( lastChangeBy != null && (owner == null || !lastChangeBy.equals(owner))) {
-            final String lastChangedName = lastChangeBy.getName(locale);
+        if ( lastChangeById != null && (ownerId == null || !lastChangeById.equals(ownerId))) {
+            final String lastChangedName = getUsername(lastChangeById);
             String lastChangeByText = encode(lastChangedName);
-            if (controller != null)
-                lastChangeByText = controller.createLink(lastChangeBy,lastChangedName);
             att.add( new Row(getString("last_changed_by"), lastChangeByText));
             
         }

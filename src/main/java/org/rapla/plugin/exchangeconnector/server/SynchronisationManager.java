@@ -385,9 +385,10 @@ public class SynchronisationManager  {
 				}
 				if ( preferences != null)
 				{
-					User owner = preferences.getOwner();
-					if (owner != null)
+					String ownerId = preferences.getOwnerId();
+					if (ownerId != null)
 					{
+						User owner = facade.getOperator().resolve( ownerId, User.class);
 						Collection<SynchronizationTask> result = updateCalendarMap(owner);
 						tasks.addAll(result);
 					}

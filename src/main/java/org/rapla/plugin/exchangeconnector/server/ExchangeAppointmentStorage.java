@@ -82,13 +82,13 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         Collection<Allocatable> store = operator.getAllocatables(newClassificationFilter.toArray());
         for (Allocatable persistant : store)
         {
-            User user = persistant.getOwner();
+            String userId = persistant.getOwnerId();
             String appointmentId = (String) persistant.getClassification().getValue(appointmentIdAtt);
             String status = (String) persistant.getClassification().getValue(statusAtt);
             String retriesString = (String) persistant.getClassification().getValue(retriesAtt);
             Date lastRetry = (Date) persistant.getClassification().getValue(lastRetryAtt);
             String lastError = (String) persistant.getClassification().getValue(lastErrorAtt);
-            if (user == null)
+            if (userId == null)
             {
                 getLogger().error("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
                 continue;
@@ -106,7 +106,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                     continue;
                 }
             }
-            SynchronizationTask synchronizationTask = new SynchronizationTask(appointmentId, user.getId(), retries, lastRetry, lastError);
+            SynchronizationTask synchronizationTask = new SynchronizationTask(appointmentId, userId, retries, lastRetry, lastError);
             if (status == null)
             {
                 getLogger().error("Synchronization task " + persistant.getId() + " has no status. Ignoring.");

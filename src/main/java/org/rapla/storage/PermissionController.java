@@ -49,8 +49,8 @@ public class PermissionController
 
     public static boolean isOwner(Ownable classifiable, User user)
     {
-        User owner = classifiable.getOwner();
-        if (owner != null && owner.equals(user))
+        String ownerId = classifiable.getOwnerId();
+        if (ownerId != null && ownerId.equals(user.getId()))
         {
             return true;
         }
@@ -92,12 +92,12 @@ public class PermissionController
         if (object instanceof Ownable)
         {
             Ownable ownable = (Ownable) object;
-            User owner = ownable.getOwner();
-            if (owner != null && user.equals(owner))
+            String ownerId = ownable.getOwnerId();
+            if (ownerId != null && user.getId().equals(ownerId))
             {
                 return true;
             }
-            if (owner == null && object instanceof Allocatable)
+            if (ownerId == null && object instanceof Allocatable)
             {
                 if (canCreate((Allocatable) object, user))
                 {
@@ -563,12 +563,12 @@ public class PermissionController
         if (object instanceof Ownable)
         {
             Ownable ownable = (Ownable) object;
-            User owner = ownable.getOwner();
-            if (owner != null && user.equals(owner))
+            String ownerId = ownable.getOwnerId();
+            if (ownerId != null && user.getId().equals(ownerId))
             {
                 return true;
             }
-            if (owner == null && object instanceof Classifiable)
+            if (ownerId == null && object instanceof Classifiable)
             {
                 if (canCreate((Classifiable) object, user))
                 {

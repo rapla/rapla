@@ -16,7 +16,6 @@ package org.rapla.entities;
 /**Should be implemented by objects which can be uniquely associated with a User. */
 public interface Ownable {
     void setOwner(User owner);
-    User getOwner();
     String getOwnerId();
 }
 

@@ -44,6 +44,19 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         buf.append( "</strong>");
     }
 
+    public String getUsername(String userId)
+    {
+        Locale locale = getLocale();
+        User owner = getClientFacade().getOperator().tryResolve(userId, User.class);
+        if ( owner == null)
+        {
+            // FIXME resolve username for client
+            return "unknown";
+        }
+        String name =owner.getName(locale);
+        return name;
+    }
+
     protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller, User user) {
         Collection<Row> att = new ArrayList<Row>();
         Classification classification = classifiable.getClassification();

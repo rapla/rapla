@@ -259,7 +259,8 @@ public class Export2iCalConverter
         // means we do not export attendees so we do not have a meeting
         if (!doExportAsMeeting)
             return;
-        final User owner = appointment.getReservation().getOwner();
+        String ownerId = appointment.getOwnerId();
+        final User owner = facade.getOperator().resolve( ownerId, User.class);
         try
         {
             Organizer organizer = null;

@@ -644,7 +644,7 @@ public class ParsedText implements Serializable
             return parent.getAnnotation(key);
         }
 
-        public User getLastChangedBy()
+        public String getLastChangedBy()
         {
             return parent.getLastChangedBy();
         }

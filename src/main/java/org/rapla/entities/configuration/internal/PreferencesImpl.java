@@ -194,6 +194,10 @@ public class PreferencesImpl extends SimpleEntity
         return patch;
     }
 
+    private User getOwner() {
+        return getEntity("owner", User.class);
+    }
+
     /**
      * @see org.rapla.entities.Named#getName(java.util.Locale)
      */

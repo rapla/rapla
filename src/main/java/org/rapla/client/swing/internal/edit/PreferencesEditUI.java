@@ -205,11 +205,11 @@ public class PreferencesEditUI extends RaplaGUIComponent
 
     public void setObjects(List<Preferences> o) throws RaplaException {
         this.preferences = o.get(0);
-        if ( preferences.getOwner() == null) {
+        if ( preferences.getOwnerId() == null) {
             messages.setText(getString("restart_options"));
         }
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
-        if ( preferences.getOwner() != null) {
+        if ( preferences.getOwnerId() != null) {
             Collection<? extends Named> elements = getUserOptions();
             for (Named element:elements) {
                 root.add(  treeFactory.newNamedNode( element));

@@ -176,8 +176,8 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         for (Reservation reservation : newReservations)
         {
             Reservation cast = reservation;
-            User lastChangedBy = cast.getLastChangedBy();
-            if (lastChangedBy != null && !lastChangedBy.equals(user))
+            String lastChangedBy = cast.getLastChangedBy();
+            if (lastChangedBy != null && !lastChangedBy.equals(user.getId()))
             {
                 throw new RaplaException("Reservation " + cast + " has wrong user " + lastChangedBy);
             }

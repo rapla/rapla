@@ -1030,7 +1030,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
 		setId(stmt, 1, entity);
 	  	setString(stmt,2, typeKey );
 		org.rapla.entities.Timestamp timestamp = allocatable;
-		setId(stmt,3, allocatable.getOwner() );
+		setId(stmt,3, allocatable.getOwnerId() );
         setTimestamp(stmt, 4,timestamp.getCreateTime() );
 		setTimestamp(stmt, 5,timestamp.getLastChanged() );
 		setId( stmt,6,timestamp.getLastChangedBy() );
@@ -1131,7 +1131,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
       	String typeKey = event.getClassification().getType().getKey();
       	setId(stmt,1, event );
       	setString(stmt,2, typeKey );
-    	setId(stmt,3, event.getOwner() );
+    	setId(stmt,3, event.getOwnerId() );
     	org.rapla.entities.Timestamp timestamp = event;
         Date createTime = timestamp.getCreateTime();
         setTimestamp( stmt,4,createTime);
@@ -1823,8 +1823,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     @Override
     protected int write(PreparedStatement stmt, Preferences entity) throws SQLException, RaplaException {
         PreferencesImpl preferences = (PreferencesImpl) entity;
-        User user = preferences.getOwner();
-        String userId = user != null ? user.getId():null; 
+        String userId= preferences.getOwnerId();
         int count = 0;
         for (String role:preferences.getPreferenceEntries()) {
             Object entry = preferences.getEntry(role);
@@ -1932,12 +1931,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             boolean empty = true;
             for ( Preferences preferences: entities)
             {
-                User user = preferences.getOwner();
-                if ( user == null) {
+                String userId = preferences.getOwnerId();
+                if ( userId == null) {
                 	deleteNullUserPreference = true;
                 }
                 empty = false;
-                setId(stmt, 1, user);
+                setId(stmt, 1, userId);
                 final Date lastChanged = preferences.getLastChanged();
                 setTimestamp( stmt, 2, lastChanged);
                 stmt.addBatch();
