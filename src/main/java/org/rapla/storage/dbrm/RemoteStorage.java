@@ -67,8 +67,10 @@ public interface RemoteStorage  {
 	FutureResult<List<ReservationImpl>> getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds);
 
     FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
-	
-    //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
+
+	FutureResult<String> getUsername(String userId);
+
+	//void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
     
     public static class BindingMap
     {

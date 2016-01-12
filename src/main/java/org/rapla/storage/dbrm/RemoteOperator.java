@@ -77,6 +77,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -753,6 +754,30 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
         	throw new RaplaException(ex);
         }
+    }
+
+    @Override
+    public String getUsername(String userId) throws RaplaException
+    {
+        User user = tryResolve(userId, User.class);
+        if ( user == null)
+        {
+            RemoteStorage remoteMethod = getRemoteStorage();
+            final FutureResult<String> result = remoteMethod.getUsername(userId);
+            try
+            {
+                String    username = result.get();
+                return username;
+            }
+            catch (Exception e)
+            {
+                throw new RaplaException( e.getMessage(),e );
+            }
+
+        }
+        Locale locale = raplaLocale.getLocale();
+        String name =user.getName(locale);
+        return name;
     }
 
     @Override

@@ -1,19 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -29,7 +15,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -50,6 +35,7 @@ import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
@@ -57,6 +43,19 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @DefaultImplementation(of =RemoteStorage.class,context = InjectionContext.server)
 public class RemoteStorageImpl implements RemoteStorage
@@ -280,6 +279,7 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         try
         {
+            checkAuthentified();
             Date currentTimestamp = operator.getCurrentTimestamp();
             Date lastSynced = event.getLastValidated();
             if (lastSynced == null)
@@ -356,6 +356,7 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         try
         {
+            checkAuthentified();
             User changingUser = getSessionUser();
             User user = operator.getUser(username);
             if (changingUser.isAdmin() || user.equals(changingUser))
@@ -379,6 +380,7 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         try
         {
+            checkAuthentified();
             User changingUser = getSessionUser();
             User user = operator.getUser(username);
             if (changingUser.isAdmin() || user.equals(changingUser))
@@ -397,10 +399,25 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
+    public FutureResult<String> getUsername(String userId)
+    {
+        try
+        {
+            checkAuthentified();
+            String username = operator.getUsername(userId);
+            return new ResultImpl<String>(username);
+        }
+        catch (RaplaException ex)
+        {
+            return new ResultImpl<String>(ex);
+        }
+    }
+
     public FutureResult<VoidResult> confirmEmail(String username, String newEmail)
     {
         try
         {
+            checkAuthentified();
             User changingUser = getSessionUser();
             User user = operator.getUser(username);
             if (changingUser.isAdmin() || user.equals(changingUser))
@@ -445,8 +462,8 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         try
         {
-            RaplaType raplaType = RaplaType.find(type);
             checkAuthentified();
+            RaplaType raplaType = RaplaType.find(type);
             //User user =
             getSessionUser(); //check if authenified
             String[] result = operator.createIdentifier(raplaType, count);
@@ -498,7 +515,6 @@ public class RemoteStorageImpl implements RemoteStorage
 
     private void dispatch_(UpdateEvent evt) throws RaplaException
     {
-        checkAuthentified();
         try
         {
             User user;
@@ -576,6 +592,7 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         try
         {
+            checkAuthentified();
             Set<Entity> completeList = new HashSet<Entity>();
             User sessionUser = getSessionUser();
             Collection<Conflict> conflicts = operator.getConflicts(sessionUser);
@@ -668,8 +685,8 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         try
         {
-            Set<ReservationImpl> result = new HashSet<ReservationImpl>();
             checkAuthentified();
+            Set<ReservationImpl> result = new HashSet<ReservationImpl>();
             List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
             Collection<Reservation> ignoreList = resolveReservations(reservationIds);
             List<Appointment> asList = cast(appointments);

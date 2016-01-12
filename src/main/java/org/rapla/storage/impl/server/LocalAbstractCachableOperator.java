@@ -285,7 +285,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setReadOnly();
             cache.put(type);
         }
+    }
 
+    @Override
+    public String getUsername(String userId)
+    {
+        User user = tryResolve(userId, User.class);
+        if ( user == null)
+        {
+            return "unknown";
+        }
+        Locale locale = raplaLocale.getLocale();
+        String name =user.getName(locale);
+        return name;
     }
 
     protected void processPermissionGroups() throws RaplaException

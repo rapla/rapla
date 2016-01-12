@@ -1370,6 +1370,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 
+	public String getUsername(String userId) throws RaplaException
+	{
+		return operator.getUsername(userId);
+	}
+
 	public void checkReservation(Reservation reservation) throws RaplaException {
 		if (reservation.getAppointments().length == 0) {
 			throw new RaplaException(i18n.getString("error.no_appointment"));
