@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -351,10 +352,13 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             else
             {
                 final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
-                importExportEntityImpl.setId(persistantId);
+                final char[] charArray = UUID.randomUUID().toString().toCharArray();
+                charArray[0] = 's';
+                importExportEntityImpl.setId(new String(charArray));
                 importExportEntityImpl.setExternalSystem(EXCHANGE_ID);
                 importExportEntityImpl.setDirection(ImportExportDirections.EXPORT);
                 importExportEntityImpl.setRaplaId(task.getAppointmentId());
+                task.setPersistantId(importExportEntityImpl.getId());
                 importExportEntityImpl.setData(gson.toJson(task));
                 final String userId = task.getUserId();
                 final User owner = operator.tryResolve(userId, User.class);
