@@ -14,6 +14,7 @@ package org.rapla.facade;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.rapla.components.util.undo.CommandHistory;
@@ -93,6 +94,16 @@ public interface ModificationModule {
     <T extends Entity> T edit(T obj) throws RaplaException;
 
     <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException;
+
+    /** checks if the user that is logged into the facade is the user that last changed the entites
+    *
+    * @param entities
+    * @param isNew if new is set then this method does not throw an exception if the entities are not found in persistant store
+    * @param <T>
+    * @return the latest persistant map of the entities
+    * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
+    */
+   <T extends Entity> Map<T,T> checklastChanged(List<T> entities, boolean isNew) throws RaplaException;
     
     /** Returns the persistant version of a working copy.
      * Throws an {@link org.rapla.entities.EntityNotFoundException} when the

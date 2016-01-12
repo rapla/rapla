@@ -1285,6 +1285,19 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
             if (mutableAppointment == null) {
                 throw new IllegalStateException("Can't find the appointment: " + appointment);
             }
+            if(firstTimeCall)
+            {
+                if(!reservation.getLastChanged().equals(mutableReservation.getLastChanged()))
+                {
+                    getClientFacade().refresh();
+                    throw new RaplaException(getI18n().format("error.new_version", reservation.toString()));
+                }
+            }
+            else
+            {
+                boolean isNew = false;
+                getClientFacade().checklastChanged( Collections.singletonList( reservation), isNew);
+            }
 
 			long offset = getOffset(sourceStart, destStart, keepTime);
             

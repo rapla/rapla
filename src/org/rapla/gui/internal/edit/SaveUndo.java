@@ -67,19 +67,15 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 
 		List<T> toStore = new ArrayList<T>();
 		Map<T,T> newEntitiesPersistant = null;
-		if ( !firstTimeCall || !isNew)
-		{
-			newEntitiesPersistant= getModification().getPersistant(newEntities);
-		}
-		if ( firstTimeCall)
-		{
-			firstTimeCall = false;
-		}
-		else
-		{
-			checklastChanged(newEntities, newEntitiesPersistant);
-		}
-		for ( T entity: newEntities)
+	    if ( !firstTimeCall )
+        {
+            newEntitiesPersistant = getClientFacade().checklastChanged(newEntities,isNew);
+        }
+        else
+        {
+            firstTimeCall = false;
+        }
+	    for ( T entity: newEntities)
 		{
             @SuppressWarnings("unchecked")
 			T  mutableEntity = (T) entity.clone();
@@ -134,14 +130,12 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
 		boolean isNew = oldEntities == null;
 
 		if (isNew) {
-			Map<T,T> newEntitiesPersistant = getModification().getPersistant(newEntities);
-			checklastChanged(newEntities, newEntitiesPersistant);
+		    getClientFacade().checklastChanged(newEntities, isNew);
             Entity[] array = newEntities.toArray(new Entity[]{});
 			getModification().removeObjects(array);
 		} else {
 			List<T> toStore = new ArrayList<T>();
-			Map<T,T> oldEntitiesPersistant = getModification().getPersistant(oldEntities);
-			checklastChanged(oldEntities, oldEntitiesPersistant);
+			Map<T,T> oldEntitiesPersistant = getClientFacade().checklastChanged(oldEntities, isNew);
 			for ( T entity: oldEntities)
     		{
                 @SuppressWarnings("unchecked")
