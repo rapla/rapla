@@ -2483,7 +2483,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
     
     public ImportExportStorage(RaplaXMLContext context) throws RaplaException
     {
-        super(context, ImportExportEntityImpl.raplaType, "IMPORT_EXPORT",
+        super(context, ImportExportEntityImpl.TYPE, "IMPORT_EXPORT",
                 new String[] { "FOREIGN_ID VARCHAR(255) KEY", "EXTERNAL_SYSTEM VARCHAR(255) KEY", "RAPLA_ID VARCHAR(255)", "DIRECTION INTEGER NOT NULL", "DATA TEXT NOT NULL",
                 "CONTEXT TEXT", "CHANGED_AT TIMESTAMP KEY" });
     }

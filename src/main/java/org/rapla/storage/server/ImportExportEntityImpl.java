@@ -6,7 +6,6 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 public class ImportExportEntityImpl extends SimpleEntity implements ImportExportEntity
 {
 
-    public static final RaplaType<ImportExportEntity> raplaType = new RaplaType<>(ImportExportEntity.class, "IMPORT_EXPORT");
     private int direction;
     private String context;
     private String data;
@@ -20,7 +19,7 @@ public class ImportExportEntityImpl extends SimpleEntity implements ImportExport
     @Override
     public RaplaType<ImportExportEntity> getRaplaType()
     {
-        return raplaType;
+        return TYPE;
     }
 
     @Override

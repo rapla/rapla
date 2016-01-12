@@ -12,40 +12,56 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import org.eclipse.jetty.server.Authentication;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TimeZone;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.*;
+import org.rapla.entities.Entity;
+import org.rapla.entities.Ownable;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.PermissionContainer.Util;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.internal.UserImpl;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.internal.UserImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.*;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
+import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.xml.RaplaXMLContextException;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.*;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -439,7 +455,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
     static boolean isTransferedToClient(RaplaObject obj)
     {
         RaplaType<?> raplaType = obj.getRaplaType();
-        if (raplaType == Appointment.TYPE || raplaType == Reservation.TYPE)
+        if (raplaType == Appointment.TYPE || raplaType == Reservation.TYPE || raplaType == ImportExportEntity.TYPE)
         {
             return false;
         }
