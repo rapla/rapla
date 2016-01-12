@@ -126,6 +126,7 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.server.ImportExportEntity;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -3344,7 +3345,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @Override public UpdateResult getUpdateResult(Date since)
     {
+        // FIXME implement me
+        return null;
+    }
+    
+    @Override
+    public Date getLock(String id) throws RaplaException
+    {
+        // FIXME implement me
         return null;
     }
 
+    @Override
+    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection)
+    {
+        // FIXME implement me
+        return null;
+    }
 }
