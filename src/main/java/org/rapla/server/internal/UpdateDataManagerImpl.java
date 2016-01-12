@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
+import org.eclipse.jetty.server.Authentication;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.*;
@@ -20,7 +21,9 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.PermissionContainer.Util;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.internal.UserImpl;
 import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -180,9 +183,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         safeResultEvent.setTimezoneOffset(timezoneOffset);
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
-        // FIMXE If lastSynced is before historyStart then set conflict und resourceRefresh true
         safeResultEvent.setLastValidated(updateResult.getUntil());
-        // FIMXE If lastSynced is before serverStart then set conflictRefresh true
         boolean resourceRefresh = lastSynced.before( historyValidStart);
         boolean conflictRefresh = lastSynced.before( conflictValidStart);
         for (Remove op : updateResult.getOperations(Remove.class))
@@ -229,10 +230,10 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
             if (newObject.getRaplaType().is(User.TYPE) && newObject.equals( user))
             {
-                User newUser = (User) newObject;
-                User oldUser = (User) updateResult.getLastEntryBeforeUpdate(currentId);
-                HashSet<Category> newGroups = new HashSet<Category>(newUser.getGroupList());
-                HashSet<Category> oldGroups = new HashSet<Category>(oldUser.getGroupList());
+                UserImpl newUser = (UserImpl) newObject;
+                UserImpl oldUser = (UserImpl) updateResult.getLastEntryBeforeUpdate(currentId);
+                HashSet<String> newGroups = new HashSet<String>(newUser.getGroupIdList());
+                HashSet<String> oldGroups = new HashSet<String>(oldUser.getGroupIdList());
                 if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
                 {
                     resourceRefresh = true;
@@ -268,17 +269,17 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         }
         if (!invalidatePermissions.isEmpty() || !invalidateEventPermissions.isEmpty())
         {
-            Set<Category> groupsResourceRefresh = new HashSet<Category>();
-            Set<Category> groupsConflictRefresh = new HashSet<Category>();
+            Set<String> groupsResourceRefresh = new HashSet<String>();
+            Set<String> groupsConflictRefresh = new HashSet<String>();
             for (Permission permission : invalidatePermissions)
             {
-                User permissionUser = permission.getUser();
-                if (permissionUser != null && permissionUser.equals(user))
+                String permissionUser = ((PermissionImpl)permission).getUserId();
+                if (permissionUser != null && permissionUser.equals(user.getId()))
                 {
                     resourceRefresh = true;
                     break;
                 }
-                Category group = permission.getGroup();
+                String group = ((PermissionImpl)permission).getGroupId();
                 if (group != null)
                 {
                     groupsResourceRefresh.add(group);
@@ -293,13 +294,13 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             {
                 for (Permission permission : invalidateEventPermissions)
                 {
-                    User permissionUser = permission.getUser();
-                    if (permissionUser != null && permissionUser.equals(user))
+                    String permissionUser = ((PermissionImpl)permission).getUserId();
+                    if (permissionUser != null && permissionUser.equals(user.getId()))
                     {
                         conflictRefresh = true;
                         break;
                     }
-                    Category group = permission.getGroup();
+                    String group = ((PermissionImpl)permission).getGroupId();
                     if (group != null)
                     {
                         groupsConflictRefresh.add(group);
@@ -314,7 +315,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             // we add all users belonging to group marked for refresh
             if (!resourceRefresh)
             {
-                for (Category group : user.getGroupList())
+                for (String group : ((UserImpl)user).getGroupIdList())
                 {
                     if (groupsResourceRefresh.contains(group))
                     {
