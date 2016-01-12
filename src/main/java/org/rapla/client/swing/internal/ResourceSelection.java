@@ -255,16 +255,16 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             RaplaType type = ((RaplaObject) focusedObject).getRaplaType();
             if (    type == User.TYPE
                  || type == Allocatable.TYPE
-                 || type ==Period.TYPE 
                )
             {
+                Entity entity = (Entity) focusedObject;
 
                 RaplaObjectAction editAction = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
                         createPopupContext(getComponent(), null), editController, infoFactory, raplaImages, dialogUiFactory);
                 PermissionController permissionController = getClientFacade().getPermissionController();
-                if (permissionController.canModify( focusedObject, getClientFacade().getUser()))
+                if (permissionController.canModify( entity, getClientFacade().getUser()))
                 {
-                    editAction.setEdit((Entity<?>)focusedObject);
+                    editAction.setEdit(entity);
                     editAction.actionPerformed();
                 }
             }

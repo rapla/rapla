@@ -525,31 +525,31 @@ import java.util.TreeMap;
     }
 
     // This will exclude DynamicTypes and non editable Objects from the list
-    private List<Entity<?>> getEditableObjects(Collection<?> list)
+    private List<Entity<?>> getEditableObjects(Collection<Entity<?>> list)
     {
-        Iterator<?> it = list.iterator();
+        Iterator<Entity<?>> it = list.iterator();
         ArrayList<Entity<?>> editableObjects = new ArrayList<Entity<?>>();
         final User user = getClientFacade().getUser();
         while (it.hasNext())
         {
-            Object o = it.next();
+            Entity o = it.next();
             if (permissionController.canModify(o, user))
                 editableObjects.add((Entity<?>) o);
         }
         return editableObjects;
     }
 
-    private List<Entity<?>> getDeletableObjects(Collection<?> list)
+    private List<Entity<?>> getDeletableObjects(Collection<Entity<?>> list)
     {
-        Iterator<?> it = list.iterator();
+        Iterator<Entity<?>> it = list.iterator();
         Category superCategory = getQuery().getSuperCategory();
         ArrayList<Entity<?>> deletableObjects = new ArrayList<Entity<?>>();
         final User user = getClientFacade().getUser();
         while (it.hasNext())
         {
-            Object o = it.next();
+            Entity<?> o = it.next();
             if (permissionController.canAdmin(o, user) && !o.equals(superCategory))
-                deletableObjects.add((Entity<?>) o);
+                deletableObjects.add(o);
         }
         return deletableObjects;
     }

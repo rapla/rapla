@@ -444,8 +444,15 @@ public class LocalCache implements EntityResolver
         EntityResolver cache = this;
         if (user != null)
         {
-            conflict.setAppointment1Editable(permissionController.canModifyEvent(conflict.getReservation1(), user));
-            conflict.setAppointment2Editable(permissionController.canModifyEvent(conflict.getReservation2(), user));
+
+            final String reservation1Id = conflict.getReservation1();
+            final String reservation2Id = conflict.getReservation2();
+            Reservation reservation1 = tryResolve( reservation1Id,Reservation.class);
+            Reservation reservation2 = tryResolve( reservation2Id, Reservation.class);
+            final boolean appointment1Editable = reservation1 != null && permissionController.canModify(reservation1, user);
+            conflict.setAppointment1Editable(appointment1Editable);
+            final boolean appointment2Editable = reservation2 != null && permissionController.canModify(reservation2, user);
+            conflict.setAppointment2Editable(appointment2Editable);
         }
         return conflict;
     }

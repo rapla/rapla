@@ -128,11 +128,11 @@ public class SecurityManager
         {
             if ( admin)
             {
-                permitted = permissionController.canAdmin((PermissionContainer)original, user);
+                permitted = permissionController.canAdmin(original, user);
             }
             else
             {
-                permitted = permissionController.canModify((PermissionContainer)original, user);
+                permitted = permissionController.canModify(original, user);
             }
             
         }
