@@ -1,20 +1,5 @@
 package org.rapla.rest.server;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -24,14 +9,25 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.TokenHandler;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
+
+import javax.inject.Inject;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 @Path("auth")
 @RemoteJsonMethod

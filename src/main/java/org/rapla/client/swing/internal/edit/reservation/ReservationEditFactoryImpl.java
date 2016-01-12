@@ -1,10 +1,5 @@
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -19,13 +14,17 @@ import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.Rese
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Set;
 
 @DefaultImplementation(of = ReservationEditFactory.class, context = InjectionContext.swing)
 @Singleton

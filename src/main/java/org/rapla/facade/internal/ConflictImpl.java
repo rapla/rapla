@@ -12,20 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 import org.jetbrains.annotations.Nullable;
 import org.rapla.components.util.DateTools;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -40,6 +28,17 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A conflict is the allocation of the same resource at the same time by different
@@ -347,11 +346,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     {
         User owner1 = getOwner1();
         User owner2 = getOwner2();
-        if (user != null && !user.equals(owner1) && !user.equals(owner2))
-        {
-            return false;
-        }
-        return true;
+        return !(user != null && !user.equals(owner1) && !user.equals(owner2));
     }
 
     // public Date getFirstConflictDate(final Date  fromDate, Date toDate) {
@@ -379,9 +374,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         String app2 = getAppointment2();
         if (app1 != null && app1.equals(appointmentId))
             return true;
-        if (app2 != null && app2.equals(appointmentId))
-            return true;
-        return false;
+        return app2 != null && app2.equals(appointmentId);
     }
 
     static public boolean equals(ConflictImpl firstConflict, Conflict secondConflict)
@@ -395,10 +388,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             return false;
         if (!firstConflict.contains(secondConflict.getAppointment1()))
             return false;
-        if (!firstConflict.contains(secondConflict.getAppointment2()))
-            return false;
+        return firstConflict.contains(secondConflict.getAppointment2());
 
-        return true;
     }
 
     private static boolean contains(ConflictImpl conflict, Collection<Conflict> conflictList)
@@ -413,9 +404,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return false;
     }
 
-    public RaplaType<Conflict> getRaplaType()
+    @Override public Class<Conflict> getTypeClass()
     {
-        return Conflict.TYPE;
+        return Conflict.class;
     }
 
     public String toString()
@@ -521,11 +512,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         {
             return true;
         }
-        if (maxEnd2 != null && maxEnd2.before(date))
-        {
-            return true;
-        }
-        return false;
+        return maxEnd2 != null && maxEnd2.before(date);
     }
 
     public static boolean isConflict(Appointment appointment1, Appointment appointment2, Date today)
@@ -558,11 +545,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         {
             checkEnd = maxEnd2;
         }
-        if (ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null)
-        {
-            return false;
-        }
-        return true;
+        return ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) != null;
     }
 
     public static boolean isConflictWithoutCheck(Appointment appointment1, Appointment appointment2, Date today)
@@ -583,11 +566,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         {
             checkEnd = maxEnd2;
         }
-        if (checkEnd != null && ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null)
-        {
-            return false;
-        }
-        return true;
+        return !(checkEnd != null && ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) == null);
     }
 
     @SuppressWarnings("null") private static boolean checkForConflictTypes(Appointment a1, Appointment a2)
@@ -647,11 +626,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     public static boolean isNoConflicts(String annotation)
     {
-        if (annotation != null && annotation.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_NONE))
-        {
-            return true;
-        }
-        return false;
+        return annotation != null && annotation.equals(DynamicTypeAnnotations.VALUE_CONFLICTS_NONE);
     }
 
     public static String getConflictAnnotation(DynamicType type)
@@ -768,11 +743,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         {
             return true;
         }
-        if (appointment2Enabled && appointment2Editable)
-        {
-            return true;
-        }
-        return false;
+        return appointment2Enabled && appointment2Editable;
     }
 }
 

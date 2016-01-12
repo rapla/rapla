@@ -1,41 +1,5 @@
 package org.rapla.plugin.exchangeconnector.server.exchange;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.NameFormatUtil;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.RepeatingType;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
-import org.rapla.plugin.exchangeconnector.server.SynchronizationTask;
-import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
-import org.rapla.server.TimeZoneConverter;
-
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.PropertySet;
 import microsoft.exchange.webservices.data.core.enumeration.misc.error.ServiceError;
@@ -76,6 +40,41 @@ import microsoft.exchange.webservices.data.property.definition.ExtendedPropertyD
 import microsoft.exchange.webservices.data.search.FindItemsResults;
 import microsoft.exchange.webservices.data.search.ItemView;
 import microsoft.exchange.webservices.data.search.filter.SearchFilter;
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.NameFormatUtil;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.RepeatingType;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.server.SynchronizationTask;
+import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
+import org.rapla.server.TimeZoneConverter;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
 
 /**
  * 
@@ -397,8 +396,7 @@ public class AppointmentSynchronizer
         return null;
     }
 
-    private microsoft.exchange.webservices.data.core.service.item.Appointment getEquivalentExchangeAppointment(Appointment raplaAppointment) throws ArgumentOutOfRangeException,
-            ArgumentException, Exception
+    private microsoft.exchange.webservices.data.core.service.item.Appointment getEquivalentExchangeAppointment(Appointment raplaAppointment) throws Exception
     {
         ExchangeService service = ewsConnector.getService();
         microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = null;
@@ -553,7 +551,7 @@ public class AppointmentSynchronizer
         return result.toString();
     }
 
-    private void addPersonsAndResources(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment) throws ServiceLocalException, Exception
+    private void addPersonsAndResources(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment) throws Exception
     {
         //final DynamicType roomType = getClientFacade().getDynamicTypes();
         // get all restricted resources

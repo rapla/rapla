@@ -1,7 +1,5 @@
 package org.rapla.plugin.weekview.client.weekview;
 
-import java.util.List;
-
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.View;
 import org.rapla.framework.RaplaException;
@@ -9,9 +7,11 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
 import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.RowSlot;
 
+import java.util.List;
+
 public interface CalendarWeekView<W> extends View<Presenter>
 {
-    public interface Presenter
+    interface Presenter
     {
         void updateReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException;
 

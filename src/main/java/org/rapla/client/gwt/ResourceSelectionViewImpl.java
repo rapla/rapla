@@ -1,10 +1,6 @@
 package org.rapla.client.gwt;
 
-import java.util.Collection;
-import java.util.Locale;
-
-import javax.inject.Inject;
-
+import com.google.gwt.user.client.ui.IsWidget;
 import org.rapla.client.ResourceSelectionView;
 import org.rapla.client.ResourceSelectionView.Presenter;
 import org.rapla.client.base.AbstractView;
@@ -15,7 +11,9 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.user.client.ui.IsWidget;
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Locale;
 
 @DefaultImplementation(of = ResourceSelectionView.class, context = InjectionContext.gwt)
 public class ResourceSelectionViewImpl extends AbstractView<Presenter>implements ResourceSelectionView<IsWidget>

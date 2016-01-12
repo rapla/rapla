@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action.user;
-import java.awt.Component;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
@@ -26,6 +25,8 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import java.awt.Component;
 
 
 public class PasswordChangeAction extends RaplaAction {

@@ -12,13 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
+import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Date;
-
-import javax.swing.SwingUtilities;
 
 /** SelectionHandler handles the  selection events and the Slot
  * Context Menu (right click).
@@ -40,7 +39,7 @@ public class SelectionHandler extends MouseAdapter {
     AbstractSwingCalendar m_wv;
     public enum SelectionStrategy
     {
-    	FLOW,BLOCK;
+    	FLOW,BLOCK
     }
     SelectionStrategy selectionStrategy = SelectionStrategy.FLOW;
     
@@ -209,11 +208,8 @@ public class SelectionHandler extends MouseAdapter {
     	 if (slotNr == startSlot && selectedIndex < selectionStart) {
     		 return false;
     	 }
-    	 if (slotNr == endSlot && selectedIndex > selectionEnd) {
-    		 return false;
-    	 }
-    	 return true;
-	}
+        return !(slotNr == endSlot && selectedIndex > selectionEnd);
+    }
 
 	protected void setSelectionFlow() {
 

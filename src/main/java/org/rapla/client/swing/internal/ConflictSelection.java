@@ -12,33 +12,6 @@
 
 package org.rapla.client.swing.internal;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTree;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -66,6 +39,32 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 
 public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget {
@@ -97,7 +96,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         JTree tree = treeSelection.getTree();
         //tree.setRootVisible(false);
         tree.setShowsRootHandles(true);
-        tree.setCellRenderer(((TreeFactoryImpl) getTreeFactory()).createConflictRenderer());
+        tree.setCellRenderer(getTreeFactory().createConflictRenderer());
         tree.setSelectionModel(((TreeFactoryImpl) getTreeFactory()).createConflictTreeSelectionModel());
         treeSelection.addPopupListener(listener);
         navTree.addTreeSelectionListener(listener);
@@ -291,15 +290,15 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     	}
     	else if ( evt.isModified() )
         {
-        	Set<Conflict> changed = RaplaType.retainObjects(evt.getChanged(), conflicts);;
-        	removeAll( conflicts,changed);
+        	Set<Conflict> changed = RaplaType.retainObjects(evt.getChanged(), conflicts);
+            removeAll( conflicts,changed);
         	
         	removeConflict(conflicts, evt.getRemovedReferences());
         	
         	conflicts.addAll( changed);
         	for (RaplaObject obj:evt.getAddObjects())
         	{
-        		if ( obj.getRaplaType()== Conflict.TYPE)
+        		if ( obj.getTypeClass()== Conflict.class)
         		{
         			Conflict conflict = (Conflict) obj;
         			conflicts.add( conflict );
@@ -356,7 +355,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
          for ( Iterator<RaplaObject> it = arrayList.iterator();it.hasNext();)
          {
              RaplaObject obj = it.next();
-             if (obj.getRaplaType() == Conflict.TYPE )
+             if (obj.getTypeClass() == Conflict.class )
              {
                  it.remove();
              }
@@ -383,7 +382,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         Set<Conflict> result = new LinkedHashSet<Conflict>();
         for (RaplaObject obj:model.getSelectedObjects())
         {
-            if (obj.getRaplaType() == Conflict.TYPE )
+            if (obj.getTypeClass() == Conflict.class )
             {
                 result.add( (Conflict) obj);
             }

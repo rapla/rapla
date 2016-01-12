@@ -1,5 +1,15 @@
 package org.rapla.client.gwt.components;
 
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.InputElement;
+import com.google.gwt.dom.client.Node;
+import com.google.gwt.dom.client.NodeList;
+import com.google.gwt.dom.client.SelectElement;
+import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
+import org.rapla.entities.Category;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -7,22 +17,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.rapla.client.gwt.components.DropDownInputField.DropDownItem;
-import org.rapla.entities.Category;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
-
-import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.InputElement;
-import com.google.gwt.dom.client.Node;
-import com.google.gwt.dom.client.NodeList;
-import com.google.gwt.dom.client.SelectElement;
-
 public class InputUtils
 {
     public static native boolean isHtml5DateInputSupported()/*-{
-		var datefield = document.createElement("input")
-		datefield.setAttribute("type", "date")
+		var datefield = document.createElement("input");
+		datefield.setAttribute("type", "date");
 		return datefield.type == "date"
     }-*/;
 

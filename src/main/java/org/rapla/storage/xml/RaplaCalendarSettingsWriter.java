@@ -13,13 +13,8 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -28,8 +23,13 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+
 
 public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
+    final static String TAGNAME =  "calendar";
 
     /**
      * @param sm
@@ -41,7 +41,7 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
 
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
         CalendarModelConfigurationImpl calendar = (CalendarModelConfigurationImpl) type ;
-        openTag("rapla:"  + CalendarModelConfiguration.TYPE.getLocalName());
+        openTag("rapla:" + TAGNAME);
         att("title", calendar.getTitle());
         att("view", calendar.getView());
         Map<String,String> extensionMap = calendar.getOptionMap();
@@ -74,7 +74,7 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
         if (extensionMap != null && extensionMap.size() > 0)
         {
             openElement("options");
-            RaplaMapWriter writer = (RaplaMapWriter)getWriterFor( RaplaMap.TYPE);
+            RaplaMapWriter writer = (RaplaMapWriter)getWriterFor( RaplaMap.class);
             writer.writeMap( extensionMap);
             closeElement("options");
         }
@@ -96,7 +96,7 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
             }
             closeElement("filter");
         }
-        closeElement("rapla:" + CalendarModelConfiguration.TYPE.getLocalName());
+        closeElement("rapla:" + TAGNAME);
     }
 
 

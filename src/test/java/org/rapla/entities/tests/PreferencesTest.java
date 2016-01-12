@@ -26,7 +26,6 @@ import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)

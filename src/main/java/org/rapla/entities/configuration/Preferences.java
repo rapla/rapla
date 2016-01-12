@@ -16,7 +16,6 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.framework.TypedComponentRole;
 
@@ -26,9 +25,8 @@ import org.rapla.framework.TypedComponentRole;
     @see org.rapla.entities.User
  */
 public interface Preferences extends Entity<Preferences>,Ownable,Timestamp, Named {
-    final RaplaType<Preferences> TYPE = new RaplaType<Preferences>(Preferences.class, "preferences");
-    final String ID_PREFIX  = TYPE.getLocalName() + "_";
-    final String SYSTEM_PREFERENCES_ID = ID_PREFIX + "0";
+    String ID_PREFIX  = "preferences_";
+    String SYSTEM_PREFERENCES_ID = ID_PREFIX + "0";
     /** returns if there are any preference-entries */
     boolean isEmpty();
     boolean hasEntry(TypedComponentRole<?> role);

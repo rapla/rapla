@@ -1,13 +1,5 @@
 package org.rapla.plugin.timeslot;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -16,6 +8,13 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 @Singleton
 public class TimeslotProvider {

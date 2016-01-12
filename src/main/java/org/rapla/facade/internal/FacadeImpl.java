@@ -12,24 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -43,8 +25,6 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
-import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
@@ -63,8 +43,6 @@ import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.jsonrpc.client.gwt.internal.impl.FutureResultImpl;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -78,7 +56,6 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -96,10 +73,28 @@ import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.jsonrpc.common.VoidResult;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.dbrm.RemoteOperator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -126,7 +121,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	private String workingUserId = null;
 	private StorageOperator operator;
 	private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
-	private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
+	//private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
 	private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
 	private I18nBundle i18n;
 	private PeriodModelImpl periodModel;
@@ -197,7 +192,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		cachedReservations = null;
     	if (workingUserId != null)
 		{
-			if ( evt.isModified( User.TYPE))
+			if ( evt.isModified( User.class))
 			{
 			    if (operator.tryResolve( workingUserId, User.class) == null)
 			    {
@@ -738,7 +733,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             try {
                 allocatableBindings = allAllocatableBindings.get();
             } catch (RaplaException e) {
-                throw (RaplaException) e;
+                throw e;
             }catch (Exception e) {
                 throw new RaplaException(e.getMessage(), e);
             }
@@ -836,7 +831,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         try {
             bindings = allocatableBindings.get();
         } catch (RaplaException e) {
-            throw (RaplaException) e;
+            throw e;
         } catch (Exception e) {
             throw new RaplaException(e.getMessage());
         }
@@ -1334,11 +1329,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	private void setNew(Entity entity,User user) throws RaplaException {
 	    ArrayList<Entity> arrayList = new ArrayList<Entity>();
 	    arrayList.add( entity );
-	    setNew(arrayList, entity.getRaplaType(), user);
+	    setNew(arrayList, entity.getTypeClass(), user);
 	}
 
 
-	private <T extends Entity> void setNew(Collection<T> entities, RaplaType raplaType,User user)
+	private <T extends Entity> void setNew(Collection<T> entities, Class<? extends Entity> raplaType,User user)
 			throws RaplaException {
 
 		for ( T entity: entities)
@@ -1365,7 +1360,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			}
 			if ( entity instanceof Reservation || entity instanceof Allocatable)
 			{
-	             ((Ownable) entity).setOwner(user);
+	             entity.setOwner(user);
 			}
 		}
 	}
@@ -1416,8 +1411,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return persistantVersions;
 	}
 
-	private <T extends Entity> void checklastChanged(List<T> entities, Map<T,T> persistantVersions, boolean isNew) throws RaplaException,
-			EntityNotFoundException
+	private <T extends Entity> void checklastChanged(List<T> entities, Map<T,T> persistantVersions, boolean isNew) throws RaplaException
 	{
 		refresh();
 		for ( T entity:entities)
@@ -1524,19 +1518,19 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		T deepClone =  (T) obj.clone();
 		T clone = deepClone;
 
-		RaplaType raplaType = clone.getRaplaType();
-		if (raplaType == Appointment.TYPE) {
+		Class<? extends Entity> raplaType = clone.getTypeClass();
+		if (raplaType == Appointment.class) {
 			// Hack for 1.6 compiler compatibility
 			Object temp = clone;
 			((AppointmentImpl) temp).removeParent();
 		}
-		if (raplaType == Category.TYPE) {
+		if (raplaType == Category.class) {
 			// Hack for 1.6 compiler compatibility
 			Object temp = clone;
 			((CategoryImpl) temp).removeParent();
 		}
 		User workingUser = getWorkingUser();
-        setNew((Entity) clone, workingUser);
+        setNew(clone, workingUser);
 		return clone;
 	}
 
@@ -1547,16 +1541,15 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 		User workingUser = getWorkingUser();
 		T result;
-		RaplaType<T> raplaType = obj.getRaplaType();
-		// Hack for 1.6 compiler compatibility
-		if (((Object)raplaType) == Appointment.TYPE ){
+		Class<T> raplaType = obj.getTypeClass();
+		if (raplaType == Appointment.class ){
 			T _clone = _clone(obj);
 			// Hack for 1.6 compiler compatibility
 			Object temp = _clone;
 			((AppointmentImpl) temp).setParent(null);
 			result = _clone;
 		// Hack for 1.6 compiler compatibility
-		} else if (((Object)raplaType) == Reservation.TYPE) {
+		} else if (raplaType == Reservation.class) {
 			// Hack for 1.6 compiler compatibility
 			Object temp = obj;
 			Reservation clonedReservation = cloneReservation((Reservation) temp);
@@ -1620,7 +1613,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 		// then we set new ids for all appointments
 		Appointment[] clonedAppointments = clone.getAppointments();
-		setNew(Arrays.asList(clonedAppointments),Appointment.TYPE, workingUser);
+		setNew(Arrays.asList(clonedAppointments),Appointment.class, workingUser);
 		
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.removeAppointment(clonedAppointment);
@@ -1695,7 +1688,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			if (storeObjects[i] == null) {
 				throw new RaplaException("Stored Objects cant be null");
 			}
-			if (storeObjects[i].getRaplaType() == Reservation.TYPE) {
+			if (storeObjects[i].getTypeClass() == Reservation.class) {
 				checkReservation((Reservation) storeObjects[i]);
 			}
 		}

@@ -1,13 +1,5 @@
 package org.rapla.plugin.merge.client.swing;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Collection;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.ImageIcon;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.MenuContext;
@@ -17,6 +9,13 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.RaplaObject;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.ImageIcon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Collection;
 
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="merge")

@@ -13,21 +13,20 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Map;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
+import java.util.Map;
+
 public class PreferenceReader extends RaplaXMLReader {
-    public static final TypedComponentRole<Map<String,RaplaType>> LOCALNAMEMAPENTRY = new TypedComponentRole<Map<String,RaplaType>>("org.rapla.storage.xml.localnameMap");
-    public static final TypedComponentRole<Map<RaplaType,RaplaXMLReader>> READERMAP = new TypedComponentRole<Map<RaplaType,RaplaXMLReader>>("org.rapla.storage.xml.readerMap");
+    public static final TypedComponentRole<Map<String,Class<? extends  RaplaObject>>> LOCALNAMEMAPENTRY = new TypedComponentRole<Map<String,Class<? extends  RaplaObject>>>("org.rapla.storage.xml.localnameMap");
+    public static final TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLReader>> READERMAP = new TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLReader>>("org.rapla.storage.xml.readerMap");
     
     PreferencesImpl preferences;
     String configRole;
@@ -76,8 +75,8 @@ public class PreferenceReader extends RaplaXMLReader {
             }
             return;
         }
-        RaplaType raplaTypeName = getTypeForLocalName(localName );
-        childReader = getChildHandlerForType( raplaTypeName );
+        Class<? extends RaplaObject> raplaType = getTypeForLocalName(localName );
+        childReader = getChildHandlerForType( raplaType );
         delegateElement(childReader,namespaceURI,localName,atts);
     }
     

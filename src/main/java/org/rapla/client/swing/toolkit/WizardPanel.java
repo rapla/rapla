@@ -20,8 +20,8 @@ public interface WizardPanel extends RaplaWidget {
     String PREV = "prev";
     String FINISH = "finish";
 
-    public ActionMap getActionMap();
-    public String getHelp();
-    public String getDefaultAction();
+    ActionMap getActionMap();
+    String getHelp();
+    String getDefaultAction();
 
 }

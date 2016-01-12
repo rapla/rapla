@@ -900,12 +900,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
     public boolean save(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
-        if (getFacade().getCommandHistory().storeAndExecute(saveCommand))
-        {
-            return true;
-        }
-        return false;
-    }  
+        return getFacade().getCommandHistory().storeAndExecute(saveCommand);
+    }
     
  
 

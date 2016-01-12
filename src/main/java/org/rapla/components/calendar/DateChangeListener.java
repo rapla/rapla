@@ -16,5 +16,5 @@ package org.rapla.components.calendar;
  *   get notified by the DateModel if the date has been changed
  */
 public interface DateChangeListener extends java.util.EventListener {
-    public void dateChanged(DateChangeEvent evt);
+    void dateChanged(DateChangeEvent evt);
 }

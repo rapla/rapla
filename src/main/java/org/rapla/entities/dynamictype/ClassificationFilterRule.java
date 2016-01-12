@@ -14,9 +14,9 @@ package org.rapla.entities.dynamictype;
 
 
 public interface ClassificationFilterRule {
-    public Attribute getAttribute();
-    public String[] getOperators();
-    public Object[] getValues();
+    Attribute getAttribute();
+    String[] getOperators();
+    Object[] getValues();
 
 }
 

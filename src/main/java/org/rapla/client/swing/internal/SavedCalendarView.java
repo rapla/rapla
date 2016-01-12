@@ -14,7 +14,6 @@ import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
@@ -397,8 +396,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     }
 
 	@SuppressWarnings("unchecked")
-	protected DefaultComboBoxModel updateModel() throws RaplaException,
-			EntityNotFoundException {
+	protected DefaultComboBoxModel updateModel() throws RaplaException
+    {
 		final Preferences preferences = getQuery().getPreferences();
 		Map<String, CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
 		filenames.clear();

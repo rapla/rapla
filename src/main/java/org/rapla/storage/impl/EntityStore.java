@@ -12,20 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
@@ -52,12 +51,13 @@ public class EntityStore implements EntityResolver {
     public void put(Entity entity) {
         String id = entity.getId();
         Assert.notNull(id);
-        if ( entity.getRaplaType() == DynamicType.TYPE)
+        final Class<? extends Entity> raplaType = entity.getTypeClass();
+        if ( raplaType == DynamicType.class)
         {
             DynamicType dynamicType = (DynamicType) entity;
             dynamicTypes.put ( dynamicType.getKey(), dynamicType);
         }
-        if ( entity.getRaplaType() == Category.TYPE)
+        if ( raplaType == Category.class)
         {
         	for (Category child:((Category)entity).getCategories())
         	{

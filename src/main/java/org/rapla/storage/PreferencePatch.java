@@ -1,10 +1,10 @@
 package org.rapla.storage;
 
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
 
 public class PreferencePatch extends RaplaMapImpl {
     String userId;

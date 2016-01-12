@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -28,6 +20,13 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 @Singleton
 public class RaplaClipboard implements ModificationListener

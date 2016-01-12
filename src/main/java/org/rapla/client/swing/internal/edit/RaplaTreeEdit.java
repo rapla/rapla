@@ -1,14 +1,8 @@
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.xmlbundle.I18nBundle;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -26,10 +20,15 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
-
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 
 final class RaplaTreeEdit implements
         RaplaWidget

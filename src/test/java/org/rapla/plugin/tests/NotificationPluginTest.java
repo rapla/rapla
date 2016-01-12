@@ -12,18 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tests;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
-import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -34,10 +28,14 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 /** listens for allocation changes */
 @RunWith(JUnit4.class)
@@ -108,7 +106,7 @@ public class NotificationPluginTest
 
         System.out.println(r.getLastChanged());
 
-        MockMailer mailMock = (MockMailer) null;
+        MockMailer mailMock = null;
         for ( int i=0;i<1000;i++ )
         {
         	if (mailMock.getMailBody()!= null)
@@ -160,7 +158,7 @@ public class NotificationPluginTest
         facade1.store( r );
         facade1.remove( r );
 
-        MockMailer mailMock = (MockMailer) null;
+        MockMailer mailMock = null;
         for ( int i=0;i<1000;i++ )
         {
         	if (mailMock.getMailBody()!= null)

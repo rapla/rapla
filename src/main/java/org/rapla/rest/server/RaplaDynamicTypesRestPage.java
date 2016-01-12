@@ -1,21 +1,20 @@
 package org.rapla.rest.server;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-
 import org.rapla.entities.User;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import java.util.ArrayList;
+import java.util.List;
 
 @Path("dynamictypes")
 @RemoteJsonMethod

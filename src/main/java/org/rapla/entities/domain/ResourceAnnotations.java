@@ -14,8 +14,8 @@ package org.rapla.entities.domain;
 
 public interface ResourceAnnotations
 {
-    final String KEY_CONFLICT_CREATION = "conflictCreation";
-	final String VALUE_CONFLICT_CREATION_IGNORE = "ignore";
+    String KEY_CONFLICT_CREATION = "conflictCreation";
+	String VALUE_CONFLICT_CREATION_IGNORE = "ignore";
 }
 
 

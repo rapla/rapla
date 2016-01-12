@@ -3,14 +3,6 @@
  */
 package org.rapla.entities.dynamictype.internal;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
@@ -20,14 +12,11 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -37,6 +26,16 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.storage.PermissionController;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
@@ -328,7 +327,6 @@ public class ParsedText implements Serializable
             throw new IllegalAnnotationException("Attribute for key '" + variableName + "' not found. You have probably deleted or renamed the attribute. ");
         }
     }
-
 
     private static final class BoundParseContext implements ParseContext
     {
@@ -634,6 +632,11 @@ public class ParsedText implements Serializable
             return parent.getCreateTime();
         }
 
+        @Override public Class<Category> getTypeClass()
+        {
+            return parent.getTypeClass();
+        }
+
         public MultiLanguageName getName()
         {
             return parent.getName();
@@ -667,11 +670,6 @@ public class ParsedText implements Serializable
         public String[] getAnnotationKeys()
         {
             return parent.getAnnotationKeys();
-        }
-
-        public RaplaType<Category> getRaplaType()
-        {
-            return parent.getRaplaType();
         }
 
         @Override public EntityReferencer.ReferenceInfo getReference()
@@ -768,7 +766,7 @@ public class ParsedText implements Serializable
 
         public Category getRootCategory()
         {
-            final Category constraint = (Category) ((AttributeImpl) attribute).getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+            final Category constraint = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
             return constraint;
         }
 
@@ -1002,7 +1000,7 @@ public class ParsedText implements Serializable
             Category rootCategory;
             if (object instanceof CategoryProxy)
             {
-                rootCategory = (Category) ((CategoryProxy) object).getRootCategory();
+                rootCategory = ((CategoryProxy) object).getRootCategory();
             }
             else
             {
@@ -1046,7 +1044,7 @@ public class ParsedText implements Serializable
 
             final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
-            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController,user,contextObjects, callStackDepth + 1);
+            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, user, contextObjects, callStackDepth + 1);
             final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             ParsedText parsedAnnotation;
             //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());

@@ -16,10 +16,8 @@ package org.rapla.storage.xml;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -41,7 +39,7 @@ public class RaplaMapReader extends RaplaXMLReader  {
     {
         if ( !RAPLA_NS.equals(namespaceURI))
             return;
-        if (localName.equals(RaplaMap.TYPE.getLocalName())) {
+        if (localName.equals(RaplaMapWriter.TAGNAME)) {
             entityMap = new RaplaMapImpl();
             return;
         }
@@ -64,32 +62,33 @@ public class RaplaMapReader extends RaplaXMLReader  {
 
         String refid = getString( atts, "idref", null);
         String keyref = getString( atts, "keyref", null);
-        RaplaType raplaType = getTypeForLocalName( localName );
+        Class<? extends RaplaObject> raplaType = getTypeForLocalName( localName );
         if ( refid != null) {
             childReader = null;
             // We ignore the old references from 1.7 that are not compatible
-            if ( !entityMap.isTypeSupportedAsLink(raplaType)) {
+            final Class typeClass = raplaType;
+            if ( !entityMap.isTypeSupportedAsLink(typeClass)) {
                 return;
             }
-            String id = getId( raplaType, refid);
-            entityMap.putIdPrivate( key,  id, raplaType);
+            String id = getId( typeClass, refid);
+            entityMap.putIdPrivate( key,  id, typeClass);
         }  else if ( keyref != null) {
             childReader = null;
-            if ( raplaType == DynamicType.TYPE)
+            if ( raplaType == DynamicType.class)
             {
                 DynamicType type = getDynamicType( keyref );
                 if ( type != null) {
-                	String id = ((Entity) type).getId();
-                    entityMap.putIdPrivate( key,  id, DynamicType.TYPE);
+                	String id = type.getId();
+                    entityMap.putIdPrivate( key,  id, DynamicType.class);
                 }
             }
-            if ( raplaType == Category.TYPE)
+            if ( raplaType == Category.class)
             {
                 try
                 {
                     Category cat = getSuperCategory().getCategoryFromPath(keyref);
-                    String id = ((Entity) cat).getId();
-                    entityMap.putIdPrivate( key,  id, DynamicType.TYPE);
+                    String id = cat.getId();
+                    entityMap.putIdPrivate( key,  id, DynamicType.class);
                 }
                 catch (EntityNotFoundException e)
                 {

@@ -13,19 +13,19 @@
 
 package org.rapla.storage.xml;
 
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.framework.RaplaException;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.RaplaException;
-
     
 public class RaplaMapWriter extends RaplaXMLWriter {
-    
+
+    final static String TAGNAME =  "map";
     public RaplaMapWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
     }
@@ -35,17 +35,17 @@ public class RaplaMapWriter extends RaplaXMLWriter {
     }
 
     private void writeMap_(RaplaMapImpl map ) throws IOException, RaplaException {
-        openElement("rapla:"  + RaplaMap.TYPE.getLocalName());
+        openElement("rapla:" +TAGNAME);
         for (Iterator<String> it = map.keySet().iterator();it.hasNext();) {
             Object key = it.next();
             Object obj =  map.get( key);
             printRaplaObject( key, obj);
         }
-        closeElement("rapla:" + RaplaMap.TYPE.getLocalName());
+        closeElement("rapla:" +TAGNAME);
     }
 
     public void writeMap(Map<String,String> map ) throws IOException {
-        openElement("rapla:"  + RaplaMap.TYPE.getLocalName());
+        openElement("rapla:" +TAGNAME);
         for (Map.Entry<String,String> entry:map.entrySet()) {
             String key = entry.getKey();
             String obj =  entry.getValue();
@@ -53,12 +53,12 @@ public class RaplaMapWriter extends RaplaXMLWriter {
             att("key", key.toString());
             if ( obj instanceof String)
             {
-                String value = (String) obj;
+                String value = obj;
                 att("value", value);
                 closeElementTag();
             }
         }
-        closeElement("rapla:" + RaplaMap.TYPE.getLocalName());
+        closeElement("rapla:" +TAGNAME);
     }
 
     
@@ -83,7 +83,7 @@ public class RaplaMapWriter extends RaplaXMLWriter {
             printReference( (Entity) obj);
         } else {
             RaplaObject raplaObj = (RaplaObject) obj;
-            getWriterFor( raplaObj.getRaplaType()).writeObject( raplaObj );
+            getWriterFor( raplaObj.getTypeClass()).writeObject( raplaObj );
         }
         setIndentLevel( start+1 );
         closeElement("rapla:mapentry");

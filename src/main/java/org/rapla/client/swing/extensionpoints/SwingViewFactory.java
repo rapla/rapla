@@ -26,11 +26,11 @@ import javax.swing.Icon;
 public interface SwingViewFactory
 {
     // instance scope
-    public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException;
+    SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException;
     boolean isEnabled();
-    public String getViewId();
+    String getViewId();
     /** return the key that is responsible for placing the view in the correct position in the drop down selection menu*/
-    public String getMenuSortKey();
-    public String getName();
-    public Icon getIcon();
+    String getMenuSortKey();
+    String getName();
+    Icon getIcon();
 }

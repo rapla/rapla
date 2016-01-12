@@ -26,6 +26,6 @@ public interface UrlEncryption
 	 * @return String Encrypted parameter string
 	 * @throws RaplaException In case the encryption fails
 	 */
-    public String encrypt(String plain) throws RaplaException;
+    String encrypt(String plain) throws RaplaException;
     
 }

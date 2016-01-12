@@ -13,12 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
@@ -36,6 +30,12 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaException;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class DynamicTypeReader extends RaplaXMLReader
 {
@@ -256,10 +256,10 @@ public class DynamicTypeReader extends RaplaXMLReader
             if (attribute.getConstraintClass( constraintKey ) == Category.class)
             {
                 @SuppressWarnings("deprecation")
-                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.TYPE, content );
+                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.class, content );
                 if (idContent)
                 {
-                    String id = getId( Category.TYPE, content );
+                    String id = getId( Category.class, content );
                     constraint = store.tryResolve( id, Category.class );
                     if ( constraint == null)
                     {
@@ -274,7 +274,7 @@ public class DynamicTypeReader extends RaplaXMLReader
             else if (attribute.getConstraintClass( constraintKey ) == DynamicType.class)
             {
                 @SuppressWarnings("deprecation")
-                boolean idContent = org.rapla.storage.OldIdMapping.isTextId( DynamicType.TYPE, content );
+                boolean idContent = org.rapla.storage.OldIdMapping.isTextId( DynamicType.class, content );
                 if (idContent)
                 {
 					constraint = content.trim();
@@ -328,10 +328,10 @@ public class DynamicTypeReader extends RaplaXMLReader
             if (type == AttributeType.CATEGORY)
             {
                 @SuppressWarnings("deprecation")
-                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.TYPE, content );
+                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.class, content );
                 if (idContent)
                 {
-                    defaultValue = resolve( Category.TYPE, content );
+                    defaultValue = resolve( Category.class, content );
                 }
                 else
                 {

@@ -12,12 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.util.Locale;
+import org.rapla.components.calendarview.WeekdayMapper;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
-
-import org.rapla.components.calendarview.WeekdayMapper;
+import java.util.Locale;
 
 /** ComboBox that displays the weekdays in long format 
     @see WeekdayMapper

@@ -11,9 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
-import java.util.EventListener;
 
 import org.rapla.framework.RaplaException;
+
+import java.util.EventListener;
 
 /** Classes implementing this interface will be notified when changes to
  *  reservations or resources occurred. The listener can be registered by calling

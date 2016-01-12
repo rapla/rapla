@@ -12,6 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.pre18;
 
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.server.internal.TimeZoneConverterImpl;
+import org.rapla.storage.LocalCache;
+import org.rapla.storage.OldIdMapping;
+import org.rapla.storage.dbsql.ColumnDef;
+import org.rapla.storage.dbsql.TableDef;
+import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.xml.PreferenceReader;
+import org.rapla.storage.xml.PreferenceWriter;
+import org.rapla.storage.xml.RaplaXMLContext;
+import org.rapla.storage.xml.RaplaXMLContextException;
+import org.rapla.storage.xml.RaplaXMLReader;
+import org.rapla.storage.xml.RaplaXMLWriter;
+
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,31 +54,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.xml.RaplaNonValidatedInput;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.storage.xml.RaplaXMLContextException;
-import org.rapla.storage.xml.RaplaXMLContext;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
-import org.rapla.server.internal.TimeZoneConverterImpl;
-import org.rapla.storage.LocalCache;
-import org.rapla.storage.OldIdMapping;
-import org.rapla.storage.dbsql.ColumnDef;
-import org.rapla.storage.dbsql.TableDef;
-import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.xml.PreferenceReader;
-import org.rapla.storage.xml.PreferenceWriter;
-import org.rapla.storage.xml.RaplaXMLReader;
-import org.rapla.storage.xml.RaplaXMLWriter;
 
 @Deprecated
 public abstract class OldEntityStorage<T extends Entity<T>>  {
@@ -217,7 +217,6 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
 	}
 
 	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
-		RaplaType type = RaplaType.get( class1);
 		Integer id = rset.getInt( column );
 		if ( rset.wasNull() || id == null )
 		{
@@ -227,26 +226,25 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
 			}
 			throw new RaplaException("Id can't be null for " + tableName);
 		}
-		return  OldIdMapping.getId(type,id);
+		return  OldIdMapping.getId(class1,id);
 	}
     
 	protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException 
 	{
-		RaplaType type = RaplaType.get( class1);
 		Integer id = rset.getInt( column );
 		if  (rset.wasNull() || id == null)
 		{
 			return null;
 		}
 		try {
-			Entity resolved = entityStore.resolve(OldIdMapping.getId(type,id), class1);
+			Entity resolved = entityStore.resolve(OldIdMapping.getId(class1,id), class1);
 			@SuppressWarnings("unchecked")
 			S casted = (S) resolved;
 			return casted;
 		}
 		catch ( EntityNotFoundException ex)
 		{
-			getLogger().warn("Could not find "  + type +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
+			getLogger().warn("Could not find "  + class1 +"  with id "+ id + " in the " + tableName + " table. Ignoring." );
 			return null;
 		}
 	}
@@ -739,7 +737,7 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
     
 
     public static int getId(Entity entity) {
-    	String id = (String) entity.getId();
+    	String id = entity.getId();
 		return OldIdMapping.parseId(id);
     }
 
@@ -770,14 +768,14 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
 
     }
 
-    public RaplaXMLReader getReaderFor( RaplaType type) throws RaplaException {
-		Map<RaplaType,RaplaXMLReader> readerMap = lookup( PreferenceReader.READERMAP);
-        return readerMap.get( type);
+    public RaplaXMLReader getReaderFor( Class<? extends Entity> typeClass) throws RaplaException {
+		Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap = lookup( PreferenceReader.READERMAP);
+        return readerMap.get( typeClass);
     }
 
-    public RaplaXMLWriter getWriterFor( RaplaType type) throws RaplaException {
-		Map<RaplaType,RaplaXMLWriter> writerMap = lookup( PreferenceWriter.WRITERMAP );
-        return writerMap.get( type);
+    public RaplaXMLWriter getWriterFor( Class<? extends Entity> typeClass) throws RaplaException {
+		Map<Class<? extends  RaplaObject>,RaplaXMLWriter> writerMap = lookup( PreferenceWriter.WRITERMAP );
+        return writerMap.get( typeClass);
     }
 
     protected <S> S lookup( TypedComponentRole<S> role) throws RaplaException {

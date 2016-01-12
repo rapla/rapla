@@ -15,7 +15,6 @@ package org.rapla.entities.storage;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 
 /** resolves the id to a proper reference to the object.
     @see org.rapla.entities.storage.internal.ReferenceHandler
@@ -23,18 +22,18 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 
 public interface EntityResolver
 {
-    public Entity resolve(String id) throws EntityNotFoundException;
+    Entity resolve(String id) throws EntityNotFoundException;
 
     /** same as resolve but returns null when an entity is not found instead of throwing an {@link EntityNotFoundException} */
-    public Entity tryResolve(String id);
+    Entity tryResolve(String id);
     
     /** now the type safe version */
-    public <T extends Entity> T tryResolve(String id,Class<T> entityClass);
+    <T extends Entity> T tryResolve(String id, Class<T> entityClass);
     
     /** now the type safe version */
-    public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException;
+    <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException;
     
-    public DynamicType getDynamicType(String key);
+    DynamicType getDynamicType(String key);
 
     //FunctionFactory getFunctionFactory(String functionName);
 

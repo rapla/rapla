@@ -14,7 +14,6 @@ package org.rapla.facade.internal;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -64,8 +63,7 @@ public class AllocationChangeFinder
     }
 
     private void added(RaplaObject entity, User user) {
-        RaplaType raplaType = entity.getRaplaType();
-        if ( raplaType == Reservation.TYPE ) {
+        if ( entity.getTypeClass() == Reservation.class ) {
             Reservation newRes = (Reservation) entity;
             addAppointmentAdd(
                               user
@@ -104,14 +102,16 @@ public class AllocationChangeFinder
     }
 
     private void changed(Entity oldEntity,Entity newEntity, User user) {
-        RaplaType raplaType = oldEntity.getRaplaType();
-        if (raplaType ==  Reservation.TYPE ) {
+        Class<? extends Entity> raplaType = oldEntity.getTypeClass();
+        if (raplaType ==  Reservation.class ) {
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Reservation changed: " + oldEntity);
             Reservation oldRes = (Reservation) oldEntity;
             Reservation newRes = (Reservation) newEntity;
+
             List<Allocatable> alloc1 = Arrays.asList(oldRes.getAllocatables());
             List<Allocatable> alloc2 = Arrays.asList(newRes.getAllocatables());
+
             List<Appointment> app1 = Arrays.asList(oldRes.getAppointments());
             List<Appointment> app2 = Arrays.asList(newRes.getAppointments());
 
@@ -128,10 +128,6 @@ public class AllocationChangeFinder
             ArrayList<Allocatable> changeList = new ArrayList<Allocatable>(alloc2);
             changeList.retainAll(alloc1);
             addAllocationDiff(user, changeList,oldRes,newRes);
-        }
-        if ( Appointment.TYPE ==  raplaType ) {
-            if (getLogger().isDebugEnabled())
-                getLogger().debug("Appointment changed: " + oldEntity + " to " + newEntity);
         }
     }
 
@@ -186,7 +182,7 @@ public class AllocationChangeFinder
             	getLogger().error("Not found matching pair for " + oldApp);
             	continue;
             }
-            for (Allocatable allocatable: allocatableList ) 
+            for (Allocatable allocatable: allocatableList )
             {
                 boolean oldAllocated = oldRes.hasAllocated(allocatable, oldApp);
                 boolean newAllocated = newRes.hasAllocated(allocatable, newApp);

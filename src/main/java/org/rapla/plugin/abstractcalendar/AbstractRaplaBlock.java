@@ -13,10 +13,6 @@
 
 package org.rapla.plugin.abstractcalendar;
 
-import java.util.Date;
-import java.util.LinkedHashSet;
-import java.util.List;
-
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -28,6 +24,10 @@ import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.BuildContext;
+
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 
 public abstract class AbstractRaplaBlock implements Block

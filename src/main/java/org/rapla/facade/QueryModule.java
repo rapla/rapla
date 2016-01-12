@@ -98,7 +98,7 @@ public interface QueryModule
 
     
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
-    public FutureResult<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,Collection<Appointment> forAppointment);
+    FutureResult<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
     
     /** returns all allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment 
      * @deprecated use {@link #getAllocatableBindings(Collection,Collection)} instead
@@ -139,9 +139,9 @@ public interface QueryModule
      * The User cannot change appointments.*/
     boolean canExchangeAllocatables(Reservation reservation);
     
-	public Collection<Allocatable> getTemplates() throws RaplaException;
+	Collection<Allocatable> getTemplates() throws RaplaException;
 	
-	public Collection<Reservation> getTemplateReservations(Allocatable name) throws RaplaException;
+	Collection<Reservation> getTemplateReservations(Allocatable name) throws RaplaException;
 
 	FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
 

@@ -1,5 +1,17 @@
 package org.rapla.components.i18n.internal;
 
+import org.rapla.RaplaResources;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.I18nLocaleFormats;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.xmlbundle.LocaleChangeEvent;
+import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -14,19 +26,6 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.Vector;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.I18nLocaleFormats;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of=BundleManager.class,context = { InjectionContext.server, InjectionContext.swing})
 @Singleton

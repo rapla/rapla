@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
+import org.rapla.entities.Entity;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,11 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.rapla.entities.Entity;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
@@ -268,11 +268,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	public boolean removeWithKey(String key) {
     	synchronized (this) 
         {
-	        if  ( links.remove(key) != null ) {
-	            return true;
-	        } else {
-	            return false;
-	        }
+			return links.remove(key) != null;
 	    }
     }
 

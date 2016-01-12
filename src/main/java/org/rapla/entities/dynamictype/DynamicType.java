@@ -14,7 +14,6 @@ package org.rapla.entities.dynamictype;
 
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.MultiLanguageNamed;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.domain.EntityPermissionContainer;
 
@@ -24,8 +23,6 @@ import org.rapla.entities.domain.EntityPermissionContainer;
  */
 public interface DynamicType extends  EntityPermissionContainer<DynamicType>,MultiLanguageNamed,Annotatable, Timestamp
 {
-    final RaplaType<DynamicType> TYPE = new RaplaType<DynamicType>(DynamicType.class, "dynamictype");
-    
     Attribute[] getAttributes();
     Iterable<Attribute> getAttributeIterable();
     
@@ -64,7 +61,7 @@ public interface DynamicType extends  EntityPermissionContainer<DynamicType>,Mul
     /* @throws IllegalStateException when called from a non persistant instance of DynamicType */
     ClassificationFilter newClassificationFilter();
     
-    final DynamicType[] DYNAMICTYPE_ARRAY = new DynamicType[0];
+    DynamicType[] DYNAMICTYPE_ARRAY = new DynamicType[0];
 }
 
 

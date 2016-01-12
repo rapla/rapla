@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.domain.Permission;
@@ -22,6 +20,8 @@ import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
+
+import java.util.Date;
 
 public class PeriodReader extends DynAttReader {
     public PeriodReader(RaplaXMLContext context) throws RaplaException {

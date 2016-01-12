@@ -1,11 +1,10 @@
 package org.rapla.components.calendar;
 
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.event.WindowEvent;
 import java.util.Locale;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
 
 public class TimeFieldChinaExample
 {

@@ -26,7 +26,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Calendar;

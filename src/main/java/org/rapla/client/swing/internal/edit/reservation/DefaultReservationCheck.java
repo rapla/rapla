@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.util.Collection;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.BoxLayout;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -37,6 +29,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.util.Collection;
+import java.util.Locale;
 
 @Extension(provides = EventCheck.class,id="defaultcheck")
 public class DefaultReservationCheck extends RaplaGUIComponent implements EventCheck
@@ -138,14 +137,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                 dialog.getAction(0).setIcon("icon.save");
                 dialog.getAction(1).setIcon("icon.cancel");
                 dialog.start(true);
-                if (dialog.getSelectedIndex() == 0)
-                {
-                    return true;
-                }
-                else
-                {
-                	return false;
-                }
+                return dialog.getSelectedIndex() == 0;
             }
 
             

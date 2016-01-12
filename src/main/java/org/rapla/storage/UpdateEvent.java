@@ -12,17 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
@@ -41,10 +30,21 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.storage.server.ImportExportEntity;
-import org.rapla.storage.server.ImportExportEntityImpl;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class UpdateEvent
 {
@@ -138,7 +138,7 @@ public class UpdateEvent
 
     @SuppressWarnings({ "unchecked" })
     private void add(Entity entity) {
-		Class<? extends RaplaType> class1 = entity.getRaplaType().getTypeClass();
+		Class<? extends Entity> class1 = entity.getTypeClass();
     	List list = getListMap().get( class1);
     	if ( list == null)
     	{
@@ -184,7 +184,7 @@ public class UpdateEvent
             }
             else
             {
-                throw new IllegalArgumentException(entity.getRaplaType() + " can't be stored ");
+                throw new IllegalArgumentException(entity.getTypeClass() + " can't be stored ");
             }
             listMap.put( class1, list);
     	}

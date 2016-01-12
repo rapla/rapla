@@ -115,9 +115,7 @@ public final class Day implements Comparable<Day>
             return false;
         if (month != other.month)
             return false;
-        if (year != other.year)
-            return false;
-        return true;
+        return year == other.year;
     }
 }
 

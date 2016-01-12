@@ -3,17 +3,16 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.IOException;
+import org.rapla.RaplaResources;
+import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.RaplaResources;
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
+import java.io.IOException;
 
 @Extension(provides = RaplaPageExtension.class,id="server")
 @Singleton

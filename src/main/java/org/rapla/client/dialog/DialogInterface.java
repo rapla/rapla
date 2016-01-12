@@ -22,7 +22,7 @@ public interface DialogInterface
     void requestFocus();
     void toFront();
     
-    public interface DialogAction
+    interface DialogAction
     {
         void setEnabled(boolean enabled);
         void setRunnable(Runnable runnable);

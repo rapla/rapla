@@ -23,10 +23,8 @@
  */
 package org.rapla.storage;
 
-import org.rapla.ConnectInfo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -39,20 +37,19 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.storage.server.ImportExportEntity;
 
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
 public interface StorageOperator extends EntityResolver {
-	public static final int MAX_DEPENDENCY = 20;
+	int MAX_DEPENDENCY = 20;
 	   
-	public final static String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
-	public final static String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
-	public final static String DEFAULT_USER_TYPE = "rapla:defaultUser";
-	public final static String PERIOD_TYPE = "rapla:period";
-	public final static String RAPLA_TEMPLATE = "rapla:template";
+	String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
+	String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
+	String DEFAULT_USER_TYPE = "rapla:defaultUser";
+	String PERIOD_TYPE = "rapla:period";
+	String RAPLA_TEMPLATE = "rapla:template";
 
 
     String getUsername(String userId) throws RaplaException;
@@ -76,7 +73,7 @@ public interface StorageOperator extends EntityResolver {
      storage.*/
     void storeAndRemove(Collection<Entity> storeObjects,Collection<Entity> removeObjects,User user) throws RaplaException;
 
-    String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException;
+    String[] createIdentifier(Class<? extends Entity> raplaType, int count) throws RaplaException;
 
     Collection<User> getUsers() throws RaplaException;
 

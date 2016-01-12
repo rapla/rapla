@@ -13,10 +13,9 @@
 package org.rapla.storage;
 
 import org.rapla.facade.ModificationEvent;
-import org.rapla.framework.RaplaException;
 
 public interface StorageUpdateListener
 {
-    public void objectsUpdated(ModificationEvent evt);
-    public void storageDisconnected(String disconnectionMessage);
+    void objectsUpdated(ModificationEvent evt);
+    void storageDisconnected(String disconnectionMessage);
 }

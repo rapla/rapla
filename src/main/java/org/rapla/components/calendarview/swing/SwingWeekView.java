@@ -12,6 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
+import org.rapla.components.calendarview.swing.scaling.IRowScale;
+import org.rapla.components.calendarview.swing.scaling.LinearRowScale;
+import org.rapla.components.util.DateTools;
+import org.rapla.framework.RaplaLocale;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Point;
@@ -20,20 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.Builder.PreperationResult;
-import org.rapla.components.calendarview.swing.scaling.IRowScale;
-import org.rapla.components.calendarview.swing.scaling.LinearRowScale;
-import org.rapla.components.util.DateTools;
-import org.rapla.framework.RaplaLocale;
 
 /** Graphical component for displaying a calendar like weekview.
  */

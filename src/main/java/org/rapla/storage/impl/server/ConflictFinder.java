@@ -12,6 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl.server;
 
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
+import org.rapla.storage.UpdateOperation;
+import org.rapla.storage.UpdateResult;
+import org.rapla.storage.UpdateResult.Change;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,30 +47,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ResourceAnnotations;
-import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.storage.PermissionController;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.LocalCache;
-import org.rapla.storage.UpdateOperation;
-import org.rapla.storage.UpdateResult;
-import org.rapla.storage.UpdateResult.Change;
 
 class ConflictFinder {
 	AllocationMap  allocationMap;
@@ -407,12 +406,8 @@ class ConflictFinder {
 	private boolean isConflictIgnored(Allocatable allocatable) 
 	{
 		String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
-		if ( annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE))
-		{
-			return true;
-		}
-		return false;
-	}
+        return annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+    }
 
 //	private boolean contains(Conflict conflict, Set<String> idList)
 //	{
@@ -535,12 +530,8 @@ class ConflictFinder {
         {
             return false;
         }
-        if (res1.hasAllocated(alloc, appointment1) && res2.hasAllocated(alloc,appointment2))
-        {
-            return true;
-        }
-        return false;
-	}
+        return res1.hasAllocated(alloc, appointment1) && res2.hasAllocated(alloc, appointment2);
+    }
 	
 	private Appointment getAppointment(String id) 
 	{
@@ -584,8 +575,8 @@ class ConflictFinder {
 		for (UpdateResult.Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
 		{
 		    String nextId = change.getCurrentId();
-			RaplaObject current = (RaplaObject) currentUpdateResult.getLastKnown(nextId);
-			if ( current.getRaplaType() == Allocatable.TYPE)
+			RaplaObject current = currentUpdateResult.getLastKnown(nextId);
+			if ( current.getTypeClass() == Allocatable.class)
 			{
 				Allocatable old = (Allocatable) currentUpdateResult.getLastEntryBeforeUpdate(nextId);
 				Allocatable newAlloc = (Allocatable) current;
@@ -667,7 +658,7 @@ class ConflictFinder {
     	{
     	    String id = change.getCurrentId();
             final Entity obj = currentUpdateResult.getLastKnown(id);//.getUnresolvedEntity();
-            if ( obj.getRaplaType().equals( Reservation.TYPE))
+            if ( obj.getTypeClass().equals( Reservation.class))
     		{
     			Reservation reservation = (Reservation) obj;
     			for (Appointment app: reservation.getAppointments())

@@ -1,9 +1,9 @@
 package org.rapla.components.util;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.junit.Assert;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
 import org.rapla.entities.tests.Day;
 

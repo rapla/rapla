@@ -1,9 +1,9 @@
 package org.rapla.components.util;
 
+import org.rapla.components.util.DateTools.TimeWithoutTimezone;
+
 import java.util.Date;
 import java.util.NoSuchElementException;
-
-import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 
 
 /**
@@ -217,7 +217,7 @@ public class SerializableDateTimeFormat
     	builder.append( DATE_TIME_SEPERATOR);
     	builder.append( formatTime( date , true));
     	builder.append( 'Z');
-		String timestamp = builder.toString();;
+		String timestamp = builder.toString();
         return timestamp;
     }
 

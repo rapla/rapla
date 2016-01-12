@@ -1,15 +1,15 @@
 package org.rapla.plugin.tableview.client.swing;
 
+import org.rapla.RaplaResources;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
+
 import javax.inject.Inject;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import org.rapla.RaplaResources;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 
 @Extension(provides = AppointmentSummaryExtension.class,id = "appointmentcounter")
 public final class AppointmentCounter implements AppointmentSummaryExtension

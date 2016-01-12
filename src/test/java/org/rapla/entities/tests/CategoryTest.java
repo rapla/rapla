@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +25,6 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
@@ -71,7 +69,7 @@ public class CategoryTest {
         Assert.assertTrue(areas.getId() != null);
         Category editObject =  modificationMod.edit(superCategory);
         modificationMod.store(editObject);
-        Assert.assertTrue("reference to subcategory has changed", areas == (CategoryImpl) superCategory.getCategory("areas"));
+        Assert.assertTrue("reference to subcategory has changed", areas == superCategory.getCategory("areas"));
     }
 
     @Test

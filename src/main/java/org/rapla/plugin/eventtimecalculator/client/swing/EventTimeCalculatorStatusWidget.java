@@ -1,12 +1,5 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
-import java.awt.Font;
-import java.util.Collection;
-
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
@@ -22,6 +15,12 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.plugin.eventtimecalculator.EventTimeModel;
+
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.awt.Font;
+import java.util.Collection;
 
 /**
  * @author Tobias Bertram

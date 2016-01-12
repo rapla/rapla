@@ -12,27 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.fields;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
@@ -47,7 +26,6 @@ import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
@@ -59,6 +37,26 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /****************************************************************
  * This is the base-class for all Classification-Panels         *
@@ -144,11 +142,11 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		oldClassifications = classifications;
 
 		// checks unity from RaplaTypes of all Classifiables
-		Set<RaplaType> raplaTypes = new HashSet<RaplaType>();
+		Set<Class> raplaTypes = new HashSet<Class>();
 		for (Classifiable c : classifiables) {
-			raplaTypes.add(((RaplaObject) c).getRaplaType());
+			raplaTypes.add(((RaplaObject) c).getTypeClass());
 		}
-		RaplaType raplaType;
+		Class raplaType;
 		// if there is an unitary type then set typ
 		if (raplaTypes.size() == 1) {
 			raplaType = raplaTypes.iterator().next();
@@ -157,9 +155,9 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		}
 
 		String classificationType = null;
-		if (Reservation.TYPE.equals(raplaType)) {
+		if (Reservation.class == raplaType) {
 			classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION;
-		} else if (Allocatable.TYPE.equals(raplaType)) {
+		} else if (Allocatable.class == raplaType) {
 
 			boolean arePersons = true;
 			// checks if Classifiables are person

@@ -12,14 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.util.Date;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
-
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -36,6 +30,11 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.PreferencePatch;
 
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
+
 public class PreferencesImpl extends SimpleEntity
     implements
         Preferences
@@ -47,7 +46,12 @@ public class PreferencesImpl extends SimpleEntity
     
 	RaplaMapImpl map = new RaplaMapImpl();
 	Set<String> removedKeys = new LinkedHashSet<String>();
-    final public RaplaType<Preferences> getRaplaType() {return TYPE;}
+
+    @Override public Class<Preferences> getTypeClass()
+    {
+        return Preferences.class;
+    }
+
     private transient PreferencePatch patch = new PreferencePatch();
     
     PreferencesImpl() {

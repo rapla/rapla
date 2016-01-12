@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools;
-import org.rapla.entities.RaplaType;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -33,7 +33,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
@@ -46,7 +45,6 @@ import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -63,10 +61,10 @@ public class LocalCacheTest  {
     public DynamicTypeImpl createDynamicType() throws Exception {
         AttributeImpl attribute = new AttributeImpl(AttributeType.STRING);
         attribute.setKey("name");
-        attribute.setId(getId(Attribute.TYPE,1));
+        attribute.setId(getId(Attribute.class,1));
         DynamicTypeImpl dynamicType = new DynamicTypeImpl();
         dynamicType.setKey("defaultResource");
-        dynamicType.setId(getId(DynamicType.TYPE,1));
+        dynamicType.setId(getId(DynamicType.class,1));
         dynamicType.addAttribute(attribute);
         dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT,"{name}");
         return dynamicType;
@@ -76,7 +74,7 @@ public class LocalCacheTest  {
     public AllocatableImpl createResource(LocalCache cache,int intId,DynamicType type,String name) {
         Date today = new Date();
         AllocatableImpl resource = new AllocatableImpl(today, today);
-        resource.setId(getId(Allocatable.TYPE,intId));
+        resource.setId(getId(Allocatable.class,intId));
         resource.setResolver( cache);
         Classification classification = type.newClassification();
         classification.setValue("name",name);
@@ -84,8 +82,8 @@ public class LocalCacheTest  {
         return resource;
     }
 
-    private String getId(RaplaType type, int intId) {
-        return type.getLocalName() + "_" + intId;
+    private String getId(Class<? extends Entity> type, int intId) {
+        return type.toString() + "_" + intId;
     }
 
     @Test

@@ -13,16 +13,15 @@
 
 package org.rapla.entities.domain;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.Classifiable;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
 
 /** The <code>Reservation</code> interface is the central interface of
  *  Rapla.  Objects implementing this interface are the courses or
@@ -39,9 +38,7 @@ import org.rapla.entities.dynamictype.Classifiable;
  */
 public interface Reservation extends EntityPermissionContainer<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable,Comparable
 {
-	final RaplaType<Reservation> TYPE = new RaplaType<Reservation>(Reservation.class,"reservation",'e');
-
-    public final int MAX_RESERVATION_LENGTH = 100;
+    int MAX_RESERVATION_LENGTH = 100;
 
     void addAppointment(Appointment appointment);
     void removeAppointment(Appointment appointment);
@@ -98,7 +95,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     
    
 
-    public static final Reservation[] RESERVATION_ARRAY = new Reservation[0];
+    Reservation[] RESERVATION_ARRAY = new Reservation[0];
 
 	/** returns the first (in time) start of all appointments. Returns null when the reservation has no appointments*/
 	Date getFirstDate();

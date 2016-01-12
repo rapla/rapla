@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Named;
@@ -30,6 +24,12 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
 
 public abstract class HTMLInfo<T>  extends RaplaComponent {
     
@@ -184,8 +184,7 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         buf.append(getI18n().getString("view"));
         if ( object instanceof RaplaObject)
         {
-            RaplaType raplaType = ((RaplaObject) object).getRaplaType();
-            String localName = raplaType.getLocalName();
+            String localName = RaplaType.getLocalName((RaplaObject) object);
             try
             {
                 String name = getI18n().getString(localName);

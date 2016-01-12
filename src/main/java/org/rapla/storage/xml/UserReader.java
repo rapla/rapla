@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
@@ -23,6 +21,8 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.framework.RaplaException;
+
+import java.util.Date;
 
 public class UserReader extends RaplaXMLReader
 {
@@ -74,7 +74,7 @@ public class UserReader extends RaplaXMLReader
             String groupId = atts.getValue( "idref" );
             if (groupId !=null)
             {
-            	String newGroupId = getId(Category.TYPE, groupId);
+            	String newGroupId = getId(Category.class, groupId);
                 user.addId("groups",newGroupId);
             }
             else
@@ -124,7 +124,7 @@ public class UserReader extends RaplaXMLReader
         {   
             // add the groups to the user if the groups were not there in a previous version
             Date createTime = group.getCreateTime();
-            RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.TYPE);
+            RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.class);
             Date categoryCreateTime = dynamicTypeReader.getReadTimestamp();
             if ( categoryCreateTime.equals(createTime ))
             {

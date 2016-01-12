@@ -12,10 +12,9 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
-import java.util.Map;
-
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
+
+import java.util.Map;
 
 /**
  * This Map can hold only Objects of type RaplaObject and String
@@ -23,5 +22,4 @@ import org.rapla.entities.RaplaType;
  * @see RaplaObject
  */
 public interface RaplaMap<T> extends RaplaObject, Map<String,T>  {
-   public static final RaplaType<RaplaMap> TYPE = new RaplaType<RaplaMap>(RaplaMap.class, "map");
 }

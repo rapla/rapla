@@ -13,18 +13,12 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
-import org.rapla.entities.RaplaType;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -33,6 +27,12 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class RaplaMainReader extends RaplaXMLReader
 {
@@ -46,19 +46,19 @@ public class RaplaMainReader extends RaplaXMLReader
     {
         super( context );
         writeableContext = context;
-        Map<RaplaType,RaplaXMLReader> readerMap = context.lookup( PreferenceReader.READERMAP );
+        Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap = context.lookup( PreferenceReader.READERMAP );
         // Setup the delegation classes
-        localnameTable.put( "grammar", readerMap.get( DynamicType.TYPE ) );
-        localnameTable.put( "element", readerMap.get( DynamicType.TYPE ) );
-        localnameTable.put( "user", readerMap.get( User.TYPE ) );
-        localnameTable.put( "category", readerMap.get( Category.TYPE ) );
-        localnameTable.put( "preferences", readerMap.get( Preferences.TYPE ) );
-        localnameTable.put( "resource", readerMap.get( Allocatable.TYPE ) );
-        localnameTable.put( "person", readerMap.get( Allocatable.TYPE ) );
-        localnameTable.put( "extension", readerMap.get( Allocatable.TYPE ) );
-        localnameTable.put( "period", readerMap.get( Period.TYPE ) );
-        localnameTable.put( "reservation", readerMap.get( Reservation.TYPE ) );
-        localnameTable.put( "conflict", readerMap.get( Conflict.TYPE ) );
+        localnameTable.put( "grammar", readerMap.get( DynamicType.class ) );
+        localnameTable.put( "element", readerMap.get( DynamicType.class ) );
+        localnameTable.put( "user", readerMap.get( User.class ) );
+        localnameTable.put( "category", readerMap.get( Category.class ) );
+        localnameTable.put( "preferences", readerMap.get( Preferences.class ) );
+        localnameTable.put( "resource", readerMap.get( Allocatable.class ) );
+        localnameTable.put( "person", readerMap.get( Allocatable.class ) );
+        localnameTable.put( "extension", readerMap.get( Allocatable.class ) );
+        localnameTable.put( "period", readerMap.get( Period.class ) );
+        localnameTable.put( "reservation", readerMap.get( Reservation.class ) );
+        localnameTable.put( "conflict", readerMap.get( Conflict.class ) );
         addChildHandler( readerMap.values() );
     }
 

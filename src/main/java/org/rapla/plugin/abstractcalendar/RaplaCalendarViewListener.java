@@ -3,20 +3,6 @@
  */
 package org.rapla.plugin.abstractcalendar;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -42,7 +28,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.storage.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -50,6 +35,20 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
+import org.rapla.storage.PermissionController;
+
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import java.awt.Component;
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class RaplaCalendarViewListener extends RaplaGUIComponent implements ViewListener
 {

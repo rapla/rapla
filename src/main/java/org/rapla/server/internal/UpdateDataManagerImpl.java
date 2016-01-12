@@ -12,21 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TimeZone;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -43,6 +33,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -60,8 +51,15 @@ import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
-import org.rapla.storage.server.ImportExportEntity;
 import org.rapla.storage.xml.RaplaXMLContextException;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TimeZone;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -117,14 +115,14 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
             {
-                Entity newEntity = (Entity) updateResult.getLastKnown(add.getCurrentId());
+                Entity newEntity = updateResult.getLastKnown(add.getCurrentId());
                 saveEvent.putStore(newEntity);
             }
         }
         {
             for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
             {
-                Entity newEntity = (Entity) updateResult.getLastKnown(change.getCurrentId());
+                Entity newEntity = updateResult.getLastKnown(change.getCurrentId());
                 saveEvent.putStore(newEntity);
             }
         }
@@ -169,8 +167,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
     private TimeInterval expandInterval(RaplaObject obj,
             TimeInterval currentInterval)
     {
-        RaplaType type = obj.getRaplaType();
-        if ( type == Reservation.TYPE)
+        if ( obj.getTypeClass() == Reservation.class)
         {
             for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
             {
@@ -236,7 +233,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             final String currentId = operation.getCurrentId();
             Entity newObject = updateResult.getLastKnown(currentId);
             // we get all the permissions that have changed on an allocatable
-            if (newObject.getRaplaType().is(Allocatable.TYPE) && isTransferedToClient(newObject))
+            final Class<? extends Entity> typeClass = newObject.getTypeClass();
+            if (typeClass == Allocatable.class && isTransferedToClient(newObject))
             {
                 PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
                 PermissionContainer newObj = (PermissionContainer) newObject;
@@ -244,7 +242,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             }
             // We trigger a resource refresh if the groups of the user have changed
 
-            if (newObject.getRaplaType().is(User.TYPE) && newObject.equals( user))
+            if (typeClass == User.class && newObject.equals( user))
             {
                 UserImpl newUser = (UserImpl) newObject;
                 UserImpl oldUser = (UserImpl) updateResult.getLastEntryBeforeUpdate(currentId);
@@ -268,7 +266,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 {
                     if ( user.getId().equals(newOwnerId) || user.getId().equals(oldOwnerId))
                     {
-                        if (!newObject.getRaplaType().is(Reservation.TYPE))
+                        if (typeClass != Reservation.class)
                         {
                             resourceRefresh = true;
                         }
@@ -276,7 +274,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                     }
                 }
             }
-            if (newObject.getRaplaType().is(Reservation.TYPE))
+            if (typeClass == Reservation.class)
             {
                 PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
                 PermissionContainer newObj = (PermissionContainer) newObject;
@@ -359,8 +357,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             for (String id : updateResult.getAddedAndChangedIds())
             {
                 final Entity obj = updateResult.getLastKnown(id);
-                final RaplaType raplaType = obj.getRaplaType();
-                if ( raplaType == Reservation.TYPE)
+                final Class<? extends  Entity> raplaType = obj.getTypeClass();
+                if ( raplaType == Reservation.class)
                 {
                     timeInterval = expandInterval(obj, timeInterval);
                     final Entity entity  = updateResult.getLastEntryBeforeUpdate(id);
@@ -454,8 +452,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
     static boolean isTransferedToClient(RaplaObject obj)
     {
-        RaplaType<?> raplaType = obj.getRaplaType();
-        if (raplaType == Appointment.TYPE || raplaType == Reservation.TYPE || raplaType == ImportExportEntity.TYPE)
+        Class<? extends RaplaObject> raplaType = obj.getTypeClass();
+        if (raplaType == Appointment.class || raplaType == Reservation.class || raplaType == ImportExportEntity.class)
         {
             return false;
         }
@@ -520,7 +518,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             if (ex instanceof RaplaXMLContextException)
             {
-                throw (RaplaXMLContextException) ex;
+                throw ex;
             }
             throw new RaplaXMLContextException(ex.getMessage(), ex);
         }

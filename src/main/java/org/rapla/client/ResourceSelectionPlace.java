@@ -1,10 +1,5 @@
 package org.rapla.client;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-import javax.inject.Inject;
-
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.ResourceSelectionView.Presenter;
 import org.rapla.entities.domain.Allocatable;
@@ -13,6 +8,10 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.Collection;
 
 @Extension(provides = PlacePresenter.class, id = ResourceSelectionPlace.PLACE_ID)
 public class ResourceSelectionPlace implements Presenter, PlacePresenter

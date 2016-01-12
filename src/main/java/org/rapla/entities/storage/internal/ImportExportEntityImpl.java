@@ -1,7 +1,6 @@
-package org.rapla.storage.server;
+package org.rapla.entities.storage.internal;
 
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.entities.storage.ImportExportEntity;
 
 public class ImportExportEntityImpl extends SimpleEntity implements ImportExportEntity
 {
@@ -16,10 +15,9 @@ public class ImportExportEntityImpl extends SimpleEntity implements ImportExport
     {
     }
 
-    @Override
-    public RaplaType<ImportExportEntity> getRaplaType()
+    @Override public Class<ImportExportEntity> getTypeClass()
     {
-        return TYPE;
+        return ImportExportEntity.class;
     }
 
     @Override

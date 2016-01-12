@@ -11,20 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Point;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JScrollPane;
-import javax.swing.JViewport;
-import javax.swing.SwingUtilities;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -33,7 +19,6 @@ import org.rapla.client.internal.LinkController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.iolayer.IOInterface;
@@ -43,6 +28,19 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JScrollPane;
+import javax.swing.JViewport;
+import javax.swing.SwingUtilities;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 /**Information of the entity-classes displayed in an HTML-ServerComponent */
 public class ViewTable<T> extends RaplaGUIComponent

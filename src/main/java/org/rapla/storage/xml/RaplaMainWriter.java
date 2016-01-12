@@ -11,14 +11,6 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -33,6 +25,14 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class RaplaMainWriter extends RaplaXMLWriter
@@ -75,7 +75,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         println();
         printDynamicTypes();
         println();
-        ((PreferenceWriter)getWriterFor(Preferences.TYPE)).printPreferences( cache.getPreferencesForUserId( null ));
+        ((PreferenceWriter)getWriterFor(Preferences.class)).printPreferences( cache.getPreferencesForUserId( null ));
         println();
         printUsers();
         println();
@@ -94,7 +94,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
     
     public void printDynamicTypes()  throws IOException,RaplaException {
         openElement("relax:grammar");
-    	DynamicTypeWriter dynamicTypeWriter = (DynamicTypeWriter)getWriterFor(DynamicType.TYPE);
+    	DynamicTypeWriter dynamicTypeWriter = (DynamicTypeWriter)getWriterFor(DynamicType.class);
         for(  DynamicType type:cache.getDynamicTypes()) {
         	if ((( DynamicTypeImpl) type).isInternal())
         	{
@@ -128,7 +128,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
     public void printCategories() throws IOException,RaplaException {
         openElement("rapla:categories");
         
-        CategoryWriter categoryWriter = (CategoryWriter)getWriterFor(Category.TYPE);
+        CategoryWriter categoryWriter = (CategoryWriter)getWriterFor(Category.class);
 		Category[] categories = cache.getSuperCategory().getCategories();
     	for (int i=0;i<categories.length;i++) {
 			categoryWriter.printCategory(categories[i]);
@@ -138,7 +138,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
     }
     public void printUsers()  throws IOException,RaplaException {
     	openElement("rapla:users");
-        UserWriter userWriter = (UserWriter)getWriterFor(User.TYPE);
+        UserWriter userWriter = (UserWriter)getWriterFor(User.class);
         println("<!-- Users of the system -->");
         for (User user:cache.getUsers()) {
         	String userId = user.getId();
@@ -154,7 +154,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         openElement("rapla:resources");
         println("<!-- resources -->");
         // Print all resources that are not persons
-        AllocatableWriter allocatableWriter = (AllocatableWriter)getWriterFor(Allocatable.TYPE);
+        AllocatableWriter allocatableWriter = (AllocatableWriter)getWriterFor(Allocatable.class);
         Collection<Allocatable> allAllocatables = cache.getAllocatables();
         Map<String,List<Allocatable>> map = new LinkedHashMap<String,List<Allocatable>>();
         
@@ -183,7 +183,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         
     void printReservations() throws IOException, RaplaException {
         openElement("rapla:reservations");
-    	ReservationWriter reservationWriter = (ReservationWriter)getWriterFor(Reservation.TYPE);
+    	ReservationWriter reservationWriter = (ReservationWriter)getWriterFor(Reservation.class);
         for (Reservation reservation: cache.getReservations()) {
 			reservationWriter.printReservation( reservation );
         }

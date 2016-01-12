@@ -1,14 +1,14 @@
 package org.rapla.plugin.eventtimecalculator;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 
 @Singleton
 public class EventTimeCalculatorFactory

@@ -1,11 +1,11 @@
 package org.rapla.plugin.tableview.client.swing;
 
-import javax.swing.table.TableColumn;
-
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.internal.AbstractRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+
+import javax.swing.table.TableColumn;
 
 public class RaplaTableColumnImpl<T> extends AbstractRaplaTableColumn<T, TableColumn>
 {

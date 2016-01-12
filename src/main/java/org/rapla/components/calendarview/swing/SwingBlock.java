@@ -12,14 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
+import org.rapla.components.calendarview.Block;
+
 import java.awt.Component;
 import java.awt.Graphics;
 
-import org.rapla.components.calendarview.Block;
-
 public interface SwingBlock extends Block {
     Component getView();
-    public void paintDragging(Graphics g, int width, int height);
+    void paintDragging(Graphics g, int width, int height);
 	boolean isMovable();
 	boolean isStartResizable();
 	boolean isEndResizable();

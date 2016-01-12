@@ -1,7 +1,7 @@
 package org.rapla.server.servletpages;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import org.rapla.inject.Extension;
+import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -9,9 +9,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.inject.Extension;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 
 @Extension(provides = RaplaPageExtension.class,id="store")

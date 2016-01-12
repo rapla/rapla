@@ -13,6 +13,19 @@
 
 package org.rapla.client.swing.images;
 
+import org.jetbrains.annotations.PropertyKey;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.IOUtil;
+import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
+import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
+import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.io.IOException;
@@ -23,20 +36,6 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.TreeMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-
-import org.jetbrains.annotations.PropertyKey;
-import org.rapla.RaplaResources;
-import org.rapla.components.util.IOUtil;
-import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
-import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
-import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
 
 /**
  * Offers direct access to the images. 

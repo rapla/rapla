@@ -12,24 +12,21 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.util.Date;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classifiable;
+
+import java.util.Date;
 
 /** Objects that implement allocatable can be allocated by reservations.
     @see Reservation
  */
 public interface Allocatable extends EntityPermissionContainer<Allocatable>,Named,Classifiable,Ownable,Timestamp, Annotatable {
-    
-	final RaplaType<Allocatable> TYPE = new RaplaType<Allocatable>(Allocatable.class, "resource");
-    
+
     /** Conflicts for this allocatable should be ignored, if this flag is enabled.
      * @deprecated use getAnnotation(IGNORE_CONFLICTS) instead*/
 	@Deprecated

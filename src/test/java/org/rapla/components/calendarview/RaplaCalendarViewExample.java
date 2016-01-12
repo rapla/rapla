@@ -12,6 +12,22 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.components.calendarview;
+
+import org.rapla.components.calendarview.swing.SwingBlock;
+import org.rapla.components.calendarview.swing.SwingMonthView;
+import org.rapla.components.calendarview.swing.SwingWeekView;
+import org.rapla.components.calendarview.swing.ViewListener;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -26,22 +42,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import org.rapla.components.calendarview.swing.SwingBlock;
-import org.rapla.components.calendarview.swing.SwingMonthView;
-import org.rapla.components.calendarview.swing.SwingWeekView;
-import org.rapla.components.calendarview.swing.ViewListener;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.framework.internal.RaplaLocaleImpl;
 
 /** Test class for RaplaCalendar and RaplaTime */
 public final class RaplaCalendarViewExample {

@@ -12,12 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Set;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.storage.EntityReferencer;
+
+import java.util.Set;
 
 /** Encapsulate the changes that are made in the backend-store.*/
 public interface ModificationEvent
@@ -31,7 +30,7 @@ public interface ModificationEvent
     boolean isModified(Entity object);
     
     /** returns if any object of the specified type has changed or was removed.*/
-    boolean isModified(RaplaType raplaType);
+    boolean isModified(Class<? extends Entity> raplaType);
     
     Set<EntityReferencer.ReferenceInfo> getRemovedReferences();
 

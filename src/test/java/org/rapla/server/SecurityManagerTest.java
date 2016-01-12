@@ -14,9 +14,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.RaplaTestCase;
@@ -51,7 +49,7 @@ public class SecurityManagerTest  {
 
 	public void tearDown() throws Exception
 	{
-		server.stop();;
+		server.stop();
 	}
 
 	@Test

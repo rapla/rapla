@@ -1,16 +1,5 @@
 package org.rapla.plugin.export2ical.client.swing;
 
-import java.awt.Frame;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -31,6 +20,16 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalExport;
+
+import javax.inject.Inject;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import java.awt.Frame;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.util.List;
 
 @Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{

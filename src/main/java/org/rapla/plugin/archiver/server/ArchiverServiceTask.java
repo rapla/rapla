@@ -1,7 +1,5 @@
 package org.rapla.plugin.archiver.server;
 
-import javax.inject.Inject;
-
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
@@ -13,6 +11,8 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.ImportExportManager;
+
+import javax.inject.Inject;
 
 @Extension(provides = ServerExtension.class,id="archiver")
 public class ArchiverServiceTask  implements ServerExtension

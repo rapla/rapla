@@ -12,16 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
 public class PeriodInfoUI extends HTMLInfo<Period> {
     public PeriodInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {

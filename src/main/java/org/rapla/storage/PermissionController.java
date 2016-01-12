@@ -5,7 +5,6 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -21,7 +20,6 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
@@ -32,7 +30,6 @@ import org.rapla.framework.RaplaLocale;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class PermissionController
@@ -50,11 +47,7 @@ public class PermissionController
     public static boolean isOwner(Ownable classifiable, User user)
     {
         String ownerId = classifiable.getOwnerId();
-        if (ownerId != null && ownerId.equals(user.getId()))
-        {
-            return true;
-        }
-        return false;
+        return ownerId != null && ownerId.equals(user.getId());
     }
 
     /**
@@ -114,11 +107,7 @@ public class PermissionController
             }
             return hasAccess(permissionContainer, user, Permission.ADMIN);
         }
-        if (object instanceof Annotatable && canWriteTemplate((Annotatable) object, user))
-        {
-            return true;
-        }
-        return false;
+        return object instanceof Annotatable && canWriteTemplate((Annotatable) object, user);
     }
 
 
@@ -239,12 +228,8 @@ public class PermissionController
             return false;
         }
         boolean hasAccess = hasAccess(permissions, user, Permission.ALLOCATE, null, null, today, true);
-        if (!hasAccess)
-        {
-            return false;
-        }
+        return hasAccess;
 
-        return true;
     }
 
     public boolean hasPermissionToAllocate(User user, Appointment appointment, Allocatable allocatable, Reservation original, Date today)
@@ -387,7 +372,7 @@ public class PermissionController
     private Collection<Category> getGroupsIncludingParents(User user)
     {
         Collection<Category> groups = new HashSet<Category>();
-        for (Category group : ((UserImpl) user).getGroupList())
+        for (Category group : user.getGroupList())
         {
             groups.add(group);
             Category parent = group.getParent();
@@ -588,17 +573,13 @@ public class PermissionController
                 return true;
             }
         }
-        if (object instanceof Annotatable && canWriteTemplate((Annotatable) object, user))
-        {
-            return true;
-        }
-        return false;
+        return object instanceof Annotatable && canWriteTemplate((Annotatable) object, user);
     }
 
     public boolean canWriteTemplate(Annotatable entity, User user)
     {
         EntityResolver resolver = this.operator;
-        String templateId = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+        String templateId = entity.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
         if (templateId != null)
         {
             Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
@@ -615,7 +596,7 @@ public class PermissionController
 
     public boolean canReadTemplate(Annotatable entity, User user)
     {
-        String templateId = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+        String templateId = entity.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
         EntityResolver resolver = this.operator;
         if (templateId != null)
         {
@@ -653,11 +634,7 @@ public class PermissionController
         {
             return true;
         }
-        if (canReadPrivate(reservation, user))
-        {
-            return true;
-        }
-        return false;
+        return canReadPrivate(reservation, user);
     }
 
     public boolean canRead(Allocatable allocatable, User user)
@@ -666,11 +643,7 @@ public class PermissionController
         {
             return true;
         }
-        if (canReadPrivate(allocatable, user))
-        {
-            return true;
-        }
-        return false;
+        return canReadPrivate(allocatable, user);
     }
 
     public boolean canWrite(Collection<? extends Classification> objectList, Attribute attribute, User user)

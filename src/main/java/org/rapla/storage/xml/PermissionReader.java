@@ -51,14 +51,14 @@ public class PermissionReader extends RaplaXMLReader
             ReferenceHandler referenceHandler = permission.getReferenceHandler();
             if (userString != null)
             {
-                referenceHandler.putId("user", getId(User.TYPE,userString));
+                referenceHandler.putId("user", getId(User.class,userString));
             }
 
             // process group
             String groupId = atts.getValue( "groupidref" );
             if (groupId != null)
             {
-            	referenceHandler.putId("group", getId(Category.TYPE,groupId));
+            	referenceHandler.putId("group", getId(Category.class,groupId));
             }
             else
             {

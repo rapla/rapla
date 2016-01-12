@@ -12,19 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.awt.Color;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
+import org.rapla.components.util.Tools;
 
 import javax.swing.BorderFactory;
 import javax.swing.JScrollPane;
@@ -39,8 +27,19 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
-
-import org.rapla.components.util.Tools;
+import java.awt.Color;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
 /** Encapsulates the complex tree class and provides some basic functionality like
  *  life model exchanging while keeping the Tree state or the integration of the popup listener.

@@ -1,12 +1,10 @@
-package org.rapla.storage.server;
+package org.rapla.entities.storage;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
 
+// TODO allow entities to be stored on the server
 public interface ImportExportEntity extends Entity<ImportExportEntity>
 {
-    public static final RaplaType<ImportExportEntity> TYPE = new RaplaType<>(ImportExportEntity.class, "IMPORT_EXPORT");
-
     String getExternalSystem();
 
     String getRaplaId();

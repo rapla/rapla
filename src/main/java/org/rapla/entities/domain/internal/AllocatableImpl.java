@@ -12,22 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
@@ -42,6 +31,16 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public final class AllocatableImpl extends SimpleEntity implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
     
@@ -107,10 +106,11 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         this.createDate = createDate;
     }
     
-    public RaplaType<Allocatable> getRaplaType() {
-    	return TYPE;
+    @Override public Class<Allocatable> getTypeClass()
+    {
+        return Allocatable.class;
     }
-    
+
     // Implementation of interface classifiable
     public Classification getClassification() { return classification; }
     public void setClassification(Classification classification) {
@@ -147,11 +147,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     public boolean isHoldBackConflicts()
     {
 		String annotation = getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
-		if ( annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE))
-		{
-			return true;
-		}
-		return false;
+        return annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
     }
     
     public void addPermission(Permission permission) {
@@ -267,7 +263,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        buf.append(getRaplaType().getLocalName());
+        buf.append(getTypeClass());
         buf.append(" [");
         buf.append(super.toString());
         buf.append("] ");

@@ -8,5 +8,5 @@ import org.rapla.inject.InjectionContext;
  */
 @ExtensionPoint(context = InjectionContext.swing,id="startafterlogin")
 public interface ClientExtension {
-     public void start();
+     void start();
 }

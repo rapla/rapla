@@ -15,16 +15,6 @@ package org.rapla.entities.domain.internal;
  *  @see ModificationEvent
  *  @see org.rapla.facade.ClientFacade
  */
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
@@ -32,7 +22,6 @@ import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -53,6 +42,17 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
@@ -126,7 +126,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         classification.setReadOnly( );
     }
 
-    final public RaplaType<Reservation> getRaplaType() {return TYPE;}
+    public Class<Reservation> getTypeClass()
+    {
+        return Reservation.class;
+    }
 
     // Implementation of interface classifiable
     public Classification getClassification() { return classification; }
@@ -432,11 +435,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
         List<String> r = this.restrictions.get(allocatable.getId());
         String appointmentId = appointment.getId();
-		if ( r == null || r.size() == 0 || r.contains( appointmentId))
-		{
-			return true;
-        }
-        return false;
+        return r == null || r.size() == 0 || r.contains(appointmentId);
     }
 
     public void setRestriction(Allocatable allocatable,Appointment[] appointments) {
@@ -630,7 +629,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public Appointment findAppointment(Appointment copy) {
 		updateIndex();
         String id = copy.getId();
-		return (Appointment) appointmentIndex.get( id);
+		return appointmentIndex.get( id);
     }
 
 
@@ -763,7 +762,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        buf.append(getRaplaType().getLocalName());
+        buf.append(getTypeClass());
         buf.append(" [");
         buf.append(super.toString());
         buf.append("] ");

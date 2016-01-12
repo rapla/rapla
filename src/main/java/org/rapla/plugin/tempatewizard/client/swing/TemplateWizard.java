@@ -13,6 +13,33 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard.client.swing;
 
+import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingActivityController;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.MenuScroller;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tempatewizard.TemplatePlugin;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.swing.MenuElement;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.Collator;
@@ -27,35 +54,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.swing.MenuElement;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.StartActivityEvent;
-import org.rapla.client.extensionpoints.ReservationWizardExtension;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingActivityController;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.MenuScroller;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.storage.PermissionController;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.tempatewizard.TemplatePlugin;
-
-import com.google.web.bindery.event.shared.EventBus;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */

@@ -1,11 +1,5 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -20,6 +14,11 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import java.util.Locale;
 
 /**
  * ****************************************************************************

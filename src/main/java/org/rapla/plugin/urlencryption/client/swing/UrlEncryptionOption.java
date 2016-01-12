@@ -1,9 +1,5 @@
 package org.rapla.plugin.urlencryption.client.swing;
 
-import java.util.Locale;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
@@ -12,6 +8,9 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
+
+import javax.inject.Inject;
+import java.util.Locale;
 
 @Extension(provides = PluginOptionPanel.class , id= UrlEncryptionPlugin.PLUGIN_ID)
 public class UrlEncryptionOption extends DefaultPluginOption 

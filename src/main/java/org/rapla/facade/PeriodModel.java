@@ -11,26 +11,27 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
-import java.util.Date;
-import java.util.List;
 
 import org.rapla.entities.domain.Period;
+
+import java.util.Date;
+import java.util.List;
 
 /** ListModel that contains all periods. Updates the list automatically if a period is added, changed or deleted.
  * */
 public interface PeriodModel
 {
     /** returns the first matching period or null if no period matches.*/
-    public Period getPeriodFor(Date date);
-    public Period getNearestPeriodForDate(Date date);
-    public Period getNearestPeriodForStartDate(Date date);
-    public Period getNearestPeriodForStartDate(Date date, Date endDate);
-    public Period getNearestPeriodForEndDate(Date date);
+    Period getPeriodFor(Date date);
+    Period getNearestPeriodForDate(Date date);
+    Period getNearestPeriodForStartDate(Date date);
+    Period getNearestPeriodForStartDate(Date date, Date endDate);
+    Period getNearestPeriodForEndDate(Date date);
 
     /** return all matching periods.*/
-    public List<Period> getPeriodsFor(Date date);
-    public int getSize();
-    public Period[] getAllPeriods();
+    List<Period> getPeriodsFor(Date date);
+    int getSize();
+    Period[] getAllPeriods();
 
 }
 

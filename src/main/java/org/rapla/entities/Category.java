@@ -19,8 +19,7 @@ import java.util.Locale;
  */
 public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp, Annotatable, Comparable
 {
-    final RaplaType<Category> TYPE = new RaplaType<Category>(Category.class, "category");
-    final String SUPER_CATEGORY_ID = TYPE.getLocalName() + "_0";    
+    String SUPER_CATEGORY_ID = "category_0";
     /** add a sub-category.
      * This category is set as parent of the passed category.*/
     void addCategory(Category category);

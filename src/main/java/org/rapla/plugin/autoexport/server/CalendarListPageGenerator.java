@@ -12,25 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.autoexport.server;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
@@ -44,6 +25,24 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 @Extension(provides = RaplaPageExtension.class,id=AutoExportPlugin.CALENDAR_LIST_GENERATOR)
 @Singleton

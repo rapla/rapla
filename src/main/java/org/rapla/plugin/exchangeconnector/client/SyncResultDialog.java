@@ -1,21 +1,10 @@
 package org.rapla.plugin.exchangeconnector.client;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.util.List;
-import java.util.TreeSet;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -24,6 +13,15 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SyncError;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 import org.rapla.plugin.exchangeconnector.SynchronizeResult;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.List;
+import java.util.TreeSet;
 
 public class SyncResultDialog extends RaplaGUIComponent
 {

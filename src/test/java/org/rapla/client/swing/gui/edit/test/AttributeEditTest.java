@@ -28,9 +28,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 public final class AttributeEditTest extends GUITestCase
 {
     public void testMain() throws Exception {

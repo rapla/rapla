@@ -12,14 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.export2ical.server;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-
-import javax.inject.Inject;
-
+import net.fortuna.ical4j.data.CalendarOutputter;
+import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.ValidationException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
@@ -32,9 +27,12 @@ import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import net.fortuna.ical4j.data.CalendarOutputter;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.ValidationException;
+import javax.inject.Inject;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
 
 @DefaultImplementation(of = ICalExport.class, context = InjectionContext.server)
 public class RaplaICalExport implements ICalExport
@@ -57,7 +55,7 @@ public class RaplaICalExport implements ICalExport
         {
             return;
         }
-        EntityResolver operator = (EntityResolver) facade.getOperator();
+        EntityResolver operator = facade.getOperator();
         Collection<Appointment> appointments = new ArrayList<Appointment>();
         for ( String id:appointmentIds)
         {

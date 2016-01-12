@@ -35,7 +35,6 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -67,7 +66,7 @@ the entities of rapla.
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
 {
-    Map<RaplaType,HTMLInfo> views = new HashMap<RaplaType,HTMLInfo>();
+    Map<Class,HTMLInfo> views = new HashMap<Class,HTMLInfo>();
     private final IOInterface ioInterface;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -78,13 +77,13 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         this.ioInterface = ioInterface;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        views.put( DynamicType.TYPE, new DynamicTypeInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( Reservation.TYPE, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
-        views.put( Appointment.TYPE, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
-        views.put( Allocatable.TYPE, new AllocatableInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( User.TYPE, new UserInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( Period.TYPE, new PeriodInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( Category.TYPE, new CategoryInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( DynamicType.class, new DynamicTypeInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
+        views.put( Appointment.class, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
+        views.put( Allocatable.class, new AllocatableInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( User.class, new UserInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( Period.class, new PeriodInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( Category.class, new CategoryInfoUI(facade, i18n, raplaLocale, logger) );
     }
 
     /** this method is used by the viewtable to dynamicaly create an
@@ -95,7 +94,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
             throw new RaplaException( "Could not create view for null object" );
 
         @SuppressWarnings("unchecked")
-		HTMLInfo<T> result =  views.get( object.getRaplaType() );
+		HTMLInfo<T> result =  views.get( object.getTypeClass() );
         if (result != null)
                 return result;
         throw new RaplaException( "Could not create view for this object: " + object.getClass() );
@@ -119,7 +118,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
                 return null;
             }
             RaplaObject o = (RaplaObject )obj;
-            if ( !views.containsKey( o.getRaplaType()))
+            if ( !views.containsKey( o.getTypeClass()))
             {
             	return null;
             }

@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.components.util.Assert;
+import org.rapla.components.util.Tools;
+import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
@@ -21,13 +27,6 @@ import java.awt.Toolkit;
 import java.awt.Window;
 import java.util.ArrayList;
 import java.util.Stack;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.rapla.components.util.Assert;
-import org.rapla.components.util.Tools;
-import org.rapla.framework.logger.Logger;
 
 /**All rapla-windows are registered on the FrameControllerList.
    The FrameControllerList is responsible for positioning the windows

@@ -20,10 +20,10 @@ package org.rapla.entities;
  * editing- mechanism to the class.
  */
 public interface RaplaObject<T> extends Cloneable {
-    public static final String[] EMPTY_STRING_ARRAY = new String[0];
+    String[] EMPTY_STRING_ARRAY = new String[0];
 
-	RaplaType<T> getRaplaType();
-	
+    Class<T> getTypeClass();
+
 	T clone();
 }
 

@@ -1,13 +1,13 @@
 package org.rapla.framework.internal;
 
-import java.util.Map;
-import java.util.Stack;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
+
+import java.util.Map;
+import java.util.Stack;
 
 public class SAXConfigurationHandler implements RaplaSAXHandler 
 {

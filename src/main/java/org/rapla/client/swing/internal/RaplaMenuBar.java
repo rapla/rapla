@@ -12,32 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
-import javax.swing.MenuElement;
-import javax.swing.SwingUtilities;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
@@ -65,7 +39,6 @@ import org.rapla.client.swing.internal.edit.TemplateEdit.TemplateEditFactory;
 import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.internal.view.LicenseInfoUI;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -86,6 +59,31 @@ import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.storage.dbrm.RestartServer;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Set;
 
 @Singleton
 public class RaplaMenuBar extends RaplaGUIComponent

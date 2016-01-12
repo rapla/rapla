@@ -14,7 +14,7 @@
 package org.rapla.components.util;
 
 public interface Command {
-    public void execute() throws Exception;
+    void execute() throws Exception;
 }
 
 

@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
+ import org.rapla.rest.GwtIncompatible;
 
-import org.rapla.rest.GwtIncompatible;
+ import java.io.IOException;
+ import java.io.Reader;
+ import java.util.ArrayList;
+ import java.util.List;
 
 /** miscellaneous util methods.*/
 public abstract class Tools

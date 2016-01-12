@@ -12,16 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.jndi.client.swing;
 
-import java.awt.GridLayout;
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import java.awt.GridLayout;
 
 
 public class PasswordEnterUI 

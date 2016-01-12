@@ -3,9 +3,8 @@
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
          xmlns="http://relaxng.org/ns/structure/1.0"
          xmlns:rapla="http://rapla.sourceforge.net/rapla"
-	     xmlns:doc="http://rapla.sourceforge.net/annotation"
-         xmlns:relax="http://relaxng.org/ns/structure/1.0"
->
+         xmlns:doc="http://rapla.sourceforge.net/annotation"
+        >
   <!-- include the relax-schema for the dynanmic-schemas.-->
   <include href="relax.rng"/>
   <start>

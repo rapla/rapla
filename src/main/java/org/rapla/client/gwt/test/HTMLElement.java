@@ -10,23 +10,19 @@ import com.google.gwt.core.client.js.JsType;
 @JsType(prototype = "HTMLElement")
 public interface HTMLElement {
 
-    public void setAttribute(String id, String value);
+    void setAttribute(String id, String value);
 
-    public String getAttribute(String id);
+    String getAttribute(String id);
 
-    public void appendChild(HTMLElement element);
+    void appendChild(HTMLElement element);
 
-    @JsProperty
-    public void setInnerHTML(String text);
+    @JsProperty void setInnerHTML(String text);
 
-    @JsProperty
-    public void setInnerText(String text);
+    @JsProperty void setInnerText(String text);
 
-    @JsProperty
-    public void setOnclick(EventListener func);
+    @JsProperty void setOnclick(EventListener func);
 
-    @JsProperty
-    public String getValue();
+    @JsProperty String getValue();
 
     void addEventListener(String event, EventListener func, boolean useCapture);
 }

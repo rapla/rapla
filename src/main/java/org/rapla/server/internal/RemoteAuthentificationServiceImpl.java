@@ -1,9 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.Set;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
@@ -19,6 +15,9 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
+
+import javax.inject.Inject;
+import java.util.Set;
 
 @DefaultImplementation(of = RemoteAuthentificationService.class, context = InjectionContext.server)
 public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationService implements RemoteAuthentificationService
@@ -51,7 +50,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
                     {
                         getLogger().getChildLogger("login").info("Request Logout " + user.getUsername());
                     }
-                    ((RemoteSession) session).logout();
+                    session.logout();
                 }
             }
         }

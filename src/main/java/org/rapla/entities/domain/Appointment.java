@@ -11,20 +11,18 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Entity;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
 /** The basic building blocks of reservations.
     @see Reservation
     @see Repeating*/
 public interface Appointment extends Entity<Appointment>, Comparable {
-    final RaplaType<Appointment> TYPE = new RaplaType<Appointment>(Appointment.class, "appointment" );
     Date getStart();
     Date getEnd();
     /** <p>
@@ -124,9 +122,9 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions);
     
-    final Appointment[] EMPTY_ARRAY = new Appointment[0];
+    Appointment[] EMPTY_ARRAY = new Appointment[0];
     
-    public class AppointmentUtil
+    class AppointmentUtil
     {
         static public Map<String,Appointment> idMap(Appointment[] appointments)
         {

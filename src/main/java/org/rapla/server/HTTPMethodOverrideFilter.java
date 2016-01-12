@@ -1,9 +1,5 @@
 package org.rapla.server;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -13,11 +9,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 /** we add this filter to enable patch*/
 public class HTTPMethodOverrideFilter implements Filter
 {
-    Collection<String> VALID_METHODS = Arrays.asList(new String[] {"GET","POST","DELETE","PUT","PATCH"});
+    Collection<String> VALID_METHODS = Arrays.asList("GET","POST","DELETE","PUT","PATCH");
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {

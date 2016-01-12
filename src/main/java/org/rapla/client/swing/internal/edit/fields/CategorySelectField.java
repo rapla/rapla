@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.fields;
 
-import javax.swing.tree.TreeModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
@@ -22,6 +20,8 @@ import org.rapla.entities.Category;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.swing.tree.TreeModel;
 
 
 public class CategorySelectField extends AbstractSelectField<Category>

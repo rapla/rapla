@@ -1,11 +1,10 @@
 package org.rapla.server.internal;
 
-import java.util.Map;
+import org.rapla.framework.logger.Logger;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-
-import org.rapla.framework.logger.Logger;
+import java.util.Map;
 
 public class RaplaJNDIContext
 {

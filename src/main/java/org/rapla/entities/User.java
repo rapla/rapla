@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import java.util.Collection;
-import java.util.Comparator;
-
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Comparator;
 
 
 /**
@@ -24,8 +24,6 @@ The User-Class is mainly for authentication-purpose
 */
 public interface User extends Entity<User>, Named, Comparable, Timestamp
 {
-    final RaplaType<User> TYPE = new RaplaType<User>(User.class,"user");
-
     /** returns the loginname  */
     String getUsername();
     /** returns the complete name of user */
@@ -54,7 +52,7 @@ public interface User extends Entity<User>, Named, Comparable, Timestamp
     boolean belongsTo( Category group );
     
 
-    public static User[] USER_ARRAY = new User[0];
+    User[] USER_ARRAY = new User[0];
     
     Comparator<User> USER_COMPARATOR= new Comparator<User>()
         {

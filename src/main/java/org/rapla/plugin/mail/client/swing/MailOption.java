@@ -12,20 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.client.swing;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
@@ -49,6 +35,19 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Locale;
 
 
 @Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)

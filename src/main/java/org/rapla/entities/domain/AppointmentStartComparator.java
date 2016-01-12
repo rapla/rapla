@@ -27,7 +27,7 @@ public class AppointmentStartComparator implements Comparator<Appointment> {
         if ( r1 == null && r2 == null )
         {
             @SuppressWarnings("unchecked")
-            int compareTo = ((Comparable)a1).compareTo( (Comparable)a2 );
+            int compareTo = a1.compareTo(a2);
             return compareTo;
         }
         if ( r1 == null)
@@ -58,7 +58,7 @@ public class AppointmentStartComparator implements Comparator<Appointment> {
         // compare the reservation ids
         {
             @SuppressWarnings("unchecked")
-            int compareTo = ((Comparable)r1).compareTo( (Comparable)r2 );
+            int compareTo = r1.compareTo(r2);
             return compareTo;
         }
     }

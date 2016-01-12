@@ -31,7 +31,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -44,6 +43,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.storage.PermissionController;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;

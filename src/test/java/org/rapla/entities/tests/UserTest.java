@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
-import java.util.Locale;
 
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
@@ -26,11 +25,11 @@ import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
 import javax.inject.Provider;
+import java.util.Locale;
 
 @RunWith(JUnit4.class)
 public class UserTest  {

@@ -12,6 +12,42 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import org.rapla.RaplaResources;
+import org.rapla.components.util.Cancelable;
+import org.rapla.components.util.Command;
+import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.permission.PermissionExtension;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.ModifiableTimestamp;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.RefEntity;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ConfigTools;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
+import org.rapla.storage.IdCreator;
+import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
+import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.EntityHistory;
+import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.xml.IOContext;
+import org.rapla.storage.xml.RaplaDefaultXMLContext;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -31,45 +67,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Cancelable;
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.xml.RaplaNonValidatedInput;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.permission.PermissionExtension;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ConfigTools;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.CachableStorageOperatorCommand;
-import org.rapla.storage.IdCreator;
-import org.rapla.storage.ImportExportManager;
-import org.rapla.storage.LocalCache;
-import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.impl.server.EntityHistory;
-import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-import org.rapla.storage.server.ImportExportEntity;
-import org.rapla.storage.xml.IOContext;
-import org.rapla.storage.xml.RaplaDefaultXMLContext;
-import org.rapla.storage.xml.RaplaXMLContextException;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
@@ -456,7 +453,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         }
     }
 
-    @SuppressWarnings("deprecation") private boolean upgradeDatabase(Connection c) throws SQLException, RaplaException, RaplaXMLContextException
+    @SuppressWarnings("deprecation") private boolean upgradeDatabase(Connection c) throws SQLException, RaplaException
     {
         Map<String, TableDef> schema = loadDBSchema(c);
         TableDef dynamicTypeDef = schema.get("DYNAMIC_TYPE");
@@ -857,7 +854,7 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         for (String id : ids)
         {
             final Entity entity = tryResolve(id);
-            if (entity != null && entity.getRaplaType() == DynamicType.TYPE)
+            if (entity != null && entity.getTypeClass() == DynamicType.class)
             {
                 return true;
             }
@@ -1035,13 +1032,13 @@ import org.rapla.storage.xml.RaplaXMLContextException;
         IdCreator idCreator = new IdCreator()
         {
 
-            @Override public String createId(RaplaType type, String seed) throws RaplaException
+            @Override public String createId(Class<? extends Entity> type, String seed) throws RaplaException
             {
                 String id = org.rapla.storage.OldIdMapping.getId(type, seed);
                 return id;
             }
 
-            @Override public String createId(RaplaType raplaType) throws RaplaException
+            @Override public String createId(Class<? extends Entity> raplaType) throws RaplaException
             {
                 throw new RaplaException("Can't create new ids in " + getClass().getName() + " this class is import only for old data ");
             }

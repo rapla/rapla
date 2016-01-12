@@ -1,9 +1,5 @@
 package org.rapla.plugin.exchangeconnector.client;
 
-import java.util.Date;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ClientExtension;
@@ -24,6 +20,9 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
+
+import javax.inject.Inject;
+import java.util.Date;
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=ClientExtension.class)
 public class ExchangeClientError extends RaplaComponent implements ClientExtension, ModificationListener 

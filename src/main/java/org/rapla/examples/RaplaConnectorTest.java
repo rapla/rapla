@@ -1,13 +1,13 @@
 package org.rapla.examples;
 
-import java.util.Locale;
-
 import org.rapla.RaplaClient;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.ConsoleLogger;
+
+import java.util.Locale;
 /** Simple demonstration for connecting your app and importing some users. See sources*/
 public class RaplaConnectorTest
 {

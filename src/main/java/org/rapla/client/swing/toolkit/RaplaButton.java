@@ -12,10 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.awt.Insets;
-
 import javax.swing.Action;
 import javax.swing.JButton;
+import java.awt.Insets;
 
 public class RaplaButton extends JButton {
     private static final long serialVersionUID = 1L;

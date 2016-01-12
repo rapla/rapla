@@ -131,9 +131,7 @@ public final class Time implements Comparable<Time>
         if (getClass() != obj.getClass())
             return false;
         Time other = (Time) obj;
-        if (millis != other.millis)
-            return false;
-        return true;
+        return millis == other.millis;
     }
 }
 

@@ -20,7 +20,7 @@ import org.rapla.framework.logger.Logger;
  */
 public interface RaplaNonValidatedInput 
 {
-	public void read(String xml, RaplaSAXHandler handler, Logger logger) throws RaplaException;
+	void read(String xml, RaplaSAXHandler handler, Logger logger) throws RaplaException;
 
 
     

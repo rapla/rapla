@@ -22,7 +22,7 @@ import java.awt.Color;
 public interface DateRenderer {
     /** Specifies a rendering info ( colors and tooltip text) for the passed day.
     Return null if you don't want to use rendering info for this day. month ranges from 1-12*/
-    public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year);
+    RenderingInfo getRenderingInfo(int dayOfWeek, int day, int month, int year);
     
     class RenderingInfo
     {

@@ -1,11 +1,6 @@
 package org.rapla.client.edit.reservation.sample;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.StopActivityEvent;
@@ -13,7 +8,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -22,8 +16,12 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
 public class ReservationPresenter implements ReservationController, Presenter
 {

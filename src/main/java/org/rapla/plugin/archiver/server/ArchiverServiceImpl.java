@@ -1,11 +1,5 @@
 package org.rapla.plugin.archiver.server;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import javax.inject.Inject;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
@@ -22,6 +16,11 @@ import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @DefaultImplementation(of=ArchiverService.class,context= InjectionContext.server)
 public class ArchiverServiceImpl  implements ArchiverService
@@ -97,7 +96,7 @@ public class ArchiverServiceImpl  implements ArchiverService
     static public void delete(Integer removeOlderInDays, ClientFacade clientFacade, Logger logger)
     {
         Date endDate = new Date(clientFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
-        Reservation[] events = clientFacade.getReservations((User) null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
+        Reservation[] events = clientFacade.getReservations(null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
         List<Reservation> toRemove = new ArrayList<Reservation>();
         for ( int i=0;i< events.length;i++)
         {

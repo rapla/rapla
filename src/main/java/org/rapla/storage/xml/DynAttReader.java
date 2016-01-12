@@ -43,7 +43,7 @@ class DynAttReader extends RaplaXMLReader {
         	DynamicType dynamicType;
             String id = atts.getValue("idref");
             if ( id!= null) {
-                dynamicType = resolve(DynamicType.TYPE,id);
+                dynamicType = resolve(DynamicType.class,id);
             } else {
                 String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
                 if ( typeName.equals("rapla:crypto"))
@@ -65,7 +65,7 @@ class DynAttReader extends RaplaXMLReader {
         if (level > entryLevel) {
             String id = atts.getValue("idref");
             if ( id != null) {
-                attribute = resolve(Attribute.TYPE,id);
+                attribute = resolve(Attribute.class,id);
             } else {
                 attribute = classification.getAttribute(localName);
             }

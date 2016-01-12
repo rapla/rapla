@@ -245,7 +245,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		}
 	}
 
-    private String loginWithoutDisconnect() throws Exception, RaplaSecurityException {
+    private String loginWithoutDisconnect() throws Exception
+    {
         String connectAs = this.connectInfo.getConnectAs();
         String password = new String( this.connectInfo.getPassword());
         String username = this.connectInfo.getUsername();
@@ -572,7 +573,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                     }
                     return null;
                 }
-            };
+            }
         };
         store.addAll( entities);
         for (Entity entity: entities) {
@@ -626,7 +627,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    }		
     }
 
-    private User loadData(UpdateEvent evt) throws EntityNotFoundException, RaplaException {
+    private User loadData(UpdateEvent evt) throws RaplaException {
         Lock writeLock = writeLock();
         Date lastUpdated = evt.getLastValidated();
         setLastUpdated( lastUpdated);
@@ -713,11 +714,12 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }
     }
     
-    public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException {
+    public String[] createIdentifier(Class<? extends Entity> raplaType, int count) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
     	try
     	{
-	    	List<String> id = serv.createIdentifier(raplaType.getLocalName(), count).get();
+            String localname = RaplaType.getLocalName( raplaType);
+	    	List<String> id = serv.createIdentifier(localname, count).get();
 	    	return id.toArray(new String[] {});
     	} 
         catch (RaplaException ex)
@@ -1063,7 +1065,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     		for ( Entity entity:entities)
     		{
                 if (entity != null)
-    			    idList.add( ((Entity)entity).getId().toString());
+    			    idList.add( entity.getId().toString());
     		}
     	}
     	String[] ids = idList.toArray(new String[] {});
@@ -1110,7 +1112,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
     
-	protected void refreshAll() throws RaplaException,EntityNotFoundException {
+	protected void refreshAll() throws RaplaException
+    {
 		UpdateResult result;
 		Collection<Entity> oldEntities; 
 		Lock readLock = readLock();
@@ -1148,7 +1151,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		for ( Entity oldEntity: toUpdate)
 		{
 			@SuppressWarnings("unchecked")
-            Class<? extends Entity> typeClass = oldEntity.getRaplaType().getTypeClass();
+            Class<? extends Entity> typeClass = oldEntity.getTypeClass();
             Entity newEntity = cache.tryResolve( oldEntity.getId(), typeClass);
 			if ( newEntity != null)
 			{
@@ -1159,7 +1162,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         Collection<EntityReferencer.ReferenceInfo> removeInfo = new ArrayList<EntityReferencer.ReferenceInfo>();
         for ( Entity entity:toRemove)
         {
-            removeInfo.add( new EntityReferencer.ReferenceInfo(entity.getId(), entity.getRaplaType().getTypeClass()));
+            removeInfo.add( new EntityReferencer.ReferenceInfo(entity.getId(), entity.getTypeClass()));
         }
         Date since = null;
         Date until = getLastUpdated();
@@ -1314,7 +1317,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	}
 
     private Map<Allocatable, Map<Appointment, Collection<Appointment>>> getMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
-            Collection<Reservation> ignoreList, List<ReservationImpl> serverResult) throws EntityNotFoundException, RaplaException {
+            Collection<Reservation> ignoreList, List<ReservationImpl> serverResult) throws RaplaException {
         testResolve( serverResult);
 	    setResolver( serverResult );
         SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());

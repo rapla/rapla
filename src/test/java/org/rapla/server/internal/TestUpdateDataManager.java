@@ -1,13 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,9 +19,17 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager

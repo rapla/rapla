@@ -246,7 +246,7 @@ public class UndoTests extends GUITestCase {
 	 * @throws Exception
 	 */
 	private Reservation createEvent(Allocatable nonPersistantAllocatable,
-			Reservation nonPersistantEvent) throws RaplaException, Exception {
+			Reservation nonPersistantEvent) throws Exception {
 		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
 		nonPersistantEvent.getClassification().setValue("name","dummy-event");
 		Assert.assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
@@ -261,7 +261,7 @@ public class UndoTests extends GUITestCase {
         return nonPersistantEvent;
 	}
 
-	private Appointment changeTime(boolean keepTime) throws RaplaException, Exception {
+	private Appointment changeTime(boolean keepTime) throws Exception {
 		Date newStart = new Date();
 		Date newEnd = new Date();
 		if(!keepTime){

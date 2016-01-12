@@ -4,8 +4,6 @@ import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 import org.rapla.server.servletpages.RaplaMenuGenerator;
 
-import javax.inject.Singleton;
-
 /** you can add your own entries on the index page Just add HtmlMainMenu extension
  @see RaplaMenuGenerator
   * */

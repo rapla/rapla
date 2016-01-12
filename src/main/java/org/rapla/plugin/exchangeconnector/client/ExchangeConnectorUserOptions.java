@@ -1,19 +1,5 @@
 package org.rapla.plugin.exchangeconnector.client;
 
-import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -36,6 +22,19 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 import org.rapla.plugin.exchangeconnector.SynchronizeResult;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Date;
+import java.util.Locale;
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=UserOptionPanel.class)
 public class ExchangeConnectorUserOptions extends DefaultPluginOption implements UserOptionPanel  {

@@ -12,10 +12,11 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.entities.internal;
-import java.util.Date;
 
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
+
+import java.util.Date;
 
 public interface ModifiableTimestamp extends Timestamp {
     /** updates the last-changed timestamp */

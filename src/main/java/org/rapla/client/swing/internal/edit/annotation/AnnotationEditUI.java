@@ -1,12 +1,5 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.client.swing.EditField;
@@ -16,6 +9,13 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class AnnotationEditUI extends AbstractEditUI<Annotatable>
 {

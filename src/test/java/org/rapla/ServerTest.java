@@ -23,7 +23,6 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -32,7 +31,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -53,6 +51,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
@@ -569,31 +568,6 @@ public class ServerTest
             String description = getDescriptionOfReservation(facade, reservationName);
             Assert.assertTrue(description.contains("\n"));
         }
-    }
-
-    @Test
-    public void testTaskType() throws Exception
-    {
-        // first test creation on server
-        {
-            ClientFacade facade = getServerFacade();
-            DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
-            Classification classification = dynamicType.newClassification();
-            Allocatable task = facade.newAllocatable(classification, null);
-            facade.store(task);
-        }
-        // then test availability on client
-        try
-        {
-            ClientFacade facade = facade1;
-            @SuppressWarnings("unused") DynamicType dynamicType = facade.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
-            Assert.fail("Entity not found should have been thrown, because type is only accesible on the server side");
-        }
-        catch (EntityNotFoundException ex)
-        {
-
-        }
-
     }
 
     public String getDescriptionOfReservation(ClientFacade facade, String reservationName) throws RaplaException

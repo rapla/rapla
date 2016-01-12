@@ -17,6 +17,10 @@
  */
 package se.jiderhamn.classloader.leak.prevention;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
 import java.beans.PropertyEditorManager;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.Reference;
@@ -41,11 +45,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
 
 
 /** Changed by Christopher Kohlhaas
@@ -689,7 +688,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     // We will not remove known shutdown hooks, since loading the owning class of the hook,
     // may register the hook if previously unregistered 
     @SuppressWarnings("unchecked")
-	Map<Thread, Thread> shutdownHooks = (Map<Thread, Thread>) getStaticFieldValue("java.lang.ApplicationShutdownHooks", "hooks");
+	Map<Thread, Thread> shutdownHooks = getStaticFieldValue("java.lang.ApplicationShutdownHooks", "hooks");
     if(shutdownHooks != null) { // Could be null during JVM shutdown, which we already avoid, but be extra precautious
       // Iterate copy to avoid ConcurrentModificationException
       for(Thread shutdownHook : new ArrayList<Thread>(shutdownHooks.keySet())) {
@@ -1337,7 +1336,7 @@ protected void clearIntrospectionUtilsCache() {
   protected <T> T getFieldValue(Object obj, String fieldName) {
     final Field field = findField(obj.getClass(), fieldName);
     @SuppressWarnings("unchecked")
-	T fieldValue = (T) getFieldValue(field, obj);
+	T fieldValue = getFieldValue(field, obj);
 	return  fieldValue;
   }
   

@@ -1,7 +1,6 @@
 package org.rapla.rest.client;
 
-import java.net.URL;
-
+import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -9,12 +8,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
-
-import junit.framework.TestCase;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.net.URL;
 
 @RunWith(JUnit4.class)
 public class RestAPITest  {

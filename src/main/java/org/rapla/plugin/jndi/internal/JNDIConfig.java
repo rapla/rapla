@@ -7,6 +7,6 @@ import org.rapla.jsonrpc.common.RemoteJsonMethod;
 @RemoteJsonMethod
 public interface JNDIConfig 
 {
-    public void test(DefaultConfiguration config,String username,String password) throws RaplaException;
-    public DefaultConfiguration getConfig() throws RaplaException;
+    void test(DefaultConfiguration config, String username, String password) throws RaplaException;
+    DefaultConfiguration getConfig() throws RaplaException;
 }

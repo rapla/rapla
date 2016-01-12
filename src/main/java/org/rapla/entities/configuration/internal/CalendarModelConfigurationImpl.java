@@ -12,16 +12,9 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -31,6 +24,14 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter implements CalendarModelConfiguration
@@ -49,14 +50,15 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    boolean defaultResourceTypes;
    boolean resourceRootSelected;
     
-   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<RaplaType> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
+   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
 	   if (selected != null)
 	   {
 	       this.selected = Collections.unmodifiableList(new ArrayList<String>(selected));
 	       typeList = new ArrayList<String>();
-	       for ( RaplaType type:idTypeList)
+	       for ( Class<? extends RaplaObject> type:idTypeList)
 	       {
-	           typeList.add(type.getLocalName());
+               String localname = RaplaType.getLocalName( type);
+	           typeList.add(localname);
 	       }
 	   }
 	   else
@@ -93,6 +95,12 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 
    CalendarModelConfigurationImpl() {
    }
+
+    @Override
+    public Class<CalendarModelConfiguration> getTypeClass()
+    {
+        return CalendarModelConfiguration.class;
+    }
    
    @Override
    public boolean isResourceRootSelected() {
@@ -102,10 +110,6 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    public void setResolver( EntityResolver resolver)  {
        super.setResolver( resolver );
    }
-
-    public RaplaType<CalendarModelConfiguration> getRaplaType() {
-        return TYPE;
-    }
 
     public Date getStartDate() {
         return startDate;
@@ -156,24 +160,16 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         {
             String id = selected.get(0);
             String localname = typeList.get(0);
-            Class<? extends Entity> type = null;
-            RaplaType raplaType;
+            Class<? extends Entity> typeClass = null;
             try {
-                raplaType = RaplaType.find(localname);
+                typeClass = RaplaType.find(localname);
             }
             catch (RaplaException ex)
             {
                 throw new IllegalArgumentException(ex.getMessage());
             }
             try {
-                Class typeClass = raplaType.getTypeClass();
-                //if ( Entity.class.isAssignableFrom(typeClass ))
-                {
-                    @SuppressWarnings("unchecked")
-                    Class<? extends Entity> casted = (Class<? extends Entity>)typeClass;
-                    type = casted;
-                }
-                ReferenceInfo referenceInfo = new ReferenceInfo(id, type);
+                ReferenceInfo referenceInfo = new ReferenceInfo(id, typeClass);
                 selectedInfo.add( referenceInfo);    
             } catch ( ClassCastException e) {
             }
@@ -191,7 +187,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         }
         for (Entity entity:getSelected())
         {
-            if ( entity.getRaplaType().equals( DynamicType.TYPE) && entity.getId().equals( newType.getId()))
+            if ( entity.getTypeClass() == DynamicType.class && entity.getId().equals( newType.getId()))
             {
                 return true;
             }
@@ -255,9 +251,9 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 		return deepClone();
 	}
 
-	public static boolean canReference(RaplaType raplaType) 
+	public static boolean canReference(Class<? extends RaplaObject> raplaType)
 	{
-	    return raplaType == DynamicType.TYPE || raplaType == Allocatable.TYPE || raplaType == User.TYPE;
+	    return raplaType == DynamicType.class || raplaType == Allocatable.class || raplaType == User.class;
     }
 	
 	public List<String> getSelectedIds()

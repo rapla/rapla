@@ -1,16 +1,5 @@
 package org.rapla.server.internal;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -21,6 +10,16 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.server.RaplaKeyStorage;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Collection;
+import java.util.Collections;
 
 @DefaultImplementation(of=RaplaKeyStorage.class,context = InjectionContext.server)
 @Singleton

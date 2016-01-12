@@ -11,12 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
-import java.util.Date;
-import java.util.Locale;
 
 import org.rapla.components.util.DateTools;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Period;
+
+import java.util.Date;
+import java.util.Locale;
 
 public class PeriodImpl implements Period
 {
@@ -36,7 +36,11 @@ public class PeriodImpl implements Period
         this.id = id;
     }
 
-    final public RaplaType<Period> getRaplaType() {return TYPE;}
+    @Override
+    public Class<Period> getTypeClass()
+    {
+        return Period.class;
+    }
 
     public Date getStart() {
         return start;

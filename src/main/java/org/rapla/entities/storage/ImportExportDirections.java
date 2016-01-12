@@ -1,4 +1,4 @@
-package org.rapla.storage.server;
+package org.rapla.entities.storage;
 
 public interface ImportExportDirections
 {

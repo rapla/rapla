@@ -14,15 +14,14 @@
  */
 package org.rapla.storage;
 
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.framework.RaplaException;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.TimeZone;
-
-import org.rapla.entities.Entity;
-import org.rapla.entities.User;
-import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaException;
-import org.rapla.storage.server.ImportExportEntity;
 
 public interface CachableStorageOperator extends StorageOperator {
 

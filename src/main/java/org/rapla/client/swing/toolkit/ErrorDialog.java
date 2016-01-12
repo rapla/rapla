@@ -12,20 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.lang.reflect.Method;
-
-import javax.inject.Inject;
-import javax.swing.DefaultListModel;
-import javax.swing.JCheckBox;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -34,6 +20,19 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.swing.DefaultListModel;
+import javax.swing.JCheckBox;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.lang.reflect.Method;
 
 final public class ErrorDialog {
     RaplaImages images;
@@ -141,7 +140,7 @@ final public class ErrorDialog {
                 if (  nestedException instanceof RaplaException)
                 {
                     showStacktrace = false;
-                    nestedException = ((RaplaException) nestedException).getCause();
+                    nestedException = nestedException.getCause();
                 }
                 else
                 {
@@ -153,8 +152,8 @@ final public class ErrorDialog {
             if ( showStacktrace)
             {
                 try {
-                    Method getStackTrace =Exception.class.getMethod("getStackTrace",new Class[] {});
-                    final Object[] stackTrace = (Object[])getStackTrace.invoke( e, new Object[] {} );
+                    Method getStackTrace =Exception.class.getMethod("getStackTrace");
+                    final Object[] stackTrace = (Object[])getStackTrace.invoke( e);
                     final JList lister = new JList( );
                     final JScrollPane list = new JScrollPane(lister, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
                     list.setBorder( null);

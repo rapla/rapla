@@ -12,19 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.JTree;
-import javax.swing.tree.TreeModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -34,12 +21,10 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -47,6 +32,19 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.JTree;
+import javax.swing.tree.TreeModel;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Extension(provides = EventCheck.class,id="conflictcheck")
 public class ConflictReservationCheck extends RaplaGUIComponent implements EventCheck
@@ -137,7 +135,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
     	JTree tree = treeSelection.getTree();
     	tree.setRootVisible(false);
     	tree.setShowsRootHandles(true);
-    	tree.setCellRenderer(((TreeFactoryImpl) treeFactory).createConflictRenderer());
+    	tree.setCellRenderer(treeFactory.createConflictRenderer());
     	treeSelection.exchangeTreeModel(treeModel);
 		treeSelection.expandAll();
 		treeSelection.setPreferredSize( new Dimension(400,200));

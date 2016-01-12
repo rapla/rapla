@@ -13,6 +13,8 @@
 
 package org.rapla.components.iolayer;
 
+import org.rapla.framework.logger.Logger;
+
 import java.awt.Component;
 import java.awt.Frame;
 import java.awt.datatransfer.ClipboardOwner;
@@ -27,8 +29,6 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-
-import org.rapla.framework.logger.Logger;
 
 final public class WebstartIO extends DefaultIO {
     Method lookup;
@@ -61,17 +61,17 @@ final public class WebstartIO extends DefaultIO {
             Class<?> fileContents = Class.forName("javax.jnlp.FileContents");
             unavailableServiceException = Class.forName("javax.jnlp.UnavailableServiceException");
 
-            getName = fileContents.getMethod("getName", new Class[] {} );
-            getInputStream = fileContents.getMethod("getInputStream", new Class[] {} );
-            lookup = serviceManagerC.getMethod("lookup", new Class[] {String.class});
-            getDefaultPage = printServiceC.getMethod("getDefaultPage",new Class[] {});
-            showPageFormatDialog = printServiceC.getMethod("showPageFormatDialog",new Class[] {PageFormat.class});
-            print = printServiceC.getMethod("print",new Class[] {Printable.class});
-            saveFileDialog = fileSaveServiceC.getMethod("saveFileDialog",new Class[] {String.class,String[].class,InputStream.class,String.class});
-            openFileDialog = fileOpenServiceC.getMethod("openFileDialog",new Class[] {String.class,String[].class});
-            setContents = clipboardServiceC.getMethod("setContents", new Class[] {Transferable.class});
-            getContents = clipboardServiceC.getMethod("getContents", new Class[] {});
-            showDocument = basicServiceC.getMethod("showDocument", new Class[] {URL.class});
+            getName = fileContents.getMethod("getName");
+            getInputStream = fileContents.getMethod("getInputStream");
+            lookup = serviceManagerC.getMethod("lookup", String.class);
+            getDefaultPage = printServiceC.getMethod("getDefaultPage");
+            showPageFormatDialog = printServiceC.getMethod("showPageFormatDialog", PageFormat.class);
+            print = printServiceC.getMethod("print", Printable.class);
+            saveFileDialog = fileSaveServiceC.getMethod("saveFileDialog", String.class,String[].class,InputStream.class,String.class);
+            openFileDialog = fileOpenServiceC.getMethod("openFileDialog", String.class,String[].class);
+            setContents = clipboardServiceC.getMethod("setContents", Transferable.class);
+            getContents = clipboardServiceC.getMethod("getContents");
+            showDocument = basicServiceC.getMethod("showDocument", URL.class);
         } catch (ClassNotFoundException ex) {
         	getLogger().error(ex.getMessage());
             throw new UnsupportedOperationException("Java Webstart not available due to " + ex.getMessage());
@@ -84,7 +84,7 @@ final public class WebstartIO extends DefaultIO {
     private Object invoke(String serviceName, Method method, Object[] args) throws Exception {
         Object service;
         try {
-            service = lookup.invoke( null, new Object[] { serviceName });
+            service = lookup.invoke( null, serviceName);
             return method.invoke( service,  args);
         } catch (InvocationTargetException e) {
             throw (Exception) e.getTargetException();
@@ -198,7 +198,7 @@ final public class WebstartIO extends DefaultIO {
                     ,filename
                                             });
             if (result != null)
-                return (String) getName.invoke( result, new Object[] {});
+                return (String) getName.invoke( result);
             else
                 return null;
         } catch (IOException ex) {
@@ -219,8 +219,8 @@ final public class WebstartIO extends DefaultIO {
             
             if (result != null)
             {
-                String name = (String) getName.invoke( result, new Object[] {});
-                InputStream in = (InputStream) getInputStream.invoke( result, new Object[] {});
+                String name = (String) getName.invoke( result);
+                InputStream in = (InputStream) getInputStream.invoke( result);
                 FileContent content = new FileContent();
                 content.setName( name );
                 content.setInputStream( in );

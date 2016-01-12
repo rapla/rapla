@@ -1,12 +1,6 @@
 package org.rapla.plugin.weekview.client.weekview;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -31,7 +25,11 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Extension(provides = CalendarPlugin.class, id = CalendarWeekViewPresenter.WEEK_VIEW)
 public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin

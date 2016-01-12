@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -26,10 +20,14 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
 

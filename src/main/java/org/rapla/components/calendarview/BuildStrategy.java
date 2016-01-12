@@ -16,7 +16,7 @@ package org.rapla.components.calendarview;
 import java.util.List;
 
 public interface BuildStrategy {
-    public void build(CalendarView wv,List<Block> blocks);
+    void build(CalendarView wv, List<Block> blocks);
 }
 
 

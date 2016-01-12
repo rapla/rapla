@@ -12,21 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -37,6 +25,17 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public final class AppointmentImpl extends SimpleEntity implements Appointment
 {
@@ -50,7 +49,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public final static String BUG = null;
     public static String DD = null;
 
-    final public RaplaType<Appointment> getRaplaType() {return TYPE;}
+    @Override public Class<Appointment> getTypeClass()
+    {
+        return Appointment.class;
+    }
+
     transient ReservationImpl parent;
     
     
@@ -533,9 +536,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         DD=DE?BUG: print(" A2: " + a2.toString());
 
         if (r1 == null && r2 == null) {
-            if (e2<=s1 || e1<=s2)
-                return false;
-            return true;
+            return !(e2 <= s1 || e1 <= s2);
         }
         if (r1 == null) {
             return a2.overlaps(this.start,this.end);

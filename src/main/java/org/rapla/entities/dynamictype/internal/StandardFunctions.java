@@ -1,20 +1,5 @@
 package org.rapla.entities.dynamictype.internal;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -23,7 +8,6 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -41,6 +25,20 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.rest.GwtIncompatible;
+
+import javax.inject.Inject;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @Extension(provides = FunctionFactory.class, id=StandardFunctions.NAMESPACE)
 public class StandardFunctions implements FunctionFactory
@@ -320,7 +318,6 @@ public class StandardFunctions implements FunctionFactory
                 for (Appointment appointment : reservation.getSortedAppointments())
                 {
                     appointment.createBlocks(start, end, blocks);
-                    ;
                 }
                 Collections.sort(blocks);
                 return blocks;
@@ -330,7 +327,6 @@ public class StandardFunctions implements FunctionFactory
                 Appointment appointment = ((Appointment) object);
                 Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
                 appointment.createBlocks(start, end, blocks);
-                ;
                 return blocks;
             }
             if (object instanceof AppointmentBlock)
@@ -578,7 +574,7 @@ public class StandardFunctions implements FunctionFactory
             try
             {
                 Class<? extends Function> class1 = arg.getClass();
-                method = class1.getMethod("eval", new Class[] { EvalContext.class });
+                method = class1.getMethod("eval", EvalContext.class);
             }
             catch (Exception e)
             {
@@ -602,15 +598,15 @@ public class StandardFunctions implements FunctionFactory
                 return "";
             }
             RaplaObject raplaObject = (RaplaObject) obj;
-            RaplaType raplaType = raplaObject.getRaplaType();
-            if (raplaType == Category.TYPE)
+            Class raplaType = raplaObject.getTypeClass();
+            if (raplaType == Category.class)
             {
                 Category category = (Category) raplaObject;
                 String key = category.getKey();
                 return key;
 
             }
-            else if (raplaType == DynamicType.TYPE)
+            else if (raplaType == DynamicType.class)
             {
                 DynamicType type = (DynamicType) raplaObject;
                 String key = type.getKey();
@@ -652,7 +648,7 @@ public class StandardFunctions implements FunctionFactory
             try
             {
                 Class<? extends Function> class1 = objectFunction.getClass();
-                method = class1.getMethod("eval", new Class[] { EvalContext.class });
+                method = class1.getMethod("eval", EvalContext.class);
             }
             catch (Exception e)
             {
@@ -1076,7 +1072,7 @@ public class StandardFunctions implements FunctionFactory
                 try
                 {
                     Class<? extends Function> class1 = start.getClass();
-                    method = class1.getMethod("eval", new Class[] { EvalContext.class });
+                    method = class1.getMethod("eval", EvalContext.class);
                 }
                 catch (Exception e)
                 {
@@ -1092,7 +1088,7 @@ public class StandardFunctions implements FunctionFactory
                 try
                 {
                     Class<? extends Function> class1 = end.getClass();
-                    method = class1.getMethod("eval", new Class[] { EvalContext.class });
+                    method = class1.getMethod("eval", EvalContext.class);
                 }
                 catch (Exception e)
                 {
@@ -1366,7 +1362,7 @@ public class StandardFunctions implements FunctionFactory
             try
             {
                 Class<? extends Function> class1 = arg.getClass();
-                method = class1.getMethod("eval", new Class[] { EvalContext.class });
+                method = class1.getMethod("eval", EvalContext.class);
             }
             catch (Exception e)
             {
@@ -1389,8 +1385,8 @@ public class StandardFunctions implements FunctionFactory
                 return null;
             }
             RaplaObject raplaObject = (RaplaObject) obj;
-            RaplaType raplaType = raplaObject.getRaplaType();
-            if (raplaType == Category.TYPE)
+            Class raplaType = raplaObject.getTypeClass();
+            if (raplaType == Category.class)
             {
                 Category category = (Category) raplaObject;
                 return category.getParent();

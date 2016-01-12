@@ -13,15 +13,13 @@
 package org.rapla.client;
 
 import org.rapla.ConnectInfo;
-import org.rapla.entities.User;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaException;
 
 /** This service starts and manages the rapla-gui-client.
  */
 public interface ClientService extends Disposable
 {
-    public void start(ConnectInfo connectInfo) throws Exception;
+    void start(ConnectInfo connectInfo) throws Exception;
     void addRaplaClientListener(RaplaClientListener listener);
 
 }

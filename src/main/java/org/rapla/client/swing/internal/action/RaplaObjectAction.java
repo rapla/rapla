@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -29,12 +23,11 @@ import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -44,6 +37,13 @@ import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -62,7 +62,7 @@ public class RaplaObjectAction extends RaplaAction {
     boolean isPerson;
     protected Entity<?> object;
     List<Entity<?>> objectList;
-    protected RaplaType raplaType;
+    protected Class<? extends RaplaObject> raplaType;
     private final PopupContext popupContext;
     protected final EditController editController;
     private final InfoFactory infoFactory;
@@ -89,7 +89,7 @@ public class RaplaObjectAction extends RaplaAction {
         return popupContext;
     }
 
-    public RaplaObjectAction setNew(RaplaType raplaType) {
+    public RaplaObjectAction setNew(Class<? extends RaplaObject> raplaType) {
         this.raplaType = raplaType;
         this.type = NEW;
         putValue(NAME, getString("new"));
@@ -161,7 +161,7 @@ public class RaplaObjectAction extends RaplaAction {
             enabled = permissionController.canModify(object, user);
 
         } else if (type == NEW ) {
-            enabled = (raplaType != null && raplaType.is(Allocatable.TYPE) && permissionController.isRegisterer(null, user)) || isAdmin();
+            enabled = (raplaType != null && raplaType == Allocatable.class && permissionController.isRegisterer(null, user)) || isAdmin();
         } else if (type == EDIT_SELECTION || type == DELETE_SELECTION) {
             if (objectList != null && objectList.size() > 0 ) {
                 Iterator<Entity<?>> it = objectList.iterator();
@@ -201,27 +201,27 @@ public class RaplaObjectAction extends RaplaAction {
     }
 
 
-    protected Entity<? extends Entity<?>> newEntity(RaplaType raplaType) throws RaplaException {
+    protected Entity<? extends Entity<?>> newEntity(Class<? extends RaplaObject> raplaType) throws RaplaException {
         ModificationModule m = getModification();
-        if ( Reservation.TYPE.is( raplaType ))
+        if ( Reservation.class == raplaType )
         {
             DynamicType type = guessType();
             final Classification newClassification = type.newClassification();
             Reservation newReservation = m.newReservation( newClassification );
             return newReservation;
         }
-        if ( Allocatable.TYPE.is( raplaType ))
+        if ( Allocatable.class == raplaType )
         {
         	DynamicType type = guessType();
             final Classification newClassification = type.newClassification();
             Allocatable allocatable = m.newAllocatable( newClassification );
         	return allocatable ;
         }
-       if ( Category.TYPE.is( raplaType ))
+       if ( Category.class ==  raplaType)
             return m.newCategory(); //will probably never happen
-       if ( User.TYPE.is( raplaType ))
+       if ( User.class ==  raplaType )
     	   return m.newUser();
-       if ( Period.TYPE.is( raplaType ))
+       if ( Period.class == raplaType )
              return m.newPeriod();
        throw new RaplaException("Can't create Entity for " + raplaType + "!");
     }
@@ -260,9 +260,9 @@ public class RaplaObjectAction extends RaplaAction {
             return new DynamicType[] {dynamicType};
         }
         String classificationType = null;
-        if ( Reservation.TYPE.is( raplaType )) {
+        if ( Reservation.class ==  raplaType) {
             classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION;
-        } else  if ( Allocatable.TYPE.is( raplaType )) {
+        } else  if ( Allocatable.class == raplaType ) {
             if ( isPerson ) {
                 classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON;
             } else {
@@ -275,7 +275,7 @@ public class RaplaObjectAction extends RaplaAction {
     }
 
 	protected  void newEntity() throws RaplaException {
-    	if ( Category.TYPE.is( raplaType )) {
+    	if ( Category.class == raplaType ) {
         	Category category = (Category)object;
 			editController.editNew(category, popupContext );
         } else {
@@ -318,8 +318,8 @@ public class RaplaObjectAction extends RaplaAction {
 	    for ( Entity<?> obj: objects)
 	    {
 	    	entities.add(  obj);
-	    	RaplaType<?> raplaType = obj.getRaplaType();
-			if ( raplaType == User.TYPE || raplaType == DynamicType.TYPE)
+	    	Class raplaType = obj.getTypeClass();
+			if ( raplaType == User.class || raplaType == DynamicType.class)
 			{
 				undoable = false;
 			}

@@ -13,15 +13,15 @@
 
 package org.rapla.components.calendarview.html;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-
 import org.rapla.components.calendarview.AbstractCalendar;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BlockComparator;
 import org.rapla.components.calendarview.CalendarView;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 
 public abstract class AbstractHTMLView extends AbstractCalendar implements CalendarView {
     public static String COLOR_NO_RESOURCE = "#BBEEBB";

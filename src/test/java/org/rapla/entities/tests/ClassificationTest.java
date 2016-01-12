@@ -32,7 +32,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Arrays;
@@ -97,7 +96,7 @@ public class ClassificationTest  {
 
     	Classification classification = type.newClassification();
         classification.setValue("name", "test-resource");
-        List<?> asList = Arrays.asList(new Category[] {c1a, c1b});
+        List<?> asList = Arrays.asList(c1a, c1b);
 		classification.setValues(classification.getAttribute("test-attribute"), asList);
 		Allocatable resource = modificationMod.newAllocatable(classification);
     	modificationMod.storeObjects( new Entity[] {  resource } );

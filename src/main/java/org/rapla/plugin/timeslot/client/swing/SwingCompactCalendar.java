@@ -212,7 +212,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 				
 		        for ( int i=0;i<slots;i++) 
 		        {
-		        	if ( ((SwingCompactWeekView)view).isSelected(i))
+		        	if ( view.isSelected(i))
 		        	{
 		        		int index = i/columns;
 		        		int time = timeslots.get(index).getMinuteOfDay();

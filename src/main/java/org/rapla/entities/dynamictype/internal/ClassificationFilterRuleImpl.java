@@ -12,19 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.Date;
-
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.internal.ReferenceHandler;
+
+import java.util.Date;
 
 public final class ClassificationFilterRuleImpl extends ReferenceHandler
     implements
@@ -53,7 +52,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
 		putEntity("dynamictype",type);
         this.operators = operators;
         this.ruleValues = new String[ruleValues.length];
-        RaplaType refType = attribute.getRefType();
+        Class<? extends Entity> refType = attribute.getRefType();
         for (int i=0;i<ruleValues.length;i++) {
             Object ruleValue = ruleValues[i];
 			if (ruleValue instanceof Entity)
@@ -94,7 +93,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     private Attribute findAttribute(DynamicType type,Object id) {
         Attribute[] typeAttributes = type.getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
-            if (((Entity)typeAttributes[i]).getId().equals(id)) {
+            if (typeAttributes[i].getId().equals(id)) {
                 return typeAttributes[i];
             }
         }
@@ -309,16 +308,10 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
         else if (type == AttributeType.INT || type ==AttributeType.DATE)
         {
             if(ruleValue == null) {
-                if (operator.equals("<>")) 
-                    if(value == null) 
-                        return false;
-                    else
-                        return true;
-                else if (operator.equals("=")) 
-                    if(value == null) 
-                        return true;
-                    else
-                        return false;
+                if (operator.equals("<>"))
+                    return value != null;
+                else if (operator.equals("="))
+                    return value == null;
                 else
                 return false;
             }

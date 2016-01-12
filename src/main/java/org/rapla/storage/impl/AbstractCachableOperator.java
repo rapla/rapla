@@ -13,22 +13,6 @@
 
 package org.rapla.storage.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -36,19 +20,17 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
@@ -64,10 +46,27 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * An abstract implementation of the StorageOperator-Interface. It operates on a
@@ -159,7 +158,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		SimpleEntity refEntity = clone;
 		if (refEntity instanceof ModifiableTimestamp) {
-		    ((ModifiableTimestamp) refEntity).setLastChangedBy(user);
+		    refEntity.setLastChangedBy(user);
 		}
 		return (Entity) refEntity;
 	}
@@ -184,8 +183,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 
 		for (Entity entity : removeObjects) {
-			RaplaType type = entity.getRaplaType();
-			if (Appointment.TYPE ==type || Category.TYPE == type || Attribute.TYPE ==  type) {
+			Class<? extends Entity> type = entity.getTypeClass();
+			if (Appointment.class ==type || Category.class == type || Attribute.class ==  type) {
 				String name = getName( entity);
 				throw new RaplaException(getI18n().format("error.remove_object",name));
 			} 
@@ -599,7 +598,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 			if ( persistantEntity instanceof Appointment || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
 			{
-				throw new RaplaException( persistantEntity.getRaplaType() + " can only be stored via parent entity ");
+				throw new RaplaException( persistantEntity.getTypeClass() + " can only be stored via parent entity ");
 				// we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
 			}
 			else
@@ -653,7 +652,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
 			    oldEntities.put(id, persistantVersion);
-			    toRemove.add( new ReferenceInfo(id, persistantVersion.getRaplaType().getTypeClass()));
+			    toRemove.add( new ReferenceInfo(id, persistantVersion.getTypeClass()));
 			}
 			else if ( ConflictImpl.isConflictId(id))
 			{
@@ -673,7 +672,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 	protected Entity findPersistant(Entity entity) {
         @SuppressWarnings("unchecked")
-        Class<? extends Entity> typeClass = entity.getRaplaType().getTypeClass();
+        Class<? extends Entity> typeClass = entity.getTypeClass();
         Entity persistantEntity = cache.tryResolve(entity.getId(), typeClass);
         return persistantEntity;
     }

@@ -1,11 +1,6 @@
 package org.rapla.client.gwt;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
+import com.google.gwt.user.client.Window;
 import org.rapla.client.Application;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
@@ -19,7 +14,10 @@ import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import com.google.gwt.user.client.Window;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.Arrays;
+import java.util.Collection;
 
 public class Bootstrap
 {

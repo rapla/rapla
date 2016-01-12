@@ -1,5 +1,29 @@
 package org.rapla.plugin.exchangeconnector.server;
 
+import com.google.gson.Gson;
+import org.rapla.RaplaResources;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.storage.ImportExportDirections;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageOperator;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,40 +40,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.rapla.RaplaResources;
-import org.rapla.entities.Entity;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.StorageOperator;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-import org.rapla.storage.server.ImportExportDirections;
-import org.rapla.storage.server.ImportExportEntity;
-import org.rapla.storage.server.ImportExportEntityImpl;
-
-import com.google.gson.Gson;
-
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
- * - the mapping between Rapla {@link Appointment}s and Exchange {@link microsoft.exchange.webservices.data.Appointment}s
+ * - the mapping between Rapla {@link Appointment}s and Exchange
  * - the information if the appointment originates from Rapla or from the Exchange Server
  * - a list of all appointments which have been deleted in the Rapla system but for some reason have not been deleted from the Exchange Server (hence they can be deleted later)   
  * 
  * @author Dominik Joder
- * @see {@link ExchangeAppointmentStorageObject}
  * @see {@link SynchronisationManager}
  * @see {@link ExchangeConnectorPlugin}
  */
@@ -68,7 +65,6 @@ public class ExchangeAppointmentStorage extends RaplaComponent
     /**
      * public constructor of the class to read a particular file
 
-     * @param filePath : {@link String} absolute path to the file which saves both the mapping table and the "to delete" list
      */
     @Inject
     public ExchangeAppointmentStorage(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, StorageOperator storageOperator) throws RaplaException

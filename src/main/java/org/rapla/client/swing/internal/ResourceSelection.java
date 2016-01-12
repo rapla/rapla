@@ -41,11 +41,8 @@ import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Period;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
@@ -54,6 +51,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -176,7 +174,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
         treeSelection.getTree().setRootVisible(false);
         treeSelection.getTree().setShowsRootHandles(true);
-        treeSelection.getTree().setCellRenderer(((TreeFactoryImpl) getTreeFactory()).createRenderer());
+        treeSelection.getTree().setCellRenderer(getTreeFactory().createRenderer());
         
         DefaultTreeModel treeModel = generateTree();
         try {
@@ -252,9 +250,9 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             if ( focusedObject == null || !(focusedObject instanceof RaplaObject))
             	return;
             // System.out.println(focusedObject.toString());
-            RaplaType type = ((RaplaObject) focusedObject).getRaplaType();
-            if (    type == User.TYPE
-                 || type == Allocatable.TYPE
+            Class type = ((RaplaObject) focusedObject).getTypeClass();
+            if (    type == User.class
+                 || type == Allocatable.class
                )
             {
                 Entity entity = (Entity) focusedObject;

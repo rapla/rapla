@@ -12,13 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class AllocationChangeEvent
 {

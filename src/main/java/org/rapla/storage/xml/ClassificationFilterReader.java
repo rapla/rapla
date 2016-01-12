@@ -13,9 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.dynamictype.Attribute;
@@ -24,6 +21,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 class ClassificationFilterReader extends RaplaXMLReader {
     
@@ -63,12 +63,12 @@ class ClassificationFilterReader extends RaplaXMLReader {
         {
             String id = atts.getValue("dynamictypeidref");
             if ( id != null) {
-                dynamicType =  resolve(DynamicType.TYPE,id);
+                dynamicType =  resolve(DynamicType.class,id);
             } else {
                 String typeName = getString(atts,"dynamictype");
                 dynamicType = getDynamicType( typeName );
                 if (dynamicType == null) {
-                    getLogger().error("Error reading filter with " + DynamicType.TYPE.getLocalName() + " " + typeName,null);
+                    getLogger().error("Error reading filter with " + DynamicType.class + " " + typeName,null);
                     return;
                 } 
             }
@@ -91,7 +91,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
         {
             String id = atts.getValue("attributeidref");
             if ( id != null) {
-                attribute = resolve(Attribute.TYPE, id);
+                attribute = resolve(Attribute.class, id);
             } else {
                 String attributeName = getString(atts,"attribute");
                 attribute = dynamicType.getAttribute(attributeName);

@@ -463,10 +463,10 @@ public class RemoteStorageImpl implements RemoteStorage
         try
         {
             checkAuthentified();
-            RaplaType raplaType = RaplaType.find(type);
+            Class<? extends Entity> typeClass = RaplaType.find(type);
             //User user =
             getSessionUser(); //check if authenified
-            String[] result = operator.createIdentifier(raplaType, count);
+            String[] result = operator.createIdentifier(typeClass, count);
             return new ResultImpl<List<String>>(Arrays.asList(result));
         }
         catch (RaplaException ex)
@@ -600,7 +600,7 @@ public class RemoteStorageImpl implements RemoteStorage
             for (Conflict conflict : conflicts)
             {
                 result.add((ConflictImpl) conflict);
-                Entity conflictRef = (Entity) conflict;
+                Entity conflictRef = conflict;
                 completeList.add(conflictRef);
             }
             return new ResultImpl<List<ConflictImpl>>(result);
@@ -719,7 +719,7 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, EntityNotFoundException, RaplaSecurityException
+    private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, RaplaSecurityException
     {
         List<Allocatable> allocatables = new ArrayList<Allocatable>();
         User sessionUser = getSessionUser();

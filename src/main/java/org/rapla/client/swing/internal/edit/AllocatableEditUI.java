@@ -12,18 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -35,7 +23,6 @@ import org.rapla.client.swing.internal.edit.fields.PermissionListField.Permissio
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -44,6 +31,18 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.HashSet;
+import java.util.Set;
 
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *

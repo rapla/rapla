@@ -26,7 +26,7 @@ public interface DialogUiFactoryInterface
     /** Creates a new ErrorDialog with the specified owner and displays the waring */
     void showWarning(String warning, PopupContext popupContext);
 
-    public static class Util
+    class Util
     {
         static public boolean isWarningOnly(Throwable ex)
         {

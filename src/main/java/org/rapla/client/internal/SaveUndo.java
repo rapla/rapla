@@ -1,5 +1,18 @@
 package org.rapla.client.internal;
 
+import org.rapla.RaplaResources;
+import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.RaplaType;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.internal.ModifiableTimestamp;
+import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -7,21 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.undo.CommandUndo;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.Named;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
-import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
 public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final List<T> newEntities;
 	protected final List<T> oldEntities;
@@ -103,7 +101,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 			if (newEntitiesPersistant != null)
 			{
 				@SuppressWarnings("null")
-				Entity persistant = (Entity) newEntitiesPersistant.get( entity);
+				Entity persistant = newEntitiesPersistant.get( entity);
 				checkConsistency( mutableEntity );
 				setNewTimestamp( mutableEntity, persistant);
 			}
@@ -183,8 +181,9 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
          buf.append(isNew ? i18n.getString("new"): i18n.getString("edit") );
          if ( iterator.hasNext())
          {
-             RaplaType raplaType = iterator.next().getRaplaType();
-             buf.append(" " + i18n.getString(raplaType.getLocalName()));
+			 final Entity next = iterator.next();
+			 final String localName = RaplaType.getLocalName(next);
+			 buf.append(" " + i18n.getString(localName));
          }
          return buf.toString();
      }   

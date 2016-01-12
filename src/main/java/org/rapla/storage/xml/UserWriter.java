@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
@@ -23,6 +21,8 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaException;
+
+import java.io.IOException;
 
 public class UserWriter extends RaplaXMLWriter {
     
@@ -66,7 +66,7 @@ public class UserWriter extends RaplaXMLWriter {
         }
 
         if ( preferences != null) {
-            PreferenceWriter preferenceWriter = (PreferenceWriter) getWriterFor(Preferences.TYPE);
+            PreferenceWriter preferenceWriter = (PreferenceWriter) getWriterFor(Preferences.class);
             preferenceWriter.setIndentLevel( getIndentLevel() );
             preferenceWriter.printPreferences(preferences);
         }

@@ -11,9 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
@@ -27,12 +24,16 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.storage.PermissionController;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;

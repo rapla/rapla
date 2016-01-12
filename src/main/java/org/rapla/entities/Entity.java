@@ -39,7 +39,7 @@ public interface Entity<T> extends RaplaObject<T> {
     boolean isReadOnly();
 
     EntityReferencer.ReferenceInfo getReference();
-    public static Entity<?>[] ENTITY_ARRAY = new Entity[0];
+    Entity<?>[] ENTITY_ARRAY = new Entity[0];
 }    
 
 

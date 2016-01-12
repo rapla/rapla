@@ -15,8 +15,8 @@ public interface Configuration {
     boolean getAttributeAsBoolean(String string, boolean defaultValue);
     String[] getAttributeNames();
     
-    public Configuration find(  String localName);
+    Configuration find(String localName);
 
-    public Configuration find(  String attributeName, String attributeValue);
+    Configuration find(String attributeName, String attributeValue);
 
 }

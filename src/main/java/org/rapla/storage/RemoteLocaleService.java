@@ -1,13 +1,12 @@
 package org.rapla.storage;
 
-import java.util.Map;
-import java.util.Set;
-
-import javax.jws.WebParam;
-
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
+
+import javax.jws.WebParam;
+import java.util.Map;
+import java.util.Set;
 
 @RemoteJsonMethod
 public interface RemoteLocaleService 

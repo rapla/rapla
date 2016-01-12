@@ -1,11 +1,5 @@
 package org.rapla.plugin.merge.client.swing;
 
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -17,6 +11,11 @@ import org.rapla.entities.Entity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.util.Map;
 
 public class MergeDialog<T extends Entity> extends EditDialog<T>
 {

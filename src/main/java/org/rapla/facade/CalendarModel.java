@@ -1,9 +1,5 @@
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -15,13 +11,17 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
 public interface CalendarModel extends Cloneable, ClassifiableFilter 
 {
-    public static final String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
-    public static final String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
-	public static final String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
-	public static final String ONLY_MY_EVENTS = "only_own_reservations";
-	public static final TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<Boolean>("org.rapla.plugin.abstractcalendar.only_own_reservations");
+    String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
+    String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
+	String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
+	String ONLY_MY_EVENTS = "only_own_reservations";
+	TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<Boolean>("org.rapla.plugin.abstractcalendar.only_own_reservations");
 
 	String getNonEmptyTitle();
 

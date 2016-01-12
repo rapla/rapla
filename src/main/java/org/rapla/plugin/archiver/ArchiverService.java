@@ -8,8 +8,8 @@ import org.rapla.jsonrpc.common.RemoteJsonMethod;
 @RemoteJsonMethod
 public interface ArchiverService
 {
-	public static final String PLUGIN_ID = "org.rapla.plugin.archiver.server";
-	public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
+	String PLUGIN_ID = "org.rapla.plugin.archiver.server";
+	TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
 
 	String REMOVE_OLDER_THAN_ENTRY = "remove-older-than";
 	String EXPORT = "export";

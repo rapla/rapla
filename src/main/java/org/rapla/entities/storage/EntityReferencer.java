@@ -26,14 +26,14 @@ public interface EntityReferencer
     /**Return all References of the object*/
     Iterable<ReferenceInfo> getReferenceInfo();
     /** returns if the entity is refering to the Object. */
-    
-    public class ReferenceInfo
+
+    class ReferenceInfo<T extends Entity>
     {
         final private String id;
         final private Class<? extends Entity> type;
 
         public ReferenceInfo(Entity entity) {
-            this(entity.getId(),entity.getRaplaType().getTypeClass());
+            this(entity.getId(), entity.getTypeClass());
         }
 
         public ReferenceInfo(String id, Class<? extends Entity> type) {

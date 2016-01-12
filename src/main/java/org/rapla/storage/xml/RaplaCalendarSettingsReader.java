@@ -13,21 +13,21 @@
 
 package org.rapla.storage.xml;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
 
@@ -43,7 +43,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
     ClassificationFilterReader classificationFilterHandler;
 
     List<String> idList;
-    List<RaplaType> idTypeList;
+    List<Class<? extends Entity>> idTypeList;
     Map<String,String> optionMap;
   
     
@@ -76,7 +76,7 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
 
         if (localName.equals("selected")) {
         	idList = new ArrayList<String>();
-        	idTypeList = new ArrayList<RaplaType>();
+        	idTypeList = new ArrayList<Class<? extends Entity>>();
         }
 
         if (localName.equals("options")) {
@@ -94,26 +94,27 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         String keyref = getString( atts, "keyref", null);
         if ( refid != null)
         {
-            RaplaType raplaType = getTypeForLocalName( localName );
+            final Class<? extends RaplaObject> typeClass = getTypeForLocalName( localName );
             // Test if raplaType can be referenced by the model (categories and periods cannot, but old versions allowed to store them 
-            if ( CalendarModelConfigurationImpl.canReference(raplaType))
+            if ( CalendarModelConfigurationImpl.canReference(typeClass))
             {
-                String id = getId( raplaType, refid);
+                final Class<? extends Entity> entityClass = (Class<? extends Entity>) typeClass;
+                String id = getId( entityClass, refid);
                 idList.add( id);
-                idTypeList.add( raplaType);
+                idTypeList.add(entityClass);
             }
         } 
         else if ( keyref != null)
         {
-            RaplaType raplaType = getTypeForLocalName( localName );
+            final Class<? extends RaplaObject> typeClass = getTypeForLocalName( localName );
             // Test if raplaType can be referenced by the model (categories and periods cannot, but old versions allowed to store them
-            if ( CalendarModelConfigurationImpl.canReference(raplaType))
+            if ( CalendarModelConfigurationImpl.canReference(typeClass))
             {
                 DynamicType type = getDynamicType( keyref );
                 if ( type != null)
                 {
                     idList.add( type.getId());
-                    idTypeList.add( DynamicType.TYPE);
+                    idTypeList.add( DynamicType.class);
                 }
                 else
                 {

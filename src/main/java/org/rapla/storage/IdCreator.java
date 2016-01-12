@@ -12,10 +12,11 @@
   *--------------------------------------------------------------------------*/
 
 package org.rapla.storage;
-import org.rapla.entities.RaplaType;
+
+import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
 
 public interface IdCreator {
-    public String createId(RaplaType raplaType) throws RaplaException;
-    public String createId(RaplaType type, String seed) throws RaplaException;
+    String createId(Class<? extends Entity> raplaType) throws RaplaException;
+    String createId(Class<? extends Entity> raplaType, String seed) throws RaplaException;
 }

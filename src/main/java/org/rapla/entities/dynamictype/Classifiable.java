@@ -21,9 +21,9 @@ public interface Classifiable {
     Classification getClassification();
     void setClassification(Classification classification);
     
-    final Classifiable[] CLASSIFIABLE_ARRAY = new Classifiable[0];
+    Classifiable[] CLASSIFIABLE_ARRAY = new Classifiable[0];
     
-    public class ClassifiableUtil {
+    class ClassifiableUtil {
         public static boolean isInternalType(Classifiable classifiable) {
             boolean isRaplaType =false;
             Classification classification = classifiable.getClassification();

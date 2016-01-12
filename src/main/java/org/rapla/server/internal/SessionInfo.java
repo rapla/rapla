@@ -5,5 +5,5 @@ package org.rapla.server.internal;
  */
 public interface SessionInfo<T>
 {
-    public void setSessionInfo(T info);
+    void setSessionInfo(T info);
 }

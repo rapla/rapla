@@ -13,6 +13,11 @@
 
 package org.rapla.components.calendarview.html;
 
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
+import org.rapla.components.util.DateTools;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,11 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.Builder.PreperationResult;
-import org.rapla.components.util.DateTools;
 
 public class HTMLCompactWeekView extends AbstractHTMLView {
     public final static int ROWS = 6; //without the header row

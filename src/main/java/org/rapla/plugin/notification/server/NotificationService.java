@@ -12,19 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -49,6 +36,19 @@ import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.storage.CachableStorageOperator;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /** Sends Notification Mails on allocation change.*/
 
@@ -66,6 +66,7 @@ public class NotificationService
     RaplaResources raplaI18n;
 
     Logger logger;
+    CachableStorageOperator operator;
 
     // FIXME same as synchronisation manager
     @Inject
@@ -84,7 +85,8 @@ public class NotificationService
 
     @Override public void start()
     {
-
+        //UpdateResult result = operator.getUpdateResult( since);
+        //AllocationChangeFinder.getTriggerEvents( result, user, logger);
     }
 
     protected  Logger getLogger()

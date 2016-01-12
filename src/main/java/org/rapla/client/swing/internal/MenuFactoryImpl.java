@@ -13,9 +13,9 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.EditController;
@@ -38,12 +38,10 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -56,6 +54,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -343,7 +342,7 @@ import java.util.TreeMap;
         if (editableObjects.size() == 1)
         {
             RaplaObject next = editableObjects.iterator().next();
-            if (next.getRaplaType() == User.TYPE)
+            if (next.getTypeClass() == User.class)
             {
                 addUserMenuEdit(menu, popupContext, (User) next, afterId);
             }
@@ -369,8 +368,8 @@ import java.util.TreeMap;
     {
         if (editableObjects.size() > 0)
         {
-            RaplaType raplaType = editableObjects.iterator().next().getRaplaType();
-            if (raplaType == Allocatable.TYPE || raplaType == User.TYPE || raplaType == Reservation.TYPE)
+            Class<?> raplaType = editableObjects.iterator().next().getTypeClass();
+            if (raplaType == Allocatable.class || raplaType == User.class || raplaType == Reservation.class)
             {
                 return true;
             }
@@ -380,7 +379,7 @@ import java.util.TreeMap;
 
     private void addAllocatableMenuNew(MenuInterface menu, PopupContext popupContext, Object focusedObj) throws RaplaException
     {
-        RaplaObjectAction newResource = addAction(menu, popupContext).setNew(Allocatable.TYPE);
+        RaplaObjectAction newResource = addAction(menu, popupContext).setNew(Allocatable.class);
         if (focusedObj != CalendarModelImpl.ALLOCATABLES_ROOT)
         {
             if (focusedObj instanceof DynamicType)
@@ -423,7 +422,7 @@ import java.util.TreeMap;
                 newResource.putValue(Action.NAME, getString("resource"));
             }
 
-            RaplaObjectAction newPerson = addAction(menu, popupContext).setNew(Allocatable.TYPE);
+            RaplaObjectAction newPerson = addAction(menu, popupContext).setNew(Allocatable.class);
             newPerson.setPerson(true);
             DynamicType[] personType = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
             if (personType.length == 1)
@@ -470,7 +469,7 @@ import java.util.TreeMap;
 
     private void addCategoryMenuNew(MenuInterface menu, PopupContext popupContext, Object obj)
     {
-        RaplaObjectAction newAction = addAction(menu, popupContext).setNew(Category.TYPE);
+        RaplaObjectAction newAction = addAction(menu, popupContext).setNew(Category.class);
         if (obj instanceof Category)
         {
             newAction.changeObject((Category) obj);
@@ -484,7 +483,7 @@ import java.util.TreeMap;
 
     private void addPeriodMenuNew(MenuInterface menu, PopupContext popupContext)
     {
-        Action newAction = new ActionWrapper(addAction(menu, popupContext).setNew(Period.TYPE));
+        Action newAction = new ActionWrapper(addAction(menu, popupContext).setNew(Period.class));
         newAction.putValue(Action.NAME, getString("period"));
 
     }
@@ -557,19 +556,19 @@ import java.util.TreeMap;
     // method for filtering a selection(Parameter: list) of similar RaplaObjekte
     // (from type raplaType)
     // criteria: RaplaType: isPerson-Flag
-    private <T extends RaplaObject> List<T> getObjectsWithSameType(Collection<T> list, RaplaType raplaType, boolean isPerson)
+    private <T extends RaplaObject> List<T> getObjectsWithSameType(Collection<T> list, Class raplaType, boolean isPerson)
     {
         ArrayList<T> objects = new ArrayList<T>();
 
         for (RaplaObject o : list)
         {
             // element will be added if it is from the stated RaplaType...
-            if (raplaType != null && (o.getRaplaType() == raplaType))
+            if (raplaType != null && (o.getTypeClass() == raplaType))
             {
                 // ...furthermore the flag isPerson at allocatables has to
                 // be conform, because person and other resources aren't
                 // able to process at the same time
-                if (raplaType != Allocatable.TYPE || ((Allocatable) o).isPerson() == isPerson)
+                if (raplaType != Allocatable.class || ((Allocatable) o).isPerson() == isPerson)
                 {
                     @SuppressWarnings("unchecked") T casted = (T) o;
                     objects.add(casted);
@@ -588,8 +587,8 @@ import java.util.TreeMap;
             return list;
         }
         RaplaObject obj = iterator.next();
-        RaplaType raplaType = obj.getRaplaType();
-        boolean isPerson = raplaType == Allocatable.TYPE && ((Allocatable) obj).isPerson();
+        Class raplaType = obj.getTypeClass();
+        boolean isPerson = raplaType == Allocatable.class && ((Allocatable) obj).isPerson();
         return getObjectsWithSameType(list, raplaType, isPerson);
     }
 

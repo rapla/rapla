@@ -1,7 +1,7 @@
 package org.rapla.server.dagger;
 
-import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerContainerContext;
 

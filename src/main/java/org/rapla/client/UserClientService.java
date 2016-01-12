@@ -13,7 +13,6 @@
 package org.rapla.client;
 
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 
 /** This service starts and manages the rapla-gui-client.

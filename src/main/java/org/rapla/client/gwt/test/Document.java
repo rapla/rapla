@@ -9,7 +9,7 @@ import com.google.gwt.core.client.js.JsType;
 public interface Document {
     <T> T getElementById(String id);
 
-    static class Util{
+    class Util{
         static public native <T> T getDocument() /*-{
             return $doc;
         }-*/;

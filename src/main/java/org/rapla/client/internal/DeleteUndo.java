@@ -1,13 +1,5 @@
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -18,6 +10,14 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaException> {
 	// FIXME Delete of categories in multiple levels can cause the lower levels not to be deleted if it contains categories higher in rank but same hierarchy that are also deleted
@@ -33,8 +33,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 		this.entities = new ArrayList<T>();
 		for ( T entity: entities)
 		{
-			// Hack for 1.6 compiler compatibility
-			if ( ((Object)entity.getRaplaType()) == Category.TYPE)
+			if ( entity.getTypeClass() == Category.class)
 	    	{
 				this.entities.add(entity);
 	    	}
@@ -61,8 +60,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	    List<T> toRemove = new ArrayList<T>();
 	    for ( T entity: entities)
 		{
-	    	// Hack for 1.6 compiler compatibility
-			if ( ((Object)entity.getRaplaType()) == Category.TYPE)
+			if ( entity.getTypeClass() == Category.class)
 	    	{
 				Entity casted = entity;
 				// to avoid compiler error
@@ -165,8 +163,8 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	     buf.append(i18n.getString("delete") );
 	     if ( iterator.hasNext())
 	     {
-	         RaplaType raplaType = iterator.next().getRaplaType();
-	         buf.append( " " +  getI18n().getString(raplaType.getLocalName()));
+			 String localname = RaplaType.getLocalName(iterator.next());
+	         buf.append( " " +  getI18n().getString(localname));
 	     }
          return buf.toString();
      }   

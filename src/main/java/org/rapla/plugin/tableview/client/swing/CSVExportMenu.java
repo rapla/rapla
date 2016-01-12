@@ -12,6 +12,27 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.client.swing;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.extensionpoints.ExportMenuExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.internal.TableConfig;
+
+import javax.inject.Inject;
+import javax.swing.JMenuItem;
+import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -23,29 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import javax.inject.Inject;
-import javax.swing.JMenuItem;
-import javax.swing.SwingUtilities;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.extensionpoints.ExportMenuExtension;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.plugin.tableview.internal.TableConfig;
 
 @Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener

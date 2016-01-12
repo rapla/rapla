@@ -15,7 +15,6 @@ package org.rapla.entities.dynamictype;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.MultiLanguageNamed;
-import org.rapla.entities.RaplaType;
 
 /** Attributes are to DynamicTypes, what properties are to Beans.
 Currently Rapla supports the following types:
@@ -29,12 +28,9 @@ Currently Rapla supports the following types:
 @see DynamicType */
 public interface Attribute extends Entity<Attribute>, MultiLanguageNamed, Annotatable
 {
-
-    final RaplaType<Attribute> TYPE = new RaplaType<Attribute>(Attribute.class, "attribute");
-
     AttributeType getType();
 
-    RaplaType getRefType();
+    Class<? extends Entity> getRefType();
 
     /** Set the type of the Attribute.
     <strong>Warning:</strong> Changing the type after initialization can lead to data loss,
@@ -88,7 +84,7 @@ public interface Attribute extends Entity<Attribute>, MultiLanguageNamed, Annota
 
     DynamicType getDynamicType();
 
-    public static final Attribute[] ATTRIBUTE_ARRAY = new Attribute[0];
+    Attribute[] ATTRIBUTE_ARRAY = new Attribute[0];
 
     void setDefaultValue(Object value);
 

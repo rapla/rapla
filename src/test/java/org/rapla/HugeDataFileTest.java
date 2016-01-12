@@ -1,23 +1,21 @@
 package org.rapla;
 
-import java.util.Date;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Date;
 
 
 @RunWith(JUnit4.class)
 public class HugeDataFileTest
 {
     @Test
-    public void testHuge() throws RaplaException, Exception
+    public void testHuge() throws Exception
     {
         ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         int RESERVATION_COUNT =15000;

@@ -1,15 +1,5 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditField;
@@ -28,6 +18,15 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="tableColumn")
 public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension {

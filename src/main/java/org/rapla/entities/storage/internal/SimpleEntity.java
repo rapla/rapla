@@ -12,16 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
@@ -30,6 +23,12 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /** Base-class for all Rapla Entity-Implementations. Provides services
  * for deep cloning and serialization of references. {@link ReferenceHandler}
@@ -43,11 +42,11 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     public SimpleEntity() {
     }
 
-    public abstract <T extends Entity> RaplaType<T> getRaplaType();
+    public abstract <T extends Entity> Class<T> getTypeClass();
 
     public ReferenceInfo getReference()
     {
-        return new ReferenceInfo(id,getRaplaType().getTypeClass());
+        return new ReferenceInfo(id,getTypeClass());
     }
 
     public void checkWritable() {
@@ -144,7 +143,6 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
 
     /** @return the identifier of the object.
-     * @see SimpleIdentifier
      */
     final public String getId()  {
         return id;

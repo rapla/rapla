@@ -167,10 +167,8 @@ public class ResourceBundleLoader
     {
         try
         {
-            Method method = bundle.getClass().getMethod( "setParent", new Class[]
-                { ResourceBundle.class } );
-            method.invoke( bundle, new Object[]
-                { parent } );
+            Method method = bundle.getClass().getMethod( "setParent", ResourceBundle.class);
+            method.invoke( bundle, parent);
         }
         catch ( Exception ex )
         {

@@ -3,20 +3,6 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
@@ -27,6 +13,19 @@ import org.rapla.inject.Extension;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
 @Singleton

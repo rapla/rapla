@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.gui.tests;
 
-import java.awt.BorderLayout;
-import java.util.concurrent.Semaphore;
-
-import javax.swing.JComponent;
-
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ErrorDialog;
@@ -28,7 +23,10 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.test.util.RaplaTestCase;
+
+import javax.swing.JComponent;
+import java.awt.BorderLayout;
+import java.util.concurrent.Semaphore;
 
 public abstract class GUITestCase  {
 
@@ -65,7 +63,7 @@ public abstract class GUITestCase  {
         try {
             ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
             try {
-                this.getClass().getMethod(methodName, new Class[] {}).invoke(this,new Object[] {});
+                this.getClass().getMethod(methodName, new Class[] {}).invoke(this);
                 waitUntilLastFrameClosed( getService(FrameControllerList.class) );
                 System.exit(0);
             } catch (Exception ex) {

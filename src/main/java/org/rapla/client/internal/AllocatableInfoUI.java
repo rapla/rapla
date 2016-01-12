@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -25,6 +19,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 
 public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     public AllocatableInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {

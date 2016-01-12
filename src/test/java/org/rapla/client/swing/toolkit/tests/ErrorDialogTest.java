@@ -23,9 +23,6 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.framework.logger.Logger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 public class ErrorDialogTest extends GUITestCase {
 
     public void testError() throws Exception {

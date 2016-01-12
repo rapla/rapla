@@ -14,5 +14,5 @@ package org.rapla.client.swing.toolkit;
 
 /** Should be implemented by all rapla-gui-components that have a view.*/
 public interface RaplaWidget<T> {
-    public T getComponent();
+    T getComponent();
 }

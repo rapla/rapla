@@ -1,14 +1,5 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
-import java.awt.Component;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JList;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditField;
@@ -22,6 +13,14 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JList;
+import java.awt.Component;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id="conflictcreation")
 public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
@@ -49,7 +48,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        Collection<String> collection = Arrays.asList( new String[] {DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES}); 
+        Collection<String> collection = Arrays.asList(DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES);
         ListField<String> field = new ListField<String>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
         field.setFieldName( getString(annotationName));
         

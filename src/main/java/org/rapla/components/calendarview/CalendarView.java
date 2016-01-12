@@ -16,23 +16,23 @@ import java.util.Date;
 public interface CalendarView
 {
     /** returns the first Date that will be displayed in the calendar */
-    public Date getStartDate();
+    Date getStartDate();
     /** returns the last Date that will be displayed in the calendar */
-    public Date getEndDate();
+    Date getEndDate();
     
     /** sets the calendarview to the selected date*/
-    public void setToDate(Date weekDate);
+    void setToDate(Date weekDate);
 
     /** This method removes all existing blocks first. 
      * Then it calls the build method of all added builders, so that they can add blocks into the CalendarView again.
      * After all blocks are added the Calendarthat repaints the screen. 
      */
-    public void rebuild(Builder builder);
+    void rebuild(Builder builder);
     
     /** Adds a block. You can optionaly specify a slot, if the day-view supports multiple slots (like in the weekview).
      *  If the selected slot does not exist it will be created. This method is usually called by the builders.
     */
-    public void addBlock(Block bl, int column,int slot);
+    void addBlock(Block bl, int column, int slot);
     
     /** returns a collection of all the added blocks 
      * @see #addBlock*/

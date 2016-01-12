@@ -12,19 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.framework.RaplaException;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.JFrame;
+import javax.swing.JRootPane;
 import java.awt.AWTEvent;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
 import java.util.ArrayList;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.JFrame;
-import javax.swing.JRootPane;
-
-import org.rapla.framework.RaplaException;
 
 @Singleton
 public class RaplaFrame extends JFrame

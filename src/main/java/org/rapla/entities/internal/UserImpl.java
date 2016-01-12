@@ -12,19 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-
 import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
 
 public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 {
@@ -36,7 +34,10 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     private Date lastChanged;
     private Date createDate;
 
-    final public RaplaType<User> getRaplaType() {return TYPE;}
+    @Override public Class<User> getTypeClass()
+    {
+        return User.class;
+    }
 
     UserImpl() {
     	this(null,null);
@@ -239,7 +240,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         else
         {
             this.email = email;
-            putEntity("person", (Entity) person);
+            putEntity("person", person);
             setName(person.getClassification().getName(null));
         }
     }

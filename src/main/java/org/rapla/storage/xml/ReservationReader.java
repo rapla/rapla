@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
@@ -30,6 +28,8 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.framework.RaplaException;
+
+import java.util.Date;
 
 public class ReservationReader extends RaplaXMLReader {
     ReservationImpl reservation;
@@ -155,7 +155,7 @@ public class ReservationReader extends RaplaXMLReader {
 
         if (localName.equals("allocate")) {
             String id = getString( atts, "idref" );
-            allocatableId = getId( Allocatable.TYPE, id);
+            allocatableId = getId( Allocatable.class, id);
             reservation.addId("resources", allocatableId );
             if ( appointment != null )
             {

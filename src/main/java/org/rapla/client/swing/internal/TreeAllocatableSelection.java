@@ -12,17 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.NamedComparator;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 import javax.inject.Inject;
 import javax.swing.AbstractAction;
@@ -37,20 +39,17 @@ import javax.swing.event.ChangeListener;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.entities.NamedComparator;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class TreeAllocatableSelection extends RaplaGUIComponent implements ChangeListener {
     JPanel content= new JPanel();

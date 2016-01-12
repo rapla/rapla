@@ -12,16 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import org.rapla.RaplaResources;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.rapla.RaplaResources;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
 
 public abstract class RaplaAction extends RaplaGUIComponent implements Action {
     private Map<String,Object> values = new HashMap<String,Object>();

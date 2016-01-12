@@ -26,9 +26,9 @@ import org.rapla.framework.TypedComponentRole;
 </ul>
 */
 public interface ServerService {
-    public static final String ENV_RAPLAFILE_ID = "env.raplafile";
-    public static final String ENV_RAPLAMAIL_ID = "env.raplamail";
+    String ENV_RAPLAFILE_ID = "env.raplafile";
+    String ENV_RAPLAMAIL_ID = "env.raplamail";
     //public static final TypedComponentRole<Configuration> RAPLA_MAIN_CONFIGURATION = new TypedComponentRole<Configuration>("org.rapla.MainConfiguration");
-    public static final TypedComponentRole<String> ENV_RAPLAFILE= new TypedComponentRole<String>(ENV_RAPLAFILE_ID);
+    TypedComponentRole<String> ENV_RAPLAFILE= new TypedComponentRole<String>(ENV_RAPLAFILE_ID);
 //    public static final TypedComponentRole<SimpleProvider<Object>> ENV_RAPLAMAIL= new TypedComponentRole<SimpleProvider<Object>>(ENV_RAPLAMAIL_ID);
 }

@@ -14,17 +14,16 @@
 
 package org.rapla.server.extensionpoints;
 
-import java.io.IOException;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.facade.CalendarModel;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.facade.CalendarModel;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
+import java.io.IOException;
 
 /** add your own views to Rapla, by providing a org.rapla.client.swing.gui.ViewFactory
  * @see SwingViewFactory

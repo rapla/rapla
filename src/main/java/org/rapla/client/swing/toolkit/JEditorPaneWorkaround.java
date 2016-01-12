@@ -11,10 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
-import java.awt.Dimension;
-import java.awt.FontMetrics;
 
 import javax.swing.JEditorPane;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
 
 /** #BUGFIX
  * This is a workaround for a bug in the Sun JDK

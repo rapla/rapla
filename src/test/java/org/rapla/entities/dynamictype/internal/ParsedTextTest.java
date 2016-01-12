@@ -172,7 +172,7 @@ public class ParsedTextTest
             Assert.assertEquals("Welt", formatName);
         }
         {
-            final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Arrays.asList(new Classification[] { classification, classification}));
+            final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Arrays.asList(classification, classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("WeltWelt", formatName);
         }

@@ -1,12 +1,12 @@
 package org.rapla.test.util;
 
-import java.util.LinkedHashSet;
-
 import org.jetbrains.annotations.NotNull;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+
+import java.util.LinkedHashSet;
 
 public class DefaultPermissionControllerSupport
 {

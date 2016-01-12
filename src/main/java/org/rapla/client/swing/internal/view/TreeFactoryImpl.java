@@ -12,46 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import java.awt.Component;
-import java.awt.Font;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JTree;
-import javax.swing.UIManager;
-import javax.swing.border.Border;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.DefaultTreeSelectionModel;
-import javax.swing.tree.MutableTreeNode;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import javax.swing.tree.TreeSelectionModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -66,7 +26,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
-import org.rapla.entities.RaplaType;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
@@ -89,6 +49,45 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.StorageOperator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JTree;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.DefaultTreeSelectionModel;
+import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
+import java.awt.Component;
+import java.awt.Font;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @Singleton
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
@@ -466,12 +465,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
      * Returns the Resources root
      * 
      * @param filter
-     * @param selectedUser
      * @return
      * @throws RaplaException
      */
     public TypeNode createResourcesModel(ClassificationFilter[] filter) throws RaplaException {
-        TypeNode treeNode = new TypeNode(Allocatable.TYPE, CalendarModelImpl.ALLOCATABLES_ROOT, getString("resources"));
+        TypeNode treeNode = new TypeNode(Allocatable.class, CalendarModelImpl.ALLOCATABLES_ROOT, getString("resources"));
         Map<DynamicType,DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType, DefaultMutableTreeNode>();
 
         boolean resourcesFiltered = false;
@@ -551,7 +549,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     
 
     public TypeNode createReservationsModel() throws RaplaException {
-        TypeNode treeNode = new TypeNode(Reservation.TYPE, getString("reservation_type"));
+        TypeNode treeNode = new TypeNode(Reservation.class, getString("reservation_type"));
 
         // creates typ folders
         DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
@@ -589,7 +587,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             // Categories (the root category)
             // Add the periods
 
-            DefaultMutableTreeNode userRoot = new TypeNode(User.TYPE, getString("users"));
+            DefaultMutableTreeNode userRoot = new TypeNode(User.class, getString("users"));
             User[] userList = getQuery().getUsers();
             SortedSet<User> sorted = new TreeSet<User>( User.USER_COMPARATOR);
             sorted.addAll( Arrays.asList( userList));
@@ -607,12 +605,12 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             root.add(categoryRoot);
 
             // set category root name
-            MultiLanguageName multiLanguageName = (MultiLanguageName)getQuery().getSuperCategory().getName();
+            MultiLanguageName multiLanguageName = getQuery().getSuperCategory().getName();
             // TODO try to replace hack
 			multiLanguageName.setNameWithoutReadCheck(getI18n().getLang(), getString("categories"));
             
             // Add the periods    
-            DefaultMutableTreeNode periodRoot = new TypeNode(Period.TYPE, getString("periods"));
+            DefaultMutableTreeNode periodRoot = new TypeNode(Period.class, getString("periods"));
             DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
             
             Allocatable[] periodList = getQuery().getAllocatables(periodType.newClassificationFilter().toArray());
@@ -678,9 +676,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         
     }
     public DefaultTreeModel createConflictModel(Collection<Conflict> conflicts ) throws RaplaException {
-	    DefaultMutableTreeNode rootNode = new TypeNode(Conflict.TYPE, "root");
+	    DefaultMutableTreeNode rootNode = new TypeNode(Conflict.class, "root");
 	    ConflictRoot conflictRootObj = new ConflictRoot("conflictUC");
-		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.TYPE, conflictRootObj);
+		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.class, conflictRootObj);
 		rootNode.add( treeNode );
         if ( conflicts != null )
         {
@@ -692,7 +690,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             {
                 Iterable<Conflict> filteredConflicts = filter(conflicts, false);
                 ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC");
-                DefaultMutableTreeNode treeNode2 = new TypeNode(Conflict.TYPE, conflictDisabledRootObj);
+                DefaultMutableTreeNode treeNode2 = new TypeNode(Conflict.class, conflictDisabledRootObj);
                 int conflict_number = addConflicts(filteredConflicts, treeNode2);
                 if ( conflict_number > 0 )
                 {
@@ -765,20 +763,20 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         private static final long serialVersionUID = 1L;
 
         boolean filtered;
-        RaplaType type;
+        Class<? extends RaplaObject> type;
         String title;
 
-        TypeNode(RaplaType type, Object userObject, String title) {
+        TypeNode(Class<? extends RaplaObject> type, Object userObject, String title) {
             this.type = type;
             this.title = title;
             setUserObject(userObject);
         }
 
-        TypeNode(RaplaType type, Object userObject) {
+        TypeNode(Class<? extends RaplaObject> type, Object userObject) {
             this(type, userObject, null);
         }
 
-        public RaplaType getType() {
+        public Class<? extends RaplaObject> getType() {
             return type;
         }
 
@@ -1031,11 +1029,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             if (value != null && value instanceof TypeNode) {
                 TypeNode typeNode = (TypeNode) value;
                 Icon bigFolderIcon;
-                if (typeNode.getType().equals(User.TYPE)) {
+                if (typeNode.getType() ==User.class) {
                     bigFolderIcon = bigFolderUsers;
-                } else if (typeNode.getType().equals(Period.TYPE)) {
+                } else if (typeNode.getType()==Period.class) {
                     bigFolderIcon = bigFolderPeriods;
-                } else if (typeNode.getType().equals(Reservation.TYPE)) {
+                } else if (typeNode.getType() == Reservation.class) {
                     bigFolderIcon = bigFolderEvents;
                 } else {
                     if (typeNode.isFiltered()) {
@@ -1221,11 +1219,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             {
                 Object lastPathComponent = treePath.getLastPathComponent();
                 Object object = getUserObject( lastPathComponent);
-                if ( object instanceof Categorization)
-                {
-                    return false;
-                }
-                return true;
+                return !(object instanceof Categorization);
             }
         };
     }
@@ -1247,11 +1241,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 {
                     return true;
                 }
-                if ( object instanceof DynamicType)
-                {
-                    return true;
-                }
-                return false;
+                return object instanceof DynamicType;
             }
         };
     }

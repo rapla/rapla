@@ -12,20 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -43,7 +29,6 @@ import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -56,6 +41,19 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public class EditDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable, EditDialogInterface<T>
 {
@@ -118,7 +116,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         List<T> toEdit = new ArrayList<T>(editObjects);
         ui.setObjects(toEdit);
 
-        JComponent editComponent = (JComponent) ui.getComponent();
+        JComponent editComponent = ui.getComponent();
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.add(editComponent, BorderLayout.CENTER);
@@ -170,8 +168,8 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 
     @SuppressWarnings("unchecked")
     private <T extends Entity> EditComponent<T,JComponent> createUI(T obj) throws RaplaException {
-        RaplaType type = obj.getRaplaType();
-        final String id = type.getTypeClass().getName();
+        final Class typeClass = obj.getTypeClass();
+        final String id = typeClass.getName();
         final Provider<EditComponent> editComponentProvider = editUiProvider.get(id);
         if ( editComponentProvider != null)
         {
@@ -180,7 +178,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         }
         else
         {
-            throw new RuntimeException("Can't edit objects of type " + type.toString());
+            throw new RuntimeException("Can't edit objects of type " + typeClass.toString());
         }
     }
 
@@ -210,7 +208,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         if (shouldCancelOnModification(evt))
         {
             getLogger().warn("Object has been changed outside.");
-            final Component component = (Component) ui.getComponent();
+            final Component component = ui.getComponent();
             DialogInterface warning = dialogUiFactory.create(new SwingPopupContext(component, null), true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
             warning.start(true);
             getPrivateEditDialog().removeEditDialog(this);

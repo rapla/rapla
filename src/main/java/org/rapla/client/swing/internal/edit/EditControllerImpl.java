@@ -12,17 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -36,6 +25,16 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /** This class handles the edit-ui for all entities (except reservations). */
 
@@ -123,25 +122,26 @@ public class EditControllerImpl implements
 
 //	enhancement of the method to deal with arrays
 	private String guessTitle(Collection obj) {
-		RaplaType raplaType = getRaplaType(obj);
+        Class<? extends Entity> raplaType = getRaplaType(obj);
 		String title = "";
 		if(raplaType != null) {
-			title = i18n.getString(raplaType.getLocalName());
+            String localname = RaplaType.getLocalName(raplaType);
+			title = i18n.getString(localname);
 		}
 
 		return title;
 	}
 
 //	method for determining the consistent RaplaType from different objects
-	protected RaplaType getRaplaType(Collection obj){
-		Set<RaplaType> types = new HashSet<RaplaType>();
+	protected Class<? extends Entity> getRaplaType(Collection obj){
+		Set<Class<? extends Entity>> types = new HashSet<Class<? extends Entity>>();
 
 
 //		iterate all committed objects and store RaplayType of the objects in a Set
 //		identic typs aren't stored double because of Set
 		for (Object o : obj) {
 			if (o instanceof Entity) {
-				RaplaType type = ((Entity<?>) o).getRaplaType();
+                final Class<? extends Entity> type = ((Entity) o).getTypeClass();
 				types.add(type);
 			}
 		}

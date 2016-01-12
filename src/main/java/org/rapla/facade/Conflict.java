@@ -12,17 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashSet;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashSet;
 
 /**
  * A conflict is the allocation of the same resource at the same time by different
@@ -32,19 +31,18 @@ import org.rapla.entities.domain.Appointment;
 
 public interface Conflict extends Named, Entity<Conflict>, Timestamp
 {
-    static public final RaplaType<Conflict> TYPE = new RaplaType<Conflict>(Conflict.class,"conflict");
     /** @return the allocatable, allocated for the same time by two different reservations. */
-    public Allocatable getAllocatable();
+    Allocatable getAllocatable();
 //    /** @return the first Reservation, that is involved in the conflict.*/
 //    public Reservation getReservation1();
     /** The appointment of the first reservation, that causes the conflict. */
-    public String getAppointment1();
+    String getAppointment1();
 //    /** @return the second Reservation, that is involved in the conflict.*/
 //    public Reservation getReservation2();
 //    /** @return The User, who created the second Reservation.*/
 //    public User getUser2();
     /** The appointment of the second reservation, that causes the conflict. */
-    public String getAppointment2();
+    String getAppointment2();
     String getReservation1();
     String getReservation2();
     
@@ -60,11 +58,11 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp
     
     //public boolean canModify(User user);
 
-    public boolean isOwner( User user);
+    boolean isOwner(User user);
     
-    public static final Conflict[] CONFLICT_ARRAY= new Conflict[] {};
+    Conflict[] CONFLICT_ARRAY= new Conflict[] {};
     
-    public class Util
+    class Util
     {
 
 		public static Collection<Allocatable> getAllocatables(

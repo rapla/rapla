@@ -12,15 +12,14 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.framework.TypedComponentRole;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
-
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.framework.TypedComponentRole;
 
 /**
  *
@@ -30,24 +29,22 @@ import org.rapla.framework.TypedComponentRole;
  */
 public interface CalendarModelConfiguration extends RaplaObject<CalendarModelConfiguration>
 {
-	
-    public static final RaplaType<CalendarModelConfiguration> TYPE = new RaplaType<CalendarModelConfiguration>(CalendarModelConfiguration.class, "calendar");
-    public static final TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.DefaultSelection");
-    public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<RaplaMap<CalendarModelConfiguration>>("org.rapla.plugin.autoexport");
-    public Date getStartDate();
-    public Date getEndDate();
-    public Date getSelectedDate();
-    public String getTitle();
-    public String getView();
-    public Collection<Entity> getSelected();
-    public Map<String,String> getOptionMap();
+    TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.DefaultSelection");
+    TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<RaplaMap<CalendarModelConfiguration>>("org.rapla.plugin.autoexport");
+    Date getStartDate();
+    Date getEndDate();
+    Date getSelectedDate();
+    String getTitle();
+    String getView();
+    Collection<Entity> getSelected();
+    Map<String,String> getOptionMap();
     //public Configuration get
-    public ClassificationFilter[] getFilter();
+    ClassificationFilter[] getFilter();
     
-    public boolean isDefaultEventTypes();
-    public boolean isDefaultResourceTypes(); 
+    boolean isDefaultEventTypes();
+    boolean isDefaultResourceTypes();
 
-    public boolean isResourceRootSelected();
+    boolean isResourceRootSelected();
     
-    public CalendarModelConfiguration cloneWithNewOptions(Map<String, String> newMap);
+    CalendarModelConfiguration cloneWithNewOptions(Map<String, String> newMap);
 }

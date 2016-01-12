@@ -12,17 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.util.Date;
-
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
+
+import java.util.Date;
 /**
 Most universities and schools are planning for fixed periods/terms
 rather than arbitrary dates. Rapla provides support for this periods.
 */
 public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
-    final RaplaType<Period> TYPE = new RaplaType<Period>(Period.class, "period");
     
     Date getStart();
     Date getEnd();
@@ -31,7 +29,7 @@ public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
 
     boolean contains(Date date);
     String toString();
-    public static Period[] PERIOD_ARRAY = new Period[0];
+    Period[] PERIOD_ARRAY = new Period[0];
 }
 
 

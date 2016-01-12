@@ -15,10 +15,10 @@ package org.rapla.entities.domain;
 public interface RaplaObjectAnnotations
 {
 	/** Template Annotation */
-	final String KEY_TEMPLATE = "template"; 
-	final String KEY_TEMPLATE_COPYOF = "copyof";
+    String KEY_TEMPLATE = "template";
+	String KEY_TEMPLATE_COPYOF = "copyof";
 	/** Template externalid annotation */
-	final String KEY_EXTERNALID = "externalid"; 
+    String KEY_EXTERNALID = "externalid";
 	
 }
 

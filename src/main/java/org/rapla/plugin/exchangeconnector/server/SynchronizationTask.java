@@ -1,10 +1,10 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import java.io.Serializable;
-import java.util.Date;
-
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
+
+import java.io.Serializable;
+import java.util.Date;
 
 public class SynchronizationTask implements Serializable
 {
@@ -15,7 +15,7 @@ public class SynchronizationTask implements Serializable
 		,synched(false)
 		,deleted(false);
 		boolean unsynchronized;
-		private SyncStatus(boolean unszynchronized) 
+		SyncStatus(boolean unszynchronized)
 		{
 			this.unsynchronized =unszynchronized;
 		}

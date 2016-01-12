@@ -12,14 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.common;
 
-import java.awt.Component;
-import java.text.MessageFormat;
-import java.util.Locale;
+import org.rapla.entities.Named;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
-
-import org.rapla.entities.Named;
+import java.awt.Component;
+import java.text.MessageFormat;
+import java.util.Locale;
 
 public class NamedListCellRenderer extends DefaultListCellRenderer {
     private static final long serialVersionUID = 1L;

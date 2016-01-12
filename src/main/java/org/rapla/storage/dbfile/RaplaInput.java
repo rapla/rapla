@@ -12,13 +12,6 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
@@ -31,6 +24,13 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
 
 /** Reads the data in xml format from an InputSource into the
     LocalCache and converts it to a newer version if necessary.
@@ -129,17 +129,17 @@ public final class RaplaInput {
             Class<?> propMapC = Class.forName("com.thaiopensource.util.PropertyMap");
             Class<?> propMapBuilderC = Class.forName("com.thaiopensource.util.PropertyMapBuilder");
             Object propMapBuilder = propMapBuilderC.newInstance();
-            Method put = propMapBuilderC.getMethod("put", new Class[] {propIdC, Object.class} );
-            put.invoke( propMapBuilder, new Object[] {errorHandlerId, errorHandler});
-            Method topropMap = propMapBuilderC.getMethod("toPropertyMap", new Class[] {} );
-            Object propMap = topropMap.invoke( propMapBuilder, new Object[] {});
-            Constructor<?> validatorConst = validatorC.getConstructor( new Class[] { propMapC });
-            Object validator = validatorConst.newInstance( new Object[] {propMap});
-            Method loadSchema = validatorC.getMethod( "loadSchema", new Class[] {InputSource.class});
-            Method validate = validatorC.getMethod("validate", new Class[] {InputSource.class});
+            Method put = propMapBuilderC.getMethod("put", propIdC, Object.class);
+            put.invoke( propMapBuilder, errorHandlerId, errorHandler);
+            Method topropMap = propMapBuilderC.getMethod("toPropertyMap");
+            Object propMap = topropMap.invoke( propMapBuilder);
+            Constructor<?> validatorConst = validatorC.getConstructor(propMapC);
+            Object validator = validatorConst.newInstance(propMap);
+            Method loadSchema = validatorC.getMethod( "loadSchema", InputSource.class);
+            Method validate = validatorC.getMethod("validate", InputSource.class);
             InputSource schemaSource = new InputSource( getResource( schema ).toString() );
-            loadSchema.invoke( validator, new Object[] {schemaSource} );
-            validate.invoke( validator, new Object[] {in});
+            loadSchema.invoke( validator, schemaSource);
+            validate.invoke( validator, in);
         } catch (ClassNotFoundException ex) {
             throw new RaplaException( ex.getMessage() + ". Latest jing.jar is missing on the classpath. Please download from http://www.thaiopensource.com/relaxng/jing.html");
         } catch (InvocationTargetException e) {

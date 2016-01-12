@@ -1,14 +1,5 @@
 package org.rapla.client.edit.reservation.sample;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import org.rapla.client.ActivityManager;
 import org.rapla.client.ActivityPresenter;
 import org.rapla.entities.Entity;
@@ -18,6 +9,14 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.storage.StorageOperator;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID)
 @Singleton

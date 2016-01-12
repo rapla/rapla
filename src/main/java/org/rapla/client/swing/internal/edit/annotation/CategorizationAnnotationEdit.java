@@ -1,10 +1,5 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.AnnotationEditExtension;
@@ -20,6 +15,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Collections;
 
 @Extension(provides = AnnotationEditAttributeExtension.class, id = "categorization")
 public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension

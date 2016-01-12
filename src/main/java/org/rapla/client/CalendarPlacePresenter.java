@@ -1,17 +1,6 @@
 package org.rapla.client;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.CalendarPlaceView.Presenter;
@@ -29,7 +18,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 @Extension(provides = PlacePresenter.class, id = CalendarPlacePresenter.PLACE_ID)
 public class CalendarPlacePresenter implements Presenter, PlacePresenter

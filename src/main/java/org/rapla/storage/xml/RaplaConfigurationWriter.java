@@ -13,17 +13,19 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.LinkedHashMap;
-
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaException;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+
 
 public class RaplaConfigurationWriter extends RaplaXMLWriter {
+
+    final static String TAGNAME = "config";
 
     public RaplaConfigurationWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
@@ -31,13 +33,13 @@ public class RaplaConfigurationWriter extends RaplaXMLWriter {
 
     public void writeObject(RaplaObject type) throws IOException, RaplaException {
         RaplaConfiguration raplaConfig = (RaplaConfiguration) type ;
-        openElement("rapla:" + RaplaConfiguration.TYPE.getLocalName());
+        openElement("rapla:" + TAGNAME);
         try {
             printConfiguration(raplaConfig  );
         } catch (ConfigurationException ex) {
             throw new RaplaException( ex );
         }
-        closeElement("rapla:" + RaplaConfiguration.TYPE.getLocalName());
+        closeElement("rapla:" + TAGNAME);
     }
 
     /**

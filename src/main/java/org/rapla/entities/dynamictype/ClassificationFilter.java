@@ -107,7 +107,7 @@ public interface ClassificationFilter extends Cloneable {
     boolean matches(Classification classification);
     ClassificationFilter clone();
     
-    final ClassificationFilter[] CLASSIFICATIONFILTER_ARRAY = new ClassificationFilter[0];
+    ClassificationFilter[] CLASSIFICATIONFILTER_ARRAY = new ClassificationFilter[0];
     ClassificationFilter[] toArray();
 
 	class Util

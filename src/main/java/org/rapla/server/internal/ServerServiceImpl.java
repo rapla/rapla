@@ -38,8 +38,6 @@ import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.StorageUpdateListener;
-import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import javax.inject.Inject;
@@ -48,7 +46,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

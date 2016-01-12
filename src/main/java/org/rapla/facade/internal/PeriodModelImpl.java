@@ -11,14 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
@@ -36,6 +28,15 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 
 class PeriodModelImpl implements PeriodModel,ModificationListener
@@ -111,7 +112,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 
 
     private boolean isPeriod(Entity entity) {
-    	if  ( entity.getRaplaType() != Allocatable.TYPE)
+    	if  ( entity.getTypeClass() != Allocatable.class)
     	{
     		return false;
     	}
@@ -121,12 +122,8 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     	{
     		return false;
     	}
-    	if (!classification.getType().getKey().equals(StorageOperator.PERIOD_TYPE))
-    	{
-    		return false;
-    	}
-    	return true;
-	}
+        return classification.getType().getKey().equals(StorageOperator.PERIOD_TYPE);
+    }
 
 	protected QueryModule getQuery() {
         return facade;

@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -26,6 +20,12 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public abstract class AbstractClassifiableFilter  implements EntityReferencer, DynamicTypeDependant, Serializable
 {

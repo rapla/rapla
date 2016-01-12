@@ -12,13 +12,12 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
-import java.io.Serializable;
-
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.TypedComponentRole;
+
+import java.io.Serializable;
 
 /**
  * This class adds just the get Type method to the DefaultConfiguration so that the config can be stored in a preference object
@@ -29,8 +28,6 @@ import org.rapla.framework.TypedComponentRole;
 public class RaplaConfiguration extends DefaultConfiguration implements RaplaObject, Serializable{
    // Don't forget to increase the serialVersionUID when you change the fields
    private static final long serialVersionUID = 1;
-
-   public static final RaplaType<RaplaConfiguration> TYPE = new RaplaType<RaplaConfiguration>(RaplaConfiguration.class, "config");
 
    public RaplaConfiguration()
    {
@@ -53,9 +50,11 @@ public class RaplaConfiguration extends DefaultConfiguration implements RaplaObj
 	   super( configuration);
    }
 
-   public RaplaType getRaplaType() {
-	   return TYPE;
-   }
+    @Override
+    public Class<? extends RaplaObject> getTypeClass()
+    {
+        return RaplaConfiguration.class;
+    }
     
    public RaplaConfiguration replace(  Configuration oldChild, Configuration newChild) 
    {

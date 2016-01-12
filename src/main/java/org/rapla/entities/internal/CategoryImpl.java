@@ -12,6 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
+import org.rapla.components.util.Assert;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.internal.SimpleEntity;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,18 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import org.rapla.components.util.Assert;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ParentEntity;
-import org.rapla.entities.storage.internal.SimpleEntity;
 
 final public class CategoryImpl extends SimpleEntity implements Category, ParentEntity, ModifiableTimestamp
 {
@@ -84,10 +83,12 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         }
     }
 
-    @Override
-    public RaplaType<Category> getRaplaType() {return TYPE;}
+    @Override public Class<Category> getTypeClass()
+    {
+        return Category.class;
+    }
 
-	void setParent(CategoryImpl parent) {
+    void setParent(CategoryImpl parent) {
 		putEntity("parent", parent);
 		this.parent = parent;
 	}
@@ -152,7 +153,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         {
         	Assert.isTrue( !categoryImpl.isAncestorOf( this), "Can't add a parent category to one of its ancestors.");
         }
-        addEntity( (Entity) category);
+        addEntity(category);
 		categoryImpl.setParent(this);
     }
 
@@ -190,7 +191,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     }
 
     public Category findCategory(Category copy) {
-        return (Category) super.findEntity((Entity)copy);
+        return (Category) super.findEntity(copy);
     }
 
     public MultiLanguageName getName() {
@@ -423,7 +424,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         CategoryImpl parent2 = (CategoryImpl) c2.getParent();
         Assert.isTrue(parent.equals( parent2 ));
 
-        Collection<CategoryImpl> categories = ((CategoryImpl)parent).getSubEntities();
+        Collection<CategoryImpl> categories = parent.getSubEntities();
         for ( Category category: categories)
         {
             if ( category.equals( c1))

@@ -12,16 +12,8 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.client.swing.gui.edit.reservation.test;
-import java.awt.Point;
-import java.awt.Window;
-import java.util.Date;
-import java.util.concurrent.Semaphore;
-
-import javax.swing.JDialog;
-import javax.swing.SwingUtilities;
 
 import org.junit.Assert;
-import org.rapla.client.UserClientService;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -38,8 +30,12 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import javax.swing.JDialog;
+import javax.swing.SwingUtilities;
+import java.awt.Point;
+import java.awt.Window;
+import java.util.Date;
+import java.util.concurrent.Semaphore;
 
 public final class ReservationControllerTest extends GUITestCase {
 	ClientFacade facade = null;

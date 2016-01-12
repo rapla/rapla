@@ -1,9 +1,6 @@
 package org.rapla.client;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
 import org.rapla.client.event.StartActivityEvent;
@@ -13,7 +10,9 @@ import org.rapla.client.event.StopActivityEvent.StopActivityEventHandler;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public abstract class ActivityManager implements PlaceChangedEventHandler, StartActivityEventHandler, StopActivityEventHandler
 {

@@ -13,31 +13,6 @@
 
 package org.rapla.storage.impl.server;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
@@ -126,7 +101,31 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.server.ImportExportEntity;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -290,7 +289,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             User user = null;
             DynamicType t = getDynamicType(RAPLA_TEMPLATE);
-            DynamicType templateType = (DynamicType) editObject(t, user);
+            DynamicType templateType = editObject(t, user);
             // TODO What does this method do?
         }
     }
@@ -487,21 +486,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return templates;
     }
 
-    @Override public String createId(RaplaType raplaType) throws RaplaException
+    @Override public String createId(Class<? extends Entity> raplaType) throws RaplaException
     {
         String string = UUID.randomUUID().toString();
         String result = replaceFirst(raplaType, string);
         return result;
     }
 
-    private String replaceFirst(RaplaType raplaType, String string)
+    private String replaceFirst(Class<? extends Entity> raplaType, String string)
     {
-        Character firstLetter = raplaType.getFirstLetter();
+        final String localName = RaplaType.getLocalName(raplaType);
+        Character firstLetter = raplaType == Reservation.class ? 'e' : localName.charAt(0);
         String result = firstLetter + string.substring(1);
         return result;
     }
 
-    public String createId(RaplaType raplaType, String seed) throws RaplaException
+    @Override
+    public String createId(Class<? extends Entity> raplaType, String seed) throws RaplaException
     {
 
         byte[] data = new byte[16];
@@ -538,7 +539,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
-    public String[] createIdentifier(RaplaType raplaType, int count) throws RaplaException
+    public String[] createIdentifier(Class<? extends Entity> raplaType, int count) throws RaplaException
     {
         String[] ids = new String[count];
         for (int i = 0; i < count; i++)
@@ -671,7 +672,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public void changeEmail(User user, String newEmail) throws RaplaException
     {
-        User editableUser = user.isReadOnly() ? editObject(user, (User) user) : user;
+        User editableUser = user.isReadOnly() ? editObject(user, user) : user;
         Allocatable personReference = editableUser.getPerson();
         ArrayList<Entity> arrayList = new ArrayList<Entity>();
         Collection<Entity> storeObjects = arrayList;
@@ -750,7 +751,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Date date = getCurrentTimestamp();
             AllocatableImpl template = new AllocatableImpl(date, date);
             template.setResolver(this);
-            String templateId = createId(Allocatable.TYPE);
+            String templateId = createId(Allocatable.class);
             Classification newClassification = getDynamicType(RAPLA_TEMPLATE).newClassification();
             newClassification.setValue("name", templateKey);
             template.setClassification(newClassification);
@@ -799,7 +800,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         for (Entity entity : entities)
         {
-            if (entity.getRaplaType().getTypeClass() == User.class)
+            if (entity.getTypeClass() == User.class)
             {
                 User user = (User) entity;
                 String email = user.getEmail();
@@ -1078,9 +1079,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 newEntity = result.getLastKnown(id);
             }
-            final RaplaType raplaType = newEntity.getRaplaType();
-            if (raplaType == Conflict.TYPE || raplaType == Allocatable.TYPE || raplaType == Reservation.TYPE || raplaType == DynamicType.TYPE
-                    || raplaType == User.TYPE|| raplaType == Category.TYPE)
+            final Class<? extends  Entity> raplaType = newEntity.getTypeClass();
+            if (raplaType == Conflict.class || raplaType == Allocatable.class || raplaType == Reservation.class || raplaType == DynamicType.class
+                    || raplaType == User.class|| raplaType == Category.class)
             {
                 //history.getBefore(id, now);
                 //Date timestamp = ((LastChangedTimestamp) newEntity).getLastChanged();
@@ -1089,7 +1090,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final EntityHistory.HistoryEntry historyEntry = history.getLatest(id);
                 addToDeleteUpdate(historyEntry);
             }
-            else if (raplaType == Preferences.TYPE)
+            else if (raplaType == Preferences.class)
             {
                 ReferenceInfo referenceInfo = op.getReference();
                 boolean isDelete = op instanceof Remove;
@@ -1100,7 +1101,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     addToDeleteUpdate(referenceInfo,timestamp,isDelete, current);
                 }
             }
-            if (raplaType == Conflict.TYPE)
+            if (raplaType == Conflict.class)
             {
                 conflictChanges.add(op);
             }
@@ -1293,7 +1294,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         String id = historyEntry.getId();
         final boolean isDelete = historyEntry.isDelete();
         final Date timestamp = new Date(historyEntry.getTimestamp());
-        ReferenceInfo ref = new ReferenceInfo(id, historyEntry.getType().getTypeClass());
+        ReferenceInfo ref = new ReferenceInfo(id, historyEntry.getTypeClass());
         addToDeleteUpdate(ref, timestamp, isDelete, current);
     }
 
@@ -1497,7 +1498,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             DeleteUpdateEntry entry = this;
             if (current instanceof Ownable)
             {
-                String ownerId = ((Ownable) current).getOwnerId();
+                String ownerId = current.getOwnerId();
                 if (ownerId != null)
                 {
                     if (entry.affectedUserIds == null)
@@ -1838,7 +1839,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         for (String conflictId : disabledConflicts)
         {
-            cache.removeWithId(Conflict.TYPE, conflictId);
+            cache.removeWithId(Conflict.class, conflictId);
         }
     }
 
@@ -1915,8 +1916,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Entity entity : storeObjects)
         {
             //evt.putStore(entity);
-            RaplaType raplaType = entity.getRaplaType();
-            if (DynamicType.TYPE == raplaType)
+            Class<?extends Entity> raplaType = entity.getTypeClass();
+            if (raplaType == DynamicType.class)
             {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
                 addChangedDynamicTypeDependant(evt, store, dynamicType, false);
@@ -1967,13 +1968,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 continue;
             }
-            if (DynamicType.TYPE == entity.getRaplaType())
+            final Class<?extends  Entity> raplaType = entity.getTypeClass();
+            if (DynamicType.class == raplaType)
             {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
                 addChangedDynamicTypeDependant(evt, store, dynamicType, true);
             }
             // If entity is a user, remove the preference object
-            if (User.TYPE == entity.getRaplaType())
+            if (User.class == raplaType)
             {
                 addRemovedUserDependant(evt, store, (User) entity);
             }
@@ -1988,7 +1990,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @SuppressWarnings("deprecation") private void processOldPermssionModify(@SuppressWarnings("unused") EntityStore store, Entity entity)
     {
         Class<? extends Entity> clazz = (entity instanceof Reservation) ? Reservation.class : Allocatable.class;
-        Classifiable persistant = (Classifiable) tryResolve(((Entity) entity).getId(), clazz);
+        Classifiable persistant = (Classifiable) tryResolve(entity.getId(), clazz);
         Util.processOldPermissionModify((Classifiable) entity, persistant);
     }
 
@@ -2025,7 +2027,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     private void addChangedDependencies(UpdateEvent evt, EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove)
-            throws EntityNotFoundException, RaplaException
+            throws RaplaException
     {
         DynamicTypeDependant dependant;
         if (evt.getStoreObjects().contains(entity))
@@ -2040,7 +2042,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 user = resolve(cache, evt.getUserId(), User.class);
             }
-            @SuppressWarnings("unchecked") Class<Entity> entityType = entity.getRaplaType().getTypeClass();
+            Class<Entity> entityType = entity.getTypeClass();
             Entity persistant = store.tryResolve(entity.getId(), entityType);
             dependant = (DynamicTypeDependant) editObject(entity, persistant, user);
             // replace or add the modified entity
@@ -2123,7 +2125,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 else
                 {
-                    @SuppressWarnings("unchecked") Class<? extends Entity> typeClass = entity.getRaplaType().getTypeClass();
+                    @SuppressWarnings("unchecked") Class<? extends Entity> typeClass = entity.getTypeClass();
                     Entity persistant = cache.tryResolve(entity.getId(), typeClass);
                     Entity dependant = editObject(entity, persistant, user);
                     ((SimpleEntity) dependant).setLastChangedBy(null);
@@ -2154,9 +2156,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     final protected Set<Entity> getDependencies(Entity entity, EntityStore store)
     {
-        RaplaType type = entity.getRaplaType();
+        Class<? extends Entity> type = entity.getTypeClass();
         final Collection<Entity> referencingEntities;
-        if (Category.TYPE == type || DynamicType.TYPE == type || Allocatable.TYPE == type || User.TYPE == type)
+        if (Category.class == type || DynamicType.class == type || Allocatable.class == type || User.class == type)
         {
             HashSet<Entity> dependencyList = new HashSet<Entity>();
             referencingEntities = getReferencingEntities(entity, store);
@@ -2217,7 +2219,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         while (it.hasNext())
         {
             RaplaObject entity = it.next();
-            if (DynamicType.TYPE != entity.getRaplaType())
+            if (DynamicType.class != entity.getTypeClass())
                 continue;
             DynamicType type = (DynamicType) entity;
             String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
@@ -2278,16 +2280,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             String name = "";
             Entity entity2 = null;
-            if (DynamicType.TYPE == entity.getRaplaType())
+            final Class<? extends Entity> typeClass = entity.getTypeClass();
+            if (DynamicType.class == typeClass)
             {
                 DynamicType type = (DynamicType) entity;
                 name = type.getKey();
-                entity2 = (Entity) store.getDynamicType(name);
+                entity2 = store.getDynamicType(name);
                 if (entity2 != null && !entity2.equals(entity))
                     throwNotUnique(name);
             }
 
-            if (Category.TYPE == entity.getRaplaType())
+            if (Category.class == typeClass)
             {
                 Category category = (Category) entity;
                 Category[] categories = category.getCategories();
@@ -2305,7 +2308,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
 
-            if (User.TYPE == entity.getRaplaType())
+            if (User.class == entity.getTypeClass())
             {
                 name = ((User) entity).getUsername();
                 if (name == null || name.trim().length() == 0)
@@ -2393,7 +2396,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 Entity reference = store.resolve(referenceInfo.getId(), referenceInfo.getType());
                 if (reference instanceof Preferences || reference instanceof Conflict || reference instanceof Reservation || reference instanceof Appointment)
                 {
-                    throw new RaplaException("The current version of Rapla doesn't allow references to objects of type " + reference.getRaplaType());
+                    throw new RaplaException("The current version of Rapla doesn't allow references to objects of type " + reference.getTypeClass());
                 }
             }
         }
@@ -2407,8 +2410,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void checkConsitency(Entity entity, Category superCategory) throws RaplaException
     {
-        RaplaType raplaType = entity.getRaplaType();
-        if (Category.TYPE == raplaType)
+        Class<? extends Entity> raplaType = entity.getTypeClass();
+        if (Category.class == raplaType)
         {
             if (entity.equals(superCategory))
             {
@@ -2451,17 +2454,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        else if (Reservation.TYPE == raplaType)
+        else if (Reservation.class == raplaType)
         {
             Reservation reservation = (Reservation) entity;
             checkReservation(reservation);
         }
-        else if (DynamicType.TYPE == raplaType)
+        else if (DynamicType.class == raplaType)
         {
             DynamicType type = (DynamicType) entity;
             DynamicTypeImpl.validate(type, i18n);
         }
-        else if (Allocatable.TYPE == raplaType)
+        else if (Allocatable.class == raplaType)
         {
             final Classification classification = ((Allocatable) entity).getClassification();
             if (classification.getType().getKey().equals(PERIOD_TYPE))
@@ -2610,7 +2613,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Set<Entity> deletedCategories = new HashSet<Entity>();
         for (Entity entity : storeObjects)
         {
-            if (entity.getRaplaType() == Category.TYPE)
+            if (entity.getTypeClass() == Category.class)
             {
                 Category newCat = (Category) entity;
                 Category old = tryResolve(entity.getId(), Category.class);
@@ -3171,7 +3174,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         list.put(type);
         for (Attribute att : type.getAttributes())
         {
-            list.put((Entity) att);
+            list.put(att);
         }
     }
 
@@ -3249,7 +3252,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         else
         {
-            ((RefEntity) attribute).setId(id);
+            attribute.setId(id);
         }
         attribute.setResolver(this);
         return attribute;
@@ -3258,7 +3261,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private <T extends Entity> void setNew(T entity) throws RaplaException
     {
 
-        RaplaType raplaType = entity.getRaplaType();
+        Class<? extends Entity> raplaType = entity.getTypeClass();
         String id = createIdentifier(raplaType, 1)[0];
         ((RefEntity) entity).setId(id);
     }

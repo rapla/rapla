@@ -6,8 +6,6 @@ import org.rapla.client.UserClientService;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
-import org.rapla.entities.User;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 

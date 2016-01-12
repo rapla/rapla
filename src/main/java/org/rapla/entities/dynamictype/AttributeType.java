@@ -35,7 +35,7 @@ public enum AttributeType {
     private String type;
    
 
-    private AttributeType(String type) {
+    AttributeType(String type) {
         this.type = type;
     }
     

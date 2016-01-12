@@ -12,29 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,12 +39,34 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(JUnit4.class)
 public class SQLOperatorTest extends AbstractOperatorTest
@@ -554,7 +553,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 ClientFacade initFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
                 initReference.set(initFacade);
                 semaphore.release();
-            };
+            }
         }).start();
         // and remove an new reservation and its allocations
 

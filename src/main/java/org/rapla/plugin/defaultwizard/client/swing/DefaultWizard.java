@@ -13,19 +13,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client.swing;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.swing.MenuElement;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.StartActivityEvent;
@@ -39,7 +27,6 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
@@ -48,8 +35,19 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.storage.PermissionController;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.swing.MenuElement;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
 */

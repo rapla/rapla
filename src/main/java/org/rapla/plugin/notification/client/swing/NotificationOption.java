@@ -12,15 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.client.swing;
 
-import java.util.Collection;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -36,6 +27,14 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.util.Collection;
+import java.util.Locale;
 
 @Extension(provides = UserOptionPanel.class, id= NotificationPlugin.PLUGIN_ID)
 public class NotificationOption extends RaplaGUIComponent implements UserOptionPanel {

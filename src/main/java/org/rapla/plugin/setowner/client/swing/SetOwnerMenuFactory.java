@@ -1,25 +1,5 @@
 package org.rapla.plugin.setowner.client.swing;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.ImageIcon;
-import javax.swing.JTree;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import javax.swing.tree.TreeSelectionModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -36,7 +16,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -48,6 +27,25 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.setowner.SetOwnerResources;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.ImageIcon;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.TreeSet;
 
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="setowner")
@@ -100,17 +98,17 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     		}
     		else if ( obj instanceof Entity )
     		{
-    			RaplaType raplaType = ((RaplaObject)obj).getRaplaType();
-    	    	if ( raplaType == Appointment.TYPE )
+    			Class<? extends  Entity> raplaType = ((Entity)obj).getTypeClass();
+    	    	if ( raplaType == Appointment.class )
     	        {
     	    		Appointment appointment = (Appointment) obj;
     	    	    		ownable = appointment.getReservation();
     	        }
-    	    	else if ( raplaType ==  Reservation.TYPE)
+    	    	else if ( raplaType ==  Reservation.class)
     	    	{
     	    		ownable = (Reservation) obj;
     	    	}
-    	    	else if ( raplaType ==  Allocatable.TYPE)
+    	    	else if ( raplaType ==  Allocatable.class)
     	    	{
     	    		ownable = (Allocatable) obj;
     	    	}

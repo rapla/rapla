@@ -1,9 +1,5 @@
 package org.rapla.plugin.exchangeconnector.client;
 
-import java.beans.PropertyChangeListener;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
@@ -18,6 +14,9 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
+
+import javax.inject.Inject;
+import java.beans.PropertyChangeListener;
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=PublishExtensionFactory.class)
 public class ExchangeExtensionFactory extends RaplaComponent implements PublishExtensionFactory

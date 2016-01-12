@@ -1,9 +1,7 @@
 package org.rapla.plugin.weekview.client.weekview.gwt;
 
-import java.util.List;
-
-import javax.inject.Inject;
-
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.IsWidget;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.gwt.view.WeekviewGWT;
@@ -19,8 +17,8 @@ import org.rapla.plugin.weekview.client.weekview.CalendarWeekView;
 import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
 import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.RowSlot;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.IsWidget;
+import javax.inject.Inject;
+import java.util.List;
 
 @DefaultImplementation(of = CalendarWeekView.class, context = InjectionContext.gwt)
 public class CalendarWeekViewImpl extends AbstractView<org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter>

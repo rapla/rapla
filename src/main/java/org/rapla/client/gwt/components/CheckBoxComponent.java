@@ -1,9 +1,8 @@
 package org.rapla.client.gwt.components;
 
-import org.gwtbootstrap3.client.ui.CheckBox;
-
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
+import org.gwtbootstrap3.client.ui.CheckBox;
 
 public class CheckBoxComponent extends CheckBox
 {

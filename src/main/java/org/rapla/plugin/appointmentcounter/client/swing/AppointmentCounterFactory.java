@@ -1,15 +1,5 @@
 package org.rapla.plugin.appointmentcounter.client.swing;
 
-import java.awt.Font;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
@@ -26,6 +16,15 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import java.awt.Font;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @Extension(provides = AppointmentStatusFactory.class, id="appointmentcounter")
 @Singleton

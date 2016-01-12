@@ -12,14 +12,26 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.facade.Conflict;
+import org.rapla.framework.RaplaException;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.rapla.framework.RaplaException;
 
 /**
  * Enumeration Pattern for all Rapla objects. You should not instanciate Objects of this type,
@@ -28,88 +40,82 @@ import org.rapla.framework.RaplaException;
  */
 public class RaplaType<T>  {
 
+
+
     private Class<T> type;
     private String localname;
-    private Character firstLetter;
-    private static Map<Class<? extends RaplaObject>,RaplaType> registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
-    private static Map<String,RaplaType> registeredTypeNames = new HashMap<String,RaplaType>();
+    private static final  Map<Class<? extends RaplaObject>,RaplaType> registeredTypes;
+    private static final  Map<String,RaplaType> registeredTypeNames;
+
+    static
+    {
+        registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
+        registeredTypeNames = new HashMap<String,RaplaType>();
+        new RaplaType<Reservation>(Reservation.class, "reservation");
+        new RaplaType<Appointment>(Appointment.class, "appointment" );
+        new RaplaType<Conflict>(Conflict.class,"conflict");
+        new RaplaType<Category>(Category.class, "category");
+        new RaplaType<User>(User.class,"user");
+        new RaplaType<CalendarModelConfiguration>(CalendarModelConfiguration.class, "calendar");
+        new RaplaType<Preferences>(Preferences.class, "preferences");
+        new RaplaType<RaplaConfiguration>(RaplaConfiguration.class, "config");
+        new RaplaType<RaplaMap>(RaplaMap.class, "map");
+        new RaplaType<Allocatable>(Allocatable.class, "resource");
+        new RaplaType<Period>(Period.class, "period");
+        new RaplaType<Attribute>(Attribute.class, "attribute");
+        new RaplaType<DynamicType>(DynamicType.class, "dynamictype");
+        new RaplaType<ImportExportEntity>(ImportExportEntity.class, "IMPORT_EXPORT");
+    }
+
 
 	public RaplaType(Class<T> clazz, String localname) {
 //        @SuppressWarnings("unchecked")
 //		Class<? extends RaplaObject> clazz2 = clazz;
 		this.type = clazz;
         this.localname = localname;
-        firstLetter = localname.charAt( 0);
-        if ( registeredTypes == null)
-        {
-            registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
-            registeredTypeNames = new HashMap<String,RaplaType>();
-        }
-        if ( registeredTypes.get( clazz ) != null) {
-            throw new IllegalStateException( "Type already registered");
-        }
         @SuppressWarnings("unchecked")
 		Class<? extends RaplaObject> casted = (Class<? extends RaplaObject>) type;
 		registeredTypes.put( casted, this);
         registeredTypeNames.put( localname, this);
     }
 	
-	public RaplaType(Class<T> clazz, String localname, Character firstLetter) {
-	    this(clazz, localname);
-	    this.firstLetter = firstLetter;
-    }
-
-    static public RaplaType find( String typeName) throws RaplaException 
+    static public Class<? extends Entity> find( String typeName) throws RaplaException
     {
     	RaplaType raplaType = registeredTypeNames.get( typeName);
     	if (raplaType != null)
     	{
-    		return raplaType;
+    		return raplaType.type;
     	}
     	throw new RaplaException("Cant find Raplatype for name" + typeName);
     }
-    
-    static public <T extends RaplaObject> RaplaType<T> get(Class<T> clazz)
+
+    static public <T extends RaplaObject> String getLocalName(RaplaObject object)
+    {
+        return getLocalName(object.getTypeClass());
+    }
+
+
+    static public <T extends RaplaObject> String getLocalName(Class<T> clazz)
+    {
+        RaplaType<T> result = get( clazz);
+        return result.localname;
+    }
+
+    static private <T extends RaplaObject> RaplaType<T> get(Class<T> clazz)
     {
     	@SuppressWarnings("unchecked")
 		RaplaType<T> result = registeredTypes.get( clazz);
 		return result;
-    }
-    
-    public boolean is(RaplaType other) {
-        if ( other == null)
-            return false;
-        return type.equals( other.type);
-    }
-
-    public String getLocalName() {
-        return localname;
     }
 
     public String toString() {
         return type.getName();
     }
 
-    public boolean equals( Object other) {
-        if ( !(other instanceof RaplaType))
-            return false;
-        return is( (RaplaType)other);
-    }
-
     public int hashCode() {
         return type.hashCode();
     }
-    
-    public Class<T> getTypeClass()
-    {
-    	return type;
-    }
-    
-    public Character getFirstLetter()
-    {
-        return firstLetter;
-    }
-    
+
     @SuppressWarnings("unchecked")
 	public static  <T extends RaplaObject> Set<T> retainObjects(Collection<? extends RaplaObject> set,Collection<T> col) {
 	    HashSet<RaplaObject> tempSet = new HashSet<RaplaObject>(set.size());

@@ -88,7 +88,7 @@ public class StandaloneStarter extends GUIStarter
         return new ConnectInfo(username, "".toCharArray());
     }
 
-    private void startStandaloneGUI(RaplaStartupEnvironment env, ConnectInfo connectInfo, final ServerServiceContainer server) throws RaplaException, Exception {
+    private void startStandaloneGUI(RaplaStartupEnvironment env, ConnectInfo connectInfo, final ServerServiceContainer server) throws Exception {
         RemoteAuthentificationServiceImpl.setPasswordCheckDisabled(true);
         String reconnectUser = connectInfo.getConnectAs() != null ? connectInfo.getConnectAs() : connectInfo.getUsername();
         User user = server.getOperator().getUser(reconnectUser);
@@ -104,7 +104,7 @@ public class StandaloneStarter extends GUIStarter
         ServerServiceContainer server = serverStarter.getServer();
         if (server != null && server instanceof  Disposable)
         {
-            ((Disposable)server).dispose();
+            server.dispose();
         }
         super.exit();
        

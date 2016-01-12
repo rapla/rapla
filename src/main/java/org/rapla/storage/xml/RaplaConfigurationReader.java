@@ -34,7 +34,7 @@ public class RaplaConfigurationReader extends RaplaXMLReader  {
     public void processElement(String namespaceURI,String localName,RaplaSAXAttributes atts)
         throws RaplaSAXParseException
     {
-        if ( RAPLA_NS.equals(namespaceURI) && localName.equals("config")) 
+        if ( RAPLA_NS.equals(namespaceURI) && localName.equals(RaplaConfigurationWriter.TAGNAME))
             return;
         delegating = true;
         configurationHandler.startElement(namespaceURI,localName, atts);
@@ -44,7 +44,7 @@ public class RaplaConfigurationReader extends RaplaXMLReader  {
     public void processEnd(String namespaceURI,String localName)
         throws RaplaSAXParseException
     {
-        if ( RAPLA_NS.equals(namespaceURI) && localName.equals("config")) 
+        if ( RAPLA_NS.equals(namespaceURI) && localName.equals(RaplaConfigurationWriter.TAGNAME))
         {
             return;
         }

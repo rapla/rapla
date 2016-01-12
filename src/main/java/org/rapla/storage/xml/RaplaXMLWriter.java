@@ -12,14 +12,6 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Provider;
-
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Annotatable;
@@ -31,7 +23,6 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.dynamictype.Attribute;
@@ -42,6 +33,13 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
+import javax.inject.Provider;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 abstract public class RaplaXMLWriter extends XMLWriter
     implements Namespaces
@@ -50,9 +48,9 @@ abstract public class RaplaXMLWriter extends XMLWriter
     //protected NamespaceSupport namespaceSupport = new NamespaceSupport();
     private boolean isPrintId;
 
-    private Map<String,RaplaType> localnameMap;
+    private Map<String,Class<? extends RaplaObject>> localnameMap;
     Logger logger;
-    Map<RaplaType,RaplaXMLWriter> writerMap;
+    Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap;
     protected RaplaXMLContext context;
     protected SerializableDateTimeFormat dateTimeFormat = SerializableDateTimeFormat.INSTANCE;
     Provider<Category> superCategory;
@@ -257,12 +255,13 @@ abstract public class RaplaXMLWriter extends XMLWriter
 
 
     protected void printReference(Entity entity) throws IOException, EntityNotFoundException {
-        String localName = entity.getRaplaType().getLocalName();
+        String localName = RaplaType.getLocalName(entity);
         openTag("rapla:" + localName);
-        if ( entity.getRaplaType() == DynamicType.TYPE ) {
+        final Class typeClass = entity.getTypeClass();
+        if ( typeClass == DynamicType.class ) {
             att("keyref", ((DynamicType)entity).getKey());
         }
-        else if ( entity.getRaplaType() == Category.TYPE  && !isPrintId()) 
+        else if ( typeClass == Category.class  && !isPrintId())
         {
             String path = getKeyPath( (CategoryImpl)getSuperCategory(), (Category) entity);
             att("keyref", path);
@@ -280,10 +279,10 @@ abstract public class RaplaXMLWriter extends XMLWriter
         return id2.toString();
     }
 
-    protected RaplaXMLWriter getWriterFor(RaplaType raplaType) throws RaplaException {
-        RaplaXMLWriter writer = writerMap.get(raplaType);
+    protected RaplaXMLWriter getWriterFor(Class<? extends RaplaObject> classType) throws RaplaException {
+        RaplaXMLWriter writer = writerMap.get(classType);
         if ( writer == null) {
-            throw new RaplaException("No writer for type " + raplaType);
+            throw new RaplaException("No writer for type " + classType);
         }
         writer.setIndentLevel( getIndentLevel());
         writer.setWriter( getWriter());
@@ -311,15 +310,17 @@ abstract public class RaplaXMLWriter extends XMLWriter
         throw new RaplaException("Method not implemented by subclass " + this.getClass().getName());
     }
 
-    public String getLocalNameForType(RaplaType raplaType) throws RaplaException{
-        for (Iterator<Map.Entry<String,RaplaType>> it = localnameMap.entrySet().iterator();it.hasNext();) {
-            Map.Entry<String,RaplaType> entry =it.next();
+    /*
+    public String getLocalNameForType(Class<? extends RaplaObject> raplaType) throws RaplaException{
+        for (Iterator<Map.Entry<String,Class<? extends RaplaObject>>> it = localnameMap.entrySet().iterator();it.hasNext();) {
+            Map.Entry<String,Class<? extends RaplaObject>> entry =it.next();
             if (entry.getValue().equals( raplaType)) {
                 return entry.getKey();
             }
         }
         throw new RaplaException("No writer declared for Type " + raplaType );
     }
+    */
 
 
 

@@ -1,12 +1,5 @@
 package org.rapla.client.swing.toolkit;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
@@ -18,6 +11,12 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * Found on http://tips4java.wordpress.com/2009/02/01/menu-scroller/
@@ -553,7 +552,7 @@ public class MenuScroller {
     }
   }
 
-  private static enum MenuIcon implements Icon {
+  private enum MenuIcon implements Icon {
 
     UP(9, 1, 9),
     DOWN(1, 9, 1);

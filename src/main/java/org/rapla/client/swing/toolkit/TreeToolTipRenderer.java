@@ -13,5 +13,5 @@
 package org.rapla.client.swing.toolkit;
 import javax.swing.JTree;
 public interface TreeToolTipRenderer {
-    public String getToolTipText(JTree table, int row);
+    String getToolTipText(JTree table, int row);
 }

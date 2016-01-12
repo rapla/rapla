@@ -20,7 +20,6 @@ import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;

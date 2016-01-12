@@ -1,9 +1,13 @@
 package org.rapla.client.gwt.components;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONString;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import org.gwtbootstrap3.client.ui.Input;
 import org.gwtbootstrap3.client.ui.constants.InputType;
 import org.rapla.RaplaResources;
@@ -15,14 +19,9 @@ import org.rapla.client.gwt.components.util.JqEvent;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
-import com.google.gwt.core.client.JavaScriptObject;
-import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
-import com.google.gwt.event.logical.shared.ValueChangeEvent;
-import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.json.client.JSONArray;
-import com.google.gwt.json.client.JSONString;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DateRangeComponent extends Input
 {
@@ -34,47 +33,41 @@ public class DateRangeComponent extends Input
     @JsType
     public interface DateRangePickerJquery extends JQueryElement
     {
-        public DateRangePickerElement daterangepicker(DateRangeOptions options);
+        DateRangePickerElement daterangepicker(DateRangeOptions options);
     }
 
     @JsType
     public interface DateRangePickerElement extends JQueryElement
     {
-        public DateRangePicker data(String key);
+        DateRangePicker data(String key);
     }
 
     @JsType
     public interface DateRangePicker extends JQueryElement
     {
-        @JsProperty
-        public void setTimePicker(boolean timePicker);
+        @JsProperty void setTimePicker(boolean timePicker);
 
-        @JsProperty
-        public boolean isTimePicker();
+        @JsProperty boolean isTimePicker();
 
-        @JsProperty
-        public Locale getLocale();
+        @JsProperty Locale getLocale();
 
-        public void setStartDate(Date start);
+        void setStartDate(Date start);
 
-        public void setEndDate(Date end);
+        void setEndDate(Date end);
 
-        public void updateView();
+        void updateView();
         
-        public void remove();
+        void remove();
     }
 
     @JsType
     public interface DateRangeOptions
     {
-        @JsProperty
-        public void setLocale(Locale locale);
+        @JsProperty void setLocale(Locale locale);
 
-        @JsProperty
-        public Locale getLocale();
+        @JsProperty Locale getLocale();
 
-        @JsProperty
-        public void setTimePicker(boolean timePicker);
+        @JsProperty void setTimePicker(boolean timePicker);
 
         @JsProperty
         boolean isTimePicker();

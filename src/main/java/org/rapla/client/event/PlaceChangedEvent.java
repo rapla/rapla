@@ -1,13 +1,12 @@
 package org.rapla.client.event;
 
+import com.google.web.bindery.event.shared.Event;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
 
-import com.google.web.bindery.event.shared.Event;
-
 public class PlaceChangedEvent extends Event<PlaceChangedEventHandler>
 {
-    public static interface PlaceChangedEventHandler
+    public interface PlaceChangedEventHandler
     {
         void placeChanged(PlaceChangedEvent event);
     }

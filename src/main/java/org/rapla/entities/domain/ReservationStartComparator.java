@@ -11,11 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+
+import org.rapla.entities.NamedComparator;
+
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
-
-import org.rapla.entities.NamedComparator;
 
 public class ReservationStartComparator implements Comparator<Reservation> {
     NamedComparator<Reservation> namedComp;

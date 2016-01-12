@@ -20,13 +20,13 @@ public interface DynamicTypeDependant  {
      * Example: If you remove an attribute from a resource type, and one resource of the resourcetype doesnt use this attribute this resource doesnt need modifaction, so it can return false
      * @param type The new dynamic type
      * */
-    public boolean needsChange(DynamicType type);
+    boolean needsChange(DynamicType type);
     /** process the change  in the object
     *Example: If you remove an attribute from a resource type, you should remove the corresponding attriabute value in all resources of the resourcetype
     * @param type The new dynamic type*/
-    public void commitChange(DynamicType type);
+    void commitChange(DynamicType type);
     /** throws a CannotExistWithoutTypeException when type cannot be removed*/
-    public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException;
+    void commitRemove(DynamicType type) throws CannotExistWithoutTypeException;
 }
 
 

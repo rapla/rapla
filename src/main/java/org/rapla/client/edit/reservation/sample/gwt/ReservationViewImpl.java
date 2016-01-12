@@ -1,9 +1,15 @@
 package org.rapla.client.edit.reservation.sample.gwt;
 
-import java.util.ArrayList;
-
-import javax.inject.Inject;
-
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.LIElement;
+import com.google.gwt.dom.client.Node;
+import com.google.gwt.dom.client.NodeList;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
 import org.gwtbootstrap3.client.ui.AnchorListItem;
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.NavTabs;
@@ -26,16 +32,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.LIElement;
-import com.google.gwt.dom.client.Node;
-import com.google.gwt.dom.client.NodeList;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.PopupPanel;
-import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
+import javax.inject.Inject;
+import java.util.ArrayList;
 
 @DefaultImplementation(of = ReservationView.class, context = InjectionContext.gwt)
 public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>

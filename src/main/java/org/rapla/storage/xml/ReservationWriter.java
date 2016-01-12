@@ -13,15 +13,15 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Date;
-
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
+
+import java.io.IOException;
+import java.util.Date;
 
 
 public class ReservationWriter extends ClassifiableWriter {

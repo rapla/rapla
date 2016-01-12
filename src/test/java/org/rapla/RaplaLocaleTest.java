@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.util.Calendar;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +20,8 @@ import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
+
+import java.util.Calendar;
 
 @RunWith(JUnit4.class)
 public class RaplaLocaleTest 

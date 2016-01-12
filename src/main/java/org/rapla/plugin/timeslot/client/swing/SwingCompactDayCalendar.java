@@ -163,7 +163,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 int slots = columns*timeslots.size();
 				for ( int i=0;i<slots;i++) 
                 {
-                	if ( ((SwingCompactWeekView)view).isSelected(i))
+                	if ( view.isSelected(i))
                 	{
                 		int column = i%columns;
                 		Allocatable allocatable = selectedAllocatables.get( column);
@@ -193,7 +193,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 				
 		        for ( int i=0;i<slots;i++) 
 		        {
-		        	if ( ((SwingCompactWeekView)view).isSelected(i))
+		        	if ( view.isSelected(i))
 		        	{
 		        		int index = i/columns;
 		        		int time = timeslots.get(index).getMinuteOfDay();

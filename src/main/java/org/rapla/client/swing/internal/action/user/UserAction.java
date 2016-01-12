@@ -13,9 +13,9 @@
 package org.rapla.client.swing.internal.action.user;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.PopupContext;
 import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;

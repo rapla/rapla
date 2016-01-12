@@ -12,6 +12,21 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.components.calendar;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.MenuElement;
+import javax.swing.MenuSelectionManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -37,21 +52,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
-import javax.swing.ImageIcon;
-import javax.swing.JComponent;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollBar;
-import javax.swing.JScrollPane;
-import javax.swing.ListSelectionModel;
-import javax.swing.MenuElement;
-import javax.swing.MenuSelectionManager;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 /** A ComboBox like time chooser.
  *  It is localizable and it uses swing-components.
  *  <p>The combobox editor is a {@link TimeField}. If the ComboBox-Button

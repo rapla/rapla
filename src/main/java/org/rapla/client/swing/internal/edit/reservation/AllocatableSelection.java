@@ -12,76 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.EventObject;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.DefaultCellEditor;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.JTree;
-import javax.swing.MenuSelectionManager;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.EventListenerList;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
-import javax.swing.plaf.basic.BasicCheckBoxMenuItemUI;
-import javax.swing.plaf.basic.BasicRadioButtonMenuItemUI;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumnModel;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -124,7 +54,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -137,6 +66,76 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.DefaultCellEditor;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.JTree;
+import javax.swing.MenuSelectionManager;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
+import javax.swing.plaf.basic.BasicCheckBoxMenuItemUI;
+import javax.swing.plaf.basic.BasicRadioButtonMenuItemUI;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumnModel;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -335,7 +334,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     {
         calendarModel.dataChanged(evt);
         boolean updateBindings = false;
-        if (evt.isModified(Allocatable.TYPE))
+        if (evt.isModified(Allocatable.class))
         {
             updateBindings = true;
             Collection<Allocatable> allAllocatables = getAllAllocatables();
@@ -359,7 +358,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             updateButtons();
         }
 
-        if (updateBindings || evt.isModified(Reservation.TYPE))
+        if (updateBindings || evt.isModified(Reservation.class))
         {
             updateBindings(null);
         }
@@ -935,10 +934,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             if (column == 1 && bWorkaround)
                 return true;
             Object o = ((DefaultMutableTreeNode) node).getUserObject();
-            if (column == 1 && o instanceof Allocatable)
-                return true;
-            else
-                return false;
+            return column == 1 && o instanceof Allocatable;
         }
 
         public Object getValueAt(Object node, int column)
@@ -2198,10 +2194,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
             List<Allocatable> changed = new ArrayList<Allocatable>();
             boolean addOrRemove;
-            if (command.equals("add"))
-                addOrRemove = false;
-            else
-                addOrRemove = true;
+            addOrRemove = !command.equals("add");
 
             Iterator<Allocatable> it = elements.iterator();
             while (it.hasNext())

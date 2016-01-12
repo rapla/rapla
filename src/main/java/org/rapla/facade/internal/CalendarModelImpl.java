@@ -18,7 +18,6 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
@@ -33,7 +32,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -57,6 +55,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -279,7 +278,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             selectedObjects.add( ALLOCATABLES_ROOT);
         }
         
-        Set<User> selectedUsers = getSelected(User.TYPE);
+        Set<User> selectedUsers = getSelected(User.class);
         User currentUser = getUser();
         if (currentUser != null &&  selectedUsers.size() == 1 && selectedUsers.iterator().next().equals( currentUser))
         {
@@ -371,9 +370,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
         }
         {
-            if (evt.isModified( DynamicType.TYPE) || evt.isModified( Category.TYPE) || evt.isModified( User.TYPE))
+            if (evt.isModified( DynamicType.class) || evt.isModified( Category.class) || evt.isModified( User.class))
             {
-                CalendarModelConfigurationImpl config = (CalendarModelConfigurationImpl)createConfiguration();
+                CalendarModelConfigurationImpl config = createConfiguration();
                 updateConfig(evt, config);
                 if  ( beforeTemplateConf != null)
                 {
@@ -397,7 +396,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         for ( RaplaObject obj:evt.getChanged())
         {
-            if ( obj.getRaplaType() == DynamicType.TYPE)
+            if ( obj.getTypeClass() == DynamicType.class)
             {
                 DynamicType type = (DynamicType) obj;
                 if ( config.needsChange(type))
@@ -483,10 +482,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
     
         final ClassificationFilter[] filterArray = filter.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
         List<String> selectedIds = new ArrayList<String>();
-        Collection<RaplaType> idTypeList = new ArrayList<RaplaType>();
+        Collection<Class<? extends Entity>> idTypeList = new ArrayList<Class<? extends Entity>>();
         for (Entity obj:selected)
         {
-            RaplaType raplaType = obj.getRaplaType();
+            Class<? extends Entity> raplaType = obj.getTypeClass();
             if (CalendarModelConfigurationImpl.canReference( raplaType))
             {
                 selectedIds.add( obj.getId());
@@ -956,7 +955,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         else if ( currentUser != null && currentUser.isAdmin())
         {
-            final Set<User> selected = getSelected(User.TYPE);
+            final Set<User> selected = getSelected(User.class);
             final Set<String> selectedUserIs = new HashSet<String>();
             for ( User user:selected)
             {
@@ -974,12 +973,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         for (RaplaObject obj :getSelectedObjects())
         {
-            RaplaType raplaType = obj.getRaplaType();
-            if ( raplaType == Allocatable.TYPE)
+            Class<? extends RaplaObject> raplaType = obj.getTypeClass();
+            if ( raplaType == Allocatable.class)
             {
                 return false;
             }
-            else if (raplaType == DynamicType.TYPE)
+            else if (raplaType == DynamicType.class)
             {
                 DynamicType type = (DynamicType) obj;
                 String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
@@ -1010,7 +1009,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         boolean conflictsDetected = false;
         for(RaplaObject object:selectedObjectsAndChildren) {
             Allocatable alloc = null;
-            if ( object.getRaplaType() ==  Conflict.TYPE ) {
+            if ( object.getTypeClass() ==  Conflict.class ) {
                 if ( !conflictsDetected)
                 {
                     // We ignore the allocatable selection if there are conflicts selected
@@ -1021,7 +1020,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 
                 
             }
-            if ( !conflictsDetected && object.getRaplaType() ==Allocatable.TYPE ) {
+            if ( !conflictsDetected && object.getTypeClass() ==Allocatable.class ) {
                 alloc = (Allocatable)object ;
             }
             if ( alloc != null && isInFilterAndCanRead( alloc))
@@ -1033,7 +1032,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
 
     public Collection<Conflict> getSelectedConflicts()  {
-        return getSelected(Conflict.TYPE);
+        return getSelected(Conflict.class);
    }
 
     public Set<DynamicType> getSelectedTypes(String classificationType) throws RaplaException {
@@ -1041,7 +1040,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Iterator<RaplaObject> it = getSelectedObjectsAndChildren().iterator();
         while (it.hasNext()) {
             RaplaObject object  =  it.next();
-            if ( object.getRaplaType() == DynamicType.TYPE ) {
+            if ( object.getTypeClass() == DynamicType.class ) {
                 if (classificationType == null || (( DynamicType) object).getAnnotation( DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE).equals( classificationType))
                 {
                     result.add((DynamicType) object  );
@@ -1051,12 +1050,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
          return result;
    }
     
-    private <T extends RaplaObject<T>> Set<T> getSelected(RaplaType<T> type)  {
+    private <T extends RaplaObject<T>> Set<T> getSelected(Class<T> type)  {
         Set<T> result = new HashSet<T>();
         Iterator<RaplaObject> it = getSelectedObjects().iterator();
         while (it.hasNext()) {
             RaplaObject object  =  it.next();
-            if ( object.getRaplaType() ==  type ) {
+            if ( object.getTypeClass() ==  type ) {
                 @SuppressWarnings("unchecked")
                 T casted = (T)object;
                 result.add( casted  );
@@ -1068,11 +1067,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Override
     public boolean isOnlyCurrentUserSelected() {
         String option = getOption(CalendarModel.ONLY_MY_EVENTS );
-        if ( option != null && option.equalsIgnoreCase("TRUE"))
-        {
-            return true;
-        }
-        return false;
+        return option != null && option.equalsIgnoreCase("TRUE");
     }
 
     @Override
@@ -1080,7 +1075,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         List<RaplaObject> selectedObjects = new ArrayList<RaplaObject>(getSelectedObjects()); 
         for (Iterator<RaplaObject> it = selectedObjects.iterator();it.hasNext();) {
             RaplaObject obj = it.next();
-            if (obj.getRaplaType() ==  User.TYPE ) {
+            if (obj.getTypeClass() ==  User.class ) {
                 it.remove();
             }
         }
@@ -1123,13 +1118,14 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
 
     @Override
-    public void save(final String filename) throws RaplaException,
-            EntityNotFoundException {
+    public void save(final String filename) throws RaplaException
+    {
         Preferences clone = createStorablePreferences(filename);
         facade.store(clone);
     }
 
-    public Preferences createStorablePreferences(final String filename) throws RaplaException, EntityNotFoundException {
+    public Preferences createStorablePreferences(final String filename) throws RaplaException
+    {
         final CalendarModelConfiguration conf = createConfiguration();
         
         Preferences clone = facade.edit(facade.getPreferences(user));
@@ -1178,7 +1174,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     }
 
     @Override
-    public void load(final String filename)  throws RaplaException, EntityNotFoundException, CalendarNotFoundExeption {
+    public void load(final String filename)  throws RaplaException, CalendarNotFoundExeption {
         final CalendarModelConfiguration modelConfig;
         boolean createIfNotNull =false;
         

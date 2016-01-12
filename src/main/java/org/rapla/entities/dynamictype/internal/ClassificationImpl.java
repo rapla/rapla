@@ -12,19 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -35,6 +24,16 @@ import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  create a classification. Once created it is not possible to change the
@@ -63,7 +62,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         String nameString;
         ParsedText lastParsedAnnotation;
         public String getName(Locale locale, String keyNameFormat) {
-    		DynamicTypeImpl type = (DynamicTypeImpl)getType();
+    		DynamicTypeImpl type = getType();
     		ParsedText parsedAnnotation = type.getParsedAnnotation( keyNameFormat );
             if ( parsedAnnotation == null) {
                 return type.toString();
@@ -122,7 +121,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             {
                 continue;
             }
-            RaplaType refType = attribute.getRefType();
+             Class<? extends Entity > refType = attribute.getRefType();
             if ( refType == null)
             {
                 continue;
@@ -130,11 +129,9 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             List<String> values = entry.getValue();
             if  (values != null ) 
             {
-                @SuppressWarnings("unchecked")
-                Class<? extends Entity> class1 = refType.getTypeClass();
                 for ( String value:values)
                 {
-                    result.add(new ReferenceInfo(value, class1) );
+                    result.add(new ReferenceInfo(value, refType) );
                 }
             }
         }
@@ -186,7 +183,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     
     public String format( Locale locale, String annotationName)
     {
-        DynamicTypeImpl type = (DynamicTypeImpl)getType();
+        DynamicTypeImpl type = getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
         if ( parsedAnnotation == null)
         {
@@ -444,7 +441,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     }
 
 	public ClassificationImpl clone() {
-        ClassificationImpl clone = new ClassificationImpl((DynamicTypeImpl)getType());
+        ClassificationImpl clone = new ClassificationImpl(getType());
         //clone.referenceHandler = (ReferenceHandler) referenceHandler.clone((Map<String, List<String>>) ((HashMap<String, List<String>>)data).clone());
         //clone.attributeValueMap = (HashMap<String,Object>) attributeValueMap.clone();
         for ( Map.Entry<String,List<String>> entry: data.entrySet())

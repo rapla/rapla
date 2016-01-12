@@ -11,10 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
-import java.util.Arrays;
-import java.util.Collection;
 
 import org.rapla.framework.RaplaException;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 public class DependencyException extends RaplaException {
     private static final long serialVersionUID = 1L;

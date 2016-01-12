@@ -32,7 +32,6 @@ import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.test.util.RaplaTestCase;
 

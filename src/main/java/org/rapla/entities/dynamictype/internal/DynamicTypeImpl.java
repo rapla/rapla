@@ -12,17 +12,6 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
@@ -32,14 +21,12 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -58,6 +45,17 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteOperator;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
@@ -122,8 +120,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         return parseContext;
     }
 
-    public RaplaType<DynamicType> getRaplaType() {return TYPE;}
-    
+    @Override public Class<DynamicType> getTypeClass()
+    {
+        return DynamicType.class;
+    }
+
     public boolean isInternal()
     {
     	boolean result =key.startsWith("rapla:");
@@ -382,7 +383,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public Attribute findAttributeForId(Object id) {
         Attribute[] typeAttributes = getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
-            if (((Entity)typeAttributes[i]).getId().equals(id)) {
+            if (typeAttributes[i].getId().equals(id)) {
                 return typeAttributes[i];
             }
         }
@@ -411,7 +412,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         attributes.remove( attribute);
         if (this.equals(attribute.getDynamicType()))
         {
-        	if (((AttributeImpl) attribute).isReadOnly())
+        	if (attribute.isReadOnly())
         	{
         		throw new IllegalArgumentException("Attribute is not writable. It does not belong to the same dynamictype instance");
         	}
@@ -511,7 +512,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         clone.key = key;
         for (AttributeImpl att:clone.getSubEntities())
         {
-            ((AttributeImpl)att).setParent(clone);
+            att.setParent(clone);
         }
         clone.annotations = new LinkedHashMap<String, ParsedText>();
         DynamicTypeParseContext parseContext = new DynamicTypeParseContext(clone);

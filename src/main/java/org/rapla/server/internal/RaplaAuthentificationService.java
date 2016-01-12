@@ -103,7 +103,7 @@ public class RaplaAuthentificationService
         return user;
     }
 
-    public User authenticate(String username, String password, String connectAs, Logger logger) throws RaplaException, RaplaSecurityException
+    public User authenticate(String username, String password, String connectAs, Logger logger) throws RaplaException
     {
         User user;
         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
@@ -136,7 +136,7 @@ public class RaplaAuthentificationService
                 logger.info("Successfull for User " + username + ".Creating new Rapla user.");
                 Date now = operator.getCurrentTimestamp();
                 UserImpl newUser = new UserImpl(now, now);
-                newUser.setId(operator.createIdentifier(User.TYPE, 1)[0]);
+                newUser.setId(operator.createIdentifier(User.class, 1)[0]);
                 user = newUser;
             }
             else
@@ -151,7 +151,7 @@ public class RaplaAuthentificationService
             {
                 Category groupCategory = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
                 logger.debug("Looking for update for rapla user '" + username + "' from external source.");
-                initUser = authenticationStoreSuccessfull.initUser((User) user, username, password, groupCategory);
+                initUser = authenticationStoreSuccessfull.initUser(user, username, password, groupCategory);
             }
             catch (RaplaSecurityException ex)
             {

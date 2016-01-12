@@ -13,14 +13,14 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.framework.RaplaException;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 
 class ClassificationFilterWriter extends RaplaXMLWriter {

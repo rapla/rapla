@@ -16,9 +16,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 public interface UpdateModule
 {
-	public final static TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<Integer>("org.rapla.refreshInterval");
-    public final static TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<Integer>("org.rapla.archiveAge");
-	public static final int REFRESH_INTERVAL_DEFAULT = 30000;
+	TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<Integer>("org.rapla.refreshInterval");
+    TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<Integer>("org.rapla.archiveAge");
+	int REFRESH_INTERVAL_DEFAULT = 30000;
     
     /**  
      *  Refreshes the data that is in the cache (or on the client)

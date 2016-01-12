@@ -13,19 +13,18 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
+import java.io.IOException;
+import java.util.Map;
+
     
 public class PreferenceWriter extends RaplaXMLWriter {
-    public static final TypedComponentRole<Map<RaplaType,RaplaXMLWriter>> WRITERMAP = new TypedComponentRole<Map<RaplaType,RaplaXMLWriter>>( "org.rapla.storage.xml.writerMap");
+    public static final TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLWriter>> WRITERMAP = new TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLWriter>>( "org.rapla.storage.xml.writerMap");
 
     public PreferenceWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);
@@ -50,8 +49,7 @@ public class PreferenceWriter extends RaplaXMLWriter {
                     att("key", role );
                     closeTag();
                     RaplaObject raplaObject = (RaplaObject)entry;
-					RaplaType raplaType = raplaObject.getRaplaType();
-                	RaplaXMLWriter writer = getWriterFor( raplaType); 
+                	RaplaXMLWriter writer = getWriterFor( raplaObject.getTypeClass());
                 	writer.writeObject( raplaObject );
                 	closeElement("rapla:entry");
                 }

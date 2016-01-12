@@ -1,16 +1,5 @@
 package org.rapla.plugin.exchangeconnector.client;
 
-import java.awt.BorderLayout;
-import java.util.List;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
@@ -32,6 +21,16 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
+
+import javax.inject.Inject;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.util.List;
+import java.util.Locale;
 
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=PluginOptionPanel.class)

@@ -1,9 +1,7 @@
 package org.rapla.client.gwt.components;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.Label;
 import org.gwtbootstrap3.extras.datetimepicker.client.ui.DateTimePicker;
 import org.gwtbootstrap3.extras.datetimepicker.client.ui.base.constants.DateTimePickerLanguage;
 import org.gwtbootstrap3.extras.datetimepicker.client.ui.base.constants.DateTimePickerView;
@@ -15,8 +13,9 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.Label;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DateTimeComponent extends FlowPanel
 {

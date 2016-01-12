@@ -80,7 +80,7 @@ public class UmbrellaException extends RuntimeException {
   protected UmbrellaException() {
     // Can't delegate to the other constructor or GWT RPC gets cranky
     super(MULTIPLE);
-    this.causes = Collections.<Throwable> emptySet();
+    this.causes = Collections.emptySet();
   }
 
   /**

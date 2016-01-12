@@ -1,13 +1,5 @@
 package org.rapla.plugin.rightsreport.client.swing;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.Icon;
-import javax.swing.MenuElement;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -15,13 +7,19 @@ import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.Icon;
+import javax.swing.MenuElement;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 @Extension(id=RightsReportMenu.PLUGIN_ID, provides=AdminMenuExtension.class)
 public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExtension, ActionListener{

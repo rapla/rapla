@@ -11,24 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.pre18;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -37,7 +19,6 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -64,7 +45,6 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.OldIdMapping;
@@ -72,8 +52,28 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbsql.TableDef;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.PreferenceReader;
+import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Deprecated
 public class RaplaPre18SQL {
@@ -206,19 +206,19 @@ public class RaplaPre18SQL {
 
 @Deprecated
 abstract class RaplaTypeStorage<T extends Entity<T>> extends OldEntityStorage<T> {
-	RaplaType raplaType;
+    Class<? extends Entity> raplaType;
 
-	RaplaTypeStorage( RaplaXMLContext context, RaplaType raplaType, String tableName, String[] entries) throws RaplaException {
+	RaplaTypeStorage( RaplaXMLContext context, Class<? extends Entity> raplaType, String tableName, String[] entries) throws RaplaException {
 		super( context,tableName, entries );
 		this.raplaType = raplaType;
 	}
 
     boolean canStore(Entity entity) {
-    	return entity.getRaplaType() == raplaType;
+    	return entity.getTypeClass() == raplaType;
     }
     
     protected String getXML(RaplaObject type) throws RaplaException {
-		RaplaXMLWriter dynamicTypeWriter = getWriterFor( type.getRaplaType());
+		RaplaXMLWriter dynamicTypeWriter = getWriterFor( type.getTypeClass());
 		StringWriter stringWriter = new StringWriter();
 	    BufferedWriter bufferedWriter = new BufferedWriter(stringWriter);
 	    dynamicTypeWriter.setWriter( bufferedWriter );
@@ -232,10 +232,10 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends OldEntityStorage<T>
 	    return stringWriter.getBuffer().toString();
 	}
 
-	protected RaplaXMLReader processXML(RaplaType type, String xml) throws RaplaException {
-	    RaplaXMLReader reader = getReaderFor( type);
+	protected RaplaXMLReader processXML(Class<? extends Entity> typeClass, String xml) throws RaplaException {
+	    RaplaXMLReader reader = getReaderFor( typeClass);
 	    if ( xml== null ||  xml.trim().length() <= 10) {
-	        throw new RaplaException("Can't load " + type);
+	        throw new RaplaException("Can't load " + typeClass);
 	    }
 	    String xmlWithNamespaces = RaplaXMLReader.wrapRaplaDataTag(xml); 
 	    RaplaNonValidatedInput parser = getReader();
@@ -257,7 +257,7 @@ class PeriodStorage extends OldEntityStorage {
 
     @Override
     protected void load(ResultSet rset) throws SQLException {
-		String id = OldIdMapping.getId(Period.TYPE,  rset.getInt(1));
+		String id = OldIdMapping.getId(Period.class,  rset.getInt(1));
 		String name = getString(rset,2, null);
 		if ( name == null)
 		{
@@ -310,7 +310,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     );
     
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
-    	super(context,Category.TYPE, "CATEGORY",new String[] {"ID INTEGER NOT NULL PRIMARY KEY","PARENT_ID INTEGER KEY","CATEGORY_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER"});
+    	super(context,Category.class, "CATEGORY",new String[] {"ID INTEGER NOT NULL PRIMARY KEY","PARENT_ID INTEGER KEY","CATEGORY_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER"});
     }
     
     @Override
@@ -322,9 +322,9 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     	checkAndRetype(schema, "DEFINITION");
 	}
     
-    public RaplaXMLReader getReaderFor( RaplaType type) throws RaplaException {
-        RaplaXMLReader reader = super.getReaderFor( type );
-        if ( type.equals( Category.TYPE ) ) {
+    public RaplaXMLReader getReaderFor( Class<? extends Entity> typeClass) throws RaplaException {
+        RaplaXMLReader reader = super.getReaderFor( typeClass );
+        if ( typeClass ==  Category.class  ) {
             ((CategoryReader) reader).setReadOnlyThisCategory( true);
         }
         return reader;
@@ -340,7 +340,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         CategoryImpl category;
     	if ( xml != null && xml.length() > 10 )
     	{
-    	    category = ((CategoryReader)processXML( Category.TYPE, xml )).getCurrentCategory();
+    	    category = ((CategoryReader)processXML( Category.class, xml )).getCurrentCategory();
             //cache.remove( category );
     	}
     	else
@@ -387,7 +387,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable> {
     PermissionStorage permissionStorage;
 
     public AllocatableStorage(RaplaXMLContext context ) throws RaplaException {
-        super(context,Allocatable.TYPE,"RAPLA_RESOURCE",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});  
+        super(context,Allocatable.class,"RAPLA_RESOURCE",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
         permissionStorage = new PermissionStorage( context, allocatableMap);
         addSubStorage(resourceAttributeStorage);
@@ -514,7 +514,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 	AppointmentStorage appointmentStorage;
 
     public ReservationStorage(RaplaXMLContext context) throws RaplaException {
-        super(context,Reservation.TYPE, "EVENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
+        super(context,Reservation.class, "EVENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","OWNER_ID INTEGER NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP","LAST_CHANGED_BY INTEGER DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
     }
@@ -704,7 +704,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     AppointmentExceptionStorage appointmentExceptionStorage;
     AllocationStorage allocationStorage;
     public AppointmentStorage(RaplaXMLContext context) throws RaplaException {
-        super(context, Appointment.TYPE,"APPOINTMENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","EVENT_ID INTEGER NOT NULL KEY","APPOINTMENT_START DATETIME NOT NULL","APPOINTMENT_END DATETIME NOT NULL","REPETITION_TYPE VARCHAR(255)","REPETITION_NUMBER INTEGER","REPETITION_END DATETIME","REPETITION_INTERVAL INTEGER"});
+        super(context, Appointment.class,"APPOINTMENT",new String [] {"ID INTEGER NOT NULL PRIMARY KEY","EVENT_ID INTEGER NOT NULL KEY","APPOINTMENT_START DATETIME NOT NULL","APPOINTMENT_END DATETIME NOT NULL","REPETITION_TYPE VARCHAR(255)","REPETITION_NUMBER INTEGER","REPETITION_END DATETIME","REPETITION_INTERVAL INTEGER"});
         appointmentExceptionStorage = new AppointmentExceptionStorage(context);
         allocationStorage = new AllocationStorage( context);
         addSubStorage(appointmentExceptionStorage);
@@ -824,7 +824,7 @@ class AppointmentExceptionStorage extends OldEntityStorage<Appointment>  {
 class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
     public DynamicTypeStorage(RaplaXMLContext context) throws RaplaException {
-        super(context, DynamicType.TYPE,"DYNAMIC_TYPE", new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL"});
+        super(context, DynamicType.class,"DYNAMIC_TYPE", new String [] {"ID INTEGER NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(100) NOT NULL","DEFINITION TEXT NOT NULL"});
     }
 
     @Override
@@ -836,7 +836,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
     protected void load(ResultSet rset) throws SQLException,RaplaException {
     	String xml = getText(rset,3);
-    	processXML( DynamicType.TYPE, xml );
+    	processXML( DynamicType.class, xml );
 
 	}
 
@@ -846,7 +846,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 class PreferenceStorage extends RaplaTypeStorage<Preferences> 
 {
     public PreferenceStorage(RaplaXMLContext context) throws RaplaException {
-        super(context,Preferences.TYPE,"PREFERENCE",
+        super(context,Preferences.class,"PREFERENCE",
 	    new String [] {"USER_ID INTEGER KEY","ROLE VARCHAR(255) NOT NULL","STRING_VALUE VARCHAR(10000)","XML_VALUE TEXT"});
     }
 
@@ -868,7 +868,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 
         String userId = readId(rset, 1,User.class, true);
         User owner ;
-        if  ( userId == null || userId.equals(OldIdMapping.getId(User.TYPE, 0)) )
+        if  ( userId == null || userId.equals(OldIdMapping.getId(User.class, 0)) )
         {
             userId = null;
         	owner = null;
@@ -917,7 +917,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         	String xml = getText(rset, 4);
 	        if ( xml != null && xml.length() > 0)
 	        {
-		        PreferenceReader contentHandler = (PreferenceReader) processXML( Preferences.TYPE, xml );
+		        PreferenceReader contentHandler = (PreferenceReader) processXML( Preferences.class, xml );
 		        RaplaObject type = contentHandler.getChildType();
 		        preferences.putEntryPrivate(configRole, type);
 	        }
@@ -930,7 +930,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 class UserStorage extends RaplaTypeStorage<User> {
     UserGroupStorage groupStorage;
     public UserStorage(RaplaXMLContext context) throws RaplaException {
-        super( context,User.TYPE, "RAPLA_USER",
+        super( context,User.class, "RAPLA_USER",
 	    new String [] {"ID INTEGER NOT NULL PRIMARY KEY","USERNAME VARCHAR(100) NOT NULL","PASSWORD VARCHAR(100)","NAME VARCHAR(255) NOT NULL","EMAIL VARCHAR(255) NOT NULL","ISADMIN INTEGER NOT NULL"});
         groupStorage = new UserGroupStorage( context );
         addSubStorage( groupStorage );

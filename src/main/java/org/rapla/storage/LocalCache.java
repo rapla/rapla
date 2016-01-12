@@ -16,7 +16,6 @@ import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -98,24 +97,24 @@ public class LocalCache implements EntityResolver
                 remove(child);
             }
         }
-        RaplaType raplaType = entity.getRaplaType();
+        Class<? extends Entity> raplaType = entity.getTypeClass();
         String entityId = entity.getId();
         return removeWithId(raplaType, entityId);
     }
 
     /** WARNING child entities will not be removed if you use this method */
-    public boolean removeWithId(RaplaType raplaType, String entityId)
+    public boolean removeWithId(Class<? extends Entity> typeClass, String entityId)
     {
         boolean bResult = true;
         bResult = entities.remove(entityId) != null;
-        Map<String, ? extends Entity> entitySet = getMap(raplaType);
+        Map<String, ? extends Entity> entitySet = getMap(typeClass);
         if (entitySet != null)
         {
             if (entityId == null)
                 return false;
             entitySet.remove(entityId);
         }
-        else if (raplaType == Conflict.TYPE)
+        else if (typeClass == Conflict.class)
         {
             disabledConflictApp1.remove(entityId);
             disabledConflictApp2.remove(entityId);
@@ -123,21 +122,21 @@ public class LocalCache implements EntityResolver
         return bResult;
     }
 
-    @SuppressWarnings("unchecked") private Map<String, Entity> getMap(RaplaType type)
+    @SuppressWarnings("unchecked") private Map<String, Entity> getMap(Class<? extends Entity> type)
     {
-        if (type == Reservation.TYPE)
+        if (type == Reservation.class)
         {
             return (Map) reservations;
         }
-        if (type == Allocatable.TYPE)
+        if (type == Allocatable.class)
         {
             return (Map) resources;
         }
-        if (type == DynamicType.TYPE)
+        if (type == DynamicType.class)
         {
             return (Map) dynamicTypes;
         }
-        if (type == User.TYPE)
+        if (type == User.class)
         {
             return (Map) users;
         }
@@ -148,7 +147,7 @@ public class LocalCache implements EntityResolver
     {
         Assert.notNull(entity);
 
-        RaplaType raplaType = entity.getRaplaType();
+        Class<? extends Entity> typeClass = entity.getTypeClass();
 
         String entityId = entity.getId();
         if (entityId == null)
@@ -157,16 +156,16 @@ public class LocalCache implements EntityResolver
         String clientUserId = getClientUserId();
         if (clientUserId != null)
         {
-            if (raplaType == Reservation.TYPE || raplaType == Appointment.TYPE)
+            if (typeClass == Reservation.class || typeClass == Appointment.class)
             {
                 throw new IllegalArgumentException("Can't store reservations, appointments or conflicts in client cache");
             }
             // we ignore client stores for now
-            if (raplaType == Conflict.TYPE)
+            if (typeClass == Conflict.class)
             {
                 return;
             }
-            if (raplaType == Preferences.TYPE)
+            if (typeClass == Preferences.class)
             {
                 String owner = ((PreferencesImpl) entity).getId("owner");
                 if (owner != null && !owner.equals(clientUserId))
@@ -188,7 +187,7 @@ public class LocalCache implements EntityResolver
         }
 
         entities.put(entityId, entity);
-        Map<String, Entity> entitySet = getMap(raplaType);
+        Map<String, Entity> entitySet = getMap(typeClass);
         if (entitySet != null)
         {
             entitySet.put(entityId, entity);

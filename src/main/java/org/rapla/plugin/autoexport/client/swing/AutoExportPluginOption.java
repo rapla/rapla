@@ -1,13 +1,5 @@
 package org.rapla.plugin.autoexport.client.swing;
 
-import java.awt.BorderLayout;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
@@ -20,6 +12,13 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.util.Locale;
 
 @Extension(provides = PluginOptionPanel.class,id= AutoExportPlugin.PLUGIN_ID)
 public class AutoExportPluginOption extends DefaultPluginOption

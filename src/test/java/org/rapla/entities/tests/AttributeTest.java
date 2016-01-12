@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -23,10 +24,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)

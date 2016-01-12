@@ -57,15 +57,15 @@ public interface IOInterface {
 
     void setContents(Transferable transferable, ClipboardOwner owner);
     Transferable getContents( ClipboardOwner owner);
-    public String saveFile(Frame frame,String dir, String[] fileExtensions,String path, byte[] content) throws IOException;
-    public FileContent openFile(Frame frame,String dir, String[] fileExtensions) throws IOException;
+    String saveFile(Frame frame, String dir, String[] fileExtensions, String path, byte[] content) throws IOException;
+    FileContent openFile(Frame frame, String dir, String[] fileExtensions) throws IOException;
             
-    public boolean openUrl(final URL url) throws IOException;
+    boolean openUrl(final URL url) throws IOException;
     
     boolean supportsPostscriptExport();
 
-    public double INCH_TO_MM = 25.40006;
-    public double MM_TO_INCH = 1.0 / INCH_TO_MM;
+    double INCH_TO_MM = 25.40006;
+    double MM_TO_INCH = 1.0 / INCH_TO_MM;
 }
 
 

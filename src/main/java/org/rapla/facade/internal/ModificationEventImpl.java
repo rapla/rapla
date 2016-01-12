@@ -21,7 +21,7 @@ public class ModificationEventImpl implements ModificationEvent
     private final Set<EntityReferencer.ReferenceInfo> removedReferences = new LinkedHashSet<EntityReferencer.ReferenceInfo>();
     private final Set<Entity> added = new LinkedHashSet<Entity>();
     private final Set<Entity> changed = new LinkedHashSet<Entity>();
-    private final Set<RaplaType> modified = new LinkedHashSet<RaplaType>();
+    private final Set<Class<? extends Entity>> modified = new LinkedHashSet<Class<? extends Entity>>();
     public ModificationEventImpl()
     {
 
@@ -34,7 +34,7 @@ public class ModificationEventImpl implements ModificationEvent
         for (UpdateOperation op : operations)
         {
             final Class<? extends Entity> typeClass = op.getType();
-            modified.add(RaplaType.get( typeClass));
+            modified.add(typeClass);
             if(op instanceof UpdateResult.Remove)
             {
                 removedReferences.add(new EntityReferencer.ReferenceInfo(op.getCurrentId(), typeClass));
@@ -111,7 +111,7 @@ public class ModificationEventImpl implements ModificationEvent
     }
 
 
-    public boolean isModified(RaplaType raplaType)
+    public boolean isModified(Class<? extends Entity> raplaType)
     {
         return modified.contains( raplaType) ;
     }
@@ -148,6 +148,6 @@ public class ModificationEventImpl implements ModificationEvent
     public void addChanged(Entity changed)
     {
         this.changed.add(changed);
-        modified.add( changed.getRaplaType());
+        modified.add( changed.getTypeClass());
     }
 }

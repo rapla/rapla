@@ -1,21 +1,13 @@
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Graphics;
-import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.calendar.NavButton;
+import org.rapla.components.calendar.RaplaArrowButton;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.xmlbundle.I18nBundle;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,15 +31,22 @@ import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.calendar.NavButton;
-import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 final public class RaplaListEdit<T> implements
         RaplaWidget
@@ -73,7 +72,7 @@ final public class RaplaListEdit<T> implements
     
     interface NameProvider<T>
     {
-        public String getName(T object);
+        String getName(T object);
     }
     
     NameProvider<T> nameProvider;

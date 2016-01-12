@@ -1,7 +1,5 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -13,6 +11,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+
+import javax.inject.Inject;
 
 @Extension(provides = PluginOptionPanel.class,id= EventTimeCalculatorPlugin.PLUGIN_ID)
 public class EventTimeCalculatorAdminOption extends EventTimeCalculatorUserOption implements  PluginOptionPanel

@@ -12,10 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
-import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,11 +29,9 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;

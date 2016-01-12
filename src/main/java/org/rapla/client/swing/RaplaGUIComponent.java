@@ -14,26 +14,16 @@ package org.rapla.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.entities.DependencyException;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.RaplaNewVersionException;
-import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.dbrm.RaplaConnectException;
-import org.rapla.storage.dbrm.RaplaRestartingException;
-import org.rapla.storage.dbrm.WrongRaplaVersionException;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -56,7 +46,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
-import java.util.Iterator;
 
 /**
     Base class for most components in the gui package. Eases

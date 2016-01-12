@@ -1,12 +1,8 @@
 package org.rapla.storage.xml;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -27,53 +23,62 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
+import javax.inject.Provider;
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class IOContext
 {
-   protected Map<String,RaplaType> getLocalnameMap()  {
+   protected Map<String,Class<? extends RaplaObject>> getLocalnameMap()  {
         //WARNING We can't use RaplaType.getRegisteredTypes() because the class could not be registered on load time
-        Map<String,RaplaType> localnameMap = new HashMap<String,RaplaType>();
-        localnameMap.put( Reservation.TYPE.getLocalName(), Reservation.TYPE);
-        localnameMap.put( Appointment.TYPE.getLocalName(), Appointment.TYPE);
-        localnameMap.put( Allocatable.TYPE.getLocalName(), Allocatable.TYPE);
-        localnameMap.put( User.TYPE.getLocalName(), User.TYPE);
-        localnameMap.put( Preferences.TYPE.getLocalName(), Preferences.TYPE);
-        localnameMap.put( Period.TYPE.getLocalName(), Period.TYPE);
-        localnameMap.put( Category.TYPE.getLocalName(), Category.TYPE);
-        localnameMap.put( DynamicType.TYPE.getLocalName(), DynamicType.TYPE);
-        localnameMap.put( Attribute.TYPE.getLocalName(), Attribute.TYPE);
-        localnameMap.put( RaplaConfiguration.TYPE.getLocalName(), RaplaConfiguration.TYPE);
-        localnameMap.put( RaplaMap.TYPE.getLocalName(), RaplaMap.TYPE);
-        localnameMap.put( CalendarModelConfiguration.TYPE.getLocalName(), CalendarModelConfiguration.TYPE);
-        localnameMap.put( Conflict.TYPE.getLocalName(), Conflict.TYPE);
+        Map<String,Class<? extends RaplaObject>> localnameMap = new HashMap<String,Class<? extends RaplaObject>>();
+        put( localnameMap, Reservation.class);
+        put( localnameMap, Appointment.class);
+        put( localnameMap, Allocatable.class);
+        put( localnameMap, User.class);
+       put( localnameMap, Preferences.class);
+       put( localnameMap, Period.class);
+       put( localnameMap, Category.class);
+       put( localnameMap, DynamicType.class);
+       put( localnameMap, Attribute.class);
+       put( localnameMap, RaplaConfiguration.class);
+       put( localnameMap, RaplaMap.class);
+       put( localnameMap, CalendarModelConfiguration.class);
+       put( localnameMap, Conflict.class);
         return localnameMap;
     }
+    private void put(Map<String,Class<? extends RaplaObject>> map,Class<? extends RaplaObject> classType)
+    {
+        String localname = RaplaType.getLocalName( classType);
+        map.put( localname, classType);
+    }
  
-    protected void addReaders(Map<RaplaType,RaplaXMLReader> readerMap,RaplaXMLContext context) throws RaplaException {
-        readerMap.put( Category.TYPE,new CategoryReader( context));
-        readerMap.put( Conflict.TYPE,new ConflictReader( context));
-        readerMap.put( Preferences.TYPE, new PreferenceReader(context) );
-        readerMap.put( DynamicType.TYPE, new DynamicTypeReader(context) );
-        readerMap.put( User.TYPE, new UserReader(context));
-        readerMap.put( Allocatable.TYPE, new AllocatableReader(context) );
-        readerMap.put( Period.TYPE, new PeriodReader(context) );
-        readerMap.put( Reservation.TYPE,new ReservationReader(context));
-        readerMap.put( RaplaConfiguration.TYPE, new RaplaConfigurationReader(context));
-        readerMap.put( RaplaMap.TYPE, new RaplaMapReader(context));
-        readerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsReader(context) );
+    protected void addReaders(Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap,RaplaXMLContext context) throws RaplaException {
+        readerMap.put( Category.class,new CategoryReader( context));
+        readerMap.put( Conflict.class,new ConflictReader( context));
+        readerMap.put( Preferences.class, new PreferenceReader(context) );
+        readerMap.put( DynamicType.class, new DynamicTypeReader(context) );
+        readerMap.put( User.class, new UserReader(context));
+        readerMap.put( Allocatable.class, new AllocatableReader(context) );
+        readerMap.put( Period.class, new PeriodReader(context) );
+        readerMap.put( Reservation.class,new ReservationReader(context));
+        readerMap.put( RaplaConfiguration.class, new RaplaConfigurationReader(context));
+        readerMap.put( RaplaMap.class, new RaplaMapReader(context));
+        readerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsReader(context) );
     }
 
-     protected void addWriters(Map<RaplaType,RaplaXMLWriter> writerMap,RaplaXMLContext context) throws RaplaException {
-        writerMap.put( Category.TYPE,new CategoryWriter(context));
-        writerMap.put( Preferences.TYPE,new PreferenceWriter(context) );
-        writerMap.put( DynamicType.TYPE,new DynamicTypeWriter(context));
-        writerMap.put( User.TYPE, new UserWriter(context) );
-        writerMap.put( Allocatable.TYPE, new AllocatableWriter(context) );
-        writerMap.put( Reservation.TYPE,new ReservationWriter(context));
-        writerMap.put( RaplaConfiguration.TYPE,new RaplaConfigurationWriter(context) );
-        writerMap.put( RaplaMap.TYPE, new RaplaMapWriter(context) );
-        writerMap.put( Preferences.TYPE, new PreferenceWriter(context) );
-        writerMap.put( CalendarModelConfiguration.TYPE, new RaplaCalendarSettingsWriter(context) );
+     protected void addWriters(Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap,RaplaXMLContext context) throws RaplaException {
+        writerMap.put( Category.class,new CategoryWriter(context));
+        writerMap.put( Preferences.class,new PreferenceWriter(context) );
+        writerMap.put( DynamicType.class,new DynamicTypeWriter(context));
+        writerMap.put( User.class, new UserWriter(context) );
+        writerMap.put( Allocatable.class, new AllocatableWriter(context) );
+        writerMap.put( Reservation.class,new ReservationWriter(context));
+        writerMap.put( RaplaConfiguration.class,new RaplaConfigurationWriter(context) );
+        writerMap.put( RaplaMap.class, new RaplaMapWriter(context) );
+        writerMap.put( Preferences.class, new PreferenceWriter(context) );
+        writerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsWriter(context) );
     }
 
     public RaplaDefaultXMLContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable) throws RaplaException {
@@ -85,7 +90,7 @@ public class IOContext
         ioContext.put(IdCreator.class,idTable);
         ioContext.put( Logger.class,logger );
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
-        Map<RaplaType,RaplaXMLReader> readerMap = new HashMap<RaplaType,RaplaXMLReader>();
+        Map<Class<? extends  RaplaObject>,RaplaXMLReader> readerMap = new HashMap<Class<? extends  RaplaObject>,RaplaXMLReader>();
         ioContext.put(PreferenceReader.READERMAP, readerMap);
         addReaders( readerMap, ioContext);
         return ioContext;
@@ -108,7 +113,7 @@ public class IOContext
         	ioContext.put( SUPERCATEGORY, superCategory);
         }
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
-        Map<RaplaType,RaplaXMLWriter> writerMap = new HashMap<RaplaType,RaplaXMLWriter>();
+        Map<Class<? extends  RaplaObject>,RaplaXMLWriter> writerMap = new HashMap<Class<? extends  RaplaObject>,RaplaXMLWriter>();
         ioContext.put(PreferenceWriter.WRITERMAP, writerMap);
         addWriters( writerMap, ioContext );
         return ioContext;

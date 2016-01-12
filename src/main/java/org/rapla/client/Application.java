@@ -1,12 +1,6 @@
 package org.rapla.client;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.ActivityManager.Activity;
 import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.event.PlaceChangedEvent;
@@ -19,7 +13,11 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 @Singleton
 public class Application implements ApplicationView.Presenter

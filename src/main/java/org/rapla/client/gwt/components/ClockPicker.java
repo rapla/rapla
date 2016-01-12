@@ -27,11 +27,11 @@ public class ClockPicker extends Div
     }
 
     @JsType(isNative = true)
-    public static interface ClockPickerJquery extends JQueryElement
+    public interface ClockPickerJquery extends JQueryElement
     {
-        public ClockPickerElement clockpicker(ClockPickerOptions options);
+        ClockPickerElement clockpicker(ClockPickerOptions options);
 
-        public void remove();
+        void remove();
     }
 
     @JsType(isNative = true)
@@ -40,41 +40,35 @@ public class ClockPicker extends Div
         /*
          * clockpicker is the key
          */
-        public ClockPickerI data(String key);
+        ClockPickerI data(String key);
     }
 
     @JsType(isNative = true)
     public interface ClockPickerI extends JQueryElement
     {
-        public void show();
+        void show();
     }
 
     @JsFunction
     public interface Callback
     {
-        public void handleAction();
+        void handleAction();
     }
 
     @JsType(isNative = true)
     public interface ClockPickerOptions
     {
-        @JsProperty
-        public void setAutoclose(Boolean autoclose);
+        @JsProperty void setAutoclose(Boolean autoclose);
 
-        @JsProperty
-        public Boolean getAutoclose();
+        @JsProperty Boolean getAutoclose();
 
-        @JsProperty
-        public void setTwelvehour(Boolean twelvehour);
+        @JsProperty void setTwelvehour(Boolean twelvehour);
 
-        @JsProperty
-        public Boolean getTwelvehour();
+        @JsProperty Boolean getTwelvehour();
 
-        @JsProperty
-        public void setAfterDone(Callback listener);
+        @JsProperty void setAfterDone(Callback listener);
 
-        @JsProperty
-        public Callback getAfterDone();
+        @JsProperty Callback getAfterDone();
     }
 
     private ClockPickerI clockPicker;

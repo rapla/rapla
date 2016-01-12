@@ -12,21 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -35,15 +25,23 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 /** checks if the client can store or delete an entity */
 @Singleton
@@ -77,7 +75,7 @@ public class SecurityManager
 
         boolean permitted = false;
         @SuppressWarnings("unchecked")
-        Class<Entity> typeClass = entity.getRaplaType().getTypeClass();
+        Class<Entity> typeClass = entity.getTypeClass();
         Entity original = operator.tryResolve( entity.getId(), typeClass);
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
@@ -169,18 +167,18 @@ public class SecurityManager
             String errorText;
             if (admin)
             {
-                errorText = i18n.format("error.admin_not_allowed", new Object[] { user.toString(), entity.toString() });
+                errorText = i18n.format("error.admin_not_allowed", user.toString(), entity.toString());
             }
             else
             {
-                errorText = i18n.format("error.modify_not_allowed", new Object[] { user.toString(), entity.toString() });
+                errorText = i18n.format("error.modify_not_allowed", user.toString(), entity.toString());
             }
             throw new RaplaSecurityException(errorText);
             
         }
 
         // Check if the user can change the reservation
-        if ( Reservation.TYPE ==entity.getRaplaType() )
+        if ( Reservation.class ==entity.getTypeClass() )
         {
             Reservation reservation = (Reservation) entity ;
             Reservation originalReservation = (Reservation)original;
@@ -232,9 +230,10 @@ public class SecurityManager
     /** checks if the user just exchanges one allocatable or removes one. The user needs admin-access on the
      * removed allocatable and the newly inserted allocatable */
     private boolean canExchange(User user,Entity entity,Entity original) {
-        if ( Appointment.TYPE.equals( entity.getRaplaType() )) {
+        final Class<? extends Entity> typeClass = entity.getTypeClass();
+        if ( Appointment.class == typeClass) {
             return ((Appointment) entity).matches( (Appointment) original );
-        } if ( Reservation.TYPE.equals( entity.getRaplaType() )) {
+        } if ( Reservation.class == typeClass) {
             Reservation newReservation = (Reservation) entity;
             Reservation oldReservation = (Reservation) original;
             // We only need to check the length because we compare the appointments above.
@@ -394,9 +393,9 @@ public class SecurityManager
         }
     }
     
-    public void checkRead(User user,Entity entity) throws RaplaSecurityException, RaplaException {
-		RaplaType<?> raplaType = entity.getRaplaType();
-		if ( raplaType == Allocatable.TYPE)
+    public void checkRead(User user,Entity entity) throws RaplaException {
+		Class<? extends Entity> raplaType = entity.getTypeClass();
+		if ( raplaType == Allocatable.class)
 		{
 		    Allocatable allocatable = (Allocatable) entity;
 			if ( !permissionController.canReadOnlyInformation( allocatable, user))
@@ -404,11 +403,11 @@ public class SecurityManager
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed",user, allocatable.getName( null)));
 			}
 		}
-		if ( raplaType == Preferences.TYPE)
+		if ( raplaType == Preferences.class)
 		{
 		    Ownable ownable = (Preferences) entity;
 		    String ownerId = ownable.getOwnerId();
-		    if (  user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals( ownerId)))
+		    if (  user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals(ownerId)))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
 			}

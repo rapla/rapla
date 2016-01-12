@@ -1,29 +1,6 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -64,7 +41,28 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 @Singleton
 public class SynchronisationManager  {
@@ -611,11 +609,7 @@ public class SynchronisationManager  {
 
 	private boolean hasExchangeExport(CalendarModelConfiguration modelConfig) {
 		String option = modelConfig.getOptionMap().get(ExchangeConnectorPlugin.EXCHANGE_EXPORT);
-		if ( option != null && option.equals("true"))
-		{
-			return true;
-		}
-		return false;
+		return option != null && option.equals("true");
 	}
 
 	private SynchronizeResult execute(Collection<SynchronizationTask> tasks) throws RaplaException {

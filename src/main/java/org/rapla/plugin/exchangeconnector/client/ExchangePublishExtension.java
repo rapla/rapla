@@ -1,11 +1,5 @@
 package org.rapla.plugin.exchangeconnector.client;
 
-import javax.swing.JCheckBox;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -19,6 +13,12 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
+
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 class ExchangePublishExtension extends RaplaGUIComponent implements PublishExtension
 {

@@ -8,6 +8,6 @@ import org.rapla.framework.TypedComponentRole;
  */
 public interface MonthViewPlugin
 {
-    public final static String MONTH_VIEW = "month";
-    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(MONTH_VIEW + ".config");
+    String MONTH_VIEW = "month";
+    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(MONTH_VIEW + ".config");
 }

@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -31,6 +26,11 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /** All methods that allow modifing the entity-objects.
 */

@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendar;
 
+import org.rapla.components.calendar.DateRenderer.RenderingInfo;
+
 import java.awt.Color;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -25,8 +27,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import org.rapla.components.calendar.DateRenderer.RenderingInfo;
 /** The DateField only accepts characters that are part of
  * DateFormat.getDateInstance(DateFormat.SHORT,locale).  The
  * inputblocks are [date,month,year]. The order of the input-blocks is

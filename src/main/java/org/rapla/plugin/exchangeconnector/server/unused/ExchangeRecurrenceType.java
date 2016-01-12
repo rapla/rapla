@@ -29,7 +29,7 @@ public enum ExchangeRecurrenceType {
 	 * 
 	 * @param recurrenceInstance : {@link Recurrence}
 	 */
-	private ExchangeRecurrenceType(Recurrence recurrenceInstance){
+	ExchangeRecurrenceType(Recurrence recurrenceInstance){
 		setRecurrenceInstance(recurrenceInstance);
 	}
 	

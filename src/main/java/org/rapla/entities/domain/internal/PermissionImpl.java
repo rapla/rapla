@@ -13,12 +13,6 @@
 
 package org.rapla.entities.domain.internal;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -27,6 +21,12 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.internal.ReferenceHandler;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 
 public final class PermissionImpl extends ReferenceHandler implements Permission,EntityReferencer
 {
@@ -45,7 +45,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         checkWritable();
         if (user != null)
         	putEntity("group",null);
-        putEntity("user",(Entity)user);
+        putEntity("user", user);
     }
 
     public void setEnd(Date end) {
@@ -135,7 +135,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
     public void setGroup(Category group) {
         if (group != null)
             putEntity("user",null);
-        putEntity("group",(Entity)group);
+        putEntity("group", group);
     }
 
     public ReferenceHandler getReferenceHandler() {
@@ -256,16 +256,10 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
  		    return true;
  		}
  		PermissionImpl perm = (PermissionImpl) o;
- 		if (equalValues(this.getReferenceHandler().getId("user"), perm.getReferenceHandler().getId("user"))
- 				&& equalValues(this.getReferenceHandler().getId("group"), perm.getReferenceHandler().getId("group"))
- 				&& equalValues(this.getStart(), perm.getStart())
- 				&& equalValues(this.getEnd(), perm.getEnd())
- 				&& equalValues(this.getMaxAdvance(), perm.getMaxAdvance())
- 				&& equalValues(this.getMinAdvance(), perm.getMinAdvance())
- 				&& equalValues(this.getAccessLevel(), perm.getAccessLevel()))
- 			return true;
- 		else
- 			return false;
+        return equalValues(this.getReferenceHandler().getId("user"), perm.getReferenceHandler().getId("user")) && equalValues(
+                this.getReferenceHandler().getId("group"), perm.getReferenceHandler().getId("group")) && equalValues(this.getStart(), perm.getStart())
+                && equalValues(this.getEnd(), perm.getEnd()) && equalValues(this.getMaxAdvance(), perm.getMaxAdvance()) && equalValues(this.getMinAdvance(),
+                perm.getMinAdvance()) && equalValues(this.getAccessLevel(), perm.getAccessLevel());
  	}
  	
  	public int hashCode() {

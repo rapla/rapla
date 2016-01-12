@@ -1,12 +1,14 @@
 package org.rapla.storage;
 
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.framework.RaplaException;
 
 @Deprecated
 public class OldIdMapping {
 
-    static public String getId(RaplaType type,String str) throws RaplaException {
+    static public String getId(Class<? extends RaplaObject> type,String str) throws RaplaException {
     	if (str == null)
     		throw new RaplaException("Id string for " + type + " can't be null");
     	int index = str.lastIndexOf("_") + 1;
@@ -19,7 +21,7 @@ public class OldIdMapping {
         }
     }
 
-    static public boolean isTextId( RaplaType type,String content )
+    static public boolean isTextId( Class<? extends Entity> type,String content )
     {
         if ( content == null)
         {
@@ -30,7 +32,7 @@ public class OldIdMapping {
         {
         	return true;
         }
-        String KEY_START = type.getLocalName() + "_";
+        String KEY_START = RaplaType.getLocalName(type) + "_";
         boolean idContent = (content.indexOf( KEY_START ) >= 0  && content.length() > 0);
         return idContent;
     }
@@ -60,23 +62,9 @@ public class OldIdMapping {
     }
 
     
-    static public String getId(RaplaType type,int id)
+    static public String getId(Class<? extends RaplaObject> type,int id)
     {
-        return type.getLocalName() + "_" + id;
-    }
-
-    static public boolean isId( RaplaType type,Object object) {
-        if (object instanceof String)
-        {
-            return ((String)object).startsWith(type.getLocalName());
-        }
-        return false;
-    }
-    
-    static public Integer getKey(RaplaType type,String id) {
-        String keyPart = id.substring(type.getLocalName().length()+1);
-        Integer key = Integer.parseInt( keyPart );
-        return key;
+        return RaplaType.getLocalName(type) + "_" + id;
     }
 
 }

@@ -1,14 +1,6 @@
 package org.rapla.client.swing;
 
-import java.awt.Component;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.StartActivityEvent;
@@ -34,7 +26,13 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.awt.Component;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 @Singleton
 @DefaultImplementation(context=InjectionContext.swing, of=StartActivityEventHandler.class)

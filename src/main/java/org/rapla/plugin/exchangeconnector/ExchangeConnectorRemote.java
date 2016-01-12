@@ -8,8 +8,8 @@ import org.rapla.jsonrpc.common.RemoteJsonMethod;
 public interface ExchangeConnectorRemote 
 {
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change");
-    public SynchronizationStatus getSynchronizationStatus() throws RaplaException;
-	public SynchronizeResult synchronize() throws RaplaException;
+    SynchronizationStatus getSynchronizationStatus() throws RaplaException;
+	SynchronizeResult synchronize() throws RaplaException;
 
 	/** 
 	 * Add an Exchange user to the user list (register a user to the Exchange Server)
@@ -20,8 +20,8 @@ public interface ExchangeConnectorRemote
 	 * @return {@link ClientMessage}
 	 * @throws RaplaException
 	 */
-	public void changeUser(String exchangeUsername, String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
-	public void removeUser() throws RaplaException;
+	void changeUser(String exchangeUsername, String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
+	void removeUser() throws RaplaException;
 	SynchronizeResult retry() throws RaplaException;
 	
 	/**

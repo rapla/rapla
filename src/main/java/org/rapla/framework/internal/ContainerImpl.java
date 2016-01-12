@@ -14,7 +14,6 @@ package org.rapla.framework.internal;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.Disposable;
@@ -26,6 +25,7 @@ import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -96,7 +96,7 @@ public class ContainerImpl implements Disposable
         T result = null;
         try
         {
-            result = (T) instanciate(component, 0, params);
+            result = instanciate(component, 0, params);
         }
         catch (Exception e)
         {
@@ -112,7 +112,7 @@ public class ContainerImpl implements Disposable
 
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass)
     {
-        addContainerProvidedComponent(roleInterface, implementingClass, null, (Configuration) null);
+        addContainerProvidedComponent(roleInterface, implementingClass, null, null);
     }
 
     public <T, I extends T> void addContainerProvidedComponent(Class<T> roleInterface, Class<I> implementingClass, Configuration config)
@@ -122,7 +122,7 @@ public class ContainerImpl implements Disposable
 
     public <T, I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass)
     {
-        addContainerProvidedComponent(roleInterface, implementingClass, (Configuration) null);
+        addContainerProvidedComponent(roleInterface, implementingClass, null);
     }
 
     public <T, I extends T> void addContainerProvidedComponent(TypedComponentRole<T> roleInterface, Class<I> implementingClass, Configuration config)
@@ -1191,7 +1191,7 @@ public class ContainerImpl implements Disposable
                     final boolean implementing = isImplementing(interfaceClass, defaultImplementations);
                     if (implementing)
                     {
-                        addContainerProvidedComponent(interfaceClass, clazz, (Configuration) null);
+                        addContainerProvidedComponent(interfaceClass, clazz, null);
                         getLogger().info("Found implementation for " + interfaceName + " : " + implementationClassName);
                         foundDefaultImpl = true;
                         // not necessary in current impl

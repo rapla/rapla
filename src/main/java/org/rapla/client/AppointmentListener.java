@@ -11,10 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
-import java.util.Collection;
-import java.util.EventListener;
 
 import org.rapla.entities.domain.Appointment;
+
+import java.util.Collection;
+import java.util.EventListener;
 
 public interface AppointmentListener extends EventListener {
     void appointmentAdded(Collection<Appointment> appointment);

@@ -40,7 +40,6 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.storage.PermissionController;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -52,6 +51,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -300,8 +300,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     	        
     			DynamicType oldDynamicType       = lastClassification.getType();
     			DynamicType newDynamicType       = (DynamicType) typeSelector.getSelectedItem();
-    			Classification oldClassification = (Classification) ((ClassificationImpl) lastClassification).clone();
-    			Classification newClassification = (Classification) ((ClassificationImpl) newDynamicType.newClassification(classification)).clone();
+    			Classification oldClassification = ((ClassificationImpl) lastClassification).clone();
+    			Classification newClassification = ((ClassificationImpl) newDynamicType.newClassification(classification)).clone();
     	        
             	UndoReservationTypeChange command = new UndoReservationTypeChange(oldClassification, newClassification, oldDynamicType, newDynamicType);
             	commandHistory.storeAndExecute(command);

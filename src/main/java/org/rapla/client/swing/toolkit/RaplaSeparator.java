@@ -12,13 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.awt.Component;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-
 import javax.swing.JSeparator;
 import javax.swing.MenuElement;
 import javax.swing.MenuSelectionManager;
+import java.awt.Component;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 
 public class RaplaSeparator extends JSeparator implements IdentifiableMenuEntry, MenuElement {
     private static final long serialVersionUID = 1L;

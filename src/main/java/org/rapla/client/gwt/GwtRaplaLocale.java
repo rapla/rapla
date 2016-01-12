@@ -1,11 +1,7 @@
 package org.rapla.client.gwt;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.inject.Inject;
-
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.i18n.client.NumberFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.client.GwtBundleManager;
 import org.rapla.framework.RaplaLocale;
@@ -13,8 +9,10 @@ import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.i18n.client.NumberFormat;
+import javax.inject.Inject;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 @DefaultImplementation(of = RaplaLocale.class, context = InjectionContext.gwt)
 public class GwtRaplaLocale extends AbstractRaplaLocale {

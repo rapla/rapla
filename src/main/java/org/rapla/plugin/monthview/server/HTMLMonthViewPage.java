@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.monthview.server;
 
-import java.util.Calendar;
-import java.util.Set;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
@@ -32,6 +27,10 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.monthview.MonthViewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
+
+import javax.inject.Inject;
+import java.util.Calendar;
+import java.util.Set;
 
 @Extension(provides = HTMLViewPage.class,id= MonthViewPlugin.MONTH_VIEW)
 public class HTMLMonthViewPage extends AbstractHTMLCalendarPage

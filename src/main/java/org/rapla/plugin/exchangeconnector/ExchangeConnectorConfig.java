@@ -1,40 +1,39 @@
 package org.rapla.plugin.exchangeconnector;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
+import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
+
 public interface ExchangeConnectorConfig 
 {
-    public static final TypedComponentRole<RaplaConfiguration> EXCHANGESERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.server.Config");
+    TypedComponentRole<RaplaConfiguration> EXCHANGESERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.server.Config");
     
-	public static final TypedComponentRole<String> EXCHANGE_WS_FQDN = new TypedComponentRole<String>("ews_fqdn");
-	public static final String DEFAULT_EXCHANGE_WS_FQDN = "https://myexchange.com";
+	TypedComponentRole<String> EXCHANGE_WS_FQDN = new TypedComponentRole<String>("ews_fqdn");
+	String DEFAULT_EXCHANGE_WS_FQDN = "https://myexchange.com";
 	
-	public static final TypedComponentRole<Integer> SYNCING_PERIOD_PAST = new TypedComponentRole<Integer>("exch-sync-past");
-	public static final Integer DEFAULT_SYNCING_PERIOD_PAST = 30;
+	TypedComponentRole<Integer> SYNCING_PERIOD_PAST = new TypedComponentRole<Integer>("exch-sync-past");
+	Integer DEFAULT_SYNCING_PERIOD_PAST = 30;
 	
 //	public static final TypedComponentRole<Integer> SYNCING_PERIOD_FUTURE = new TypedComponentRole<Integer>("exch-sync-future");
 //	public static final Integer DEFAULT_SYNCING_PERIOD_FUTURE = 300;
 
-	public static final TypedComponentRole<String> EXCHANGE_APPOINTMENT_CATEGORY  = new TypedComponentRole<String>( "exchange.default.category");
-	public static final String DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY = "RAPLA";
+	TypedComponentRole<String> EXCHANGE_APPOINTMENT_CATEGORY  = new TypedComponentRole<String>( "exchange.default.category");
+	String DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY = "RAPLA";
 	
-	public static final TypedComponentRole<String> EXCHANGE_TIMEZONE  = new TypedComponentRole<String>( "exchange.timezone");
-	public static final String DEFAULT_EXCHANGE_TIMEZONE = "W. Europe Standard Time";
+	TypedComponentRole<String> EXCHANGE_TIMEZONE  = new TypedComponentRole<String>( "exchange.timezone");
+	String DEFAULT_EXCHANGE_TIMEZONE = "W. Europe Standard Time";
 
-	public static final TypedComponentRole<Boolean> EXCHANGE_SEND_INVITATION_AND_CANCELATION  = new TypedComponentRole<Boolean>( "exchange.sendInvitationAndCancelation");
-	public static final boolean DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION = false;
+	TypedComponentRole<Boolean> EXCHANGE_SEND_INVITATION_AND_CANCELATION  = new TypedComponentRole<Boolean>( "exchange.sendInvitationAndCancelation");
+	boolean DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION = false;
 
-	public static final boolean DEFAULT_EXCHANGE_REMINDER_SET = true;
-	public static final String DEFAULT_EXCHANGE_FREE_AND_BUSY = "Busy";
+	boolean DEFAULT_EXCHANGE_REMINDER_SET = true;
+	String DEFAULT_EXCHANGE_FREE_AND_BUSY = "Busy";
 
 
 //  public static final TypedComponentRole<String> EXPORT_EVENT_TYPE_KEY = new TypedComponentRole<String>("export-event-type-key");
@@ -45,9 +44,9 @@ public interface ExchangeConnectorConfig
 //	public static final TypedComponentRole<String> PASSWORD = new TypedComponentRole<String>("exchangeconnector.password");
 //	public static final TypedComponentRole<Boolean> SYNC_FROM_EXCHANGE_ENABLED_KEY = new TypedComponentRole<Boolean>("sync_from_exchange");
 //	public static final boolean DEFAULT_SYNC_FROM_EXCHANGE_ENABLED = false;
-	public static final String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
-	public static final TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>(ENABLED_BY_ADMIN_STRING);
-	public static final boolean DEFAULT_ENABLED_BY_ADMIN = false;
+String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
+	TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>(ENABLED_BY_ADMIN_STRING);
+	boolean DEFAULT_ENABLED_BY_ADMIN = false;
 //	public static final String PULL_FREQUENCY_KEY = "exch-pull-freq";
 //	public static final Integer DEFAULT_PULL_FREQUENCY = 180;
 //	public static final TypedComponentRole<String> IMPORT_EVENT_TYPE_KEY = new TypedComponentRole<String>("import-event-type-key");
@@ -70,9 +69,9 @@ public interface ExchangeConnectorConfig
 //	public static final  TypedComponentRole<String> ROOM_TYPE = new  TypedComponentRole<String>("rapla.room.type");
 //	public static final String DEFAULT_ROOM_TYPE = "room";
 
-	public String getExchangeServerURL();
+	String getExchangeServerURL();
 	
-	 public static class ConfigReader implements ExchangeConnectorConfig
+	 class ConfigReader implements ExchangeConnectorConfig
 	    {
 		    Map<TypedComponentRole<?>,Object> map = new HashMap<TypedComponentRole<?>,Object>();
 		    
@@ -158,7 +157,7 @@ public interface ExchangeConnectorConfig
             }
 	    }
 
-    public String getExchangeTimezone();
-    public String getAppointmentCategory();
-    public int getSyncPeriodPast();
+    String getExchangeTimezone();
+    String getAppointmentCategory();
+    int getSyncPeriodPast();
 }

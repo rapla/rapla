@@ -1,13 +1,13 @@
 package org.rapla.facade;
-import java.util.Collection;
-import java.util.Date;
 
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
 
 public interface CalendarSelectionModel extends CalendarModel{
     String getTitle();
@@ -31,9 +31,9 @@ public interface CalendarSelectionModel extends CalendarModel{
 
     void setAllocatableFilter(ClassificationFilter[] filters);
 
-    public void resetExports();
-    public void save(final String filename) throws RaplaException;
-    public void load(final String filename) throws RaplaException, EntityNotFoundException, CalendarNotFoundExeption;
+    void resetExports();
+    void save(final String filename) throws RaplaException;
+    void load(final String filename) throws RaplaException, CalendarNotFoundExeption;
     
     CalendarSelectionModel clone();
 	

@@ -259,7 +259,7 @@ public class RaplaICalImport implements ICalImport {
 		                List<Recur> recurList = new ArrayList<Recur>(rrules.size());
                         for ( int i=0;i<rrules.size();i++)
                         {
-                            Property prop = (Property) rrules.get( i);
+                            Property prop = rrules.get( i);
                             RRule rrule = new RRule(prop.getParameters(),prop.getValue());
                             recurList.add(rrule.getRecur());
                         }

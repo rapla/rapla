@@ -21,12 +21,12 @@ import java.awt.Color;
 public interface TimeRenderer {
     /** Specifies a special background color for the passed time.
         Return null if you want to use the default color.*/
-    public Color getBackgroundColor(int hourOfDay,int minute);
+    Color getBackgroundColor(int hourOfDay, int minute);
     /** Specifies a tooltip text for the passed time.
         Return null if you don't want to use a tooltip for this time.*/
-    public String getToolTipText(int hourOfDay,int minute);
+    String getToolTipText(int hourOfDay, int minute);
     
     /** returns a formated text of the duration can return null if the duration should not be appended, e.g. if its &lt; 0*/
-    public String getDurationString(int durationInMinutes);
+    String getDurationString(int durationInMinutes);
 
 }

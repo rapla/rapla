@@ -1,12 +1,11 @@
 package org.rapla.client.event;
 
-import org.rapla.client.event.StartActivityEvent.StartActivityEventHandler;
-
 import com.google.web.bindery.event.shared.Event;
+import org.rapla.client.event.StartActivityEvent.StartActivityEventHandler;
 
 public class StartActivityEvent extends Event<StartActivityEventHandler>
 {
-    public static interface StartActivityEventHandler
+    public interface StartActivityEventHandler
     {
         void startActivity(StartActivityEvent event);
     }

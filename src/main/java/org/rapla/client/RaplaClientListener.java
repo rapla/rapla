@@ -16,7 +16,7 @@ import org.rapla.ConnectInfo;
 
 public interface RaplaClientListener
 {
-    public void clientStarted();
-    public void clientClosed(ConnectInfo reconnect);
-    public void clientAborted();
+    void clientStarted();
+    void clientClosed(ConnectInfo reconnect);
+    void clientAborted();
 }

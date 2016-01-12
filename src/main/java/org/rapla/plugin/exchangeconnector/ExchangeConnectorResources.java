@@ -1,16 +1,15 @@
 package org.rapla.plugin.exchangeconnector;
 
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Locale;
 
 @Extension(provides = I18nBundle.class, id = RaplaResources.ID)
 @Singleton

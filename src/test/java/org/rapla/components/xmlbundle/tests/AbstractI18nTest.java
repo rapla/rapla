@@ -11,13 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.tests;
-import java.util.MissingResourceException;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.rapla.components.xmlbundle.I18nBundle;
 
-import junit.framework.TestCase;
+import java.util.MissingResourceException;
 
 public abstract class AbstractI18nTest  {
     abstract public I18nBundle getI18n();

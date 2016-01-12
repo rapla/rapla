@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.gui.tests;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
-
-import javax.inject.Provider;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.rapla.RaplaResources;
@@ -45,6 +39,11 @@ import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
 import org.rapla.test.util.RaplaTestCase;
+
+import javax.inject.Provider;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest {

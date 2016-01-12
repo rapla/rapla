@@ -13,9 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-import java.util.Map;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -28,7 +25,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
@@ -46,14 +42,17 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
+import java.util.Date;
+import java.util.Map;
+
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
     public static TypedComponentRole<Double> VERSION = new TypedComponentRole<Double>("org.rapla.version");
     protected EntityStore store;
     private Logger logger;
     private IdCreator idTable;
-    private Map<String,RaplaType> localnameMap;
-    private Map<RaplaType,RaplaXMLReader> readerMap;
+    private Map<String,Class<? extends RaplaObject>> localnameMap;
+    private Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap;
     private SerializableDateTimeFormat dateTimeFormat;
     private RaplaResources i18n;
     private Date now;
@@ -135,10 +134,10 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         return result;
     }
     
-    public RaplaType getTypeForLocalName( String localName )
+    public Class<? extends RaplaObject> getTypeForLocalName( String localName )
         throws RaplaSAXParseException
     {
-        RaplaType type =  localnameMap.get( localName );
+        Class<? extends RaplaObject> type =  localnameMap.get( localName );
         if (type == null)
             throw createSAXParseException( "No type declared for localname " + localName );
         return type;
@@ -148,7 +147,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
      * @param raplaType
      * @throws RaplaSAXParseException
      */
-    protected RaplaXMLReader getChildHandlerForType( RaplaType raplaType )
+    protected RaplaXMLReader getChildHandlerForType( Class<? extends RaplaObject> raplaType )
         throws RaplaSAXParseException
     {
         RaplaXMLReader childReader = readerMap.get( raplaType );
@@ -248,7 +247,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     	throws RaplaSAXParseException
     {
         String idString = atts.getValue( "id" );
-        String id = getId( entity.getRaplaType(), idString );
+        String id = getId( entity.getTypeClass(), idString );
         ((SimpleEntity)entity).setId( id );
         return id;
     }
@@ -258,7 +257,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         try
         {
-            String id = idTable.createId( entity.getRaplaType() );
+            String id = idTable.createId( entity.getTypeClass() );
             ((SimpleEntity)entity).setId( id );
             return id;
         }
@@ -274,7 +273,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         String ownerString = atts.getValue( "owner" );
         if (ownerString != null)
         {
-            ownable.putId("owner", getId( User.TYPE, ownerString ) );
+            ownable.putId("owner", getId( User.class, ownerString ) );
         }
         // No else case as no owner should still be possible and there should be no default owner 
     }
@@ -285,7 +284,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 		{
 		    try 
 		    {
-		        User user = resolve(User.TYPE,lastChangedBy );
+		        User user = resolve(User.class,lastChangedBy );
 		        entity.setLastChangedBy( user );
 		    } 
 		    catch (RaplaSAXParseException ex) 
@@ -297,7 +296,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 
 
     @SuppressWarnings("deprecation")
-    protected String getId( RaplaType type, String str ) throws RaplaSAXParseException
+    protected String getId( Class<? extends Entity> typeClass, String str ) throws RaplaSAXParseException
     {
         try
         {
@@ -306,9 +305,9 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             {
                 id = Category.SUPER_CATEGORY_ID;
             }
-            else if (org.rapla.storage.OldIdMapping.isTextId(type, str))
+            else if (org.rapla.storage.OldIdMapping.isTextId(typeClass, str))
             {
-               id = idTable.createId(type, str);
+               id = idTable.createId(typeClass, str);
             } 
             else
             {
@@ -343,12 +342,11 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         return store.getDynamicType( keyref);
     }
 
-    protected <T extends Entity> T resolve( RaplaType<T> type, String str ) throws RaplaSAXParseException
+    protected <T extends Entity> T resolve( Class<T> typeClass, String str ) throws RaplaSAXParseException
     {
         try
         {
-            String id = getId( type, str );
-            Class<T> typeClass = type.getTypeClass();
+            String id = getId( typeClass, str );
             T resolved = store.resolve( id, typeClass );
 			return resolved;
         }
@@ -365,11 +363,11 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             AttributeType type = attribute.getType();
             if ( type == AttributeType.CATEGORY )
             {
-                text = getId(Category.TYPE, text);
+                text = getId(Category.class, text);
             }
             else if ( type == AttributeType.ALLOCATABLE )
             {
-                text = getId(Allocatable.TYPE, text);
+                text = getId(Allocatable.class, text);
             }
             return AttributeImpl.parseAttributeValue( attribute, text);
         }

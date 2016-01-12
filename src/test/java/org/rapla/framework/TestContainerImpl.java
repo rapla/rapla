@@ -1,11 +1,5 @@
 package org.rapla.framework;
 
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +9,11 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.xml.RaplaXMLContextException;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.Map;
+import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class TestContainerImpl
@@ -48,7 +47,7 @@ public class TestContainerImpl
 
     public interface MyExtensionPoint<T>
     {
-        public void doSomething(T obj);
+        void doSomething(T obj);
     }
 
     @Test public void testSetProvider() throws RaplaXMLContextException

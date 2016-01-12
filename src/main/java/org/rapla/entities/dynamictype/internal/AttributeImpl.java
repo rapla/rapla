@@ -11,13 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
@@ -28,7 +21,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -39,6 +31,14 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 final public class AttributeImpl extends SimpleEntity implements Attribute
 {
@@ -76,25 +76,27 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         return parent;
     }
 
-    final public RaplaType<Attribute> getRaplaType() {return TYPE;}
+    public Class<Attribute> getTypeClass()
+    {
+        return Attribute.class;
+    }
 
-    public RaplaType getRefType() {
+    public Class<? extends Entity> getRefType() {
     	if (type == null)
     	{
     		return null;
     	}
     	if ( type.equals(AttributeType.CATEGORY))
 		{
-			return Category.TYPE;
+			return Category.class;
 		}
 		else if ( type.equals( AttributeType.ALLOCATABLE))
 		{
-			return Allocatable.TYPE;
+			return Allocatable.class;
 		}
 		return null;
 	}
 
-    
     public AttributeType getType() {
         return type;
     }
@@ -366,12 +368,12 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 Entity result = resolver.tryResolve( (String) value);
                 if ( result != null && result instanceof Allocatable)
                 {
-                    return (Allocatable) result;
+                    return result;
                 }
             } 
             else if ( value instanceof Allocatable )
             {
-                return (Allocatable) value;
+                return value;
             }
         	return null;
         }
@@ -462,7 +464,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 Entity result = resolver.tryResolve( (String) value);
                 if ( result != null && result instanceof Category)
                 {
-                    return (Category) result;
+                    return result;
                 }
             }
             if ( rootCategory != null)
@@ -566,8 +568,8 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                     return path;
                 }
             }
-            if (org.rapla.storage.OldIdMapping.isTextId(Category.TYPE,path) ) {
-            	String id = org.rapla.storage.OldIdMapping.getId( Category.TYPE, path);
+            if (org.rapla.storage.OldIdMapping.isTextId(Category.class,path) ) {
+            	String id = org.rapla.storage.OldIdMapping.getId( Category.class, path);
             	return id ;
             } else {
                 CategoryImpl rootCategory = (CategoryImpl)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
@@ -705,7 +707,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 			 locale = Locale.getDefault();
 		 }
 		 String language = DateTools.getLang(locale);
-		 if ( (Boolean) value)
+		 if (value)
 		 {
 			return TRUE_TRANSLATION.getName( language);
 		 }
@@ -717,7 +719,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 
 	public String toStringValue( Object value) {
 		String stringValue = null;
-		RaplaType refType = getRefType();
+		Class<? extends Entity> refType = getRefType();
 		if (refType != null) 
 		{
 			if ( value instanceof Entity)
@@ -740,7 +742,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 	}
 
 	public Object fromString(EntityResolver resolver, String value) throws EntityNotFoundException {
-		RaplaType refType = getRefType();
+		Class<? extends Entity> refType = getRefType();
 		if (refType != null) 
 		{
 		    Entity resolved = resolver.resolve( value );

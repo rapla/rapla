@@ -1,7 +1,7 @@
 package org.rapla.storage.dbrm;
 
 public interface StatusUpdater {
-    public enum Status
+    enum Status
     {
     	READY,
     	BUSY

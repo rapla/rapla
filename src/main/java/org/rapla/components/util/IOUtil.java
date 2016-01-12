@@ -102,19 +102,14 @@ abstract public class IOUtil {
         try {
             Method method =
                 clazz.getMethod(methodName
-                                ,new Class[] {
-                                    String.class
-                                    ,String.class
-                                }
-                                           );
-            return (String) method.invoke(null,new Object[] {s,enc});
+                                , String.class,String.class);
+            return (String) method.invoke(null, s,enc);
         } catch (NoSuchMethodException ex) {
             try {
                 Method method =
                     URLDecoder.class.getMethod(methodName
-                                               ,new Class[] {String.class}
-                                               );
-                return (String) method.invoke(null,new Object[] {s});
+                                               , String.class);
+                return (String) method.invoke(null, s);
             } catch (Exception ex2) {
                 ex2.printStackTrace();
                 throw new IllegalStateException("Should not happen" + ex2.getMessage());

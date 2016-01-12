@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import org.rapla.client.swing.toolkit.RaplaWidget;
+
 import javax.swing.JComponent;
 import javax.swing.event.ChangeListener;
-
-import org.rapla.client.swing.toolkit.RaplaWidget;
 
 /** Base class for most rapla edit fields. Provides some mapping
     functionality such as reflection invocation of getters/setters.
@@ -24,15 +24,15 @@ import org.rapla.client.swing.toolkit.RaplaWidget;
 */
 public interface EditField extends RaplaWidget<JComponent>
 {
-    public String getFieldName();
+    String getFieldName();
     /** registers new ChangeListener for this component.
      *  An ChangeEvent will be fired to every registered ChangeListener
      *  when the component info changes.
      * @see javax.swing.event.ChangeListener
      * @see javax.swing.event.ChangeEvent
     */
-    public void addChangeListener(ChangeListener listener);
+    void addChangeListener(ChangeListener listener);
     /** removes a listener from this component.*/
-    public void removeChangeListener(ChangeListener listener);
+    void removeChangeListener(ChangeListener listener);
 }
 

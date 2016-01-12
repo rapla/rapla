@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.net.URL;
-
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.framework.RaplaException;
@@ -26,6 +24,8 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.client.EntryPointFactory;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+
+import java.net.URL;
 
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.

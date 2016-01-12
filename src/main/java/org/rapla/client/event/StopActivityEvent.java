@@ -1,12 +1,11 @@
 package org.rapla.client.event;
 
-import org.rapla.client.event.StopActivityEvent.StopActivityEventHandler;
-
 import com.google.web.bindery.event.shared.Event;
+import org.rapla.client.event.StopActivityEvent.StopActivityEventHandler;
 
 public class StopActivityEvent extends Event<StopActivityEventHandler>
 {
-    public static interface StopActivityEventHandler
+    public interface StopActivityEventHandler
     {
         void stopActivity(StopActivityEvent event);
     }

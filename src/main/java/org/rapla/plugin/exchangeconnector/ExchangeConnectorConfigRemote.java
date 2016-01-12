@@ -1,15 +1,15 @@
 package org.rapla.plugin.exchangeconnector;
 
-import java.util.List;
-
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 
+import java.util.List;
+
 @RemoteJsonMethod
 public interface ExchangeConnectorConfigRemote 
 {
-	public DefaultConfiguration getConfig() throws RaplaException;
-	public List<String> getTimezones() throws RaplaException;
+	DefaultConfiguration getConfig() throws RaplaException;
+	List<String> getTimezones() throws RaplaException;
 
 }

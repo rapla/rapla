@@ -3,7 +3,6 @@ package org.rapla.server.internal.console;
 import org.rapla.ConnectInfo;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListenerAdapter;
-import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.RaplaJNDIContext;

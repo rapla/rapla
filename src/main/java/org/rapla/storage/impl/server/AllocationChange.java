@@ -1,9 +1,9 @@
 package org.rapla.storage.impl.server;
 
+import org.rapla.entities.domain.Appointment;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import org.rapla.entities.domain.Appointment;
 
 class AllocationChange
 {

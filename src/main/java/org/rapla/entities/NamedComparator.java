@@ -11,11 +11,12 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
+
+import org.rapla.components.util.Assert;
+
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
-
-import org.rapla.components.util.Assert;
 
 public class NamedComparator<T extends Named> implements Comparator<T> {
     Locale locale;

@@ -24,10 +24,10 @@ abstract public class JNLPUtil {
             Class<?> basicServiceC = Class.forName( basicService );
             //Class unavailableServiceException = Class.forName("javax.jnlp.UnavailableServiceException");
 
-            Method lookup = serviceManagerC.getMethod("lookup", new Class[] {String.class});
-            Method getCodeBase = basicServiceC.getMethod("getCodeBase", new Class[] {});
-            Object service = lookup.invoke( null, new Object[] { basicService });
-            return (URL) getCodeBase.invoke( service, new Object[] {});
+            Method lookup = serviceManagerC.getMethod("lookup", String.class);
+            Method getCodeBase = basicServiceC.getMethod("getCodeBase");
+            Object service = lookup.invoke( null, basicService);
+            return (URL) getCodeBase.invoke( service);
         } catch (ClassNotFoundException ex ) {
             throw new Exception( "Webstart not available :" + ex.getMessage());
         }

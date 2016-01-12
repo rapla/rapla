@@ -13,17 +13,17 @@
 
 package org.rapla.components.calendarview.html;
 
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
+import org.rapla.components.util.DateTools;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.Builder.PreperationResult;
-import org.rapla.components.util.DateTools;
 
 public class HTMLWeekView extends AbstractHTMLView {
     private int endMinutes;

@@ -1,11 +1,11 @@
 package org.rapla.framework.logger;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapter;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Provider;
+import javax.inject.Singleton;
 
 @DefaultImplementation(of=Logger.class,context = InjectionContext.server)
 @Singleton

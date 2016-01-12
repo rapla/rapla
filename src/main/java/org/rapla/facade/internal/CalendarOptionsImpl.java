@@ -11,12 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
-import java.util.Calendar;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarOptions;
@@ -26,6 +20,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Calendar;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
 @DefaultImplementation(of = CalendarOptions.class, context = InjectionContext.all)

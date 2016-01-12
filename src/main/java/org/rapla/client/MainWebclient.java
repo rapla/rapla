@@ -14,7 +14,6 @@ package org.rapla.client;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
-import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.StartupEnvironment;

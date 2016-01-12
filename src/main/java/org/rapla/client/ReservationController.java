@@ -1,13 +1,13 @@
 package org.rapla.client;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
 
 /** Use the ReservationController to modify or create a {@link Reservation}.
     This class handles all interactions with the user. Examples:
@@ -34,7 +34,7 @@ public interface ReservationController
     boolean save(Reservation reservation,PopupContext context) throws RaplaException;
     boolean save(Collection<Reservation> reservation,PopupContext context) throws RaplaException;
 
-    public ReservationEdit[] getEditWindows();
+    ReservationEdit[] getEditWindows();
 
     /** copies an appointment without interaction */
     Appointment copyAppointment( Appointment appointment ) throws RaplaException;

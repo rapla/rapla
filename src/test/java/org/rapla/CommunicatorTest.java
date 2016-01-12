@@ -16,7 +16,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -33,7 +32,7 @@ public class CommunicatorTest
     ClientFacade createFacade()
     {
         return clientFacadeProvider.get();
-    };
+    }
 
     @Before
     public void setUp() throws Exception

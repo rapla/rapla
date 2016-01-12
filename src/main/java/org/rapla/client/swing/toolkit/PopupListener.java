@@ -13,5 +13,5 @@
 package org.rapla.client.swing.toolkit;
 
 public interface PopupListener {
-    public void showPopup(PopupEvent evt);
+    void showPopup(PopupEvent evt);
 }

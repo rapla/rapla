@@ -3,14 +3,13 @@
  */
 package org.rapla.plugin.tableview.client.swing;
 
-import java.awt.Component;
-import java.util.Date;
+import org.rapla.components.util.DateTools;
+import org.rapla.framework.RaplaLocale;
 
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-
-import org.rapla.components.util.DateTools;
-import org.rapla.framework.RaplaLocale;
+import java.awt.Component;
+import java.util.Date;
 
 final public class DateCellRenderer extends DefaultTableCellRenderer {
     private static final long serialVersionUID = 1L;

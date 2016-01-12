@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
@@ -24,6 +21,8 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.inject.Inject;
 
 public class AppointmentInfoUI extends HTMLInfo<Appointment> {
 	ReservationInfoUI parent;
