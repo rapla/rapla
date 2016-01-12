@@ -42,6 +42,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
@@ -689,7 +690,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 				continue;
 			}
 			User workingUser = getWorkingUser();
-			if ( workingUser != null && !permissionController.canRead( type, workingUser))
+			if ( workingUser != null && !permissionController.canRead(type, workingUser))
 			{
 			    continue;
 			}
@@ -1401,6 +1402,48 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			castedResult.add( casted);
 		}
 		return castedResult;
+	}
+
+	public <T extends Entity> Map<T,T> checklastChanged(List<T> entities, boolean isNew) throws RaplaException
+	{
+		Map<T,T> persistantVersions= getPersistant(entities);
+		checklastChanged(entities, persistantVersions,isNew);
+		return persistantVersions;
+	}
+
+	private <T extends Entity> void checklastChanged(List<T> entities, Map<T,T> persistantVersions, boolean isNew) throws RaplaException,
+			EntityNotFoundException
+	{
+		refresh();
+		for ( T entity:entities)
+		{
+			if ( entity instanceof ModifiableTimestamp)
+			{
+				T persistant = persistantVersions.get( entity);
+				if ( persistant != null)
+				{
+					User lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+					if (lastChangedBy != null && !getUser().equals(lastChangedBy))
+					{
+						final Locale locale = i18n.getLocale();
+						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+						throw new RaplaException(i18n.format("error.new_version", name));
+					}
+				}
+				else
+				{
+					// if there exists an older version
+					if ( !isNew )
+					{
+						final Locale locale = i18n.getLocale();
+						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+						throw new RaplaException(i18n.format("error.new_version", name));
+					}
+					// otherwise we ignore it
+				}
+
+			}
+		}
 	}
 	
 	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 

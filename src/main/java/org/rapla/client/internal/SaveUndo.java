@@ -87,23 +87,20 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 
 		List<T> toStore = new ArrayList<T>();
 		Map<T,T> newEntitiesPersistant = null;
-		if ( !firstTimeCall || !isNew)
+		// undo
+		if ( !firstTimeCall )
 		{
-			newEntitiesPersistant= getFacade().getPersistant(newEntities);
-		}
-		if ( firstTimeCall)
-		{
-			firstTimeCall = false;
+			newEntitiesPersistant = getFacade().checklastChanged(newEntities,isNew);
 		}
 		else
 		{
-			checklastChanged(newEntities, newEntitiesPersistant);
+			firstTimeCall = false;
 		}
 		for ( T entity: newEntities)
 		{
             @SuppressWarnings("unchecked")
 			T  mutableEntity = (T) entity.clone();
-			if (!isNew)
+			if (newEntitiesPersistant != null)
 			{
 				@SuppressWarnings("null")
 				Entity persistant = (Entity) newEntitiesPersistant.get( entity);
@@ -118,50 +115,16 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		return true;
 	}
 
-	protected void checklastChanged(List<T> entities, Map<T,T> persistantVersions) throws RaplaException,
-			EntityNotFoundException {
-		getFacade().refresh();
-		for ( T entity:entities)
-		{
-			if ( entity instanceof ModifiableTimestamp)
-			{
-				T persistant = persistantVersions.get( entity);
-				if ( persistant != null) 
-				{
-					User lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-					if (lastChangedBy != null && !getFacade().getUser().equals(lastChangedBy))
-					{
-						String name = entity instanceof Named ? ((Named) entity).getName( getLocale()) : entity.toString();
-						throw new RaplaException(getI18n().format("error.new_version", name));
-					}		
-				} 
-				else
-				{
-					// if there exists an older version
-					if ( oldEntities != null)
-					{
-						String name = entity instanceof Named ? ((Named) entity).getName( getLocale()) : entity.toString();
-						throw new RaplaException(getI18n().format("error.new_version", name));
-					}
-					// otherwise we ignore it
-				}
-			
-			}
-		}
-	}
-	
 	public boolean undo() throws RaplaException {
 		boolean isNew = oldEntities == null;
 
 		if (isNew) {
-			Map<T,T> newEntitiesPersistant = getFacade().getPersistant(newEntities);
-			checklastChanged(newEntities, newEntitiesPersistant);
+			getFacade().checklastChanged(newEntities, isNew);
             Entity[] array = newEntities.toArray(new Entity[]{});
 			getFacade().removeObjects(array);
 		} else {
 			List<T> toStore = new ArrayList<T>();
-			Map<T,T> oldEntitiesPersistant = getFacade().getPersistant(oldEntities);
-			checklastChanged(oldEntities, oldEntitiesPersistant);
+			Map<T,T> oldEntitiesPersistant = getFacade().checklastChanged(oldEntities, isNew);
 			for ( T entity: oldEntities)
     		{
                 @SuppressWarnings("unchecked")

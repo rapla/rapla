@@ -1298,9 +1298,18 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             if (mutableAppointment == null) {
                 throw new IllegalStateException("Can't find the appointment: " + appointment);
             }
-            if(!reservation.getLastChanged().equals(mutableReservation.getLastChanged()))
+            if(firstTimeCall)
             {
-                throw new RaplaException(getI18n().format("error.new_version", reservation.toString()));
+                if(!reservation.getLastChanged().equals(mutableReservation.getLastChanged()))
+                {
+                    getFacade().refresh();
+                    throw new RaplaException(getI18n().format("error.new_version", reservation.toString()));
+                }
+            }
+            else
+            {
+                boolean isNew = false;
+                getFacade().checklastChanged( Collections.singletonList( reservation), isNew);
             }
 
 			long offset = getOffset(sourceStart, destStart, keepTime);
