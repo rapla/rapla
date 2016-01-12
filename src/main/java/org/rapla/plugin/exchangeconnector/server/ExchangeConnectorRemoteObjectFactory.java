@@ -2,12 +2,8 @@ package org.rapla.plugin.exchangeconnector.server;
 
 import javax.inject.Inject;
 
-import org.rapla.RaplaResources;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -19,20 +15,24 @@ import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.RemoteSession;
 
 @DefaultImplementation(context = InjectionContext.server, of = ExchangeConnectorRemote.class)
-public class ExchangeConnectorRemoteObjectFactory extends RaplaComponent implements ExchangeConnectorRemote
+public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRemote
 {
 	final SynchronisationManager manager;
 	RaplaKeyStorage keyStorage;
-    private final RemoteSession remoteSession;
-	private final User user;	
+	private final User user;
+    private Logger logger;	
 	
 	@Inject
-	public ExchangeConnectorRemoteObjectFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaKeyStorage keyStorage, SynchronisationManager manager, final RemoteSession remoteSession) {
-		super(facade, i18n, raplaLocale, logger);
+	public ExchangeConnectorRemoteObjectFactory(Logger logger, RaplaKeyStorage keyStorage, SynchronisationManager manager, final RemoteSession remoteSession) {
+        this.logger = logger;
 		this.keyStorage = keyStorage;
 		this.manager = manager;
-        this.remoteSession = remoteSession;
         user  = remoteSession.getUser();
+	}
+	
+	protected Logger getLogger()
+	{
+	    return logger;
 	}
 
     @Override

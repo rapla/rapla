@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -32,7 +33,6 @@ import org.rapla.components.xmlbundle.CompoundI18n;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -48,25 +48,28 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SyncError;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 import org.rapla.plugin.exchangeconnector.SynchronizeResult;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 
+@Singleton
 public class SynchronisationManager  {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
+    private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
     // existing tasks in memory
 	private final ExchangeAppointmentStorage appointmentStorage;
 	private final Map<String,List<CalendarModelImpl>> calendarModels = new HashMap<String,List<CalendarModelImpl>>();
@@ -108,11 +111,32 @@ public class SynchronisationManager  {
         long delay =0;
 		
 		scheduler.schedule( new RetryCommand(), delay, SCHEDULE_PERIOD);
+		// TODO check if start is needed in this instance and the delay
+		scheduler.schedule(new Command()
+        {
+            
+
+            @Override
+            public void execute() throws Exception
+            {
+                try
+                {
+                    final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator)SynchronisationManager.this.facade.getOperator();
+                    Date lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
+                    final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
+                    synchronize(updateResult);
+                }
+                catch(Throwable t)
+                {
+                    SynchronisationManager.this.logger.debug("Error updating exchange queue");
+                }
+            }
+        }, delay, 2000);
         //final Timer scheduledDownloadTimer = new Timer("ScheduledDownloadThread",true);
         //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
 	}
-	
-	class RetryCommand implements Command
+
+    class RetryCommand implements Command
 	{
 	    boolean firstExecution = true;
 	    
@@ -148,7 +172,7 @@ public class SynchronisationManager  {
 		    }
 		}
 	}
-
+    
 	ConcurrentHashMap<String, Object> synchronizer = new ConcurrentHashMap<String, Object>();
 	public SynchronizeResult retry(User user) throws RaplaException  
 	{

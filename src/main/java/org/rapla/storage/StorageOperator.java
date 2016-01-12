@@ -39,6 +39,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.storage.server.ImportExportEntity;
 
 import java.util.Collection;
 import java.util.Date;
@@ -49,7 +50,6 @@ public interface StorageOperator extends EntityResolver {
 	   
 	public final static String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
 	public final static String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
-	public final static String SYNCHRONIZATIONTASK_TYPE = "rapla:synchronizationTask";
 	public final static String DEFAULT_USER_TYPE = "rapla:defaultUser";
 	public final static String PERIOD_TYPE = "rapla:period";
 	public final static String RAPLA_TEMPLATE = "rapla:template";
@@ -128,5 +128,5 @@ public interface StorageOperator extends EntityResolver {
 	//Collection<String> getTemplateNames() throws RaplaException;
 
     FunctionFactory getFunctionFactory(String functionName);
-
+    
 }

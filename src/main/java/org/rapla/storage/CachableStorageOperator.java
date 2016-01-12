@@ -22,6 +22,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.server.ImportExportEntity;
 
 public interface CachableStorageOperator extends StorageOperator {
 
@@ -44,6 +45,16 @@ public interface CachableStorageOperator extends StorageOperator {
 
     Date getHistoryValidStart();
     Date getConnectStart();
+
+    Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection);
+    
+    /**
+     * Tries to receive the lock for the given id. If another System has the lock, a RaplaException is thrown
+     * @param id the id of the lock
+     * @return the time taken from the underlying system (database or file) when the lock was last requested
+     * @throws RaplaException if the lock can not be received
+     */
+    Date getLock(String id) throws RaplaException;
 }
 
 

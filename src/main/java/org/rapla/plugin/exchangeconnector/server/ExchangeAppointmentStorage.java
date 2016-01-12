@@ -22,23 +22,24 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
-import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
+import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.server.ImportExportDirections;
+import org.rapla.storage.server.ImportExportEntity;
+import org.rapla.storage.server.ImportExportEntityImpl;
+
+import com.google.gson.Gson;
 
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
@@ -54,10 +55,11 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 @Singleton
 public class ExchangeAppointmentStorage extends RaplaComponent
 {
+    private static final String EXCHANGE_ID = "exchange";
     Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<String, Set<SynchronizationTask>>();
-    StorageOperator operator;
+    CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
-
+    private final Gson gson = JSONParserWrapper.defaultGsonBuilder(new Class[]{SynchronizationTask.class}).create();
     //private static String DEFAULT_STORAGE_FILE_PATH = "data/exchangeConnector.dat";
     //	private String storageFilePath = DEFAULT_STORAGE_FILE_PATH;
     protected ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -71,55 +73,32 @@ public class ExchangeAppointmentStorage extends RaplaComponent
     public ExchangeAppointmentStorage(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, StorageOperator storageOperator) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
-        operator = storageOperator;
-        DynamicType dynamicType = operator.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
-        Attribute appointmentIdAtt = dynamicType.getAttribute("objectId");
-        Attribute statusAtt = dynamicType.getAttribute("status");
-        Attribute retriesAtt = dynamicType.getAttribute("retries");
-        Attribute lastRetryAtt = dynamicType.getAttribute("lastRetry");
-        Attribute lastErrorAtt = dynamicType.getAttribute("lastError");
-        ClassificationFilter newClassificationFilter = dynamicType.newClassificationFilter();
-        Collection<Allocatable> store = operator.getAllocatables(newClassificationFilter.toArray());
-        for (Allocatable persistant : store)
+        operator = (CachableStorageOperator) storageOperator;
+        final Collection<ImportExportEntity> exportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
+        for (ImportExportEntity persistant : exportEntities)
         {
-            String userId = persistant.getOwnerId();
-            String appointmentId = (String) persistant.getClassification().getValue(appointmentIdAtt);
-            String status = (String) persistant.getClassification().getValue(statusAtt);
-            String retriesString = (String) persistant.getClassification().getValue(retriesAtt);
-            Date lastRetry = (Date) persistant.getClassification().getValue(lastRetryAtt);
-            String lastError = (String) persistant.getClassification().getValue(lastErrorAtt);
-            if (userId == null)
+            SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
+            if (synchronizationTask.getUserId() == null)
             {
                 getLogger().error("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
                 continue;
             }
-            int retries = 0;
-            if (retriesString != null)
+            if (synchronizationTask.getRetries() == 0)
             {
-                try
-                {
-                    retries = Integer.parseInt(retriesString);
-                }
-                catch (Exception ex)
-                {
-                    getLogger().error("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
-                    continue;
-                }
+                getLogger().error("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
+                continue;
             }
-            SynchronizationTask synchronizationTask = new SynchronizationTask(appointmentId, userId, retries, lastRetry, lastError);
-            if (status == null)
+            if (synchronizationTask.getStatus() == null)
             {
                 getLogger().error("Synchronization task " + persistant.getId() + " has no status. Ignoring.");
                 continue;
             }
-            synchronizationTask.setPersistantId(persistant.getId());
-            SyncStatus valueOf = SyncStatus.valueOf(status);
-            if (valueOf == null)
+            final String appointmentId = synchronizationTask.getAppointmentId();
+            if(appointmentId == null)
             {
-                getLogger().error("Synchronization task " + persistant.getId() + " has unsupported status '" + status + "'. Ignoring.");
+                getLogger().error("Synchronization task " + persistant.getId() + " has no appointmentId. Ignoring.");
                 continue;
             }
-            synchronizationTask.setStatus(valueOf);
             Set<SynchronizationTask> taskList = tasks.get(appointmentId);
             if (taskList == null)
             {
@@ -339,7 +318,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             String persistantId = task.getPersistantId();
             if (persistantId != null)
             {
-                Allocatable persistant = operator.tryResolve(persistantId, Allocatable.class);
+                ImportExportEntity persistant = operator.tryResolve(persistantId, ImportExportEntity.class);
                 if (persistant != null)
                 {
                     removeObjects.add(persistant);
@@ -350,17 +329,14 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         for (SynchronizationTask task : toStore)
         {
             final String persistantId = task.getPersistantId();
-            final Classification newClassification;
             if (persistantId != null)
             {
-                final Entity persistant = operator.tryResolve(persistantId, Allocatable.class);
+                final Entity persistant = operator.tryResolve(persistantId, ImportExportEntity.class);
                 if (persistant != null)
                 {
-                    Set<Entity> singleton = Collections.singleton(persistant);
-                    Collection<Entity> editObjects = operator.editObjects(singleton, null);
-                    Allocatable editable = (Allocatable) editObjects.iterator().next();
-                    newClassification = editable.getClassification();
-                    storeObjects.add(editable);
+                    final Entity edit = getClientFacade().edit(persistant);
+                    ((ImportExportEntityImpl)edit).setData(gson.toJson(task));
+                    storeObjects.add(edit);
                 }
                 else
                 {
@@ -374,8 +350,12 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             }
             else
             {
-                final DynamicType dynamicType = operator.getDynamicType(StorageOperator.SYNCHRONIZATIONTASK_TYPE);
-                newClassification = dynamicType.newClassification();
+                final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
+                importExportEntityImpl.setId(persistantId);
+                importExportEntityImpl.setExternalSystem(EXCHANGE_ID);
+                importExportEntityImpl.setDirection(ImportExportDirections.EXPORT);
+                importExportEntityImpl.setRaplaId(task.getAppointmentId());
+                importExportEntityImpl.setData(gson.toJson(task));
                 final String userId = task.getUserId();
                 final User owner = operator.tryResolve(userId, User.class);
                 if (owner == null)
@@ -385,18 +365,11 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 }
                 else
                 {
-                    final Allocatable newObject = getModification().newAllocatable(newClassification, owner);
-                    task.setPersistantId(newObject.getId());
-                    storeObjects.add(newObject);
+                    importExportEntityImpl.setOwner(owner);
+                    storeObjects.add(importExportEntityImpl);
                 }
             }
             final String lastError = task.getLastError();
-            newClassification.setValue("objectId", task.getAppointmentId());
-            newClassification.setValue("status", task.getStatus().name());
-            newClassification.setValue("retries", task.getRetries());
-            newClassification.setValue("lastRetry", task.getLastRetry());
-            newClassification.setValue("lastError", lastError);
-
             if (lastError != null)
             {
                 addHash(hashMap, task, lastError);

@@ -107,7 +107,6 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
@@ -268,24 +267,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setReadOnly();
             cache.put(type);
         }
-        {
-            DynamicTypeImpl type = new DynamicTypeImpl();
-            String key = SYNCHRONIZATIONTASK_TYPE;
-            type.setKey(key);
-            type.setId(key);
-            type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
-            type.setAnnotation(DynamicTypeAnnotations.KEY_TRANSFERED_TO_CLIENT, DynamicTypeAnnotations.VALUE_TRANSFERED_TO_CLIENT_NEVER);
-            addAttributeWithInternalId(type, "objectId", AttributeType.STRING);
-            addAttributeWithInternalId(type, "externalObjectId", AttributeType.STRING);
-            addAttributeWithInternalId(type, "status", AttributeType.STRING);
-            addAttributeWithInternalId(type, "retries", AttributeType.STRING);
-            addAttributeWithInternalId(type, "lastRetry", AttributeType.DATE);
-            addAttributeWithInternalId(type, "lastError", AttributeType.STRING);
-            type.setResolver(this);
-            type.setReadOnly();
-            cache.put(type);
-        }
-
     }
 
     protected void processPermissionGroups() throws RaplaException
