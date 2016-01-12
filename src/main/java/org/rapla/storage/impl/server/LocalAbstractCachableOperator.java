@@ -132,9 +132,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 {
     /**
      * The duration which the history must support, only one older Entry than the specified time are needed.
-     * FIXME think about a delay when every old entry must not be within the history (e.g. one week)
      */
-    public static final long HISTORY_DURATION = 1000l * 60l * 60l;
+    public static final long HISTORY_DURATION = DateTools.MILLISECONDS_PER_HOUR;
+    
     /**
      * set encryption if you want to enable password encryption. Possible values
      * are "sha" or "md5".
@@ -1373,7 +1373,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean isAffected(DeleteUpdateEntry entry, User user)
     {
-        if (entry.affectAll || user.isAdmin())
+        if (entry.affectAll || user == null || user.isAdmin())
         {
             return true;
         }
@@ -3345,8 +3345,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @Override public UpdateResult getUpdateResult(Date since)
     {
-        // FIXME implement me
-        return null;
+        return getUpdateResult(since, null);
     }
     
     @Override
