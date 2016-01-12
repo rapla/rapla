@@ -46,7 +46,7 @@ public interface CachableStorageOperator extends StorageOperator {
     Date getHistoryValidStart();
     Date getConnectStart();
 
-    Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection);
+    Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection) throws RaplaException;
     
     /**
      * Tries to receive the lock for the given id. If another System has the lock, a RaplaException is thrown

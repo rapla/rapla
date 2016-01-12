@@ -101,6 +101,7 @@ class RaplaSQL {
     RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
     LockStorage lockStorage;
+    private final ImportExportStorage importExportStorage;
     
     RaplaSQL( RaplaXMLContext context) throws RaplaException{
     	this.context = context;
@@ -122,7 +123,8 @@ class RaplaSQL {
         history = new HistoryStorage( context, false);
         stores.add(history);
         stores.add(new HistoryStorage( context, true));
-        stores.add(new ImportExportStorage(context));
+        importExportStorage = new ImportExportStorage(context);
+        stores.add(importExportStorage);
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
@@ -423,6 +425,23 @@ class RaplaSQL {
         finally
         {
             preferencesStorage.setConnection(null, null);
+        }
+    }
+    
+    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection, Connection con) throws RaplaException
+    {
+        try
+        {
+            importExportStorage.setConnection(con, null);
+            return importExportStorage.load(id, importExportDirection);
+        }
+        catch(SQLException e)
+        {
+            throw new RaplaException("Error reading ImportExportEntries for "+id+" with direction "+importExportDirection);
+        }
+        finally
+        {
+            importExportStorage.removeConnection();
         }
     }
 }
@@ -2480,6 +2499,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
 class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
 {
+    private String sqlLoadByExternalSystemAndDirection;
     
     public ImportExportStorage(RaplaXMLContext context) throws RaplaException
     {
@@ -2507,18 +2527,45 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
         stmt.addBatch();
         return 1;
     }
+    
+    @Override
+    protected void createSQL(Collection<ColumnDef> entries)
+    {
+        super.createSQL(entries);
+        sqlLoadByExternalSystemAndDirection = selectSql + " WHERE EXTERNAL_SYSTEM = ? AND DIRECTION = ?";
+    }
 
+    public Collection<ImportExportEntity> load(String externalSystemId, int direction) throws SQLException
+    {
+        try(PreparedStatement stmt = con.prepareStatement(sqlLoadByExternalSystemAndDirection))
+        {
+            stmt.setString(1, externalSystemId);
+            stmt.setInt(2, direction);
+            final ResultSet rs = stmt.executeQuery();
+            if(rs == null)
+            {
+                return Collections.emptyList();
+            }
+            Collection<ImportExportEntity> result = new ArrayList<ImportExportEntity>();
+            while(rs.next())
+            {
+                final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
+                importExportEntityImpl.setId(rs.getString(1));
+                importExportEntityImpl.setExternalSystem(rs.getString(2));
+                importExportEntityImpl.setRaplaId(rs.getString(3));
+                importExportEntityImpl.setDirection(rs.getInt(4));
+                importExportEntityImpl.setData(getText(rs, 5));
+                importExportEntityImpl.setContext(getText(rs, 6));
+                result.add(importExportEntityImpl);
+            }
+            return result;
+        }
+    }
+    
     @Override
     protected void load(ResultSet rs) throws SQLException, RaplaException
     {
-        final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
-        importExportEntityImpl.setId(rs.getString(1));
-        importExportEntityImpl.setExternalSystem(rs.getString(2));
-        importExportEntityImpl.setRaplaId(rs.getString(3));
-        importExportEntityImpl.setDirection(rs.getInt(4));
-        importExportEntityImpl.setData(getText(rs, 5));
-        importExportEntityImpl.setContext(getText(rs, 6));
-        put(importExportEntityImpl);
+        // Do not load into cache
     }
     
 }

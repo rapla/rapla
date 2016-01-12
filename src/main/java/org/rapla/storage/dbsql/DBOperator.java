@@ -37,7 +37,6 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 
-import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
@@ -51,7 +50,6 @@ import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -63,7 +61,6 @@ import org.rapla.storage.IdCreator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
@@ -1090,24 +1087,50 @@ import org.rapla.storage.xml.RaplaXMLContextException;
     }
 
     @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection)
+    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection) throws RaplaException
     {
-        // FIXME implement me
-        return null;
+        try(Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            final Collection<ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(id, importExportDirection, con);
+            return importExportEntities;
+        }
+        catch(SQLException e)
+        {
+            throw new RaplaException("Error connecting to database");
+        }
     }
 
     @Override
     public Date getLock(String id) throws RaplaException
     {
-        // FIXME implement me
-        return null;
+        try(Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            raplaSQL.getLocks(con, Collections.singletonList(id));
+            return raplaSQL.getLastUpdated(con);
+        }
+        catch(SQLException e)
+        {
+            throw new RaplaException("Error connecting to database");
+        }
     }
 
     @Override
     public void releaseLock(String id, Date lockReceivedTimestamp)
     {
-        // FIXME implement me
-        
+        try(Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            raplaSQL.removeLocks(con, Collections.singletonList(id));
+        }
+        catch(SQLException e)
+        {
+            throw new RaplaException("Error connecting to database");
+        }
     }
 
     //implement backup at disconnect
