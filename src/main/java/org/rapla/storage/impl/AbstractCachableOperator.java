@@ -655,7 +655,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			    toRemove.add( new ReferenceInfo(id, persistantVersion.getTypeClass()));
 			}
 			else if ( ConflictImpl.isConflictId(id))
-			{
+			{  // FIXME what about the oldEntities?
 			    toRemove.add( new ReferenceInfo(id, Conflict.class) );
 			}
 		}

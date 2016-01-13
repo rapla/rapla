@@ -71,39 +71,6 @@ public class ExchangeAppointmentStorage extends RaplaComponent
     {
         super(facade, i18n, raplaLocale, logger);
         operator = (CachableStorageOperator) storageOperator;
-        final Collection<ImportExportEntity> exportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
-        for (ImportExportEntity persistant : exportEntities)
-        {
-            SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
-            if (synchronizationTask.getUserId() == null)
-            {
-                getLogger().error("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
-                continue;
-            }
-            if (synchronizationTask.getRetries() == 0)
-            {
-                getLogger().error("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
-                continue;
-            }
-            if (synchronizationTask.getStatus() == null)
-            {
-                getLogger().error("Synchronization task " + persistant.getId() + " has no status. Ignoring.");
-                continue;
-            }
-            final String appointmentId = synchronizationTask.getAppointmentId();
-            if(appointmentId == null)
-            {
-                getLogger().error("Synchronization task " + persistant.getId() + " has no appointmentId. Ignoring.");
-                continue;
-            }
-            Set<SynchronizationTask> taskList = tasks.get(appointmentId);
-            if (taskList == null)
-            {
-                taskList = new HashSet<SynchronizationTask>();
-                tasks.put(appointmentId, taskList);
-            }
-            taskList.add(synchronizationTask);
-        }
     }
 
     protected Lock writeLock() throws RaplaException
@@ -420,6 +387,43 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             hashMap.put(userId, set);
         }
         set.add(useInHashCalc);
+    }
+
+    public void refresh()
+    {
+        final Collection<ImportExportEntity> exportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
+        for (ImportExportEntity persistant : exportEntities)
+        {
+            SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
+            if (synchronizationTask.getUserId() == null)
+            {
+                getLogger().error("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
+                continue;
+            }
+            if (synchronizationTask.getRetries() == 0)
+            {
+                getLogger().error("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
+                continue;
+            }
+            if (synchronizationTask.getStatus() == null)
+            {
+                getLogger().error("Synchronization task " + persistant.getId() + " has no status. Ignoring.");
+                continue;
+            }
+            final String appointmentId = synchronizationTask.getAppointmentId();
+            if(appointmentId == null)
+            {
+                getLogger().error("Synchronization task " + persistant.getId() + " has no appointmentId. Ignoring.");
+                continue;
+            }
+            Set<SynchronizationTask> taskList = tasks.get(appointmentId);
+            if (taskList == null)
+            {
+                taskList = new HashSet<SynchronizationTask>();
+                tasks.put(appointmentId, taskList);
+            }
+            taskList.add(synchronizationTask);
+        }
     }
 
 }

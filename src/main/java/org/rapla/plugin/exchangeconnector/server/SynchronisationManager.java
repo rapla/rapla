@@ -133,11 +133,11 @@ public class SynchronisationManager  {
                 {
                     if(lastUpdated != null)
                     {
-                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, lastUpdated);
+                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID);
                     }
                 }
             }
-        }, delay, 2000);
+        }, delay, 20000);
         //final Timer scheduledDownloadTimer = new Timer("ScheduledDownloadThread",true);
         //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
 	}
@@ -331,6 +331,7 @@ public class SynchronisationManager  {
     }
 
 	private void synchronize(UpdateResult evt) throws RaplaException {
+	    appointmentStorage.refresh();
         Collection<SynchronizationTask> tasks = new ArrayList<SynchronizationTask>();
         //lock
         for (UpdateOperation operation: evt.getOperations())

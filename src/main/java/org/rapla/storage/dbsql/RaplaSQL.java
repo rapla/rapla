@@ -12,8 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -68,30 +91,8 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -349,6 +350,19 @@ class RaplaSQL {
         }
     }
 
+    public Date getLastRequested(Connection c, String id) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(c, null);
+            return lockStorage.readLastRequested(id);
+        }
+        finally
+        {
+            lockStorage.setConnection(null, null);
+        }
+    }
+    
     synchronized public Date getDatabaseTimestamp(Connection con) throws SQLException
     {
         try
@@ -445,19 +459,30 @@ class RaplaSQL {
     }
 }
 
+// TODO Think about canDelete and remove of locks when entities are deleted (not updated)
 class LockStorage extends AbstractTableStorage
 {
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
-    private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "'";
-    private final String cleanupSql = "delete from WRITE_LOCK WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
+    private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "' AND ACTIVE = 1";
+    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
+    private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP WHERE LOCKID = ? AND ACTIVE <> 1";
+    private final String deactivateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = LAST_CHANGED WHERE LOCKID = ?";
     private String readTimestampInclusiveLockedSql;
     private String requestTimestampSql;
     public LockStorage(Logger logger)
     {
-        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP"}, false);
-        insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED) values (?, CURRENT_TIMESTAMP)";
-        deleteSql = "delete from WRITE_LOCK WHERE LOCKID = ?";
+        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP", "LAST_REQUESTED TIMESTAMP", "ACTIVE INTEGER NOT NULL"}, false);
+        insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED, LAST_REQUESTED, ACTIVE) values (?, CURRENT_TIMESTAMP, ?, 1)";
+        deleteSql = null;//"delete from WRITE_LOCK WHERE LOCKID = ?";
         selectSql += " WHERE LOCKID = ?";
+    }
+    
+    @Override
+    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary(schema);
+        checkAndAdd(schema, "LAST_REQUESTED");
+        checkAndAdd(schema, "ACTIVE");
     }
     
     @Override
@@ -472,7 +497,7 @@ class LockStorage extends AbstractTableStorage
         {
             requestTimestampSql = "SELECT CURRENT_TIMESTAMP";
         }
-        readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
+        readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ACTIVE = 1 UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
     }
 
     public void removeLocks(Collection<String> ids) throws RaplaException
@@ -481,7 +506,7 @@ class LockStorage extends AbstractTableStorage
         {
             return;
         }
-        try(final PreparedStatement stmt = con.prepareStatement(deleteSql))
+        try(final PreparedStatement stmt = con.prepareStatement(deactivateSql))
         {
             for(String id : ids)
             {
@@ -489,7 +514,7 @@ class LockStorage extends AbstractTableStorage
                 stmt.addBatch();
             }
             final int[] result = stmt.executeBatch();
-            logger.debug("removed logs: "+Arrays.toString(result));
+            logger.debug("deactivated logs: "+Arrays.toString(result));
         }
         catch(Exception e)
         {
@@ -550,6 +575,24 @@ class LockStorage extends AbstractTableStorage
             throw new RaplaException("Global lock set", e);
         }
     }
+    
+    public Date readLastRequested(String id) throws RaplaException
+    {
+        try (final PreparedStatement stmt = con.prepareStatement(selectSql))
+        {
+            stmt.setString(1, id);
+            final ResultSet dbResult = stmt.executeQuery();
+            if(dbResult.next())
+            {
+                return new Date(dbResult.getTimestamp(3).getTime());
+            }
+            throw new IllegalStateException();
+        }
+        catch(SQLException e)
+        {
+            throw new RaplaException("Could not read last_requested from db for id: " + id);
+        }
+    }
 
     public void getLocks(Collection<String> ids) throws RaplaException
     {
@@ -558,15 +601,47 @@ class LockStorage extends AbstractTableStorage
             return;
         }
         checkGlobalLockThrowException();
-        try(final PreparedStatement stmt = con.prepareStatement(insertSql))
+        try (final PreparedStatement insertStmt = con.prepareStatement(insertSql);
+                final PreparedStatement updateStatement = con.prepareStatement(activateSql);
+                final PreparedStatement containsStmt = con.prepareStatement("SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID = ?"))
         {
+            boolean executeUpdate = false;
+            boolean executeInsert = false;
             for (String id : ids)
             {
-                stmt.setString(1, id);
-                stmt.addBatch();
+                // for each id first check, if a lock was already requested once. if so just update otherwise insert new
+                containsStmt.setString(1, id);
+                final ResultSet executeQuery = containsStmt.executeQuery();
+                if (executeQuery != null && executeQuery.next() && executeQuery.getInt(1) > 0)
+                {//update
+                    executeUpdate = true;
+                    updateStatement.setString(1, id);
+                    updateStatement.addBatch();
+                }
+                else
+                {// insert
+                    executeInsert = true;
+                    insertStmt.setString(1, id);
+                    insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
+                    insertStmt.addBatch();
+                }
             }
-            stmt.executeBatch();
-            if(con.getMetaData().supportsTransactions())
+            if (executeInsert)
+            {
+                insertStmt.executeBatch();
+            }
+            if (executeUpdate)
+            {
+                final int[] updates = updateStatement.executeBatch();
+                for (int numColumnsChanged : updates)
+                {
+                    if(numColumnsChanged != 1)
+                    {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+            if (con.getMetaData().supportsTransactions())
             {
                 con.commit();
             }
@@ -2276,8 +2351,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     protected void createSQL(Collection<ColumnDef> entries)
     {
         super.createSQL(entries);
-        String valueString = " (" + getEntryList(entries) + ")";
-        insertSql = "insert into " + getTableName() + valueString + " values (?,?,?,?,CURRENT_TIMESTAMP,?)";
         selectSql += " ORDER BY CHANGED_AT DESC";
     }
     
@@ -2389,7 +2462,8 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(2, RaplaType.getLocalName(entity));
         stmt.setString(3, entity.getClass().getCanonicalName());
         setText(stmt, 4, gson.toJson(entity));
-        setInt(stmt,5, asDeletion? 1:0);
+        stmt.setTimestamp(5, new java.sql.Timestamp(getConnectionTimestamp().getTime()));
+        setInt(stmt,6, asDeletion? 1:0);
         stmt.addBatch();
         return 1;
     }
@@ -2559,6 +2633,11 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
             }
             return result;
         }
+    }
+    
+    @Override
+    public void loadAll() throws SQLException, RaplaException
+    {
     }
     
     @Override

@@ -12,6 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
@@ -43,30 +68,6 @@ import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
@@ -1102,12 +1103,14 @@ import java.util.concurrent.locks.Lock;
     @Override
     public Date getLock(String id) throws RaplaException
     {
+        // no commit needed as getLocks will do a commit
         try(Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
             raplaSQL.getLocks(con, Collections.singletonList(id));
-            return raplaSQL.getLastUpdated(con);
+            final Date lastRequested = raplaSQL.getLastRequested(con, id);
+            return lastRequested;
         }
         catch(SQLException e)
         {
@@ -1116,13 +1119,14 @@ import java.util.concurrent.locks.Lock;
     }
 
     @Override
-    public void releaseLock(String id, Date lockReceivedTimestamp)
+    public void releaseLock(String id)
     {
         try(Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
             raplaSQL.removeLocks(con, Collections.singletonList(id));
+            con.commit();
         }
         catch(SQLException e)
         {
