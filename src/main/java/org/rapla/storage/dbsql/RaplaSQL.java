@@ -94,6 +94,8 @@ import org.rapla.storage.xml.RaplaXMLWriter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import microsoft.exchange.webservices.data.core.request.UpdateDelegateRequest;
+
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
     private final Logger logger;
@@ -402,12 +404,12 @@ class RaplaSQL {
         }
     }
 
-    public void removeLocks(Connection connection, Collection<String> ids) throws SQLException
+    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException
     {
         try
         {
             lockStorage.setConnection(connection, null);
-            lockStorage.removeLocks(ids);
+            lockStorage.removeLocks(ids, updatedUntil);
         }
         finally
         {
@@ -415,12 +417,12 @@ class RaplaSQL {
         }
     }
 
-    public void removeGlobalLock(Connection connection) throws SQLException
+    public void removeGlobalLock(Connection connection, Date connectionTimestamp) throws SQLException
     {
         try
         {
             lockStorage.setConnection(connection, null);
-            lockStorage.removeLocks(Collections.singleton(LockStorage.GLOBAL_LOCK));
+            lockStorage.removeLocks(Collections.singleton(LockStorage.GLOBAL_LOCK), connectionTimestamp);
         }
         finally 
         {
@@ -466,7 +468,8 @@ class LockStorage extends AbstractTableStorage
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "' AND ACTIVE = 1";
     private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
     private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP WHERE LOCKID = ? AND ACTIVE <> 1";
-    private final String deactivateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = LAST_CHANGED WHERE LOCKID = ?";
+    private final String deactivateWithLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = ? WHERE LOCKID = ?";
+    private final String deactivateWithoutLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE LOCKID = ?";
     private String readTimestampInclusiveLockedSql;
     private String requestTimestampSql;
     public LockStorage(Logger logger)
@@ -500,17 +503,24 @@ class LockStorage extends AbstractTableStorage
         readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ACTIVE = 1 UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
     }
 
-    public void removeLocks(Collection<String> ids) throws RaplaException
+    public void removeLocks(Collection<String> ids, Date updatedUntil) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
             return;
         }
-        try(final PreparedStatement stmt = con.prepareStatement(deactivateSql))
+        boolean updateTimestamp = updatedUntil != null;
+        try(final PreparedStatement stmt = con.prepareStatement(updateTimestamp ? deactivateWithLastRequestedUpdateSql : deactivateWithoutLastRequestedUpdateSql))
         {
             for(String id : ids)
             {
-                stmt.setString(1, id);
+                int i = 1;
+                if(updateTimestamp)
+                {
+                    stmt.setTimestamp(i, new java.sql.Timestamp(updatedUntil.getTime()));
+                    i++;
+                }
+                stmt.setString(i, id);
                 stmt.addBatch();
             }
             final int[] result = stmt.executeBatch();
@@ -656,7 +666,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch(RaplaException e)
         {
-            removeLocks(ids);
+            removeLocks(ids, null);
             try
             {
                 if(con.getMetaData().supportsTransactions())
@@ -690,7 +700,7 @@ class LockStorage extends AbstractTableStorage
             {
                 Thread.sleep(1);
                 // remove it so we can request a new
-                removeLocks(Collections.singleton(GLOBAL_LOCK));
+                removeLocks(Collections.singleton(GLOBAL_LOCK), null);
                 return requestLock(lockId, lastLocked);
             }
             else
@@ -710,7 +720,7 @@ class LockStorage extends AbstractTableStorage
                         final long actualTime = System.currentTimeMillis();
                         if((actualTime - startWaitingTime) > 30000l)
                         {
-                            removeLocks(Collections.singleton(GLOBAL_LOCK));
+                            removeLocks(Collections.singleton(GLOBAL_LOCK), null);
                             if(con.getMetaData().supportsTransactions())
                             {// Commit so others do not see the global lock any more
                                 con.commit();

@@ -763,6 +763,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         }
         ids.addAll(removeObjects);
         final boolean needsGlobalLock = containsDynamicType(ids);
+        Date connectionTimestamp = null;
         try
         {
             if (needsGlobalLock)
@@ -782,7 +783,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
                 }
                 raplaSQLOutput.getLocks(connection, ids);
             }
-            Date connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
+            connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
             for (String id : removeObjects)
             {
                 Entity entity = cache.get(id);
@@ -832,11 +833,11 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
             {
                 if (needsGlobalLock)
                 {
-                    raplaSQLOutput.removeGlobalLock(connection);
+                    raplaSQLOutput.removeGlobalLock(connection, connectionTimestamp);
                 }
                 else
                 {
-                    raplaSQLOutput.removeLocks(connection, ids);
+                    raplaSQLOutput.removeLocks(connection, ids, connectionTimestamp);
                 }
                 if (connection.getMetaData().supportsTransactions())
                 {
@@ -1119,13 +1120,13 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     }
 
     @Override
-    public void releaseLock(String id)
+    public void releaseLock(String id, Date updatedUntil)
     {
         try(Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            raplaSQL.removeLocks(con, Collections.singletonList(id));
+            raplaSQL.removeLocks(con, Collections.singletonList(id), updatedUntil);
             con.commit();
         }
         catch(SQLException e)

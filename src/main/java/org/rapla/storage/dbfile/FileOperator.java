@@ -555,11 +555,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
     
     @Override
-    public void releaseLock(String id)
+    public void releaseLock(String id, Date updatedUntil)
     {
         final SystemLock systemLock = locks.get(id);
         if(systemLock != null)
         {
+            if(updatedUntil != null)
+            {
+                systemLock.lastRequested = updatedUntil;
+            }
             systemLock.active = false;
         }
     }

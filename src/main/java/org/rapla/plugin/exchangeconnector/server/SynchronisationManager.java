@@ -1,6 +1,8 @@
 package org.rapla.plugin.exchangeconnector.server;
 
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import microsoft.exchange.webservices.data.core.request.UpdateDelegateRequest;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -109,12 +111,15 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             {
                 final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
                 Date lastUpdated = null;
+                Date updatedUntil = null;
                 try
                 {
                     lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                     calendarModelCache.synchronizeCalendars(updateResult);
                     synchronize(updateResult);
+                    // set it as last, so update must have been successful
+                    updatedUntil = updateResult.getUntil();
                 }
                 catch (Throwable t)
                 {
@@ -124,7 +129,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 {
                     if (lastUpdated != null)
                     {
-                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID);
+                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
                     }
                 }
             }

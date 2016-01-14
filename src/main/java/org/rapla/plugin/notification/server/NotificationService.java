@@ -104,8 +104,9 @@ public class NotificationService
                 {
                     lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID);
                     final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
-                    updatedUntil = updateResult.getUntil();
                     changed(updateResult);
+                    // set it as last, so update must have been successful
+                    updatedUntil = updateResult.getUntil();
                 }
                 catch(Throwable t)
                 {
@@ -115,8 +116,7 @@ public class NotificationService
                 {
                     if(lastUpdated != null)
                     {
-                        // FIXME provide information of updatedUntil, if successful. on successful release update lastRequested to updatedUntil otherwise not
-                        operator.releaseLock(NOTIFICATION_LOCK_ID);
+                        operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
                     }
                 }
             }
