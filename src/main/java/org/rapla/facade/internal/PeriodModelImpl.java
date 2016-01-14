@@ -20,7 +20,7 @@ import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -89,7 +89,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 			}
 		}
 		
-		for (EntityReferencer.ReferenceInfo removed:evt.getRemovedReferences())
+		for (ReferenceInfo removed:evt.getRemovedReferences())
 		{
 			if ( containsPeriodId(removed.getId()))
 			{

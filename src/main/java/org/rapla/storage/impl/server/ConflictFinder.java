@@ -23,8 +23,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
@@ -627,7 +627,7 @@ class ConflictFinder {
 				boolean isRemoved = !conflictListAfter.containsKey(conflictId);
 				if  ( isRemoved )
 				{
-                    final UpdateResult.Remove operation = new UpdateResult.Remove(new EntityReferencer.ReferenceInfo(conflictId, Conflict.class));
+                    final UpdateResult.Remove operation = new UpdateResult.Remove(new ReferenceInfo(conflictId, Conflict.class));
                     Conflict oldConflict = conflictListBefore.get(conflictId);
                     Conflict newConflict = null;
                     conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));
@@ -639,7 +639,7 @@ class ConflictFinder {
                 boolean isNew = !conflictListBefore.containsKey(conflictId);
 				if  ( isNew )
 				{
-                    final UpdateResult.Add operation = new UpdateResult.Add(new EntityReferencer.ReferenceInfo(conflictId, Conflict.class));
+                    final UpdateResult.Add operation = new UpdateResult.Add(new ReferenceInfo(conflictId, Conflict.class));
                     Conflict oldConflict = null;
                     Conflict newConflict = conflictListAfter.get(conflictId);
                     conflictChanges.add(new ConflictChangeOperation(operation, oldConflict, newConflict));

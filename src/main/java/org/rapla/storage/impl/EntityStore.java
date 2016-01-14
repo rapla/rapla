@@ -19,6 +19,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
 import java.util.Collection;
@@ -106,7 +107,22 @@ public class EntityStore implements EntityResolver {
         SimpleEntity.checkResolveResult(id, entityClass, entity);
         return entity;
     }
-    
+
+    @Override
+    public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
+    {
+        final Class<T> type = (Class<T>)referenceInfo.getType();
+        return tryResolve( referenceInfo.getId(), type);
+    }
+
+    @Override
+    public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
+    {
+        final Class<T> type = (Class<T>)referenceInfo.getType();
+        return resolve(referenceInfo.getId(), type);
+    }
+
+
     @Override
     public Entity tryResolve(String id) {
         return tryResolve(id, null);

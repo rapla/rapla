@@ -194,7 +194,7 @@ public class MainFrame extends RaplaGUIComponent
             User  user = getUser();
             final boolean admin = user.isAdmin();
             String message =   getString("user") + " "+ user.toString(); 
-            Allocatable template = getModification().getTemplate();
+            Allocatable template = getClientFacade().getTemplate();
             if ( template != null)
             {
             	Locale locale = getLocale();

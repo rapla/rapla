@@ -218,8 +218,7 @@ public class PermissionTest  {
         Assert.assertTrue(permissionController.canAllocate(allocatable, user, null, null, testFacade.today()));
 
         Reservation r1 = testFacade.newReservation();
-        final String ownerId = r1.getOwnerId();
-        final User owner = testFacade.getOperator().tryResolve(ownerId, User.class);
+        final User owner = testFacade.tryResolve(r1.getOwnerRef());
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         r1.getClassification().setValue("name","R1");

@@ -63,12 +63,7 @@ public class RaplaComponent
         this.logger = logger;
         this.raplaLocale = raplaLocale;
     }
-    
-    public EntityResolver getEntityResolver() 
-    {
-        return getClientFacade().getOperator();
-    }
-    
+
     protected void setLogger(Logger logger) 
     {
     	this.logger = logger;
@@ -150,21 +145,17 @@ public class RaplaComponent
     }
 
     static public CalendarOptions getCalendarOptions(final User user, final ClientFacade clientFacade) {
-        return getCalendarOptions(user, clientFacade.getOperator());
-    }
-
-    static public CalendarOptions getCalendarOptions(final User user, final StorageOperator operator) {
         RaplaConfiguration conf = null;
         try {
             // check if user has calendar options
             if ( user != null)
             {
-                conf = operator.getPreferences( user, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = clientFacade.getPreferences( user, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             // check if system has calendar options
             if ( conf == null)
             {
-                conf = operator.getPreferences( null, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = clientFacade.getPreferences( null, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             if ( conf != null)
             {
@@ -332,11 +323,10 @@ public class RaplaComponent
 	protected Date getStartDate(CalendarModel model)
 	{
 	    final ClientFacade clientFacade = getClientFacade();
-        final RaplaLocale raplaLocale2 = getRaplaLocale();
-        return getStartDate(model, clientFacade, raplaLocale2);
+        return getStartDate(model, clientFacade, clientFacade.getUser());
 	}
     
-    public static Date getStartDate(CalendarModel model, ClientFacade clientFacade, RaplaLocale raplaLocale) {
+    public static Date getStartDate(CalendarModel model, ClientFacade clientFacade, User user) {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
         Date startDate = null;
         if ( markedIntervals.size() > 0)
@@ -358,37 +348,9 @@ public class RaplaComponent
         {
             selectedDate = clientFacade.today();
         }
-        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(clientFacade.getUser(), clientFacade);
+        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, clientFacade);
         Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
-        startDate = raplaLocale.toDate(selectedDate,time);
-        return startDate;
-    }
-
-    public static Date getStartDate(CalendarModel model, StorageOperator operator,User user, RaplaLocale raplaLocale) {
-        Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-        Date startDate = null;
-        if ( markedIntervals.size() > 0)
-        {
-            TimeInterval first = markedIntervals.iterator().next();
-            startDate = first.getStart();
-        }
-        if ( startDate != null)
-        {
-            return startDate;
-        }
-
-        Date selectedDate = model.getSelectedDate();
-        if ( selectedDate == null)
-        {
-            selectedDate = model.getStartDate();
-        }
-        if ( selectedDate == null)
-        {
-            selectedDate = operator.today();
-        }
-        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, operator);
-        Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
-        startDate = raplaLocale.toDate(selectedDate,time);
+        startDate = DateTools.toDateTime(selectedDate,time);
         return startDate;
     }
     

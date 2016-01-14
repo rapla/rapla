@@ -25,6 +25,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -511,7 +512,12 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     }
     
     public Appointment copyAppointment(Appointment appointment) throws RaplaException {
-        return getFacade().clone(appointment);
+        return clone(appointment);
+    }
+
+    <T extends Entity> T clone(T obj) throws RaplaException
+    {
+        return getFacade().clone(obj, getFacade().getUser());
     }
 
     enum DialogAction
@@ -613,7 +619,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         List<Reservation> clones = new ArrayList<Reservation>();
         for (Reservation r:reservations)
         {
-            Reservation copyReservation = getFacade().clone(r);
+            Reservation copyReservation = clone(r);
             clones.add( copyReservation);
         }
         getClipboard().setReservation( clones, contextAllocatables);
@@ -624,7 +630,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         List<Reservation> clones = new ArrayList<Reservation>();
         for (Reservation r:reservations)
         {
-            Reservation copyReservation = getFacade().clone(r);
+            Reservation copyReservation = clone(r);
             clones.add( copyReservation);
         }
         getClipboard().setReservation( clones, contextAllocatables);
@@ -697,7 +703,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         else if ( dialogResult == DialogAction.EVENT && appointment.getReservation().getAppointments().length >1)
         {
         	Reservation reservation = appointment.getReservation();
-        	Reservation clone = getFacade().clone( reservation);
+        	Reservation clone = clone(reservation);
             int num  = getAppointmentIndex(appointment);
             Appointment[] clonedAppointments = clone.getAppointments();
             if ( num >= clonedAppointments.length)
@@ -1444,7 +1450,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 			Reservation mutableReservation = null;
 			
 			if (asNewReservation) {
-			    mutableReservation =  getFacade().clone(saveReservation != null ? saveReservation : fromReservation);
+                final Reservation reservation = saveReservation != null ? saveReservation : fromReservation;
+                mutableReservation =  ReservationControllerImpl.this.clone(reservation);
 	        	
 	        	// Alle anderen Appointments verschieben / entfernen
 	            Appointment[] appointments = mutableReservation.getAppointments();
@@ -1524,7 +1531,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 		}
 		
 		public boolean execute() throws RaplaException {
-			clones = getFacade().copy(fromReservations,start, keepTime);
+			clones = getFacade().copy(fromReservations,start, keepTime, getFacade().getUser());
 			PopupContext sourceComponent = getPopupContext();
 			save(clones, sourceComponent);
 			return true;

@@ -15,6 +15,7 @@ import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
 import org.rapla.entities.Entity;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
@@ -174,7 +175,8 @@ public class TemplateEdit extends RaplaGUIComponent
         DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.RAPLA_TEMPLATE);
         Classification newClassification = dynamicType.newClassification();
         newClassification.setValue("name", name);
-        Allocatable template = getModification().newAllocatable( newClassification);
+        final User user = getUser();
+        Allocatable template = getModification().newAllocatable( newClassification, user);
         Collection<Permission> permissionList = new ArrayList<Permission>(template.getPermissionList());
         for ( Permission permission: permissionList)
         {
@@ -258,7 +260,7 @@ public class TemplateEdit extends RaplaGUIComponent
                                 calendarSelectionModel.setSelectedDate( start);
                             }
                         }
-                        getModification().setTemplate( selectedTemplate);
+                        getClientFacade().setTemplate( selectedTemplate);
                     }
                     catch (RaplaException ex)
                     {

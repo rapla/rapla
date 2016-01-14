@@ -422,7 +422,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     private void updateActions() {
         FileEntry selectedFile = getSelectedFile();
         boolean isDefault = selectedFile == null || selectedFile.isDefault ;
-        final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getModification().getTemplate() == null;
+        final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getClientFacade().getTemplate() == null;
         saveAction.setEnabled(modifyPreferencesAllowed );
         publishAction.setEnabled( modifyPreferencesAllowed);
         deleteAction.setEnabled( !isDefault && modifyPreferencesAllowed);
@@ -430,9 +430,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     
     public void save(final String filename) throws RaplaException 
     {
-        Preferences preferences = ((CalendarModelImpl)model).createStorablePreferences(filename);
-        getModification().store( preferences);
-        
+        ((CalendarModelImpl)model).save(filename);
+
         // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
 //        Map<Preferences, Preferences> originalMap = getModification().getPersistant(Collections.singletonList(preferences) );
 //        Preferences original = originalMap.get(preferences);

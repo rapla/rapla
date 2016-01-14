@@ -99,7 +99,7 @@ public class ICalImportTest {
         {
             Date start = null;
             Date end = null;
-            reservations = facade.getReservations(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end);
+            reservations = facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null);
         }
         Assert.assertEquals(1, reservations.length);
         Reservation event = reservations[0];

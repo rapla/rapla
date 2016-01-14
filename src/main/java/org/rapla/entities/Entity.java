@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 
 public interface Entity<T> extends RaplaObject<T> {
     /** returns true, if the passed object is an instance of Entity
@@ -38,7 +38,7 @@ public interface Entity<T> extends RaplaObject<T> {
 
     boolean isReadOnly();
 
-    EntityReferencer.ReferenceInfo getReference();
+    ReferenceInfo<T> getReference();
     Entity<?>[] ENTITY_ARRAY = new Entity[0];
 }    
 

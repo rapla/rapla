@@ -13,6 +13,7 @@
 package org.rapla.facade;
 
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -21,6 +22,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
 
@@ -33,6 +35,10 @@ import java.util.Map;
 
 public interface QueryModule
 {
+    <T extends Entity> T tryResolve( ReferenceInfo<T> info);
+
+    <T extends Entity> T resolve( ReferenceInfo<T> info) throws RaplaException;
+
     /** returns all DynamicTypes matching the specified classification
         possible keys are reservation, person and resource.
         @see org.rapla.entities.dynamictype.DynamicTypeAnnotations
@@ -67,20 +73,19 @@ public interface QueryModule
      @param filters  you can specify classificationfilters or null for all reservations .
      */
     Reservation[] getReservations(User user,Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
+    FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
+
+
+
 
     /**returns all reservations that have allocated at least one Resource or Person that is part of the allocatables array.
      @param allocatables only reservations that allocate at least on element of this array will be returned.
      @param start only reservations beginning after the start-date will be returned (can be null).
      @param end   only reservations beginning before the end-date will be returned (can be null).
-
-    **/
-    Reservation[] getReservations(Allocatable[] allocatables,Date start,Date end) throws RaplaException;
-    
+     @param filters  you can specify classificationfilters or null for all reservations.
+     **/
     Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
     
-    FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
-    
-	List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException;
 
     /** returns all available periods */
     Period[] getPeriods() throws RaplaException;
@@ -129,7 +134,9 @@ public interface QueryModule
     /** returns the preferences for the passed user, must be admin todo this.*/
     Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException;
 
-    /** returns the preferences for the login user */
+    /** returns the preferences for the login user
+     * @Deprecated use getPreferences(getWorkingUser()) on client and getSystemPreferences on server*/
+    @Deprecated
     Preferences getPreferences() throws RaplaException;
     
     Preferences getSystemPreferences() throws RaplaException;
@@ -137,7 +144,7 @@ public interface QueryModule
     /** returns if the user is allowed to exchange the allocatables of this reservation. A user can do it if he has
      * at least admin privileges for one allocatable. He can only exchange or remove or insert allocatables he has admin privileges on.
      * The User cannot change appointments.*/
-    boolean canExchangeAllocatables(Reservation reservation);
+    boolean canExchangeAllocatables(User user,Reservation reservation);
     
 	Collection<Allocatable> getTemplates() throws RaplaException;
 	
@@ -145,6 +152,7 @@ public interface QueryModule
 
 	FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
 
+    boolean canAllocate(CalendarModel model,User user);
 
 }
 

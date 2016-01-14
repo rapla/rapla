@@ -22,8 +22,6 @@ public interface CalendarSelectionModel extends CalendarModel{
 
     void setOption( String name, String string );
 
-    void selectUser( User user );
-    
     /** If show only own reservations is selected. Thats if the current user is selected with select User*/
     boolean isOnlyCurrentUserSelected();
 
@@ -33,6 +31,7 @@ public interface CalendarSelectionModel extends CalendarModel{
 
     void resetExports();
     void save(final String filename) throws RaplaException;
+
     void load(final String filename) throws RaplaException, CalendarNotFoundExeption;
     
     CalendarSelectionModel clone();
@@ -42,9 +41,6 @@ public interface CalendarSelectionModel extends CalendarModel{
 	void markInterval(Date start, Date end);
 
 	void setMarkedAllocatables(Collection<Allocatable> allocatable);
-
-    /** CalendarModels do not update automatically but need to be notified on changes from the outside*/
-	void dataChanged(ModificationEvent evt) throws RaplaException;
 
     boolean isMarkedIntervalTimeEnabled();
 

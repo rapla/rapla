@@ -13,7 +13,7 @@
 package org.rapla.storage;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -121,13 +121,13 @@ public class UpdateResult
     }
 
     static public class Add implements UpdateOperation {
-        EntityReferencer.ReferenceInfo info;
+        ReferenceInfo info;
 
-        public Add( EntityReferencer.ReferenceInfo info) {
+        public Add( ReferenceInfo info) {
             this.info = info;
         }
 
-        @Override public EntityReferencer.ReferenceInfo getReference()
+        @Override public ReferenceInfo getReference()
         {
             return info;
         }
@@ -149,13 +149,13 @@ public class UpdateResult
     }
 
     static public class Remove implements UpdateOperation {
-        EntityReferencer.ReferenceInfo info;
+        ReferenceInfo info;
 
-        public Remove(EntityReferencer.ReferenceInfo info) {
+        public Remove(ReferenceInfo info) {
             this.info = info;
         }
 
-        @Override public EntityReferencer.ReferenceInfo getReference()
+        @Override public ReferenceInfo getReference()
         {
             return info;
         }
@@ -179,13 +179,13 @@ public class UpdateResult
 
     static public class Change implements UpdateOperation{
         
-        EntityReferencer.ReferenceInfo info;
+        ReferenceInfo info;
 
-        public Change( EntityReferencer.ReferenceInfo info) {
+        public Change( ReferenceInfo info) {
             this.info = info;
         }
 
-        @Override public EntityReferencer.ReferenceInfo getReference()
+        @Override public ReferenceInfo getReference()
         {
             return info;
         }

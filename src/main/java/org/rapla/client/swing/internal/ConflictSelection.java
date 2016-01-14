@@ -30,7 +30,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -155,7 +155,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 public void actionPerformed(ActionEvent e) {
                     try {
                         CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
-                        CommandHistory commanHistory = getModification().getCommandHistory();
+                        CommandHistory commanHistory = getClientFacade().getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
                         dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
@@ -171,7 +171,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 public void actionPerformed(ActionEvent e) {
                     try {
                         CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
-                        CommandHistory commanHistory = getModification().getCommandHistory();
+                        CommandHistory commanHistory = getClientFacade().getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
                         dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
@@ -312,10 +312,10 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         }
     }
 
-    private void removeConflict(Collection<Conflict> conflicts, Set<EntityReferencer.ReferenceInfo> removedReferences)
+    private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)
     {
         Set<String> removedIds = new LinkedHashSet<String>();
-        for (EntityReferencer.ReferenceInfo removedReference : removedReferences)
+        for (ReferenceInfo removedReference : removedReferences)
         {
             removedIds.add(removedReference.getId());
         }

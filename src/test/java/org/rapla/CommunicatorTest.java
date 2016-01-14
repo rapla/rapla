@@ -98,7 +98,7 @@ public class CommunicatorTest
 
            facade.store( newEvent );
 
-           Reservation[] events = facade.getReservations( new Allocatable[] {allocatables[0]}, null,null);
+           Reservation[] events = facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null);
            Assert.assertTrue(events.length > 0);
            
            Reservation r = events[0];

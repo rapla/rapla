@@ -60,6 +60,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final EventBus eventBus;
+
     @Inject
 	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
         super(facade, i18n, raplaLocale, logger);
@@ -98,7 +99,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         if ( eventTypes.size() == 1)
 		{
 		    RaplaMenuItem item = new RaplaMenuItem( getId());
-            item.setEnabled( permissionController.canAllocate(model, user, raplaLocale) && canCreateReservation);
+            item.setEnabled( clientFacade.canAllocate(model, user) && canCreateReservation);
             DynamicType type = eventTypes.get(0);
             String name = type.getName( getLocale());
             if ( newEventText.endsWith( name))
@@ -118,7 +119,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( permissionController.canAllocate(model, user, raplaLocale) && canCreateReservation);
+			item.setEnabled( getClientFacade().canAllocate(model, user) && canCreateReservation);
 			item.setText(newEventText);
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			for ( DynamicType type:eventTypes)

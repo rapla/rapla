@@ -55,7 +55,9 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -144,6 +146,24 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		locale = i18n.getLocale();
 	}
 
+	public boolean canAllocate(CalendarModel model,User user)
+	{
+		//Date start, Date end,
+		Collection<Allocatable> allocatables = model.getMarkedAllocatables();
+		boolean canAllocate = true;
+
+		Date start = RaplaComponent.getStartDate(model, this,user);
+		Date end = RaplaComponent.calcEndDate(model, start);
+		for (Allocatable allo : allocatables)
+		{
+			if (!getPermissionController().canAllocate(start, end, allo, user))
+			{
+				canAllocate = false;
+			}
+		}
+		return canAllocate;
+	}
+
 	public PermissionController getPermissionController()
 	{
 		if ( operator== null)
@@ -188,8 +208,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		if (getLogger().isDebugEnabled())
 			getLogger().debug("Objects updated");
 
-    	cacheValidString = null;
-		cachedReservations = null;
     	if (workingUserId != null)
 		{
 			if ( evt.isModified( User.class))
@@ -453,21 +471,27 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return objects;
 	}
 
-	int queryCounter = 0;
 	public FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters) {
+		if ( templateId != null)
+		{
+			final Allocatable template = getTemplate();
+			if ( template == null)
+			{
+				return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
+			}
+		}
+		return getReservationsAsync(operator,user,allocatables, start, end, reservationFilters, templateId );
+	}
+
+	public static FutureResult<Collection<Reservation>> getReservationsAsync(StorageOperator operator,User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId) {
         final List<Allocatable> allocList;
         Map<String,String> annotationQuery;
 		if ( templateId != null)
 		{
 		    user = null;
 		    allocList = null;
-			Allocatable template = getTemplate();
-			if ( template == null)
-			{
-			    return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
-			}
 			annotationQuery = new LinkedHashMap<String,String>();
-			annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
+			annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
 		}
 		else
 		{
@@ -500,10 +524,13 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return getVisibleAllocatables(filters).toArray(	Allocatable.ALLOCATABLE_ARRAY);
 	}
 
-	public boolean canExchangeAllocatables(Reservation reservation) {
+	public boolean canExchangeAllocatables(User user,Reservation reservation) {
+		if ( user == null)
+		{
+			return true;
+		}
 		try {
 			Allocatable[] all = getAllocatables(null);
-			User user = getUser();
 			PermissionController permissionController = getPermissionController();
 			for (int i = 0; i < all.length; i++) {
 				if (permissionController.canModify(all[i], user)) {
@@ -592,73 +619,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
             throw new RaplaException(e.getMessage(),e);
         }
     }
-	
-	private String cacheValidString;
-	private Reservation[] cachedReservations;
-	private boolean cachingEnabled = true;
-	public Reservation[] getReservations(Allocatable[] allocatables,Date start, Date end) throws RaplaException {
-		String cacheKey = createCacheKey( allocatables, start, end);
-		if ( cachingEnabled)
-		{
-        	if ( cacheValidString != null && cacheValidString.equals( cacheKey) && cachedReservations != null)
-        	{
-        		return cachedReservations;
-        	}
-		}
-    	Reservation[] reservationsForAllocatable = getReservationsForAllocatable(allocatables, start, end, null);
-    	if ( cachingEnabled)
-    	{
-    	    cachedReservations = reservationsForAllocatable;
-    	    cacheValidString = cacheKey;
-    	}
-		return reservationsForAllocatable;
-	}
-	
-	public void setCachingEnabled(boolean enable)
-	{
-	     this.cachingEnabled = enable;
-	}
-	
-	private String createCacheKey(Allocatable[] allocatables, Date start,
-			Date end) {
-		StringBuilder buf = new StringBuilder();
-		if ( allocatables != null)
-		{
-			for ( Allocatable alloc:allocatables)
-			{
-				buf.append(alloc.getId());
-				buf.append(";");
-			}
-		}
-		else
-		{
-			buf.append("all_reservations;");
-		}
-		if ( start != null)
-		{
-			buf.append(start.getTime() + ";");
-		}
-		if ( end != null)
-		{
-			buf.append(end.getTime() + ";");
-		}
-		return buf.toString();
-	}
-
-	public List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException
-	{
-		Collection<String> ids = new ArrayList<String>();
-		for ( Conflict conflict:conflicts)
-		{
-			ids.add(conflict.getReservation1());
-			ids.add(conflict.getReservation2());
-		}
-		Collection<Entity> values = operator.getFromId( ids, true).values();
-		@SuppressWarnings("unchecked")
-		ArrayList<Reservation> converted = new ArrayList(values);
-		return converted;
-	}
-
 
 	public Period[] getPeriods() throws RaplaException {
 		Period[] result = getPeriodModel().getAllPeriods();
@@ -674,9 +634,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 
 	public DynamicType[] getDynamicTypes(String classificationType)
 			throws RaplaException {
+		return getDynamicTypes(operator, classificationType, getWorkingUser());
+	}
+
+	static public DynamicType[] getDynamicTypes(StorageOperator operator,String classificationType, User user)
+			throws RaplaException {
 		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
 		Collection<DynamicType> collection = operator.getDynamicTypes();
-		PermissionController permissionController = getPermissionController();
+		PermissionController permissionController = operator.getPermissionController();
 		for (DynamicType type: collection) {
 			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
 			// ignore internal types for backward compatibility
@@ -684,10 +649,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			{
 				continue;
 			}
-			User workingUser = getWorkingUser();
-			if ( workingUser != null && !permissionController.canRead(type, workingUser))
+			if ( user != null && !permissionController.canRead(type, user))
 			{
-			    continue;
+				continue;
 			}
 			if ( classificationType == null || classificationType.equals(classificationTypeAnno)) {
 				result.add(type);
@@ -1043,8 +1007,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public void setTemplate(Allocatable template) 
 	{
 		this.templateId = template != null ? template.getId() : null;
-		cachedReservations = null;
-		cacheValidString = null;
 //		User workingUser;
 //        try {
 //            workingUser = getWorkingUser();
@@ -1134,6 +1096,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
         return allocatable;
     }
 
+
+
 	private Classification newClassification(String classificationType)
 			throws RaplaException {
 		DynamicType[] dynamicTypes = getDynamicTypes(classificationType);
@@ -1167,17 +1131,18 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return newAllocatable(classification, user);
 	}
 
-	public Allocatable newPeriod() throws RaplaException {
+	public Allocatable newPeriod(User user) throws RaplaException {
 		DynamicType periodType = getDynamicType(StorageOperator.PERIOD_TYPE);
 		Classification classification = periodType.newClassification();
 		classification.setValue("name", "");
 		Date today = today();
 		classification.setValue("start", DateTools.cutDate(today));
 		classification.setValue("end", DateTools.addDays(DateTools.fillDate(today),7));
-		Allocatable period = newAllocatable(classification);
-		setNew(period);
+		Allocatable period = newAllocatable(classification, user);
+		setNew(period, user);
 		return period;
 	}
+
 
 	public Date today() {
 		return operator.today();
@@ -1293,14 +1258,16 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 		return user;
 	}
-	
+
+
+
 	public CalendarSelectionModel newCalendarModel(User user) throws RaplaException{
 	    User workingUser = getWorkingUser();
         if ( workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
 	    {
 	        throw new RaplaException("Can't create a calendar model for a different user.");
 	    }
-	    return new CalendarModelImpl( locale, user, this);
+	    return new CalendarModelImpl( locale, user, operator);
     }
 
 	private String createDynamicTypeKey(String classificationType)
@@ -1445,7 +1412,7 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		}
 	}
 	
-	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime) throws RaplaException 
+	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException
 	    {
 	        List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
 	        Collections.sort( sortedReservations, new ReservationStartComparator(i18n.getLocale()));
@@ -1456,14 +1423,14 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	            {
 	                firstStart = ReservationStartComparator.getStart( reservation);
 	            }
-	            Reservation copy = copy(reservation, beginn, firstStart, keepTime);
+	            Reservation copy = copy(reservation, beginn, firstStart, keepTime, user);
 	            copies.add( copy);
 	        }
 	        return copies;
 	    }
 	    
-	    public  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime) throws RaplaException {
-	        Reservation r =  clone( reservation);
+	    private  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime, User user) throws RaplaException {
+	        Reservation r =  clone( reservation, user);
 	        Appointment[] appointments = r.getAppointments();
 	    
 	        for ( Appointment app :appointments) {
@@ -1511,8 +1478,6 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	        return r;
 	    }
 
-
-
 	@SuppressWarnings("unchecked")
 	private <T extends Entity> T _clone(T obj) throws RaplaException {
 		T deepClone =  (T) obj.clone();
@@ -1534,12 +1499,12 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		return clone;
 	}
 
+
 	@SuppressWarnings("unchecked")
-	public <T extends Entity> T clone(T obj) throws RaplaException {
+	public <T extends Entity> T clone(T obj, User user) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't clone null objects");
 
-		User workingUser = getWorkingUser();
 		T result;
 		Class<T> raplaType = obj.getTypeClass();
 		if (raplaType == Appointment.class ){
@@ -1555,9 +1520,9 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			Reservation clonedReservation = cloneReservation((Reservation) temp);
 			// Hack for 1.6 compiler compatibility
 			Reservation r = clonedReservation;
-			if ( workingUser != null)
+			if ( user != null)
 			{
-				r.setOwner( workingUser );
+				r.setOwner( user );
 			}
 			if ( templateId != null )
 			{
@@ -1590,8 +1555,8 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		if (result instanceof ModifiableTimestamp) {
 			Date now = operator.getCurrentTimestamp();
 			((ModifiableTimestamp) result).setLastChanged(now);
-			if (workingUser != null) {
-				((ModifiableTimestamp) result).setLastChangedBy(workingUser);
+			if (user != null) {
+				((ModifiableTimestamp) result).setLastChangedBy(user);
 			}
 		}
 		return result;
@@ -1714,6 +1679,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 			getLogger().debug("Storing took " + (System.currentTimeMillis() - time)	+ " ms.");
 	}
 
+	@Override public void storeAndRemove(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
+	{
+
+	}
+
 	public CommandHistory getCommandHistory() 
 	{
 		return commandHistory;
@@ -1722,20 +1692,29 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 	public void changeName(String title, String firstname, String surname) throws RaplaException
 	{
 		User user = getUser();
-		getOperator().changeName(user,title,firstname,surname);
+		operator.changeName(user, title, firstname, surname);
 	}
 
 	public void changeEmail(String newEmail)  throws RaplaException
 	{
 		User user = getUser();
-		getOperator().changeEmail(user, newEmail);
+		operator.changeEmail(user, newEmail);
 	}
 
 	public void confirmEmail(String newEmail) throws RaplaException {
 		User user = getUser();
-		getOperator().confirmEmail(user, newEmail);
+		operator.confirmEmail(user, newEmail);
 	}
 
-	
+
+	public <T extends Entity> T tryResolve( ReferenceInfo<T> info)
+	{
+		return getOperator().tryResolve( info);
+	}
+
+	public  <T extends Entity> T resolve( ReferenceInfo<T> info) throws RaplaException
+	{
+		return getOperator().resolve(info);
+	}
 
 }

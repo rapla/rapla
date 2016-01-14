@@ -15,6 +15,7 @@ package org.rapla.entities.storage.internal;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 
 import java.util.ArrayList;
@@ -95,7 +96,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     }
     
     @Override
-    public Iterable<ReferenceInfo> getReferenceInfo() 
+    public Iterable<ReferenceInfo> getReferenceInfo()
     {
         Set<ReferenceInfo> result = new HashSet<ReferenceInfo>();
         if (links != null) {
@@ -109,6 +110,17 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
             }
         }
         return result;
+    }
+
+    protected <T> ReferenceInfo<T> getReferenceFor(String key, Class<T> typeClass)
+    {
+        String id = getId(key);
+        return getReferenceForId(id, typeClass);
+    }
+
+    protected <T> ReferenceInfo<T> getReferenceForId(String id, Class<T> typeClass)
+    {
+        return new ReferenceInfo(id, typeClass);
     }
     
     abstract protected Class<? extends Entity> getInfoClass(String key);

@@ -21,9 +21,9 @@ import org.rapla.storage.StorageOperator;
 public interface ClientFacade 
     extends 
 	UserModule
+    ,UpdateModule
 	,ModificationModule
 	,QueryModule
-	,UpdateModule
 {
     StorageOperator getOperator();
 

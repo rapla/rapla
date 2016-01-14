@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
+import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 public interface UpdateModule
@@ -68,6 +70,10 @@ public interface UpdateModule
     
     //void addAllocationChangedListener(AllocationChangeListener triggerListener);
     //void removeAllocationChangedListener(AllocationChangeListener triggerListener);
+
+    void setTemplate(Allocatable template);
+    Allocatable getTemplate();
+    CommandHistory getCommandHistory();
 }
 
 

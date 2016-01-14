@@ -89,7 +89,7 @@ public class ClientFacadeTest  {
         
         orig.addAllocatable( facade.getAllocatables()[0]);
        
-        Reservation clone = facade.clone( orig );
+        Reservation clone = facade.clone( orig , facade.getUser());
         facade.store( orig );
         facade.store( clone );
 
@@ -115,7 +115,7 @@ public class ClientFacadeTest  {
         ClassificationFilter filter = facade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","power planting");
         Reservation orig = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter})[0];
-        Reservation clone = facade.clone( orig );
+        Reservation clone = facade.clone( orig, facade.getUser() );
         Appointment a = clone.getAppointments()[0];
         Date newStart = new SerializableDateTimeFormat().parseDateTime("2005-10-10","10:20:00");
         Date newEnd = new SerializableDateTimeFormat().parseDateTime("2005-10-12", null);

@@ -33,7 +33,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -154,7 +154,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         facade.login("homer", "duffs".toCharArray());
         Date start = DateTools.cutDate(new Date());
         Date end = new Date(start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
-        Allocatable period = facade.newPeriod();
+        Allocatable period = facade.newPeriod(facade.getUser());
         Classification c = period.getClassification();
         String name = "TEST PERIOD2";
         c.setValue("name", name);
@@ -403,11 +403,11 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Reservation newReservation = (Reservation) next;
                 Assert.assertEquals(allocatables.length, newReservation.getAllocatables().length);
             }
-            final String userID;
+            final ReferenceInfo<User> userID;
             {// UserStorage and UserGroupStorage
                 {
                     final User newUser = writeFacade.newUser();
-                    userID = newUser.getId();
+                    userID = newUser.getReference();
                     for (Category cat:newUser.getGroupList()) {newUser.removeGroup( cat);}
                     //newUser.getGroupList().clear();
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
@@ -436,7 +436,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     Assert.assertEquals(categories[0], groupList.iterator().next());
                 }
                 {// now change the group
-                    final User newUser = writeFacade.edit(writeFacade.getOperator().tryResolve(userID, User.class));
+                    final User obj = writeFacade.tryResolve(userID);
+                    final User newUser = writeFacade.edit(obj);
                     newUser.removeGroup(writeFacade.getUserGroupsCategory().getCategories()[0]);
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[1]);
                     writeFacade.store(newUser);
@@ -461,9 +462,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
+                final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
+                final ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(existingReservaton.getId(), next.getId());
             }
             {// Delete of an resource
@@ -474,21 +475,21 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
+                final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
+                final ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(allocatable.getId(), next.getId());
             }
             {// Delete of an user
-                final User newUser = writeFacade.edit(writeFacade.getOperator().tryResolve(userID, User.class));
+                final User newUser = writeFacade.edit(writeFacade.tryResolve(userID));
                 writeFacade.remove(newUser);
                 readFacade.refresh();
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
+                final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
+                final ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(newUser.getId(), next.getId());
             }
             {// Delete of a category
@@ -498,9 +499,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
                 Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
-                final Set<EntityReferencer.ReferenceInfo> removed = modificationEvent.getRemovedReferences();
+                final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
-                final EntityReferencer.ReferenceInfo next = removed.iterator().next();
+                final ReferenceInfo next = removed.iterator().next();
                 Assert.assertEquals(newCategory.getId(), next.getId());
             }
         }
@@ -518,7 +519,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         for(int i = 0; i< 100000; i++)
         {
             final Classification classification = dynamicType.newClassification();
-            final Allocatable allocatable = writeFacade.newAllocatable(classification);
+            final Allocatable allocatable = writeFacade.newAllocatable(classification, writeFacade.getUser());
             final Attribute attribute = classification.getAttributes()[0];
             classification.setValue(attribute, "generated-alloc-"+i);
             storeObjects.add(allocatable);

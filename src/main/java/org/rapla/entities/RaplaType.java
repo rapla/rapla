@@ -68,7 +68,7 @@ public class RaplaType<T>  {
     }
 
 
-	public RaplaType(Class<T> clazz, String localname) {
+	private RaplaType(Class<T> clazz, String localname) {
 //        @SuppressWarnings("unchecked")
 //		Class<? extends RaplaObject> clazz2 = clazz;
 		this.type = clazz;

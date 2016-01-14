@@ -1,10 +1,10 @@
 package org.rapla.storage;
 
 import org.rapla.entities.Entity;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 
 public interface UpdateOperation {
     String getCurrentId();
     Class<? extends Entity> getType();
-    EntityReferencer.ReferenceInfo getReference();
+    ReferenceInfo getReference();
 }

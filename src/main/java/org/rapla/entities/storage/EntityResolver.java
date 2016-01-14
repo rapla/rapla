@@ -29,9 +29,13 @@ public interface EntityResolver
     
     /** now the type safe version */
     <T extends Entity> T tryResolve(String id, Class<T> entityClass);
+
+    <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo);
     
     /** now the type safe version */
     <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException;
+
+    <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException;
     
     DynamicType getDynamicType(String key);
 

@@ -15,6 +15,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -65,10 +66,10 @@ public class SwingActivityController extends RaplaComponent implements StartActi
             case CREATE_RESERVATION_FOR_DYNAMIC_TYPE:
             {
                 final String dynamicTypeId = event.getInfo();
-                final Entity resolve = facade.getOperator().resolve(dynamicTypeId);
+                final Entity resolve = facade.resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
                 final DynamicType type = (DynamicType)resolve;
                 Classification newClassification = type.newClassification();
-                Reservation r = facade.newReservation(newClassification);
+                Reservation r = facade.newReservation(newClassification, facade.getUser());
                 Appointment appointment = createAppointment(model);
                 r.addAppointment(appointment);
                 final List<Reservation> singletonList = Collections.singletonList( r);
@@ -95,7 +96,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
                 boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                 boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
                 Date beginn = getStartDate(model);
-                Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime);
+                Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime, facade.getUser());
                 if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
                 {
                     Appointment app = newReservations.iterator().next().getAppointments()[0];

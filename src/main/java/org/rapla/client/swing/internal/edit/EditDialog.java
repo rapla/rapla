@@ -270,7 +270,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                 else if (canUndo)
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(getClientFacade(), getI18n(), entities, originals);
-                    CommandHistory commandHistory = getModification().getCommandHistory();
+                    CommandHistory commandHistory = getClientFacade().getCommandHistory();
                     commandHistory.storeAndExecute(saveCommand);
                 }
                 else

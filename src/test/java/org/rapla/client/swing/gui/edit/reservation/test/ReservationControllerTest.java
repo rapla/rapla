@@ -20,6 +20,7 @@ import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -116,7 +117,8 @@ public final class ReservationControllerTest extends GUITestCase {
 		Date startDate = new Date();
 		editor.addAppointment(startDate, new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_DAY));
 		editor.save();
-		Allocatable period = facade.newPeriod();
+		User user = facade.getUser();
+		Allocatable period = facade.newPeriod(user);
 		Classification classification = period.getClassification();
 		classification.setValue("start",startDate);
 		classification.setValue("start",new Date(startDate.getTime() + 3

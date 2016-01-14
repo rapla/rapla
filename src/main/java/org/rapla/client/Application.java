@@ -68,7 +68,6 @@ public class Application implements ApplicationView.Presenter
                     // TODO inform activities?
                 }
             });
-            ((FacadeImpl) facade).setCachingEnabled(false);
             RaplaPopups.getProgressBar().setPercent(100);
         }
         catch (RaplaException e)

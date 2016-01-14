@@ -171,14 +171,14 @@ public abstract class RaplaBuilder
      
         allReservationsForAllocatables.clear();
         if ( startDate != null && !allocatables.isEmpty()) {
-            Reservation[] events = getClientFacade().getReservations( allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), startDate, endDate);
+            Reservation[] events = model.getReservations( startDate, endDate);
             List<Reservation> reservationsForAllocatables = Arrays.asList(events);
 			allReservationsForAllocatables.addAll( reservationsForAllocatables);
         }
     
         if ( !conflictsSelected.isEmpty() )
         {
-        	filteredReservations = getClientFacade().getReservations( conflictsSelected);
+        	filteredReservations =  Arrays.asList(model.getReservations());
         	conflictingAppointments = ConflictImpl.getMap( conflictsSelected, filteredReservations);
         }
         else

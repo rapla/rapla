@@ -26,7 +26,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.storage.PermissionController;
 
 import java.io.Serializable;
@@ -672,7 +672,7 @@ public class ParsedText implements Serializable
             return parent.getAnnotationKeys();
         }
 
-        @Override public EntityReferencer.ReferenceInfo getReference()
+        @Override public ReferenceInfo getReference()
         {
             return parent.getReference();
         }

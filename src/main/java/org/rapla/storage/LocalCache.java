@@ -30,6 +30,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
@@ -365,6 +366,20 @@ public class LocalCache implements EntityResolver
         return result;
     }
 
+    @Override
+    public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
+    {
+        final Class<T> type = (Class<T>)referenceInfo.getType();
+        return tryResolve( referenceInfo.getId(), type);
+    }
+
+    @Override
+    public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
+    {
+        final Class<T> type = (Class<T>)referenceInfo.getType();
+        return resolve(referenceInfo.getId(), type);
+    }
+
     // Implementation of EntityResolver
     @Override public Entity resolve(String id) throws EntityNotFoundException
     {
@@ -382,6 +397,7 @@ public class LocalCache implements EntityResolver
     {
         return tryResolve(id, null);
     }
+
 
     @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
     {

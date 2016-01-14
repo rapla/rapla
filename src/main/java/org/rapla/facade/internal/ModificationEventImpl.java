@@ -4,7 +4,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
-import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -18,7 +18,7 @@ public class ModificationEventImpl implements ModificationEvent
 {
     private TimeInterval timeInterval;
     private boolean switchTemplateMode = false;
-    private final Set<EntityReferencer.ReferenceInfo> removedReferences = new LinkedHashSet<EntityReferencer.ReferenceInfo>();
+    private final Set<ReferenceInfo> removedReferences = new LinkedHashSet<ReferenceInfo>();
     private final Set<Entity> added = new LinkedHashSet<Entity>();
     private final Set<Entity> changed = new LinkedHashSet<Entity>();
     private final Set<Class<? extends Entity>> modified = new LinkedHashSet<Class<? extends Entity>>();
@@ -37,7 +37,7 @@ public class ModificationEventImpl implements ModificationEvent
             modified.add(typeClass);
             if(op instanceof UpdateResult.Remove)
             {
-                removedReferences.add(new EntityReferencer.ReferenceInfo(op.getCurrentId(), typeClass));
+                removedReferences.add(new ReferenceInfo(op.getCurrentId(), typeClass));
             }
             else if(op instanceof UpdateResult.Change)
             {
@@ -55,7 +55,7 @@ public class ModificationEventImpl implements ModificationEvent
     }
 
     public boolean isRemoved(Entity object) {
-        final EntityReferencer.ReferenceInfo referenceInfo = new EntityReferencer.ReferenceInfo(object);
+        final ReferenceInfo referenceInfo = new ReferenceInfo(object);
         return getRemovedReferences().contains( referenceInfo);
     }
 
@@ -97,7 +97,7 @@ public class ModificationEventImpl implements ModificationEvent
 //        return set;
 //    }
 
-    public Set<EntityReferencer.ReferenceInfo> getRemovedReferences()
+    public Set<ReferenceInfo> getRemovedReferences()
     {
         return removedReferences;
     }

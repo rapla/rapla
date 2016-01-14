@@ -140,13 +140,14 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
         }
         Collection<Reservation> originalEntity = null;
 		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getClientFacade(), getI18n(), newReservations, originalEntity);
-        getModification().getCommandHistory().storeAndExecute( cmd);
+        getClientFacade().getCommandHistory().storeAndExecute( cmd);
     }
 
 	public Reservation copy(Reservation reservation, Date destStart,
 			Date destEnd, boolean includeSingleAppointmentsAndExceptions,
 			Date firstStart) throws RaplaException {
-		Reservation r = getModification().clone( reservation);
+		final ClientFacade clientFacade = getClientFacade();
+		Reservation r = clientFacade.clone(reservation, clientFacade.getUser());
 		if ( firstStart == null )
 		{
 			firstStart = ReservationStartComparator.getStart( reservation);

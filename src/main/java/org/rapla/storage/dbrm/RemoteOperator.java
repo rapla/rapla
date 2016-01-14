@@ -41,6 +41,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
@@ -595,7 +596,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }  
     }
 
-    protected void testResolve(EntityResolver resolver, EntityReferencer obj, EntityReferencer.ReferenceInfo reference) throws EntityNotFoundException {
+    protected void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {
         Class<? extends Entity> class1 = reference.getType();
         String id = reference.getId();
         if (tryResolve(resolver,id, class1) == null)
@@ -1159,10 +1160,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 			}
 		}
 		TimeInterval invalidateInterval = new TimeInterval( null,null);
-        Collection<EntityReferencer.ReferenceInfo> removeInfo = new ArrayList<EntityReferencer.ReferenceInfo>();
+        Collection<ReferenceInfo> removeInfo = new ArrayList<ReferenceInfo>();
         for ( Entity entity:toRemove)
         {
-            removeInfo.add( new EntityReferencer.ReferenceInfo(entity.getId(), entity.getTypeClass()));
+            removeInfo.add( new ReferenceInfo(entity.getId(), entity.getTypeClass()));
         }
         Date since = null;
         Date until = getLastUpdated();

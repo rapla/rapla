@@ -8,7 +8,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -147,7 +147,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		{
 			for ( ReferenceInfo info: ((SimpleEntity) entity).getReferenceInfo())
 			{
-				getFacade().getOperator().resolve( info.getId(), info.getType());
+				getFacade().resolve( info );
 			}
 		}
 		if ( entity instanceof Classifiable)

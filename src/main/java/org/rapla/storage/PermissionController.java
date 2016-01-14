@@ -22,6 +22,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
@@ -485,23 +486,6 @@ public class PermissionController
         {
             return false;
         }
-    }
-
-    public boolean canAllocate(CalendarModel model, User user, RaplaLocale raplaLocale)
-    {
-        //Date start, Date end,
-        Collection<Allocatable> allocatables = model.getMarkedAllocatables();
-        boolean canAllocate = true;
-        Date start = RaplaComponent.getStartDate(model, operator,user, raplaLocale);
-        Date end = RaplaComponent.calcEndDate(model, start);
-        for (Allocatable allo : allocatables)
-        {
-            if (!canAllocate(start, end, allo, user))
-            {
-                canAllocate = false;
-            }
-        }
-        return canAllocate;
     }
 
     private boolean canModifyConflict(Conflict conflict, User user)

@@ -71,7 +71,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -149,6 +149,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
     private Cancelable cleanConflictsTask;
+
+    private CalendarModelCache calendarModelCache;
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -301,6 +303,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.scheduler = scheduler;
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
+        calendarModelCache = new CalendarModelCache(this, i18n);
     }
 
     private Date connectStart;

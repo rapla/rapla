@@ -40,7 +40,9 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.UserModule;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -99,7 +101,8 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     final RaplaImages raplaImages;
     final Provider<MainFrame> mainFrameProvider;
     final Provider<RaplaFrame> raplaFrameProvider;
-    final private Provider<CalendarSelectionModel> calendarModel;
+    final private ModifiableCalendarState calendarModelContainer;
+
     final private Provider<Set<ClientExtension>> clientExtensions;
     @Inject
 	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
@@ -117,7 +120,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         this.commandScheduler = commandScheduler;
         this.mainFrameProvider = mainFrameProvider;
         this.raplaFrameProvider = raplaFrameProvider;
-        this.calendarModel = calendarModel;
+        this.calendarModelContainer = new ModifiableCalendarState(facade,calendarModel);
         this.clientExtensions = clientExtensions;
         ((FacadeImpl)this.facade).setOperator( storageOperator);
         this.raplaImages = raplaImages;
@@ -272,7 +275,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         ((FacadeImpl)facade).addDirectModificationListener( new ModificationListener() {
 			
 			public void dataChanged(ModificationEvent evt) throws RaplaException {
-			    calendarModel.get().dataChanged(evt);
+                calendarModelContainer.dataChanged(evt);
 			}
         });
 //        if ( facade.isClientForServer() )

@@ -203,18 +203,19 @@ public class RaplaObjectAction extends RaplaAction {
 
     protected Entity<? extends Entity<?>> newEntity(Class<? extends RaplaObject> raplaType) throws RaplaException {
         ModificationModule m = getModification();
+        final User user = getUser();
         if ( Reservation.class == raplaType )
         {
             DynamicType type = guessType();
             final Classification newClassification = type.newClassification();
-            Reservation newReservation = m.newReservation( newClassification );
+            Reservation newReservation = m.newReservation( newClassification, user);
             return newReservation;
         }
         if ( Allocatable.class == raplaType )
         {
         	DynamicType type = guessType();
             final Classification newClassification = type.newClassification();
-            Allocatable allocatable = m.newAllocatable( newClassification );
+            Allocatable allocatable = m.newAllocatable( newClassification, user );
         	return allocatable ;
         }
        if ( Category.class ==  raplaType)
@@ -222,7 +223,7 @@ public class RaplaObjectAction extends RaplaAction {
        if ( User.class ==  raplaType )
     	   return m.newUser();
        if ( Period.class == raplaType )
-             return m.newPeriod();
+             return m.newPeriod(user);
        throw new RaplaException("Can't create Entity for " + raplaType + "!");
     }
 
@@ -328,7 +329,7 @@ public class RaplaObjectAction extends RaplaAction {
         DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getClientFacade(),getI18n(), entities);
 	    if ( undoable)
 	    {
-	    	getModification().getCommandHistory().storeAndExecute(deleteCommand);
+	    	getClientFacade().getCommandHistory().storeAndExecute(deleteCommand);
 	    }
 	    else
 	    {

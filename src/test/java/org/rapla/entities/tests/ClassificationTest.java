@@ -29,8 +29,6 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -48,38 +46,35 @@ public class ClassificationTest  {
     Allocatable allocatable2;
     Calendar cal;
 
-    ModificationModule modificationMod;
-    QueryModule queryMod;
+    ClientFacade facade;
 
 	@Before
     public void setUp() throws Exception {
-		ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = facade;
-        modificationMod = facade;
+		facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
     }
 
 	@Test
     public void testChangeType() throws RaplaException {
-    	Category c1 = modificationMod.newCategory();
+    	Category c1 = facade.newCategory();
     	c1.setKey("c1");
-    	Category c1a = modificationMod.newCategory();
+    	Category c1a = facade.newCategory();
     	c1a.setKey("c1a");
     	c1.addCategory( c1a );
-    	Category c1b = modificationMod.newCategory();
+    	Category c1b = facade.newCategory();
     	c1a.setKey("c1b");
     	c1.addCategory( c1b );
-    	Category c2 = modificationMod.newCategory();
+    	Category c2 = facade.newCategory();
     	c2.setKey("c2");
-    	Category c2a = modificationMod.newCategory();
+    	Category c2a = facade.newCategory();
     	c2a.setKey("c2a");
     	c2.addCategory( c2a );
-    	Category rootC = modificationMod.edit( queryMod.getSuperCategory() );
+    	Category rootC = facade.edit( facade.getSuperCategory() );
     	rootC.addCategory( c1 );
     	rootC.addCategory( c2 );
 
-    	DynamicType type =  modificationMod.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+    	DynamicType type =  facade.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
     	type.setKey("test-type");
-    	Attribute a1 = modificationMod.newAttribute(AttributeType.CATEGORY);
+    	Attribute a1 = facade.newAttribute(AttributeType.CATEGORY);
     	a1.setKey("test-attribute");
     	a1.setConstraint( ConstraintIds.KEY_ROOT_CATEGORY, c1 );
     	a1.setConstraint( ConstraintIds.KEY_MULTI_SELECT, true);
@@ -87,21 +82,21 @@ public class ClassificationTest  {
     	type.getName().setName("en", "test-type");
 
     	try {
-    		modificationMod.store(  type  );
+    		facade.store(  type  );
 			Assert.fail("Should throw an EntityNotFoundException");
     	} catch (EntityNotFoundException ex) {
     	}
-		modificationMod.storeObjects( new Entity[] { rootC, type } );
-    	type =  modificationMod.getPersistant( type );
+		facade.storeObjects( new Entity[] { rootC, type } );
+    	type =  facade.getPersistant( type );
 
     	Classification classification = type.newClassification();
         classification.setValue("name", "test-resource");
         List<?> asList = Arrays.asList(c1a, c1b);
 		classification.setValues(classification.getAttribute("test-attribute"), asList);
-		Allocatable resource = modificationMod.newAllocatable(classification);
-    	modificationMod.storeObjects( new Entity[] {  resource } );
+		Allocatable resource = facade.newAllocatable(classification, facade.getUser());
+    	facade.storeObjects( new Entity[] {  resource } );
     	{
-	        Allocatable persistantResource = modificationMod.getPersistant(resource);
+	        Allocatable persistantResource = facade.getPersistant(resource);
 	        Collection<Object> values = persistantResource.getClassification().getValues( classification.getAttribute("test-attribute"));
 	        Assert.assertEquals(2, values.size());
 	        Iterator<Object> iterator = values.iterator();
@@ -109,14 +104,14 @@ public class ClassificationTest  {
 			Assert.assertEquals(c1b, iterator.next());
     	}
     	
-    	type = queryMod.getDynamicType("test-type");
-    	type =  modificationMod.edit( type );
+    	type = facade.getDynamicType("test-type");
+    	type =  facade.edit( type );
 
     	a1 = type.getAttribute("test-attribute");
     	a1.setConstraint( ConstraintIds.KEY_ROOT_CATEGORY, c2 );
-    	modificationMod.store( type );
+    	facade.store( type );
     	{
-	    	Allocatable persistantResource = modificationMod.getPersistant(resource);
+	    	Allocatable persistantResource = facade.getPersistant(resource);
 	        Classification classification2 = persistantResource.getClassification();
 	        Collection<Object> values = classification2.getValues( classification.getAttribute("test-attribute"));
 			Assert.assertEquals(0, values.size());

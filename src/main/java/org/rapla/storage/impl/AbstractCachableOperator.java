@@ -35,7 +35,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityReferencer.ReferenceInfo;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -524,13 +524,28 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	{
 	    return tryResolve( id, null);
 	}
-	
+
+
 	@Override
     public Entity resolve(String id) throws EntityNotFoundException 
     {
         return resolve( id, null);
     }
-	
+
+	@Override
+	public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
+	{
+		final Class<T> type = (Class<T>)referenceInfo.getType();
+		return tryResolve( referenceInfo.getId(), type);
+	}
+
+	@Override
+	public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
+	{
+		final Class<T> type = (Class<T>)referenceInfo.getType();
+		return resolve(referenceInfo.getId(), type);
+	}
+
 	@Override
 	public <T extends Entity> T tryResolve(String id,Class<T> entityClass) {
 		Lock readLock = null;

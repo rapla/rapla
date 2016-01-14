@@ -418,7 +418,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         }
         {
             final String icon = "icon.edit";
-            boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(appointment.getReservation());
+            boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(getClientFacade().getUser(),appointment.getReservation());
             boolean canModify = permissionController.canModify(appointment.getReservation(), getUser());
             String text = !canModify && canExchangeAllocatables ? getString("exchange_allocatables") : getString("edit");
             final boolean enabled = canModify || canExchangeAllocatables;

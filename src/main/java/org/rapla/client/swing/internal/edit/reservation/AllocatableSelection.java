@@ -63,6 +63,8 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -175,7 +177,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     String[] appointmentStrings;
     String[] appointmentIndexStrings;
 
-    CalendarSelectionModel calendarModel;
+    ModifiableCalendarState calendarModel;
     EventListenerList listenerList = new EventListenerList();
     Listener listener = new Listener();
 
@@ -299,8 +301,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
         content.setDividerLocation(0.3);
 
-        calendarModel = originalModel.clone();
-        filter = filterEditButtonFactory.create(calendarModel,true,listener);
+        calendarModel = new ModifiableCalendarState(facade,originalModel.clone());
+        filter = filterEditButtonFactory.create(calendarModel.getModel(),true,listener);
         leftPanel.add(filter.getButton(), "4,0,r,f");
         //		filterAction = new FilterAction(getContext(), getComponent(), null);
         //		filterAction.setFilter(calendarModel);
@@ -478,7 +480,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private Set<Allocatable> getAllAllocatables() throws RaplaException
     {
-        Allocatable[] allocatables = getQuery().getAllocatables(calendarModel.getAllocatableFilter());
+        Allocatable[] allocatables = getQuery().getAllocatables(calendarModel.getModel().getAllocatableFilter());
         Set<Allocatable> rightsToAllocate = new HashSet<Allocatable>();
         Date today = getQuery().today();
         for (Allocatable alloc : allocatables)
@@ -753,7 +755,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 if (filterUI != null)
                 {
                     final ClassificationFilter[] filters = filterUI.getFilters();
-                    calendarModel.setAllocatableFilter(filters);
+                    calendarModel.getModel().setAllocatableFilter(filters);
                     completeModel.setAllocatables(getAllAllocatables(), completeTable.getTree());
                     //List<Appointment> appointments = Arrays.asList(mutableReservation.getAppointments());
                     // it is important to update all bindings, because a
@@ -2126,7 +2128,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             if (command.indexOf("calendar") >= 0)
             {
                 JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
-                CalendarAction calendarAction = new CalendarAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), getComponent(), calendarModel,
+                CalendarAction calendarAction = new CalendarAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), getComponent(), calendarModel.getModel(),
                         raplaImages, multiCalendarViewFactory, dialogUiFactory, frameControllerList);
                 calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
                 Collection<Appointment> appointments = Arrays.asList(AllocatableSelection.this.appointments);

@@ -23,6 +23,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -100,6 +101,11 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     public String getOwnerId()
     {
         return getId("owner");
+    }
+
+    public ReferenceInfo<User> getOwnerRef()
+    {
+        return getReferenceFor("owner", User.class);
     }
 
     public void setOwner(User owner) {

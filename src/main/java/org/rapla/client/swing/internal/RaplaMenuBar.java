@@ -199,7 +199,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         redo.setToolTipText(getString("redo"));
         redo.setIcon(raplaImages.getIconFromKey("icon.redo"));
-        getModification().getCommandHistory().addCommandHistoryChangedListener(listener);
+        getClientFacade().getCommandHistory().addCommandHistoryChangedListener(listener);
 
         undo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, ActionEvent.CTRL_MASK));
         redo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, ActionEvent.CTRL_MASK));
@@ -307,7 +307,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     protected boolean isTemplateEdit()
     {
-        return getModification().getTemplate() != null;
+        return getClientFacade().getTemplate() != null;
     }
 
 
@@ -316,7 +316,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         public void historyChanged()
         {
-            CommandHistory history = getModification().getCommandHistory();
+            CommandHistory history = getClientFacade().getCommandHistory();
             redo.setEnabled(history.canRedo());
             undo.setEnabled(history.canUndo());
             redo.setText(getString("redo") + ": " + history.getRedoText());
@@ -335,7 +335,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             {
                 if (isTemplateEdit())
                 {
-                    getModification().setTemplate(null);
+                    getClientFacade().setTemplate(null);
                 }
                 else
                 {
@@ -353,7 +353,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             }
             else
             {
-                CommandHistory commandHistory = getModification().getCommandHistory();
+                CommandHistory commandHistory = getClientFacade().getCommandHistory();
                 try
                 {
                     if (source == redo)

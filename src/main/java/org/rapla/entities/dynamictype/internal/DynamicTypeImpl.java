@@ -40,6 +40,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
@@ -278,7 +279,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
     
     @Override
-    public Iterable<ReferenceInfo> getReferenceInfo() 
+    public Iterable<ReferenceInfo> getReferenceInfo()
     {
         return new IterableChain<ReferenceInfo>(
                 super.getReferenceInfo() 

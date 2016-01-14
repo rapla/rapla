@@ -175,7 +175,7 @@ public class TestUpdateDataManager
                 changedEntities.add(allocatable);
             }
             updatedAllocatables = changedEntities.size();
-            final Reservation[] reservations = facade.getReservations(allocatables, null, null);
+            final Reservation[] reservations = facade.getReservationsForAllocatable(allocatables, null, null, null);
             for (int i = 0; i < maxChangesPerType; i++)
             {
                 final Reservation reservation = facade.edit(reservations[i]);
@@ -218,7 +218,7 @@ public class TestUpdateDataManager
                 toDelete.add(allocatables[i]);
                 removedIds.add(allocatables[i].getId());
             }
-            final Reservation[] reservations = facade.getReservations(toDelete.toArray(new Allocatable[0]), null, null);
+            final Reservation[] reservations = facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null);
             toDelete.addAll(Arrays.asList(reservations));
             facade.removeObjects(toDelete.toArray(new Entity[0]));
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);

@@ -40,7 +40,6 @@ public class Bootstrap
     {
         final FacadeImpl facadeImpl = (FacadeImpl) facade;
         ((FacadeImpl) facade).setOperator( operator);
-        facadeImpl.setCachingEnabled(false);
         FutureResult<VoidResult> load = facadeImpl.load();
         logger.info("Loading resources");
         RaplaPopups.getProgressBar().setPercent(40);

@@ -24,6 +24,7 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
@@ -162,7 +163,7 @@ public class PreferencesImpl extends SimpleEntity
     }
 
     @Override
-    public Iterable<ReferenceInfo> getReferenceInfo() 
+    public Iterable<ReferenceInfo> getReferenceInfo()
     {
         Iterable<ReferenceInfo> parentReferences = super.getReferenceInfo();
         Iterable<ReferenceInfo> mapReferences = map.getReferenceInfo();

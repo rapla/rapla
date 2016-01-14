@@ -83,8 +83,7 @@ public class AppointmentAction extends RaplaAction {
 		putValue(NAME, value);
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.new"));
         final ClientFacade clientFacade = getClientFacade();
-        final RaplaLocale raplaLocale = getRaplaLocale();
-        boolean canAllocate = permissionController.canAllocate(calendarSelectionModel, getUser(), raplaLocale);
+        boolean canAllocate = clientFacade.canAllocate(calendarSelectionModel, clientFacade.getUser());
         setEnabled( canAllocate);
         return this;
     }
@@ -195,7 +194,7 @@ public class AppointmentAction extends RaplaAction {
         this.type = EDIT;
         putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.edit"));
         Appointment appointment = appointmentBlock.getAppointment();
-        boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(appointment.getReservation());
+        boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(getClientFacade().getUser(),appointment.getReservation());
 		boolean canModify = permissionController.canModify(appointment.getReservation(), getUser());
 		String text = !canModify && canExchangeAllocatables ?  getString("exchange_allocatables") : getString("edit");
 		putValue(NAME, text);
