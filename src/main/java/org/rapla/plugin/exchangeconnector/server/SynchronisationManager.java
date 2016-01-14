@@ -1,7 +1,6 @@
 package org.rapla.plugin.exchangeconnector.server;
 
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
-import microsoft.exchange.webservices.data.core.request.UpdateDelegateRequest;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -40,7 +39,6 @@ import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.impl.server.CalendarModelCache;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -71,24 +69,23 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     private final I18nBundle i18n;
     private final Logger logger;
     private final RaplaKeyStorage keyStorage;
-
+    CachableStorageOperator operator;
     private final TimeZoneConverter converter;
     private final String exchangeUrl;
     private final String exchangeTimezoneId;
     private final String exchangeAppointmentCategory;
 
     private final int syncPeriodPast;
-    CalendarModelCache calendarModelCache;
 
     @Inject public SynchronisationManager(ClientFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
             TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
             CommandScheduler scheduler, ConfigReader config) throws RaplaException
     {
         super();
-        calendarModelCache = new CalendarModelCache((CachableStorageOperator)facade.getOperator(), i18nRapla);
         this.converter = converter;
         this.logger = logger;
         this.facade = facade;
+        this.operator = (CachableStorageOperator) facade.getOperator();
         this.i18n = new CompoundI18n(i18nRapla, i18nExchange);
         this.appointmentFormater = appointmentFormater;
         this.keyStorage = keyStorage;
@@ -116,7 +113,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 {
                     lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
-                    calendarModelCache.synchronizeCalendars(updateResult);
                     synchronize(updateResult);
                     // set it as last, so update must have been successful
                     updatedUntil = updateResult.getUntil();
@@ -261,7 +257,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         {
             Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment);
             result.addAll(taskList);
-            Collection<String> matchingUserIds = calendarModelCache.findMatchingUser(appointment);
+            Collection<String> matchingUserIds = operator.findUsersThatExport(appointment);
             // delete all appointments that are no longer covered
             for (SynchronizationTask task : taskList)
             {
@@ -407,7 +403,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                     final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                     if (!isInternal)
                     {
-                        final Collection<String> users = calendarModelCache.findMatchingUsers(allocatable);
+                        final Collection<String> users = operator.findUsersThatExport(allocatable);
                         for (String userId : users)
                         {
                             User owner = facade.getOperator().tryResolve(userId, User.class);
@@ -438,7 +434,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         final String userId = user.getId();
         TimeInterval syncRange = getSyncRange();
 
-        Collection<Appointment> appointments = calendarModelCache.getAppointments(userId, syncRange);
+        Collection<Appointment> appointments = operator.getAppointmentsFromUserCalendarModels(userId, syncRange);
         if ( appointments.isEmpty())
         {
             return Collections.emptySet();

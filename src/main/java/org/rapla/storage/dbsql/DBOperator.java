@@ -73,7 +73,6 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
 {
     //protected String datasourceName;
-    protected boolean isConnected;
     Properties dbProperties = new Properties();
     boolean bSupportsTransactions = false;
     boolean hsqldb = false;
@@ -114,7 +113,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         //	        try {
         //	        	lookupDeprecated  = ContextTools.resolveContextObject(datasourceName, context );
         //	        } catch (RaplaXMLContextException ex) {
-        //	        	throw new RaplaDBException("Datasource " + datasourceName + " not found");
+        //	        	throw new RaplaDBExceptionc("Datasource " + datasourceName + " not found");
         //	        }
         //        }
 
@@ -292,10 +291,9 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         {
             getLogger().debug("Connecting: " + getConnectionName());
             loadData();
-
+            changeStatus(InitStatus.Loaded);
             initIndizes();
-            isConnected = true;
-            getLogger().debug("Connected");
+            changeStatus(InitStatus.Connected);
             scheduleCleanupAndRefresh(scheduler);
         }
         /*
@@ -313,11 +311,6 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         {
             return null;
         }*/
-    }
-
-    public boolean isConnected()
-    {
-        return isConnected;
     }
 
     @Override public void refresh() throws RaplaException
@@ -373,6 +366,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
     synchronized public void disconnect() throws RaplaException
     {
+        changeStatus(InitStatus.Disconnected);
         if (cleanupOldLocks != null)
         {
             cleanupOldLocks.cancel();
@@ -408,8 +402,6 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
                 throw new RaplaException(ex);
             }
         }
-        isConnected = false;
-        getLogger().info("Disconnected");
     }
 
     public final void loadData() throws RaplaException

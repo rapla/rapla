@@ -202,7 +202,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	public abstract void dispatch(UpdateEvent evt) throws RaplaException;
 
 	public Collection<User> getUsers()	throws RaplaException {
-		checkConnected();
+		checkLoaded();
 		Lock readLock = readLock();
 		try
 		{
@@ -217,7 +217,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 	
 	public Collection<DynamicType> getDynamicTypes() throws RaplaException {
-		checkConnected();
+		checkLoaded();
 		Lock readLock = readLock();
 		try
 		{
@@ -233,8 +233,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
 	public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
 	{
+		checkLoaded();
 		Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
-		checkConnected();
 		Lock readLock = readLock();
 		try
 		{
@@ -287,7 +287,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 	
 	public User getUser(final String username) throws RaplaException {
-		checkConnected();
+		checkLoaded();
 		Lock readLock = readLock();
 		try
 		{
@@ -302,7 +302,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected Map<String,PreferencesImpl> emptyPreferencesProxy = new HashMap<String, PreferencesImpl>();
 
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
-		checkConnected();
+		checkLoaded();
 		// Test if user is already stored
 		if (user != null) {
 			resolve(user.getId(), User.class);
@@ -377,9 +377,19 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			throw new RaplaException(getI18n().format("error.connection_closed", ""));
 		}
 	}
+
+	protected void checkLoaded() throws RaplaException {
+		if (!isLoaded())
+		{
+			throw new RaplaException(getI18n().format("error.connection_closed", ""));
+		}
+	}
+
+	public  abstract boolean isLoaded() throws RaplaException;
 	
 	@Override
 	public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound)	throws RaplaException {
+		checkLoaded();
     	Lock readLock = readLock();
 		try
 		{

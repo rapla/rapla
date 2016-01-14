@@ -122,9 +122,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return operator.getPreferences( null, true);
     }
 
-    public CalendarModelImpl(Locale locale, User user, StorageOperator facade) throws RaplaException {
+    public CalendarModelImpl(Locale locale, User user, StorageOperator operator) throws RaplaException {
         this.locale = locale;
-        this.operator = facade;
+        this.operator = operator;
         Date today = this.operator.today();
         setSelectedDate(today);
         setStartDate(today);

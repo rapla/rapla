@@ -22,6 +22,7 @@ import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Category;
@@ -102,6 +103,9 @@ import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -129,6 +133,34 @@ import java.util.concurrent.locks.Lock;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
+    InitStatus connectStatus = InitStatus.Disconnected;
+
+    protected enum InitStatus
+    {
+        Disconnected,
+        Loading,
+        Loaded,
+        Connected
+    }
+
+    @Override
+    final public boolean isConnected()
+    {
+        return connectStatus == InitStatus.Connected;
+    }
+
+    @Override
+    public boolean isLoaded()
+    {
+        return connectStatus.ordinal()>= InitStatus.Loaded.ordinal();
+    }
+
+    protected void changeStatus( InitStatus status)
+    {
+        connectStatus = status;
+        getLogger().debug("Initstatus " + status);
+    }
+
     /**
      * The duration which the history must support, only one older Entry than the specified time are needed.
      */
@@ -151,6 +183,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private Cancelable cleanConflictsTask;
 
     private CalendarModelCache calendarModelCache;
+    private Date connectStart;
+
+    public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+            Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
+    {
+        super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions);
+        this.scheduler = scheduler;
+        //context.lookupDeprecated( CommandScheduler.class);
+        this.history = new EntityHistory();
+
+        calendarModelCache = new CalendarModelCache(this, i18n);
+    }
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -291,22 +335,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             User user = null;
             DynamicType t = getDynamicType(RAPLA_TEMPLATE);
-            DynamicType templateType = editObject(t, user);
+            //DynamicType templateType = editObject(t, user);
             // TODO What does this method do?
         }
     }
-
-    public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
-            Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
-    {
-        super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions);
-        this.scheduler = scheduler;
-        //context.lookupDeprecated( CommandScheduler.class);
-        this.history = new EntityHistory();
-        calendarModelCache = new CalendarModelCache(this, i18n);
-    }
-
-    private Date connectStart;
 
     @Override public Date getConnectStart()
     {
@@ -461,32 +493,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         return true;
-    }
-
-    public Collection<String> getTemplateNames() throws RaplaException
-    {
-        Lock readLock = readLock();
-        Collection<? extends Reservation> reservations;
-        try
-        {
-            reservations = cache.getReservations();
-        }
-        finally
-        {
-            unlock(readLock);
-        }
-        //Reservation[] reservations = cache.getReservations(user, start, end, filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
-
-        Set<String> templates = new LinkedHashSet<String>();
-        for (Reservation r : reservations)
-        {
-            String templateName = r.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
-            if (templateName != null)
-            {
-                templates.add(templateName);
-            }
-        }
-        return templates;
     }
 
     @Override public String createId(Class<? extends Entity> raplaType) throws RaplaException
@@ -1033,6 +1039,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
 
         cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, period);
+        calendarModelCache.initCalendarMap();
     }
 
     /*
@@ -1069,6 +1076,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
     private Collection<ConflictFinder.ConflictChangeOperation> updateIndizes(UpdateResult result)
     {
+        calendarModelCache.synchronizeCalendars( result );
         final Collection<UpdateOperation> conflictChanges = new ArrayList<UpdateOperation>();
         for (UpdateOperation op : result.getOperations())
         {
@@ -3293,6 +3301,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public UpdateResult getUpdateResult(Date since, User user)
     {
+        checkConnected();
         // FIXME check if history supports since
         Date until = getLastUpdated();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
@@ -3352,5 +3361,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override public UpdateResult getUpdateResult(Date since)
     {
         return getUpdateResult(since, null);
+    }
+
+    @Override public Collection<Appointment> getAppointmentsFromUserCalendarModels(String userId, TimeInterval syncRange)
+    {
+        checkConnected();
+        return calendarModelCache.getAppointments(userId,syncRange);
+    }
+
+    @Override public Collection<String> findUsersThatExport(Allocatable allocatable)
+    {
+        checkConnected();
+        return calendarModelCache.findMatchingUsers(allocatable);
+    }
+
+    @Override public Collection<String> findUsersThatExport(Appointment appointment)
+    {
+        checkConnected();
+        return calendarModelCache.findMatchingUser( appointment );
     }
 }

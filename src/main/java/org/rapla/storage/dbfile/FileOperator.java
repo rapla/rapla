@@ -84,7 +84,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
 {
     protected URI storageURL;
 
-    protected boolean isConnected = false;
     final boolean includeIds = false;
 
     static FileIO DefaultFileIO = new DefaultFileIO();
@@ -188,15 +187,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     final public void connect() throws RaplaException
     {
-        if (!isConnected)
+        if (!isConnected())
         {
             getLogger().info("Connecting: " + getURL());
             cache.clearAll();
             addInternalTypes(cache);
             loadData(cache);
+            changeStatus(InitStatus.Loaded);
             initIndizes();
-            isConnected = true;
-            getLogger().debug("Connected");
+            changeStatus(InitStatus.Connected);
+
         }
         /*
         if ( connectInfo != null)
@@ -215,21 +215,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }*/
     }
 
-    final public boolean isConnected()
-    {
-        return isConnected;
-    }
 
     final public void disconnect() throws RaplaException
     {
         boolean wasConnected = isConnected();
         if (wasConnected)
         {
-            getLogger().info("Disconnecting: " + getURL());
+            changeStatus( InitStatus.Disconnected);
             cache.clearAll();
             history.clear();
-            isConnected = false;
-            getLogger().debug("Disconnected");
         }
     }
 

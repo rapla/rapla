@@ -14,8 +14,11 @@
  */
 package org.rapla.storage;
 
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.framework.RaplaException;
 
@@ -55,6 +58,12 @@ public interface CachableStorageOperator extends StorageOperator {
      */
     Date getLock(String id) throws RaplaException;
     void releaseLock(String id, Date updatedUntil);
+
+    Collection<Appointment> getAppointmentsFromUserCalendarModels(String userId, TimeInterval syncRange);
+
+    Collection<String> findUsersThatExport(Appointment appointment);
+
+    Collection<String> findUsersThatExport(Allocatable allocatable);
 }
 
 

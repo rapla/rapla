@@ -364,14 +364,23 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 //        }
 //    }
 
+    @Override
     public boolean isConnected() {
         return bSessionActive;
     }
 
+    @Override
+    public boolean isLoaded()
+    {
+        return isConnected();
+    }
+
+    @Override
     public boolean supportsActiveMonitoring() {
         return true;
     }
 
+    @Override
     synchronized public void refresh() throws RaplaException {
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();

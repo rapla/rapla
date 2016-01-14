@@ -42,7 +42,6 @@ public class CalendarModelCache
     {
         this.operator = operator;
         this.i18n = i18n;
-        initCalendarMap();
     }
 
     private void removeCalendarModelFor(String userId)
@@ -232,7 +231,7 @@ public class CalendarModelCache
         return appointments;
     }
 
-    private  void initCalendarMap()
+    void initCalendarMap()
     {
         for (User user : operator.getUsers())
         {
