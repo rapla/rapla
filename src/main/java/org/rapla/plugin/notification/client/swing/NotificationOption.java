@@ -69,7 +69,7 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
     @Override
     public boolean isEnabled()
     {
-        return preferences.getEntryAsBoolean( NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
+        return true;// || preferences.getEntryAsBoolean( NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
     }
 
     /** calls "&lt;html&gt;" + getI18n().getString(key) + "&lt;/html&gt;"*/
