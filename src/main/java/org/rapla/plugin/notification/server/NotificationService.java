@@ -12,6 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -22,10 +36,11 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.AllocationChangeEvent;
-import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
@@ -38,20 +53,8 @@ import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /** Sends Notification Mails on allocation change.*/
 
@@ -67,6 +70,7 @@ public class NotificationService
     private final AppointmentFormater appointmentFormater;
     private final NotificationResources notificationI18n;
     private final RaplaResources raplaI18n;
+    private final CachableStorageOperator operator;
 
     Logger logger;
 
@@ -85,8 +89,8 @@ public class NotificationService
         this.mailQueue = mailQueue;
         //clientFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
+        this.operator = (CachableStorageOperator) facade.getOperator();
         getLogger().info("NotificationServer Plugin started");
-        final CachableStorageOperator operator = (CachableStorageOperator) facade.getOperator();
         // FIXME get if start needed, the interval and so on
         mailQueue.schedule(new Command()
         {
@@ -95,10 +99,12 @@ public class NotificationService
             public void execute() throws Exception
             {
                 Date lastUpdated = null;
+                Date updatedUntil = null;
                 try
                 {
                     lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID);
                     final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
+                    updatedUntil = updateResult.getUntil();
                     changed(updateResult);
                 }
                 catch(Throwable t)
@@ -109,7 +115,7 @@ public class NotificationService
                 {
                     if(lastUpdated != null)
                     {
-                        // FIXME provide information, if successful. on successful release update lastRequested otherwise not
+                        // FIXME provide information of updatedUntil, if successful. on successful release update lastRequested to updatedUntil otherwise not
                         operator.releaseLock(NOTIFICATION_LOCK_ID);
                     }
                 }
@@ -182,7 +188,7 @@ public class NotificationService
         }
         final HashMap<Reservation,List<AllocationChangeEvent>> reservationMap = new HashMap<Reservation,List<AllocationChangeEvent>>(4);
         final HashSet<Allocatable> changedAllocatables = new HashSet<Allocatable>();
-        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger);
+        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
         for ( int i = 0; i< changeEvents.size(); i++) {
             AllocationChangeEvent event = changeEvents.get(i);
             Reservation reservation = event.getNewReservation();
@@ -245,7 +251,27 @@ public class NotificationService
         buf.append("\n");
         buf.append(raplaI18n.getString("reservation"));
         buf.append(": ");
-        buf.append(reservation.getName(getLocale()));
+        {// TODO think about better solution 
+            ReservationImpl resImpl = ((ReservationImpl) reservation);
+            if(resImpl.getResolver() == null)
+            {
+                resImpl.setResolver(operator);
+            }
+            try
+            {
+                buf.append(reservation.getName(getLocale()));
+            }
+            catch(Throwable t)
+            {
+                // TODO is there a unknown event type needed?
+                ReservationImpl anonymousReservation  = new ReservationImpl(new Date(), new Date());
+                DynamicType anonymousReservationType = operator.getDynamicType(StorageOperator.ANONYMOUSEVENT_TYPE);
+                anonymousReservation.setClassification(anonymousReservationType.newClassification());
+                // print unknown ressource
+                buf.append(anonymousReservation.getName(getLocale()));
+            }
+            
+        }
         buf.append("\n");
         buf.append("\n");
         Iterator<AllocationChangeEvent> it = eventList.iterator();

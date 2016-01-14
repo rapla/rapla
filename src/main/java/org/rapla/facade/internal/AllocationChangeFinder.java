@@ -41,16 +41,19 @@ public class AllocationChangeFinder
 {
     ArrayList<AllocationChangeEvent> changeList = new ArrayList<AllocationChangeEvent>();
     Logger logger;
+    private final EntityResolver resolver;
 
-    private AllocationChangeFinder(Logger logger, UpdateResult updateResult, User user) {
+    private AllocationChangeFinder(Logger logger, UpdateResult updateResult, User user, EntityResolver resolver) {
         this.logger = logger;
+        this.resolver = resolver;
         if ( updateResult == null)
             return;
         for (UpdateResult.Add addOp: updateResult.getOperations( UpdateResult.Add.class )) {
             added(  updateResult.getLastKnown(addOp.getCurrentId()), user );
         }
         for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
-            removed( removeOp.getCurrentId(),removeOp.getType(), user );
+            final Entity removedEvent = updateResult.getLastEntryBeforeUpdate(removeOp.getCurrentId());
+            removed( removedEvent, user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
             Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getCurrentId());
@@ -64,8 +67,8 @@ public class AllocationChangeFinder
         return logger;
     }
 
-    static public List<AllocationChangeEvent> getTriggerEvents(UpdateResult result, User user, Logger logger) {
-    	AllocationChangeFinder finder = new AllocationChangeFinder(logger, result, user);
+    static public List<AllocationChangeEvent> getTriggerEvents(UpdateResult result, User user, Logger logger, EntityResolver resolver) {
+    	AllocationChangeFinder finder = new AllocationChangeFinder(logger, result, user, resolver);
     	return finder.changeList; 
     }
 
@@ -81,13 +84,13 @@ public class AllocationChangeFinder
         }
     }
 
-    private void removed(String id,Class<?extends Entity> raplaType, User user) {
-        // FIXME to be replaced with notification mechanism
-//
-//        if ( raplaType ==  Reservation.TYPE ) {
-//            if (getLogger().isDebugEnabled())
-//                getLogger().debug("Reservation removed: " + id);
-//            Reservation oldRes = (Reservation) entity;
+    private void removed(Entity removedEntity, User user) {
+        if ( removedEntity.getTypeClass() == Reservation.class ) {
+            if (getLogger().isDebugEnabled())
+                getLogger().debug("Reservation removed: " + removedEntity.getId());
+            Reservation oldRes = (Reservation) removedEntity;
+            final Appointment[] appointments = oldRes.getAppointments();
+            final List<Allocatable> allocatables = getAllocatablesUsingIds(oldRes);
 //            for (Allocatable allocatable:allocatables)
 //            {
 //                for (Appointment appointment:appointments)
@@ -98,17 +101,17 @@ public class AllocationChangeFinder
 //                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));
 //                }
 //            }
-//            addAppointmentRemove(
-//                                 user
-//                                 ,oldRes
-//                                 ,oldRes
-//                                 ,Arrays.asList(oldRes.getAllocatables())
-//                                 ,Arrays.asList(oldRes.getAppointments())
-//                                );
-//        }
+            addAppointmentRemove(
+                                 user
+                                 ,oldRes
+                                 ,oldRes
+                                 ,allocatables
+                                 ,Arrays.asList(appointments)
+                                );
+        }
     }
     
-    private List<Allocatable> getAllocatablesUsingIds(Reservation reservation, final EntityResolver resolver)
+    private List<Allocatable> getAllocatablesUsingIds(Reservation reservation)
     {
         final ArrayList<Allocatable> result = new ArrayList<Allocatable>();
         ReservationImpl resImpl = ((ReservationImpl)reservation);
@@ -150,7 +153,7 @@ public class AllocationChangeFinder
             Reservation oldRes = (Reservation) oldEntity;
             Reservation newRes = (Reservation) newEntity;
 
-            List<Allocatable> alloc1 = getAllocatablesUsingIds(oldRes, ((ReservationImpl)newRes).getResolver());
+            List<Allocatable> alloc1 = getAllocatablesUsingIds(oldRes);
             List<Allocatable> alloc2 = Arrays.asList(newRes.getAllocatables());
 
             List<Appointment> app1 = Arrays.asList(oldRes.getAppointments());
