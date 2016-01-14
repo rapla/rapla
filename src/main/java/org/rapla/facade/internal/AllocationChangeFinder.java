@@ -12,22 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /** Converts updateResults into AllocationChangeEvents */
 public class AllocationChangeFinder 
@@ -100,6 +107,40 @@ public class AllocationChangeFinder
 //                                );
 //        }
     }
+    
+    private List<Allocatable> getAllocatablesUsingIds(Reservation reservation, final EntityResolver resolver)
+    {
+        final ArrayList<Allocatable> result = new ArrayList<Allocatable>();
+        ReservationImpl resImpl = ((ReservationImpl)reservation);
+        final Appointment[] appointments = resImpl.getAppointments();
+        Collection<String> allocatableIds = new HashSet<String>();
+        for (Appointment appointment : appointments)
+        {
+            final Collection<String> allocatableIdsFor = resImpl.getAllocatableIdsFor(appointment);
+            allocatableIds.addAll(allocatableIdsFor);
+        }
+        for (String allocatableId : allocatableIds)
+        {
+            Allocatable alloc = resolver.tryResolve(allocatableId, Allocatable.class);
+            if (alloc == null)
+            {
+                AllocatableImpl unresolved = new AllocatableImpl(null, null);
+                unresolved.setId(allocatableId);
+                DynamicType dynamicType = resolver.getDynamicType(StorageOperator.UNRESOLVED_RESOURCE_TYPE);
+                if (dynamicType == null)
+                {// TODO log?
+                    continue;
+                }
+                Classification newClassification = dynamicType.newClassification();
+                unresolved.setClassification(newClassification);
+            }
+            else
+            {
+                result.add(alloc);
+            }
+        }
+        return result;
+    }
 
     private void changed(Entity oldEntity,Entity newEntity, User user) {
         Class<? extends Entity> raplaType = oldEntity.getTypeClass();
@@ -109,7 +150,7 @@ public class AllocationChangeFinder
             Reservation oldRes = (Reservation) oldEntity;
             Reservation newRes = (Reservation) newEntity;
 
-            List<Allocatable> alloc1 = Arrays.asList(oldRes.getAllocatables());
+            List<Allocatable> alloc1 = getAllocatablesUsingIds(oldRes, ((ReservationImpl)newRes).getResolver());
             List<Allocatable> alloc2 = Arrays.asList(newRes.getAllocatables());
 
             List<Appointment> app1 = Arrays.asList(oldRes.getAppointments());
