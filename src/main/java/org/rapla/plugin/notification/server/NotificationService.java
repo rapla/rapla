@@ -61,21 +61,24 @@ public class NotificationService
     ServerExtension
 {
     private static final String NOTIFICATION_LOCK_ID = "MAIL";
-    ClientFacade clientFacade;
+    private final ClientFacade clientFacade;
     Provider<MailToUserImpl> mailToUserInterface;
     protected CommandScheduler mailQueue;
-    AppointmentFormater appointmentFormater;
-    NotificationResources notificationI18n;
-    RaplaResources raplaI18n;
+    private final AppointmentFormater appointmentFormater;
+    private final NotificationResources notificationI18n;
+    private final RaplaResources raplaI18n;
 
     Logger logger;
 
     // FIXME same as synchronisation manager
     @Inject
-    public NotificationService(ClientFacade facade,RaplaResources   i18nBundle,NotificationResources   notificationI18n, RaplaLocale raplaLocale, AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger) throws RaplaException
+    public NotificationService(ClientFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, RaplaLocale raplaLocale,
+            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger)
+                    throws RaplaException
     {
         this.notificationI18n = notificationI18n;
         this.clientFacade = facade;
+        this.raplaI18n = i18nBundle;
         this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
@@ -106,6 +109,7 @@ public class NotificationService
                 {
                     if(lastUpdated != null)
                     {
+                        // FIXME provide information, if successful. on successful release update lastRequested otherwise not
                         operator.releaseLock(NOTIFICATION_LOCK_ID);
                     }
                 }
@@ -186,7 +190,7 @@ public class NotificationService
             // Did the user opt in for the resource?
 			if (!allocatablesTheUsersListensTo.contains(allocatable))
                 continue;
-            if (!notifyIfOwner && owner.getId().equals(reservation.getOwnerId()))
+            if (!notifyIfOwner && (reservation.getLastChangedBy() != null && owner.getId().equals(reservation.getLastChangedBy())))
                 continue;
             List<AllocationChangeEvent> eventList = reservationMap.get(reservation);
             if (eventList == null) {
@@ -253,7 +257,7 @@ public class NotificationService
             if (!event.getType().equals( AllocationChangeEvent.REMOVE ))
                 removed = false;
 
-            buf.append(raplaI18n.format("appointment." + event.getType()
+            buf.append(notificationI18n.format("appointment." + event.getType()
                                         ,event.getAllocatable().getName(getLocale()))
                        );
 //            changes.append("[" + event.getAllocatable().getName(getLocale()) + "]");
