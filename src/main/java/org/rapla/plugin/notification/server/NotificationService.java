@@ -27,6 +27,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
@@ -37,11 +38,13 @@ import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.UpdateResult;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -55,9 +58,9 @@ import java.util.Set;
 @Extension(provides = ServerExtension.class, id ="notification")
 public class NotificationService
     implements
-    AllocationChangeListener,
     ServerExtension
 {
+    private static final String NOTIFICATION_LOCK_ID = "MAIL";
     ClientFacade clientFacade;
     Provider<MailToUserImpl> mailToUserInterface;
     protected CommandScheduler mailQueue;
@@ -66,7 +69,6 @@ public class NotificationService
     RaplaResources raplaI18n;
 
     Logger logger;
-    CachableStorageOperator operator;
 
     // FIXME same as synchronisation manager
     @Inject
@@ -81,6 +83,35 @@ public class NotificationService
         //clientFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         getLogger().info("NotificationServer Plugin started");
+        final CachableStorageOperator operator = (CachableStorageOperator) facade.getOperator();
+        // FIXME get if start needed, the interval and so on
+        mailQueue.schedule(new Command()
+        {
+            
+            @Override
+            public void execute() throws Exception
+            {
+                Date lastUpdated = null;
+                try
+                {
+                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID);
+                    final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
+                    changed(updateResult);
+                }
+                catch(Throwable t)
+                {
+                    NotificationService.this.logger.debug("Could not send mail: "+t.getMessage());
+                }
+                finally
+                {
+                    if(lastUpdated != null)
+                    {
+                        operator.releaseLock(NOTIFICATION_LOCK_ID);
+                    }
+                }
+            }
+        }, 0, 30000l);
+        
     }
 
     @Override public void start()
@@ -99,11 +130,12 @@ public class NotificationService
         return raplaI18n.getLocale();
     }
 
-    public void changed(AllocationChangeEvent[] changeEvents) {
+    private void changed(UpdateResult updateResult) {
         try {
             getLogger().debug("Mail check triggered") ;
             User[] users = clientFacade.getUsers();
             List<AllocationMail> mailList = new ArrayList<AllocationMail>();
+            // we check for each user if a mail must be sent
             for ( int i=0;i< users.length;i++) {
                 User user = users[i];
                 if(user.getEmail().trim().length() == 0)
@@ -122,7 +154,7 @@ public class NotificationService
                     boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
                     final String ownerId = preferences.getOwnerId();
                     final User owner = ownerId != null ? clientFacade.getOperator().resolve( ownerId, User.class) : null;
-                    AllocationMail mail = getAllocationMail( new HashSet<Allocatable>(allocatableMap.values()), changeEvents, owner,notifyIfOwner);
+                    AllocationMail mail = getAllocationMail( new HashSet<Allocatable>(allocatableMap.values()), updateResult, owner,notifyIfOwner);
                     if (mail != null) {
                         mailList.add(mail);
                     }
@@ -138,14 +170,17 @@ public class NotificationService
         }
     }
 
-    AllocationMail getAllocationMail(Collection<Allocatable> allocatablesTheUsersListensTo, AllocationChangeEvent[] changeEvents, User owner,boolean notifyIfOwner) throws RaplaException {
-
-        HashMap<Reservation,List<AllocationChangeEvent>> reservationMap = null;
-        HashSet<Allocatable> changedAllocatables = null;
-        for ( int i = 0; i< changeEvents.length; i++) {
-            if (reservationMap == null)
-                reservationMap = new HashMap<Reservation,List<AllocationChangeEvent>>(4);
-            AllocationChangeEvent event = changeEvents[i];
+    AllocationMail getAllocationMail(Collection<Allocatable> allocatablesTheUsersListensTo, UpdateResult updateResult, User owner,boolean notifyIfOwner) throws RaplaException 
+    {
+        if(updateResult == null || !updateResult.getOperations().iterator().hasNext())
+        {
+            return null;
+        }
+        final HashMap<Reservation,List<AllocationChangeEvent>> reservationMap = new HashMap<Reservation,List<AllocationChangeEvent>>(4);
+        final HashSet<Allocatable> changedAllocatables = new HashSet<Allocatable>();
+        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger);
+        for ( int i = 0; i< changeEvents.size(); i++) {
+            AllocationChangeEvent event = changeEvents.get(i);
             Reservation reservation = event.getNewReservation();
             Allocatable allocatable = event.getAllocatable();
             // Did the user opt in for the resource?
@@ -157,10 +192,6 @@ public class NotificationService
             if (eventList == null) {
                 eventList = new ArrayList<AllocationChangeEvent>(3);
                 reservationMap.put(reservation,eventList);
-            }
-            if ( changedAllocatables == null)
-            {
-                changedAllocatables = new HashSet<Allocatable>();
             }
             changedAllocatables.add(allocatable);
             eventList.add(event);
