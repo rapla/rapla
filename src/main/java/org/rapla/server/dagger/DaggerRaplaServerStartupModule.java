@@ -2,6 +2,8 @@ package org.rapla.server.dagger;
 
 import dagger.Module;
 import dagger.Provides;
+
+import org.jetbrains.annotations.Nullable;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
 import org.rapla.server.internal.ServerContainerContext;
@@ -33,7 +35,7 @@ import javax.inject.Named;
         return context;
     }
 
-    @Named(ServerService.ENV_RAPLAMAIL_ID) @Provides Object mail()
+    @Named(ServerService.ENV_RAPLAMAIL_ID) @Provides @Nullable Object mail()
     {
         return context.getMailSession();
     }
