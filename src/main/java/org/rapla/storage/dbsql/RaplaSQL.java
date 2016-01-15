@@ -94,8 +94,6 @@ import org.rapla.storage.xml.RaplaXMLWriter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import microsoft.exchange.webservices.data.core.request.UpdateDelegateRequest;
-
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
     private final Logger logger;
@@ -2586,7 +2584,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
     
     public ImportExportStorage(RaplaXMLContext context) throws RaplaException
     {
-        super(context, ImportExportEntityImpl.class, "IMPORT_EXPORT",
+        super(context, ImportExportEntity.class, "IMPORT_EXPORT",
                 new String[] { "FOREIGN_ID VARCHAR(255) KEY", "EXTERNAL_SYSTEM VARCHAR(255) KEY", "RAPLA_ID VARCHAR(255)", "DIRECTION INTEGER NOT NULL", "DATA TEXT NOT NULL",
                 "CONTEXT TEXT", "CHANGED_AT TIMESTAMP KEY" });
     }
