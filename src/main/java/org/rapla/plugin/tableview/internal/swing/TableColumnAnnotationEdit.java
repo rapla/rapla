@@ -1,4 +1,4 @@
-package org.rapla.plugin.tableview.internal;
+package org.rapla.plugin.tableview.internal.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
@@ -17,6 +17,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.TableViewPlugin;
+import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 import javax.inject.Inject;
