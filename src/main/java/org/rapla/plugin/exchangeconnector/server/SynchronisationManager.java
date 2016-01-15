@@ -10,11 +10,11 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,8 +37,10 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
@@ -63,6 +65,8 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
+    private final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.retryUser");
+    private final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.resyncUser");
     // existing tasks in memory
     private final ExchangeAppointmentStorage appointmentStorage;
     private final AppointmentFormater appointmentFormater;
@@ -179,21 +183,10 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
         }
     }
 
-    ConcurrentHashMap<String, Object> synchronizer = new ConcurrentHashMap<String, Object>();
-
     public void retry(User user) throws RaplaException
     {
-        final Object sync = synchronizer.putIfAbsent(user.getId(), new Object());
-        synchronized (sync)
-        {
-            final String userId = user.getId();
-            Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(userId);
-            for (SynchronizationTask task : existingTasks)
-            {
-                task.resetRetries();
-            }
-            execute(existingTasks);
-        }
+        final Preferences userPreferences= facade.edit(facade.getPreferences(user));
+        userPreferences.putEntry(RETRY_USER, true);
     }
 
     public SynchronizationStatus getSynchronizationStatus(User user) throws RaplaException
@@ -207,17 +200,11 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
         return result;
     }
 
-    public synchronized void synchronizeUser(User user) throws RaplaException
+    public void synchronizeUser(User user) throws RaplaException
     {
-        appointmentStorage.refresh();
-        // remove old appointments
-        Collection<SyncError> removingErrors = removeAllAppointmentsFromExchangeAndAppointmentStore(user);
-        // then insert and update the new tasks
-        User owner = user;
-        Collection<SynchronizationTask> updateTasks = updateTasksForUser(owner);
-        // we skip notification on a resync
-        SynchronizeResult result = execute(updateTasks, true);
-        result.errorMessages.addAll(0, removingErrors);
+        final Preferences userPreferences = facade.edit(facade.getPreferences(user));
+        userPreferences.putEntry(RESYNC_USER, true);
+        facade.store(userPreferences);
     }
 
     private Collection<SynchronizationTask> updateTasksSetDelete(Appointment appointment) throws RaplaException
@@ -267,6 +254,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
     private void synchronize(UpdateResult evt) throws RaplaException
     {
         appointmentStorage.refresh();
+        List<Preferences> preferencesToStore = new ArrayList<Preferences>();
         Collection<SynchronizationTask> tasks = new ArrayList<SynchronizationTask>();
         //lock
         for (UpdateOperation operation : evt.getOperations())
@@ -344,6 +332,33 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                 else if (operation instanceof UpdateResult.Change)
                 {
                     preferences = (Preferences) evt.getLastKnown(operation.getCurrentId());
+                    boolean savePreferences = false;
+                    if(preferences.getEntryAsBoolean(RETRY_USER, false))
+                    {
+                        Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(preferences.getOwnerId());
+                        for (SynchronizationTask task : existingTasks)
+                        {
+                            task.resetRetries();
+                        }
+                        tasks.addAll(tasks);
+                        savePreferences = true;
+                    }
+                    if(preferences.getEntryAsBoolean(RESYNC_USER, false))
+                    {
+                        final User user = operator.tryResolve(new ReferenceInfo<User>(preferences.getOwnerId(), User.class));
+                        if(user != null)
+                        {
+                            removeAllAppointmentsFromExchangeAndAppointmentStore(user);
+                        }
+                        savePreferences = true;
+                    }
+                    if(savePreferences)
+                    {
+                        final Preferences editPreferences = facade.edit(operator.resolve(preferences.getId(), Preferences.class));
+                        editPreferences.putEntry(RESYNC_USER, false);
+                        editPreferences.putEntry(RETRY_USER, false);
+                        preferencesToStore.add(editPreferences);
+                    }
                 }
                 else
                 {
@@ -404,6 +419,10 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
             Collection<SynchronizationTask> toRemove = Collections.emptyList();
             appointmentStorage.storeAndRemove(tasks, toRemove);
             execute(tasks);
+        }
+        if(!preferencesToStore.isEmpty())
+        {
+            facade.storeObjects(preferencesToStore.toArray(new Entity[preferencesToStore.size()]));
         }
     }
 
