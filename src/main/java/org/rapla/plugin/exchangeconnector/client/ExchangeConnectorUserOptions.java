@@ -357,8 +357,8 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
             this.usernameTextField = new JTextField();
             usernameTextField.setEnabled( !connected);
             this.passwordTextField = new JPasswordField();
-            this.passwordLabel = new JLabel(getString("password.server"));
-            this.usernameLabel = new JLabel(getString("username.server"));
+            this.passwordLabel = new JLabel(exchangeConnectorResources.getString("password.server"));
+            this.usernameLabel = new JLabel(exchangeConnectorResources.getString("username.server"));
             double[][] sizes = new double[][]{
                     {5, TableLayout.PREFERRED, 5, 200, 5},
                     {TableLayout.PREFERRED, 5,TableLayout.PREFERRED}
