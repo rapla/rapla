@@ -29,7 +29,7 @@ public class SynchronizationTask implements Serializable
 	String userId;
 	String appointmentId;
 	Date lastRetry;
-	private int retries = 0;
+	private int retries = -1;
 	String lastError;
 	
 	//TimeInterval syncInterval;

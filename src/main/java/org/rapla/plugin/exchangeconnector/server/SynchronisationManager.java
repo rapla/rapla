@@ -1,6 +1,23 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -40,23 +57,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 
 @Singleton public class SynchronisationManager
 {
@@ -142,8 +143,11 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
         public void execute()
         {
+            final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
             try
-            {
+            {                
+                cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
+                appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();
                 final Date now = new Date();
@@ -166,6 +170,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 firstExecution = false;
                 SynchronisationManager.this.execute(includedTasks);
+                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, null);
             }
             catch (Exception ex)
             {
@@ -227,6 +232,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public synchronized SynchronizeResult synchronizeUser(User user) throws RaplaException
     {
+        appointmentStorage.refresh();
         // remove old appointments
         Collection<SyncError> removingErrors = removeAllAppointmentsFromExchangeAndAppointmentStore(user);
         // then insert and update the new tasks
@@ -294,7 +300,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             {
                 if (operation instanceof UpdateResult.Remove)
                 {
-                    Entity<?> current = evt.getLastKnown(operation.getCurrentId());
+                    Entity<?> current = evt.getLastEntryBeforeUpdate(operation.getCurrentId());
                     Reservation oldReservation = (Reservation) current;
                     for (Appointment app : oldReservation.getAppointments())
                     {
@@ -435,10 +441,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         TimeInterval syncRange = getSyncRange();
 
         Collection<Appointment> appointments = operator.getAppointmentsFromUserCalendarModels(userId, syncRange);
-        if ( appointments.isEmpty())
-        {
-            return Collections.emptySet();
-        }
         final Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
         Set<String> appointmentsFound = new HashSet<String>();
         Collection<SynchronizationTask> newTasksFromCalendar = new HashSet<SynchronizationTask>();
@@ -498,7 +500,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         return result;
     }
 
-    public String getAppointmentMessage(SynchronizationTask task)
+    private String getAppointmentMessage(SynchronizationTask task)
     {
         boolean isDelete = task.status == SyncStatus.toDelete;
         String appointmentId = task.getAppointmentId();
@@ -737,8 +739,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public void removeTasksAndExports(User user) throws RaplaException
     {
-        String userId = user.getId();
-        appointmentStorage.removeTasksForUser(userId);
         boolean createIfNotNull = false;
         Preferences preferences = facade.getPreferences(user, createIfNotNull);
         if (preferences == null)

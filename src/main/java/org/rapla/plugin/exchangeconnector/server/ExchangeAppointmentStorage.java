@@ -54,7 +54,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ExchangeAppointmentStorage extends RaplaComponent
 {
     private static final String EXCHANGE_ID = "exchange";
-    Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<String, Set<SynchronizationTask>>();
+    private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<String, Set<SynchronizationTask>>();
+    private final Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<String, ImportExportEntity>();
     CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
     private final Gson gson = JSONParserWrapper.defaultGsonBuilder(new Class[]{SynchronizationTask.class}).create();
@@ -107,6 +108,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
 
     public Collection<SynchronizationTask> getTasksForUser(String userId) throws RaplaException
     {
+        // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
         List<SynchronizationTask> result = new ArrayList<SynchronizationTask>();
         Lock lock = readLock();
         try
@@ -282,7 +284,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             String persistantId = task.getPersistantId();
             if (persistantId != null)
             {
-                ImportExportEntity persistant = operator.tryResolve(persistantId, ImportExportEntity.class);
+                ImportExportEntity persistant = importExportEntities.get(persistantId);
                 if (persistant != null)
                 {
                     removeObjects.add(persistant);
@@ -295,7 +297,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             final String persistantId = task.getPersistantId();
             if (persistantId != null)
             {
-                final Entity persistant = operator.tryResolve(persistantId, ImportExportEntity.class);
+                final Entity persistant = importExportEntities.get(persistantId);
                 if (persistant != null)
                 {
                     final Entity edit = getClientFacade().edit(persistant);
@@ -392,6 +394,8 @@ public class ExchangeAppointmentStorage extends RaplaComponent
     public void refresh()
     {
         final Collection<ImportExportEntity> exportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
+        tasks.clear();
+        importExportEntities.clear();
         for (ImportExportEntity persistant : exportEntities)
         {
             SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
@@ -400,7 +404,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 getLogger().error("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
                 continue;
             }
-            if (synchronizationTask.getRetries() == 0)
+            if (synchronizationTask.getRetries() < 0)
             {
                 getLogger().error("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
                 continue;
@@ -423,7 +427,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 tasks.put(appointmentId, taskList);
             }
             taskList.add(synchronizationTask);
+            importExportEntities.put(persistant.getId(), persistant);
         }
     }
-
 }
