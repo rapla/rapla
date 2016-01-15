@@ -1,5 +1,7 @@
 package org.rapla.plugin.exchangeconnector.server;
 
+import javax.inject.Inject;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -7,12 +9,9 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
-import org.rapla.plugin.exchangeconnector.SynchronizeResult;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.RemoteSession;
-
-import javax.inject.Inject;
 
 @DefaultImplementation(context = InjectionContext.server, of = ExchangeConnectorRemote.class)
 public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRemote
@@ -42,12 +41,11 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     }
 
     @Override
-    public SynchronizeResult synchronize() throws RaplaException
+    public void synchronize() throws RaplaException
     {
         // Synchronize this user after registering
         getLogger().debug("Invoked change sync for user " + user.getUsername());
-        SynchronizeResult result = manager.synchronizeUser(user);
-        return result;
+        manager.synchronizeUser(user);
     }
 
     @Override
@@ -69,15 +67,15 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     }
 
     @Override
-    public SynchronizeResult retry() throws RaplaException
+    public void retry() throws RaplaException
     {
         LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         if ( secrets != null)
         {
-            String exchangeUsername = secrets.login;
-            String exchangePassword = secrets.secret;
+            //String exchangeUsername = secrets.login;
+            //String exchangePassword = secrets.secret;
             //manager.testConnection(exchangeUsername, exchangePassword);
-            return manager.retry(user);
+            manager.retry(user);
         }
         else
         {

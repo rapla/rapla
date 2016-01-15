@@ -9,7 +9,7 @@ public interface ExchangeConnectorRemote
 {
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change");
     SynchronizationStatus getSynchronizationStatus() throws RaplaException;
-	SynchronizeResult synchronize() throws RaplaException;
+	void synchronize() throws RaplaException;
 
 	/** 
 	 * Add an Exchange user to the user list (register a user to the Exchange Server)
@@ -22,7 +22,7 @@ public interface ExchangeConnectorRemote
 	 */
 	void changeUser(String exchangeUsername, String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
 	void removeUser() throws RaplaException;
-	SynchronizeResult retry() throws RaplaException;
+	void retry() throws RaplaException;
 	
 	/**
 	 * Remove an existing user from the user list (unregister a user from the Exchange Server)

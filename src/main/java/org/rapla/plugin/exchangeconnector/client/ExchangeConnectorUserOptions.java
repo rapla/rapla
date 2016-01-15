@@ -1,5 +1,18 @@
 package org.rapla.plugin.exchangeconnector.client;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Date;
+import java.util.Locale;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -21,20 +34,6 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
-import org.rapla.plugin.exchangeconnector.SynchronizeResult;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Date;
-import java.util.Locale;
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=UserOptionPanel.class)
 public class ExchangeConnectorUserOptions extends DefaultPluginOption implements UserOptionPanel  {
@@ -53,7 +52,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     //private JLabel securityInformationLabel;
     private JLabel usernameLabel;
     private JLabel usernameInfoLabel;
-    private JLabel synchronizedLabel;
+    //private JLabel synchronizedLabel;
     private JLabel syncIntervalLabel;
     //private JTextField filterCategoryField;
     //private String filterCategory;
@@ -123,7 +122,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
         this.optionsPanel = new JPanel();
         usernameLabel = new JLabel();
         usernameInfoLabel = new JLabel();
-        synchronizedLabel = new JLabel();
+        //synchronizedLabel = new JLabel();
         syncIntervalLabel =new JLabel();
         
         double[][] sizes = new double[][]{
@@ -171,7 +170,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
         this.optionsPanel.add(syncIntervalLabel, "3, 8");
         this.optionsPanel.add(syncButton, "3, 10");
         this.optionsPanel.add(new JLabel(getString("appointments") + ":"), "1, 12");
-        this.optionsPanel.add(synchronizedLabel, "3, 12");
+        //this.optionsPanel.add(synchronizedLabel, "3, 12");
         this.optionsPanel.add(retryButton, "3, 14");
         loginButton.addActionListener(new ActionListener() {
             @Override
@@ -224,8 +223,8 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 			public void actionPerformed(ActionEvent e) {
 				try
 				{
-					SynchronizeResult result = service.synchronize();
-					showResultDialog(result);
+					service.synchronize();
+					showResultWillBeSentByMailDialog();
 					updateComponentState();
 				}
 				catch (RaplaException ex)
@@ -259,8 +258,8 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 			public void actionPerformed(ActionEvent e) {
 				try
 				{
-					SynchronizeResult result = service.retry();
-					showResultDialog( result);
+					service.retry();
+					showResultWillBeSentByMailDialog();
 					updateComponentState();
 				}
 				catch (RaplaException ex)
@@ -300,8 +299,8 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
 
     }
    
-    public void showResultDialog(SynchronizeResult result) throws RaplaException {
-        new SyncResultDialog(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), exchangeConnectorResources, dialogUiFactory).showResultDialog(result);
+    private void showResultWillBeSentByMailDialog() throws RaplaException {
+        new SyncResultDialog(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), exchangeConnectorResources, dialogUiFactory).showResultDialog();
     }
     
     private String getConnectButtonString() {
@@ -392,19 +391,19 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     	this.connected = synchronizationStatus.enabled;
     	this.usernameLabel.setText(  connected ? synchronizationStatus.username: exchangeConnectorResources.getString("disconnected"));
     	
-    	int synchronizedEvents = synchronizationStatus.synchronizedEvents;
-    	int unsynchronizedEvents = synchronizationStatus.synchronizationErrors.size();
-        String format = exchangeConnectorResources.format("format.synchronized_events", synchronizedEvents);
-        if ( unsynchronizedEvents > 0)
-        {
-            format += ",  " +exchangeConnectorResources.format("format.unsynchronized_events", unsynchronizedEvents);
-        }
-        synchronizedLabel.setText(format);
-    	Color foreground = usernameLabel.getForeground();
-    	if ( foreground != null)
-    	{
-    		synchronizedLabel.setForeground( unsynchronizedEvents > 0 ? Color.RED : foreground);
-    	}
+//    	int synchronizedEvents = synchronizationStatus.synchronizedEvents;
+//    	int unsynchronizedEvents = synchronizationStatus.synchronizationErrors.size();
+//        String format = exchangeConnectorResources.format("format.synchronized_events", synchronizedEvents);
+//        if ( unsynchronizedEvents > 0)
+//        {
+//            format += ",  " +exchangeConnectorResources.format("format.unsynchronized_events", unsynchronizedEvents);
+//        }
+//        synchronizedLabel.setText(format);
+//    	Color foreground = usernameLabel.getForeground();
+//    	if ( foreground != null)
+//    	{
+//    		synchronizedLabel.setForeground( unsynchronizedEvents > 0 ? Color.RED : foreground);
+//    	}
     	
     	String intervalText = "";
     	TimeInterval syncInterval = synchronizationStatus.syncInterval;
@@ -433,7 +432,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     	this.removeButton.setEnabled( connected);
     	this.removeButton.setToolTipText(exchangeConnectorResources.getString("disable.sync.rapla.exchange"));
     	this.syncButton.setEnabled( connected);
-    	this.retryButton.setEnabled( connected && unsynchronizedEvents > 0);
+    	this.retryButton.setEnabled( connected );
 
     }
 //	enableSynchronisationBox.setEnabled(ExchangeConnectorConfig.ENABLED_BY_ADMIN);

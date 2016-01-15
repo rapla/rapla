@@ -181,7 +181,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
 
     ConcurrentHashMap<String, Object> synchronizer = new ConcurrentHashMap<String, Object>();
 
-    public SynchronizeResult retry(User user) throws RaplaException
+    public void retry(User user) throws RaplaException
     {
         final Object sync = synchronizer.putIfAbsent(user.getId(), new Object());
         synchronized (sync)
@@ -192,7 +192,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
             {
                 task.resetRetries();
             }
-            return execute(existingTasks);
+            execute(existingTasks);
         }
     }
 
@@ -203,34 +203,11 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
         boolean connected = secrets != null;
         result.enabled = connected;
         result.username = secrets != null ? secrets.login : "";
-        if (secrets != null)
-        {
-            final String userId = user.getId();
-            Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(userId);
-            for (SynchronizationTask task : existingTasks)
-            {
-                SyncStatus status = task.getStatus();
-                if (status.isUnsynchronized())
-                {
-                    String lastError = task.getLastError();
-                    if (lastError != null)
-                    {
-                        String appointmentDetail = getAppointmentMessage(task);
-                        result.synchronizationErrors.add(new SyncError(appointmentDetail, lastError));
-                    }
-                    result.unsynchronizedEvents++;
-                }
-                if (status == SyncStatus.synched)
-                {
-                    result.synchronizedEvents++;
-                }
-            }
-        }
         result.syncInterval = getSyncRange();
         return result;
     }
 
-    public synchronized SynchronizeResult synchronizeUser(User user) throws RaplaException
+    public synchronized void synchronizeUser(User user) throws RaplaException
     {
         appointmentStorage.refresh();
         // remove old appointments
@@ -241,7 +218,6 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
         // we skip notification on a resync
         SynchronizeResult result = execute(updateTasks, true);
         result.errorMessages.addAll(0, removingErrors);
-        return result;
     }
 
     private Collection<SynchronizationTask> updateTasksSetDelete(Appointment appointment) throws RaplaException
