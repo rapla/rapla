@@ -47,6 +47,7 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -104,6 +105,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     final private ModifiableCalendarState calendarModelContainer;
 
     final private Provider<Set<ClientExtension>> clientExtensions;
+
     @Inject
 	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
             FrameControllerList frameControllerList, RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
@@ -462,6 +464,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         if (!started)
             return;
 
+
         RaplaGUIComponent.setMainComponent( null );
         try {
             ClientFacade facade = getFacade();
@@ -480,6 +483,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     public void dispose() {
         if (frameControllerList != null)
             frameControllerList.closeAll();
+        ((DefaultScheduler)commandScheduler).dispose();
         stop();
         getLogger().debug("RaplaClient disposed");
     }

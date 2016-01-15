@@ -14,6 +14,7 @@ package org.rapla.server.internal;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -24,6 +25,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -68,6 +70,7 @@ public class ServerServiceImpl implements ServerServiceContainer
     private boolean passwordCheckDisabled;
     private final RaplaRpcAndRestProcessor apiPage;
     private final RaplaLocale raplaLocale;
+    private final CommandScheduler scheduler;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
@@ -80,8 +83,9 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     @Inject
     public ServerServiceImpl(CachableStorageOperator operator, ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices)
+            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices,CommandScheduler scheduler)
     {
+        this.scheduler = scheduler;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         //webMethods.setList( );
@@ -331,6 +335,7 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     private void stop()
     {
+        ((DefaultScheduler)scheduler).dispose();
         boolean wasConnected = operator.isConnected();
         Logger logger = getLogger();
         try
