@@ -881,7 +881,12 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		   }
 		   else
 		   {
-			   throw new RaplaException("Login only possible with remoteOperator");
+			   final String username = connectInfo.getUsername();
+			   user = operator.getUser(username);
+			   if ( user == null)
+			   {
+				   throw new EntityNotFoundException("user with username " + username + " not found.");
+			   }
 		   }
        } catch (RaplaSecurityException ex) {
 			return false;

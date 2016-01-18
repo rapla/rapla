@@ -68,13 +68,12 @@ public class DynamicTypeTest  {
 	{
 		logger = RaplaTestCase.initLoger();
 		facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-		model  = facade.newCalendarModel( facade.getUser());
+		model  = facade.newCalendarModel( facade.getUser("homer"));
 	}
 
 	@After
 	public void tearDown()
 	{
-		facade.logout();
 	}
 
 	@Test

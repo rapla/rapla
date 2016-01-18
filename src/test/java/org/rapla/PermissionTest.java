@@ -27,6 +27,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
@@ -42,8 +43,8 @@ import java.util.Locale;
 @RunWith(JUnit4.class)
 public class PermissionTest  {
     
-    RaplaFacade adminFacade;
-    RaplaFacade testFacade;
+    ClientFacade adminFacade;
+    ClientFacade testFacade;
     Locale locale;
     private Server server;
     ServerServiceContainer servlet;
@@ -56,7 +57,7 @@ public class PermissionTest  {
         int port = 8052;
         servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
         this.server = ServletTestBase.createServer(servlet, port);
-        Provider<RaplaFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
+        Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
         adminFacade = clientFacadeProvider.get();
         testFacade = clientFacadeProvider.get();
         adminFacade.login("homer","duffs".toCharArray());

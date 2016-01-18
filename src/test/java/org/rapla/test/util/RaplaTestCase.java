@@ -81,21 +81,27 @@ public abstract class RaplaTestCase
         return "src/test/resources/" + xmlFile;
     }
 
-    public static RaplaFacade createSimpleSimpsonsWithHomer()
+    public static ClientFacade createSimpleSimpsonsWithHomer()
     {
-        RaplaFacade facade = RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
+        ClientFacade facade = RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
         facade.login("homer","duffs".toCharArray());
         return facade;
     }
 
-    public static RaplaFacade createFacadeWithFile(Logger logger, String xmlFile)
+    public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile)
     {
         String resolvedPath = getTestDataFile(xmlFile);
-        return createFacadeWithFile(logger,resolvedPath,new VoidFileIO());
+        return _createFacadeWithFile(logger, resolvedPath, new VoidFileIO());
     }
 
     public static RaplaFacade createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
     {
+        return _createFacadeWithFile(logger, resolvedPath, fileIO);
+    }
+
+    private static FacadeImpl _createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
+    {
+
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 

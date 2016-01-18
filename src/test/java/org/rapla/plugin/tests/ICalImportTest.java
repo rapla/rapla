@@ -11,6 +11,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
@@ -33,13 +34,16 @@ public class ICalImportTest {
 
     Logger logger;
     RaplaFacade facade;
+    User user;
 
     @Before
     public void setUp()
     {
         logger = RaplaTestCase.initLoger();
-        facade = RaplaTestCase.createFacadeWithFile(logger, "testdefault.xml");
-        facade.login("homer","duffs".toCharArray());
+        ClientFacade clientFacade = RaplaTestCase.createFacadeWithFile(logger, "testdefault.xml");
+        clientFacade.login("homer","duffs".toCharArray());
+        user = clientFacade.getUser();
+        facade = clientFacade.getRaplaFacade();
     }
 
     @Test
@@ -49,7 +53,7 @@ public class ICalImportTest {
         TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
         converter.setImportExportTimeZone(timezone);
 
-        RemoteSession session = new RemoteSessionImpl(logger, facade.getUser());
+        RemoteSession session = new RemoteSessionImpl(logger, user);
         RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
         boolean isUrl = true;
         String content = "https://www.google.com/calendar/ical/76kijffqdch1nkemshokjlf6r4%40group.calendar.google.com/private-e8c8772e35043055c7d9c16f366fdfbf/basic.ics";
@@ -67,7 +71,7 @@ public class ICalImportTest {
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");
         TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
         converter.setImportExportTimeZone(timezone);
-        RemoteSession session = new RemoteSessionImpl(logger, facade.getUser());
+        RemoteSession session = new RemoteSessionImpl(logger, user);
         RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
         boolean isUrl = false;
         String packageName = getClass().getPackage().getName().replaceAll("\\.", "/");
