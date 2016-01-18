@@ -1,5 +1,13 @@
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,6 +22,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -23,14 +33,6 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager
@@ -67,8 +69,7 @@ public class TestUpdateDataManager
     @Test
     public void testNothingChangeFastUpdate()
     {
-        Assert.assertTrue(facade.login("homer", "duffs".toCharArray()));
-        final User user = facade.getUser();
+        final User user = facade.getUser("homer");
         Date lastSynced = new Date();
         final long start = System.currentTimeMillis();
         final UpdateEvent updateEvent = updateManager.createUpdateEvent(user, lastSynced);
@@ -93,11 +94,8 @@ public class TestUpdateDataManager
     private void testInsertChangeAndDelete(int countInsert, int countDelete)
     {
         // create second user first
-        Assert.assertTrue(facade.login("monty", "burns".toCharArray()));
-        final User readUser = facade.getUser();
-        facade.logout();
-        Assert.assertTrue(facade.login("homer", "duffs".toCharArray()));
-        final User writeUser = facade.getUser();
+        final User readUser = facade.getUser("monty");
+        final User writeUser = facade.getUser("homer");
         // do an init so we don't get the resources and reservations from the test data
         final int startAllocatables;
         Date lastSynced = updateManager.createUpdateEvent(readUser, new Date()).getLastValidated();
@@ -110,28 +108,30 @@ public class TestUpdateDataManager
             final int maxNumberGeneratedItems = countInsert;
             for (int i = 0; i < maxNumberGeneratedItems; i++)
             {
-                final Allocatable newResource = facade.newResource();
+                Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
+                final Allocatable newResource = facade.newAllocatable(classification, writeUser);
                 newResource.getClassification().setValue("name", "newResource" + i);
                 entitiesToStore.add(newResource);
             }
             storedAllocatables = entitiesToStore.size();
-            facade.storeObjects(entitiesToStore.toArray(new Entity[0]));
+            facade.storeAndRemove(entitiesToStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, writeUser);
             entitiesToStore.clear();
             allocatables = facade.getAllocatables();
             for (int i = 0; i <maxNumberGeneratedItems; i++)
             {
-                final Reservation newReservation = facade.newReservation();
+                Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+                final Reservation newReservation = facade.newReservation( classification, writeUser );
                 newReservation.getClassification().setValue("name", "newReservation" + i);
                 Date startDate = new Date();
                 // half an hour duration
                 Date endDate = new Date(startDate.getTime() + 30000);
-                newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+                newReservation.addAppointment(facade.newAppointment(startDate, endDate, writeUser));
                 // we take always another allocatable as we want no conflicts for now
                 newReservation.addAllocatable(allocatables[i]);
                 entitiesToStore.add(newReservation);
             }
             storedReservations = entitiesToStore.size();
-            facade.storeObjects(entitiesToStore.toArray(new Entity[0]));
+            facade.storeAndRemove(entitiesToStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, writeUser);
         }
         {
             // check the created entities
@@ -184,7 +184,7 @@ public class TestUpdateDataManager
                 changedEntities.add(reservation);
             }
             updatedReservations = changedEntities.size() - updatedAllocatables;
-            facade.storeObjects(changedEntities.toArray(new Entity[changedEntities.size()]));
+            facade.storeAndRemove(changedEntities.toArray(new Entity[changedEntities.size()]), Entity.ENTITY_ARRAY, writeUser);
         }
         {
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
@@ -221,7 +221,7 @@ public class TestUpdateDataManager
             }
             final Reservation[] reservations = facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null);
             toDelete.addAll(Arrays.asList(reservations));
-            facade.removeObjects(toDelete.toArray(new Entity[0]));
+            facade.storeAndRemove(Entity.ENTITY_ARRAY, toDelete.toArray(new Entity[0]), writeUser);
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             final Collection<ReferenceInfo> removeIds = updateEvent.getRemoveIds();
             Assert.assertFalse(removeIds.isEmpty());
@@ -242,20 +242,20 @@ public class TestUpdateDataManager
     {
         // create second user first
         Date lastSynced = new Date();
-        Assert.assertTrue(facade.login("monty", "burns".toCharArray()));
-        final User readUser = facade.getUser();
+        final User readUser = facade.getUser("monty");
         facade.logout();
-        Assert.assertTrue(facade.login("homer", "duffs".toCharArray()));
+        final User writeUser = facade.getUser("homer");
         final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
         lastSynced = updateEvent.getLastValidated();
-        final Allocatable newResource = facade.newResource();
+        Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
+        final Allocatable newResource = facade.newAllocatable(classification, writeUser);
         newResource.getClassification().setValue("name", "newResource");
-        facade.store(newResource);
+        facade.storeAndRemove(new Entity[]{newResource}, Entity.ENTITY_ARRAY, writeUser);
         final UpdateEvent updateWithInsert = updateManager.createUpdateEvent(readUser, lastSynced);
         final Date lastValidatedAfterInsert = updateWithInsert.getLastValidated();
         Assert.assertEquals(1, updateWithInsert.getStoreObjects().size());
         Assert.assertEquals(0, updateWithInsert.getRemoveIds().size());
-        facade.remove(newResource);
+        facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{newResource}, writeUser);
         final UpdateEvent updateWithInsertAndDelete = updateManager.createUpdateEvent(readUser, lastSynced);
         Assert.assertEquals(0, updateWithInsertAndDelete.getStoreObjects().size());
         Assert.assertEquals(0, updateWithInsertAndDelete.getRemoveIds().size());
