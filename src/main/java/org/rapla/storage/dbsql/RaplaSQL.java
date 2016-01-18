@@ -2351,7 +2351,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     HistoryStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY", "ISDELETE INTEGER NOT NULL" });
-        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
+        loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT >= ? ORDER BY CHANGED_AT ASC";
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
         gson = gsonBuilder.create();
@@ -2391,15 +2391,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             for (Entity entity : entites)
             {
                 write(stmt, (T) entity);
-                if(entity instanceof User)
-                {
-                    final String userId = entity.getId();
-                    final PreferencesImpl preferencesForUserId = cache.getPreferencesForUserId(userId);
-                    if(preferencesForUserId != null)
-                    {
-                        write(stmt, (T) preferencesForUserId);
-                    }
-                }
             }
             stmt.executeBatch();
         }
