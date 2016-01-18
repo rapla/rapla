@@ -34,6 +34,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -129,7 +130,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
             {
-                String removeEntity =  remove.getCurrentId();
+                ReferenceInfo removeEntity =  remove.getReference();
                 saveEvent.putRemoveId(removeEntity);
             }
         }
@@ -237,20 +238,34 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (typeClass == Allocatable.class && isTransferedToClient(newObject))
             {
                 PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
-                PermissionContainer newObj = (PermissionContainer) newObject;
-                Util.addDifferences(invalidatePermissions, current, newObj);
+                if ( current == null)
+                {
+                    resourceRefresh = true;
+                }
+                else
+                {
+                    PermissionContainer newObj = (PermissionContainer) newObject;
+                    Util.addDifferences(invalidatePermissions, current, newObj);
+                }
             }
             // We trigger a resource refresh if the groups of the user have changed
 
             if (typeClass == User.class && newObject.equals( user))
             {
                 UserImpl newUser = (UserImpl) newObject;
-                UserImpl oldUser = (UserImpl) updateResult.getLastEntryBeforeUpdate(currentId);
                 HashSet<String> newGroups = new HashSet<String>(newUser.getGroupIdList());
-                HashSet<String> oldGroups = new HashSet<String>(oldUser.getGroupIdList());
-                if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
+                UserImpl oldUser = (UserImpl) updateResult.getLastEntryBeforeUpdate(currentId);
+                if ( oldUser == null)
                 {
                     resourceRefresh = true;
+                }
+                else
+                {
+                    HashSet<String> oldGroups = new HashSet<String>(oldUser.getGroupIdList());
+                    if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
+                    {
+                        resourceRefresh = true;
+                    }
                 }
 
             }
@@ -277,8 +292,15 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (typeClass == Reservation.class)
             {
                 PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
-                PermissionContainer newObj = (PermissionContainer) newObject;
-                Util.addDifferences(invalidateEventPermissions, current, newObj);
+                if ( current == null)
+                {
+                    resourceRefresh = true;
+                }
+                else
+                {
+                    PermissionContainer newObj = (PermissionContainer) newObject;
+                    Util.addDifferences(invalidateEventPermissions, current, newObj);
+                }
             }
         }
         if (!invalidatePermissions.isEmpty() || !invalidateEventPermissions.isEmpty())
@@ -366,23 +388,35 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                     {
                         timeInterval = expandInterval(entity, timeInterval);
                     }
+                    else
+                    {
+                        timeInterval = new TimeInterval( null, null);
+                    }
                 }
                 // Add entity to result
                 processClientReadable(user, safeResultEvent, obj, false);
             }
             Collection<Remove> removedEntities = updateResult.getOperations(UpdateResult.Remove.class);
-            for (Remove ref : removedEntities)
+            for (Remove remove : removedEntities)
             {
-                String id = ref.getCurrentId();
+                ReferenceInfo ref = remove.getReference();
                 Class<? extends Entity> type = ref.getType();
                 if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class)
                 {
-                    safeResultEvent.putRemoveId(id);
+                    safeResultEvent.putRemoveId(ref);
                 }
                 if ( type == Reservation.class)
                 {
+                    final String id = ref.getId();
                     final Entity entity = updateResult.getLastEntryBeforeUpdate(id);
-                    timeInterval = expandInterval(entity, timeInterval);
+                    if ( entity != null)
+                    {
+                        timeInterval = expandInterval(entity, timeInterval);
+                    }
+                    else
+                    {
+                        timeInterval = new TimeInterval( null, null);
+                    }
                 }
             }
         }

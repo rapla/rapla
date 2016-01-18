@@ -41,7 +41,6 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -87,7 +86,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	protected Logger logger;
 	protected ReadWriteLock lock = new ReentrantReadWriteLock();
 	protected final Map<String,FunctionFactory> functionFactoryMap;
-	private volatile Date lastUpdated;
+	private volatile Date lastRefreshed;
 	protected PermissionController permissionController;
 
 	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)  {
@@ -112,14 +111,14 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return logger;
 	}
 
-	public Date getLastUpdated()
+	public Date getLastRefreshed()
 	{
-		return lastUpdated;
+		return lastRefreshed;
 	}
 
-	protected void setLastUpdated(Date lastUpdated)
+	protected void setLastRefreshed(Date lastRefreshed)
 	{
-		this.lastUpdated = lastUpdated;
+		this.lastRefreshed = lastRefreshed;
 	}
 
 	
@@ -603,7 +602,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
     }
 
 	final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
-			Collection<String> removedIds)
+			Collection<ReferenceInfo> removedIds)
 	{
 		HashMap<String,Entity> oldEntities = new HashMap<String,Entity>();
 		// First make a copy of the old entities
@@ -672,26 +671,21 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			updatedEntities.add(entity);
 		}
 		Collection<ReferenceInfo> toRemove = new HashSet<ReferenceInfo>();
-		for (String id: removedIds) {
+		for (ReferenceInfo id: removedIds) {
             Entity persistantVersion = cache.tryResolve(id );
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
-			    oldEntities.put(id, persistantVersion);
-			    toRemove.add( new ReferenceInfo(id, persistantVersion.getTypeClass()));
+			    oldEntities.put(id.getId(), persistantVersion);
+			    toRemove.add( id);
 			}
-			else if ( ConflictImpl.isConflictId(id))
-			{  // FIXME what about the oldEntities?
-			    toRemove.add( new ReferenceInfo(id, Conflict.class) );
+			else if ( id.getType() == Conflict.class)
+			{
+			    toRemove.add( id );
 			}
 		}
-		//		Collection<ConflictImpl> removedConflicts = evt.getRemoveConflicts();
-		//		for (Conflict conflict: removedConflicts)
-		//		{
-		//	           toRemove.add( conflict );
-		//		}
 		setResolver(updatedEntities);
 		final UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
-		setLastUpdated( until );
+		setLastRefreshed(until);
 		return updateResult;
 	}
 

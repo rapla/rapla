@@ -34,6 +34,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
@@ -179,7 +180,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override public Date getHistoryValidStart()
     {
         Date connectStart = getConnectStart();
-        final Date date = new Date(Math.max(getLastUpdated().getTime() - HISTORY_DURATION, connectStart.getTime()));
+        final Date date = new Date(Math.max(getLastRefreshed().getTime() - HISTORY_DURATION, connectStart.getTime()));
         return date;
     }
 
@@ -218,6 +219,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     final public void disconnect() throws RaplaException
     {
+        super.disconnect();
         boolean wasConnected = isConnected();
         if (wasConnected)
         {
@@ -229,7 +231,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     final public void refresh() throws RaplaException
     {
-        getLogger().warn("Incremental refreshs are not supported");
+        //getLogger().warn("Incremental refreshs are not supported");
+        setLastRefreshed( getCurrentTimestamp());
+        // TODO check if file timestamp has changed and either abort server with warning or refresh all data
     }
 
 
@@ -239,8 +243,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
         if (getLogger().isDebugEnabled())
             getLogger().debug("Reading data from file:" + getURL());
 
+        // TODO implement history storage
+        // FIXME implement importexport storage
         Date lastUpdated = getCurrentTimestamp();
-        setLastUpdated( lastUpdated );
+        setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
 
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
@@ -411,7 +417,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             Date until = getCurrentTimestamp();
             // call of update must be first to update the cache.
             // then saveData() saves all the data in the cache
-            final Collection<String> removeIds = evt.getRemoveIds();
+            final Collection<ReferenceInfo> removeIds = evt.getRemoveIds();
             final List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             final Collection<Entity> storeObjects = evt.getStoreObjects();
             UpdateResult result = refresh(since, until, storeObjects, preferencePatches, removeIds);
@@ -445,13 +451,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 history.addHistoryEntry(e,currentTime, isDelete);
             }
         }
-        for ( String id: evt.getRemoveIds())
+        for ( ReferenceInfo id: evt.getRemoveIds())
         {
-            final Entity e = tryResolve(id);
-            final boolean isDelete = true;
-            if ( e instanceof ModifiableTimestamp)
+            if ( history.isSupportedEntity( id.getType()))
             {
-                history.addHistoryEntry(e,currentTime, isDelete);
+                final Entity e = tryResolve(id);
+                final boolean isDelete = true;
+                history.addHistoryEntry(e, currentTime, isDelete);
             }
         }
         for ( PreferencePatch patch: evt.getPreferencePatches())

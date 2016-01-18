@@ -37,6 +37,12 @@ public class EntityHistory
         return map.keySet();
     }
 
+    public boolean isSupportedEntity(Class<? extends Entity> type)
+    {
+        return type == Allocatable.class || type == DynamicType.class || type == Reservation.class || type == User.class || type == Category.class
+                || type == Conflict.class;
+    }
+
     public static class HistoryEntry
     {
         private long timestamp;
@@ -73,14 +79,13 @@ public class EntityHistory
         {
             return timestamp;
         }
-        
+
         public boolean isDelete()
         {
             return isDelete;
         }
 
-        @Override
-        public String toString()
+        @Override public String toString()
         {
             return "HistoryEntry [timestamp=" + timestamp + ", id=" + id + "]";
         }
@@ -104,7 +109,7 @@ public class EntityHistory
             // FIXME handle history ends
             throw new RaplaException("History not available for id " + id);
         }
-        return historyEntries.get(historyEntries.size()-1);
+        return historyEntries.get(historyEntries.size() - 1);
     }
 
     /** returns the history entry with a timestamp<= since or null if no such entry exists*/
@@ -120,8 +125,7 @@ public class EntityHistory
         emptyEntryWithTimestamp.timestamp = since.getTime();
         int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, new Comparator<EntityHistory.HistoryEntry>()
         {
-            @Override
-            public int compare(EntityHistory.HistoryEntry o1, EntityHistory.HistoryEntry o2)
+            @Override public int compare(EntityHistory.HistoryEntry o1, EntityHistory.HistoryEntry o2)
             {
                 return (int) (o1.timestamp - o2.timestamp);
             }
@@ -143,7 +147,8 @@ public class EntityHistory
         return getEntity(entry);
     }
 
-    Map<Class<? extends Entity>,Class<? extends Entity>> typeImpl = new HashMap<Class<? extends Entity>,Class<? extends Entity>>();
+    Map<Class<? extends Entity>, Class<? extends Entity>> typeImpl = new HashMap<Class<? extends Entity>, Class<? extends Entity>>();
+
     {
         addMap(Reservation.class, ReservationImpl.class);
         //addMap(Appointment.class, AppointmentImpl.class);
@@ -157,19 +162,19 @@ public class EntityHistory
 
     <T extends Entity> void addMap(Class<T> type, Class<? extends T> impl)
     {
-        typeImpl.put( type, impl);
+        typeImpl.put(type, impl);
     }
 
     public Entity getEntity(HistoryEntry entry)
     {
         String json = entry.json;
         final Class typeClass = entry.typeClass;
-        final Class<? extends Entity> implementingClass = typeImpl.get( typeClass);
+        final Class<? extends Entity> implementingClass = typeImpl.get(typeClass);
         final Entity entity = gson.fromJson(json, implementingClass);
         return entity;
     }
 
-    public EntityHistory.HistoryEntry addHistoryEntry(String id, String json,Class typeClass, Date timestamp, boolean isDelete)
+    public EntityHistory.HistoryEntry addHistoryEntry(String id, String json, Class typeClass, Date timestamp, boolean isDelete)
     {
         List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
@@ -177,7 +182,7 @@ public class EntityHistory
             historyEntries = new ArrayList<EntityHistory.HistoryEntry>();
             map.put(id, historyEntries);
         }
-        final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id,timestamp.getTime(), json, typeClass, isDelete);
+        final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, typeClass, isDelete);
         int index = historyEntries.size();
         insert(historyEntries, newEntry, index);
         return newEntry;
@@ -211,7 +216,14 @@ public class EntityHistory
     {
         final String id = entity.getId();
         final String json = gson.toJson(entity);
-        return addHistoryEntry(id, json,  entity.getTypeClass(), timestamp,isDelete);
+        return addHistoryEntry(id, json, entity.getTypeClass(), timestamp, isDelete);
+    }
+
+    public EntityHistory.HistoryEntry addHistoryDeleteEntry(Entity entity, Date timestamp, boolean isDelete)
+    {
+        final String id = entity.getId();
+        final String json = gson.toJson(entity);
+        return addHistoryEntry(id, json, entity.getTypeClass(), timestamp, isDelete);
     }
 
     public void clear()
@@ -242,16 +254,16 @@ public class EntityHistory
      * Returns the entity with the given id where timestamp >= last_changed from the entity.
      * @param id
      * @param timestamp
-     * @return 
+     * @return
      */
     public HistoryEntry getLastChangedUntil(String id, Date timestamp)
     {
         final long time = timestamp.getTime();
         final List<HistoryEntry> list = map.get(id);
-        for(int i = list.size() -1; i >= 0; i--)
+        for (int i = list.size() - 1; i >= 0; i--)
         {
             final HistoryEntry historyEntry = list.get(i);
-            if(historyEntry.getTimestamp() <= time)
+            if (historyEntry.getTimestamp() <= time)
             {
                 return historyEntry;
             }

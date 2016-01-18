@@ -103,9 +103,6 @@ import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -118,7 +115,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -181,6 +177,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
     private Cancelable cleanConflictsTask;
+    private Cancelable refreshTask;
 
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
@@ -997,17 +994,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, permissionController);
 
         // if a client request changes before the start date return refresh conflict flag
-        long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
-        long period = DateTools.MILLISECONDS_PER_HOUR;
+        final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         Command cleanUpConflicts = new Command()
         {
-
             @Override public void execute() throws Exception
             {
                 removeOldConflicts();
                 removeOldHistory();
             }
         };
+
+
         for (String id : history.getAllIds())
         {
             EntityHistory.HistoryEntry entry = history.getLatest(id);
@@ -1037,9 +1034,37 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Date timestamp = preference.getLastChanged();
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
-
-        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, period);
         calendarModelCache.initCalendarMap();
+
+        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
+        final int refreshPeriod = 1000 * 3;
+        refreshTask = scheduler.schedule(new Command()
+        {
+            @Override public void execute() throws Exception
+            {
+                try
+                {
+                    refresh();
+                }
+                catch (Throwable t)
+                {
+                    getLogger().info("Could not refresh data");
+                }
+            }
+        }, delay, refreshPeriod);
+
+    }
+
+    public void disconnect()
+    {
+        if ( cleanConflictsTask != null)
+        {
+            cleanConflictsTask.cancel();
+        }
+        if ( refreshTask != null)
+        {
+            refreshTask.cancel();
+        }
     }
 
     /*
@@ -1178,7 +1203,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
 
         // Order is important. Can't remove from database if removed from cache first
-        final Set<String> conflictsToDelete = getConflictsToDelete(conflictChanges);
+        final Set<ReferenceInfo<Conflict>> conflictsToDelete = getConflictsToDelete(conflictChanges);
         removeConflictsFromDatabase(conflictsToDelete);
         removeConflictsFromCache(conflictsToDelete);
         return calculatedConflictChanges;
@@ -1607,8 +1632,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
     */
 
+    /**
+     * returns all entities with a timestampe >= the passed timestamp
+     */
     private Collection<ReferenceInfo> getEntities(User user, final Date timestamp, boolean isDelete) throws RaplaException
     {
+        // we use an empty id here because the implmentation of the DeleteUpdateEntry compare compares idStrings if timestamps are equal
+        // so tailMap returns all entities with a timestamp >= timestamp
         final String dummyId = "";
         DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), timestamp, isDelete);
         LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
@@ -1771,7 +1801,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     protected UpdateResult refresh(Date since, Date until, Collection<Entity> storeObjects, Collection<PreferencePatch> preferencePatches,
-            Collection<String> removedIds) throws RaplaException
+            Collection<ReferenceInfo> removedIds) throws RaplaException
     {
 
         UpdateResult update = super.update(since, until, storeObjects, preferencePatches, removedIds);
@@ -1790,7 +1820,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Lock writeLock = writeLock();
         try
         {
-            Date lastUpdated = getLastUpdated();
+            Date lastUpdated = getLastRefreshed();
             Date date = new Date(lastUpdated.getTime() - HISTORY_DURATION);
             history.removeUnneeded(date);
         }
@@ -1803,12 +1833,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private void removeOldConflicts() throws RaplaException
     {
         Date today = today();
-        Set<String> conflictsToDelete;
+        Set<ReferenceInfo<Conflict>> conflictsToDelete;
         {
             Lock readLock = readLock();
             try
             {
-                conflictsToDelete = new HashSet<String>();
+                conflictsToDelete = new HashSet<ReferenceInfo<Conflict>>();
                 conflictsToDelete.addAll(conflictFinder.removeOldConflicts(today));
                 conflictsToDelete.retainAll(cache.getConflictIds());
             }
@@ -1823,7 +1853,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             if (!conflictFinder.isActiveConflict(conflict, today))
             {
-                conflictsToDelete.add(conflict.getId());
+                conflictsToDelete.add(conflict.getReference());
             }
         }
 
@@ -1846,37 +1876,37 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //fireStorageUpdated( result );
     }
 
-    protected void removeConflictsFromCache(Collection<String> disabledConflicts)
+    protected void removeConflictsFromCache(Collection<ReferenceInfo<Conflict>> disabledConflicts)
     {
-        for (String conflictId : disabledConflicts)
+        for (ReferenceInfo<Conflict> conflictId : disabledConflicts)
         {
-            cache.removeWithId(Conflict.class, conflictId);
+            cache.removeWithId(conflictId);
         }
     }
 
-    protected void removeConflictsFromDatabase(@SuppressWarnings("unused") Collection<String> disabledConflicts)
+    protected void removeConflictsFromDatabase(@SuppressWarnings("unused") Collection<ReferenceInfo<Conflict>> disabledConflicts)
     {
     }
 
-    private Set<String> getConflictsToDelete(Collection<UpdateOperation> operations)
+    private Set<ReferenceInfo<Conflict>> getConflictsToDelete(Collection<UpdateOperation> operations)
     {
-        Set<String> conflicts = new HashSet<String>();
+        Set<ReferenceInfo<Conflict>> conflicts = new HashSet<ReferenceInfo<Conflict>>();
         for (UpdateOperation op : operations)
         {
-            final String id = op.getCurrentId();
+            final ReferenceInfo ref = op.getReference();
             if (op instanceof Remove)
             {
-                if (cache.getConflictIds().contains(id))
+                if (cache.getConflictIds().contains(ref.getId()))
                 {
-                    conflicts.add(id);
+                    conflicts.add(ref);
                 }
             }
             if (op instanceof Change)
             {
-                Conflict conflict = (Conflict) tryResolve(id);
+                Conflict conflict = (Conflict) tryResolve(ref);
                 if (conflict != null && conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
                 {
-                    conflicts.add(conflict.getId());
+                    conflicts.add(conflict.getReference());
                 }
             }
         }
@@ -1923,7 +1953,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void addClosure(final UpdateEvent evt, EntityStore store) throws RaplaException
     {
         Collection<Entity> storeObjects = new ArrayList<Entity>(evt.getStoreObjects());
-        Collection<String> removeIds = new ArrayList<String>(evt.getRemoveIds());
+        Collection<ReferenceInfo> removeIds = new ArrayList<ReferenceInfo>(evt.getRemoveIds());
         for (Entity entity : storeObjects)
         {
             //evt.putStore(entity);
@@ -1972,14 +2002,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             //			}
         }
 
-        for (String removeId : removeIds)
+        for (ReferenceInfo removeId : removeIds)
         {
+            final Class<?extends  Entity> raplaType = removeId.getType();
             Entity entity = store.tryResolve(removeId);
             if (entity == null)
             {
                 continue;
             }
-            final Class<?extends  Entity> raplaType = entity.getTypeClass();
             if (DynamicType.class == raplaType)
             {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
@@ -2040,12 +2070,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private void addChangedDependencies(UpdateEvent evt, EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove)
             throws RaplaException
     {
-        DynamicTypeDependant dependant;
-        if (evt.getStoreObjects().contains(entity))
-        {
-            dependant = (DynamicTypeDependant) evt.findEntity(entity);
-        }
-        else
+        DynamicTypeDependant dependant = (DynamicTypeDependant) evt.findEntity(entity);
+        if ( dependant == null)
         {
             // no, then create a clone of the classfiable object and add to list
             User user = null;
@@ -2130,9 +2156,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                 }
                 // check if entity is already in updateEvent (e.g. is modified)
-                if (updateEvt.getStoreObjects().contains(entity))
+                final Entity updateEntity = updateEvt.findEntity(entity);
+                if (updateEntity != null )
                 {
-                    ((SimpleEntity) updateEvt.findEntity(entity)).setLastChangedBy(null);
+                    ((SimpleEntity) updateEntity).setLastChangedBy(null);
                 }
                 else
                 {
@@ -2514,12 +2541,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void checkNoDependencies(final UpdateEvent evt, final EntityStore store) throws RaplaException
     {
-        Collection<String> removedIds = evt.getRemoveIds();
+        Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
         Collection<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
         HashSet<Entity> dep = new HashSet<Entity>();
         Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
         Collection<Entity> removeEntities = new ArrayList<Entity>();
-        for (String id : removedIds)
+        for (ReferenceInfo id : removedIds)
         {
             Entity persistant = store.tryResolve(id);
             if (persistant != null)
@@ -3303,7 +3330,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         checkConnected();
         // FIXME check if history supports since
-        Date until = getLastUpdated();
+        Date until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
         Map<String, Entity> oldEntities = new LinkedHashMap<String, Entity>();
         Collection<Entity> updatedEntities = new ArrayList<Entity>();

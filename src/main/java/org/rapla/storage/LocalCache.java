@@ -98,14 +98,15 @@ public class LocalCache implements EntityResolver
                 remove(child);
             }
         }
-        Class<? extends Entity> raplaType = entity.getTypeClass();
-        String entityId = entity.getId();
-        return removeWithId(raplaType, entityId);
+        return removeWithId(entity.getReference());
     }
 
+
     /** WARNING child entities will not be removed if you use this method */
-    public boolean removeWithId(Class<? extends Entity> typeClass, String entityId)
+    public boolean removeWithId(ReferenceInfo info)
     {
+        String entityId = info.getId();
+        Class<? extends Entity> typeClass  =info.getType();
         boolean bResult = true;
         bResult = entities.remove(entityId) != null;
         Map<String, ? extends Entity> entitySet = getMap(typeClass);

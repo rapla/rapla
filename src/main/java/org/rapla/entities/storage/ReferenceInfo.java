@@ -33,7 +33,7 @@ public class ReferenceInfo<T>
         {
             return false;
         }
-        return this.id.equals(((ReferenceInfo)obj).id);
+        return this.id.equals(((ReferenceInfo)obj).id) && type ==((ReferenceInfo)obj).type ;
     }
 
     @Override

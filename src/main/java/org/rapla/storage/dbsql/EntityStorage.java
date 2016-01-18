@@ -19,6 +19,8 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -299,7 +301,12 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 //    }
 
     public void save( Iterable<T> entities ) throws RaplaException, SQLException{
-        deleteEntities( entities );
+        Collection<ReferenceInfo<T>> toDelete = new ArrayList<ReferenceInfo<T>>();
+        for (Entity entity:entities)
+        {
+            toDelete.add( entity.getReference());
+        }
+        deleteEntities(  toDelete );
 		for (Entity entity:entities)
 		{
 			if (entity instanceof ModifiableTimestamp)
@@ -317,9 +324,9 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 		timestamp.setLastChanged(currentTimestamp);
 	}
 
-    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException {
+    public void deleteEntities(Iterable<ReferenceInfo<T>> entities) throws SQLException, RaplaException {
         Set<String> ids = new HashSet<String>();
-        for ( T entity: entities)
+        for ( ReferenceInfo entity: entities)
         {
         	ids.add( entity.getId());
         }
@@ -335,7 +342,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
             {
                 stmt = con.prepareStatement(deleteSql);
                 boolean commitNeeded = false;
-                for (T entity : entities)
+                for (ReferenceInfo entity : entities)
                 {
                     final Timestamp castedEntity = (Timestamp)entity;
                     if(has(entity.getId()))

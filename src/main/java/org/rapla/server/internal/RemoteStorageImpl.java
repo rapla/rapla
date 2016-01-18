@@ -20,6 +20,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -542,8 +543,8 @@ public class RemoteStorageImpl implements RemoteStorage
             {
                 security.checkWritePermissions(user, patch);
             }
-            Collection<String> removeObjects = evt.getRemoveIds();
-            for (String id : removeObjects)
+            Collection<ReferenceInfo> removeObjects = evt.getRemoveIds();
+            for (ReferenceInfo id : removeObjects)
             {
                 Entity entity = operator.tryResolve(id);
                 if (entity != null)

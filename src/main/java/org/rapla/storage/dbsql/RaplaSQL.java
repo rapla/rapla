@@ -75,6 +75,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
@@ -120,9 +121,9 @@ class RaplaSQL {
 		stores.add(appointmentStorage);
 		stores.add(new ConflictStorage( context));
 		//stores.add(new DeleteStorage( context));
-        history = new HistoryStorage( context, false);
+        history = new HistoryStorage( context);
         stores.add(history);
-        stores.add(new HistoryStorage( context, true));
+
         importExportStorage = new ImportExportStorage(context);
         stores.add(importExportStorage);
 		// now set delegate because reservation storage should also use appointment storage
@@ -202,17 +203,18 @@ class RaplaSQL {
     }
 
     @SuppressWarnings("unchecked")
-	synchronized public void remove(Connection con, Entity entity, Date connectionTimestamp) throws SQLException,RaplaException {
-    	if ( Attribute.class ==  entity.getTypeClass() )
+	synchronized public void remove(Connection con,ReferenceInfo referenceInfo, Date connectionTimestamp) throws SQLException,RaplaException {
+        final Class<? extends Entity> typeClass = referenceInfo.getType();
+        if ( Attribute.class == typeClass)
 			return;
     	boolean couldDelete = false;
 		for (RaplaTypeStorage storage:stores) {
-		    if (storage.canDelete(entity)) {
+		    if (storage.canDelete(typeClass)) {
 		    	storage.setConnection(con, connectionTimestamp);
 		    	try
 		    	{
-			    	List<Entity>list = new ArrayList<Entity>();
-			    	list.add( entity);
+			    	List<ReferenceInfo>list = new ArrayList<ReferenceInfo>();
+			    	list.add( referenceInfo);
 	                storage.deleteEntities(list);
 	                couldDelete = true;
 		    	}
@@ -224,7 +226,7 @@ class RaplaSQL {
 		}
 		if(!couldDelete)
 		{
-		    throw new RaplaException("No Storage-Sublass matches this object: " + entity.getClass());
+		    throw new RaplaException("No Storage-Sublass matches this object: " + referenceInfo.getType());
 		}
     }
 
@@ -239,7 +241,7 @@ class RaplaSQL {
             boolean found = false;
             for ( RaplaTypeStorage storage: stores)
             {
-                if (storage.canStore(entity)) {
+                if (storage.canStore(entity.getTypeClass())) {
                     List<Entity>list = store.get( storage);
                     if ( list == null)
                     {
@@ -767,12 +769,12 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
         super( context,tableName, entries, checkLastChanged );
         this.raplaType = raplaType;
     }
-    boolean canStore(Entity entity) {
-    	return entity.getTypeClass() == raplaType;
+    boolean canStore(Class<Entity> typeClass) {
+    	return typeClass == raplaType;
     }
 
-    boolean canDelete(Entity entity) {
-        return canStore(entity);
+    boolean canDelete(Class<Entity> typeClass) {
+        return canStore(typeClass);
     }
     
     abstract void insertAll() throws SQLException,RaplaException;
@@ -943,11 +945,16 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     }
 
     @Override
-    public void deleteEntities(Iterable<Category> entities) throws SQLException,RaplaException {
-        Set<Category> transitiveCategories = new HashSet<Category>();
-    	for ( Category cat:entities)
+    public void deleteEntities(Iterable<ReferenceInfo<Category>> entities) throws SQLException,RaplaException {
+        Set<ReferenceInfo<Category>> transitiveCategories = new HashSet<ReferenceInfo<Category>>();
+    	for ( ReferenceInfo<Category> catRef:entities)
     	{
-    		transitiveCategories.addAll(getTransitiveCategories(cat));
+            final Collection<Category> transitiveCategories1 = getTransitiveCategories(cache.resolve(catRef));
+            for ( Category cat:transitiveCategories1)
+            {
+                final ReferenceInfo<Category> transitiveReference = cat.getReference();
+                transitiveCategories.add (transitiveReference);
+            }
     	}
         super.deleteEntities( transitiveCategories );
     }
@@ -2024,14 +2031,15 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     }
 
     @Override
-    public void deleteEntities( Iterable<Preferences> entities) throws SQLException {
+    public void deleteEntities( Iterable<ReferenceInfo<Preferences>> entities) throws SQLException {
         PreparedStatement stmt = null;
         boolean deleteNullUserPreference = false;
         try {
             stmt = con.prepareStatement(deleteSql);
             boolean empty = true;
-            for ( Preferences preferences: entities)
+            for ( ReferenceInfo<Preferences> referenceInfo: entities)
             {
+                Preferences preferences = cache.tryResolve( referenceInfo);
                 String userId = preferences.getOwnerId();
                 if ( userId == null) {
                 	deleteNullUserPreference = true;
@@ -2136,7 +2144,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         super(context, Conflict.class, "RAPLA_CONFLICT",
                 new String[] { "RESOURCE_ID VARCHAR(255) NOT NULL", "APPOINTMENT1 VARCHAR(255) NOT NULL", "APPOINTMENT2 VARCHAR(255) NOT NULL",
                         "APP1ENABLED INTEGER NOT NULL", "APP2ENABLED INTEGER NOT NULL", "LAST_CHANGED TIMESTAMP KEY" });
-        this.deleteSql = "delete from " + getTableName() + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=? and LAST_CHANGED=?";
+        this.deleteSql = "delete from " + getTableName() + " where RESOURCE_ID=? and APPOINTMENT1=? and APPOINTMENT2=?";
     }
     
     @Override
@@ -2151,21 +2159,24 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
         insert(cache.getDisabledConflicts());
     }
 
-    public void deleteEntities(Iterable<Conflict> entities) throws SQLException, RaplaException {
+    @Override
+    public void deleteEntities(Iterable<ReferenceInfo<Conflict>> entities) throws SQLException, RaplaException {
         PreparedStatement stmt = null;
         try {
             stmt = con.prepareStatement(deleteSql);
             boolean execute = false;
-            for (Conflict conflict : entities)
+            for (ReferenceInfo<Conflict> conflictRef : entities)
             {
-                Date lastChanged = conflict.getLastChanged();
+                String id = conflictRef.getId();
+                final Date connectionTimestamp = getConnectionTimestamp();
+                Conflict conflict = new ConflictImpl(id, connectionTimestamp, connectionTimestamp);
                 String allocatableId = conflict.getAllocatableId();
                 String appointment1Id = conflict.getAppointment1();
                 String appointment2Id = conflict.getAppointment2();
                 stmt.setString(1,allocatableId);
                 stmt.setString(2,appointment1Id);
                 stmt.setString(3,appointment2Id);
-                setTimestamp(stmt, 4, lastChanged);
+                //setTimestamp(stmt, 4, lastChanged);
                 stmt.addBatch();
                 execute = true;
             }
@@ -2334,13 +2345,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     private Gson gson;
     private final Date supportTimestamp;
-    private final boolean asDeletion;
     private final String loadAllUpdatesSql;
 
-    HistoryStorage(RaplaXMLContext context, boolean asDeletion) throws RaplaException
+    HistoryStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context, null, "CHANGES", new String[]{"ID VARCHAR(255) KEY", "TYPE VARCHAR(50)", "ENTITY_CLASS VARCHAR(255)", "XML_VALUE TEXT NOT NULL", "CHANGED_AT TIMESTAMP KEY", "ISDELETE INTEGER NOT NULL" });
-        this.asDeletion = asDeletion;
         loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT > ? ORDER BY CHANGED_AT ASC";
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
         final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
@@ -2361,14 +2370,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         super.createSQL(entries);
         selectSql += " ORDER BY CHANGED_AT DESC";
     }
-    
+
+
     @Override
     void insertAll() throws SQLException, RaplaException
     {
-        if(asDeletion)
-        {
-            return;
-        }
         final Collection<Entity> entites = new LinkedList<Entity>();
         entites.addAll(cache.getAllocatables());
         entites.addAll(cache.getDynamicTypes());
@@ -2404,23 +2410,33 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     }
 
-    @Override
-    public void deleteEntities(Iterable<T> entities) throws SQLException, RaplaException
+    @Override public void save(Iterable<T> entities) throws RaplaException, SQLException
     {
-        if(asDeletion)
-        {
-            Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
-            super.insert(entitiesWithTransitiveCategories);
-        }
+        Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
+        insert(entitiesWithTransitiveCategories, false);
     }
-    
+
     @Override
-    public void insert(Iterable<T> entities) throws SQLException, RaplaException
+    public void deleteEntities(Iterable<ReferenceInfo<T>> referenceInfos) throws SQLException, RaplaException
     {
-        if(!asDeletion)
-        {
-            Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
-            super.insert(entitiesWithTransitiveCategories);
+        // only write history entry if entity is deleted and not updated
+        Collection<T> entitiesWithTransitiveCategories = getDeleteEntitiesWithTransitiveCategories(referenceInfos);
+        insert(entitiesWithTransitiveCategories, true);
+    }
+
+    private void insert(Iterable<T> entities, boolean asDelete) throws SQLException,RaplaException {
+        try (PreparedStatement stmt = con.prepareStatement(insertSql)){
+            int count = 0;
+            for ( T entity: entities)
+            {
+                count+= write(stmt, entity, asDelete);
+            }
+            if ( count > 0)
+            {
+                stmt.executeBatch();
+            }
+        } catch (SQLException ex) {
+            throw ex;
         }
     }
 
@@ -2444,27 +2460,55 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         }
         return entitiesWithTransitiveCategories;
     }
-    
-    @Override
-    boolean canDelete(Entity entity)
+
+    protected Collection<T> getDeleteEntitiesWithTransitiveCategories(Iterable<ReferenceInfo<T>> referenceInfos)
     {
-        return asDeletion && isSupportedEntity(entity);
+        Collection<T> entitiesWithTransitiveCategories = new LinkedList<T>();
+        for(ReferenceInfo<T> ref : referenceInfos)
+        {
+            T entity = cache.tryResolve( ref);
+            if ( entity != null)
+            {
+                if (entity instanceof Category)
+                {
+                    final Collection<Category> transitiveCategories = getTransitiveCategories((Category) entity);
+                    for (Category category : transitiveCategories)
+                    {
+                        entitiesWithTransitiveCategories.add((T) category);
+                    }
+                }
+                else
+                {
+                    entitiesWithTransitiveCategories.add(entity);
+                }
+            }
+            else {
+                getLogger().error("can't create history event for remove entity with id " + ref);
+            }
+        }
+        return entitiesWithTransitiveCategories;
     }
     
     @Override
-    boolean canStore(@SuppressWarnings("rawtypes") Entity entity)
+    boolean canDelete(Class<Entity> typeClass)
     {
-        return !asDeletion && isSupportedEntity(entity);
+        return history.isSupportedEntity(typeClass);
+    }
+    
+    @Override
+    boolean canStore(@SuppressWarnings("rawtypes") Class<Entity> typeClass)
+    {
+        return history.isSupportedEntity(typeClass);
     }
 
-    private boolean isSupportedEntity(Entity entity)
-    {
-        return (entity instanceof Allocatable) || (entity instanceof DynamicType) || (entity instanceof Reservation) || (entity instanceof User)
-                || (entity instanceof Category) || (entity instanceof Conflict);
-    }
-    
+
     @Override
     protected int write(PreparedStatement stmt, T entity) throws SQLException, RaplaException
+    {
+        return write(stmt, entity, false);
+    }
+
+    protected int write(PreparedStatement stmt, T entity, boolean asDeletion) throws SQLException, RaplaException
     {
         stmt.setString(1, entity.getId());
         stmt.setString(2, RaplaType.getLocalName(entity));
@@ -2478,10 +2522,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     
     public Collection<String> update(Date lastUpdated) throws SQLException
     {
-        if(asDeletion)
-        {
-            return Collections.emptyList();
-        }
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
             setTimestamp(stmt, 1, lastUpdated);
@@ -2504,10 +2544,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     public void loadAll() throws SQLException, RaplaException
     {
-        if(asDeletion)
-        {
-            return;
-        }
         try (Statement stmt = con.createStatement(); ResultSet rset = stmt.executeQuery(selectSql))
         {
             final HashSet<String> finishedIdsToLoad = new HashSet<String>();

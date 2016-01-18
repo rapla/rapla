@@ -31,6 +31,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
@@ -48,135 +49,251 @@ import java.util.Set;
 
 public class UpdateEvent
 {
-	transient Map listMap;// = new HashMap<Class, List<Entity>>(); 
-	List<CategoryImpl> categories;
-	List<DynamicTypeImpl> types;
-	List<UserImpl> users;
-	List<PreferencePatch> preferencesPatches;
+    transient Map listMap;// = new HashMap<Class, List<Entity>>();
+    List<CategoryImpl> categories;
+    List<DynamicTypeImpl> types;
+    List<UserImpl> users;
+    List<PreferencePatch> preferencesPatches;
 
-	List<PreferencesImpl> preferences;
-	List<AllocatableImpl> resources;
-	List<ReservationImpl> reservations;
-	List<ConflictImpl> conflicts;
-	List<ImportExportEntityImpl> importExports;
-	
-	private Set<String> removeSet;
-	private Set<String> storeSet;
+    List<PreferencesImpl> preferences;
+    List<AllocatableImpl> resources;
+    List<ReservationImpl> reservations;
+    List<ConflictImpl> conflicts;
+    List<ImportExportEntityImpl> importExports;
+
+    private Set<RemoveEntry> removeSet;
+
 
     private String userId;
-    
+
     private boolean needResourcesRefresh = false;
 
-	private TimeInterval invalidateInterval;
+    private TimeInterval invalidateInterval;
     private String lastValidated;
-	private int timezoneOffset;
+    private int timezoneOffset;
 
-	public UpdateEvent() {
+    public static class RemoveEntry
+    {
+        String id;
+        String localname;
+
+        RemoveEntry(ReferenceInfo info)
+        {
+            this.id = info.getId();
+            this.localname = RaplaType.getLocalName(info.getType());
+        }
+
+        public RemoveEntry()
+        {
+        }
+
+        @Override public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            RemoveEntry that = (RemoveEntry) o;
+
+            if (id != null ? !id.equals(that.id) : that.id != null)
+                return false;
+            return !(localname != null ? !localname.equals(that.localname) : that.localname != null);
+
+        }
+
+        @Override public int hashCode()
+        {
+            int result = id != null ? id.hashCode() : 0;
+            result = 31 * result + (localname != null ? localname.hashCode() : 0);
+            return result;
+        }
+
+        public ReferenceInfo getReference()
+        {
+            final Class<? extends Entity> aClass = RaplaType.find(localname);
+            return new ReferenceInfo(id, aClass );
+        }
     }
 
- 	public void setUserId( String userId) {
+    public UpdateEvent()
+    {
+    }
+
+    public void setUserId(String userId)
+    {
         this.userId = userId;
     }
-    public String getUserId() {
+
+    public String getUserId()
+    {
         return userId;
     }
-    
-    private void addRemove(String id) {
-        if ( removeSet == null)
-        {
-            removeSet = new LinkedHashSet<String>();
-        }
-        removeSet.add( id);
-//        if ( entity instanceof ConflictImpl)
-//        {
-//            removeConflicts.add( (ConflictImpl) entity);
-//        }
-    //    add( entity);
-    }
-    
-//    public Collection<ConflictImpl> getRemoveConflicts() {
-//        if ( removeConflicts == null)
-//        {
-//            return Collections.emptySet();
-//        }
-//        return removeConflicts;
-//    }
 
-	private void addStore(Entity entity) {
-	    if ( storeSet == null)
-	    {
-	        storeSet = new LinkedHashSet<String>();
-	    }
-        storeSet.add( entity.getId());
-        add( entity);
-    }
-	
-	@SuppressWarnings({ "unchecked" })
-	private Map<Class, List<Entity>> getListMap() {
-		if ( listMap == null)
-		{
-			listMap = new HashMap<Class,Collection<Entity>>();
+    //    public Collection<ConflictImpl> getRemoveConflicts() {
+    //        if ( removeConflicts == null)
+    //        {
+    //            return Collections.emptySet();
+    //        }
+    //        return removeConflicts;
+    //    }
+
+    @SuppressWarnings({ "unchecked" }) private Map<Class, List<Entity>> getListMap()
+    {
+        if (listMap == null)
+        {
+            listMap = new HashMap<Class, Collection<Entity>>();
             put(Reservation.class, reservations);
-			put( Allocatable.class,resources);
-            put( Preferences.class,preferences);
-			put(Category.class, categories);
-			put(User.class, users);
-			put(DynamicType.class, types);
-			put(Conflict.class, conflicts);
-		}
-		return listMap;
-	}
-
-	@SuppressWarnings("unchecked")
-    private <T extends Entity> void put(Class<T> class1, List<? extends T> list) {
-        if ( list != null)
-        {
-            listMap.put( class1, list );
+            put(Allocatable.class, resources);
+            put(Preferences.class, preferences);
+            put(Category.class, categories);
+            put(User.class, users);
+            put(DynamicType.class, types);
+            put(Conflict.class, conflicts);
         }
-        
+        return listMap;
     }
 
-    @SuppressWarnings({ "unchecked" })
-    private void add(Entity entity) {
-		Class<? extends Entity> class1 = entity.getTypeClass();
-    	List list = getListMap().get( class1);
-    	if ( list == null)
-    	{
-            if ( class1.equals(Reservation.class))
+    @SuppressWarnings("unchecked") private <T extends Entity> void put(Class<T> class1, List<? extends T> list)
+    {
+        if (list != null)
+        {
+            listMap.put(class1, list);
+        }
+
+    }
+
+    public void putPatch(PreferencePatch patch)
+    {
+        if (preferencesPatches == null)
+        {
+            preferencesPatches = new ArrayList<PreferencePatch>();
+        }
+        preferencesPatches.add(patch);
+    }
+
+    public Collection<ReferenceInfo> getRemoveIds()
+    {
+        if (removeSet == null)
+        {
+            return Collections.emptyList();
+        }
+        Collection<ReferenceInfo> result = new ArrayList<ReferenceInfo>();
+        for (RemoveEntry entry:removeSet)
+        {
+            final ReferenceInfo reference = entry.getReference();
+            result.add (reference);
+        }
+        return result;
+        //		HashSet<Entity> objects = new LinkedHashSet<Entity>();
+        //		for ( Collection<Entity> list:getListMap().values())
+        //        {
+        //        	for ( Entity entity:list)
+        //        	{
+        //        		if (  removeSet.contains( entity.getId()))
+        //        		{
+        //        			objects.add(entity);
+        //        		}
+        //        	}
+        //        }
+        //		return objects;
+
+    }
+
+    public Collection<Entity> getStoreObjects()
+    {
+        final Map<Class, List<Entity>> listMap = getListMap();
+        if ( listMap.isEmpty() )
+        {
+            return Collections.emptyList();
+        }
+        // Needs to be a linked hashset to keep the order of the entities
+        HashSet<Entity> objects = new LinkedHashSet<Entity>();
+        for (Collection<Entity> list : listMap.values())
+        {
+            for (Entity entity : list)
+            {
+                objects.add(entity);
+            }
+        }
+        return objects;
+
+    }
+
+    public Collection<EntityReferencer> getEntityReferences()
+    {
+        HashSet<EntityReferencer> objects = new HashSet<EntityReferencer>();
+        for (Collection<Entity> list : getListMap().values())
+        {
+            for (Entity entity : list)
+            {
+                if (entity instanceof EntityReferencer)
+                {
+                    EntityReferencer references = (EntityReferencer) entity;
+                    objects.add(references);
+                }
+            }
+        }
+
+        for (PreferencePatch patch : getPreferencePatches())
+        {
+            objects.add(patch);
+        }
+        return objects;
+
+    }
+
+    public List<PreferencePatch> getPreferencePatches()
+    {
+        if (preferencesPatches == null)
+        {
+            return Collections.emptyList();
+        }
+        return preferencesPatches;
+    }
+
+    /** use this method if you want to avoid adding the same Entity twice.*/
+    public void putStore(Entity entity)
+    {
+        Class<? extends Entity> class1 = entity.getTypeClass();
+        List list = getListMap().get(class1);
+        if (list == null)
+        {
+            if (class1.equals(Reservation.class))
             {
                 reservations = new ArrayList<ReservationImpl>();
                 list = reservations;
             }
-            else if ( class1.equals(Allocatable.class))
+            else if (class1.equals(Allocatable.class))
             {
                 resources = new ArrayList<AllocatableImpl>();
                 list = resources;
             }
-            else if ( class1.equals(Preferences.class))
+            else if (class1.equals(Preferences.class))
             {
-    	        preferences = new ArrayList<PreferencesImpl>();
-    	        list = preferences;
+                preferences = new ArrayList<PreferencesImpl>();
+                list = preferences;
             }
-            else if ( class1.equals(Category.class))
+            else if (class1.equals(Category.class))
             {
                 categories = new ArrayList<CategoryImpl>();
                 list = categories;
             }
-            else if ( class1.equals(User.class))
+            else if (class1.equals(User.class))
             {
                 users = new ArrayList<UserImpl>();
                 list = users;
             }
-    	    else if ( class1.equals(DynamicType.class))
-    	    {
+            else if (class1.equals(DynamicType.class))
+            {
                 types = new ArrayList<DynamicTypeImpl>();
                 list = types;
-    	    }
-            else if ( class1.equals(Conflict.class))
+            }
+            else if (class1.equals(Conflict.class))
             {
                 conflicts = new ArrayList<ConflictImpl>();
                 list = conflicts;
-            } 
+            }
             else if (class1.equals(ImportExportEntity.class))
             {
                 importExports = new ArrayList<ImportExportEntityImpl>();
@@ -186,210 +303,124 @@ public class UpdateEvent
             {
                 throw new IllegalArgumentException(entity.getTypeClass() + " can't be stored ");
             }
-            listMap.put( class1, list);
-    	}
-    	
-    	list.add( entity );
-	}
-    
-    public void putPatch(PreferencePatch patch) 
-    {
-        if ( preferencesPatches == null)
-        {
-            preferencesPatches = new ArrayList<PreferencePatch>();
+            listMap.put(class1, list);
         }
-        preferencesPatches.add( patch);
-    }
 
-
-    public Collection<String> getRemoveIds()
-    {
-        if ( removeSet == null)
-        {
-            return Collections.emptyList();
-        }
-        return removeSet;
-//		HashSet<Entity> objects = new LinkedHashSet<Entity>();
-//		for ( Collection<Entity> list:getListMap().values())
-//        {
-//        	for ( Entity entity:list)
-//        	{
-//        		if (  removeSet.contains( entity.getId()))
-//        		{
-//        			objects.add(entity);
-//        		}
-//        	}
-//        }
-//		return objects;
-
-    }
-
-    public Collection<Entity> getStoreObjects() 
-    {
-        if ( storeSet == null)
-        {
-            return Collections.emptyList();
-        }
-        // Needs to be a linked hashset to keep the order of the entities
-		HashSet<Entity> objects = new LinkedHashSet<Entity>();
-		for ( Collection<Entity> list:getListMap().values())
-        {
-        	for ( Entity entity:list)
-        	{
-        		if ( storeSet.contains( entity.getId()))
-        		{
-        			objects.add(entity);
-        		}
-        	}
-        }
-		return objects;
-
-    }
-    
-    public Collection<EntityReferencer> getEntityReferences() 
-    {
-        HashSet<EntityReferencer> objects = new HashSet<EntityReferencer>();
-        for ( Collection<Entity> list:getListMap().values())
-        {
-            for ( Entity entity:list)
-            {
-                String id = entity.getId();
-                boolean contains = (storeSet != null && storeSet.contains( id)) ;
-                if ( contains && entity instanceof EntityReferencer)
-                {
-                    EntityReferencer references = (EntityReferencer)entity;
-                    objects.add(references);
-                }
-            }
-        }
-        
-        for ( PreferencePatch patch:getPreferencePatches())
-        {
-            objects.add(patch);
-        }
-        return objects;
-
-    }
-
-    
-    public List<PreferencePatch> getPreferencePatches() 
-    {
-        if ( preferencesPatches == null)
-        {
-            return Collections.emptyList();
-        }
-        return preferencesPatches;
-    }
-    
-    /** use this method if you want to avoid adding the same Entity twice.*/
-    public void putStore(Entity entity) {
-        if (storeSet == null || !storeSet.contains(entity.getId()))
-            addStore(entity);
+        list.add(entity);
     }
 
     /** use this method if you want to avoid adding the same Entity twice.*/
-    public void putRemove(Entity entity) {
-        String id = entity.getId();
+    public void putRemove(Entity entity)
+    {
+        ReferenceInfo id = entity.getReference();
         putRemoveId(id);
     }
 
-    public void putRemoveId(String id) {
-        if (removeSet == null || !removeSet.contains(id))
-            addRemove(id);
+    public void putRemoveId(ReferenceInfo ref)
+    {
+        final RemoveEntry id = new RemoveEntry(ref);
+        if (removeSet == null)
+        {
+            removeSet = new LinkedHashSet<RemoveEntry>();
+            removeSet.add(id);
+        }
+        else if (!removeSet.contains(id))
+        {
+            removeSet.add(id);
+        }
+
     }
 
     /** find an entity in the update-event that matches the passed original. Returns null
      * if no such entity is found. */
-    public Entity findEntity(Entity original) {
+    public Entity findEntity(Entity original)
+    {
         String originalId = original.getId();
-		if (storeSet == null || !storeSet.contains( originalId))
+        for (Collection<Entity> list : getListMap().values())
         {
-			if (removeSet == null || !removeSet.contains( originalId))
-	        {
-	        	return null;
-	        }
+            for (Entity entity : list)
+            {
+                if (entity.getId().equals(originalId))
+                {
+                    return entity;
+                }
+            }
         }
-		
-        for ( Collection<Entity> list:getListMap().values())
-        {
-        	for ( Entity entity:list)
-        	{
-        		if ( entity.getId().equals( originalId))
-        		{
-        			return entity;
-        		}
-        	}
-        }
-      	throw new IllegalStateException("Entity in store/remove set but not found in list");
+        return null;
     }
 
-    public void setLastValidated( Date serverTime )
+    public void setLastValidated(Date serverTime)
     {
-    	if ( serverTime == null)
-    	{
-    		this.lastValidated = null;
-    	}
+        if (serverTime == null)
+        {
+            this.lastValidated = null;
+        }
         this.lastValidated = SerializableDateTimeFormat.INSTANCE.formatTimestamp(serverTime);
     }
 
-	public void setInvalidateInterval(TimeInterval invalidateInterval) 
-	{
-		this.invalidateInterval = invalidateInterval;
-	}
-	
-	public TimeInterval getInvalidateInterval() 
-	{
-		return invalidateInterval;
-	}
-	
-	public boolean isNeedResourcesRefresh() {
-		return needResourcesRefresh;
-	}
+    public void setInvalidateInterval(TimeInterval invalidateInterval)
+    {
+        this.invalidateInterval = invalidateInterval;
+    }
 
-	public void setNeedResourcesRefresh(boolean needResourcesRefresh) {
-		this.needResourcesRefresh = needResourcesRefresh;
-	}
+    public TimeInterval getInvalidateInterval()
+    {
+        return invalidateInterval;
+    }
 
-//	public Collection<Entity> getAllObjects() {
-//		HashSet<Entity> objects = new HashSet<Entity>();
-//		for ( Collection<Entity> list:getListMap().values())
-//        {
-//        	for ( Entity entity:list)
-//        	{
-//        		objects.add(entity);
-//        	}
-//        }
-//		return objects;
-//	}
+    public boolean isNeedResourcesRefresh()
+    {
+        return needResourcesRefresh;
+    }
 
-	public boolean isEmpty() {
-        boolean isEmpty = removeSet == null && storeSet == null && invalidateInterval == null;
+    public void setNeedResourcesRefresh(boolean needResourcesRefresh)
+    {
+        this.needResourcesRefresh = needResourcesRefresh;
+    }
+
+    //	public Collection<Entity> getAllObjects() {
+    //		HashSet<Entity> objects = new HashSet<Entity>();
+    //		for ( Collection<Entity> list:getListMap().values())
+    //        {
+    //        	for ( Entity entity:list)
+    //        	{
+    //        		objects.add(entity);
+    //        	}
+    //        }
+    //		return objects;
+    //	}
+
+    public boolean isEmpty()
+    {
+        final Map<Class, List<Entity>> listMap = getListMap();
+        boolean isEmpty = removeSet == null && listMap.isEmpty() && invalidateInterval == null;
         return isEmpty;
-	}
+    }
 
-	public Date getLastValidated() 
-	{
-		if ( lastValidated == null)
-		{
-			return null;
-		}
-		try {
-			return SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastValidated);
-		} catch (ParseDateException e) {
-			throw new IllegalStateException(e.getMessage());
-		}
-	}
-	
-	public int getTimezoneOffset() 
-	{
-		return timezoneOffset;
-	}
+    public Date getLastValidated()
+    {
+        if (lastValidated == null)
+        {
+            return null;
+        }
+        try
+        {
+            return SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastValidated);
+        }
+        catch (ParseDateException e)
+        {
+            throw new IllegalStateException(e.getMessage());
+        }
+    }
 
-	public void setTimezoneOffset(int timezoneOffset) 
-	{
-		this.timezoneOffset = timezoneOffset;
-	}
+    public int getTimezoneOffset()
+    {
+        return timezoneOffset;
+    }
 
-
+    public void setTimezoneOffset(int timezoneOffset)
+    {
+        this.timezoneOffset = timezoneOffset;
+    }
 
 }

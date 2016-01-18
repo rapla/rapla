@@ -14,6 +14,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -222,9 +223,9 @@ public class TestUpdateDataManager
             toDelete.addAll(Arrays.asList(reservations));
             facade.removeObjects(toDelete.toArray(new Entity[0]));
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
-            final Collection<String> removeIds = updateEvent.getRemoveIds();
+            final Collection<ReferenceInfo> removeIds = updateEvent.getRemoveIds();
             Assert.assertFalse(removeIds.isEmpty());
-            for (String removedId : removeIds)
+            for (ReferenceInfo removedId : removeIds)
             {
                 Assert.assertTrue("found removed id (" + removedId + ") which is not in the list of deleted resources: " + removedIds,
                         removedIds.contains(removedId));

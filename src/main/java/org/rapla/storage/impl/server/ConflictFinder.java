@@ -737,9 +737,9 @@ class ConflictFinder {
 //		return foundAppointment;
 //	}
 
-	public Set<String> removeOldConflicts(Date today)
+	public Set<ReferenceInfo<Conflict>> removeOldConflicts(Date today)
 	{
-        Set<String> result = new LinkedHashSet<String>();
+        Set<ReferenceInfo<Conflict>> result = new LinkedHashSet<ReferenceInfo<Conflict>>();
 		for (Map<String,Conflict> conflictMap: this.conflictMap.values())
 		{
 			Iterator<Map.Entry<String,Conflict>> it = conflictMap.entrySet().iterator();
@@ -750,7 +750,7 @@ class ConflictFinder {
 				if ( endsBefore( conflict,today))
 				{
 					it.remove();
-					result.add(conflict.getId());
+					result.add(conflict.getReference());
 				}
 			}
 		}

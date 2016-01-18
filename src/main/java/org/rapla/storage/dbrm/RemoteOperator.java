@@ -640,7 +640,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     private User loadData(UpdateEvent evt) throws RaplaException {
         Lock writeLock = writeLock();
         Date lastUpdated = evt.getLastValidated();
-        setLastUpdated( lastUpdated);
+        setLastRefreshed(lastUpdated);
         try
         {
             this.userId = evt.getUserId();
@@ -698,7 +698,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             for (Entity entity:evt.getStoreObjects()) {
                 getLogger().debug("dispatching store for: " + entity);
             }
-            for (String id:evt.getRemoveIds()) {
+            for (ReferenceInfo id:evt.getRemoveIds()) {
                 getLogger().debug("dispatching remove for: " + id);
             }
 //            Iterator<Entity> it =evt.getRemoveObjects().iterator();
@@ -1096,7 +1096,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	setResolver(evt.getStoreObjects());
     	// we don't test the references of the removed objects
     	//setResolver(evt.getRemoveObjects());
-        Date since = getLastUpdated();
+        Date since = getLastRefreshed();
         Date until = evt.getLastValidated();
     	if ( bSessionActive  &&   !evt.isEmpty()  )
     	{
@@ -1106,7 +1106,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     	    {
                 final Collection<Entity> storeObjects1 = evt.getStoreObjects();
                 Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
-                Collection<String> removedIds = evt.getRemoveIds();
+                Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
     	        result = update( since, until, storeObjects1, preferencePatches, removedIds);
     	    }
     	    finally
@@ -1175,7 +1175,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             removeInfo.add( new ReferenceInfo(entity.getId(), entity.getTypeClass()));
         }
         Date since = null;
-        Date until = getLastUpdated();
+        Date until = getLastRefreshed();
 		result  = createUpdateResult(oldEntityMap, updated, removeInfo, since,until);
 		fireStorageUpdated(result, new TimeInterval( null, null));
 	}
