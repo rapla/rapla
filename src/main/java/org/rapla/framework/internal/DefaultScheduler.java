@@ -121,7 +121,7 @@ public class DefaultScheduler implements CommandScheduler, Disposable
 			return createCancable( null);
 		}
 		TimeUnit unit = TimeUnit.MILLISECONDS;
-		ScheduledFuture<?> schedule = executor.scheduleAtFixedRate(task, delay, period, unit);
+		ScheduledFuture<?> schedule = executor.scheduleWithFixedDelay(task, delay, period, unit);
 		return createCancable( schedule);
 	}
 	
