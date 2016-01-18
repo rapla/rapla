@@ -337,9 +337,9 @@
 			<version>4.0</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.mail</groupId>
+			<groupId>com.sun.mail</groupId>
 			<artifactId>mailapi</artifactId>
-			<version>1.4.3</version>
+			<version>1.4.7</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>activation</artifactId>
