@@ -22,6 +22,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
@@ -100,12 +101,12 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	    List<Object> objects = new ArrayList<Object>();
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
-	    	columns = tableConfigLoader.loadColumns("events");
+	    	columns = tableConfigLoader.loadColumns("events", getUser());
 		    objects.addAll(Arrays.asList( model.getReservations())); 
 	    }
 	    else
 	    {
-	    	columns = tableConfigLoader.loadColumns( "appointments");
+	    	columns = tableConfigLoader.loadColumns( "appointments", getUser());
 		    objects.addAll( model.getBlocks());
 	    }
 	    for (RaplaTableColumn column: columns)

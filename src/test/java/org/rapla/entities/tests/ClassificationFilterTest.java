@@ -26,7 +26,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
@@ -40,7 +40,7 @@ import java.util.Iterator;
 
 @RunWith(JUnit4.class)
 public class ClassificationFilterTest  {
-    ClientFacade facade;
+    RaplaFacade facade;
     ModificationModule modificationMod;
     QueryModule queryMod;
     UpdateModule updateMod;
@@ -48,7 +48,7 @@ public class ClassificationFilterTest  {
     @Before
     public void setUp() throws Exception 
     {
-        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        RaplaFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         queryMod = facade;
         modificationMod = facade;
         updateMod = facade;

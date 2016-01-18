@@ -25,7 +25,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateResult;
@@ -35,16 +35,16 @@ import java.util.Date;
 
 public abstract class AbstractOperatorTest  {
 
-	abstract protected ClientFacade getFacade();
+	abstract protected RaplaFacade getFacade();
 	protected CachableStorageOperator getOperator()
 	{
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
 		return (CachableStorageOperator)facade.getOperator();
 	}
 
 	@Test
     public void testReservationStore() throws RaplaException {
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
         // abspeichern
         facade.login("homer", "duffs".toCharArray() );
         {
@@ -86,7 +86,7 @@ public abstract class AbstractOperatorTest  {
 
 	@Test
     public void testUserStore() throws RaplaException {
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray() );
         {
             User u = facade.newUser();
@@ -110,7 +110,7 @@ public abstract class AbstractOperatorTest  {
 
 	@Test
     public void testCategoryAnnotation() throws RaplaException {
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
     	String sampleDoc = "This is the category for user-groups";
     	String sampleAnnotationValue = "documentation";
     	facade.login("homer", "duffs".toCharArray() );
@@ -131,7 +131,7 @@ public abstract class AbstractOperatorTest  {
 
 	@Test
     public void testAttributeStore() throws RaplaException {
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray() );
 		CachableStorageOperator operator = getOperator();
         // abspeichern
@@ -194,7 +194,7 @@ public abstract class AbstractOperatorTest  {
 	{
 		Date startAll = new Date();
 		CachableStorageOperator operator = getOperator();
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
 		final String resourceId;
 		facade.login("homer", "duffs".toCharArray() );
 		{// resources

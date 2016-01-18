@@ -22,6 +22,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -53,7 +54,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
 {
     SetOwnerResources setOwnerI18n;
     RaplaResources i18n;
-    ClientFacade facade;
+    RaplaFacade facade;
     TreeFactory treeFactory;
     RaplaGUIComponent old;
     private final RaplaImages raplaImages;
@@ -66,7 +67,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         this.dialogUiFactory = dialogUiFactory;
         old = new RaplaGUIComponent(facade, i18n, raplaLocale, logger);
         this.i18n = i18n;
-        this.facade = facade;
+        this.facade = facade.getRaplaFacade();
         this.treeFactory = treeFactory;
     }
 

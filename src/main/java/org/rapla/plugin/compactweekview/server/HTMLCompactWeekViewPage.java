@@ -21,7 +21,7 @@ import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -45,7 +45,7 @@ import java.util.Set;
 public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements  HTMLViewPage
 {
     @Inject
-    public HTMLCompactWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
+    public HTMLCompactWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
             AppointmentFormater appointmentFormater)
     {
         super(raplaLocale, raplaResources, facade, logger, appointmentFormater);

@@ -9,7 +9,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -68,7 +68,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
 
      */
     @Inject
-    public ExchangeAppointmentStorage(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, StorageOperator storageOperator) throws RaplaException
+    public ExchangeAppointmentStorage(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, StorageOperator storageOperator) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         operator = (CachableStorageOperator) storageOperator;
@@ -300,7 +300,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 final Entity persistant = importExportEntities.get(persistantId);
                 if (persistant != null)
                 {
-                    final Entity edit = getClientFacade().edit(persistant);
+                    final Entity edit = getFacade().edit(persistant);
                     ((ImportExportEntityImpl)edit).setData(gson.toJson(task));
                     storeObjects.add(edit);
                 }
@@ -368,7 +368,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             if (hash == null || !newHash.equals(hash))
             {
                 Preferences edit = getModification().edit(userPreferences);
-                String timestampOfFailure = getRaplaLocale().getSerializableFormat().formatTimestamp(getClientFacade().getOperator().getCurrentTimestamp());
+                String timestampOfFailure = getRaplaLocale().getSerializableFormat().formatTimestamp(getFacade().getOperator().getCurrentTimestamp());
                 edit.putEntry(ExchangeConnectorRemote.LAST_SYNC_ERROR_CHANGE, timestampOfFailure);
                 // store hash of errors to check changes in with future errors
                 edit.putEntry(LAST_SYNC_ERROR_CHANGE_HASH, newHash);

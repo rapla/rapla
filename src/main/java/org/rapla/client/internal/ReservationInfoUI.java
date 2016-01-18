@@ -20,7 +20,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
@@ -35,11 +35,16 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     AppointmentFormater appointmentFormater;
 
     @Inject
-    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(i18n, raplaLocale, facade, logger);
         this.appointmentFormater = appointmentFormater;
         this.permissionController = facade.getPermissionController();
+    }
+
+    @Override public String getUsername(String userId)
+    {
+        return getFacade().getOperator().getUsername( userId);
     }
 
     private void addRestriction(Reservation reservation, Allocatable allocatable, StringBuffer buf) {
@@ -85,7 +90,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     }
     
     @Override
-    public String createHTMLAndFillLinks(Reservation reservation,LinkController controller) {
+    public String createHTMLAndFillLinks(Reservation reservation,LinkController controller, User user) {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( reservation, buf );
         insertClassificationTitle( reservation, buf );

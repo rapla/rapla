@@ -38,7 +38,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -70,7 +70,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
     // existing tasks in memory
     private final ExchangeAppointmentStorage appointmentStorage;
     private final AppointmentFormater appointmentFormater;
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final I18nBundle i18n;
     private final Logger logger;
     private final RaplaKeyStorage keyStorage;
@@ -82,7 +82,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
 
     private final int syncPeriodPast;
 
-    @Inject public SynchronisationManager(ClientFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
+    @Inject public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
             TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
             CommandScheduler scheduler, ConfigReader config) throws RaplaException
     {

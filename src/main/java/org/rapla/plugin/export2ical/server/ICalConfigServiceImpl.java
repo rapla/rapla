@@ -3,7 +3,7 @@ package org.rapla.plugin.export2ical.server;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -17,11 +17,11 @@ import javax.inject.Inject;
 
 @DefaultImplementation(of =ICalConfigService.class,context = InjectionContext.server)
 public class ICalConfigServiceImpl implements ICalConfigService {
-    final ClientFacade facade;
+    final RaplaFacade facade;
     RemoteSession remoteSession;
 
     @Inject
-    public ICalConfigServiceImpl(ClientFacade facade, RemoteSession remoteSession)
+    public ICalConfigServiceImpl(RaplaFacade facade, RemoteSession remoteSession)
     {
         this.facade = facade;
         this.remoteSession = remoteSession;

@@ -16,12 +16,10 @@ package org.rapla.facade.internal;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -43,14 +41,13 @@ import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.entities.dynamictype.internal.ParsedText.Variable;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -111,9 +108,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
     @Inject
-    public CalendarModelImpl(ClientFacade facade, RaplaLocale locale)
+    public CalendarModelImpl(RaplaFacade facade, ClientFacade clientFacade,RaplaLocale locale)
     {
-        this(locale.getLocale(), facade.getUser(), facade.getOperator());
+        this(locale.getLocale(), clientFacade.getUser(), facade.getOperator());
         load( null);
     }
 

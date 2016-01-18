@@ -20,7 +20,7 @@ import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -44,7 +44,7 @@ public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTM
 {
     private final TimeslotProvider timeslotProvider;
     @Inject
-    public HTMLCompactViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger,
+    public HTMLCompactViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
             AppointmentFormater appointmentFormater , final TimeslotProvider timeslotProvider)
     {
         super(raplaLocale, raplaResources, facade, logger, appointmentFormater);

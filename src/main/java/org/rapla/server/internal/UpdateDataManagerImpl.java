@@ -35,7 +35,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
@@ -514,7 +514,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
     }
 
-    static public void convertToNewPluginConfig(ClientFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
+    static public void convertToNewPluginConfig(RaplaFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
             throws RaplaXMLContextException
     {
         try

@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -44,13 +45,13 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 
 	JLabel multipleValuesLabel = new JLabel();
 	
-    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName) 
+    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName)
     {
         this(facade, i18n, raplaLocale, logger);
         setFieldName( fieldName );
     }
 
-    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) 
+    public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade, i18n, raplaLocale, logger);
         panel  = new JPanel(){

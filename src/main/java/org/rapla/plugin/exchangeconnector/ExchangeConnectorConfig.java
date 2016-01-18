@@ -1,7 +1,7 @@
 package org.rapla.plugin.exchangeconnector;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
@@ -77,7 +77,7 @@ String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
 		    
                 
 		    @Inject
-	    	public ConfigReader(ClientFacade facade) throws RaplaException
+	    	public ConfigReader(RaplaFacade facade) throws RaplaException
 	    	{
 		        this(facade.getSystemPreferences().getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()));
 	    	}

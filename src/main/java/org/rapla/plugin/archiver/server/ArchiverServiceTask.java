@@ -4,7 +4,7 @@ import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -18,7 +18,7 @@ import javax.inject.Inject;
 public class ArchiverServiceTask  implements ServerExtension
 {
     @Inject
-	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final ClientFacade facade, final ImportExportManager importExportManager)
+	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final ImportExportManager importExportManager)
             throws RaplaException
     {
         final RaplaConfiguration config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());

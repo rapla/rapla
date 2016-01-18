@@ -23,6 +23,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
@@ -87,7 +88,7 @@ public class TimeslotOption extends DefaultPluginOption
     }
 
 	@Inject
-    public TimeslotOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TimeslotProvider timeslotProvider, RaplaImages raplaImages, IOInterface ioInterface) 
+    public TimeslotOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TimeslotProvider timeslotProvider, RaplaImages raplaImages, IOInterface ioInterface)
     {
         super(facade, i18n, raplaLocale, logger);
         this.timeslotProvider = timeslotProvider;

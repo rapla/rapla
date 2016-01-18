@@ -21,7 +21,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
@@ -48,10 +48,10 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
             }
         }
                                   );
-    ClientFacade facade;
+    RaplaFacade facade;
     Period defaultPeriod;
 
-    PeriodModelImpl( ClientFacade query ) throws RaplaException {
+    PeriodModelImpl( RaplaFacade query ) throws RaplaException {
         this.facade = query;
         update();
     }

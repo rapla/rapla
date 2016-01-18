@@ -17,6 +17,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
@@ -47,7 +48,7 @@ public class RaplaClipboard implements ModificationListener
 	CopyType copyType;
 	
 	@Inject
-    public RaplaClipboard( ClientFacade facade ) 
+    public RaplaClipboard( ClientFacade facade )
     {
         facade.addModificationListener( this );
     }

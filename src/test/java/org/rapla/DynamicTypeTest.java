@@ -48,7 +48,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -60,7 +60,7 @@ import java.util.Date;
 public class DynamicTypeTest  {
 
 
-	ClientFacade facade;
+	RaplaFacade facade;
 	Logger logger;
 	CalendarSelectionModel model;
 	@Before

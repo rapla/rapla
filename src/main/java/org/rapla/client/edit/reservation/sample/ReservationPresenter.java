@@ -13,6 +13,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -27,7 +28,7 @@ public class ReservationPresenter implements ReservationController, Presenter
 {
     public static final String EDIT_ACTIVITY_ID = "edit";
 
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final Logger logger;
     private final RaplaLocale raplaLocale;
     private final EventBus eventBus;
@@ -37,11 +38,13 @@ public class ReservationPresenter implements ReservationController, Presenter
     private Appointment selectedAppointment;
     private boolean isNew;
     private final PermissionController permissionController;
+    ClientFacade clientFacade;
 
     @Inject
-    protected ReservationPresenter(ClientFacade facade, Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view)
+    protected ReservationPresenter(RaplaFacade facade, ClientFacade clientFacade,Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view)
     {
         this.facade = facade;
+        this.clientFacade = clientFacade;
         this.permissionController = facade.getPermissionController();
         this.logger = logger;
         this.raplaLocale = raplaLocale;
@@ -151,7 +154,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         try
         {
             final DynamicType[] types = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-            final User user = facade.getUser();
+            final User user = clientFacade.getUser();
             for (DynamicType type : types)
             {
                 if (permissionController.canCreate(type, user))

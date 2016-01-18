@@ -47,6 +47,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -90,7 +91,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaMenuBarContainer menuBar;
-	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, PermissionController permissionController, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
+	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages,  DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
 
         this.menuBar = menuBar;
@@ -259,8 +260,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
                 RaplaObjectAction editAction = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
                         createPopupContext(getComponent(), null), editController, infoFactory, raplaImages, dialogUiFactory);
-                PermissionController permissionController = getClientFacade().getPermissionController();
-                if (permissionController.canModify( entity, getClientFacade().getUser()))
+                PermissionController permissionController = getFacade().getPermissionController();
+                if (permissionController.canModify(entity, getUser()))
                 {
                     editAction.setEdit(entity);
                     editAction.actionPerformed();
@@ -362,20 +363,14 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         private final EditController editController;
         private final InfoFactory infoFactory;
         private final RaplaImages raplaImages;
-        private final DateFieldFactory dateFieldFactory;
         private final DialogUiFactoryInterface dialogUiFactory;
-        private final BooleanFieldFactory booleanFieldFactory;
-        private final PermissionController permissionController;
-        private final TextFieldFactory textFieldFactory;
-        private final LongFieldFactory longFieldFactory;
         private final FilterEditButtonFactory filterEditButtonFactory;
         private final RaplaMenuBarContainer menuBar;
 
         @Inject
         public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
                 TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory,
-                RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory,
-                TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory,
+                RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
                 FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
         {
             this.facade = facade;
@@ -388,20 +383,15 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             this.editController = editController;
             this.infoFactory = infoFactory;
             this.raplaImages = raplaImages;
-            this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
-            this.booleanFieldFactory = booleanFieldFactory;
-            this.permissionController = facade.getPermissionController();
-            this.textFieldFactory = textFieldFactory;
-            this.longFieldFactory = longFieldFactory;
             this.filterEditButtonFactory = filterEditButtonFactory;
             this.menuBar = menuBar;
         }
 
         public ResourceSelection create(MultiCalendarView view)
         {
-            return new ResourceSelection(menuBar,facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages,
-                    dateFieldFactory, dialogUiFactory, booleanFieldFactory, permissionController, textFieldFactory, longFieldFactory, filterEditButtonFactory);
+            return new ResourceSelection(menuBar,facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages
+                    , dialogUiFactory, filterEditButtonFactory);
         }
     }
 

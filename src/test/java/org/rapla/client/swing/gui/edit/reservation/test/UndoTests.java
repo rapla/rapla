@@ -14,7 +14,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 
 import javax.swing.JDialog;
@@ -75,7 +75,7 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testMoveUndo() throws Exception{ 
-		final ClientFacade facade = getFacade();
+		final RaplaFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
         //Creating Event
@@ -131,7 +131,7 @@ public class UndoTests extends GUITestCase {
 	 */
 	
 	public void testResizeUndo() throws Exception{
-    	final ClientFacade facade = getFacade();
+    	final RaplaFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
 		final Reservation event = createEvent(facade.newResource(), facade.newReservation());
@@ -189,7 +189,7 @@ public class UndoTests extends GUITestCase {
 	
 	//Erstellt von Jens Fritz
 	public void testDeleteUndo() throws Exception{
-    	final ClientFacade facade = getFacade();
+    	final RaplaFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
 		Allocatable nonPersistantAllocatable = facade.newResource();

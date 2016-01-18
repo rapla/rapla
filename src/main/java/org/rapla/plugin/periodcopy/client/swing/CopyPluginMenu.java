@@ -22,11 +22,13 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -139,15 +141,16 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 
         }
         Collection<Reservation> originalEntity = null;
-		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getClientFacade(), getI18n(), newReservations, originalEntity);
-        getClientFacade().getCommandHistory().storeAndExecute( cmd);
+		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getFacade(), getI18n(), newReservations, originalEntity);
+        getUpdateModule().getCommandHistory().storeAndExecute( cmd);
     }
 
 	public Reservation copy(Reservation reservation, Date destStart,
 			Date destEnd, boolean includeSingleAppointmentsAndExceptions,
 			Date firstStart) throws RaplaException {
-		final ClientFacade clientFacade = getClientFacade();
-		Reservation r = clientFacade.clone(reservation, clientFacade.getUser());
+		final RaplaFacade raplaFacade = getFacade();
+		User user = getUser();
+		Reservation r = raplaFacade.clone(reservation, user);
 		if ( firstStart == null )
 		{
 			firstStart = ReservationStartComparator.getStart( reservation);

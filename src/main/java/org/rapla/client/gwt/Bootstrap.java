@@ -4,7 +4,7 @@ import com.google.gwt.user.client.Window;
 import org.rapla.client.Application;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -23,12 +23,12 @@ public class Bootstrap
 {
 
     private final Provider<Application> application;
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final StorageOperator operator;
     private final Logger logger;
 
     @Inject
-    public Bootstrap(ClientFacade facade,StorageOperator operator,Provider<Application> application, Logger logger)
+    public Bootstrap(RaplaFacade facade,StorageOperator operator,Provider<Application> application, Logger logger)
     {
         this.application = application;
         this.operator = operator;

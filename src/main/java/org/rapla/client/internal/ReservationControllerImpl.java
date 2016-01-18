@@ -27,6 +27,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -35,6 +36,7 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
@@ -88,7 +90,12 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         this.editFactory = editFactory;
     }
     
-    protected ClientFacade getFacade()
+    protected RaplaFacade getFacade()
+    {
+        return facade.getRaplaFacade();
+    }
+
+    protected ClientFacade getClientFacade()
     {
         return facade;
     }
@@ -221,7 +228,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 		}
 		
 	    DeleteBlocksCommand command = new DeleteBlocksCommand(reservationsToRemove, appointmentsToRemove, exceptionsToAdd);
-	    CommandHistory commanHistory = getFacade().getCommandHistory();
+	    CommandHistory commanHistory = getCommandHistory();
         commanHistory.storeAndExecute( command);
 	}
 
@@ -284,7 +291,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 	    private Map<Appointment,Reservation> parentReservations = new HashMap<Appointment,Reservation>();
 	      
 	    public DeleteBlocksCommand(Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd) {
-	        super( ReservationControllerImpl.this.getFacade(),ReservationControllerImpl.this.getI18n(),reservationsToRemove);
+	        super( ReservationControllerImpl.this.getClientFacade(),ReservationControllerImpl.this.getI18n(),reservationsToRemove);
 	        this.reservationsToRemove = reservationsToRemove;
 	        this.appointmentsToRemove = appointmentsToRemove;
 	        this.exceptionsToAdd = exceptionsToAdd;
@@ -466,7 +473,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                 return i18n.getString(isCut ? "cut" :"delete") + " " + name;
             }
         };
-        CommandHistory commandHistory = getFacade().getCommandHistory();
+        CommandHistory commandHistory = getCommandHistory();
         commandHistory.storeAndExecute( command );
     }
     
@@ -517,7 +524,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
     <T extends Entity> T clone(T obj) throws RaplaException
     {
-        return getFacade().clone(obj, getFacade().getUser());
+        return getFacade().clone(obj, getClientFacade().getUser());
     }
 
     enum DialogAction
@@ -643,7 +650,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                 return getI18n().getString("cut");
             }
         };
-        CommandHistory commandHistory = getFacade().getCommandHistory();
+        CommandHistory commandHistory = getCommandHistory();
         commandHistory.storeAndExecute( command );
     }
 
@@ -854,7 +861,12 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 	    	}
 	    	pasteCommand = new AppointmentPaste(appointment, reservation, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, sourceComponent);
     	}
-    	getFacade().getCommandHistory().storeAndExecute(pasteCommand);
+    	getCommandHistory().storeAndExecute(pasteCommand);
+    }
+
+    public CommandHistory getCommandHistory()
+    {
+        return getClientFacade().getCommandHistory();
     }
 
     public void moveAppointment(AppointmentBlock appointmentBlock,Date newStart,PopupContext context, boolean keepTime) throws RaplaException {
@@ -882,7 +894,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         	newStart = new Date( oldStart.getTime() + getOffset(oldStart, newStart, keepTime));
         }
         AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart, newEnd, context, result, keepTime);
-		getFacade().getCommandHistory().storeAndExecute(resizeCommand);
+		getCommandHistory().storeAndExecute(resizeCommand);
     }
 
 	public long getOffset(Date appStart, Date newStart, boolean keepTime) {
@@ -906,7 +918,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
     public boolean save(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
         ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
-        return getFacade().getCommandHistory().storeAndExecute(saveCommand);
+        return getCommandHistory().storeAndExecute(saveCommand);
     }
     
  
@@ -918,7 +930,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         AllocatableExchangeCommand command = exchangeAllocatebleCmd( appointmentBlock, oldAllocatable, newAllocatable,newStart, context);
         if ( command != null)
         {
-        	CommandHistory commandHistory = getFacade().getCommandHistory();
+        	CommandHistory commandHistory = getCommandHistory();
 			commandHistory.storeAndExecute( command );
         }
 	}
@@ -1304,7 +1316,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             {
                 if(!reservation.getLastChanged().equals(mutableReservation.getLastChanged()))
                 {
-                    getFacade().refresh();
+                    getClientFacade().refresh();
                     throw new RaplaException(getI18n().format("error.new_version", reservation.toString()));
                 }
             }
@@ -1531,7 +1543,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 		}
 		
 		public boolean execute() throws RaplaException {
-			clones = getFacade().copy(fromReservations,start, keepTime, getFacade().getUser());
+            final User user = getClientFacade().getUser();
+            clones = getFacade().copy(fromReservations,start, keepTime, user);
 			PopupContext sourceComponent = getPopupContext();
 			save(clones, sourceComponent);
 			return true;

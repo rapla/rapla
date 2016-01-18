@@ -19,7 +19,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -60,12 +60,12 @@ import java.util.Map;
 public class CalendarPageGenerator  implements RaplaPageGenerator
 {
 	 final private Map<String,Provider<HTMLViewPage>> factoryMap;
-     ClientFacade facade;
+     RaplaFacade facade;
      Logger logger;
     RaplaLocale raplaLocale;
 
      @Inject
-	 public CalendarPageGenerator(Map<String,Provider<HTMLViewPage>> extensionMap,ClientFacade facade, Logger logger,RaplaLocale raplaLocale)
+	 public CalendarPageGenerator(Map<String,Provider<HTMLViewPage>> extensionMap,RaplaFacade facade, Logger logger,RaplaLocale raplaLocale)
 	 {
          this.facade = facade;
          this.logger = logger;

@@ -3,6 +3,7 @@ package org.rapla.client.swing.internal.common;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 

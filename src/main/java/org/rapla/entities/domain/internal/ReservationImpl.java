@@ -13,7 +13,7 @@
 package org.rapla.entities.domain.internal;
 /** The default Implementation of the <code>Reservation</code>
  *  @see ModificationEvent
- *  @see org.rapla.facade.ClientFacade
+ *  @see org.rapla.facade.RaplaFacade
  */
 
 import org.rapla.components.util.Assert;

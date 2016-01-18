@@ -4,7 +4,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -26,19 +26,19 @@ import java.util.List;
 public class ArchiverServiceImpl  implements ArchiverService
 {
     private final RemoteSession session;
-    private final ClientFacade clientFacade;
+    private final RaplaFacade raplaFacade;
     private final ImportExportManager importExportManager;
     private final Logger    logger;
 
     @Inject
 	public ArchiverServiceImpl(
-            ClientFacade facade,
+            RaplaFacade facade,
             ImportExportManager importExportManager,
             Logger logger,
             RemoteSession session
             ) {
         this.session = session;
-        this.clientFacade = facade;
+        this.raplaFacade = facade;
         this.importExportManager = importExportManager;
         this.logger = logger;
 	}
@@ -55,13 +55,13 @@ public class ArchiverServiceImpl  implements ArchiverService
 	}
 	
 	public boolean isExportEnabled() throws RaplaException {
-        final ClientFacade clientFacade = this.clientFacade;
-        return isExportEnabled(clientFacade);
+        final RaplaFacade raplaFacade = this.raplaFacade;
+        return isExportEnabled(raplaFacade);
 	}
 
-    static boolean isExportEnabled(ClientFacade clientFacade)
+    static boolean isExportEnabled(RaplaFacade raplaFacade)
     {
-        StorageOperator operator = clientFacade.getOperator();
+        StorageOperator operator = raplaFacade.getOperator();
         boolean enabled =  operator instanceof DBOperator;
         return enabled;
     }
@@ -88,15 +88,15 @@ public class ArchiverServiceImpl  implements ArchiverService
 
 	public void delete(Integer removeOlderInDays) throws RaplaException {
 		checkAccess();
-        final ClientFacade clientFacade = this.clientFacade;
+        final RaplaFacade raplaFacade = this.raplaFacade;
         final Logger logger = this.logger;
-        delete(removeOlderInDays, clientFacade, logger);
+        delete(removeOlderInDays, raplaFacade, logger);
 	}
 
-    static public void delete(Integer removeOlderInDays, ClientFacade clientFacade, Logger logger)
+    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger)
     {
-        Date endDate = new Date(clientFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
-        Reservation[] events = clientFacade.getReservations(null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
+        Date endDate = new Date(raplaFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
+        Reservation[] events = raplaFacade.getReservations(null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
         List<Reservation> toRemove = new ArrayList<Reservation>();
         for ( int i=0;i< events.length;i++)
         {
@@ -116,7 +116,7 @@ public class ArchiverServiceImpl  implements ArchiverService
                 int blockSize = Math.min( eventsToRemove.length- i, STEP_SIZE);
                 Reservation[] eventBlock = new Reservation[blockSize];
                 System.arraycopy( eventsToRemove,i, eventBlock,0, blockSize);
-                clientFacade.removeObjects(eventBlock);
+                raplaFacade.removeObjects(eventBlock);
             }
         }
     }

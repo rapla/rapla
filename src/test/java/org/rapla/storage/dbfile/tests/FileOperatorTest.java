@@ -15,7 +15,7 @@ package org.rapla.storage.dbfile.tests;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
@@ -39,7 +39,7 @@ import java.util.concurrent.Future;
 @RunWith(JUnit4.class)
 public class FileOperatorTest extends AbstractOperatorTest {
 
-    ClientFacade facade;
+    RaplaFacade facade;
     Logger logger;
 
     @Before
@@ -97,7 +97,7 @@ public class FileOperatorTest extends AbstractOperatorTest {
         }
     }
 
-    @Override protected ClientFacade getFacade()
+    @Override protected RaplaFacade getFacade()
     {
         return facade;
     }

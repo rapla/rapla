@@ -5,7 +5,7 @@ package org.rapla.server.servletpages;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
@@ -31,9 +31,9 @@ public class RaplaIndexPageGenerator implements RaplaPageExtension
 	Set<RaplaMenuGenerator> entries;
 	RaplaResources i18n;
 	
-	ClientFacade facade;
+	RaplaFacade facade;
 	@Inject
-    public RaplaIndexPageGenerator( RaplaResources i18n, ClientFacade facade, Set<HtmlMainMenu> entries)
+    public RaplaIndexPageGenerator( RaplaResources i18n, RaplaFacade facade, Set<HtmlMainMenu> entries)
     {
         this.i18n = i18n;
         this.facade = facade;

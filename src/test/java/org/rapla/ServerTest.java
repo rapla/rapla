@@ -39,7 +39,7 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UserModule;
@@ -68,13 +68,13 @@ import java.util.Locale;
 public class ServerTest
 {
 
-    protected ClientFacade facade1;
-    protected ClientFacade facade2;
+    protected RaplaFacade facade1;
+    protected RaplaFacade facade2;
     Locale locale;
 
     private Server server;
     Logger logger;
-    Provider<ClientFacade> clientFacadeProvider;
+    Provider<RaplaFacade> clientFacadeProvider;
     protected RaplaLocale raplaLocale;
     protected ServerServiceImpl serverService;
 
@@ -96,7 +96,7 @@ public class ServerTest
         locale = Locale.getDefault();
     }
 
-    protected ClientFacade getServerFacade()
+    protected RaplaFacade getServerFacade()
     {
         return serverService.getFacade();
     }
@@ -264,7 +264,7 @@ public class ServerTest
         facade2.logout();
     }
 
-    private Reservation findReservation(ClientFacade facade, String typeKey, String name) throws RaplaException
+    private Reservation findReservation(RaplaFacade facade, String typeKey, String name) throws RaplaException
     {
         DynamicType reservationType = facade.getDynamicType(typeKey);
         ClassificationFilter filter = reservationType.newClassificationFilter();
@@ -392,7 +392,7 @@ public class ServerTest
         prefs.putEntry(TEST_CONF, conf);
         facade1.store(prefs);
 
-        ClientFacade facade = getServerFacade();
+        RaplaFacade facade = getServerFacade();
         User user = facade.getUser("homer");
         Preferences storedPrefs = facade.getPreferences(user);
         Assert.assertNotNull(storedPrefs);
@@ -559,18 +559,18 @@ public class ServerTest
 
         String reservationName = "bowling";
         {
-            ClientFacade facade = getServerFacade();
+            RaplaFacade facade = getServerFacade();
             String description = getDescriptionOfReservation(facade, reservationName);
             Assert.assertTrue(description.contains("\n"));
         }
         {
-            ClientFacade facade = facade1;
+            RaplaFacade facade = facade1;
             String description = getDescriptionOfReservation(facade, reservationName);
             Assert.assertTrue(description.contains("\n"));
         }
     }
 
-    public String getDescriptionOfReservation(ClientFacade facade, String reservationName) throws RaplaException
+    public String getDescriptionOfReservation(RaplaFacade facade, String reservationName) throws RaplaException
     {
         User user = null;
         Date start = null;
@@ -609,7 +609,7 @@ public class ServerTest
         facade2.logout();
     }
     // Make some Changes to the Reservation in another client
-    private void changeInSecondFacade(ClientFacade facade2,String name) throws Exception {
+    private void changeInSecondFacade(RaplaFacade facade2,String name) throws Exception {
         UserModule userMod2 =  facade2;
         QueryModule queryMod2 =  facade2;
         ModificationModule modificationMod2 =  facade2;

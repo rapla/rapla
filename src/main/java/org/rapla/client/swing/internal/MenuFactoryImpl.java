@@ -48,6 +48,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -76,7 +77,7 @@ import java.util.TreeMap;
 {
     public void addReservationWizards(MenuInterface menu, MenuContext context, String afterId) throws RaplaException
     {
-        final User user = getClientFacade().getUser();
+        final User user = getUser();
         if (permissionController.canCreateReservation(user))
         {
             addNewMenus(menu, afterId);
@@ -100,7 +101,7 @@ import java.util.TreeMap;
         super(facade, i18n, raplaLocale, logger);
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.model = model;
         this.service = service;
         this.infoFactory = infoFactory;
@@ -214,7 +215,7 @@ import java.util.TreeMap;
         final PopupContext popupContext = context.getPopupContext();
         Object focusedObject = context.getFocusedObject();
 
-        final ClientFacade clientFacade = getClientFacade();
+        final RaplaFacade raplaFacade = getFacade();
         if (permissionController.canUserAllocateSomething(user))
         {
             if (addNewReservationMenu)
@@ -243,7 +244,7 @@ import java.util.TreeMap;
         }
 
         boolean allocatableNodeContext = allocatableType || focusedObject instanceof Allocatable || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT;
-        if (permissionController.isRegisterer(type, clientFacade.getUser()) || isAdmin())
+        if (permissionController.isRegisterer(type, user) || isAdmin())
         {
             if (allocatableNodeContext)
             {
@@ -528,7 +529,7 @@ import java.util.TreeMap;
     {
         Iterator<Entity<?>> it = list.iterator();
         ArrayList<Entity<?>> editableObjects = new ArrayList<Entity<?>>();
-        final User user = getClientFacade().getUser();
+        final User user = getUser();
         while (it.hasNext())
         {
             Entity o = it.next();
@@ -543,7 +544,7 @@ import java.util.TreeMap;
         Iterator<Entity<?>> it = list.iterator();
         Category superCategory = getQuery().getSuperCategory();
         ArrayList<Entity<?>> deletableObjects = new ArrayList<Entity<?>>();
-        final User user = getClientFacade().getUser();
+        final User user = getUser();
         while (it.hasNext())
         {
             Entity<?> o = it.next();

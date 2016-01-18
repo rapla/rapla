@@ -5,7 +5,7 @@ import org.rapla.components.util.Tools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
@@ -36,12 +36,12 @@ public class RaplaAuthRestPage extends AbstractRestPage
 
     private final RaplaAuthentificationService authentificationService;
     private final I18nBundle i18n;
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final Logger logger;
     private final TokenHandler tokenHandler;
 
     @Inject
-    public RaplaAuthRestPage(ClientFacade facade, RaplaAuthentificationService authentificationService, RaplaResources i18n, Logger logger, TokenHandler tokenHandler) throws RaplaException
+    public RaplaAuthRestPage(RaplaFacade facade, RaplaAuthentificationService authentificationService, RaplaResources i18n, Logger logger, TokenHandler tokenHandler) throws RaplaException
     {
         super(facade);
         this.facade = facade;

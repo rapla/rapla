@@ -1,11 +1,11 @@
-package org.rapla.plugin.exchangeconnector.client;
+package org.rapla.plugin.exchangeconnector.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -19,7 +19,7 @@ import javax.inject.Inject;
 import java.beans.PropertyChangeListener;
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=PublishExtensionFactory.class)
-public class ExchangeExtensionFactory extends RaplaComponent implements PublishExtensionFactory
+public class ExchangeExtensionFactory extends RaplaGUIComponent implements PublishExtensionFactory
 {
 	private final ExchangeConnectorRemote remote;
     private final ExchangeConnectorResources exchangeConnectorResources;

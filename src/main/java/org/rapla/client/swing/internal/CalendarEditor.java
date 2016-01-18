@@ -32,6 +32,7 @@ import org.rapla.entities.Entity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
@@ -191,7 +192,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         exitTemplateEdit.addActionListener( new ActionListener() {
 			
 			public void actionPerformed(ActionEvent e) {
-				getClientFacade().setTemplate( null );
+				getUpdateModule().setTemplate( null );
 				
 			}
 		});
@@ -262,13 +263,13 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 
     private void updateViews() throws RaplaException {
     	
-    	boolean showConflicts = getClientFacade().getPreferences().getEntryAsBoolean( SHOW_CONFLICTS_CONFIG_ENTRY, true);
-        boolean showSelection = getClientFacade().getPreferences().getEntryAsBoolean( SHOW_SELECTION_CONFIG_ENTRY, true);
+    	boolean showConflicts = getFacade().getPreferences().getEntryAsBoolean( SHOW_CONFLICTS_CONFIG_ENTRY, true);
+        boolean showSelection = getFacade().getPreferences().getEntryAsBoolean( SHOW_SELECTION_CONFIG_ENTRY, true);
       
         conflictsView.getComponent().setVisible( showConflicts);
         conflictsView.getSummaryComponent().setVisible( !showConflicts );
         
-        boolean templateMode = getClientFacade().getTemplate() != null;
+        boolean templateMode = getUpdateModule().getTemplate() != null;
         if ( templateMode)
         {
             conflictsView.getComponent().setVisible(false);

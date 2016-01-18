@@ -19,7 +19,7 @@ import org.rapla.client.swing.toolkit.FrameController;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.FrameControllerListener;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -31,7 +31,7 @@ import java.util.concurrent.Semaphore;
 public abstract class GUITestCase  {
 
     Logger logger;
-    ClientFacade facade;
+    RaplaFacade facade;
     RaplaLocale raplaLocale;
 
     protected <T> T getService(Class<T> role) throws RaplaException {
@@ -43,7 +43,7 @@ public abstract class GUITestCase  {
         return logger;
     }
 
-    public ClientFacade getFacade()
+    public RaplaFacade getFacade()
     {
         return facade;
     }

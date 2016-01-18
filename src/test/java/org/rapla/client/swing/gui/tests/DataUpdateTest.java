@@ -23,13 +23,13 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 
 import java.util.Collection;
 import java.util.Collections;
 
 public class DataUpdateTest  {
-    ClientFacade facade;
+    RaplaFacade facade;
     Exception error;
     CalendarSelectionModel model;
 

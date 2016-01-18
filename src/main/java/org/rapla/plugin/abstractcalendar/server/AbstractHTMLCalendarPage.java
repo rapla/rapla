@@ -23,7 +23,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -55,11 +55,11 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     RaplaBuilder builder;
     final protected RaplaResources raplaResources;
     final protected RaplaLocale raplaLocale;
-    final protected ClientFacade facade;
+    final protected RaplaFacade facade;
     final protected Logger logger;
     final protected AppointmentFormater appointmentFormater;
 
-    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
+    public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
         this.raplaResources = raplaResources;
         this.raplaLocale = raplaLocale;
         this.logger = logger;

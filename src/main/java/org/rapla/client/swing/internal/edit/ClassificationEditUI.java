@@ -38,6 +38,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -83,7 +84,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.booleanFieldFactory = booleanFieldFactory;
         this.textFieldFactory = textFieldFactory;
         this.longFieldFactory = longFieldFactory;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
 	}
 
 	// enhanced to an array, for administration of multiple classifications
@@ -219,13 +220,27 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		}
 		Assert.notNull(field, "Unknown AttributeType");
 		final User user = getUser();
-        final boolean canRead = permissionController.canRead(objectList, attribute, user);
-        field.getComponent().setVisible(canRead);
-        if(canRead)
+        boolean canRead = true;
+        boolean canWrite = true;
+        for ( Classification object: objectList)
         {
-            final boolean canWrite = permissionController.canWrite(objectList, attribute, user);
-            field.getComponent().setEnabled(canWrite);
+            if (permissionController.canRead(object, attribute, user))
+            {
+                canRead = true;
+                if (permissionController.canWrite(object, attribute, user))
+                {
+                    canWrite = true;
+                }
+            }
+            else
+            {
+                canRead = false;
+                canWrite = false;
+                break;
+            }
         }
+        field.getComponent().setVisible(canRead);
+        field.getComponent().setEnabled(canWrite);
 		return field;
 	}
 

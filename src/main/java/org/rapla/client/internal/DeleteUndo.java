@@ -9,6 +9,7 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	Map<Category,Category> removedCategories = new LinkedHashMap<Category, Category>();
 	ClientFacade facade;
 	RaplaResources i18n;
-	public DeleteUndo(ClientFacade facade, RaplaResources i18n,Collection<T> entities)
+	public DeleteUndo( ClientFacade facade,RaplaResources i18n,Collection<T> entities)
 	{
 	    this.facade = facade;
 	    this.i18n = i18n;
@@ -44,11 +45,10 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 		}
 	}
 	
-	public ClientFacade getFacade()
+	public RaplaFacade getFacade()
     {
-        return facade;
+        return facade.getRaplaFacade();
     }
-	
 	public I18nBundle getI18n()
     {
         return i18n;
@@ -113,7 +113,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
             // we change the owner of deleted entities because we can't create new objects with owners others than the current user
             if ( mutableEntity instanceof Ownable)
             {
-                User user = getFacade().getUser();
+                User user = facade.getUser();
                 ((Ownable) mutableEntity).setOwner( user);
             }
 			toStore.add( mutableEntity);

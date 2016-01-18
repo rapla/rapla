@@ -9,6 +9,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -50,10 +51,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     Set<Category> notAllList = new HashSet<Category>();
 
     private final DialogUiFactoryInterface dialogUiFactory;
-    /**
-     * @param context
-     * @throws RaplaException
-     */
+
     @Inject
     public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);

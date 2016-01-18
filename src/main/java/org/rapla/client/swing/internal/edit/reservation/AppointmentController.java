@@ -44,6 +44,7 @@ import org.rapla.entities.domain.ReservationHelper;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;

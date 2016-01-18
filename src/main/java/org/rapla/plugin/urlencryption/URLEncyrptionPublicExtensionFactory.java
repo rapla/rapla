@@ -5,6 +5,7 @@ import org.rapla.client.swing.PublishExtension;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;

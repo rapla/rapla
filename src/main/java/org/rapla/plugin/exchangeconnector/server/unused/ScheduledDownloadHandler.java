@@ -12,13 +12,13 @@ package org.rapla.plugin.exchangeconnector.server.unused;
 //public class ScheduledDownloadHandler extends TimerTask {
 //
 //    private final RaplaContext context;
-//    private final ClientFacade clientFacade;
+//    private final RaplaFacade clientFacade;
 //    private final Logger logger;
 //
 //    /**
 //	 * @param clientFacade
 //	 */
-//	public ScheduledDownloadHandler(RaplaContext context, ClientFacade clientFacade, Logger logger) {
+//	public ScheduledDownloadHandler(RaplaContext context, RaplaFacade clientFacade, Logger logger) {
 //		super();
 //        this.context = context;
 //        this.clientFacade = clientFacade;

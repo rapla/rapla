@@ -7,7 +7,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
@@ -37,7 +37,7 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 	private final User user;
 
 	@Inject
-	public RaplaResourcesRestPage(ClientFacade facade, RemoteSession session) throws RaplaException {
+	public RaplaResourcesRestPage(RaplaFacade facade, RemoteSession session) throws RaplaException {
 		super(facade);
 		this.user = session.getUser();
 	}

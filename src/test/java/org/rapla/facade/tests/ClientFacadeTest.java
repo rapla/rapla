@@ -33,7 +33,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.internal.CalendarModelImpl;
@@ -52,7 +52,7 @@ import java.util.Locale;
 
 @RunWith(JUnit4.class)
 public class ClientFacadeTest  {
-    ClientFacade facade;
+    RaplaFacade facade;
     Locale locale;
 
     @Before

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -38,7 +39,8 @@ import java.util.List;
 
     public String getCalendarHTML() throws RaplaException
     {
-        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments");
+        User user = model.getUser();
+        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments", user);
         final List<AppointmentBlock> blocks = model.getBlocks();
         return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
     }

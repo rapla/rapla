@@ -19,5 +19,5 @@ public interface PermissionExtension
 
     boolean hasAccess(Iterable<? extends Permission> permissions, User user, AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday);
 
-    boolean hasAccess(Collection<? extends Classification> objectList, Attribute attribute, User user, AccessLevel edit);
+    boolean hasAccess(Classification objectList, Attribute attribute, User user, AccessLevel edit);
 }

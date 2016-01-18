@@ -25,13 +25,13 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 
 public final class AttributeEditTest extends GUITestCase
 {
     public void testMain() throws Exception {
-        ClientFacade facade = null;
+        RaplaFacade facade = null;
         final Logger logger = getLogger();
         RaplaImages raplaImages = new RaplaImages(logger);
         final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
@@ -46,7 +46,7 @@ public final class AttributeEditTest extends GUITestCase
     }
 
     public void testNew() throws Exception {
-        ClientFacade facade = null;
+        RaplaFacade facade = null;
         final Logger logger = getLogger();
         RaplaImages raplaImages = new RaplaImages(logger);
         final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);

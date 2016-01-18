@@ -31,6 +31,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -64,7 +65,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
     @Inject
 	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
         this.raplaImages = raplaImages;
@@ -94,12 +95,12 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		boolean canCreateReservation = eventTypes.size() > 0;
 		MenuElement element;
 		String newEventText = getString("new_reservation");
-		final ClientFacade clientFacade = getClientFacade();
+		final RaplaFacade raplaFacade = getFacade();
 		final RaplaLocale raplaLocale = getRaplaLocale();
         if ( eventTypes.size() == 1)
 		{
 		    RaplaMenuItem item = new RaplaMenuItem( getId());
-            item.setEnabled( clientFacade.canAllocate(model, user) && canCreateReservation);
+            item.setEnabled( raplaFacade.canAllocate(model, user) && canCreateReservation);
             DynamicType type = eventTypes.get(0);
             String name = type.getName( getLocale());
             if ( newEventText.endsWith( name))
@@ -119,7 +120,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( getClientFacade().canAllocate(model, user) && canCreateReservation);
+			item.setEnabled( getFacade().canAllocate(model, user) && canCreateReservation);
 			item.setText(newEventText);
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			for ( DynamicType type:eventTypes)

@@ -32,6 +32,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -110,8 +111,8 @@ public class UserOption extends RaplaGUIComponent
         superPanel.add(changeEmailButton, "4,6");
         changeNameButton.setText(getString("change"));
         changeNameButton.addActionListener(new MyActionListener());
-        nameLabel.setText(this.getClientFacade().getUser().getName());
-        emailLabel.setText(this.getClientFacade().getUser().getEmail());
+        nameLabel.setText(this.getUser().getName());
+        emailLabel.setText(this.getUser().getEmail());
         changeEmailButton.setText(getString("change"));
         changeEmailButton.addActionListener(new MyActionListener2( ));
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");

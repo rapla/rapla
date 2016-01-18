@@ -61,9 +61,9 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -216,7 +216,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         this.commandHistory = commandHistory;
         this.treeFactory = treeFactory;
         this.model = originalModel;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.menuFactory = menuFactory;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
@@ -2297,7 +2297,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final AppointmentFormater appointmentFormater;
-        private final PermissionController permissionController;
         private final TreeFactory treeFactory;
         private final CalendarSelectionModel model;
         private final MenuFactory menuFactory;
@@ -2324,7 +2323,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             this.logger = logger;
             this.appointmentFormater = appointmentFormater;
             this.multiCalendarViewFactory = multiCalendarViewFactory;
-            this.permissionController = facade.getPermissionController();
             this.treeFactory = treeFactory;
             this.model = model;
             this.menuFactory = menuFactory;

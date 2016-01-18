@@ -1,5 +1,7 @@
 package org.rapla.plugin.tableview;
 
+import org.rapla.entities.User;
+
 public interface RaplaTableColumn<T, C> {
 
 	String getColumnName();

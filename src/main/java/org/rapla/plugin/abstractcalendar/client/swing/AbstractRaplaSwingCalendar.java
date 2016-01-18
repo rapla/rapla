@@ -41,6 +41,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -240,7 +241,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
    
     protected RaplaBuilder createBuilder() throws RaplaException
     {
-        RaplaBuilder builder = new SwingRaplaBuilder(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater, raplaImages);
+        RaplaBuilder builder = new SwingRaplaBuilder(getFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater, raplaImages);
         Date startDate = getStartDate();
 		Date endDate = getEndDate();
 		builder.setFromModel( model, startDate, endDate );

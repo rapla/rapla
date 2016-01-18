@@ -19,7 +19,7 @@ import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
@@ -80,20 +80,20 @@ public abstract class RaplaTestCase
         return "src/test/resources/" + xmlFile;
     }
 
-    public static ClientFacade createSimpleSimpsonsWithHomer()
+    public static RaplaFacade createSimpleSimpsonsWithHomer()
     {
-        ClientFacade facade = RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
+        RaplaFacade facade = RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
         facade.login("homer","duffs".toCharArray());
         return facade;
     }
 
-    public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile)
+    public static RaplaFacade createFacadeWithFile(Logger logger, String xmlFile)
     {
         String resolvedPath = getTestDataFile(xmlFile);
         return createFacadeWithFile(logger,resolvedPath,new VoidFileIO());
     }
 
-    public static ClientFacade createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
+    public static RaplaFacade createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
     {
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -133,7 +133,7 @@ public abstract class RaplaTestCase
         }
     }
 
-    public static ClientFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile)
+    public static RaplaFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile)
     {
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -167,7 +167,7 @@ public abstract class RaplaTestCase
         return facade;
     }
 
-    public static Provider<ClientFacade> createFacadeWithRemote(final Logger logger, int port)
+    public static Provider<RaplaFacade> createFacadeWithRemote(final Logger logger, int port)
     {
         final String serverURL = "http://localhost:" + port + "/";
 
@@ -193,9 +193,9 @@ public abstract class RaplaTestCase
         final RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        Provider<ClientFacade> clientFacadeProvider = new Provider<ClientFacade>()
+        Provider<RaplaFacade> clientFacadeProvider = new Provider<RaplaFacade>()
         {
-            @Override public ClientFacade get()
+            @Override public RaplaFacade get()
             {
                 RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
                 connectionInfo.setServerURL(serverURL);
@@ -292,7 +292,7 @@ public abstract class RaplaTestCase
         //        URL configURL = new URL("file:./" + TEST_FOLDER_NAME + "/test.xconf");
         //env.setConfigURL( configURL);
         copyDataFile(TEST_SRC_FOLDER_NAME + "/" + testFile);
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray());
     }
 
@@ -301,9 +301,9 @@ public abstract class RaplaTestCase
         setUp("testdefault.xml");
     }
 
-    protected ClientFacade getFacade() throws RaplaException
+    protected RaplaFacade getFacade() throws RaplaException
     {
-        return getService(ClientFacade.class);
+        return getService(RaplaFacade.class);
     }
 
     protected RaplaLocale getRaplaLocale() throws RaplaException

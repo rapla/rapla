@@ -29,6 +29,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;

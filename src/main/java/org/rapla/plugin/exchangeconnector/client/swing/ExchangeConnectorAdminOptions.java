@@ -1,4 +1,4 @@
-package org.rapla.plugin.exchangeconnector.client;
+package org.rapla.plugin.exchangeconnector.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -9,6 +9,7 @@ import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;

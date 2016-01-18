@@ -48,6 +48,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -150,7 +151,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         DynamicType dynamicType = classification.getType();
         List<DynamicType> creatableTypes = new ArrayList<DynamicType>();
         User user = getUser();
-        PermissionController permissionController = getClientFacade().getPermissionController();
+        PermissionController permissionController = getFacade().getPermissionController();
         for ( DynamicType type: types)
         {
             if (permissionController.canCreate(type, user))
@@ -203,9 +204,9 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     }
 
     private void updatePermissionFieldVisiblity() {
-        final ClientFacade clientFacade = getClientFacade();
-        PermissionController permissionController = getClientFacade().getPermissionController();
-        boolean canAdmin = permissionController.canAdmin((Reservation)classifiable, clientFacade.getUser());
+        PermissionController permissionController = getFacade().getPermissionController();
+        final User user = getUser();
+        boolean canAdmin = permissionController.canAdmin((Reservation) classifiable, user);
         permissionListField.getComponent().setVisible( selectedView == TabSelected.Info && canAdmin);
     }
 

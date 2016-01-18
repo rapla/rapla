@@ -33,6 +33,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -81,7 +82,7 @@ public class RaplaObjectAction extends RaplaAction {
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
     }
     
     protected PopupContext getPopupContext()
@@ -329,7 +330,7 @@ public class RaplaObjectAction extends RaplaAction {
         DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getClientFacade(),getI18n(), entities);
 	    if ( undoable)
 	    {
-	    	getClientFacade().getCommandHistory().storeAndExecute(deleteCommand);
+	    	getUpdateModule().getCommandHistory().storeAndExecute(deleteCommand);
 	    }
 	    else
 	    {

@@ -19,7 +19,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -37,12 +37,12 @@ import java.util.Collection;
 @DefaultImplementation(of = ICalExport.class, context = InjectionContext.server)
 public class RaplaICalExport implements ICalExport
 {
-    ClientFacade facade;
+    RaplaFacade facade;
     RemoteSession session;
     Export2iCalConverter iCalConverter;
 
     @Inject
-    public RaplaICalExport(  ClientFacade facade, RemoteSession session, Export2iCalConverter iCalConverter)
+    public RaplaICalExport(  RaplaFacade facade, RemoteSession session, Export2iCalConverter iCalConverter)
     {
         this.facade = facade;
         this.session = session;

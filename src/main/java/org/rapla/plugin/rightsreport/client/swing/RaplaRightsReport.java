@@ -9,6 +9,7 @@ import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;

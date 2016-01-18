@@ -41,7 +41,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.AllocationChangeEvent;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -64,7 +64,7 @@ public class NotificationService
     ServerExtension
 {
     private static final String NOTIFICATION_LOCK_ID = "MAIL";
-    private final ClientFacade clientFacade;
+    private final RaplaFacade raplaFacade;
     Provider<MailToUserImpl> mailToUserInterface;
     protected CommandScheduler mailQueue;
     private final AppointmentFormater appointmentFormater;
@@ -76,18 +76,18 @@ public class NotificationService
 
     // FIXME same as synchronisation manager
     @Inject
-    public NotificationService(ClientFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, RaplaLocale raplaLocale,
+    public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, RaplaLocale raplaLocale,
             AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger)
                     throws RaplaException
     {
         this.notificationI18n = notificationI18n;
-        this.clientFacade = facade;
+        this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;
         this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
         this.mailQueue = mailQueue;
-        //clientFacade.addAllocationChangedListener(this);
+        //raplaFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
         getLogger().info("NotificationServer Plugin started");
@@ -143,7 +143,7 @@ public class NotificationService
     private void changed(UpdateResult updateResult) {
         try {
             getLogger().debug("Mail check triggered") ;
-            User[] users = clientFacade.getUsers();
+            User[] users = raplaFacade.getUsers();
             List<AllocationMail> mailList = new ArrayList<AllocationMail>();
             // we check for each user if a mail must be sent
             for ( int i=0;i< users.length;i++) {
@@ -151,7 +151,7 @@ public class NotificationService
                 if(user.getEmail().trim().length() == 0)
                 	continue;
                 
-                Preferences preferences = clientFacade.getPreferences(user);
+                Preferences preferences = raplaFacade.getPreferences(user);
                 Map<String,Allocatable> allocatableMap = null ;
                 
                 if (preferences != null && preferences.getEntry(NotificationPlugin.ALLOCATIONLISTENERS_CONFIG)!= null ) {
@@ -163,7 +163,7 @@ public class NotificationService
                 {
                     boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
                     final String ownerId = preferences.getOwnerId();
-                    final User owner = ownerId != null ? clientFacade.getOperator().resolve( ownerId, User.class) : null;
+                    final User owner = ownerId != null ? raplaFacade.getOperator().resolve( ownerId, User.class) : null;
                     AllocationMail mail = getAllocationMail( new HashSet<Allocatable>(allocatableMap.values()), updateResult, owner,notifyIfOwner);
                     if (mail != null) {
                         mailList.add(mail);
@@ -223,7 +223,7 @@ public class NotificationService
             buf.append( eventBlock );
             buf.append("\n\n");
         }
-        String raplaTitle = clientFacade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, raplaI18n.getString("rapla.title"));
+        String raplaTitle = raplaFacade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, raplaI18n.getString("rapla.title"));
 		buf.append(notificationI18n.format("disclaimer_1", raplaTitle));
         StringBuffer allocatableNames = new StringBuffer();
         for (Allocatable alloc: changedAllocatables) {
@@ -311,7 +311,7 @@ public class NotificationService
 				String name;  
 				if ( lastChangedBy != null)
             	{
-                    final User user = clientFacade.getOperator().tryResolve(lastChangedBy, User.class);
+                    final User user = raplaFacade.getOperator().tryResolve(lastChangedBy, User.class);
                     name =  user != null ? user.getName() : "unknown";
             	}
 				else if ( eventUser != null)
@@ -340,7 +340,7 @@ public class NotificationService
         buf.append("\n");
 
         String ownerId = reservation.getOwnerId();
-        User owner = ownerId != null ? clientFacade.getOperator().tryResolve( ownerId, User.class) : null;
+        User owner = ownerId != null ? raplaFacade.getOperator().tryResolve( ownerId, User.class) : null;
         if ( owner != null)
         {
             buf.append(raplaI18n.getString("reservation.owner"));

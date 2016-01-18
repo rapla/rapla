@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.internal.ServerServiceImpl;
@@ -31,7 +31,7 @@ import java.util.Locale;
 public class MailPluginTest {
     ServerServiceImpl raplaServer;
 
-    ClientFacade facade1;
+    RaplaFacade facade1;
     Locale locale;
 
     @Before
@@ -49,7 +49,7 @@ public class MailPluginTest {
     public void test() throws Exception 
     {
         MockMailer mailMock = new MockMailer();
-        final ClientFacade facade = null;
+        final RaplaFacade facade = null;
         Logger logger = null;
 
         MailToUserImpl mail = new MailToUserImpl(mailMock, facade, logger);

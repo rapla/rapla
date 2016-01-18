@@ -16,7 +16,7 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -64,13 +64,13 @@ public class Export2iCalServlet  implements RaplaPageExtension
 	private int lastModifiedIntervall;
 	Export2iCalConverter converter;
 	TimeZoneConverter timeZoneConverter;
-	ClientFacade facade;
+	RaplaFacade facade;
 	Logger logger;
 	final RaplaLocale raplaLocale ;
 	RaplaResources i18n;
 
 	@Inject
-    public Export2iCalServlet(ClientFacade facade, Export2iCalConverter converter, Logger logger, RaplaLocale raplaLocale, RaplaResources i18n) throws RaplaException{
+    public Export2iCalServlet(RaplaFacade facade, Export2iCalConverter converter, Logger logger, RaplaLocale raplaLocale, RaplaResources i18n) throws RaplaException{
 		this. logger = logger.getChildLogger("ical");
 		this.raplaLocale = raplaLocale;
 		this.facade = facade;

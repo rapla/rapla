@@ -8,7 +8,7 @@ import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -62,7 +62,7 @@ import java.util.Set;
     private final MultiLanguageFieldFactory multiLanguageFieldFactory;
 
     @Inject
-    public TableviewOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader,
+    public TableviewOption(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader,
             MultiLanguageFieldFactory multiLanguageFieldFactory)
     {
         this.i18n = i18n;

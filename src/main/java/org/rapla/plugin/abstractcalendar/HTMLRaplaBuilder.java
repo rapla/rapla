@@ -20,7 +20,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -39,8 +39,8 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     protected boolean onlyAllocationInfo;
     
     @Inject
-    public HTMLRaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
-        super(raplaLocale, clientFacade, i18n, logger, appointmentFormater);
+    public HTMLRaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
+        super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
     }
 
     

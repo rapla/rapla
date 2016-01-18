@@ -31,7 +31,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -47,7 +47,7 @@ import java.util.Locale;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest {
-    ClientFacade facade;
+    RaplaFacade facade;
     Locale locale;
     Logger logger;
     RaplaLocale raplaLocale;
@@ -64,7 +64,7 @@ public class CopyPeriodPluginTest {
         return  raplaLocale;
     }
 
-    public ClientFacade getFacade()
+    public RaplaFacade getFacade()
     {
         return facade;
     }

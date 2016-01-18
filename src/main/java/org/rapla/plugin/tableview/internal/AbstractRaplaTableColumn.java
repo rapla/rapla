@@ -11,7 +11,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
@@ -26,13 +26,15 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
 
     protected final TableColumnConfig column;
     protected RaplaLocale raplaLocale;
-    final ClientFacade facade;
+    final RaplaFacade facade;
+    User user;
 
-    public AbstractRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale, ClientFacade facade)
+    public AbstractRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale, RaplaFacade facade, User user)
     {
         this.column = column;
         this.raplaLocale = raplaLocale;
         this.facade = facade;
+        this.user = user;
     }
 
     protected Locale getLocale()
@@ -70,7 +72,6 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
         final Classification classification = ParsedText.guessClassification(object);
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
-        User user = facade.getUser();
         final EvalContext context = type.createEvalContext(user,locale, annotationName, Collections.singletonList(object));
         if (parsedAnnotation == null)
         {

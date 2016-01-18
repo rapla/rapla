@@ -3,7 +3,7 @@ package org.rapla.plugin.urlencryption.server;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -29,10 +29,10 @@ import java.util.TreeMap;
 @Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionPlugin.PLUGIN_ID)
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
     private UrlEncryptionService urlEncryptionService;
-    private ClientFacade facade;
+    private RaplaFacade facade;
     private Logger logger;
     @Inject
-    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryption service, ClientFacade facade, Logger logger) 
+    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryption service, RaplaFacade facade, Logger logger)
     {
     	this.urlEncryptionService =  (UrlEncryptionService) service;
     	this.facade = facade;

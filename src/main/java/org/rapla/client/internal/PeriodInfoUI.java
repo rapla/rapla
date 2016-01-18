@@ -14,8 +14,9 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Period;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -24,11 +25,11 @@ import java.util.Collection;
 import java.util.Date;
 
 public class PeriodInfoUI extends HTMLInfo<Period> {
-    public PeriodInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+    public PeriodInfoUI(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(i18n, raplaLocale, facade, logger);
     }
 
-    public String createHTMLAndFillLinks(Period period,LinkController controller) {
+    public String createHTMLAndFillLinks(Period period,LinkController controller, User user) {
         Collection<Row> att = new ArrayList<Row>();
         RaplaLocale loc = getRaplaLocale();
 
@@ -57,9 +58,10 @@ public class PeriodInfoUI extends HTMLInfo<Period> {
         }
         return createTable(att, false);
     }
-    
-    public String getTooltip(Period object) {
-        return createHTMLAndFillLinks( object, null);
+
+    @Override
+    public String getTooltip(Period object, User user) {
+        return createHTMLAndFillLinks( object, null, user);
     }
 
 }

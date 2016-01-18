@@ -1,4 +1,4 @@
-package org.rapla.plugin.exchangeconnector.client;
+package org.rapla.plugin.exchangeconnector.client.swing;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -70,7 +70,7 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
     private final ConfigReader config;
     
     @Inject
-    public ExchangeConnectorUserOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorRemote service, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ConfigReader config) {
+    public ExchangeConnectorUserOptions( ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorRemote service, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ConfigReader config) {
         super(facade, i18n, raplaLocale, logger);
         this.exchangeConnectorResources = exchangeConnectorResources;
         this.service = service;

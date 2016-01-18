@@ -25,6 +25,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -60,7 +61,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
             JPanel warningPanel = new JPanel();
             for (Reservation reservation:reservations)
             {
-                getClientFacade().checkReservation( reservation);
+                getFacade().checkReservation( reservation);
                 Appointment[] appointments = reservation.getAppointments();
                 Appointment duplicatedAppointment = null;
                 for (int i=0;i<appointments.length;i++) {

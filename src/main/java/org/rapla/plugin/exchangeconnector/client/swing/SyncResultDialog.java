@@ -1,4 +1,4 @@
-package org.rapla.plugin.exchangeconnector.client;
+package org.rapla.plugin.exchangeconnector.client.swing;
 
 import java.awt.BorderLayout;
 
@@ -11,6 +11,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;

@@ -5,7 +5,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
@@ -22,9 +22,9 @@ public abstract class AbstractRestPage
 
     protected StorageOperator operator;
     protected JsonServlet servlet;
-    protected ClientFacade facade;
+    protected RaplaFacade facade;
 
-    public AbstractRestPage(ClientFacade facade) throws RaplaException
+    public AbstractRestPage(RaplaFacade facade) throws RaplaException
     {
         this.facade = facade;
         operator = facade.getOperator();

@@ -8,7 +8,7 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
@@ -38,7 +38,7 @@ public class RaplaEventsRestPage extends AbstractRestPage
     private final User user;
 
     @Inject
-    public RaplaEventsRestPage(ClientFacade facade,   RemoteSession session) throws RaplaException {
+    public RaplaEventsRestPage(RaplaFacade facade,   RemoteSession session) throws RaplaException {
 		super(facade);
         user = session.getUser();
 	}

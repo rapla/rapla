@@ -18,6 +18,7 @@ import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;

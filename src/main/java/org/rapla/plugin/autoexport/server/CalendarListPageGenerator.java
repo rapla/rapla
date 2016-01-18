@@ -18,7 +18,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
@@ -49,14 +49,14 @@ import java.util.TreeSet;
 public class CalendarListPageGenerator  implements RaplaPageExtension
 {
 
-    final private ClientFacade facade;
+    final private RaplaFacade facade;
     final private RaplaLocale raplaLocale;
     final private RaplaResources i18n;
     final private AutoExportResources autoexportI18n;
 
 
     @Inject
-    public CalendarListPageGenerator(ClientFacade facade, RaplaLocale raplaLocale, RaplaResources i18n, AutoExportResources autoexportI18n)
+    public CalendarListPageGenerator(RaplaFacade facade, RaplaLocale raplaLocale, RaplaResources i18n, AutoExportResources autoexportI18n)
     {
         this.facade = facade;
         this.raplaLocale = raplaLocale;

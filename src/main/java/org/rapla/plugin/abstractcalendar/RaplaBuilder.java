@@ -46,7 +46,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.Conflict.Util;
 import org.rapla.facade.RaplaComponent;
@@ -105,16 +105,16 @@ public abstract class RaplaBuilder
 	Map<Appointment,Set<Appointment>> conflictingAppointments;
     
 	final private RaplaLocale raplaLocale;
-	final private ClientFacade clientFacade;
+	final private RaplaFacade raplaFacade;
 	final private RaplaResources i18n;
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
 
-	public RaplaBuilder(RaplaLocale raplaLocale, ClientFacade clientFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
+	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );
         this.raplaLocale = raplaLocale;
-        this.clientFacade = clientFacade;
+        this.raplaFacade = raplaFacade;
         this.i18n = i18n;
         this.logger = logger;
         this.appointmentFormater = appointmentFormater;
@@ -126,9 +126,9 @@ public abstract class RaplaBuilder
         return raplaLocale;
     }
     
-    protected ClientFacade getClientFacade() 
+    protected RaplaFacade getClientFacade()
     {
-        return clientFacade;
+        return raplaFacade;
     }
     
     protected RaplaResources getI18n()
@@ -143,7 +143,7 @@ public abstract class RaplaBuilder
     
     protected EntityResolver getEntityResolver()
     {
-        return clientFacade.getOperator();
+        return raplaFacade.getOperator();
     }
 
 
@@ -485,7 +485,7 @@ public abstract class RaplaBuilder
         ArrayList<Block> blocks = new ArrayList<Block>();
         {
             //long time = System.currentTimeMillis();
-            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale,clientFacade,logger, appointmentFormater);
+            AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale, raplaFacade,logger, appointmentFormater);
         	BuildContext buildContext = new BuildContext(this, appointmentInfoUI, blocks);
             Assert.notNull(preparedBlocks, "call prepareBuild first");
             for (AppointmentBlock block:preparedBlocks)

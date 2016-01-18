@@ -21,7 +21,7 @@ import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -29,9 +29,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
-class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
+public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     
-    public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger)
+    public ClassificationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger)
     {
         super(i18n, raplaLocale, facade, logger);
     }
@@ -46,18 +46,20 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
 
     public String getUsername(String userId)
     {
-        final ClientFacade clientFacade = getClientFacade();
-        String name = clientFacade.getUsername(userId);
+        String name = getFacade().getOperator().getUsername(userId);
         return name;
     }
 
     protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller, User user) {
         Collection<Row> att = new ArrayList<Row>();
         Classification classification = classifiable.getClassification();
-
         Attribute[] attributes = classification.getAttributes();
         for (int i=0; i< attributes.length; i++) {
             Attribute attribute = attributes[i];
+            if ( user != null && !getFacade().getPermissionController().canRead( classification, attribute, user))
+            {
+                continue;
+            }
             String view = attribute.getAnnotation( AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN );
             if ( view.equals(AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW )) {
                 continue;
@@ -105,16 +107,15 @@ class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     }
 
     @Override
-    public String createHTMLAndFillLinks(Classifiable classifiable,LinkController controller) {
+    public String createHTMLAndFillLinks(Classifiable classifiable,LinkController controller, User user) {
         StringBuffer buf = new StringBuffer();
         insertClassificationTitle( classifiable, buf );
         Collection<Row> att = new ArrayList<Row>();
-        final User user = getClientFacade().getUser();
         att.addAll(getClassificationAttributes(classifiable, false, null, user));
         createTable(att,buf,false);
         return buf.toString();
     }
-   
+
     /**
      * @param object
      * @param controller

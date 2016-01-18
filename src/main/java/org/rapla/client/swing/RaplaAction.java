@@ -14,6 +14,7 @@ package org.rapla.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 

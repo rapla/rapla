@@ -4,7 +4,7 @@ import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.ResourceSelectionView.Presenter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -19,12 +19,12 @@ public class ResourceSelectionPlace implements Presenter, PlacePresenter
     public static final String PLACE_ID = "ResSel";
     private final ResourceSelectionView view;
     private final CalendarSelectionModel model;
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final Logger logger;
 
     @SuppressWarnings("unchecked")
     @Inject
-    public ResourceSelectionPlace(@SuppressWarnings("rawtypes") ResourceSelectionView view, CalendarSelectionModel model, ClientFacade facade, Logger logger)
+    public ResourceSelectionPlace(@SuppressWarnings("rawtypes") ResourceSelectionView view, CalendarSelectionModel model, RaplaFacade facade, Logger logger)
     {
         this.view = view;
         this.model = model;

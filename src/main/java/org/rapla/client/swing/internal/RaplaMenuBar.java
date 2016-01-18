@@ -51,6 +51,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
@@ -180,7 +181,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         Listener listener = new Listener();
         JMenuItem restart = new JMenuItem();
-        restart.setAction(new ActionWrapper(new RestartRaplaAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), clientService, raplaImages)));
+        restart.setAction(new ActionWrapper(new RestartRaplaAction(facade, getI18n(), getRaplaLocale(), getLogger(), clientService, raplaImages)));
         systemMenu.add(restart);
 
         systemMenu.setMnemonic('F');
@@ -199,7 +200,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         redo.setToolTipText(getString("redo"));
         redo.setIcon(raplaImages.getIconFromKey("icon.redo"));
-        getClientFacade().getCommandHistory().addCommandHistoryChangedListener(listener);
+        getCommandHistory().addCommandHistoryChangedListener(listener);
 
         undo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, ActionEvent.CTRL_MASK));
         redo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, ActionEvent.CTRL_MASK));
@@ -230,20 +231,20 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         {
-            SaveableToggleAction action = new SaveableToggleAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
+            SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
             action.setEnabled(modifyPreferencesAllowed);
         }
         {
-            SaveableToggleAction action = new SaveableToggleAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
+            SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
                     CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
             action.setEnabled(modifyPreferencesAllowed);
         }
         {
-            SaveableToggleAction action = new SaveableToggleAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
+            SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
                     CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY, dialogUiFactory);
             RaplaMenuItem menu = createMenuItem(action);
             viewMenu.insertBeforeId(menu, "view_save");
@@ -272,6 +273,11 @@ public class RaplaMenuBar extends RaplaGUIComponent
         exportMenu.setEnabled(exportMenu.getMenuComponentCount() != 0);
         importMenu.setEnabled(importMenu.getMenuComponentCount() != 0);
         getUpdateModule().addModificationListener(listener);
+    }
+
+    public CommandHistory getCommandHistory()
+    {
+        return getUpdateModule().getCommandHistory();
     }
 
     private RaplaMenuItem createMenuItem(SaveableToggleAction action) throws RaplaException
@@ -307,7 +313,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     protected boolean isTemplateEdit()
     {
-        return getClientFacade().getTemplate() != null;
+        return getUpdateModule().getTemplate() != null;
     }
 
 
@@ -316,7 +322,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         public void historyChanged()
         {
-            CommandHistory history = getClientFacade().getCommandHistory();
+            CommandHistory history = getCommandHistory();
             redo.setEnabled(history.canRedo());
             undo.setEnabled(history.canUndo());
             redo.setText(getString("redo") + ": " + history.getRedoText());
@@ -335,7 +341,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             {
                 if (isTemplateEdit())
                 {
-                    getClientFacade().setTemplate(null);
+                    getUpdateModule().setTemplate(null);
                 }
                 else
                 {
@@ -353,7 +359,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             }
             else
             {
-                CommandHistory commandHistory = getClientFacade().getCommandHistory();
+                CommandHistory commandHistory = getCommandHistory();
                 try
                 {
                     if (source == redo)

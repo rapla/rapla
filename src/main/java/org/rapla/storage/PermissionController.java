@@ -21,12 +21,8 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 
 import java.util.Collection;
 import java.util.Date;
@@ -305,7 +301,7 @@ public class PermissionController
         return false;
     }
 
-    private boolean hasAccess(Collection<? extends Classification> objectList, Attribute attribute, User user, AccessLevel edit)
+    private boolean hasAccess(Classification objectList, Attribute attribute, User user, AccessLevel edit)
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
         {
@@ -630,22 +626,22 @@ public class PermissionController
         return canReadPrivate(allocatable, user);
     }
 
-    public boolean canWrite(Collection<? extends Classification> objectList, Attribute attribute, User user)
+    public boolean canWrite(Classification object, Attribute attribute, User user)
     {
         if(user.isAdmin())
         {
             return true;
         }
-        return hasAccess(objectList, attribute, user, Permission.AccessLevel.EDIT);
+        return hasAccess(object, attribute, user, Permission.AccessLevel.EDIT);
     }
     
-    public boolean canRead(Collection<? extends Classification> objectList, Attribute attribute, User user)
+    public boolean canRead(Classification object, Attribute attribute, User user)
     {
         if(user.isAdmin())
         {
             return true;
         }
-        return hasAccess(objectList, attribute, user, Permission.AccessLevel.READ);
+        return hasAccess(object, attribute, user, Permission.AccessLevel.READ);
     }
 
 }

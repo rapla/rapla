@@ -36,11 +36,11 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.UserModule;
-import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.Disposable;
@@ -203,7 +203,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         	getLogger().debug("RaplaClient started");
             ClientFacade facade = getFacade();
             facade.addUpdateErrorListener(this);
-            StorageOperator operator = facade.getOperator();
+            StorageOperator operator = facade.getRaplaFacade().getOperator();
             if ( operator instanceof RemoteOperator)
             {
                 RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
@@ -285,7 +285,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 //            addContainerProvidedComponent (RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION , ConnectionOption.class);
 //        } 
         
-        Preferences systemPreferences = facade.getSystemPreferences();
+        Preferences systemPreferences = facade.getRaplaFacade().getSystemPreferences();
         //List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
         //addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
 
@@ -302,7 +302,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 //            addContainerProvidedComponent(DateRenderer.class, RaplaDateRenderer.class);
 //        }
         started = true;
-        boolean showToolTips = facade.getPreferences(  ).getEntryAsBoolean( RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
+        boolean showToolTips = facade.getRaplaFacade().getPreferences( facade.getUser() ).getEntryAsBoolean( RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
         javax.swing.ToolTipManager.sharedInstance().setEnabled(showToolTips);
         //javax.swing.ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         javax.swing.ToolTipManager.sharedInstance().setInitialDelay( 1000 );
@@ -349,7 +349,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     
     private void initLanguage() throws RaplaException
     {
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade().getRaplaFacade();
         if ( !defaultLanguageChoosen)
         {
             Preferences prefs = facade.edit(facade.getPreferences());
@@ -664,11 +664,6 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
   		return logoutAvailable;
   	}
 
-    private CalendarSelectionModel createCalendarModel() throws RaplaException {
-        User user = getFacade().getUser();
-        CalendarSelectionModel model = getFacade().newCalendarModel( user);
-        model.load( null );
-        return model;
-    }
+
 
 }

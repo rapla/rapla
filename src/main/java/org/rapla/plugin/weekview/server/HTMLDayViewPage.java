@@ -15,7 +15,7 @@ package org.rapla.plugin.weekview.server;
 import org.rapla.RaplaResources;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -29,7 +29,7 @@ import java.util.Calendar;
 public class HTMLDayViewPage extends HTMLWeekViewPage
 {
     @Inject
-    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }

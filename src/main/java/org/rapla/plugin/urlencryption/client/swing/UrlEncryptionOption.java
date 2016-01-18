@@ -4,6 +4,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -17,7 +18,7 @@ public class UrlEncryptionOption extends DefaultPluginOption
 {
 
     @Inject
-	public UrlEncryptionOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) 
+	public UrlEncryptionOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
 	{
 		super(facade, i18n, raplaLocale, logger);
 	}

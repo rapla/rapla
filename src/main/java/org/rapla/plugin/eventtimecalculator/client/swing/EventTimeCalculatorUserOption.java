@@ -6,6 +6,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -40,7 +41,7 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
 	public EventTimeCalculatorUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorResources eventTimei18n) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
-        this.config = facade.getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
+        this.config = facade.getRaplaFacade().getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
         this.eventTimei18n = eventTimei18n;
         optionPanel = new EventTimeCalculatorOption(facade, i18n, raplaLocale, logger, false, eventTimei18n);
         panel = optionPanel.createPanel();

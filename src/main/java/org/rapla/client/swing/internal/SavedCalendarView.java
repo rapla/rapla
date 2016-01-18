@@ -19,6 +19,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
@@ -422,7 +423,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     private void updateActions() {
         FileEntry selectedFile = getSelectedFile();
         boolean isDefault = selectedFile == null || selectedFile.isDefault ;
-        final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getClientFacade().getTemplate() == null;
+        final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getUpdateModule().getTemplate() == null;
         saveAction.setEnabled(modifyPreferencesAllowed );
         publishAction.setEnabled( modifyPreferencesAllowed);
         deleteAction.setEnabled( !isDefault && modifyPreferencesAllowed);

@@ -23,6 +23,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -67,7 +68,7 @@ public class TemplateEdit extends RaplaGUIComponent
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
         {
             protected void mapFromObjects() throws RaplaException {
@@ -195,10 +196,10 @@ public class TemplateEdit extends RaplaGUIComponent
             
             Collection<Allocatable> originals = getQuery().getTemplates();
             List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
-            final ClientFacade clientFacade = getClientFacade();
+            final RaplaFacade raplaFacade = getFacade();
             for ( Allocatable template:originals)
             {
-                if ( permissionController.canModify( template, clientFacade.getUser()))
+                if ( permissionController.canModify( template, getUser()))
                 {
                     editableTemplates.add( template);
                 }
@@ -260,7 +261,7 @@ public class TemplateEdit extends RaplaGUIComponent
                                 calendarSelectionModel.setSelectedDate( start);
                             }
                         }
-                        getClientFacade().setTemplate( selectedTemplate);
+                        getUpdateModule().setTemplate( selectedTemplate);
                     }
                     catch (RaplaException ex)
                     {
@@ -331,7 +332,7 @@ public class TemplateEdit extends RaplaGUIComponent
             this.permissionListFieldFactory = permissionListFieldFactory;
             this.raplaListEditFactory = raplaListEditFactory;
             this.booleanFieldFactory = booleanFieldFactory;
-            this.permissionController = facade.getPermissionController();
+            this.permissionController = facade.getRaplaFacade().getPermissionController();
         }
 
         public TemplateEdit create()

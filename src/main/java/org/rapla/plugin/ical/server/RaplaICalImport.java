@@ -27,7 +27,7 @@ import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -61,11 +61,11 @@ public class RaplaICalImport implements ICalImport {
 	private TimeZone timeZone;
 	private TimeZoneConverter timeZoneConverter;
 	RemoteSession session;
-	ClientFacade facade;
+	RaplaFacade facade;
 	Logger logger;
 
 	@Inject
-	public RaplaICalImport( TimeZoneConverter converter, RemoteSession session,ClientFacade facade, Logger logger) {
+	public RaplaICalImport( TimeZoneConverter converter, RemoteSession session,RaplaFacade facade, Logger logger) {
 		this.timeZoneConverter = converter;
 		this.session = session;
 		this.facade = facade;

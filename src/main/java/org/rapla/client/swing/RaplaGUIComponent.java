@@ -20,8 +20,15 @@ import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.User;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.UpdateModule;
+import org.rapla.facade.UserModule;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -46,6 +53,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
     Base class for most components in the gui package. Eases
@@ -55,6 +63,7 @@ import java.text.SimpleDateFormat;
 public class RaplaGUIComponent extends RaplaComponent
 {
     private static Component mainComponent;
+	ClientFacade clientFacade;
 
 	@Deprecated
 	public static void setMainComponent(Component mainComponent)
@@ -62,12 +71,70 @@ public class RaplaGUIComponent extends RaplaComponent
 		RaplaGUIComponent.mainComponent = mainComponent;
 	}
 
-	public RaplaGUIComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+	public RaplaGUIComponent(ClientFacade facade,RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
+		this.clientFacade = clientFacade;
     }
-    
-    protected PopupContext createPopupContext(Component parent, Point p)
+
+	protected User getUser() throws RaplaException
+	{
+		return clientFacade.getUser();
+	}
+
+	/** lookupDeprecated UpdateModule from the serviceManager */
+	protected UpdateModule getUpdateModule() {
+		return clientFacade;
+	}
+
+	/** lookupDeprecated UserModule from the serviceManager */
+	protected UserModule getUserModule() {
+		return clientFacade;
+	}
+
+	public CalendarOptions getCalendarOptions() {
+		User user;
+		try
+		{
+			user = getUser();
+		}
+		catch (RaplaException ex) {
+			// Use system settings if an error occurs
+			user = null;
+		}
+		return getCalendarOptions( user);
+	}
+
+	/** returns if the session user is admin */
+	final public boolean isAdmin() {
+		try {
+			return getUser().isAdmin();
+		} catch (RaplaException ex) {
+		}
+		return false;
+	}
+
+	final public boolean isModifyPreferencesAllowed() {
+		try {
+			User user = getUser();
+			return isModifyPreferencesAllowed( user);
+		} catch (RaplaException ex) {
+		}
+		return false;
+	}
+
+	protected Date getStartDate(CalendarModel model)
+	{
+		final RaplaFacade raplaFacade = getFacade();
+		return getStartDate(model, raplaFacade, getUser());
+	}
+
+	public ClientFacade getClientFacade()
+	{
+		return clientFacade;
+	}
+
+	protected PopupContext createPopupContext(Component parent, Point p)
     {
         return new SwingPopupContext(parent, p);
     }

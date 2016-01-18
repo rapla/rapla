@@ -29,6 +29,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -90,7 +91,7 @@ public class CompactViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
-        config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
+        config = facade.getRaplaFacade().getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
     }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException

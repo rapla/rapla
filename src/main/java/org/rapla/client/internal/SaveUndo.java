@@ -10,7 +10,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
@@ -25,15 +25,15 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final List<T> oldEntities;
 	protected final String commandoName;
    	protected boolean firstTimeCall = true;
-   	private ClientFacade facade;
+   	private RaplaFacade facade;
    	RaplaResources i18n;
 	
-	public SaveUndo(ClientFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity)
+	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity)
 	{
 		this( facade, i18n,newEntity, originalEntity, null);
 	}
 	
-	public SaveUndo(ClientFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName)
+	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName)
 	{
 	    this.facade = facade;
 	    this.i18n = i18n;
@@ -65,7 +65,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		}
 	}
 	
-	protected ClientFacade getFacade()
+	protected RaplaFacade getFacade()
     {
         return facade;
     }

@@ -13,7 +13,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.RaplaSecurityException;
@@ -27,7 +27,7 @@ import java.util.Locale;
 public class SecurityManagerTest  {
 
 
-	protected ClientFacade facade1;
+	protected RaplaFacade facade1;
 	
 	Locale locale;
 	private Logger logger;
@@ -40,7 +40,7 @@ public class SecurityManagerTest  {
 		int port = 8052;
 		serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
 		server = ServletTestBase.createServer( serverService, port);
-		Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
+		Provider<RaplaFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
 		facade1 = clientFacadeProvider.get();
 		//facade2 = clientFacadeProvider.get();
 		//facade2.login("homer", "duffs".toCharArray());

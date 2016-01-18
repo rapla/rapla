@@ -34,7 +34,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
@@ -72,7 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SQLOperatorTest extends AbstractOperatorTest
 {
 
-    ClientFacade facade;
+    RaplaFacade facade;
     Logger logger;
     org.hsqldb.jdbc.JDBCDataSource datasource;
     
@@ -115,7 +115,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         //       }
     }
 
-    @Override protected ClientFacade getFacade()
+    @Override protected RaplaFacade getFacade()
     {
         return facade;
     }
@@ -125,7 +125,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
      * @throws RaplaException */
     public void testPeriodInfitiveEnd() throws RaplaException
     {
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade();
         CachableStorageOperator operator = getOperator();
         facade.login("homer", "duffs".toCharArray());
         Reservation event = facade.newReservation();
@@ -150,7 +150,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     public void testPeriodStorage() throws RaplaException
     {
         CachableStorageOperator operator = getOperator();
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade();
         facade.login("homer", "duffs".toCharArray());
         Date start = DateTools.cutDate(new Date());
         Date end = new Date(start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
@@ -178,7 +178,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     @Test
     public void testCategoryChange() throws RaplaException
     {
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade();
         CachableStorageOperator operator = getOperator();
         facade.login("homer", "duffs".toCharArray());
         {
@@ -208,7 +208,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     @Test
     public void testDynamicTypeChange() throws Exception
     {
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade();
         CachableStorageOperator operator = getOperator();
         facade.login("homer", "duffs".toCharArray());
         DynamicType type = facade.edit(facade.getDynamicType("event"));
@@ -259,7 +259,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         final AtomicReference<ModificationEvent> updateResult = new AtomicReference<ModificationEvent>();
         final Semaphore waitFor = new Semaphore(0);
-        ClientFacade readFacade = this.facade;
+        RaplaFacade readFacade = this.facade;
         readFacade.addModificationListener(new ModificationListener()
         {
             @Override public void dataChanged(ModificationEvent evt) throws RaplaException
@@ -272,7 +272,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         {// create second writeFacade
             String reservationId = null;
             String xmlFile = null;
-            ClientFacade writeFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+            RaplaFacade writeFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
             writeFacade.login("homer", "duffs".toCharArray());
             { // Reservation test with an attribute, appointment and permission
                 final Reservation newReservation = writeFacade.newReservation();
@@ -510,7 +510,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     @Test
     public void concurrentReadAndUpdate() throws Exception
     {
-        ClientFacade writeFacade = this.facade;
+        RaplaFacade writeFacade = this.facade;
         writeFacade.login("homer", "duffs".toCharArray());
         final String xmlFile = null;
         // create init data
@@ -546,12 +546,12 @@ public class SQLOperatorTest extends AbstractOperatorTest
             storeObjects.add(reservation);
         }
         writeFacade.storeObjects(storeObjects.toArray(new Entity[storeObjects.size()]));
-        final AtomicReference<ClientFacade> initReference = new AtomicReference<ClientFacade>(null);
+        final AtomicReference<RaplaFacade> initReference = new AtomicReference<RaplaFacade>(null);
         final Semaphore semaphore = new Semaphore(0);
         // now lets start init the other facade
         new Thread(new Runnable(){
             public void run() {
-                ClientFacade initFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+                RaplaFacade initFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
                 initReference.set(initFacade);
                 semaphore.release();
             }

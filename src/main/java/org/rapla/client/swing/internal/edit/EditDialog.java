@@ -33,6 +33,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
@@ -269,8 +270,8 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                 }
                 else if (canUndo)
                 {
-                    @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(getClientFacade(), getI18n(), entities, originals);
-                    CommandHistory commandHistory = getClientFacade().getCommandHistory();
+                    @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(getFacade(), getI18n(), entities, originals);
+                    CommandHistory commandHistory = getUpdateModule().getCommandHistory();
                     commandHistory.storeAndExecute(saveCommand);
                 }
                 else

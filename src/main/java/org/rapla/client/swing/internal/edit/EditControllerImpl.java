@@ -21,7 +21,7 @@ import org.rapla.client.swing.EditController;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -45,12 +45,12 @@ public class EditControllerImpl implements
 	Collection<EditDialogInterface<?>> editWindowList = new ArrayList<EditDialogInterface<?>>();
 	private final EditDialogFactoryInterface editDialogFactory;
 	private final ReservationController reservationController;
-	private final ClientFacade facade;
+	private final RaplaFacade facade;
     private final RaplaResources i18n;
 
     @Inject
 	public EditControllerImpl(EditDialogFactoryInterface editDialogFactory, ReservationController reservationController,
-            ClientFacade facade, RaplaResources i18n)
+            RaplaFacade facade, RaplaResources i18n)
     {
         super();
         this.editDialogFactory = editDialogFactory;

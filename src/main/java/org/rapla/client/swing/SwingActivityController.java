@@ -10,6 +10,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
@@ -19,6 +20,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -50,7 +52,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
     @Inject
     public SwingActivityController(final EventBus eventBus, final EditController editController, final ClientFacade facade, final CalendarSelectionModel model, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
         this.editController = editController;
         this.facade = facade;
         this.model = model;
@@ -61,22 +63,23 @@ public class SwingActivityController extends RaplaComponent implements StartActi
     public void startActivity(StartActivityEvent event)
     {
         final String eventId = event.getId();
+        final User user = facade.getUser();
         switch (eventId)
         {
             case CREATE_RESERVATION_FOR_DYNAMIC_TYPE:
             {
                 final String dynamicTypeId = event.getInfo();
-                final Entity resolve = facade.resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
+                final Entity resolve = facade.getRaplaFacade().resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
                 final DynamicType type = (DynamicType)resolve;
                 Classification newClassification = type.newClassification();
-                Reservation r = facade.newReservation(newClassification, facade.getUser());
+                Reservation r = facade.getRaplaFacade().newReservation(newClassification, user);
                 Appointment appointment = createAppointment(model);
                 r.addAppointment(appointment);
                 final List<Reservation> singletonList = Collections.singletonList( r);
-                List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, facade.getUser());
+                List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, user);
                 String title = null;
                 // TODO think about a better solution
-                Component mainComponent = new RaplaGUIComponent(getClientFacade(), getI18n(), getRaplaLocale(), getLogger()).getMainComponent();
+                Component mainComponent = new RaplaGUIComponent(facade, getI18n(), getRaplaLocale(), getLogger()).getMainComponent();
                 final PopupContext swingPopupContext = new SwingPopupContext(mainComponent, null);
                 EditController.EditCallback<List<Reservation>> callback = null;
                 editController.edit(list, title, swingPopupContext,callback);
@@ -95,8 +98,8 @@ public class SwingActivityController extends RaplaComponent implements StartActi
                 Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
                 boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                 boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
-                Date beginn = getStartDate(model);
-                Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime, facade.getUser());
+                Date beginn = getStartDate(model, user);
+                Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime, user);
                 if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
                 {
                     Appointment app = newReservations.iterator().next().getAppointments()[0];
@@ -112,7 +115,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
                     }
                     app.move(app.getStart(), end);
                 }
-                List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, getUser());
+                List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, user);
                 // FIXME lookup main component
                 final Component mainComponent = null;//getMainComponent();
                 final SwingPopupContext popupContext = new SwingPopupContext(mainComponent, null);
@@ -129,7 +132,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
     }
     private Allocatable findTemplate(String templateId)
     {
-        final Collection<Allocatable> templates = facade.getTemplates();
+        final Collection<Allocatable> templates = facade.getRaplaFacade().getTemplates();
         for (Allocatable allocatable : templates)
         {
             if(allocatable.getId().equals(templateId))
@@ -143,7 +146,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
     protected Appointment createAppointment(CalendarModel model)
             throws RaplaException {
         
-        Date startDate = getStartDate(model);
+        Date startDate = getStartDate(model, facade.getUser());
         Date endDate = getEndDate( model, startDate);
         Appointment appointment =  getModification().newAppointment(startDate, endDate);
         return appointment;

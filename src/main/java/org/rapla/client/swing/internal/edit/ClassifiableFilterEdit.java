@@ -47,6 +47,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -836,11 +837,12 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             // used for static testing of the field type 
             @SuppressWarnings("unused")
             SetGetField test;
+            final ClientFacade facade = getClientFacade();
             if (type.equals(AttributeType.ALLOCATABLE))
             {
                 operatorComponent = new JLabel("");
                 DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
-                AllocatableSelectField newField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory);
+                AllocatableSelectField newField = new AllocatableSelectField(facade, getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory);
                 field = newField;
                 test = newField;
                
@@ -851,11 +853,11 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                 Category rootCategory = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
                 if (rootCategory.getDepth() > 2) {
                     Category defaultCategory = (Category) attribute.defaultValue();
-                    CategorySelectField newField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
+                    CategorySelectField newField = new CategorySelectField(facade, getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
 					field = newField;
 					test = newField;
                 } else {
-                    CategoryListField newField = new CategoryListField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), rootCategory);
+                    CategoryListField newField = new CategoryListField(facade, getI18n(), getRaplaLocale(), getLogger(), rootCategory);
 					field = newField;
 					test = newField;
                 }

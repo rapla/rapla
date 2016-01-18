@@ -33,6 +33,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.internal.ConflictImpl;
@@ -155,7 +156,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 public void actionPerformed(ActionEvent e) {
                     try {
                         CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
-                        CommandHistory commanHistory = getClientFacade().getCommandHistory();
+                        CommandHistory commanHistory = getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
                         dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
@@ -171,7 +172,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                 public void actionPerformed(ActionEvent e) {
                     try {
                         CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
-                        CommandHistory commanHistory = getClientFacade().getCommandHistory();
+                        CommandHistory commanHistory = getCommandHistory();
                         commanHistory.storeAndExecute( command);
                     } catch (RaplaException ex) {
                         dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
@@ -189,7 +190,12 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
             dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
-    
+
+    public CommandHistory getCommandHistory()
+    {
+        return getUpdateModule().getCommandHistory();
+    }
+
     public class ConflictEnable implements CommandUndo<RaplaException> {
         boolean enable;
         Collection<String> conflictStrings;

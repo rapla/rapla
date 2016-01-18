@@ -37,7 +37,7 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -53,7 +53,7 @@ public final class PermissionEditTest extends GUITestCase
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
         IOInterface ioInterface = new DefaultIO(logger);
-        ClientFacade facade = getFacade();
+        RaplaFacade facade = getFacade();
         final RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger );

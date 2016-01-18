@@ -17,6 +17,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -26,15 +27,17 @@ import java.util.Date;
 import java.util.List;
 
 public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
-    public AllocatableInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, facade, logger);
+    final private ClientFacade clientFacade;
+    public AllocatableInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
+        this.clientFacade = clientFacade;
     }
 
     void insertPermissions( Allocatable allocatable, StringBuffer buf ) {
         User user;
         Date today;
         try {
-            user = getUser();
+            user = clientFacade.getUser();
             today = getQuery().today();
         } catch (Exception ex) {
             return;
@@ -71,11 +74,10 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     }
     
     @Override
-    public String createHTMLAndFillLinks(Allocatable allocatable,LinkController controller) {
+    public String createHTMLAndFillLinks(Allocatable allocatable,LinkController controller, User user) {
         StringBuffer buf = new StringBuffer();
         insertModificationRow( allocatable, buf );
         insertClassificationTitle( allocatable, buf );
-        final User user = getClientFacade().getUser();
         createTable( getAttributes( allocatable, controller, false, user),buf,false);
         return buf.toString();
     }

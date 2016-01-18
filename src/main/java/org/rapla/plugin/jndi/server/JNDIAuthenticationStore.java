@@ -64,7 +64,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
@@ -225,9 +225,9 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     protected int connectionAttempt = 0;
     
     Logger logger;
-    ClientFacade facade;
+    RaplaFacade facade;
     
-    public JNDIAuthenticationStore(ClientFacade facade,Logger logger) throws RaplaException {
+    public JNDIAuthenticationStore(RaplaFacade facade,Logger logger) throws RaplaException {
         this.logger = logger.getChildLogger("ldap");
         this.facade = facade;
         Preferences preferences = facade.getSystemPreferences();

@@ -13,7 +13,7 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -36,7 +36,7 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
     private static final String TODAY_DATE = "today";
 
     private final CalendarPlaceView view;
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final CalendarSelectionModel model;
     private final EventBus eventBus;
     private final RaplaResources i18n;
@@ -47,7 +47,7 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
-    public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade facade, final RaplaResources i18n, final CalendarSelectionModel model,
+    public CalendarPlacePresenter(final CalendarPlaceView view, final RaplaFacade facade, final RaplaResources i18n, final CalendarSelectionModel model,
             final Logger logger, final EventBus eventBus, Map<String, CalendarPlugin> views)
     {
         this.view = view;

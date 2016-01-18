@@ -6,7 +6,7 @@ package org.rapla.server.servletpages;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
@@ -31,12 +31,12 @@ import java.util.List;
 @Singleton
 public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
 
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final RaplaResources i18n;
     private final String moduleId;
 
     @Inject
-    public RaplaJNLPPageGenerator( ClientFacade facade,RaplaResources i18n )
+    public RaplaJNLPPageGenerator( RaplaFacade facade,RaplaResources i18n )
     {
         this.facade = facade;
         this.i18n = i18n;

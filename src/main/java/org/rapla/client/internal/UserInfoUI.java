@@ -17,6 +17,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -26,13 +27,15 @@ import java.util.Collection;
 
 public class UserInfoUI extends HTMLInfo<User> {
 	ClassificationInfoUI<Allocatable> classificationInfo;
-    public UserInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, facade, logger);
-        classificationInfo = new ClassificationInfoUI<Allocatable>(i18n, raplaLocale, facade, logger);
+    ClientFacade clientFacade;
+    public UserInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+        super(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
+        classificationInfo = new ClassificationInfoUI<Allocatable>(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
+        this.clientFacade = clientFacade;
     }
 
     @Override
-    public String createHTMLAndFillLinks(User user,LinkController controller) {
+    public String createHTMLAndFillLinks(User user,LinkController controller, User forUser) {
         StringBuffer buf = new StringBuffer();
         if (user.isAdmin()) {
             highlight(getString("admin"),buf);
@@ -49,7 +52,7 @@ public class UserInfoUI extends HTMLInfo<User> {
         else
         {
             // no links for user resource to its person so we pass null as link controller
-            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,null,getClientFacade().getUser());
+            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,null, clientFacade.getUser());
 			att.addAll(classificationAttributes);
         }
         createTable(att,buf,false);
@@ -78,7 +81,7 @@ public class UserInfoUI extends HTMLInfo<User> {
     
     @Override
     public String getTooltip(User user, User forUser) {
-        return createHTMLAndFillLinks(user, null );
+        return createHTMLAndFillLinks(user, null, forUser );
     }
 
 }

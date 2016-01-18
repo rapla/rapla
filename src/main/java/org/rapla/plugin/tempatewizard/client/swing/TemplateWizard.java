@@ -29,6 +29,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
@@ -72,7 +73,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
         this.model = model;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.eventBus = eventBus;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
@@ -121,7 +122,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     }
 
     public MenuElement getMenuElement() {
-		//final ClientFacade clientFacade = getClientFacade();
+		//final RaplaFacade clientFacade = getClientFacade();
 		User user = getUser();
         boolean canCreateReservation = permissionController.canCreateReservation(user);
 		MenuElement element;
@@ -134,7 +135,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		{
 			Allocatable template = templateNames.iterator().next();
 			RaplaMenuItem item = new TemplateMenuItem( getId(), template);
-            item.setEnabled(getClientFacade().canAllocate(model, user) && canCreateReservation);
+            item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
 			final String templateName = template.getName(getLocale());
 			item.setText( getI18n().format("new_reservation.format", templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
@@ -144,7 +145,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 		else
 		{
 			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( getClientFacade().canAllocate(model, user) && canCreateReservation);
+			item.setEnabled( getFacade().canAllocate(model, user) && canCreateReservation);
 			item.setText(getString("new_reservations_from_template"));
 			item.setIcon( raplaImages.getIconFromKey("icon.new"));
 			@SuppressWarnings("unchecked")

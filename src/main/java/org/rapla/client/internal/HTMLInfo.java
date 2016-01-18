@@ -19,7 +19,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -33,7 +33,7 @@ import java.util.Iterator;
 
 public abstract class HTMLInfo<T>  extends RaplaComponent {
     
-    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
+    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger) {
         super( facade, i18n, raplaLocale, logger);
 //        this.i18n = i18n;
 //        this.raplaLocale = raplaLacale;
@@ -176,7 +176,7 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         return buf.toString();
     }
     
-    abstract public String createHTMLAndFillLinks(T object,LinkController controller) throws RaplaException ;
+    abstract public String createHTMLAndFillLinks(T object,LinkController controller, User user) throws RaplaException ;
     
     
     public String getTitle(T object) {

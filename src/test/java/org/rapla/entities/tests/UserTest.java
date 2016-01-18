@@ -22,7 +22,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
@@ -34,8 +34,8 @@ import java.util.Locale;
 @RunWith(JUnit4.class)
 public class UserTest  {
     
-    ClientFacade adminFacade;
-    ClientFacade testFacade;
+    RaplaFacade adminFacade;
+    RaplaFacade testFacade;
     Locale locale;
     Server server;
 
@@ -46,7 +46,7 @@ public class UserTest  {
         final ServerServiceContainer servlet = RaplaTestCase.createServer(raplaLogger, "testdefault.xml");
         server = ServletTestBase.createServer(servlet, port);
         // start the client service
-        final Provider<ClientFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
+        final Provider<RaplaFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
         adminFacade = facadeWithRemote.get();
         adminFacade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();

@@ -3,6 +3,7 @@ package org.rapla.examples;
 import org.rapla.RaplaClient;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.ConsoleLogger;
@@ -29,7 +30,7 @@ public class RaplaConnectorTest
             }
 
             // query resouce
-            Allocatable firstResource = facade.getAllocatables() [0] ;
+            Allocatable firstResource = facade.getRaplaFacade().getAllocatables() [0] ;
             logger.info( firstResource.getName( Locale.getDefault()));
 
             // cleanup the Container

@@ -15,7 +15,7 @@ package org.rapla.plugin.jndi.server;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -30,11 +30,11 @@ import javax.inject.Inject;
 
 @DefaultImplementation(of = JNDIConfig.class, context = InjectionContext.server) public class RaplaJNDITestOnLocalhost implements JNDIConfig
 {
-    private final ClientFacade facade;
+    private final RaplaFacade facade;
     private final Logger logger;
     private final RemoteSession remoteSession;
     @Inject
-    public RaplaJNDITestOnLocalhost(final RemoteSession remoteSession,Logger logger, ClientFacade facade)
+    public RaplaJNDITestOnLocalhost(final RemoteSession remoteSession,Logger logger, RaplaFacade facade)
     {
         this.remoteSession = remoteSession;
         this.logger = logger;

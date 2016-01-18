@@ -7,6 +7,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -72,7 +73,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	@Override
 	public boolean isEnabled()
 	{
-	    final RaplaConfiguration config = getClientFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+	    final RaplaConfiguration config = getFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
         final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
         return enabled;
 	}

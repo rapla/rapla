@@ -17,7 +17,7 @@ import org.rapla.RaplaResources;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
 import org.rapla.entities.domain.Period;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
@@ -37,7 +37,7 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     protected PeriodModel periodModel;
 
     @Inject
-    public RaplaDateRenderer(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+    public RaplaDateRenderer(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
         periodModel = getPeriodModel();
     }

@@ -4,7 +4,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -23,7 +23,7 @@ public class TimeslotProvider {
     private final RaplaLocale raplaLocale;
 
 	@Inject
-	public TimeslotProvider(RaplaLocale raplaLocale, ClientFacade facade) throws RaplaException // ParseDateException
+	public TimeslotProvider(RaplaLocale raplaLocale, RaplaFacade facade) throws RaplaException // ParseDateException
 	{
 		this.raplaLocale = raplaLocale;
         try

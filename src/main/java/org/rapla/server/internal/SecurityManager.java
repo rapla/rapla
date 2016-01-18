@@ -26,7 +26,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -51,11 +51,11 @@ public class SecurityManager
     final AppointmentFormater appointmentFormater;
     final StorageOperator operator;
     final Logger logger;
-    final ClientFacade facade;
+    final RaplaFacade facade;
     private final PermissionController permissionController;
 
     @Inject
-    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, ClientFacade facade)
+    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, RaplaFacade facade)
     {
         this.logger = logger;
         this.i18n = i18n;

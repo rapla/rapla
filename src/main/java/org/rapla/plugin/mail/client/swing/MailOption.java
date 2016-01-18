@@ -26,6 +26,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
@@ -72,7 +73,7 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
     private final TextFieldFactory textFieldFactory;
     private final IOInterface ioInterface;
 	@Inject
-    public MailOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,MailConfigService mailConfigService, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)   
+    public MailOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,MailConfigService mailConfigService, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
     {
         super(facade, i18n, raplaLocale, logger);
         this.configService = mailConfigService;

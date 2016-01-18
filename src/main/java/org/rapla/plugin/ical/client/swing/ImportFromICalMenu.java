@@ -18,6 +18,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -163,7 +164,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		bg.add(fileRadio);
 
 		@SuppressWarnings("unchecked")
-		final JComboBox comboEventType = new JComboBox(getClientFacade().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION));
+		final JComboBox comboEventType = new JComboBox(getFacade().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION));
         final JLabel labelEventType = new JLabel(getString("reservation_type"));
         panel1.add(labelEventType, "0,4");
         panel1.add(comboEventType, "2,4");

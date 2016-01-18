@@ -43,6 +43,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaException;
@@ -165,7 +166,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
         this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
@@ -413,8 +414,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         getPrivateReservationController().addReservationEdit(this);
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
-        final ClientFacade clientFacade = getClientFacade();
-        final User user = clientFacade.getUser();
+        final User user = getUserModule().getUser();
         deleteButton.setEnabled( permissionController.canAdmin( reservation, user ));
         if ( !permissionController.canModify( reservation, user) )
         {
@@ -627,7 +627,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             
             PopupContext popupContext = createPopupContext(frame, null);
             ReservationControllerImpl.ReservationSave saveCommand = getPrivateReservationController().new ReservationSave(Collections.singleton(mutableReservation), original != null ? Collections.singleton( original) : null, popupContext);
-            if (getClientFacade().getCommandHistory().storeAndExecute(saveCommand))
+            if (getCommandHistory().storeAndExecute(saveCommand))
             {
                 setSaved(true);
             }
@@ -639,6 +639,11 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                 closeWindow();
             bSaving = false;
         }
+    }
+
+    public CommandHistory getCommandHistory()
+    {
+        return getUpdateModule().getCommandHistory();
     }
 
     /* (non-Javadoc)
@@ -661,7 +666,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                         return getString("delete") + " " + getString("reservation");
                     }
                 };
-                getClientFacade().getCommandHistory().storeAndExecute(deleteCommand);
+                getCommandHistory().storeAndExecute(deleteCommand);
                 closeWindow();
             }
         } finally {

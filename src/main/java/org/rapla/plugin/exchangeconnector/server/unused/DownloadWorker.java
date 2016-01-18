@@ -178,7 +178,7 @@ package org.rapla.plugin.exchangeconnector.server.unused;
 //     */
 //    private Reservation createEquivalentRaplaReservation(Appointment exchangeAppointment) throws Exception {
 //        Reservation raplaReservation = null;
-//        ClientFacade currentClientFacade = getClientFacade();
+//        RaplaFacade currentClientFacade = getClientFacade();
 //        DynamicType importEventType = ExchangeConnectorPlugin.getImportEventType(currentClientFacade);
 //
 //        if (importEventType != null) {

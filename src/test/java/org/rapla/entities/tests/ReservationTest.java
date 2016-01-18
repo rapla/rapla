@@ -23,8 +23,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.test.util.RaplaTestCase;
@@ -42,7 +41,7 @@ public class ReservationTest {
     Calendar cal;
 
     QueryModule queryMod;
-    ClientFacade facade;
+    RaplaFacade facade;
 
     @Before
     public void setUp() throws Exception

@@ -1,5 +1,6 @@
 package org.rapla.plugin.tableview.client.swing;
 
+import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.internal.AbstractRaplaTableColumn;
@@ -7,11 +8,11 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 import javax.swing.table.TableColumn;
 
-public class RaplaTableColumnImpl<T> extends AbstractRaplaTableColumn<T, TableColumn>
+public class RaplaSwingTableColumnImpl<T> extends AbstractRaplaTableColumn<T, TableColumn>
 {
-    protected RaplaTableColumnImpl(TableColumnConfig column, RaplaLocale raplaLocale,ClientFacade facade)
+    protected RaplaSwingTableColumnImpl(TableColumnConfig column, RaplaLocale raplaLocale, ClientFacade facade, User user)
     {
-        super(column, raplaLocale, facade);
+        super(column, raplaLocale, facade.getRaplaFacade(),user);
     }
 
     @Override

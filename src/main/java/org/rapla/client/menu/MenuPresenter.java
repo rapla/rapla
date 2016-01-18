@@ -20,6 +20,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -49,6 +50,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
     private final RaplaClipboard clipboard;
 
     private final PermissionController permissionController;
+    ClientFacade clientFacade;
 
     //    private final InfoFactory infoFactory;
 
@@ -59,14 +61,20 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             CalendarSelectionModel model, ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
             MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view)
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
         this.model = model;
         this.reservationController = reservationController;
         this.view = view;
         this.clipboard = clipboard;
+        this.clientFacade = clientFacade;
         //        this.infoFactory = infoFactory;
       //  this.menuFactory = menuFactory;
-        this.permissionController =facade.getPermissionController();
+        this.permissionController =facade.getRaplaFacade().getPermissionController();
+    }
+
+    User getUser()
+    {
+        return clientFacade.getUser();
     }
 
     protected final CalendarSelectionModel getModel()
@@ -137,7 +145,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
 //                    
 //                }
 //            }, context, null);
-            final ClientFacade clientFacade = getClientFacade();
+            final RaplaFacade raplaFacade = getFacade();
             final User user = getUser();
             if (permissionController.canCreateReservation(user))
             {
@@ -161,7 +169,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
                                 @Override
                                 public void run()
                                 {
-                                    Date start = getStartDate(model);
+                                    Date start = getStartDate(model,raplaFacade,user);
                                     Date end = getEndDate(model, start);
                                     try
                                     {
@@ -197,7 +205,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
                         @Override
                         public void run()
                         {
-                            Date start = getStartDate(model);
+                            Date start = getStartDate(model, raplaFacade,user);
                             boolean keepTime = !model.isMarkedIntervalTimeEnabled();
                             try
                             {
@@ -220,7 +228,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
                     @Override
                     public void run()
                     {
-                        Date start = getStartDate(model);
+                        Date start = getStartDate(model, raplaFacade, user);
                         boolean keepTime = !model.isMarkedIntervalTimeEnabled();
                         try
                         {
@@ -373,11 +381,12 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         {
             copyContextAllocatables = Collections.emptyList();
         }
-        final ClientFacade clientFacade = getClientFacade();
+
+        User user = getUser();
         {
             final String text = getString("copy");
             final String icon = "icon.copy";
-            final boolean enabled = permissionController.canCreateReservation(getUser());
+            final boolean enabled = permissionController.canCreateReservation(user);
             final MenuEntry entry = new MenuEntry(text, icon, enabled);
             menu.add(entry);
             mapping.put(entry, new Runnable()
@@ -398,6 +407,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         {
             final String text = getString("cut");
             final String icon = "icon.cut";
+
             final boolean enabled = permissionController.canCreateReservation(getUser());
             final MenuEntry entry = new MenuEntry(text, icon, enabled);
             menu.add(entry);
@@ -418,8 +428,8 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         }
         {
             final String icon = "icon.edit";
-            boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(getClientFacade().getUser(),appointment.getReservation());
-            boolean canModify = permissionController.canModify(appointment.getReservation(), getUser());
+            boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(user,appointment.getReservation());
+            boolean canModify = permissionController.canModify(appointment.getReservation(), user);
             String text = !canModify && canExchangeAllocatables ? getString("exchange_allocatables") : getString("edit");
             final boolean enabled = canModify || canExchangeAllocatables;
             final MenuEntry entry = new MenuEntry(text, icon, enabled);
@@ -443,7 +453,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         {
             final String text = getI18n().format("delete.format", getString("appointment"));
             final String icon = "icon.delete";
-            final boolean enabled = permissionController.canModify(appointment.getReservation(), getUser());
+            final boolean enabled = permissionController.canModify(appointment.getReservation(), user);
             final MenuEntry entry = new MenuEntry(text, icon, enabled);
             menu.add(entry);
             mapping.put(entry, new Runnable()
@@ -467,7 +477,6 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             boolean enabled = true;
             try
             {
-                User user = getUser();
                 boolean canRead = permissionController.canRead(appointment, user);
                 enabled = canRead;
             }
@@ -528,7 +537,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         //Date start, Date end,
         Collection<Allocatable> allocatables = model.getMarkedAllocatables();
         boolean canAllocate = true;
-        Date start = getStartDate(model);
+        Date start = getStartDate(model,getFacade(), getUser());
         Date end = getEndDate(model, start);
         for (Allocatable allo : allocatables)
         {

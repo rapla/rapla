@@ -12,6 +12,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -63,7 +64,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         TableConfig config;
         try
         {
-            final Preferences preferences = getClientFacade().getSystemPreferences();
+            final Preferences preferences = getFacade().getSystemPreferences();
             config = tableConfigLoader.read(preferences,false);
         }
         catch (Exception ex)

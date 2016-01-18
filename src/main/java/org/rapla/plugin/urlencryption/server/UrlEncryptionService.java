@@ -2,7 +2,7 @@ package org.rapla.plugin.urlencryption.server;
 
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -54,7 +54,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @throws RaplaException
      */
     @Inject
-    public UrlEncryptionService(ClientFacade facade,RaplaKeyStorage keyStore, Logger logger) throws RaplaException {//, InvalidKeyException {
+    public UrlEncryptionService(RaplaFacade facade,RaplaKeyStorage keyStore, Logger logger) throws RaplaException {//, InvalidKeyException {
         this.logger = logger;
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);

@@ -16,6 +16,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 

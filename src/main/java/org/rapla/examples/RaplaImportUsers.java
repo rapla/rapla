@@ -17,6 +17,7 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.ConsoleLogger;
@@ -73,7 +74,8 @@ public class RaplaImportUsers  {
     
     public static void importUsers(ClientFacade facade, Reader reader) throws RaplaException, IOException {
         String[][] entries = Tools.csvRead( reader, 5 );
-        Category rootCategory = facade.getUserGroupsCategory();
+        final RaplaFacade raplaFacade = facade.getRaplaFacade();
+        Category rootCategory = raplaFacade.getUserGroupsCategory();
         for ( int i=0;i<entries.length; i++ ) {
             String[] lineEntries = entries[i];
             String name = lineEntries[0];
@@ -81,7 +83,7 @@ public class RaplaImportUsers  {
             String username = lineEntries[2];
             String groupKey = lineEntries[3];
             String password = lineEntries[4];
-            User user = facade.newUser();
+            User user = raplaFacade.newUser();
             user.setUsername( username );
             user.setName ( name );
             user.setEmail( email );
@@ -89,7 +91,7 @@ public class RaplaImportUsers  {
             if (group != null) {
                 user.addGroup(  group );
             }
-            facade.store(user);
+            raplaFacade.store(user);
             facade.changePassword( user, new char[] {} ,password.toCharArray());
             System.out.println("Imported user " + user + " with password '" + password + "'");
         }

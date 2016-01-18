@@ -29,6 +29,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -45,7 +46,7 @@ import java.util.Set;
 @Extension(provides = SwingViewFactory.class,id = DayResourceViewFactory.DAY_RESOURCE_VIEW)
 public class DayResourceViewFactory implements SwingViewFactory
 {
-    private final ClientFacade facade; 
+    private final ClientFacade facade;
     private final RaplaLocale raplaLocale;
     private final Logger logger;
     private final RaplaResources i18n;
@@ -82,7 +83,7 @@ public class DayResourceViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
-        config = facade.getSystemPreferences().getEntry(DayResourcePlugin.CONFIG, new RaplaConfiguration());
+        config = facade.getRaplaFacade().getSystemPreferences().getEntry(DayResourcePlugin.CONFIG, new RaplaConfiguration());
     }
 
     public final static String DAY_RESOURCE_VIEW = "day_resource";

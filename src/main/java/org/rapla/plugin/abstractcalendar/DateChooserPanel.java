@@ -28,6 +28,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.QueryModule;
 import org.rapla.framework.Disposable;

@@ -14,11 +14,14 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.UserModule;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -26,11 +29,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
+    final private UserModule userModule;
     public DynamicTypeInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(i18n, raplaLocale, facade, logger);
+        super(i18n, raplaLocale, facade.getRaplaFacade(), logger);
+        this.userModule = facade;
     }
 
-    public String createHTMLAndFillLinks(DynamicType object,LinkController controller){
+    @Override
+    public String createHTMLAndFillLinks(DynamicType object,LinkController controller, User user){
         DynamicType dynamicType = object;
         StringBuffer buf = new StringBuffer();
         insertModificationRow( object, buf );
@@ -50,10 +56,11 @@ public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
         createTable(att, buf, false);
         return buf.toString();
     }
-    
-    public String getTooltip(DynamicType object) {
-        if ( this.isAdmin()) {
-            return createHTMLAndFillLinks( object, null);
+
+    @Override
+    public String getTooltip(DynamicType object, User user) {
+        if ( userModule.getUser().isAdmin()) {
+            return createHTMLAndFillLinks( object, null, user);
         } else {
             return null;
         }

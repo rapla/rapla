@@ -25,7 +25,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
@@ -83,7 +83,7 @@ import java.sql.Statement;
     /** exposes a bug in the 0.12.1 Version of Rapla */
     @Test public void testAttributeChange() throws Exception
     {
-        ClientFacade facade = getServerFacade();
+        RaplaFacade facade = getServerFacade();
         // change Type
         changeEventType(facade);
 
@@ -99,7 +99,7 @@ import java.sql.Statement;
 
     }
 
-    private void changeEventType(ClientFacade facade) throws RaplaException
+    private void changeEventType(RaplaFacade facade) throws RaplaException
     {
         DynamicType eventType = facade.edit(facade.getDynamicType("event"));
         Attribute attribute = eventType.getAttribute("description");
@@ -137,7 +137,7 @@ import java.sql.Statement;
 
     @Test public void testNewAttribute() throws Exception
     {
-        ClientFacade facade = getServerFacade();
+        RaplaFacade facade = getServerFacade();
         // change Type
         DynamicType roomType = facade.edit(facade.getDynamicType("room"));
         Attribute attribute = facade.newAttribute(AttributeType.STRING);

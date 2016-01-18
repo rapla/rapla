@@ -25,7 +25,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
@@ -38,7 +38,7 @@ import org.rapla.test.util.RaplaTestCase;
 public class TestUpdateDataManager
 {
     private Logger logger;
-    private ClientFacade facade;
+    private RaplaFacade facade;
     private UpdateDataManager updateManager;
     CachableStorageOperator operator;
 

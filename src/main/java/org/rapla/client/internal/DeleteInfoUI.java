@@ -14,16 +14,17 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.facade.ClientFacade;
+import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 public class DeleteInfoUI extends HTMLInfo<Object[]> {
-    public DeleteInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger) {
+    public DeleteInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger) {
         super(i18n, raplaLocale, facade, logger);
     }
 
-    public String createHTMLAndFillLinks(Object[] deletables,LinkController controller) {
+    public String createHTMLAndFillLinks(Object[] deletables,LinkController controller, User user) {
         StringBuffer buf = new StringBuffer();
         buf.append(getString("delete.question"));
         buf.append("<br>");

@@ -61,15 +61,18 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.UpdateErrorListener;
+import org.rapla.facade.UserModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
@@ -83,6 +86,7 @@ import org.rapla.storage.dbrm.RemoteOperator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.lang.annotation.Repeatable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -102,23 +106,14 @@ import java.util.Vector;
  * This is the default implementation of the necessary JavaClient-Facade to the
  * DB-Subsystem.
  * <p>
- * Sample configuration 1:
- * 
- * <pre>
- *    &lt;facade id="facade">
- *       &lt;store>file&lt;/store>
- *    &lt;/facade>
- * </pre>
- * 
- * </p>
- * <p>
  * The store entry contains the id of a storage-component. Storage-Components
  * are all components that implement the {@link StorageOperator} interface.
  * </p>
  */
 @Singleton
-@DefaultImplementation(of = ClientFacade.class, context = InjectionContext.all)
-public class FacadeImpl implements ClientFacade,StorageUpdateListener {
+@DefaultImplementationRepeatable({ @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all),
+		@DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client) })
+public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListener {
 	protected CommandScheduler notifyQueue;
 	private String workingUserId = null;
 	private StorageOperator operator;
@@ -144,6 +139,11 @@ public class FacadeImpl implements ClientFacade,StorageUpdateListener {
 		this.i18n = i18n;
 		this.notifyQueue = notifyQueue;
 		locale = i18n.getLocale();
+	}
+
+	@Override public RaplaFacade getRaplaFacade()
+	{
+		return this;
 	}
 
 	public boolean canAllocate(CalendarModel model,User user)

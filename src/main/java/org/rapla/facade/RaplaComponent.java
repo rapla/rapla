@@ -28,14 +28,12 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
-import org.rapla.storage.StorageOperator;
 
 import java.util.Collection;
 import java.util.Date;
@@ -55,9 +53,9 @@ public class RaplaComponent
     private Logger logger;
     RaplaLocale raplaLocale;
     RaplaResources i18n;
-    ClientFacade facade;
+    RaplaFacade facade;
 
-    public RaplaComponent(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+    public RaplaComponent(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         this.facade = facade;
         this.i18n = i18n;
         this.logger = logger;
@@ -70,23 +68,7 @@ public class RaplaComponent
 	}
 
 
-    /** returns if the session user is admin */
-    final public boolean isAdmin() {
-        try {
-            return getUser().isAdmin();
-        } catch (RaplaException ex) {
-        }
-        return false;
-    }
 
-    final public boolean isModifyPreferencesAllowed() {
-        try {
-            User user = getUser();
-            return isModifyPreferencesAllowed( user);
-        } catch (RaplaException ex) {
-        }
-        return false;
-    }
     
     @SuppressWarnings("deprecation")
     final public boolean isModifyPreferencesAllowed(User user) 
@@ -127,35 +109,23 @@ public class RaplaComponent
         return false;
     }
 
-    public CalendarOptions getCalendarOptions() {
-    	User user;
-    	try
-    	{
-    		user = getUser();
-    	} 
-    	catch (RaplaException ex) {
-    		// Use system settings if an error occurs
-    		user = null;
-        }
-    	return getCalendarOptions( user);
-    }
     
     protected CalendarOptions getCalendarOptions(final User user) {
-        return getCalendarOptions(user, getClientFacade());
+        return getCalendarOptions(user, getFacade());
     }
 
-    static public CalendarOptions getCalendarOptions(final User user, final ClientFacade clientFacade) {
+    static public CalendarOptions getCalendarOptions(final User user, final RaplaFacade raplaFacade) {
         RaplaConfiguration conf = null;
         try {
             // check if user has calendar options
             if ( user != null)
             {
-                conf = clientFacade.getPreferences( user, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = raplaFacade.getPreferences( user, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             // check if system has calendar options
             if ( conf == null)
             {
-                conf = clientFacade.getPreferences( null, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = raplaFacade.getPreferences( null, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             if ( conf != null)
             {
@@ -172,9 +142,7 @@ public class RaplaComponent
         }
     }
 
-    protected User getUser() throws RaplaException {
-    	return getUserModule().getUser();
-    }
+
 
     protected Logger getLogger() {
         return logger;
@@ -222,27 +190,18 @@ public class RaplaComponent
 
     /** lookupDeprecated QueryModule from the serviceManager */
     protected QueryModule getQuery() {
-        return getClientFacade();
+        return getFacade();
     }
 
-    final protected ClientFacade getClientFacade() {
+    final protected RaplaFacade getFacade() {
         return facade;
     }
 
     /** lookupDeprecated ModificationModule from the serviceManager */
     protected ModificationModule getModification() {
-        return getClientFacade();
+        return getFacade();
     }
 
-    /** lookupDeprecated UpdateModule from the serviceManager */
-    protected UpdateModule getUpdateModule() {
-        return getClientFacade();
-    }
-
-    /** lookupDeprecated UserModule from the serviceManager */
-   protected UserModule getUserModule() {
-        return getClientFacade();
-    }
 
     /** returns a translation for the object name into the selected language. If
      a translation into the selected language is not possible an english translation will be tried next.
@@ -265,7 +224,7 @@ public class RaplaComponent
 
     private static class ClientServiceManager  {
         I18nBundle i18n;
-        ClientFacade facade;
+        RaplaFacade facade;
         RaplaLocale raplaLocale;
         AppointmentFormater appointmentFormater;
     }
@@ -320,13 +279,12 @@ public class RaplaComponent
 		}
 	}
 
-	protected Date getStartDate(CalendarModel model)
-	{
-	    final ClientFacade clientFacade = getClientFacade();
-        return getStartDate(model, clientFacade, clientFacade.getUser());
-	}
-    
-    public static Date getStartDate(CalendarModel model, ClientFacade clientFacade, User user) {
+
+    protected Date getStartDate(CalendarModel model, User user)
+    {
+        return getStartDate( model, facade, user);
+    }
+    public static Date getStartDate(CalendarModel model, RaplaFacade raplaFacade, User user) {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
         Date startDate = null;
         if ( markedIntervals.size() > 0)
@@ -346,9 +304,9 @@ public class RaplaComponent
         }
         if ( selectedDate == null)
         {
-            selectedDate = clientFacade.today();
+            selectedDate = raplaFacade.today();
         }
-        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, clientFacade);
+        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, raplaFacade);
         Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
         startDate = DateTools.toDateTime(selectedDate,time);
         return startDate;

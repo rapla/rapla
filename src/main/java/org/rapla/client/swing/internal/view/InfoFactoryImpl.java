@@ -43,6 +43,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -72,16 +73,17 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public InfoFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+        super(clientFacade, i18n, raplaLocale, logger);
+        RaplaFacade facade = clientFacade.getRaplaFacade();
         this.ioInterface = ioInterface;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        views.put( DynamicType.class, new DynamicTypeInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( DynamicType.class, new DynamicTypeInfoUI(clientFacade, i18n, raplaLocale, logger) );
         views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
         views.put( Appointment.class, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
-        views.put( Allocatable.class, new AllocatableInfoUI(facade, i18n, raplaLocale, logger) );
-        views.put( User.class, new UserInfoUI(facade, i18n, raplaLocale, logger) );
+        views.put( Allocatable.class, new AllocatableInfoUI(clientFacade, i18n, raplaLocale, logger) );
+        views.put( User.class, new UserInfoUI(clientFacade, i18n, raplaLocale, logger) );
         views.put( Period.class, new PeriodInfoUI(facade, i18n, raplaLocale, logger) );
         views.put( Category.class, new CategoryInfoUI(facade, i18n, raplaLocale, logger) );
     }
@@ -209,7 +211,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
      */
     public DialogInterface createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
-        DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getClientFacade(), getLogger());
+        DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade(), getLogger());
         DialogInterface dlg = dialogUiFactory.create(popupContext
                                        ,true
                                        ,viewTable.getComponent()

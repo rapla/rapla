@@ -13,7 +13,7 @@ package org.rapla.plugin.exchangeconnector.server.unused;
 //    /**
 //     * @param clientFacade
 //     */
-//    public CompleteReconciliationHandler(ClientFacade clientFacade) {
+//    public CompleteReconciliationHandler(RaplaFacade clientFacade) {
 //      //  super(null,clientFacade);
 //    }
 //

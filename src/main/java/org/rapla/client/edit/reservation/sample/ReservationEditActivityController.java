@@ -4,7 +4,7 @@ import org.rapla.client.ActivityManager;
 import org.rapla.client.ActivityPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -23,12 +23,12 @@ import java.util.Map;
 public class ReservationEditActivityController  implements ActivityPresenter
 {
     final private Provider<ReservationPresenter> presenterProvider;
-    final private ClientFacade facade;
+    final private RaplaFacade facade;
     final private Logger logger;
     private final Map<String, ReservationPresenter> opendPresenter = new HashMap<>();
 
     @Inject
-    public ReservationEditActivityController(Provider<ReservationPresenter> presenterProvider, ClientFacade facade, Logger logger)
+    public ReservationEditActivityController(Provider<ReservationPresenter> presenterProvider, RaplaFacade facade, Logger logger)
     {
         this.presenterProvider = presenterProvider;
         this.facade = facade;

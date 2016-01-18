@@ -14,17 +14,19 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
-import org.rapla.facade.ClientFacade;
+import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
 public class CategoryInfoUI extends HTMLInfo<Category> {
-    public CategoryInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger){
+    public CategoryInfoUI(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger){
         super(i18n, raplaLocale, facade, logger);
     }
 
-    public String createHTMLAndFillLinks(Category category,LinkController controller) throws RaplaException{
+    @Override
+    public String createHTMLAndFillLinks(Category category,LinkController controller, User user) throws RaplaException{
         return category.getName( getRaplaLocale().getLocale());
     }
 }

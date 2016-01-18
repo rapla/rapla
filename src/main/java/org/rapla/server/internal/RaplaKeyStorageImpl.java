@@ -3,7 +3,7 @@ package org.rapla.server.internal;
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -39,7 +39,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
 	private Base64 base64;
 	CryptoHandler cryptoHandler;
 	
-	ClientFacade facade;
+	RaplaFacade facade;
 	Logger logger;
 	
     public String getRootKeyBase64() 
@@ -55,7 +55,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
      * @throws RaplaException
      */
     @Inject
-    public RaplaKeyStorageImpl(ClientFacade facade, Logger logger) throws RaplaException {
+    public RaplaKeyStorageImpl(RaplaFacade facade, Logger logger) throws RaplaException {
         this.facade = facade;
         this.logger = logger;
         byte[] linebreake = {};

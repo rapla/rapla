@@ -12,6 +12,7 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 
@@ -29,6 +30,7 @@ public class ModifiableCalendarState
     CalendarModelConfigurationImpl beforeTemplateConf;
 
     private final ClientFacade facade;
+
     final private Provider<CalendarSelectionModel> calendarModel;
 
     public CalendarSelectionModel getModel()
@@ -36,7 +38,7 @@ public class ModifiableCalendarState
         return calendarModel.get();
     }
 
-    public ModifiableCalendarState(ClientFacade facade, final CalendarSelectionModel model)
+    public ModifiableCalendarState(ClientFacade facade,final CalendarSelectionModel model)
     {
         this.facade = facade;
         this.calendarModel = new Provider<CalendarSelectionModel>()
@@ -49,7 +51,7 @@ public class ModifiableCalendarState
         } ;
     }
 
-    public ModifiableCalendarState(ClientFacade facade, Provider<CalendarSelectionModel> calendarModel)
+    public ModifiableCalendarState(ClientFacade facade,Provider<CalendarSelectionModel> calendarModel)
     {
         this.facade = facade;
         this.calendarModel = calendarModel;

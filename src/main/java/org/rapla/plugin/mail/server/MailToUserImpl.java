@@ -2,7 +2,7 @@ package org.rapla.plugin.mail.server;
 
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
@@ -13,11 +13,11 @@ public class MailToUserImpl
 {
 
     final MailInterface mail;
-    final ClientFacade facade;
+    final RaplaFacade facade;
     final Logger logger;
 
     @Inject
-    public MailToUserImpl(final MailInterface mail, final ClientFacade facade, final Logger logger)
+    public MailToUserImpl(final MailInterface mail, final RaplaFacade facade, final Logger logger)
     {
         this.mail = mail;
         this.facade = facade;

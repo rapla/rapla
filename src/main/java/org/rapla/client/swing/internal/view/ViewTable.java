@@ -25,6 +25,7 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.RaplaObject;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -114,7 +115,7 @@ public class ViewTable<T> extends RaplaGUIComponent
 
     public void updateInfo(T object, HTMLInfo<T> info) throws RaplaException {
         linkMap.clear();
-        final String html = info.createHTMLAndFillLinks( object, this);
+        final String html = info.createHTMLAndFillLinks( object, this, getUser());
         setTitle (info.getTitle( object));
         updateInfoHtml(html);
      }

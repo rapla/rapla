@@ -3,7 +3,7 @@ package org.rapla.rest.server;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
@@ -22,7 +22,7 @@ public class RaplaDynamicTypesRestPage extends AbstractRestPage
 {
     final User user;
     @Inject
-    public RaplaDynamicTypesRestPage(ClientFacade facade,RemoteSession session) throws RaplaException
+    public RaplaDynamicTypesRestPage(RaplaFacade facade,RemoteSession session) throws RaplaException
     {
         super(facade);
         user = session.getUser();

@@ -17,7 +17,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -29,7 +29,7 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
 	AppointmentFormater appointmentFormater;
 	
     @Inject
-    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger, AppointmentFormater appointmentFormater)
+    public AppointmentInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super( i18n, raplaLocale, facade, logger);
         parent = new ReservationInfoUI( i18n, raplaLocale, facade, logger, appointmentFormater);
@@ -55,9 +55,9 @@ public class AppointmentInfoUI extends HTMLInfo<Appointment> {
    }
 
     public String createHTMLAndFillLinks(Appointment appointment,
-			LinkController controller) throws RaplaException {
+			LinkController controller, User user) throws RaplaException {
 		Reservation reservation = appointment.getReservation();
-		return parent.createHTMLAndFillLinks(reservation, controller);
+		return parent.createHTMLAndFillLinks(reservation, controller, user);
 	}
     
 

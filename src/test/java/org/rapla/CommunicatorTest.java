@@ -13,7 +13,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
@@ -27,9 +27,9 @@ public class CommunicatorTest
 {
     private Server server;
     Logger logger;
-    Provider<ClientFacade> clientFacadeProvider;
+    Provider<RaplaFacade> clientFacadeProvider;
 
-    ClientFacade createFacade()
+    RaplaFacade createFacade()
     {
         return clientFacadeProvider.get();
     }
@@ -54,7 +54,7 @@ public class CommunicatorTest
     @Test
     public void testLargeform() throws Exception
     {
-        ClientFacade facade = createFacade();
+        RaplaFacade facade = createFacade();
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         StringBuffer buf = new StringBuffer();
@@ -72,7 +72,7 @@ public class CommunicatorTest
     @Test
     public void testClient() throws Exception
     {
-        ClientFacade facade = createFacade();
+        RaplaFacade facade = createFacade();
        boolean success = facade.login("admin","test".toCharArray());
        Assert.assertFalse("Login should fail", success);
        facade.login("homer","duffs".toCharArray());
@@ -116,7 +116,7 @@ public class CommunicatorTest
     @Test
     public void testUmlaute() throws Exception
     {
-        ClientFacade facade = createFacade();
+        RaplaFacade facade = createFacade();
         facade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         String typeName = alloc.getClassification().getType().getKey();
@@ -147,12 +147,12 @@ public class CommunicatorTest
     public void testManyClients() throws Exception
     {
         int clientNum = 50;
-        ClientFacade [] opts = new ClientFacade[ clientNum];
+        RaplaFacade[] opts = new RaplaFacade[ clientNum];
 
 
         for ( int i=0;i<clientNum;i++)
         {
-            ClientFacade facade = createFacade();
+            RaplaFacade facade = createFacade();
             facade.login("homer","duffs".toCharArray());
             opts[i] = facade;
             System.out.println("JavaClient " + i + " successfully subscribed");
@@ -160,7 +160,7 @@ public class CommunicatorTest
 
         for ( int i=0;i<clientNum;i++)
         {
-            ClientFacade opt = opts[i];
+            RaplaFacade opt = opts[i];
             opt.logout();
         }
     }

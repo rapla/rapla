@@ -27,7 +27,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
@@ -39,7 +39,7 @@ import java.util.Date;
 import java.util.concurrent.Semaphore;
 
 public final class ReservationControllerTest extends GUITestCase {
-	ClientFacade facade = null;
+	RaplaFacade facade = null;
 
 	public void testMain() throws Exception {
 		Reservation[] reservations = facade.getReservationsForAllocatable(null, null, null, null);
@@ -104,7 +104,7 @@ public final class ReservationControllerTest extends GUITestCase {
 	
 	
 	public void testPeriodChange() throws Exception {
-		ClientFacade facade = getFacade();
+		RaplaFacade facade = getFacade();
 		ClassificationFilter[] filters = facade.getDynamicType(StorageOperator.PERIOD_TYPE).newClassificationFilter().toArray();
 		Allocatable[] periods = facade.getAllocatables(filters);
 		facade.removeObjects(periods);

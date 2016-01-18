@@ -46,7 +46,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -79,10 +79,10 @@ public class Export2iCalConverter
     boolean hasLocationType;
     final RaplaLocale raplaLocale;
     final Logger logger;
-    final ClientFacade facade;
+    final RaplaFacade facade;
     final RaplaResources i18n;
 
-    @Inject public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale, Logger logger, ClientFacade facade, RaplaResources i18n )
+    @Inject public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale, Logger logger, RaplaFacade facade, RaplaResources i18n )
             throws RaplaException
     {
         this.timezoneConverter = timezoneConverter;

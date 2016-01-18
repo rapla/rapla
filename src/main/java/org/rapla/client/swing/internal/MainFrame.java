@@ -22,6 +22,7 @@ import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
@@ -194,7 +195,7 @@ public class MainFrame extends RaplaGUIComponent
             User  user = getUser();
             final boolean admin = user.isAdmin();
             String message =   getString("user") + " "+ user.toString(); 
-            Allocatable template = getClientFacade().getTemplate();
+            Allocatable template = getUpdateModule().getTemplate();
             if ( template != null)
             {
             	Locale locale = getLocale();

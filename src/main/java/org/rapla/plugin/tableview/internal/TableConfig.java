@@ -5,10 +5,11 @@ import org.rapla.RaplaResources;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.dynamictype.internal.ParsedText;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.DefaultConfiguration;
@@ -557,31 +558,31 @@ public class TableConfig
 
     @Singleton public static class TableConfigLoader
     {
-        private final ClientFacade clientFacade;
+        private final RaplaFacade raplaFacade;
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
         private final Set<TableColumnDefinitionExtension> extensions;
         private final RaplaTableColumnFactory tableColumnCreator;
 
-        @Inject public TableConfigLoader(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale,
+        @Inject public TableConfigLoader(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale,
                 Set<TableColumnDefinitionExtension> extensions, RaplaTableColumnFactory tableColumnCreator)
         {
-            this.clientFacade = clientFacade;
+            this.raplaFacade = raplaFacade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
             this.extensions = extensions;
             this.tableColumnCreator = tableColumnCreator;
         }
 
-        public <T, C> List<RaplaTableColumn<T, C>> loadColumns(String configName) throws RaplaException
+        public <T, C> List<RaplaTableColumn<T, C>> loadColumns(String configName, User user) throws RaplaException
         {
             List<RaplaTableColumn<T, C>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<T, C>>();
-            final Preferences preferences = clientFacade.getSystemPreferences();
+            final Preferences preferences = raplaFacade.getSystemPreferences();
             TableConfig config = read(preferences, false);
             final Collection<TableColumnConfig> columns = config.getColumns(configName);
             for (final TableColumnConfig column : columns)
             {
-                reservationColumnPlugins.add(tableColumnCreator.createColumn(column, raplaLocale));
+                reservationColumnPlugins.add(tableColumnCreator.createColumn(column, user,raplaLocale));
             }
             return reservationColumnPlugins;
         }

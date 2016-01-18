@@ -26,6 +26,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -114,7 +115,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.ioInterface = ioInterface;
         cutListener.setCut(true);
         table = new JTable() {
@@ -158,7 +159,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         //Map<?,?> map = getContainer().lookupServicesFor(RaplaExtensionPoints.APPOINTMENT_STATUS);
         //Collection<AppointmentStatusFactory> appointmentStatusFactories = (Collection<AppointmentStatusFactory>) map.values();
 
-        List<RaplaTableColumn<Reservation,TableColumn>> reservationColumnConfigured = tableConfigLoader.loadColumns("events");
+        List<RaplaTableColumn<Reservation,TableColumn>> reservationColumnConfigured = tableConfigLoader.loadColumns("events", getUser());
         reservationTableModel = new ReservationTableModel( getLocale(), i18n, reservationColumnConfigured );
         ReservationTableModel tableModel = reservationTableModel;
         sorter = createAndSetSorter(model, table, TableViewPlugin.EVENTS_SORTING_STRING_OPTION, tableModel);
@@ -303,7 +304,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 		try {
 			updateMenu(editMenu,newMenu, p);
 			final User user = getUser();
-            final ClientFacade clientFacade = getClientFacade();
+            final RaplaFacade raplaFacade = getFacade();
             boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(user);
 			boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
 			newMenu.setEnabled(enableNewMenu);

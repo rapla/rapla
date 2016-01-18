@@ -20,6 +20,7 @@ import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -27,6 +28,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -60,7 +62,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     @Inject
     public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
         
@@ -129,7 +131,8 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         boolean canAdmin = true;
         boolean allPermissions = true;
         boolean internal = false;
-        final ClientFacade clientFacade = getClientFacade();
+        final User user = getUser();
+
         for ( Allocatable alloc:objectList)
         {
             if ( isInternalType( alloc))
@@ -143,7 +146,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             String annotation = alloc.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
 			boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
 			values.add(holdBackConflicts);
-			if ( !permissionController.canAdmin( alloc, clientFacade.getUser()))
+            if ( !permissionController.canAdmin( alloc, user))
 			{
 			    canAdmin = false;
 			}

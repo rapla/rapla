@@ -41,6 +41,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
@@ -993,7 +994,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 Allocatable allocatable = (Allocatable) object;
                 try {
     				User user = getUser();
-    				if ( !getClientFacade().getPermissionController().canAllocate(allocatable, user, today))
+    				if ( !getFacade().getPermissionController().canAllocate(allocatable, user, today))
     				{
     					icon = forbiddenIcon;
     				}

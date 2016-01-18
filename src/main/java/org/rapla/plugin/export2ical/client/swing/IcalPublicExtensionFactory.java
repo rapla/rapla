@@ -8,6 +8,7 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -41,7 +42,7 @@ public class IcalPublicExtensionFactory implements PublishExtensionFactory
     @Override
     public boolean isEnabled()
     {
-        final RaplaConfiguration config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+        final RaplaConfiguration config = facade.getRaplaFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
         final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
         return enabled;
     }

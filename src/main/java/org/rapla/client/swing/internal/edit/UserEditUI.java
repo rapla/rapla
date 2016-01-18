@@ -36,6 +36,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -82,7 +83,6 @@ public class UserEditUI  extends AbstractEditUI<User> {
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     /**
-     * @param context
      * @throws RaplaException
      */
     @Inject
@@ -161,10 +161,6 @@ public class UserEditUI  extends AbstractEditUI<User> {
         RaplaButton newButton  = new RaplaButton(RaplaButton.SMALL);
         RaplaButton removeButton  = new RaplaButton(RaplaButton.SMALL);
         
-        /**
-         * @param sm
-         * @throws RaplaException
-         */
         public PersonSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
             super(facade, i18n, raplaLocale, logger);
             setFieldName( getString("person"));

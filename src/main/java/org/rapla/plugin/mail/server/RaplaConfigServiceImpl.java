@@ -15,7 +15,7 @@ package org.rapla.plugin.mail.server;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -37,12 +37,12 @@ public class RaplaConfigServiceImpl implements MailConfigService
     final private RaplaKeyStorage keyStore;
     final private  RemoteSession remoteSession;
     final private  boolean externalConfigEnabled;
-    final private ClientFacade facade;
+    final private RaplaFacade facade;
     final private MailInterface mailInterface;
 
 
     @Inject
-    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,ClientFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession)
+    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession)
     {
         this.remoteSession = remoteSession;
         this.keyStore = keyStore;

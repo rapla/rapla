@@ -18,7 +18,7 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Configuration;
@@ -63,7 +63,7 @@ import java.util.TreeSet;
 public class ServerServiceImpl implements ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
-    final protected ClientFacade facade;
+    final protected RaplaFacade facade;
     final Logger logger;
 
     private final Map<String,RaplaPageExtension> pageMap;
@@ -82,7 +82,7 @@ public class ServerServiceImpl implements ServerServiceContainer
 
 
     @Inject
-    public ServerServiceImpl(CachableStorageOperator operator, ClientFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
+    public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
             final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices,CommandScheduler scheduler)
     {
         this.scheduler = scheduler;
@@ -195,7 +195,7 @@ public class ServerServiceImpl implements ServerServiceContainer
         return logger;
     }
 
-    public ClientFacade getFacade()
+    public RaplaFacade getFacade()
     {
         return facade;
     }

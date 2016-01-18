@@ -3,7 +3,7 @@ package org.rapla.plugin.exchangeconnector.server;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -21,12 +21,12 @@ public class ExchangeConnectorRemoteConfigFactory implements ExchangeConnectorCo
 {
 			
     private final RemoteSession remoteSession;
-    private final ClientFacade clientFacade;
+    private final RaplaFacade raplaFacade;
 
     @Inject
-	public ExchangeConnectorRemoteConfigFactory(final RemoteSession remoteSession, ClientFacade clientFacade) {
+	public ExchangeConnectorRemoteConfigFactory(final RemoteSession remoteSession, RaplaFacade raplaFacade) {
         this.remoteSession = remoteSession;
-        this.clientFacade = clientFacade;
+        this.raplaFacade = raplaFacade;
 	}
 
     @Override
@@ -37,7 +37,7 @@ public class ExchangeConnectorRemoteConfigFactory implements ExchangeConnectorCo
         {
             throw new RaplaSecurityException("Access only for admin users");
         }
-        Preferences preferences = clientFacade.getSystemPreferences();
+        Preferences preferences = raplaFacade.getSystemPreferences();
         RaplaConfiguration config = preferences.getEntry( ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, new RaplaConfiguration());
         return config;
     }

@@ -1,6 +1,7 @@
 package org.rapla.plugin.tableview.client.gwt;
 
-import org.rapla.facade.ClientFacade;
+import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -14,17 +15,17 @@ import javax.inject.Inject;
 @DefaultImplementation(context = { InjectionContext.gwt }, of = RaplaTableColumnFactory.class)
 public class GwtRaplaTableColumnFactory implements RaplaTableColumnFactory
 {
-    final ClientFacade facade;
+    final RaplaFacade facade;
     @Inject
-    public GwtRaplaTableColumnFactory(ClientFacade facade)
+    public GwtRaplaTableColumnFactory(RaplaFacade facade)
     {
         this.facade = facade;
     }
 
     @Override
-    public RaplaTableColumn createColumn(TableColumnConfig column, RaplaLocale raplaLocale)
+    public RaplaTableColumn createColumn(TableColumnConfig column, User user,RaplaLocale raplaLocale)
     {
-        return new AbstractRaplaTableColumn(column, raplaLocale, facade)
+        return new AbstractRaplaTableColumn(column, raplaLocale, facade, user)
         {
             @Override
             public void init(Object column)

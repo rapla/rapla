@@ -84,7 +84,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     }
 
     @Override
-    public boolean hasAccess(Collection<? extends Classification> objectList, Attribute attribute, User user, AccessLevel edit)
+    public boolean hasAccess(Classification object, Attribute attribute, User user, AccessLevel edit)
     {
         return true;
     }

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -44,7 +45,8 @@ public class ReservationTableViewPage extends TableViewPage<Reservation, TableCo
         final Date startDate = model.getStartDate();
         final Date endDate = model.getEndDate();
         final List<Reservation> reservations = Arrays.asList(model.getReservations(startDate, endDate));
-        List<RaplaTableColumn<Reservation, TableColumn>> columPluigns = tableConfigLoader.loadColumns("events");
+        final User user = model.getUser();
+        List<RaplaTableColumn<Reservation, TableColumn>> columPluigns = tableConfigLoader.loadColumns("events", user);
         return getCalendarHTML(columPluigns, reservations, TableViewPlugin.EVENTS_SORTING_STRING_OPTION);
     }
 

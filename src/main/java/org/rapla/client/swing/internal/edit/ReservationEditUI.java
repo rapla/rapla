@@ -38,6 +38,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -70,7 +71,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
             DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = facade.getPermissionController();
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
         classificationField = classificationFieldFactory.create();
         this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
 
@@ -163,10 +164,10 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         classificationField.mapFrom( objectList);
         permissionListField.mapFrom( objectList);
         boolean canAdmin = true;
-        final ClientFacade clientFacade = getClientFacade();
+        final RaplaFacade raplaFacade = getFacade();
         for ( Reservation event:objectList)
         {
-            if ( !permissionController.canAdmin( event, clientFacade.getUser()))
+            if ( !permissionController.canAdmin( event, getUser()))
             {
                 canAdmin = false;
             }

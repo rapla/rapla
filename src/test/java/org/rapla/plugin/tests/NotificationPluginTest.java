@@ -25,7 +25,7 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.notification.NotificationPlugin;
@@ -43,7 +43,7 @@ public class NotificationPluginTest
 {
     ServerServiceImpl raplaServer;
 
-    ClientFacade facade1;
+    RaplaFacade facade1;
     Locale locale;
     Logger logger;
 

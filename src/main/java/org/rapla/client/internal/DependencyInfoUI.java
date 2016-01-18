@@ -15,7 +15,8 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.DependencyException;
-import org.rapla.facade.ClientFacade;
+import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -24,12 +25,12 @@ import org.rapla.storage.StorageOperator;
 import java.util.Iterator;
 
 class DependencyInfoUI extends HTMLInfo<DependencyException> {
-    public DependencyInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, ClientFacade facade, Logger logger){
+    public DependencyInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger){
         super(i18n, raplaLocale, facade, logger);
     }
 
     @Override
-    public String createHTMLAndFillLinks(DependencyException ex,LinkController controller) throws RaplaException{
+    public String createHTMLAndFillLinks(DependencyException ex,LinkController controller, User user) throws RaplaException{
         StringBuffer buf = new StringBuffer();
         buf.append(getString("error.dependencies")+":");
         buf.append("<br>");

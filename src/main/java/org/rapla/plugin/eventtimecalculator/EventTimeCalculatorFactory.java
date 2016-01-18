@@ -1,7 +1,7 @@
 package org.rapla.plugin.eventtimecalculator;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -14,11 +14,11 @@ import javax.inject.Singleton;
 public class EventTimeCalculatorFactory
 {
 
-	private final Provider<ClientFacade> facadeProvider;
+	private final Provider<RaplaFacade> facadeProvider;
 	private final Logger logger;
     private final EventTimeCalculatorResources eventTimeI18n;
 	@Inject
-    public EventTimeCalculatorFactory(Provider<ClientFacade> facade,Logger logger, final EventTimeCalculatorResources eventTimeI18n)
+    public EventTimeCalculatorFactory(Provider<RaplaFacade> facade,Logger logger, final EventTimeCalculatorResources eventTimeI18n)
 	{
 		this.facadeProvider = facade;
 		this.logger = logger;
@@ -28,7 +28,7 @@ public class EventTimeCalculatorFactory
     public  EventTimeModel getEventTimeModel ()
 	{
 		Configuration configuration = null;
-		final ClientFacade facade = facadeProvider.get();
+		final RaplaFacade facade = facadeProvider.get();
         try
 		{
 			configuration = facade.getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
