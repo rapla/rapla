@@ -169,16 +169,16 @@ import java.sql.Statement;
     @org.junit.Test
     public void testCreateResourceAndRemoveAttribute() throws RaplaException
     {
-        Allocatable newResource = facade1.newResource();
-        newResource.setClassification(facade1.getDynamicType("room").newClassification());
+        Allocatable newResource = clientFacade.newResource();
+        newResource.setClassification(clientFacade.getDynamicType("room").newClassification());
         newResource.getClassification().setValue("name", "test-resource");
         //If commented in it works
         //newResource.getClassification().setValue("belongsto", facade1.getSuperCategory().getCategory("department").getCategories()[0]);
-        facade1.store(newResource);
+        clientFacade.store(newResource);
 
-        DynamicType typeEdit3 = facade1.edit(facade1.getDynamicType("room"));
+        DynamicType typeEdit3 = clientFacade.edit(clientFacade.getDynamicType("room"));
         typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
-        facade1.store(typeEdit3);
+        clientFacade.store(typeEdit3);
 
     }
 

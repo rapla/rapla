@@ -19,6 +19,7 @@ import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaLocale;
@@ -167,7 +168,7 @@ public abstract class RaplaTestCase
         return facade;
     }
 
-    public static Provider<RaplaFacade> createFacadeWithRemote(final Logger logger, int port)
+    public static Provider<ClientFacade> createFacadeWithRemote(final Logger logger, int port)
     {
         final String serverURL = "http://localhost:" + port + "/";
 
@@ -193,9 +194,9 @@ public abstract class RaplaTestCase
         final RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        Provider<RaplaFacade> clientFacadeProvider = new Provider<RaplaFacade>()
+        Provider<ClientFacade> clientFacadeProvider = new Provider<ClientFacade>()
         {
-            @Override public RaplaFacade get()
+            @Override public ClientFacade get()
             {
                 RemoteConnectionInfo connectionInfo = new RemoteConnectionInfo();
                 connectionInfo.setServerURL(serverURL);
