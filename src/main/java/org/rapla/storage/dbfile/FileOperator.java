@@ -48,6 +48,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
@@ -453,7 +454,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         for ( ReferenceInfo id: evt.getRemoveIds())
         {
-            if ( history.isSupportedEntity( id.getType()))
+            if ( EntityHistory.isSupportedEntity( id.getType()))
             {
                 final Entity e = tryResolve(id);
                 final boolean isDelete = true;

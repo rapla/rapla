@@ -83,6 +83,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
+import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.xml.CategoryReader;
 import org.rapla.storage.xml.DynamicTypeReader;
@@ -2492,13 +2493,13 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     boolean canDelete(Class<Entity> typeClass)
     {
-        return history.isSupportedEntity(typeClass);
+        return EntityHistory.isSupportedEntity(typeClass);
     }
     
     @Override
     boolean canStore(@SuppressWarnings("rawtypes") Class<Entity> typeClass)
     {
-        return history.isSupportedEntity(typeClass);
+        return EntityHistory.isSupportedEntity(typeClass);
     }
 
 

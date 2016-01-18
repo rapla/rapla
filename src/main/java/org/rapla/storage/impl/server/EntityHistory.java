@@ -37,7 +37,7 @@ public class EntityHistory
         return map.keySet();
     }
 
-    public boolean isSupportedEntity(Class<? extends Entity> type)
+    public static boolean isSupportedEntity(Class<? extends Entity> type)
     {
         return type == Allocatable.class || type == DynamicType.class || type == Reservation.class || type == User.class || type == Category.class
                 || type == Conflict.class;

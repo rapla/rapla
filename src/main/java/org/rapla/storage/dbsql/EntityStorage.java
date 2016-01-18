@@ -342,12 +342,12 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
             {
                 stmt = con.prepareStatement(deleteSql);
                 boolean commitNeeded = false;
-                for (ReferenceInfo entity : entities)
+                for (ReferenceInfo referenceInfo : entities)
                 {
-                    final Timestamp castedEntity = (Timestamp)entity;
-                    if(has(entity.getId()))
+                    final Timestamp castedEntity = (Timestamp)cache.get(referenceInfo.getId());
+                    if(has(referenceInfo.getId()))
                     {
-                        stmt.setString(1, entity.getId());
+                        stmt.setString(1, referenceInfo.getId());
                         setTimestamp(stmt, 2, castedEntity.getLastChanged());
                         stmt.addBatch();
                         commitNeeded = true;
