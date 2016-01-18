@@ -60,7 +60,7 @@ public class PreferencesTest  {
         //clone.putEntry("org.rapla.client.swing.gui.weekview", config);
         modificationMod.store(clone);
         //assertEquals(allocatable, queryMod.resolve(config));
-        updateMod.refresh();
+        modificationMod.refresh();
     }
 
 }

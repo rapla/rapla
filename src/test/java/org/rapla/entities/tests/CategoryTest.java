@@ -78,7 +78,7 @@ public class CategoryTest {
         superCategory.addCategory(areas);
         modificationMod.store(superCategory);
         Assert.assertTrue(areas.getId() != null);
-        updateMod.refresh();
+        modificationMod.refresh();
         Category[] categories = queryMod.getSuperCategory().getCategories();
         for (int i=0;i<categories.length;i++)
             if (categories[i].equals(areas))

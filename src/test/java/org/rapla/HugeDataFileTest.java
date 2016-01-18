@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -17,7 +18,8 @@ public class HugeDataFileTest
     @Test
     public void testHuge() throws Exception
     {
-        RaplaFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        RaplaFacade facade = clientFacade.getRaplaFacade();
         int RESERVATION_COUNT =15000;
         Reservation[] events = new Reservation[RESERVATION_COUNT];
         
@@ -33,10 +35,10 @@ public class HugeDataFileTest
         }
 
         facade.storeObjects(events);
-        facade.logout();
+        clientFacade.logout();
 
         
-        facade.login("homer", "duffs".toCharArray());
+        clientFacade.login("homer", "duffs".toCharArray());
     }
     
 

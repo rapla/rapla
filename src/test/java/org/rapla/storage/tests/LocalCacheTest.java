@@ -33,6 +33,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
@@ -113,7 +114,8 @@ public class LocalCacheTest  {
     @Test
     public void test2() throws Exception {
 
-        final RaplaFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        final ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        RaplaFacade facade = clientFacade.getRaplaFacade();
         final CachableStorageOperator storage = (CachableStorageOperator) facade.getOperator();
         final Period[] periods = facade.getPeriods();
         storage.runWithReadLock(new CachableStorageOperatorCommand() {
@@ -168,7 +170,8 @@ public class LocalCacheTest  {
 
     @Test
     public void testConflicts() throws Exception {
-        RaplaFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        final ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        RaplaFacade facade = clientFacade.getRaplaFacade();
         CachableStorageOperator storage = (CachableStorageOperator) facade.getOperator();
         Reservation reservation = facade.newReservation();
         //start is 13/4  original end = 28/4

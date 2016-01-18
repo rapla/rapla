@@ -21,40 +21,6 @@ public interface UpdateModule
 	TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<Integer>("org.rapla.refreshInterval");
     TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<Integer>("org.rapla.archiveAge");
 	int REFRESH_INTERVAL_DEFAULT = 30000;
-    
-    /**  
-     *  Refreshes the data that is in the cache (or on the client)
-        and notifies all registered {@link ModificationListener ModificationListeners}
-        with an update-event. 
-        There are two types of refreshs.
-        
-        <ul>
-        <li>Incremental Refresh: Only the changes are propagated</li>
-        <li>Full Refresh: The complete data is reread. (Currently disabled in Rapla)</li>
-        </ul>
-        
-        <p>
-        Incremental refreshs are the normal case if you have a client server basis.
-        (In a single user system no refreshs are necessary at all). 
-        The refreshs are triggered in defined intervals if you use the webbased communication 
-        and automaticaly if you use the old communication layer. You can change the refresh interval
-        via the admin options.
-        </p>
-        <p>
-        Of course you can call a refresh anytime you want to synchronize with the server, e.g. if 
-        you want to ensure you are uptodate before editing. If you are on the server you dont need to refresh.
-        </p>
-        
-        
-        <strong>WARNING: When using full refresh on a local file storage
-        all information will be  changed. So use it  
-        only if you modify the data from external.
-        You better re-get and re-draw all
-        the information in the Frontend after a full refresh.
-        </strong>
-       
-    */
-    void refresh() throws RaplaException;
 
     /**
      *  registers a new ModificationListener.

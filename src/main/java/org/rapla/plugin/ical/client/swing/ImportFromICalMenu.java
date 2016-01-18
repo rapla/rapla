@@ -305,7 +305,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
             		int eventsImported = status[1];
             		int eventsPresent = status[2];
             		int eventsSkipped = status[3];
-            		getClientFacade().refresh();
+            		getFacade().refresh();
 					dlg.close();
 					String text = "Imported " + eventsImported + "/" + eventsInICal + ". " + eventsPresent + " present";
 					if (eventsSkipped > 0)

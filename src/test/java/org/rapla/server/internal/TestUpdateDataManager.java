@@ -243,7 +243,7 @@ public class TestUpdateDataManager
         // create second user first
         Date lastSynced = new Date();
         final User readUser = facade.getUser("monty");
-        facade.logout();
+        //facade.logout();
         final User writeUser = facade.getUser("homer");
         final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
         lastSynced = updateEvent.getLastValidated();

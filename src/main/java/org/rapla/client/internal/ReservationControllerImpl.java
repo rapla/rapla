@@ -1316,7 +1316,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             {
                 if(!reservation.getLastChanged().equals(mutableReservation.getLastChanged()))
                 {
-                    getClientFacade().refresh();
+                    getFacade().refresh();
                     throw new RaplaException(getI18n().format("error.new_version", reservation.toString()));
                 }
             }

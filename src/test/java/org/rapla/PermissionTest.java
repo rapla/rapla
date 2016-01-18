@@ -43,8 +43,10 @@ import java.util.Locale;
 @RunWith(JUnit4.class)
 public class PermissionTest  {
     
-    ClientFacade adminFacade;
-    ClientFacade testFacade;
+    RaplaFacade adminFacade;
+    ClientFacade adminFacadeClient;
+    RaplaFacade testFacade;
+    ClientFacade testFacadeClient;
     Locale locale;
     private Server server;
     ServerServiceContainer servlet;
@@ -58,9 +60,11 @@ public class PermissionTest  {
         servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
         this.server = ServletTestBase.createServer(servlet, port);
         Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
-        adminFacade = clientFacadeProvider.get();
-        testFacade = clientFacadeProvider.get();
-        adminFacade.login("homer","duffs".toCharArray());
+        ClientFacade adminFacadeClient = clientFacadeProvider.get();
+        ClientFacade testFacadeClient = clientFacadeProvider.get();
+        adminFacade = adminFacadeClient.getRaplaFacade();
+        testFacade = testFacadeClient.getRaplaFacade();
+        adminFacadeClient.login("homer","duffs".toCharArray());
         try
         {
             Category userGroupsCategory = adminFacade.getUserGroupsCategory();
@@ -77,8 +81,8 @@ public class PermissionTest  {
             user.setUsername("test");
             user.addGroup( testGroup );
             adminFacade.store( user );
-            adminFacade.changePassword( user, new char[]{}, new char[] {});
-            testFacade.login("test","".toCharArray());
+            adminFacadeClient.changePassword( user, new char[]{}, new char[] {});
+            testFacadeClient.login("test","".toCharArray());
         }
         catch (Exception ex) {
             throw ex;
@@ -88,8 +92,8 @@ public class PermissionTest  {
     @After
     public void tearDown() throws  Exception
     {
-        adminFacade.logout();
-        testFacade.logout();
+        adminFacadeClient.logout();
+        testFacadeClient.logout();
         server.stop();
     }
 
@@ -169,7 +173,7 @@ public class PermissionTest  {
         Allocatable allocatable2 = adminFacade.newResource();
         allocatable2.getClassification().setValue("name","test-allocatable2");
         permission = allocatable.newPermission();
-        permission.setUser( testFacade.getUser());
+        permission.setUser( testFacadeClient.getUser());
         permission.setAccessLevel( Permission.ADMIN);
         allocatable2.addPermission( permission );
         adminFacade.store( allocatable2 );
@@ -197,7 +201,7 @@ public class PermissionTest  {
 
     private void clientReadPermissions() throws Exception {
         final PermissionController permissionController = DefaultPermissionControllerSupport.getController(testFacade.getOperator());
-        User user = testFacade.getUser();
+        User user = testFacadeClient.getUser();
         Allocatable a = getTestResource();
         Assert.assertNotNull(a);
         Assert.assertTrue(permissionController.canRead(a, user));
@@ -209,7 +213,7 @@ public class PermissionTest  {
     private void clientAllocatePermissions() throws Exception {
         final PermissionController permissionController = DefaultPermissionControllerSupport.getController(testFacade.getOperator());
         Allocatable allocatable = getTestResource();
-        User user = testFacade.getUser();
+        User user = testFacadeClient.getUser();
         Assert.assertNotNull(allocatable);
         Assert.assertTrue(permissionController.canRead(allocatable, user));
         Date start1 = DateTools.addDay(testFacade.today());

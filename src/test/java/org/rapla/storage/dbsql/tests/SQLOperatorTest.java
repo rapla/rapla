@@ -127,7 +127,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         RaplaFacade facade = getFacade();
         CachableStorageOperator operator = getOperator();
-        facade.login("homer", "duffs".toCharArray());
         Reservation event = facade.newReservation();
         Appointment appointment = facade.newAppointment(new Date(), new Date());
         event.getClassification().setValue("name", "test");
@@ -151,10 +150,10 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         CachableStorageOperator operator = getOperator();
         RaplaFacade facade = getFacade();
-        facade.login("homer", "duffs".toCharArray());
         Date start = DateTools.cutDate(new Date());
         Date end = new Date(start.getTime() + DateTools.MILLISECONDS_PER_WEEK);
-        Allocatable period = facade.newPeriod(facade.getUser());
+        final User user = facade.getUser("homer");
+        Allocatable period = facade.newPeriod(user);
         Classification c = period.getClassification();
         String name = "TEST PERIOD2";
         c.setValue("name", name);
@@ -180,7 +179,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         RaplaFacade facade = getFacade();
         CachableStorageOperator operator = getOperator();
-        facade.login("homer", "duffs".toCharArray());
         {
             Category category1 = facade.newCategory();
             Category category2 = facade.newCategory();
@@ -210,17 +208,14 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         RaplaFacade facade = getFacade();
         CachableStorageOperator operator = getOperator();
-        facade.login("homer", "duffs".toCharArray());
         DynamicType type = facade.edit(facade.getDynamicType("event"));
         String id = type.getId();
         Attribute att = facade.newAttribute(AttributeType.STRING);
         att.setKey("test-att");
         type.addAttribute(att);
         facade.store(type);
-        facade.logout();
         printTypeIds();
         operator.disconnect();
-        facade.login("homer", "duffs".toCharArray());
         DynamicType typeAfterEdit = facade.getDynamicType("event");
         String idAfterEdit = typeAfterEdit.getId();
         Assert.assertEquals(id, idAfterEdit);
@@ -258,8 +253,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
     public void testUpdateFromDB() throws Exception
     {
         final AtomicReference<ModificationEvent> updateResult = new AtomicReference<ModificationEvent>();
-        final Semaphore waitFor = new Semaphore(0);
+        //final Semaphore waitFor = new Semaphore(0);
         RaplaFacade readFacade = this.facade;
+        /*
         readFacade.addModificationListener(new ModificationListener()
         {
             @Override public void dataChanged(ModificationEvent evt) throws RaplaException
@@ -268,12 +264,12 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 waitFor.release();
             }
         });
+        */
         Thread.sleep(500);
         {// create second writeFacade
             String reservationId = null;
             String xmlFile = null;
             RaplaFacade writeFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
-            writeFacade.login("homer", "duffs".toCharArray());
             { // Reservation test with an attribute, appointment and permission
                 final Reservation newReservation = writeFacade.newReservation();
                 reservationId = newReservation.getId();
@@ -299,8 +295,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 classification.setValue(attribute, value);
                 writeFacade.store(newReservation);
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 Assert.assertNotNull(modificationEvent);
                 final Set<Entity> addObjects = modificationEvent.getAddObjects();
@@ -337,8 +333,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 writeFacade.storeObjects(new Entity[]{editSuperCat});
                 readFacade.refresh();
 
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
 //                writeFacade.store(newCategory);
                 // check
                 final ModificationEvent modificationEvent = updateResult.get();
@@ -365,8 +361,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 }
                 writeFacade.storeObjects(allocatables.toArray(Entity.ENTITY_ARRAY));
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<Entity> changed = modificationEvent.getChanged();
                 Assert.assertEquals(allocatables.size(), changed.size());
@@ -393,8 +389,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 }
                 writeFacade.store(reservationChange);
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<Entity> changed = modificationEvent.getChanged();
                 Assert.assertEquals(1, changed.size());
@@ -420,8 +416,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     newUser.setUsername(username);
                     writeFacade.store(newUser);
                     readFacade.refresh();
-                    final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                    Assert.assertTrue(tryAcquire);
+//                    final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                    Assert.assertTrue(tryAcquire);
                     final ModificationEvent modificationEvent = updateResult.get();
                     final Set<Entity> addObjects = modificationEvent.getAddObjects();
                     Assert.assertEquals(1, addObjects.size());
@@ -442,8 +438,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     newUser.addGroup(writeFacade.getUserGroupsCategory().getCategories()[1]);
                     writeFacade.store(newUser);
                     readFacade.refresh();
-                    final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                    Assert.assertTrue(tryAcquire);
+//                    final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                    Assert.assertTrue(tryAcquire);
                     final ModificationEvent modificationEvent = updateResult.get();
                     final Set<Entity> changed = modificationEvent.getChanged();
                     Assert.assertEquals(1, changed.size());
@@ -459,8 +455,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Reservation existingReservaton = writeFacade.getOperator().resolve(reservationId, Reservation.class);
                 writeFacade.remove(existingReservaton);
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
@@ -472,8 +468,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Allocatable allocatable = allocatables[0];
                 writeFacade.remove(allocatable);
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
@@ -484,8 +480,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final User newUser = writeFacade.edit(writeFacade.tryResolve(userID));
                 writeFacade.remove(newUser);
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
@@ -496,8 +492,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Category newCategory = writeFacade.edit(writeFacade.getOperator().tryResolve(categoryId, Category.class));
                 writeFacade.remove(newCategory);
                 readFacade.refresh();
-                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
-                Assert.assertTrue(tryAcquire);
+//                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
+//                Assert.assertTrue(tryAcquire);
                 final ModificationEvent modificationEvent = updateResult.get();
                 final Set<ReferenceInfo> removed = modificationEvent.getRemovedReferences();
                 Assert.assertEquals(1, removed.size());
@@ -511,7 +507,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
     public void concurrentReadAndUpdate() throws Exception
     {
         RaplaFacade writeFacade = this.facade;
-        writeFacade.login("homer", "duffs".toCharArray());
         final String xmlFile = null;
         // create init data
         final DynamicType dynamicType = writeFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
@@ -519,7 +514,8 @@ public class SQLOperatorTest extends AbstractOperatorTest
         for(int i = 0; i< 100000; i++)
         {
             final Classification classification = dynamicType.newClassification();
-            final Allocatable allocatable = writeFacade.newAllocatable(classification, writeFacade.getUser());
+            final User user = writeFacade.getUser("homer");
+            final Allocatable allocatable = writeFacade.newAllocatable(classification, user);
             final Attribute attribute = classification.getAttributes()[0];
             classification.setValue(attribute, "generated-alloc-"+i);
             storeObjects.add(allocatable);
@@ -573,7 +569,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
         final Connection readConnection = datasource.getConnection();
         Calendar datetimeCal = Calendar.getInstance( TimeZone.getDefault());
         final String select = "SELECT ID, CHANGED_AT, DATA, TYPE FROM CHANGES WHERE id = ?";
-        facade.login("homer", "duffs".toCharArray());
         {// resources
             final Allocatable newResource = facade.newResource();
             final Classification classification = newResource.getClassification();

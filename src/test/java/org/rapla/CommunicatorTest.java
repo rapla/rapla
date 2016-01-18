@@ -13,6 +13,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -27,9 +28,9 @@ public class CommunicatorTest
 {
     private Server server;
     Logger logger;
-    Provider<RaplaFacade> clientFacadeProvider;
+    Provider<ClientFacade> clientFacadeProvider;
 
-    RaplaFacade createFacade()
+    ClientFacade createFacade()
     {
         return clientFacadeProvider.get();
     }
@@ -54,8 +55,9 @@ public class CommunicatorTest
     @Test
     public void testLargeform() throws Exception
     {
-        RaplaFacade facade = createFacade();
-        facade.login("homer","duffs".toCharArray());
+        ClientFacade clientFacade = createFacade();
+        RaplaFacade facade = clientFacade.getRaplaFacade();
+        clientFacade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         StringBuffer buf = new StringBuffer();
         int stringsize = 100000;
@@ -72,10 +74,11 @@ public class CommunicatorTest
     @Test
     public void testClient() throws Exception
     {
-        RaplaFacade facade = createFacade();
-       boolean success = facade.login("admin","test".toCharArray());
+        ClientFacade clientFacade = createFacade();
+        RaplaFacade facade = clientFacade.getRaplaFacade();
+       boolean success = clientFacade.login("admin","test".toCharArray());
        Assert.assertFalse("Login should fail", success);
-       facade.login("homer","duffs".toCharArray());
+        clientFacade.login("homer","duffs".toCharArray());
        try 
        {
            Preferences preferences = facade.edit( facade.getSystemPreferences());
@@ -109,15 +112,16 @@ public class CommunicatorTest
        }
        finally
        {
-           facade.logout();
+           clientFacade.logout();
        }
     }
 
     @Test
     public void testUmlaute() throws Exception
     {
-        RaplaFacade facade = createFacade();
-        facade.login("homer","duffs".toCharArray());
+        ClientFacade clientFacade = createFacade();
+        RaplaFacade facade = clientFacade.getRaplaFacade();
+        clientFacade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
         String typeName = alloc.getClassification().getType().getKey();
         // AE = \u00C4
@@ -132,8 +136,8 @@ public class CommunicatorTest
         int allocSizeBefore = facade.getAllocatables().length;
         facade.store( alloc);
         
-        facade.logout();
-        facade.login("homer","duffs".toCharArray());
+        clientFacade.logout();
+        clientFacade.login("homer","duffs".toCharArray());
         DynamicType type = facade.getDynamicType( typeName);
         ClassificationFilter filter = type.newClassificationFilter();
         filter.addEqualsRule("name", nameWithUmlaute);
@@ -147,20 +151,20 @@ public class CommunicatorTest
     public void testManyClients() throws Exception
     {
         int clientNum = 50;
-        RaplaFacade[] opts = new RaplaFacade[ clientNum];
+        ClientFacade[] opts = new ClientFacade[ clientNum];
 
 
         for ( int i=0;i<clientNum;i++)
         {
-            RaplaFacade facade = createFacade();
-            facade.login("homer","duffs".toCharArray());
-            opts[i] = facade;
+            ClientFacade clientFacade = createFacade();
+            clientFacade.login("homer","duffs".toCharArray());
+            opts[i] = clientFacade;
             System.out.println("JavaClient " + i + " successfully subscribed");
         }
 
         for ( int i=0;i<clientNum;i++)
         {
-            RaplaFacade opt = opts[i];
+            ClientFacade opt = opts[i];
             opt.logout();
         }
     }

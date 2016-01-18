@@ -83,7 +83,7 @@ public class UserTest  {
         user.setUsername("test");
         user.setName("Test User");
         adminFacade.getRaplaFacade().store( user );
-        testFacade.refresh();
+        testFacade.getRaplaFacade().refresh();
         final RaplaFacade raplaFacade = testFacade.getRaplaFacade();
         User newUser = raplaFacade.getUser("test");
         raplaFacade.remove( newUser );

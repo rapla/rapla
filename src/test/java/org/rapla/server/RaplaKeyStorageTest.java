@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
@@ -21,7 +22,8 @@ public class RaplaKeyStorageTest  {
 	public void testKeyStore() throws RaplaException
 	{
 		Logger logger = RaplaTestCase.initLoger();
-		RaplaFacade facade = RaplaTestCase.createFacadeWithFile(logger,"testdefault.xml");
+		ClientFacade clientFacade = RaplaTestCase.createFacadeWithFile(logger,"testdefault.xml");
+		RaplaFacade facade = clientFacade.getRaplaFacade();
 		RaplaKeyStorageImpl storage = new RaplaKeyStorageImpl(facade,logger);
         User user = facade.newUser();
 		user.setUsername("testuser");

@@ -143,7 +143,7 @@ public class ServerTest
         r1.addAppointment(getRaplaFacade1().newAppointment(getRaplaFacade1().today(), new Date()));
         getRaplaFacade1().store(r1);
         // Wait for the update
-        clientFacade2.refresh();
+        getRaplaFacade2().refresh();
 
         Reservation r2 = findReservation(getRaplaFacade2(), typeKey, "test-reservation");
         Assert.assertEquals(1, r2.getAppointments().length);
@@ -154,7 +154,7 @@ public class ServerTest
         r1clone.addAllocatable(getRaplaFacade1().getAllocatables()[0]);
         getRaplaFacade1().store(r1clone);
         // Wait for the update
-        clientFacade2.refresh();
+        getRaplaFacade2().refresh();
 
         // test for modify in second facade
         Reservation persistant = getRaplaFacade2().getPersistant(r2);
@@ -195,7 +195,7 @@ public class ServerTest
         }
 
         {
-            clientFacade2.refresh();
+            getRaplaFacade2().refresh();
             // Dyn
             DynamicType typeInSecondFacade = getRaplaFacade2().getDynamicType("room");
             Attribute att = typeInSecondFacade.getAttribute("test");
@@ -255,7 +255,7 @@ public class ServerTest
         Assert.assertEquals(2, attributes.length);
 
         // we check if the store affectes the second client.
-        clientFacade2.refresh();
+        getRaplaFacade2().refresh();
         Assert.assertEquals(5, getRaplaFacade2().getAllocatables().length);
 
         ClassificationFilter filter = getRaplaFacade2().getDynamicType("room").newClassificationFilter();
@@ -502,7 +502,7 @@ public class ServerTest
         Assert.assertFalse(permissionController.canAllocate(testResource, getRaplaFacade2().getUser("monty"), null, null, null));
         Assert.assertTrue(permissionController.canRead(testResource, getRaplaFacade2().getUser("monty")));
         getRaplaFacade1().store(user);
-        clientFacade2.refresh();
+        getRaplaFacade2().refresh();
         Assert.assertFalse(permissionController.canAllocate(testResource, getRaplaFacade2().getUser("monty"), null, null, null));
     }
 
@@ -600,7 +600,7 @@ public class ServerTest
     @Test
     public void testRefresh() throws Exception {
         changeInSecondFacade(clientFacade2,"bowling");
-        clientFacade1.refresh();
+        getRaplaFacade1().refresh();
         Reservation resAfter = findReservation(clientFacade1.getRaplaFacade(),"bowling");
         Appointment appointment = resAfter.getAppointments()[0];
         Calendar cal = Calendar.getInstance(DateTools.getTimeZone());

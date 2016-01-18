@@ -13,6 +13,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.ServerServiceImpl;
@@ -27,6 +28,7 @@ import java.util.Locale;
 public class SecurityManagerTest  {
 
 
+	protected ClientFacade clientFacade1;
 	protected RaplaFacade facade1;
 	
 	Locale locale;
@@ -40,8 +42,9 @@ public class SecurityManagerTest  {
 		int port = 8052;
 		serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
 		server = ServletTestBase.createServer( serverService, port);
-		Provider<RaplaFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
-		facade1 = clientFacadeProvider.get();
+		Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
+		clientFacade1 = clientFacadeProvider.get();
+		facade1 = clientFacade1.getRaplaFacade();
 		//facade2 = clientFacadeProvider.get();
 		//facade2.login("homer", "duffs".toCharArray());
 		locale = Locale.getDefault();
@@ -59,7 +62,7 @@ public class SecurityManagerTest  {
 		Date start = new Date(facade1.today().getTime() + DateTools.MILLISECONDS_PER_DAY  +  10 * DateTools.MILLISECONDS_PER_HOUR);
 		Date end = new Date( start.getTime() + 2 * DateTools.MILLISECONDS_PER_HOUR);
 		
-		facade1.login("homer", "duffs".toCharArray());
+		clientFacade1.login("homer", "duffs".toCharArray());
 		DynamicType roomType = facade1.getDynamicType("room");
 		ClassificationFilter filter = roomType.newClassificationFilter();
 		filter.addEqualsRule("name", "erwin");
@@ -74,9 +77,9 @@ public class SecurityManagerTest  {
 			event.addAllocatable( resource );
 			facade1.store( event );
 		}
-		facade1.logout();
+		clientFacade1.logout();
 		// Now we login as a non admin user, who isnt allowed to create conflicts on the resource erwin
-		facade1.login("monty", "burns".toCharArray());
+		clientFacade1.login("monty", "burns".toCharArray());
 		{
 			Reservation event = facade1.newReservation();
 			// A new event with the same time for the same resource should fail. 
@@ -145,7 +148,7 @@ public class SecurityManagerTest  {
 					Assert.fail("Exception expected but was not security exception");
 				}
 			}
-			facade1.logout();
+			clientFacade1.logout();
 		    Thread.sleep(100);
 		}
 

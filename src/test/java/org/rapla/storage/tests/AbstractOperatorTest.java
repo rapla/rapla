@@ -46,7 +46,6 @@ public abstract class AbstractOperatorTest  {
     public void testReservationStore() throws RaplaException {
 		RaplaFacade facade = getFacade();
         // abspeichern
-        facade.login("homer", "duffs".toCharArray() );
         {
 	        Reservation r = facade.newReservation();
 	        r.getClassification().setValue("name","test");
@@ -66,7 +65,6 @@ public abstract class AbstractOperatorTest  {
 		CachableStorageOperator operator = getOperator();
         operator.disconnect();
         operator.connect();
-        facade.login("homer", "duffs".toCharArray() );
         // einlesen
         {
 	        String defaultReservation = "event";
@@ -87,7 +85,6 @@ public abstract class AbstractOperatorTest  {
 	@Test
     public void testUserStore() throws RaplaException {
 		RaplaFacade facade = getFacade();
-        facade.login("homer", "duffs".toCharArray() );
         {
             User u = facade.newUser();
             u.setUsername("kohlhaas");
@@ -98,7 +95,6 @@ public abstract class AbstractOperatorTest  {
 		CachableStorageOperator operator = getOperator();
         operator.disconnect();
         operator.connect();
-        facade.login("homer", "duffs".toCharArray() );
         {
             User u = facade.getUser("kohlhaas");
             Category[] groups = u.getGroupList().toArray( new Category [] {});
@@ -113,7 +109,6 @@ public abstract class AbstractOperatorTest  {
 		RaplaFacade facade = getFacade();
     	String sampleDoc = "This is the category for user-groups";
     	String sampleAnnotationValue = "documentation";
-    	facade.login("homer", "duffs".toCharArray() );
         {
         	Category userGroups = facade.edit( facade.getUserGroupsCategory());
         	userGroups.setAnnotation( sampleAnnotationValue, sampleDoc );
@@ -122,7 +117,6 @@ public abstract class AbstractOperatorTest  {
 		CachableStorageOperator operator = getOperator();
         operator.disconnect();
         operator.connect();
-        facade.login("homer", "duffs".toCharArray() );
         {
         	Category userGroups = facade.getUserGroupsCategory();
 			Assert.assertEquals(sampleDoc, userGroups.getAnnotation(sampleAnnotationValue));
@@ -132,7 +126,6 @@ public abstract class AbstractOperatorTest  {
 	@Test
     public void testAttributeStore() throws RaplaException {
 		RaplaFacade facade = getFacade();
-        facade.login("homer", "duffs".toCharArray() );
 		CachableStorageOperator operator = getOperator();
         // abspeichern
         {
@@ -172,7 +165,6 @@ public abstract class AbstractOperatorTest  {
         // einlesen
         {
 	        operator.connect();
-	        facade.login("homer", "duffs".toCharArray() );
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","test"}});
@@ -196,7 +188,6 @@ public abstract class AbstractOperatorTest  {
 		CachableStorageOperator operator = getOperator();
 		RaplaFacade facade = getFacade();
 		final String resourceId;
-		facade.login("homer", "duffs".toCharArray() );
 		{// resources
 			Date startDate=operator.getCurrentTimestamp();
 			Allocatable resource = facade.newResource();

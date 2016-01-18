@@ -48,6 +48,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -61,14 +62,16 @@ public class DynamicTypeTest  {
 
 
 	RaplaFacade facade;
+	ClientFacade clientFacade;
 	Logger logger;
 	CalendarSelectionModel model;
 	@Before
 	public void setUp()
 	{
 		logger = RaplaTestCase.initLoger();
-		facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-		model  = facade.newCalendarModel( facade.getUser("homer"));
+		clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+		facade= clientFacade.getRaplaFacade();
+		model  = facade.newCalendarModel( clientFacade.getUser());
 	}
 
 	@After
@@ -87,7 +90,7 @@ public class DynamicTypeTest  {
 	    	att.getName().setName("en", "test");
 			att.setKey(key);
 	    	type.addAttribute( att);
-	    	facade.store( type);
+	    	facade.store(type);
 	    	{
 	    		eventType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0];
 	    		AttributeImpl attributeImpl = (AttributeImpl) eventType.getAttribute(key);
@@ -107,7 +110,7 @@ public class DynamicTypeTest  {
     	
     	DynamicType eventType = event.getClassification().getType();
     	
-    	facade.store( event);
+    	facade.store(event);
     	String key = "booleantest";
     	{
 	    	DynamicType type = facade.edit( eventType );
@@ -115,12 +118,12 @@ public class DynamicTypeTest  {
 	    	att.getName().setName("en", "test");
 			att.setKey(key);
 	    	type.addAttribute( att);
-	    	facade.store( type);
+	    	facade.store(type);
     	}
     	{
     		Reservation modified = facade.edit( event );
     		modified.getClassification().setValue(key, Boolean.TRUE);
-    		facade.store( modified);
+    		facade.store(modified);
     	}
     	{
 	    	ClassificationFilter firstFilter = eventType.newClassificationFilter();
@@ -134,7 +137,7 @@ public class DynamicTypeTest  {
 	    	DynamicType type = facade.edit( eventType );
 	    	Attribute att = type.getAttribute(key);
 	    	att.setType(AttributeType.CATEGORY);
-	    	facade.store( type);
+	    	facade.store(type);
     	}
     	{
     		Thread.sleep(100);
@@ -157,12 +160,12 @@ public class DynamicTypeTest  {
 	    	att.getName().setName("en", "test");
 			att.setKey(key);
 	    	type.addAttribute( att);
-	    	facade.store( type);
+	    	facade.store(type);
    	}
    	{
    		Allocatable modified = facade.edit( alloc );
    		modified.getClassification().setValue(key, "t");
-   		facade.store( modified);
+   		facade.store(modified);
    	}
    	{
 	    	ClassificationFilter firstFilter = allocType.newClassificationFilter();
@@ -175,7 +178,7 @@ public class DynamicTypeTest  {
 	    	DynamicType type = facade.edit( allocType );
 	    	Attribute att = type.getAttribute(key);
 	    	type.removeAttribute( att);
-	    	facade.store( type);
+	    	facade.store(type);
    	}
    	{
             final DefaultBundleManager bundleManager = new DefaultBundleManager();
@@ -186,17 +189,17 @@ public class DynamicTypeTest  {
             final RaplaImages raplaImages = new RaplaImages(logger);
             FrameControllerList frameList = new FrameControllerList(logger);
             DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger);
-            InfoFactory infoFactory = new InfoFactoryImpl(facade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
-   	        TreeFactory treeFactory = new TreeFactoryImpl(facade, i18n, raplaLocale, logger, infoFactory, raplaImages);
+            InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
+   	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory, raplaImages);
 	    	model.getReservations();
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
 	        DateRenderer dateRenderer = new RaplaDateRenderer(facade, i18n, raplaLocale, logger);
-            DateFieldFactory dateFieldFactory = new DateFieldFactory(facade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
-            BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, i18n, raplaLocale, logger);
-            TextFieldFactory textFieldFactory = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
-            LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
-            ClassifiableFilterEdit ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, logger, treeFactory, isResourceOnly, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+            DateFieldFactory dateFieldFactory = new DateFieldFactory(clientFacade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
+            BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(clientFacade, i18n, raplaLocale, logger);
+            TextFieldFactory textFieldFactory = new TextFieldFactory(clientFacade, i18n, raplaLocale, logger, ioInterface);
+            LongFieldFactory longFieldFactory = new LongFieldFactory(clientFacade, i18n, raplaLocale, logger, ioInterface);
+            ClassifiableFilterEdit ui = new ClassifiableFilterEdit( clientFacade, i18n, raplaLocale, logger, treeFactory, isResourceOnly, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();

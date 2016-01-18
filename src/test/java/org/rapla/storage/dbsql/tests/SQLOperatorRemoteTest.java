@@ -169,6 +169,7 @@ import java.sql.Statement;
     @org.junit.Test
     public void testCreateResourceAndRemoveAttribute() throws RaplaException
     {
+        final RaplaFacade clientFacade = getRaplaFacade1();
         Allocatable newResource = clientFacade.newResource();
         newResource.setClassification(clientFacade.getDynamicType("room").newClassification());
         newResource.getClassification().setValue("name", "test-resource");
