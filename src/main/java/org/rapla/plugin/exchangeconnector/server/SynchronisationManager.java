@@ -1,6 +1,23 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -20,8 +37,10 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
@@ -40,28 +59,14 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 
 @Singleton public class SynchronisationManager
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
+    private final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.retryUser");
+    private final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.resyncUser");
     // existing tasks in memory
     private final ExchangeAppointmentStorage appointmentStorage;
     private final AppointmentFormater appointmentFormater;
@@ -142,8 +147,11 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
         public void execute()
         {
+            final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
             try
-            {
+            {                
+                cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
+                appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();
                 final Date now = new Date();
@@ -166,6 +174,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 firstExecution = false;
                 SynchronisationManager.this.execute(includedTasks);
+                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, null);
             }
             catch (Exception ex)
             {
@@ -174,21 +183,10 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         }
     }
 
-    ConcurrentHashMap<String, Object> synchronizer = new ConcurrentHashMap<String, Object>();
-
-    public SynchronizeResult retry(User user) throws RaplaException
+    public void retry(User user) throws RaplaException
     {
-        final Object sync = synchronizer.putIfAbsent(user.getId(), new Object());
-        synchronized (sync)
-        {
-            final String userId = user.getId();
-            Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(userId);
-            for (SynchronizationTask task : existingTasks)
-            {
-                task.resetRetries();
-            }
-            return execute(existingTasks);
-        }
+        final Preferences userPreferences= facade.edit(facade.getPreferences(user));
+        userPreferences.putEntry(RETRY_USER, true);
     }
 
     public SynchronizationStatus getSynchronizationStatus(User user) throws RaplaException
@@ -198,44 +196,15 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         boolean connected = secrets != null;
         result.enabled = connected;
         result.username = secrets != null ? secrets.login : "";
-        if (secrets != null)
-        {
-            final String userId = user.getId();
-            Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(userId);
-            for (SynchronizationTask task : existingTasks)
-            {
-                SyncStatus status = task.getStatus();
-                if (status.isUnsynchronized())
-                {
-                    String lastError = task.getLastError();
-                    if (lastError != null)
-                    {
-                        String appointmentDetail = getAppointmentMessage(task);
-                        result.synchronizationErrors.add(new SyncError(appointmentDetail, lastError));
-                    }
-                    result.unsynchronizedEvents++;
-                }
-                if (status == SyncStatus.synched)
-                {
-                    result.synchronizedEvents++;
-                }
-            }
-        }
         result.syncInterval = getSyncRange();
         return result;
     }
 
-    public synchronized SynchronizeResult synchronizeUser(User user) throws RaplaException
+    public void synchronizeUser(User user) throws RaplaException
     {
-        // remove old appointments
-        Collection<SyncError> removingErrors = removeAllAppointmentsFromExchangeAndAppointmentStore(user);
-        // then insert and update the new tasks
-        User owner = user;
-        Collection<SynchronizationTask> updateTasks = updateTasksForUser(owner);
-        // we skip notification on a resync
-        SynchronizeResult result = execute(updateTasks, true);
-        result.errorMessages.addAll(0, removingErrors);
-        return result;
+        final Preferences userPreferences = facade.edit(facade.getPreferences(user));
+        userPreferences.putEntry(RESYNC_USER, true);
+        facade.store(userPreferences);
     }
 
     private Collection<SynchronizationTask> updateTasksSetDelete(Appointment appointment) throws RaplaException
@@ -285,6 +254,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     private void synchronize(UpdateResult evt) throws RaplaException
     {
         appointmentStorage.refresh();
+        List<Preferences> preferencesToStore = new ArrayList<Preferences>();
         Collection<SynchronizationTask> tasks = new ArrayList<SynchronizationTask>();
         //lock
         for (UpdateOperation operation : evt.getOperations())
@@ -294,7 +264,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             {
                 if (operation instanceof UpdateResult.Remove)
                 {
-                    Entity<?> current = evt.getLastKnown(operation.getCurrentId());
+                    Entity<?> current = evt.getLastEntryBeforeUpdate(operation.getCurrentId());
                     Reservation oldReservation = (Reservation) current;
                     for (Appointment app : oldReservation.getAppointments())
                     {
@@ -362,6 +332,33 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 else if (operation instanceof UpdateResult.Change)
                 {
                     preferences = (Preferences) evt.getLastKnown(operation.getCurrentId());
+                    boolean savePreferences = false;
+                    if(preferences.getEntryAsBoolean(RETRY_USER, false))
+                    {
+                        Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(preferences.getOwnerId());
+                        for (SynchronizationTask task : existingTasks)
+                        {
+                            task.resetRetries();
+                        }
+                        tasks.addAll(tasks);
+                        savePreferences = true;
+                    }
+                    if(preferences.getEntryAsBoolean(RESYNC_USER, false))
+                    {
+                        final User user = operator.tryResolve(new ReferenceInfo<User>(preferences.getOwnerId(), User.class));
+                        if(user != null)
+                        {
+                            removeAllAppointmentsFromExchangeAndAppointmentStore(user);
+                        }
+                        savePreferences = true;
+                    }
+                    if(savePreferences)
+                    {
+                        final Preferences editPreferences = facade.edit(operator.resolve(preferences.getId(), Preferences.class));
+                        editPreferences.putEntry(RESYNC_USER, false);
+                        editPreferences.putEntry(RETRY_USER, false);
+                        preferencesToStore.add(editPreferences);
+                    }
                 }
                 else
                 {
@@ -423,6 +420,10 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             appointmentStorage.storeAndRemove(tasks, toRemove);
             execute(tasks);
         }
+        if(!preferencesToStore.isEmpty())
+        {
+            facade.storeObjects(preferencesToStore.toArray(new Entity[preferencesToStore.size()]));
+        }
     }
 
 
@@ -435,10 +436,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         TimeInterval syncRange = getSyncRange();
 
         Collection<Appointment> appointments = operator.getAppointmentsFromUserCalendarModels(userId, syncRange);
-        if ( appointments.isEmpty())
-        {
-            return Collections.emptySet();
-        }
         final Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
         Set<String> appointmentsFound = new HashSet<String>();
         Collection<SynchronizationTask> newTasksFromCalendar = new HashSet<SynchronizationTask>();
@@ -498,7 +495,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         return result;
     }
 
-    public String getAppointmentMessage(SynchronizationTask task)
+    private String getAppointmentMessage(SynchronizationTask task)
     {
         boolean isDelete = task.status == SyncStatus.toDelete;
         String appointmentId = task.getAppointmentId();
@@ -737,8 +734,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public void removeTasksAndExports(User user) throws RaplaException
     {
-        String userId = user.getId();
-        appointmentStorage.removeTasksForUser(userId);
         boolean createIfNotNull = false;
         Preferences preferences = facade.getPreferences(user, createIfNotNull);
         if (preferences == null)
