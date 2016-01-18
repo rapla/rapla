@@ -325,7 +325,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         Date lastUpdated = getLastRefreshed();
         Date connectionTime = raplaSQLInput.getLastUpdated(c);
 
-        if (!connectionTime.after(lastUpdated))
+        if (connectionTime.before(lastUpdated))
         {
             return;
         }
