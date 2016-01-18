@@ -24,7 +24,7 @@ public final class CalendarEditorTest extends GUITestCase
 {
     @Test
     public void testShow() throws Exception {
-        CalendarSelectionModel settings = getFacade().newCalendarModel(getFacade().getUser() );
+        CalendarSelectionModel settings = getFacade().getRaplaFacade().newCalendarModel(getFacade().getUser() );
         settings.setSelectedDate(new Date());
         CalendarEditor editor = null;// new CalendarEditor(getContext(),settings);
         testComponent(editor.getComponent(),1024,600);

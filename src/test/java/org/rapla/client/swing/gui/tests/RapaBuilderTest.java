@@ -13,6 +13,10 @@
 
 package org.rapla.client.swing.gui.tests;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,19 +26,16 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 
 @RunWith(JUnit4.class)
 public final class RapaBuilderTest
 {
-    RaplaFacade facade;
+    ClientFacade facade;
     @Before
     public void setUp()
     {
@@ -53,8 +54,9 @@ public final class RapaBuilderTest
 
         // test 2 Blocks
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        Reservation reservation = facade.newReservation();
-        Appointment appointment = facade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
+        final RaplaFacade raplaFacade = facade.getRaplaFacade();
+        Reservation reservation = raplaFacade.newReservation();
+        Appointment appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks
@@ -69,8 +71,8 @@ public final class RapaBuilderTest
 
         //      test 3 Blocks
         blocks.clear();
-        reservation = facade.newReservation();
-        appointment = facade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
+        reservation = raplaFacade.newReservation();
+        appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks
@@ -82,8 +84,8 @@ public final class RapaBuilderTest
 
         //      test 3 Blocks, but only the first two should show
         blocks.clear();
-        reservation = facade.newReservation();
-        appointment = facade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
+        reservation = raplaFacade.newReservation();
+        appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks

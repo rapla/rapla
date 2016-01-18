@@ -13,6 +13,8 @@
 
 package org.rapla.client.swing.gui.edit.test;
 
+import java.util.Collections;
+
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -31,12 +33,10 @@ import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
-
-import java.util.Collections;
 
 public final class CategoryEditTest extends GUITestCase
 {
@@ -48,7 +48,7 @@ public final class CategoryEditTest extends GUITestCase
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
         IOInterface ioInterface = new DefaultIO(logger);
-        RaplaFacade facade = getFacade();
+        ClientFacade facade = getFacade();
         RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger );
@@ -58,7 +58,7 @@ public final class CategoryEditTest extends GUITestCase
         MultiLanguageFieldFactory multiLAnguageFieldFactoy = new MultiLanguageFieldFactory(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, textField, ioInterface);
         TextFieldFactory longFieldFactory = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
         CategoryEditUI editor = new CategoryEditUI( getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, multiLAnguageFieldFactoy, longFieldFactory);
-        editor.setObjects( Collections.singletonList(getFacade().getSuperCategory().getCategories()[0] ));
+        editor.setObjects( Collections.singletonList(getFacade().getRaplaFacade().getSuperCategory().getCategories()[0] ));
         testComponent(editor.getComponent(),600,500);
         getLogger().info("Category edit started");
     }

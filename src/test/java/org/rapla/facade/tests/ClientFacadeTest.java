@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.tests;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,38 +40,34 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.QueryModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-
 
 @RunWith(JUnit4.class)
 public class ClientFacadeTest  {
+    ClientFacade clientFacade;
     RaplaFacade facade;
     Locale locale;
 
     @Before
     public void setUp() throws Exception {
-        facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        facade = clientFacade.getRaplaFacade();
         locale = Locale.getDefault();
     }
 
 
     @After
     public void tearDown() throws Exception {
-        facade.logout();
+        clientFacade.logout();
     }
 
     private Reservation findReservation(QueryModule queryMod,String name) throws RaplaException {
@@ -89,7 +92,7 @@ public class ClientFacadeTest  {
         
         orig.addAllocatable( facade.getAllocatables()[0]);
        
-        Reservation clone = facade.clone( orig , facade.getUser());
+        Reservation clone = facade.clone( orig , clientFacade.getUser());
         facade.store( orig );
         facade.store( clone );
 
@@ -104,9 +107,9 @@ public class ClientFacadeTest  {
 
     @Test
     public void testLogin() throws Exception {
-        facade.logout();
-        Assert.assertEquals(false, facade.login("non_existant_user", "".toCharArray()));
-        Assert.assertEquals(false, facade.login("non_existant_user", "fake".toCharArray()));
+        clientFacade.logout();
+        Assert.assertEquals(false, clientFacade.login("non_existant_user", "".toCharArray()));
+        Assert.assertEquals(false, clientFacade.login("non_existant_user", "fake".toCharArray()));
     }
 
 
@@ -115,7 +118,7 @@ public class ClientFacadeTest  {
         ClassificationFilter filter = facade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","power planting");
         Reservation orig = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter})[0];
-        Reservation clone = facade.clone( orig, facade.getUser() );
+        Reservation clone = facade.clone( orig, clientFacade.getUser() );
         Appointment a = clone.getAppointments()[0];
         Date newStart = new SerializableDateTimeFormat().parseDateTime("2005-10-10","10:20:00");
         Date newEnd = new SerializableDateTimeFormat().parseDateTime("2005-10-12", null);
@@ -225,7 +228,7 @@ public class ClientFacadeTest  {
         Allocatable allocatable = facade.newResource();
         facade.store( allocatable);
 
-        CalendarSelectionModel calendar = facade.newCalendarModel(facade.getUser() );
+        CalendarSelectionModel calendar = facade.newCalendarModel(clientFacade.getUser() );
         calendar.setSelectedObjects( Collections.singleton( allocatable));
         calendar.setViewId( WeekviewPlugin.WEEK_VIEW);
         CalendarModelConfiguration config = ((CalendarModelImpl)calendar).createConfiguration();

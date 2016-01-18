@@ -20,7 +20,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationModule;
 import org.rapla.facade.QueryModule;
 import org.rapla.facade.UpdateModule;
@@ -37,9 +37,9 @@ public class PreferencesTest  {
 
     @Before
     public void setUp() throws Exception {
-        RaplaFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = facade;
-        modificationMod = facade;
+        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        queryMod = facade.getRaplaFacade();
+        modificationMod = facade.getRaplaFacade();
         updateMod = facade;
     }
 

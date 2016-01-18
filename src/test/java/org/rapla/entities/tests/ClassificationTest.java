@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +26,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
@@ -28,15 +35,10 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 
 @RunWith(JUnit4.class)
 public class ClassificationTest  {
@@ -47,10 +49,13 @@ public class ClassificationTest  {
     Calendar cal;
 
     RaplaFacade facade;
+    User user;
 
 	@Before
     public void setUp() throws Exception {
-		facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+		final ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        facade = clientFacade.getRaplaFacade();
+        user = clientFacade.getUser();
     }
 
 	@Test
@@ -93,7 +98,7 @@ public class ClassificationTest  {
         classification.setValue("name", "test-resource");
         List<?> asList = Arrays.asList(c1a, c1b);
 		classification.setValues(classification.getAttribute("test-attribute"), asList);
-		Allocatable resource = facade.newAllocatable(classification, facade.getUser());
+		Allocatable resource = facade.newAllocatable(classification, user);
     	facade.storeObjects( new Entity[] {  resource } );
     	{
 	        Allocatable persistantResource = facade.getPersistant(resource);

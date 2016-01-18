@@ -28,7 +28,7 @@ public final class ReservationEditTest extends GUITestCase{
 	ReservationEditImpl internalWindow;
 	
     public void setUp() throws Exception{
-        reservations = getFacade().getReservationsForAllocatable(null,null,null,null);
+        reservations = getFacade().getRaplaFacade().getReservationsForAllocatable(null,null,null,null);
         c = null;//clientService.getContext().lookup(ReservationController.class);
         window = c.edit(reservations[0]);
         internalWindow = (ReservationEditImpl) window;

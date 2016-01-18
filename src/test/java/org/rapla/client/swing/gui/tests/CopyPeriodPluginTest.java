@@ -31,6 +31,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -47,7 +48,7 @@ import java.util.Locale;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest {
-    RaplaFacade facade;
+    ClientFacade facade;
     Locale locale;
     Logger logger;
     RaplaLocale raplaLocale;
@@ -64,7 +65,7 @@ public class CopyPeriodPluginTest {
         return  raplaLocale;
     }
 
-    public RaplaFacade getFacade()
+    public ClientFacade getFacade()
     {
         return facade;
     }
@@ -84,13 +85,14 @@ public class CopyPeriodPluginTest {
     }
     @SuppressWarnings("null")
     public void test() throws Exception {
-        final CalendarSelectionModel model = facade.newCalendarModel( facade.getUser());
-        final ClassificationFilter filter = facade.getDynamicType("room").newClassificationFilter();
+        final RaplaFacade raplaFacade = facade.getRaplaFacade();
+        final CalendarSelectionModel model = raplaFacade.newCalendarModel( facade.getUser());
+        final ClassificationFilter filter = raplaFacade.getDynamicType("room").newClassificationFilter();
         filter.addEqualsRule("name","erwin");
-        Allocatable allocatable = facade.getAllocatables( new ClassificationFilter[] { filter})[0];
+        Allocatable allocatable = raplaFacade.getAllocatables( new ClassificationFilter[] { filter})[0];
         model.setSelectedObjects( Collections.singletonList(allocatable ));
 
-        Period[] periods = facade.getPeriods();
+        Period[] periods = raplaFacade.getPeriods();
         Period sourcePeriod = null;
         Period destPeriod = null;
         for ( int i=0;i<periods.length;i++) {
@@ -108,7 +110,7 @@ public class CopyPeriodPluginTest {
         final Logger logger = getLogger();
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         final RaplaResources rr = new RaplaResources(bundleManager);
-        final DateRenderer dateRenderer = new RaplaDateRenderer(getFacade(), rr, getRaplaLocale(), getLogger());
+        final DateRenderer dateRenderer = new RaplaDateRenderer(raplaFacade, rr, getRaplaLocale(), getLogger());
         final RaplaResources raplaResources = rr;
         final RaplaImages raplaImages = new RaplaImages(logger);
         final FrameControllerList frameList = new FrameControllerList(logger);

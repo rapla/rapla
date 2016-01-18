@@ -22,6 +22,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -34,8 +35,8 @@ import java.util.Locale;
 @RunWith(JUnit4.class)
 public class UserTest  {
     
-    RaplaFacade adminFacade;
-    RaplaFacade testFacade;
+    ClientFacade adminFacade;
+    ClientFacade testFacade;
     Locale locale;
     Server server;
 
@@ -46,18 +47,19 @@ public class UserTest  {
         final ServerServiceContainer servlet = RaplaTestCase.createServer(raplaLogger, "testdefault.xml");
         server = ServletTestBase.createServer(servlet, port);
         // start the client service
-        final Provider<RaplaFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
+        final Provider<ClientFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
         adminFacade = facadeWithRemote.get();
         adminFacade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
 
         try
         {
-            Category groups = adminFacade.edit( adminFacade.getUserGroupsCategory() );
-            Category testGroup = adminFacade.newCategory();
+            final RaplaFacade raplaFacade = adminFacade.getRaplaFacade();
+            Category groups = raplaFacade.edit( raplaFacade.getUserGroupsCategory() );
+            Category testGroup = raplaFacade.newCategory();
             testGroup.setKey("test-group");
             groups.addCategory( testGroup );
-            adminFacade.store( groups );
+            raplaFacade.store( groups );
         } catch (RaplaException ex) {
             adminFacade.logout();
             throw ex;
@@ -77,13 +79,14 @@ public class UserTest  {
 
     @Test
     public void testCreateAndRemoveUser() throws Exception {
-        User user = adminFacade.newUser();
+        User user = adminFacade.getRaplaFacade().newUser();
         user.setUsername("test");
         user.setName("Test User");
-        adminFacade.store( user );
+        adminFacade.getRaplaFacade().store( user );
         testFacade.refresh();
-        User newUser = testFacade.getUser("test");
-        testFacade.remove( newUser );
+        final RaplaFacade raplaFacade = testFacade.getRaplaFacade();
+        User newUser = raplaFacade.getUser("test");
+        raplaFacade.remove( newUser );
         // first create a new resource and set the permissions
     }
 
