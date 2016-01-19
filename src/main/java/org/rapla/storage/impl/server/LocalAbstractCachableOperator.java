@@ -181,6 +181,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
+    protected boolean startAllTasks = true;
 
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
@@ -1036,23 +1037,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
-
-        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
-        final int refreshPeriod = 1000 * 3;
-        refreshTask = scheduler.schedule(new Command()
+        if(startAllTasks)
         {
-            @Override public void execute() throws Exception
+            cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
+            final int refreshPeriod = 1000 * 3;
+            refreshTask = scheduler.schedule(new Command()
             {
-                try
+                @Override public void execute() throws Exception
                 {
-                    refresh();
+                    try
+                    {
+                        refresh();
+                    }
+                    catch (Throwable t)
+                    {
+                        getLogger().info("Could not refresh data");
+                    }
                 }
-                catch (Throwable t)
-                {
-                    getLogger().info("Could not refresh data");
-                }
-            }
-        }, delay, refreshPeriod);
+            }, delay, refreshPeriod);
+        }
 
     }
 

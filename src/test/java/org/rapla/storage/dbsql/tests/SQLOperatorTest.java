@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
+import org.apache.http.conn.OperatedClientConnection;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,6 +91,12 @@ public class SQLOperatorTest extends AbstractOperatorTest
         ((DBOperator) operator).removeAll();
         operator.disconnect();
         operator.connect();
+    }
+    
+    @After
+    public void shutDown()
+    {
+        facade.getOperator().disconnect();
     }
     
     @Test
@@ -463,7 +471,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             {// Delete of an resource
                 final Allocatable[] allocatables = writeFacade.getAllocatables();
                 final Allocatable allocatable = allocatables[0];
-                writeFacade.remove(allocatable);
+                writeFacade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{allocatable}, user);
                 readFacade.refresh();
 //                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
 //                Assert.assertTrue(tryAcquire);
@@ -476,7 +484,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             }
             {// Delete of an user
                 final User newUser = writeFacade.edit(writeFacade.tryResolve(userID));
-                writeFacade.remove(newUser);
+                writeFacade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{newUser}, user);
                 readFacade.refresh();
 //                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
 //                Assert.assertTrue(tryAcquire);
@@ -489,7 +497,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             }
             {// Delete of a category
                 final Category newCategory = writeFacade.edit(writeFacade.getOperator().tryResolve(categoryId, Category.class));
-                writeFacade.remove(newCategory);
+                writeFacade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{newCategory}, user);
                 readFacade.refresh();
 //                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
 //                Assert.assertTrue(tryAcquire);

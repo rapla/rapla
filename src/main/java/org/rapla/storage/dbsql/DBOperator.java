@@ -121,31 +121,33 @@ import java.util.concurrent.locks.Lock;
 
     public void scheduleCleanupAndRefresh(final CommandScheduler scheduler)
     {
-        final int delay = 15000;
-        cleanupOldLocks = scheduler.schedule(new Command()
+        if(startAllTasks)
         {
-            @Override public void execute() throws Exception
+            final int delay = 15000;
+            cleanupOldLocks = scheduler.schedule(new Command()
             {
-                final Lock writeLock = writeLock();
-                try (final Connection connection = createConnection())
+                @Override public void execute() throws Exception
                 {
-                    final RaplaDefaultXMLContext context = createOutputContext(cache);
-                    final RaplaSQL raplaSQL = new RaplaSQL(context);
-                    raplaSQL.cleanupOldLocks(connection);
-                    connection.commit();
+                    final Lock writeLock = writeLock();
+                    try (final Connection connection = createConnection())
+                    {
+                        final RaplaDefaultXMLContext context = createOutputContext(cache);
+                        final RaplaSQL raplaSQL = new RaplaSQL(context);
+                        raplaSQL.cleanupOldLocks(connection);
+                        connection.commit();
+                    }
+                    catch (Throwable t)
+                    {
+                        DBOperator.this.logger.info("Could not release old locks");
+                    }
+                    finally
+                    {
+                        unlock(writeLock);
+                    }
+                    scheduler.schedule(this, delay);
                 }
-                catch (Throwable t)
-                {
-                    DBOperator.this.logger.info("Could not release old locks");
-                }
-                finally
-                {
-                    unlock(writeLock);
-                }
-                scheduler.schedule(this, delay);
-            }
-        }, delay);
-
+            }, delay);
+        }
     }
 
     public boolean supportsActiveMonitoring()
@@ -334,7 +336,7 @@ import java.util.concurrent.locks.Lock;
         List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
         for (String id : allIds)
         {
-            final HistoryEntry before = history.getLastChangedUntil(id, connectionTime);
+            final HistoryEntry before = history.getLatest(id);//LastChangedUntil(id, connectionTime);
             if (before.isDelete())
             {
                 final ReferenceInfo referenceInfo = new ReferenceInfo(before.getId(), before.getTypeClass());

@@ -12,8 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TimeZone;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
@@ -54,13 +64,7 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.xml.RaplaXMLContextException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TimeZone;
+import com.google.gwt.uibinder.attributeparsers.SafeUriAttributeParser;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -106,36 +110,44 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         return clone;
     }
 
-    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult, User user)
-    {
-        UpdateEvent saveEvent = new UpdateEvent();
-        if (user != null)
-        {
-            saveEvent.setUserId(user.getId());
-        }
-        {
-            for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
-            {
-                Entity newEntity = updateResult.getLastKnown(add.getCurrentId());
-                saveEvent.putStore(newEntity);
-            }
-        }
-        {
-            for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
-            {
-                Entity newEntity = updateResult.getLastKnown(change.getCurrentId());
-                saveEvent.putStore(newEntity);
-            }
-        }
-        {
-            for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
-            {
-                ReferenceInfo removeEntity =  remove.getReference();
-                saveEvent.putRemoveId(removeEntity);
-            }
-        }
-        return saveEvent;
-    }
+//    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult, User user)
+//    {
+//        UpdateEvent saveEvent = new UpdateEvent();
+////        Category categoryToAdd = null;
+//        if (user != null)
+//        {
+//            saveEvent.setUserId(user.getId());
+//        }
+//        {
+//            for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
+//            {
+//                Entity newEntity = updateResult.getLastKnown(add.getCurrentId());
+//                if(newEntity instanceof Category)
+//                {
+////                    categoryToAdd = 
+//                }
+//                else
+//                {
+//                    saveEvent.putStore(newEntity);
+//                }
+//            }
+//        }
+//        {
+//            for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
+//            {
+//                Entity newEntity = updateResult.getLastKnown(change.getCurrentId());
+//                saveEvent.putStore(newEntity);
+//            }
+//        }
+//        {
+//            for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
+//            {
+//                ReferenceInfo removeEntity =  remove.getReference();
+//                saveEvent.putRemoveId(removeEntity);
+//            }
+//        }
+//        return saveEvent;
+//    }
 
 //    public TimeInterval calulateInvalidateInterval(UpdateResult result) {
 //        TimeInterval currentInterval = null;
@@ -372,6 +384,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             String userId = user.getId();
             safeResultEvent.setNeedResourcesRefresh(resourceRefresh);
         }
+        boolean superCategoryToAdd = false;
         if (!resourceRefresh)
         {
             //Collection<Entity> updatedEntities = operator.getUpdatedEntities(user, lastSynced);
@@ -393,8 +406,15 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                         timeInterval = new TimeInterval( null, null);
                     }
                 }
-                // Add entity to result
-                processClientReadable(user, safeResultEvent, obj, false);
+                if(obj instanceof Category)
+                {
+                    superCategoryToAdd = true;
+                }
+                else
+                {
+                    // Add entity to result
+                    processClientReadable(user, safeResultEvent, obj, false);
+                }
             }
             Collection<Remove> removedEntities = updateResult.getOperations(UpdateResult.Remove.class);
             for (Remove remove : removedEntities)
@@ -418,6 +438,10 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                         timeInterval = new TimeInterval( null, null);
                     }
                 }
+                if ( type == Category.class )
+                {
+                    superCategoryToAdd = true;
+                }
             }
         }
         {
@@ -426,6 +450,10 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 timeInterval = new TimeInterval(null, null);
             }
             safeResultEvent.setInvalidateInterval(timeInterval);
+        }
+        if(superCategoryToAdd)
+        {
+            safeResultEvent.putStore(operator.getSuperCategory());
         }
         return safeResultEvent;
     }

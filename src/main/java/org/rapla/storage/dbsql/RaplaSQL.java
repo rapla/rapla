@@ -2550,7 +2550,8 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             final HashSet<String> finishedIdsToLoad = new HashSet<String>();
             while (rset.next())
             {
-                if(finishedIdsToLoad.contains(rset.getString(1)))
+                final String id = rset.getString(1);
+                if(finishedIdsToLoad.contains(id))
                 {
                     continue;
                 }
@@ -2558,7 +2559,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 // the select is ordered desc by last_changed, so if we get to early in time, we do not need to load it
                 if(supportTimestamp != null && getTimestamp(rset, 5).getTime() < supportTimestamp.getTime())
                 {
-                    finishedIdsToLoad.add(rset.getString(1));
+                    finishedIdsToLoad.add(id);
                 }
             }
         }

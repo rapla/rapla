@@ -620,7 +620,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 				getLogger().debug("Storing old: " + entity);
 			}
 
-			if ( persistantEntity instanceof Appointment || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
+			if ( persistantEntity instanceof Appointment )// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
 			{
 				throw new RaplaException( persistantEntity.getTypeClass() + " can only be stored via parent entity ");
 				// we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
