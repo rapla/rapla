@@ -34,6 +34,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
@@ -52,7 +53,7 @@ public interface StorageOperator extends EntityResolver {
 	String RAPLA_TEMPLATE = "rapla:template";
 
 
-    String getUsername(String userId) throws RaplaException;
+    String getUsername(ReferenceInfo<User> userId) throws RaplaException;
     boolean isConnected();
     /** Refreshes the data. This could be helpful if the storage
      * operator uses a cache and does not support "Active Monitoring"
@@ -65,7 +66,7 @@ public interface StorageOperator extends EntityResolver {
     Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
 
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
-    Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound) throws RaplaException;
+    Map<ReferenceInfo,Entity> getFromId(Collection<ReferenceInfo> idSet, boolean throwEntityNotFound) throws RaplaException;
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
@@ -73,7 +74,7 @@ public interface StorageOperator extends EntityResolver {
      storage.*/
     void storeAndRemove(Collection<Entity> storeObjects,Collection<Entity> removeObjects,User user) throws RaplaException;
 
-    String[] createIdentifier(Class<? extends Entity> raplaType, int count) throws RaplaException;
+    <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException;
 
     Collection<User> getUsers() throws RaplaException;
 

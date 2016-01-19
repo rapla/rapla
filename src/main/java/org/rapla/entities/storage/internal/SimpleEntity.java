@@ -25,6 +25,7 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 
+import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -98,7 +99,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return readOnly;
     }
     
-    public String getOwnerId()
+    protected String getOwnerId()
     {
         return getId("owner");
     }
@@ -112,8 +113,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         putEntity("owner",owner);
     }
     
-	public String getLastChangedBy() {
-		return getId("last_changed_by");
+	public ReferenceInfo<User> getLastChangedBy() {
+		return getRef("last_changed_by",User.class);
 	}
 
 	public void setLastChangedBy(User user) {

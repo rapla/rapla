@@ -8,6 +8,7 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
@@ -34,7 +35,7 @@ public class CalendarModelCache
 {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private final Map<String, List<CalendarModelImpl>> calendarModels = new HashMap<String, List<CalendarModelImpl>>();
+    private final Map<ReferenceInfo<User>, List<CalendarModelImpl>> calendarModels = new HashMap<ReferenceInfo<User>, List<CalendarModelImpl>>();
     final CachableStorageOperator operator;
     final RaplaResources i18n;
 
@@ -71,7 +72,7 @@ public class CalendarModelCache
     {
         final List<CalendarModelImpl> calendarModelList = new ArrayList<CalendarModelImpl>();
         final boolean createIfNotNull = false;
-        final String userId = user.getId();
+        final ReferenceInfo<User> userId = user.getReference();
         final Preferences preferences = operator.getPreferences(user, createIfNotNull);
         if (preferences == null)
         {
@@ -149,13 +150,13 @@ public class CalendarModelCache
     }
 
     // checks all exports if appointment is still in on of the exported calendars (check eslected resources)
-    public Collection<String> findMatchingUser(Appointment appointment) throws RaplaException
+    public Collection<ReferenceInfo<User>> findMatchingUser(Appointment appointment) throws RaplaException
     {
-        Set<String> result = new HashSet<String>();
+        Set<ReferenceInfo<User>> result = new HashSet<ReferenceInfo<User>>();
         Lock lock = readLock();
         try
         {
-            for (String userId : calendarModels.keySet())
+            for (ReferenceInfo<User> userId : calendarModels.keySet())
             {
                 // TODO check wether the user can see the appointment or no
                 //
@@ -179,13 +180,13 @@ public class CalendarModelCache
     }
 
     // checks all exports if appointment is still in on of the exported calendars (check eslected resources)
-    public Collection<String> findMatchingUsers(Allocatable allocatable) throws RaplaException
+    public Collection<ReferenceInfo<User>> findMatchingUsers(Allocatable allocatable) throws RaplaException
     {
-        Set<String> result = new HashSet<String>();
+        Set<ReferenceInfo<User>> result = new HashSet<ReferenceInfo<User>>();
         Lock lock = readLock();
         try
         {
-            for (String userId : calendarModels.keySet())
+            for (ReferenceInfo<User> userId : calendarModels.keySet())
             {
                 List<CalendarModelImpl> list = calendarModels.get(userId);
                 for (CalendarModelImpl conf : list)
@@ -206,7 +207,7 @@ public class CalendarModelCache
         return result;
     }
 
-    public Collection<Appointment> getAppointments(String userId, TimeInterval syncRange)
+    public Collection<Appointment> getAppointments(ReferenceInfo<User> userId, TimeInterval syncRange)
     {
         final Lock lock = readLock();
         List<CalendarModelImpl> calendarModelList;
@@ -263,10 +264,10 @@ public class CalendarModelCache
                 }
                 if (preferences != null)
                 {
-                    String ownerId = preferences.getOwnerId();
+                    ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                     if (ownerId != null)
                     {
-                        User owner = operator.resolve(ownerId, User.class);
+                        User owner = operator.resolve(ownerId);
                         updateCalendarMap(owner);
                     }
                     // FIXME if export is removed from a calendar we can remove calendar model from cache

@@ -20,7 +20,6 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -41,7 +40,7 @@ public class DynamicTypeAction extends  RaplaObjectAction {
     }
 
     protected void newEntity() throws RaplaException {
-        DynamicType newDynamicType = getModification().newDynamicType(classificationType);
+        DynamicType newDynamicType = getFacade().newDynamicType(classificationType);
         editController.edit(newDynamicType, getPopupContext());
     }
 

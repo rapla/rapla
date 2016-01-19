@@ -1,24 +1,6 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -59,7 +41,23 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 @Singleton public class SynchronisationManager
 {
@@ -227,7 +225,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
         {
             Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment);
             result.addAll(taskList);
-            Collection<String> matchingUserIds = operator.findUsersThatExport(appointment);
+            Collection<ReferenceInfo<User>> matchingUserIds = operator.findUsersThatExport(appointment);
             // delete all appointments that are no longer covered
             for (SynchronizationTask task : taskList)
             {
@@ -237,7 +235,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                     task.setStatus(SyncStatus.toDelete);
                 }
             }
-            for (String userId : matchingUserIds)
+            for (ReferenceInfo<User> userId : matchingUserIds)
             {
                 SynchronizationTask task = appointmentStorage.getTask(appointment, userId);
                 if (task == null)
@@ -336,7 +334,8 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                     boolean savePreferences = false;
                     if(preferences.getEntryAsBoolean(RETRY_USER, false))
                     {
-                        Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(preferences.getOwnerId());
+                        final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
+                        Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(ownerId);
                         for (SynchronizationTask task : existingTasks)
                         {
                             task.resetRetries();
@@ -346,7 +345,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                     }
                     if(preferences.getEntryAsBoolean(RESYNC_USER, false))
                     {
-                        final User user = operator.tryResolve(new ReferenceInfo<User>(preferences.getOwnerId(), User.class));
+                        final User user = operator.tryResolve(preferences.getOwnerRef());
                         if(user != null)
                         {
                             removeAllAppointmentsFromExchangeAndAppointmentStore(user);
@@ -367,10 +366,10 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                 }
                 if (preferences != null)
                 {
-                    String ownerId = preferences.getOwnerId();
+                    ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                     if (ownerId != null)
                     {
-                        User owner = facade.getOperator().resolve(ownerId, User.class);
+                        User owner = facade.getOperator().resolve(ownerId);
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
                         tasks.addAll(result);
                     }
@@ -378,14 +377,14 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
             }
             else if (raplaType == User.class)
             {
-                String userId = operation.getCurrentId();
+                ReferenceInfo<User> userId = operation.getReference();
                 if (operation instanceof UpdateResult.Remove)
                 {
                     appointmentStorage.removeTasksForUser(userId);
                 }
                 else if (operation instanceof UpdateResult.Change)
                 {
-                    User owner = facade.getOperator().tryResolve(userId, User.class);
+                    User owner = facade.getOperator().tryResolve(userId);
                     if (owner != null)
                     {
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
@@ -401,10 +400,10 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                     final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                     if (!isInternal)
                     {
-                        final Collection<String> users = operator.findUsersThatExport(allocatable);
-                        for (String userId : users)
+                        final Collection<ReferenceInfo<User>> users = operator.findUsersThatExport(allocatable);
+                        for (ReferenceInfo<User> userId : users)
                         {
-                            User owner = facade.getOperator().tryResolve(userId, User.class);
+                            User owner = facade.getOperator().tryResolve(userId);
                             if (owner != null)
                             {
                                 Collection<SynchronizationTask> result = updateTasksForUser(owner);
@@ -433,7 +432,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
     private Collection<SynchronizationTask> updateTasksForUser(User user)
     {
 
-        final String userId = user.getId();
+        final ReferenceInfo<User> userId = user.getReference();
         TimeInterval syncRange = getSyncRange();
 
         Collection<Appointment> appointments = operator.getAppointmentsFromUserCalendarModels(userId, syncRange);
@@ -555,7 +554,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                 result.add(error);
             }
         }
-        String userId = user.getId();
+        ReferenceInfo<User> userId = user.getReference();
         appointmentStorage.removeTasksForUser(userId);
         return result;
     }

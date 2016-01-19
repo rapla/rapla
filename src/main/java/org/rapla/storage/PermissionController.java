@@ -21,6 +21,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
@@ -43,8 +44,8 @@ public class PermissionController
 
     public static boolean isOwner(Ownable classifiable, User user)
     {
-        String ownerId = classifiable.getOwnerId();
-        return ownerId != null && ownerId.equals(user.getId());
+        ReferenceInfo<User> ownerId = classifiable.getOwnerRef();
+        return ownerId != null && ownerId.isSame(user.getReference());
     }
 
     /**
@@ -82,8 +83,8 @@ public class PermissionController
         if (object instanceof Ownable)
         {
             Ownable ownable = (Ownable) object;
-            String ownerId = ownable.getOwnerId();
-            if (ownerId != null && user.getId().equals(ownerId))
+            ReferenceInfo<User> ownerId = ownable.getOwnerRef();
+            if (ownerId != null && user.getReference().isSame(ownerId))
             {
                 return true;
             }
@@ -505,10 +506,10 @@ public class PermissionController
         return false;
     }
 
-    private boolean canModifyEvent(String reservationId, User user)
+    private boolean canModifyEvent(ReferenceInfo<Reservation> reservationId, User user)
     {
         EntityResolver resolver = operator;
-        Reservation reservation = resolver.tryResolve(reservationId, Reservation.class);
+        Reservation reservation = resolver.tryResolve(reservationId);
         boolean canModify = reservation != null && canModify(reservation, user);
         return canModify;
     }
@@ -528,8 +529,8 @@ public class PermissionController
         if (object instanceof Ownable)
         {
             Ownable ownable = (Ownable) object;
-            String ownerId = ownable.getOwnerId();
-            if (ownerId != null && user.getId().equals(ownerId))
+            ReferenceInfo<User> ownerId = ownable.getOwnerRef();
+            if (ownerId != null && user.getReference().isSame(ownerId))
             {
                 return true;
             }

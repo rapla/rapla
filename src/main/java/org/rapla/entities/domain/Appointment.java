@@ -14,6 +14,8 @@ package org.rapla.entities.domain;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Collection;
 import java.util.Date;
@@ -37,8 +39,8 @@ public interface Appointment extends Entity<Appointment>, Comparable {
         @see Repeating
     */
     Date getMaxEnd();
-    
-    String getOwnerId();
+
+    ReferenceInfo<User> getOwnerRef();
 
     /** returns the reservation that owns the appointment.
     @return the reservation that owns the appointment or null if

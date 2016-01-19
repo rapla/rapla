@@ -31,7 +31,7 @@ public class RaplaDynamicTypesRestPage extends AbstractRestPage
     @GET
     public List<DynamicTypeImpl> list(@QueryParam("classificationType") String classificationType) throws RaplaException
     {
-        DynamicType[] types = getQuery().getDynamicTypes(classificationType);
+        DynamicType[] types = getFacade().getDynamicTypes(classificationType);
         List<DynamicTypeImpl> result = new ArrayList<DynamicTypeImpl>();
         final PermissionController controller  =   facade.getPermissionController();
         for (DynamicType type : types)

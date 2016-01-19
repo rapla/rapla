@@ -33,7 +33,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
@@ -90,7 +89,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         ui = createUI(editObjects.iterator().next());
         // sets for every object in this array an edit item in the logfile
         originals = new ArrayList<T>();
-        Map<T, T> persistant = getModification().getPersistant(editObjects);
+        Map<T, T> persistant = getFacade().getPersistant(editObjects);
         for (T entity : editObjects)
         {
 
@@ -190,7 +189,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
         for (T o : objects)
         {
             // TODO include timestamps in preferencepatches
-            if (o instanceof Preferences && ((Preferences) o).getOwnerId() != null)
+            if (o instanceof Preferences && ((Preferences) o).getOwnerRef() != null)
             {
                 continue;
             }
@@ -276,7 +275,7 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                 }
                 else
                 {
-                    getModification().storeObjects(saveObjects.toArray(new Entity[] {}));
+                    getFacade().storeObjects(saveObjects.toArray(new Entity[] {}));
                 }
 
                 getPrivateEditDialog().removeEditDialog(EditDialog.this);

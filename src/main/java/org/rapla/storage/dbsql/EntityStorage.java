@@ -19,7 +19,6 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -124,12 +123,12 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
     }*/
 
 	protected void setId(PreparedStatement stmt, int column, Entity<?> entity) throws SQLException {
-	    setId( stmt, column, entity != null ? entity.getId() : null);
+	    setId( stmt, column, entity != null ? entity.getReference() : null);
 	}
 
-	protected void setId(PreparedStatement stmt, int column, String id) throws SQLException {
+	protected void setId(PreparedStatement stmt, int column, ReferenceInfo id) throws SQLException {
         if ( id != null) {
-            stmt.setString( column, id );
+            stmt.setString( column, id.getId() );
         } else {
             stmt.setObject(column, null, Types.VARCHAR);
         }

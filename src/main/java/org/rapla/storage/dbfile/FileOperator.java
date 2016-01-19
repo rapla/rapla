@@ -572,7 +572,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
     
     @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection)
+    public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection)
     {
         // FIXME implement me
         return Collections.emptyList();

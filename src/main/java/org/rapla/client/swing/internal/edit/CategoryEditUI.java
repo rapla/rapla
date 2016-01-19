@@ -32,7 +32,6 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -242,7 +241,7 @@ public class CategoryEditUI extends RaplaGUIComponent
 
     // creates a new Category
     private Category createNewNodeAt(NamedNode parentNode) throws RaplaException {
-        Category newCategory = getModification().newCategory();
+        Category newCategory = getFacade().newCategory();
 
         Category parent =  (Category) parentNode.getUserObject();
         newCategory.setKey(createNewKey(parent.getCategories()));

@@ -12,31 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
@@ -70,6 +45,30 @@ import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
@@ -1061,13 +1060,13 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     }
 
     @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection) throws RaplaException
+    public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         try(Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            final Collection<ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(id, importExportDirection, con);
+            final Collection<ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(systemId, importExportDirection, con);
             return importExportEntities;
         }
         catch(SQLException e)

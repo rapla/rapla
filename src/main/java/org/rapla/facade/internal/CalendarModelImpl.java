@@ -46,8 +46,8 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -909,11 +909,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             reservationFilter = null;
         }
-        Set<String> users = getUserRestrictions();
+        Set<ReferenceInfo<User>> users = getUserRestrictions();
         for ( Iterator<Reservation> it = reservations.iterator();it.hasNext();) 
         {
             Reservation event = it.next();
-            if ( !users.isEmpty()  && !users.contains( event.getOwnerId() )) {
+            if ( !users.isEmpty()  && !users.contains( event.getOwnerRef() )) {
                 it.remove();
             }
             else if (reservationFilter != null && !ClassificationFilter.Util.matches( reservationFilter,event))
@@ -924,19 +924,19 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return reservations;
     }
     
-    private Set<String> getUserRestrictions() {
+    private Set<ReferenceInfo<User>> getUserRestrictions() {
         User currentUser = getUser();
         if (  currentUser != null &&  isOnlyCurrentUserSelected() ) 
         {
-            return Collections.singleton( currentUser.getId() );
+            return Collections.singleton( currentUser.getReference() );
         }
         else if ( currentUser != null && currentUser.isAdmin())
         {
             final Set<User> selected = getSelected(User.class);
-            final Set<String> selectedUserIs = new HashSet<String>();
+            final Set<ReferenceInfo<User>> selectedUserIs = new HashSet<ReferenceInfo<User>>();
             for ( User user:selected)
             {
-                selectedUserIs.add( user.getId());
+                selectedUserIs.add( user.getReference());
             }
             return selectedUserIs;
         }
@@ -1228,7 +1228,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException
     {
-        Collection<String> ids = new ArrayList<String>();
+        Collection<ReferenceInfo> ids = new ArrayList<ReferenceInfo>();
         for ( Conflict conflict:conflicts)
         {
             ids.add(conflict.getReservation1());

@@ -112,13 +112,13 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         return result;
     }
 
-    protected <T> ReferenceInfo<T> getReferenceFor(String key, Class<T> typeClass)
+    protected <T extends Entity> ReferenceInfo<T> getReferenceFor(String key, Class<T> typeClass)
     {
         String id = getId(key);
         return getReferenceForId(id, typeClass);
     }
 
-    protected <T> ReferenceInfo<T> getReferenceForId(String id, Class<T> typeClass)
+    protected <T extends Entity> ReferenceInfo<T> getReferenceForId(String id, Class<T> typeClass)
     {
         return new ReferenceInfo(id, typeClass);
     }
@@ -182,6 +182,16 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     	if (entry == null)
     		return null;
     	return entry;
+    }
+
+    public <T extends Entity> ReferenceInfo<T> getRef(String key,Class<T> clazz)
+    {
+        final String id = getId(key);
+        if ( id == null)
+        {
+            return null;
+        }
+        return new ReferenceInfo<T>(id,clazz);
     }
     
 	public Collection<String> getIds(String key) 

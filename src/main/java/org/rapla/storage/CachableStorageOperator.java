@@ -20,6 +20,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
@@ -48,7 +49,7 @@ public interface CachableStorageOperator extends StorageOperator {
     Date getHistoryValidStart();
     Date getConnectStart();
 
-    Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection) throws RaplaException;
+    Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
     
     /**
      * Tries to receive the lock for the given id. If another System has the lock, a RaplaException is thrown
@@ -61,11 +62,11 @@ public interface CachableStorageOperator extends StorageOperator {
     Date getLock(String id, Long validMilliseconds) throws RaplaException;
     void releaseLock(String id, Date updatedUntil);
 
-    Collection<Appointment> getAppointmentsFromUserCalendarModels(String userId, TimeInterval syncRange);
+    Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange);
 
-    Collection<String> findUsersThatExport(Appointment appointment);
+    Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment);
 
-    Collection<String> findUsersThatExport(Allocatable allocatable);
+    Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable);
 }
 
 

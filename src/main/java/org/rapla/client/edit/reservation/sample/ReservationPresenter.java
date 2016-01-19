@@ -26,7 +26,7 @@ import java.util.Date;
 
 public class ReservationPresenter implements ReservationController, Presenter
 {
-    public static final String EDIT_ACTIVITY_ID = "edit";
+    public static final String EDIT_ACTIVITY_ID = "editevent";
 
     private final RaplaFacade facade;
     private final Logger logger;

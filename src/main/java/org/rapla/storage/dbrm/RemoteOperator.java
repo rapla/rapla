@@ -42,8 +42,8 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
@@ -70,6 +70,7 @@ import org.rapla.storage.impl.EntityStore;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -318,10 +319,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                 }
 			}
 		};
-		intervalLength = UpdateModule.REFRESH_INTERVAL_DEFAULT;
+		intervalLength = ClientFacade.REFRESH_INTERVAL_DEFAULT;
 		if (isConnected()) {
 			try {
-				intervalLength = getPreferences(null, true).getEntryAsInteger(UpdateModule.REFRESH_INTERVAL_ENTRY, UpdateModule.REFRESH_INTERVAL_DEFAULT);
+				intervalLength = getPreferences(null, true).getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
 			} catch (RaplaException e) {
 				getLogger().error("Error refreshing.", e);
 			}
@@ -724,13 +725,18 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }
     }
     
-    public String[] createIdentifier(Class<? extends Entity> raplaType, int count) throws RaplaException {
+    public <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException {
     	RemoteStorage serv = getRemoteStorage();
     	try
     	{
             String localname = RaplaType.getLocalName( raplaType);
-	    	List<String> id = serv.createIdentifier(localname, count).get();
-	    	return id.toArray(new String[] {});
+	    	List<String> ids = serv.createIdentifier(localname, count).get();
+            List<ReferenceInfo<T>> result = new ArrayList<ReferenceInfo<T>>();
+            for ( String id:ids)
+            {
+                result.add( new ReferenceInfo<T>(id, raplaType));
+            }
+	    	return result.toArray(new ReferenceInfo[] {});
     	} 
         catch (RaplaException ex)
         {
@@ -769,13 +775,13 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
     @Override
-    public String getUsername(String userId) throws RaplaException
+    public String getUsername(ReferenceInfo<User> userId) throws RaplaException
     {
-        User user = tryResolve(userId, User.class);
+        User user = tryResolve(userId);
         if ( user == null)
         {
             RemoteStorage remoteMethod = getRemoteStorage();
-            final FutureResult<String> result = remoteMethod.getUsername(userId);
+            final FutureResult<String> result = remoteMethod.getUsername(userId.getId());
             try
             {
                 String    username = result.get();
@@ -874,12 +880,13 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }		
 
     }
-    
-    public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound) throws RaplaException
+
+    @Override
+    public Map<ReferenceInfo,Entity> getFromId(Collection<ReferenceInfo> idSet, boolean throwEntityNotFound) throws RaplaException
     {
      	RemoteStorage serv = getRemoteStorage();
      	String[] array = idSet.toArray(new String[] {});
-     	Map<String,Entity> result = new HashMap<String,Entity>();
+     	Map<ReferenceInfo,Entity> result = new HashMap<ReferenceInfo,Entity>();
      	try
      	{
 			UpdateEvent entityList = serv.getEntityRecursive( array).get();
@@ -896,10 +903,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             }
 	    	for (Entity entity:list)
 			{
-				String id = entity.getId();
-				if ( idSet.contains( id ))
+				ReferenceInfo ref = entity.getReference();
+				if ( idSet.contains( ref ))
 				{
-					result.put( id, entity);
+                    result.put(ref, entity);
 				}
 			}
      	} 

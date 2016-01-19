@@ -18,6 +18,8 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Collection;
 import java.util.Date;
@@ -36,17 +38,17 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp
 //    /** @return the first Reservation, that is involved in the conflict.*/
 //    public Reservation getReservation1();
     /** The appointment of the first reservation, that causes the conflict. */
-    String getAppointment1();
+    ReferenceInfo<Appointment> getAppointment1();
 //    /** @return the second Reservation, that is involved in the conflict.*/
 //    public Reservation getReservation2();
 //    /** @return The User, who created the second Reservation.*/
 //    public User getUser2();
     /** The appointment of the second reservation, that causes the conflict. */
-    String getAppointment2();
-    String getReservation1();
-    String getReservation2();
+    ReferenceInfo<Appointment> getAppointment2();
+    ReferenceInfo<Reservation> getReservation1();
+    ReferenceInfo<Reservation> getReservation2();
     
-    String getAllocatableId();
+    ReferenceInfo<Allocatable> getAllocatableId();
     
     String getReservation1Name();
 	

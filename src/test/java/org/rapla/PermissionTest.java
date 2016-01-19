@@ -145,8 +145,7 @@ public class PermissionTest  {
         final Reservation[] reservationsForAllocatable = testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter });
         Assert.assertEquals(1, reservationsForAllocatable.length);
         Reservation evt = reservationsForAllocatable[0];
-        String ownerId = evt.getOwnerId();
-        final User owner = testFacade.getOperator().tryResolve(ownerId, User.class);
+        final User owner = testFacade.getOperator().tryResolve(evt.getOwnerRef());
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         evt =  testFacade.edit( evt );

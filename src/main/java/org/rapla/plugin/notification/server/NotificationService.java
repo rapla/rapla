@@ -12,20 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -41,6 +27,7 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
@@ -56,6 +43,19 @@ import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /** Sends Notification Mails on allocation change.*/
 
@@ -164,8 +164,8 @@ public class NotificationService
                 if ( allocatableMap != null && allocatableMap.size()> 0)
                 {
                     boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
-                    final String ownerId = preferences.getOwnerId();
-                    final User owner = ownerId != null ? raplaFacade.getOperator().resolve( ownerId, User.class) : null;
+                    final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
+                    final User owner = ownerId != null ? raplaFacade.getOperator().resolve( ownerId ) : null;
                     AllocationMail mail = getAllocationMail( new HashSet<Allocatable>(allocatableMap.values()), updateResult, owner,notifyIfOwner);
                     if (mail != null) {
                         mailList.add(mail);
@@ -198,7 +198,7 @@ public class NotificationService
             // Did the user opt in for the resource?
 			if (!allocatablesTheUsersListensTo.contains(allocatable))
                 continue;
-            if (!notifyIfOwner && (reservation.getLastChangedBy() != null && owner.getId().equals(reservation.getLastChangedBy())))
+            if (!notifyIfOwner && (reservation.getLastChangedBy() != null && owner.getReference().equals(reservation.getLastChangedBy())))
                 continue;
             List<AllocationChangeEvent> eventList = reservationMap.get(reservation);
             if (eventList == null) {
@@ -309,11 +309,11 @@ public class NotificationService
             Reservation newReservation = event.getNewReservation();
 			if ( newReservation != null && changed == false) {
 				User eventUser = event.getUser();
-				String lastChangedBy = newReservation.getLastChangedBy();
+				ReferenceInfo<User> lastChangedBy = newReservation.getLastChangedBy();
 				String name;  
 				if ( lastChangedBy != null)
             	{
-                    final User user = raplaFacade.getOperator().tryResolve(lastChangedBy, User.class);
+                    final User user = raplaFacade.tryResolve(lastChangedBy);
                     name =  user != null ? user.getName() : "unknown";
             	}
 				else if ( eventUser != null)
@@ -341,8 +341,8 @@ public class NotificationService
         buf.append("\n");
         buf.append("\n");
 
-        String ownerId = reservation.getOwnerId();
-        User owner = ownerId != null ? raplaFacade.getOperator().tryResolve( ownerId, User.class) : null;
+        ReferenceInfo<User> ownerId = reservation.getOwnerRef();
+        User owner = ownerId != null ? raplaFacade.getOperator().tryResolve( ownerId ) : null;
         if ( owner != null)
         {
             buf.append(raplaI18n.getString("reservation.owner"));

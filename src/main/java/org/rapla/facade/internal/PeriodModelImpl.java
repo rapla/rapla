@@ -21,11 +21,10 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
-import org.rapla.facade.QueryModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
@@ -124,11 +123,6 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     	}
         return classification.getType().getKey().equals(StorageOperator.PERIOD_TYPE);
     }
-
-	protected QueryModule getQuery() {
-        return facade;
-    }
-
 
     /** returns the first matching period or null if no period matches.*/
     public Period getPeriodFor(Date date) {

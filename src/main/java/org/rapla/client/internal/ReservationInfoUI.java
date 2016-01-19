@@ -20,6 +20,7 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -42,7 +43,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         this.permissionController = facade.getPermissionController();
     }
 
-    @Override public String getUsername(String userId)
+    @Override public String getUsername(ReferenceInfo<User> userId)
     {
         return getFacade().getOperator().getUsername( userId);
     }
@@ -102,14 +103,14 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     public List<Row> getAttributes(Reservation reservation,LinkController controller, User user, boolean excludeAdditionalInfos) {
         ArrayList<Row> att = new ArrayList<Row>();
         att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,controller, user ));
-        String ownerId = reservation.getOwnerId();
+        ReferenceInfo<User> ownerId = reservation.getOwnerRef();
         if ( ownerId != null)
         {
             final String ownerName = getUsername( ownerId);
             String ownerText = encode(ownerName);
             att.add( new Row(getString("reservation.owner"), ownerText));
         }
-        String lastChangeById = reservation.getLastChangedBy();
+        ReferenceInfo<User> lastChangeById = reservation.getLastChangedBy();
         if ( lastChangeById != null && (ownerId == null ||! lastChangeById.equals(ownerId))) {
         	final String lastChangedName = getUsername(lastChangeById);
             String lastChangeByText = encode(lastChangedName);

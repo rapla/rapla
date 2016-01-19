@@ -22,7 +22,6 @@ import java.util.EventListener;
  *  Don't forget to remove the listener by calling <code>removeModificationLister</code>
  *  when no longer needed.
  *  @author Christopher Kohlhaas
- *  @see UpdateModule
  *  @see ModificationEvent
  */
 

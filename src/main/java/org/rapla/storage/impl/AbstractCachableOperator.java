@@ -35,9 +35,9 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -156,7 +156,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			clone = (SimpleEntity) newObj.clone();
 		}
 		SimpleEntity refEntity = clone;
-		if (refEntity instanceof ModifiableTimestamp) {
+		if (refEntity instanceof ModifiableTimestamp && user != null) {
 		    refEntity.setLastChangedBy(user);
 		}
 		return (Entity) refEntity;
@@ -387,13 +387,13 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	public  abstract boolean isLoaded() throws RaplaException;
 	
 	@Override
-	public Map<String,Entity> getFromId(Collection<String> idSet, boolean throwEntityNotFound)	throws RaplaException {
+	public Map<ReferenceInfo,Entity> getFromId(Collection<ReferenceInfo> idSet, boolean throwEntityNotFound)	throws RaplaException {
 		checkLoaded();
     	Lock readLock = readLock();
 		try
 		{
-			Map<String, Entity> result= new LinkedHashMap<String,Entity>();
-			for ( String id:idSet)
+			Map<ReferenceInfo, Entity> result= new LinkedHashMap<ReferenceInfo,Entity>();
+			for ( ReferenceInfo id:idSet)
 			{
 				Entity persistant = (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
 		    	if ( persistant != null)
@@ -412,19 +412,19 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	@Override
 	public Map<Entity,Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException 
 	{
-		Map<String,Entity> idMap = new LinkedHashMap<String,Entity>();
+		Map<ReferenceInfo,Entity> idMap = new LinkedHashMap<ReferenceInfo,Entity>();
         for ( Entity key: list)
     	{
-     		String id =  key.getId().toString();
+     		ReferenceInfo id =  key.getReference();
      		idMap.put( id, key);
     	}
 		Map<Entity,Entity> result = new LinkedHashMap<Entity,Entity>();
-		Set<String> keySet = idMap.keySet();
-		Map<String,Entity> resolvedList = getFromId( keySet, false);
+		Set<ReferenceInfo> keySet = idMap.keySet();
+		Map<ReferenceInfo,Entity> resolvedList = getFromId( keySet, false);
     	for (Entity entity:resolvedList.values())
     	{
-    		String id = entity.getId().toString();
-			Entity key = idMap.get( id);
+    		ReferenceInfo reference = entity.getReference();
+			Entity key = idMap.get( reference);
 			if ( key != null )
 			{
 				result.put( key, entity);

@@ -28,9 +28,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.PeriodModel;
-import org.rapla.facade.QueryModule;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -122,8 +120,7 @@ public class DateChooserPanel extends RaplaGUIComponent
             final PeriodModel periodModel = getPeriodModel();
             periodChooser.setPeriodModel( periodModel);
             if ( model.getSelectedDate() == null) {
-                QueryModule query = getQuery();
-				Date today = query.today();
+				Date today = getQuery().today();
 				model.setSelectedDate( today);
             }
             Date date = model.getSelectedDate();

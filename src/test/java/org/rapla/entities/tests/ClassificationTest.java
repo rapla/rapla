@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +33,12 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 @RunWith(JUnit4.class)
 public class ClassificationTest  {

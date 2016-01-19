@@ -24,10 +24,8 @@ import org.rapla.entities.User;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.UpdateModule;
-import org.rapla.facade.UserModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -83,12 +81,12 @@ public class RaplaGUIComponent extends RaplaComponent
 	}
 
 	/** lookupDeprecated UpdateModule from the serviceManager */
-	protected UpdateModule getUpdateModule() {
+	protected ClientFacade getUpdateModule() {
 		return clientFacade;
 	}
 
 	/** lookupDeprecated UserModule from the serviceManager */
-	protected UserModule getUserModule() {
+	protected ClientFacade getUserModule() {
 		return clientFacade;
 	}
 

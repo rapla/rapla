@@ -7,6 +7,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
@@ -75,8 +76,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
 		resource.setResolver(operator);
-		getModification().store(resource);
-		AllocatableImpl result = getModification().getPersistant(resource);
+		getFacade().store(resource);
+		AllocatableImpl result = getFacade().getPersistant(resource);
 		return result;
 	}
 
@@ -91,13 +92,13 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 		if (resource.getId() != null) {
 			throw new RaplaException("Id has to be null for new resources");
 		}
-		String eventId = operator.createIdentifier(Allocatable.class, 1)[0];
-		resource.setId(eventId);
+		ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1)[0];
+		resource.setId(resourceRef.getId());
 		resource.setResolver(operator);
 		resource.setCreateDate(operator.getCurrentTimestamp());
 		resource.setOwner(user);
-		getModification().store(resource);
-		AllocatableImpl result = getModification().getPersistant(resource);
+		getFacade().store(resource);
+		AllocatableImpl result = getFacade().getPersistant(resource);
 		return result;
 	}
 

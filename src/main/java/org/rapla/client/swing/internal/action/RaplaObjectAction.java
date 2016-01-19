@@ -34,7 +34,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.ModificationModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -203,7 +202,7 @@ public class RaplaObjectAction extends RaplaAction {
 
 
     protected Entity<? extends Entity<?>> newEntity(Class<? extends RaplaObject> raplaType) throws RaplaException {
-        ModificationModule m = getModification();
+        RaplaFacade m = getFacade();
         final User user = getUser();
         if ( Reservation.class == raplaType )
         {

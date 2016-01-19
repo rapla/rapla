@@ -15,7 +15,6 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 
 import javax.swing.JDialog;

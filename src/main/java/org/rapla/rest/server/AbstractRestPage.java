@@ -4,10 +4,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.server.JsonServlet;
 import org.rapla.storage.StorageOperator;
@@ -39,7 +36,7 @@ public abstract class AbstractRestPage
             return null;
         }
         {
-            DynamicType[] types = getQuery().getDynamicTypes(null);
+            DynamicType[] types = getFacade().getDynamicTypes(null);
             List<ClassificationFilter> filterList = new ArrayList<ClassificationFilter>();
             for (DynamicType type : types)
             {
@@ -84,19 +81,9 @@ public abstract class AbstractRestPage
         return filters;
     }
 
-    protected QueryModule getQuery()
+    protected RaplaFacade getFacade()
     {
         return facade;
-    }
-
-    protected ModificationModule getModification()
-    {
-        return facade;
-    }
-
-    protected EntityResolver getEntityResolver()
-    {
-        return facade.getOperator();
     }
 
 

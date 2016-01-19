@@ -103,7 +103,7 @@ public class RemoteStorageImpl implements RemoteStorage
                     if (entity instanceof Preferences)
                     {
                         Preferences preferences = (Preferences) entity;
-                        String ownerId = preferences.getOwnerId();
+                        ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                         if (ownerId == null && !user.isAdmin())
                         {
                             entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
@@ -243,7 +243,7 @@ public class RemoteStorageImpl implements RemoteStorage
 
     protected boolean isAllocatablesVisible(User sessionUser, Reservation res)
     {
-        String ownerId = res.getOwnerId();
+        ReferenceInfo<User> ownerId = res.getOwnerRef();
         if (sessionUser.isAdmin() || ownerId == null || ownerId.equals(sessionUser.getId()))
         {
             return true;
@@ -405,7 +405,7 @@ public class RemoteStorageImpl implements RemoteStorage
         try
         {
             checkAuthentified();
-            String username = operator.getUsername(userId);
+            String username = operator.getUsername(new ReferenceInfo<User>(userId,User.class));
             return new ResultImpl<String>(username);
         }
         catch (RaplaException ex)
@@ -467,8 +467,13 @@ public class RemoteStorageImpl implements RemoteStorage
             Class<? extends Entity> typeClass = RaplaType.find(type);
             //User user =
             getSessionUser(); //check if authenified
-            String[] result = operator.createIdentifier(typeClass, count);
-            return new ResultImpl<List<String>>(Arrays.asList(result));
+            ReferenceInfo[] refs = operator.createIdentifier(typeClass, count);
+            List<String> result = new ArrayList<String>();
+            for ( ReferenceInfo ref:refs)
+            {
+                result.add( ref.getId());
+            }
+            return new ResultImpl<List<String>>(result);
         }
         catch (RaplaException ex)
         {

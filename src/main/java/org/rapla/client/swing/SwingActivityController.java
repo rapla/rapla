@@ -20,7 +20,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -99,7 +98,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
                 boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                 boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig); 
                 Date beginn = getStartDate(model, user);
-                Collection<Reservation> newReservations = getModification().copy(reservations, beginn, keepTime, user);
+                Collection<Reservation> newReservations = getFacade().copy(reservations, beginn, keepTime, user);
                 if ( markedIntervals.size() >0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1 && keepOrig == Boolean.FALSE)
                 {
                     Appointment app = newReservations.iterator().next().getAppointments()[0];
@@ -148,7 +147,7 @@ public class SwingActivityController extends RaplaComponent implements StartActi
         
         Date startDate = getStartDate(model, facade.getUser());
         Date endDate = getEndDate( model, startDate);
-        Appointment appointment =  getModification().newAppointment(startDate, endDate);
+        Appointment appointment =  getFacade().newAppointment(startDate, endDate);
         return appointment;
     }
 

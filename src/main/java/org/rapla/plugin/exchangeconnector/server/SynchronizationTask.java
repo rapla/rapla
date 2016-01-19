@@ -2,6 +2,7 @@ package org.rapla.plugin.exchangeconnector.server;
 
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -36,9 +37,9 @@ public class SynchronizationTask implements Serializable
 	SyncStatus status;
 	private String persistantId;
 	
-	public SynchronizationTask(String appointmentId, String userId, int retries, Date lastRetry, String lastError) {
-		this.userId = userId;
-		this.appointmentId = appointmentId;
+	public SynchronizationTask(ReferenceInfo<Appointment> appointmentId, ReferenceInfo<User> userId, int retries, Date lastRetry, String lastError) {
+		this.userId = userId.getId();
+		this.appointmentId = appointmentId.getId();
 		status = SyncStatus.toUpdate;
 		this.retries = retries;
 		this.lastRetry = lastRetry;
@@ -60,6 +61,12 @@ public class SynchronizationTask implements Serializable
 	public String getUserId() {
 		return userId;
 	}
+
+	public ReferenceInfo<User> getUserRef()
+	{
+		return new ReferenceInfo<User>(userId,User.class);
+	}
+
 
 	public String getAppointmentId() {
 		return appointmentId;
@@ -183,9 +190,14 @@ public class SynchronizationTask implements Serializable
 		return persistantId;
 	}
 
-	public boolean matchesUserId(String otherId) 
+	public boolean matchesUserId(ReferenceInfo<User> otherId)
 	{
-		boolean b = otherId == this.userId || (otherId!= null && otherId.equals( this.userId));
+		if ( otherId == null )
+		{
+			return false;
+		}
+		final String secondId = otherId.getId();
+		boolean b = secondId == this.userId ||  secondId.equals(this.userId);
 		return b;
 	}
 

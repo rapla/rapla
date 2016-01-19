@@ -18,8 +18,6 @@ import org.rapla.framework.RaplaException;
  *  <code>addUpdateErrorListener</code> of the <code>UpdateModule</code> <br>
  *  Don't forget to remove the listener by calling <code>removeUpdateErrorLister</code>
  *  when no longer need.
- *  @author Christopher Kohlhaas
- *  @see UpdateModule
  */
 
 public interface UpdateErrorListener {

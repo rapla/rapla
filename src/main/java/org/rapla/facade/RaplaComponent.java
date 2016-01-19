@@ -22,10 +22,8 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.facade.internal.CalendarOptionsImpl;
@@ -48,8 +46,6 @@ import java.util.concurrent.locks.Lock;
 public class RaplaComponent 
 {
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
-	//private final ClientServiceManager serviceManager;
-    private TypedComponentRole<I18nBundle> childBundleName;
     private Logger logger;
     RaplaLocale raplaLocale;
     RaplaResources i18n;
@@ -189,17 +185,12 @@ public class RaplaComponent
     }
 
     /** lookupDeprecated QueryModule from the serviceManager */
-    protected QueryModule getQuery() {
+    protected RaplaFacade getQuery() {
         return getFacade();
     }
 
     final protected RaplaFacade getFacade() {
         return facade;
-    }
-
-    /** lookupDeprecated ModificationModule from the serviceManager */
-    protected ModificationModule getModification() {
-        return getFacade();
     }
 
 
@@ -222,20 +213,7 @@ public class RaplaComponent
     }
 
 
-    private static class ClientServiceManager  {
-        I18nBundle i18n;
-        RaplaFacade facade;
-        RaplaLocale raplaLocale;
-        AppointmentFormater appointmentFormater;
-    }
-
-    final public Preferences newEditablePreferences() throws RaplaException {
-        Preferences preferences = getQuery().getPreferences();
-		ModificationModule modification = getModification();
-		return  modification.edit(preferences);
-    }
-    
-	public static boolean isTemplate(RaplaObject<?> obj) 
+	public static boolean isTemplate(RaplaObject<?> obj)
 	{
 		if ( obj instanceof Appointment)
 		{

@@ -6,6 +6,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.AuthenticationStore;
@@ -136,7 +137,8 @@ public class RaplaAuthentificationService
                 logger.info("Successfull for User " + username + ".Creating new Rapla user.");
                 Date now = operator.getCurrentTimestamp();
                 UserImpl newUser = new UserImpl(now, now);
-                newUser.setId(operator.createIdentifier(User.class, 1)[0]);
+                final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1)[0];
+                newUser.setId(userReferenceInfo.getId());
                 user = newUser;
             }
             else

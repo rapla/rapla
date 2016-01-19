@@ -14,7 +14,7 @@ package org.rapla.entities;
 
 import org.rapla.entities.storage.ReferenceInfo;
 
-public interface Entity<T> extends RaplaObject<T> {
+public interface Entity<T extends Entity> extends RaplaObject<T> {
     /** returns true, if the passed object is an instance of Entity
      * and has the same id as the object. If both Entities have
      * no ids, the == operator will be applied.

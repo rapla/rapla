@@ -35,9 +35,9 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -275,11 +275,11 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             {
                 Ownable newOwnable = (Ownable) newObject;
                 Ownable oldOwnable = (Ownable) updateResult.getLastEntryBeforeUpdate(currentId);
-                String newOwnerId = newOwnable.getOwnerId();
-                String oldOwnerId = oldOwnable.getOwnerId();
+                ReferenceInfo<User> newOwnerId = newOwnable.getOwnerRef();
+                ReferenceInfo<User> oldOwnerId = oldOwnable.getOwnerRef();
                 if (newOwnerId != null && oldOwnerId != null && (!newOwnerId.equals(oldOwnerId)))
                 {
-                    if ( user.getId().equals(newOwnerId) || user.getId().equals(oldOwnerId))
+                    if ( user.getReference().isSame(newOwnerId) || user.getReference().isSame(oldOwnerId))
                     {
                         if (typeClass != Reservation.class)
                         {
@@ -444,8 +444,8 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
             if (obj instanceof Preferences)
             {
                 Preferences preferences = (Preferences) obj;
-                String ownerId = preferences.getOwnerId();
-                if (ownerId != null && !ownerId.equals(user.getId()))
+                ReferenceInfo<User> ownerId = preferences.getOwnerRef();
+                if (ownerId != null && !ownerId.isSame(user.getReference()))
                 {
                     clientStore = false;
                 }

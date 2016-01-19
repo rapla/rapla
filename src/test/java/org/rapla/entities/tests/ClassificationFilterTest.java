@@ -28,9 +28,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
-import org.rapla.facade.UpdateModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
@@ -41,63 +38,48 @@ import java.util.Iterator;
 
 @RunWith(JUnit4.class)
 public class ClassificationFilterTest  {
-    ClientFacade facade;
-    ModificationModule modificationMod;
-    QueryModule queryMod;
-    UpdateModule updateMod;
+    ClientFacade clientFacade;
+    RaplaFacade raplaFacade;
 
     @Before
     public void setUp() throws Exception 
     {
-        facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = facade.getRaplaFacade();
-        modificationMod = facade.getRaplaFacade();
-        updateMod = facade;
+        clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        raplaFacade = clientFacade.getRaplaFacade();
     }
 
     @Test
     public void testStore() throws Exception {
         // select from event where (name contains 'planting' or name contains 'owl') or (description contains 'friends');
-        DynamicType dynamicType = queryMod.getDynamicType("event");
+        DynamicType dynamicType = raplaFacade.getDynamicType("event");
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
-        classificationFilter.setRule(0
-                                     ,dynamicType.getAttribute("name")
-                                     ,new Object[][] {
-                                         {"contains","planting"}
-                                         ,{"contains","owl"}
-                                     }
-                                     );
-        classificationFilter.setRule(1
-                                     ,dynamicType.getAttribute("description")
-                                     ,new Object[][] {
-                                         {"contains","friends"}
-                                     }
-                                     );
+        classificationFilter.setRule(0, dynamicType.getAttribute("name"), new Object[][] { { "contains", "planting" }, { "contains", "owl" } });
+        classificationFilter.setRule(1, dynamicType.getAttribute("description"), new Object[][] { { "contains", "friends" } });
         /*
         modificationMod.newRaplaCalendarModel( )
-        ReservationFilter filter  = modificationMod.newReservationFilter(, null, ReservationFilter.PARTICULAR_PERIOD, queryMod.getPeriods()[1], null, null );
+        ReservationFilter filter  = raplaFacade.newReservationFilter(, null, ReservationFilter.PARTICULAR_PERIOD, queryMod.getPeriods()[1], null, null );
         //  filter.setPeriod();
         //assertEquals("bowling",queryMod.getReservations(filter)[0].getClassification().getValue("name"));
         assertTrue(((EntityReferencer)filter).isRefering((RefEntity)dynamicType));
 */
         ClassificationFilter[] filter = new ClassificationFilter[] {classificationFilter};
 
-        CalendarSelectionModel calendar = modificationMod.newCalendarModel(facade.getUser());
+        CalendarSelectionModel calendar = raplaFacade.newCalendarModel(clientFacade.getUser());
         calendar.setViewId( WeekviewPlugin.WEEK_VIEW);
         calendar.setSelectedObjects( Collections.emptyList());
-        calendar.setSelectedDate( queryMod.today());
-        calendar.setReservationFilter( filter);
+        calendar.setSelectedDate( raplaFacade.today());
+        calendar.setReservationFilter(filter);
         CalendarModelConfiguration conf = ((CalendarModelImpl)calendar).createConfiguration();
-        Preferences prefs =  modificationMod.edit( queryMod.getPreferences());
+        Preferences prefs =  raplaFacade.edit( raplaFacade.getPreferences());
         TypedComponentRole<CalendarModelConfiguration> testConf = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.TestConf");
-        prefs.putEntry( testConf, conf);
-        modificationMod.store( prefs );
+        prefs.putEntry(testConf, conf);
+        raplaFacade.store(prefs);
 
-        DynamicType newDynamicType = modificationMod.edit( dynamicType );
+        DynamicType newDynamicType = raplaFacade.edit( dynamicType );
         newDynamicType.removeAttribute(newDynamicType.getAttribute("description"));
-        modificationMod.store( newDynamicType );
+        raplaFacade.store(newDynamicType);
 
-        CalendarModelConfiguration configuration = queryMod.getPreferences().getEntry(testConf);
+        CalendarModelConfiguration configuration = raplaFacade.getPreferences().getEntry(testConf);
         filter =  configuration.getFilter();
         Iterator<? extends ClassificationFilterRule> it = filter[0].ruleIterator();
         it.next();
@@ -110,25 +92,20 @@ public class ClassificationFilterTest  {
     public void testFilter() throws Exception {
         // Test if the new date attribute is used correctly in filters
         {
-        	DynamicType dynamicType = queryMod.getDynamicType("room");
-            DynamicType modifiableType = modificationMod.edit(dynamicType);
-            Attribute attribute = modificationMod.newAttribute( AttributeType.DATE);
+        	DynamicType dynamicType = raplaFacade.getDynamicType("room");
+            DynamicType modifiableType = raplaFacade.edit(dynamicType);
+            Attribute attribute = raplaFacade.newAttribute( AttributeType.DATE);
             attribute.setKey( "date");
             modifiableType.addAttribute(attribute);
-            modificationMod.store( modifiableType);
+            raplaFacade.store( modifiableType);
         }
-    	DynamicType dynamicType = queryMod.getDynamicType("room");
+    	DynamicType dynamicType = raplaFacade.getDynamicType("room");
         //Issue 235 in rapla: Null date check in filter not working anymore
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
-        Allocatable[] allocatablesWithoutFilter = queryMod.getAllocatables( classificationFilter.toArray());
+        Allocatable[] allocatablesWithoutFilter = raplaFacade.getAllocatables( classificationFilter.toArray());
         Assert.assertTrue(allocatablesWithoutFilter.length > 0);
-        classificationFilter.setRule(0
-                                     ,dynamicType.getAttribute("date")
-                                     ,new Object[][] {
-                                         {"=",null}
-                                     }
-                                     );
-        Allocatable[] allocatables = queryMod.getAllocatables( classificationFilter.toArray());
+        classificationFilter.setRule(0, dynamicType.getAttribute("date"), new Object[][] { { "=", null } });
+        Allocatable[] allocatables = raplaFacade.getAllocatables( classificationFilter.toArray());
 
         Assert.assertTrue(allocatables.length > 0);
     }

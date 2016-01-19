@@ -21,9 +21,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
-import org.rapla.facade.UpdateModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.test.util.RaplaTestCase;
@@ -31,21 +29,18 @@ import org.rapla.test.util.RaplaTestCase;
 @RunWith(JUnit4.class)
 public class PreferencesTest  {
     CategoryImpl areas;
-    ModificationModule modificationMod;
-    QueryModule queryMod;
-    UpdateModule updateMod;
+    RaplaFacade raplaFacade;
+    ClientFacade clientFacade;
 
     @Before
     public void setUp() throws Exception {
-        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = facade.getRaplaFacade();
-        modificationMod = facade.getRaplaFacade();
-        updateMod = facade;
+        clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        raplaFacade = clientFacade.getRaplaFacade();
     }
 
     @Test
     public void testLoad() throws Exception {
-        Preferences preferences = queryMod.getPreferences();
+        Preferences preferences = raplaFacade.getPreferences();
         TypedComponentRole<RaplaConfiguration> SESSION_TEST = new TypedComponentRole<RaplaConfiguration>("org.rapla.SessionTest");
         Configuration config = preferences.getEntry(SESSION_TEST);
         Assert.assertEquals("testvalue", config.getAttribute("test"));
@@ -53,14 +48,14 @@ public class PreferencesTest  {
 
     @Test
     public void testStore() throws Exception {
-        Preferences preferences = queryMod.getPreferences();
-        Preferences clone  = modificationMod.edit(preferences);
+        Preferences preferences = raplaFacade.getPreferences();
+        Preferences clone  = raplaFacade.edit(preferences);
         //Allocatable allocatable = queryMod.getAllocatables()[0];
         //Configuration config = queryMod.createReference((RaplaType)allocatable);
         //clone.putEntry("org.rapla.client.swing.gui.weekview", config);
-        modificationMod.store(clone);
+        raplaFacade.store(clone);
         //assertEquals(allocatable, queryMod.resolve(config));
-        modificationMod.refresh();
+        raplaFacade.refresh();
     }
 
 }

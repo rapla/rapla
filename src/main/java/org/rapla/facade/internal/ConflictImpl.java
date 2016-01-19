@@ -113,8 +113,10 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         Reservation reservation2 = app2.getReservation();
         putEntity("reservation1", reservation1);
         putEntity("reservation2", reservation2);
-        putId("owner1", reservation1.getOwnerId());
-        putId("owner2", reservation2.getOwnerId());
+        final ReferenceInfo<User> ownerRef1 = reservation1.getOwnerRef();
+        putId("owner1", ownerRef1 != null ? ownerRef1.getId(): null);
+        final ReferenceInfo<User> ownerRef2 = reservation2.getOwnerRef();
+        putId("owner2", ownerRef2 != null ? ownerRef2.getId(): null);
         this.reservation1Name = reservation1.getName(Locale.getDefault());
         this.reservation2Name = reservation2.getName(Locale.getDefault());
         setResolver(((AllocatableImpl) allocatable).getResolver());
@@ -126,7 +128,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         super.setResolver(resolver);
 
         {
-            Appointment appointment = resolver.tryResolve(getAppointment1(), Appointment.class);
+            Appointment appointment = resolver.tryResolve(getAppointment1());
             if (appointment != null)
             {
                 Reservation reservation = appointment.getReservation();
@@ -135,7 +137,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             }
         }
         {
-            Appointment appointment = resolver.tryResolve(getAppointment2(), Appointment.class);
+            Appointment appointment = resolver.tryResolve(getAppointment2());
             if (appointment != null)
             {
                 Reservation reservation = appointment.getReservation();
@@ -286,19 +288,24 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     //    }
 
     /** The appointment of the first reservation, that causes the conflict. */
-    public String getAppointment1()
+    public ReferenceInfo<Appointment> getAppointment1()
     {
-        return getId("appointment1");
+        return getRef("appointment1", Appointment.class);
     }
 
-    public String getReservation1()
+    public ReferenceInfo<Appointment> getAppointment2()
     {
-        return getId("reservation1");
+        return getRef("appointment2", Appointment.class);
     }
 
-    public String getReservation2()
+    public ReferenceInfo<Reservation> getReservation1()
     {
-        return getId("reservation2");
+        return getRef("reservation1", Reservation.class);
+    }
+
+    public ReferenceInfo<Reservation> getReservation2()
+    {
+        return getRef("reservation2", Reservation.class);
     }
 
     /** @return the allocatable, allocated for the same time by two different reservations. */
@@ -307,9 +314,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return getEntity("allocatable", Allocatable.class);
     }
 
-    public String getAllocatableId()
+    public ReferenceInfo<Allocatable> getAllocatableId()
     {
-        return getId("allocatable");
+        return getRef("allocatable", Allocatable.class);
     }
     //    /** @return the second Reservation, that is involed in the conflict.*/
     //    public Reservation getReservation2()
@@ -328,10 +335,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     //    }
 
     /** The appointment of the second reservation, that causes the conflict. */
-    public String getAppointment2()
-    {
-        return getId("appointment2");
-    }
+
 
     public static final ConflictImpl[] CONFLICT_ARRAY = new ConflictImpl[] {};
 
@@ -366,13 +370,13 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return getEntity("owner2", User.class);
     }
 
-    private boolean contains(String appointmentId)
+    private boolean contains(ReferenceInfo<Appointment> appointmentId)
     {
         if (appointmentId == null)
             return false;
 
-        String app1 = getAppointment1();
-        String app2 = getAppointment2();
+        ReferenceInfo<Appointment> app1 = getAppointment1();
+        ReferenceInfo<Appointment> app2 = getAppointment2();
         if (app1 != null && app1.equals(appointmentId))
             return true;
         return app2 != null && app2.equals(appointmentId);
@@ -380,7 +384,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     static public boolean equals(ConflictImpl firstConflict, Conflict secondConflict)
     {
-        String allocatable = firstConflict.getAllocatableId();
+        ReferenceInfo<Allocatable> allocatable = firstConflict.getAllocatableId();
         if (allocatable != null && !allocatable.equals(secondConflict.getAllocatableId()))
         {
             return false;
@@ -703,12 +707,12 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts, List<Reservation> reservations)
     {
         Map<Appointment, Set<Appointment>> result = new HashMap<Appointment, Set<Appointment>>();
-        Map<String, Appointment> map = new HashMap<String, Appointment>();
+        Map<ReferenceInfo<Appointment>, Appointment> map = new HashMap<ReferenceInfo<Appointment>, Appointment>();
         for (Reservation reservation : reservations)
         {
             for (Appointment app : reservation.getAppointments())
             {
-                map.put(app.getId(), app);
+                map.put(app.getReference(), app);
             }
         }
         for (Conflict conflict : selectedConflicts)

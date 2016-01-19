@@ -12,31 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -93,8 +70,30 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -620,12 +619,12 @@ class LockStorage extends AbstractTableStorage
                 final long validOffset;
                 if(validMilliseconds == null || validMilliseconds.longValue() <= 0)
                 {
-                    validOffset = validMilliseconds;
+                    final long millisecondsPerMinute = DateTools.MILLISECONDS_PER_MINUTE;
+                    validOffset = id.startsWith(GLOBAL_LOCK) ? millisecondsPerMinute * 5 : millisecondsPerMinute;
                 }
                 else
                 {
-                    final long millisecondsPerMinute = DateTools.MILLISECONDS_PER_MINUTE;
-                    validOffset = id.startsWith(GLOBAL_LOCK) ? millisecondsPerMinute * 5 : millisecondsPerMinute;
+                    validOffset = validMilliseconds;
                 }
                 final Date validUntil = new Date(databaseTimestamp.getTime() + validOffset);
                 // for each id first check, if a lock was already requested once. if so just update otherwise insert new
@@ -1149,7 +1148,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
 		setId(stmt, 1, entity);
 	  	setString(stmt,2, typeKey );
 		org.rapla.entities.Timestamp timestamp = allocatable;
-		setId(stmt,3, allocatable.getOwnerId() );
+		setId(stmt,3, allocatable.getOwnerRef() );
         setTimestamp(stmt, 4,timestamp.getCreateTime() );
 		setTimestamp(stmt, 5,timestamp.getLastChanged() );
 		setId( stmt,6,timestamp.getLastChangedBy() );
@@ -1250,7 +1249,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
       	String typeKey = event.getClassification().getType().getKey();
       	setId(stmt,1, event );
       	setString(stmt,2, typeKey );
-    	setId(stmt,3, event.getOwnerId() );
+    	setId(stmt,3, event.getOwnerRef() );
     	org.rapla.entities.Timestamp timestamp = event;
         Date createTime = timestamp.getCreateTime();
         setTimestamp( stmt,4,createTime);
@@ -1830,7 +1829,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 	{
 	    for ( PreferencePatch patch:preferencePatches)
 	    {
-	        String userId = patch.getUserId();
+	        ReferenceInfo<User> userId = patch.getUserRef();
             PreparedStatement stmt = null;
 	        try {
 	            
@@ -1942,12 +1941,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     @Override
     protected int write(PreparedStatement stmt, Preferences entity) throws SQLException, RaplaException {
         PreferencesImpl preferences = (PreferencesImpl) entity;
-        String userId= preferences.getOwnerId();
+        ReferenceInfo<User> userId= preferences.getOwnerRef();
         int count = 0;
         for (String role:preferences.getPreferenceEntries()) {
             Object entry = preferences.getEntry(role);
             final Date lastChanged = getConnectionTimestamp();
-            insertEntry(stmt, userId, role, entry,lastChanged);
+            insertEntry(stmt, userId != null ? userId.getId(): null, role, entry,lastChanged);
             count++;
         }
        
@@ -2051,7 +2050,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
             for ( ReferenceInfo<Preferences> referenceInfo: entities)
             {
                 Preferences preferences = cache.tryResolve( referenceInfo);
-                String userId = preferences.getOwnerId();
+                ReferenceInfo<User> userId = preferences.getOwnerRef();
                 if ( userId == null) {
                 	deleteNullUserPreference = true;
                 }
@@ -2181,12 +2180,13 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
                 String id = conflictRef.getId();
                 final Date connectionTimestamp = getConnectionTimestamp();
                 Conflict conflict = new ConflictImpl(id, connectionTimestamp, connectionTimestamp);
-                String allocatableId = conflict.getAllocatableId();
-                String appointment1Id = conflict.getAppointment1();
-                String appointment2Id = conflict.getAppointment2();
-                stmt.setString(1,allocatableId);
-                stmt.setString(2,appointment1Id);
-                stmt.setString(3,appointment2Id);
+                ReferenceInfo<Allocatable> allocatableId = conflict.getAllocatableId();
+                ReferenceInfo<Appointment> appointment1Id = conflict.getAppointment1();
+                ReferenceInfo<Appointment> appointment2Id = conflict.getAppointment2();
+
+                setId(stmt,1, allocatableId );
+                setId(stmt,2, appointment1Id );
+                setId(stmt,3, appointment2Id );
                 //setTimestamp(stmt, 4, lastChanged);
                 stmt.addBatch();
                 execute = true;
@@ -2204,8 +2204,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     
     @Override
     protected int write(PreparedStatement stmt,Conflict conflict) throws SQLException, RaplaException {
-        String allocatableId = conflict.getAllocatableId();
-        setId(stmt, 1, allocatableId);
+        setId(stmt, 1, conflict.getAllocatableId());
         setId(stmt, 2, conflict.getAppointment1());
         setId(stmt, 3, conflict.getAppointment2());
         boolean appointment1Enabled = conflict.isAppointment1Enabled();

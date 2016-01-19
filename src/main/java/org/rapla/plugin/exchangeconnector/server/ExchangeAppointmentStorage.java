@@ -1,25 +1,24 @@
 package org.rapla.plugin.exchangeconnector.server;
 
 import com.google.gson.Gson;
-import org.rapla.RaplaResources;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import javax.inject.Inject;
@@ -40,6 +39,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static org.rapla.facade.RaplaComponent.unlock;
+
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
  * - the mapping between Rapla {@link Appointment}s and Exchange
@@ -51,27 +52,32 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @see {@link ExchangeConnectorPlugin}
  */
 @Singleton
-public class ExchangeAppointmentStorage extends RaplaComponent
+public class ExchangeAppointmentStorage
 {
     private static final String EXCHANGE_ID = "exchange";
     private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<String, Set<SynchronizationTask>>();
     private final Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<String, ImportExportEntity>();
-    CachableStorageOperator operator;
+    //CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
     private final Gson gson = JSONParserWrapper.defaultGsonBuilder(new Class[]{SynchronizationTask.class}).create();
     //private static String DEFAULT_STORAGE_FILE_PATH = "data/exchangeConnector.dat";
     //	private String storageFilePath = DEFAULT_STORAGE_FILE_PATH;
     protected ReadWriteLock lock = new ReentrantReadWriteLock();
+    final private Logger logger;
+    final private RaplaFacade facade;
+    final CachableStorageOperator operator;
+
 
     /**
      * public constructor of the class to read a particular file
 
      */
     @Inject
-    public ExchangeAppointmentStorage(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, StorageOperator storageOperator) throws RaplaException
+    public ExchangeAppointmentStorage(RaplaFacade facade, Logger logger,CachableStorageOperator operator) throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger);
-        operator = (CachableStorageOperator) storageOperator;
+        this.facade = facade;
+        this.logger = logger;
+        this.operator = operator;
     }
 
     protected Lock writeLock() throws RaplaException
@@ -106,7 +112,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         }
     }
 
-    public Collection<SynchronizationTask> getTasksForUser(String userId) throws RaplaException
+    public Collection<SynchronizationTask> getTasksForUser(ReferenceInfo<User> userId) throws RaplaException
     {
         // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
         List<SynchronizationTask> result = new ArrayList<SynchronizationTask>();
@@ -134,14 +140,14 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         }
     }
     
-    public void removeTasksForUser(String userId) throws RaplaException
+    public void removeTasksForUser(ReferenceInfo<User> userId) throws RaplaException
     {
         Collection<SynchronizationTask> toRemove = getTasksForUser(userId);
         Collection<SynchronizationTask> toStore = Collections.emptyList();
         storeAndRemove(toStore, toRemove);
     }
 
-    synchronized public SynchronizationTask getTask(Appointment appointment, String userId) throws RaplaException
+    synchronized public SynchronizationTask getTask(Appointment appointment, ReferenceInfo<User> userId) throws RaplaException
     {
         String appointmentId = appointment.getId();
         Lock lock = readLock();
@@ -185,12 +191,12 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         }
     }
 
-    synchronized public SynchronizationTask createTask(Appointment appointment, String userId)
+    synchronized public SynchronizationTask createTask(Appointment appointment, ReferenceInfo<User> userId)
     {
         int retries = 0;
         Date date = null;
         String lastError = null;
-        return new SynchronizationTask(appointment.getId(), userId, retries, date, lastError);
+        return new SynchronizationTask(appointment.getReference(), userId, retries, date, lastError);
     }
 
     //	public void remove(SynchronizationTask appointmentTask) throws RaplaException {
@@ -257,7 +263,6 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             unlock(lock);
         }
 
-        Map<String, Set<String>> hashMap = new HashMap<String, Set<String>>();
         Collection<Entity> storeObjects = new HashSet<Entity>();
         Collection<Entity> removeObjects = new HashSet<Entity>();
         for (SynchronizationTask task : toRemove)
@@ -276,7 +281,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 }
                 finally
                 {
-                    RaplaComponent.unlock(writeLock);
+                    unlock(writeLock);
                 }
             }
 
@@ -292,6 +297,8 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             }
 
         }
+        Map<ReferenceInfo<User>, Set<String>> hashMap = new HashMap<ReferenceInfo<User>, Set<String>>();
+
         for (SynchronizationTask task : toStore)
         {
             final String persistantId = task.getPersistantId();
@@ -300,7 +307,7 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 final Entity persistant = importExportEntities.get(persistantId);
                 if (persistant != null)
                 {
-                    final Entity edit = getFacade().edit(persistant);
+                    final Entity edit = facade.edit(persistant);
                     ((ImportExportEntityImpl)edit).setData(gson.toJson(task));
                     storeObjects.add(edit);
                 }
@@ -325,11 +332,11 @@ public class ExchangeAppointmentStorage extends RaplaComponent
                 importExportEntityImpl.setRaplaId(task.getAppointmentId());
                 task.setPersistantId(importExportEntityImpl.getId());
                 importExportEntityImpl.setData(gson.toJson(task));
-                final String userId = task.getUserId();
-                final User owner = operator.tryResolve(userId, User.class);
+                final ReferenceInfo<User> userRef = task.getUserRef();
+                final User owner = facade.tryResolve(userRef);
                 if (owner == null)
                 {
-                    getLogger().error("User for id " + userId + " not found. Ignoring appointmentTask for appointment " + task.getAppointmentId());
+                    getLogger().error("User for id " + userRef + " not found. Ignoring appointmentTask for appointment " + task.getAppointmentId());
                     continue;
                 }
                 else
@@ -346,11 +353,11 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         }
         // error handling. update LAST_SYNC_ERROR_CHANGE on new error
         // check if there is a new error. Use hashing to check for new errors
-        for (Entry<String, Set<String>> entry : hashMap.entrySet())
+        for (Entry<ReferenceInfo<User>, Set<String>> entry : hashMap.entrySet())
         {
-            final String userid = entry.getKey();
+            final ReferenceInfo<User> userid = entry.getKey();
             final Set<String> hashKeys = entry.getValue();
-            final User user = operator.tryResolve(userid, User.class);
+            final User user = facade.tryResolve(userid);
             if (user == null)
             {
                 // User is deleted we don't have to update his preferences
@@ -362,13 +369,13 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             {
                 hashableString.append(hashEntry);
             }
-            final Preferences userPreferences = operator.getPreferences(user, true);
+            final Preferences userPreferences = facade.getPreferences(user, true);
             final String newHash = LocalAbstractCachableOperator.encrypt("sha-1", hashableString.toString());
             final String hash = userPreferences.getEntryAsString(LAST_SYNC_ERROR_CHANGE_HASH, null);
             if (hash == null || !newHash.equals(hash))
             {
-                Preferences edit = getModification().edit(userPreferences);
-                String timestampOfFailure = getRaplaLocale().getSerializableFormat().formatTimestamp(getFacade().getOperator().getCurrentTimestamp());
+                Preferences edit = facade.edit(userPreferences);
+                String timestampOfFailure = new SerializableDateTimeFormat().formatTimestamp(facade.getOperator().getCurrentTimestamp());
                 edit.putEntry(ExchangeConnectorRemote.LAST_SYNC_ERROR_CHANGE, timestampOfFailure);
                 // store hash of errors to check changes in with future errors
                 edit.putEntry(LAST_SYNC_ERROR_CHANGE_HASH, newHash);
@@ -379,9 +386,9 @@ public class ExchangeAppointmentStorage extends RaplaComponent
         operator.storeAndRemove(storeObjects, removeObjects, user);
     }
 
-    private void addHash(Map<String, Set<String>> hashMap, SynchronizationTask task, String useInHashCalc)
+    private void addHash(Map<ReferenceInfo<User>, Set<String>> hashMap, SynchronizationTask task, String useInHashCalc)
     {
-        String userId = task.getUserId();
+        ReferenceInfo<User> userId = task.getUserRef();
         Set<String> set = hashMap.get(userId);
         if (set == null)
         {
@@ -389,6 +396,11 @@ public class ExchangeAppointmentStorage extends RaplaComponent
             hashMap.put(userId, set);
         }
         set.add(useInHashCalc);
+    }
+
+    protected Logger getLogger()
+    {
+        return  logger;
     }
 
     public void refresh()

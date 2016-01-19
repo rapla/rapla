@@ -17,7 +17,6 @@ import org.rapla.client.AppointmentListener;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 

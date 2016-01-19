@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.gui.tests;
 
-import java.awt.BorderLayout;
-import java.util.concurrent.Semaphore;
-
-import javax.swing.JComponent;
-
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ErrorDialog;
@@ -25,10 +20,13 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.FrameControllerListener;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.swing.JComponent;
+import java.awt.BorderLayout;
+import java.util.concurrent.Semaphore;
 
 public abstract class GUITestCase  {
 

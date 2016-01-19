@@ -26,8 +26,9 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.facade.RaplaFacade;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
@@ -62,7 +63,7 @@ public class SecurityManager
         this.appointmentFormater = appointmentFormater;
         this.facade = facade;
         operator = facade.getOperator();
-        permissionController = operator.getPermissionController();
+        permissionController = facade.getPermissionController();
     }
     
     void checkWritePermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException {
@@ -76,42 +77,42 @@ public class SecurityManager
         boolean permitted = false;
         @SuppressWarnings("unchecked")
         Class<Entity> typeClass = entity.getTypeClass();
-        Entity original = operator.tryResolve( entity.getId(), typeClass);
+        Entity original = facade.tryResolve( entity.getReference());
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
 
         boolean ownable = entity instanceof Ownable;
 		if (ownable || entity instanceof Appointment) {
-            String entityOwnerId;
+            ReferenceInfo<User> entityOwnerId;
             if ( ownable)
             {
-            	entityOwnerId = ((Ownable) entity).getOwnerId();
+            	entityOwnerId = ((Ownable) entity).getOwnerRef();
             }
             else
             {
-            	entityOwnerId = ((Appointment) entity).getOwnerId();
+            	entityOwnerId = ((Appointment) entity).getOwnerRef();
             }
             if (original == null) {
                 permitted = entityOwnerId != null && user.getId().equals(entityOwnerId);
                 if (getLogger().isDebugEnabled())
                 {
-                    getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerId, User.class));
+                    getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerId));
                 }
             } else {
-            	String originalOwnerId;
+            	ReferenceInfo<User> originalOwnerId;
                 if ( ownable)
                 {
-                	originalOwnerId = ((Ownable) original).getOwnerId();
+                	originalOwnerId = ((Ownable) original).getOwnerRef();
                 }
                 else
                 {
-                	originalOwnerId = ((Appointment) original).getOwnerId();
+                	originalOwnerId = ((Appointment) original).getOwnerRef();
                 }
 
                 if (getLogger().isDebugEnabled())
                 {
-                    final User entityOwner = operator.tryResolve(entityOwnerId, User.class);
-                    final User originalOwner = operator.tryResolve(originalOwnerId, User.class);
+                    final User entityOwner = operator.tryResolve(entityOwnerId);
+                    final User originalOwner = operator.tryResolve(originalOwnerId);
                     getLogger().debug("Permissions for existing object " + entity + "\nUser check: " + user + " = " + entityOwner + " = " + originalOwner);
                 }
                 permitted = (originalOwnerId != null) && originalOwnerId.equals(user.getId()) && originalOwnerId.equals(entityOwnerId);
@@ -406,8 +407,8 @@ public class SecurityManager
 		if ( raplaType == Preferences.class)
 		{
 		    Ownable ownable = (Preferences) entity;
-		    String ownerId = ownable.getOwnerId();
-		    if (  user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals(ownerId)))
+		    ReferenceInfo<User> ownerId = ownable.getOwnerRef();
+		    if (  user != null && !user.isAdmin() && (ownerId == null || !user.getReference().equals(ownerId)))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
 			}

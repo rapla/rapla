@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import java.util.Calendar;
-import java.util.Date;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,11 +24,12 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Calendar;
+import java.util.Date;
 
 
 @RunWith(JUnit4.class)
@@ -42,32 +40,28 @@ public class ReservationTest {
     Allocatable allocatable2;
     Calendar cal;
 
-    QueryModule queryMod;
     RaplaFacade facade;
-    ModificationModule modificationMod;
 
     @Before
     public void setUp() throws Exception
     {
         ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = clientFacade.getRaplaFacade();
-        modificationMod = clientFacade.getRaplaFacade();
         facade = clientFacade.getRaplaFacade();
-        
+
         cal = Calendar.getInstance(DateTools.getTimeZone());
 
         User user =clientFacade.getUser();
-        reserv1 = modificationMod.newReservation();
+        reserv1 = facade.newReservation();
         reserv1.getClassification().setValue("name","Test Reservation 1");
 
-        reserv2 = modificationMod.newReservation();
+        reserv2 = facade.newReservation();
         reserv2.getClassification().setValue("name","Test Reservation 2");
 
-        allocatable1 = modificationMod.newResource();
-        allocatable1.getClassification().setValue("name","Test Resource 1");
+        allocatable1 = facade.newResource();
+        allocatable1.getClassification().setValue("name", "Test Resource 1");
 
-        allocatable2 = modificationMod.newResource();
-        allocatable2.getClassification().setValue("name","Test Resource 2");
+        allocatable2 = facade.newResource();
+        allocatable2.getClassification().setValue("name", "Test Resource 2");
 
         cal.set(Calendar.DAY_OF_WEEK,Calendar.TUESDAY);
         cal.set(Calendar.HOUR_OF_DAY,13);
@@ -75,7 +69,7 @@ public class ReservationTest {
         Date startDate = cal.getTime();
         cal.set(Calendar.HOUR_OF_DAY,16);
         Date endDate = cal.getTime();
-        Appointment appointment = modificationMod.newAppointment(startDate, endDate);
+        Appointment appointment = facade.newAppointment(startDate, endDate);
         reserv1.addAppointment(appointment);
         reserv1.addAllocatable(allocatable1);
     }
@@ -96,16 +90,16 @@ public class ReservationTest {
     @Test
     public void testEdit() throws RaplaException {
         // store the reservation to create the id's
-        modificationMod.storeObjects(new Entity[] {allocatable1,allocatable2, reserv1});
+        facade.storeObjects(new Entity[] { allocatable1, allocatable2, reserv1 });
         String eventId;
         {
-	        Reservation persistantReservation = modificationMod.getPersistant( reserv1);
+	        Reservation persistantReservation = facade.getPersistant( reserv1);
 	        eventId = persistantReservation.getId();
 	        @SuppressWarnings("unused")
 			Appointment oldAppointment= persistantReservation.getAppointments()[0];
 	
 	        // Clone the reservation
-	        Reservation clone =  modificationMod.edit(persistantReservation);
+	        Reservation clone =  facade.edit(persistantReservation);
             Assert.assertTrue(persistantReservation.equals(clone));
             Assert.assertTrue(clone.hasAllocated(allocatable1));
 	
@@ -113,7 +107,7 @@ public class ReservationTest {
 	        Appointment clonedAppointment= clone.getAppointments()[0];
 	        cal = Calendar.getInstance(DateTools.getTimeZone());
 	        cal.setTime(clonedAppointment.getStart());
-	        cal.set(Calendar.HOUR_OF_DAY,12);
+	        cal.set(Calendar.HOUR_OF_DAY, 12);
 	        clonedAppointment.move(cal.getTime());
 	
 	        // Add a new appointment
@@ -123,11 +117,11 @@ public class ReservationTest {
 	        Date startDate2 = cal.getTime();
 	        cal.set(Calendar.HOUR_OF_DAY,17);
 	        Date endDate2 = cal.getTime();
-	        Appointment newAppointment = modificationMod.newAppointment(startDate2, endDate2);
+	        Appointment newAppointment = facade.newAppointment(startDate2, endDate2);
 	        clone.addAppointment(newAppointment);
 	
 	        // store clone
-	        modificationMod.storeObjects(new Entity[] {clone});
+	        facade.storeObjects(new Entity[] { clone });
 	    }
         Reservation persistantReservation = facade.getOperator().resolve(eventId, Reservation.class);
         Assert.assertTrue(persistantReservation.hasAllocated(allocatable1));

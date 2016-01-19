@@ -7,7 +7,6 @@ import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;

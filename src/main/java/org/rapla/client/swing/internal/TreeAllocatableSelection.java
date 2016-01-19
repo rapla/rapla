@@ -22,7 +22,6 @@ import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;

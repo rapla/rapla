@@ -177,7 +177,7 @@ public class TemplateEdit extends RaplaGUIComponent
         Classification newClassification = dynamicType.newClassification();
         newClassification.setValue("name", name);
         final User user = getUser();
-        Allocatable template = getModification().newAllocatable( newClassification, user);
+        Allocatable template = getFacade().newAllocatable( newClassification, user);
         Collection<Permission> permissionList = new ArrayList<Permission>(template.getPermissionList());
         for ( Permission permission: permissionList)
         {
@@ -204,7 +204,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     editableTemplates.add( template);
                 }
             }
-            Collection<Allocatable> copies = getModification().edit( editableTemplates);
+            Collection<Allocatable> copies = getFacade().edit( editableTemplates);
             fillModel(copies);
             
             Collection<String> options = new ArrayList<String>();
@@ -240,7 +240,7 @@ public class TemplateEdit extends RaplaGUIComponent
                         Entity[] storedObjects = toStoreObj.toArray(Entity.ENTITY_ARRAY); 
                         Entity[] removedObjects = toRemoveObj.toArray(Entity.ENTITY_ARRAY);
                         // FIXME Implement as undo
-                        getModification().storeAndRemove(storedObjects, removedObjects);
+                        getFacade().storeAndRemove(storedObjects, removedObjects);
               
                         Allocatable selectedTemplate = templateList.getSelectedValue();
                         Date start = null;

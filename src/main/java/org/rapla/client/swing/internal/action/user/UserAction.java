@@ -21,7 +21,6 @@ import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -96,7 +95,7 @@ public class UserAction extends RaplaAction {
                    // putValue(NAME, getString("switch_back"));
                 }
             } else if (type == NEW) {
-                User newUser = getModification().newUser();
+                User newUser = getFacade().newUser();
                 // create new user dialog and show password dialog if user is created successfully
                 final String title = getString("user");
                 editController.edit(newUser, title,popupContext,new EditController.EditCallback<User>()

@@ -20,8 +20,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.UserModule;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -29,10 +27,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
-    final private UserModule userModule;
+    final private ClientFacade clientFacade;
     public DynamicTypeInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(i18n, raplaLocale, facade.getRaplaFacade(), logger);
-        this.userModule = facade;
+        this.clientFacade = facade;
     }
 
     @Override
@@ -59,7 +57,7 @@ public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
 
     @Override
     public String getTooltip(DynamicType object, User user) {
-        if ( userModule.getUser().isAdmin()) {
+        if ( clientFacade.getUser().isAdmin()) {
             return createHTMLAndFillLinks( object, null, user);
         } else {
             return null;

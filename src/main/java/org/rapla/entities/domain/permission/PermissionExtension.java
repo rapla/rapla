@@ -9,7 +9,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
-import java.util.Collection;
 import java.util.Date;
 
 @ExtensionPoint(context = InjectionContext.all, id = "org.rapla.entities.domain.Permission")

@@ -33,7 +33,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.internal.ConflictImpl;
@@ -240,7 +239,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
             ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
             for ( Conflict conflict:conflictOrig)
             {
-                Conflict clone = getModification().edit( conflict);
+                Conflict clone = getFacade().edit( conflict);
                 conflicts.add( clone);
             }
             for (Conflict conflict: conflicts)
@@ -259,7 +258,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     
     private void store(Collection<Conflict> conflicts) throws RaplaException 
     {
-        getModification().storeObjects( conflicts.toArray(Conflict.CONFLICT_ARRAY));
+        getFacade().storeObjects( conflicts.toArray(Conflict.CONFLICT_ARRAY));
     }
 
     private void setEnabled(ConflictImpl conflictImpl, boolean enabled)

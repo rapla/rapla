@@ -29,6 +29,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
@@ -176,8 +177,8 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         for (Reservation reservation : newReservations)
         {
             Reservation cast = reservation;
-            String lastChangedBy = cast.getLastChangedBy();
-            if (lastChangedBy != null && !lastChangedBy.equals(user.getId()))
+            ReferenceInfo<User> lastChangedBy = cast.getLastChangedBy();
+            if (lastChangedBy != null && !lastChangedBy.equals(user.getReference()))
             {
                 throw new RaplaException("Reservation " + cast + " has wrong user " + lastChangedBy);
             }

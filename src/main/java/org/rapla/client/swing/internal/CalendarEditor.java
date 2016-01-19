@@ -32,7 +32,6 @@ import org.rapla.entities.Entity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;

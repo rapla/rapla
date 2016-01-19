@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.rapla.entities.Category;
@@ -33,6 +30,9 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateResult;
+
+import java.util.Collection;
+import java.util.Date;
 
 public abstract class AbstractOperatorTest  {
 

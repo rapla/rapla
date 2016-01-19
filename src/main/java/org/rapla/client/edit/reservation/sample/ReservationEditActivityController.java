@@ -4,6 +4,7 @@ import org.rapla.client.ActivityManager;
 import org.rapla.client.ActivityPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -16,6 +17,7 @@ import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID)
@@ -37,11 +39,12 @@ public class ReservationEditActivityController  implements ActivityPresenter
 
     @Override @SuppressWarnings("rawtypes") public boolean startActivity(ActivityManager.Activity activity)
     {
-
         try
         {
             final StorageOperator operator = facade.getOperator();
-            final Map<String, Entity> entities = operator.getFromId(Collections.singletonList(activity.getInfo()), false);
+            final ReferenceInfo<Reservation> info = new ReferenceInfo(activity.getInfo(), Reservation.class);
+            final List<ReferenceInfo> referenceInfos =  (List)Collections.singletonList(info);
+            final Map<ReferenceInfo, Entity> entities = operator.getFromId(referenceInfos, false);
             final Collection<Entity> values = entities.values();
             for (Entity entity : values)
             {

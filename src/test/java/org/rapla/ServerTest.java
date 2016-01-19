@@ -41,9 +41,6 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
-import org.rapla.facade.UserModule;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -622,11 +619,9 @@ public class ServerTest
     }
     // Make some Changes to the Reservation in another client
     private void changeInSecondFacade(ClientFacade facade2,String name) throws Exception {
-        UserModule userMod2 =  facade2;
-        QueryModule queryMod2 =  facade2.getRaplaFacade();
-        ModificationModule modificationMod2 =  facade2.getRaplaFacade();
-        Reservation reservation = findReservation(queryMod2,name);
-        Reservation mutableReseravation = modificationMod2.edit(reservation);
+        RaplaFacade raplaFacade2 =  facade2.getRaplaFacade();
+        Reservation reservation = findReservation(raplaFacade2,name);
+        Reservation mutableReseravation = raplaFacade2.edit(reservation);
         Appointment appointment =  mutableReseravation.getAppointments()[0];
 
         RaplaLocale loc = getRaplaLocale();
@@ -638,11 +633,11 @@ public class ServerTest
         Date endTime1 = loc.toDate(cal.getTime(), endTime);
         appointment.move(startTime1,endTime1);
 
-        modificationMod2.store( mutableReseravation );
+        raplaFacade2.store( mutableReseravation );
         //userMod2.logout();
     }
 
-    private Reservation findReservation(QueryModule queryMod,String name) throws RaplaException {
+    private Reservation findReservation(RaplaFacade queryMod,String name) throws RaplaException {
         Reservation[] reservations = queryMod.getReservationsForAllocatable(null,null,null,null);
         for (int i=0;i<reservations.length;i++) {
             if (reservations[i].getName(locale).equals(name))

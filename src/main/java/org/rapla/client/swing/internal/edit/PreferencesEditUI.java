@@ -27,7 +27,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -205,11 +204,11 @@ public class PreferencesEditUI extends RaplaGUIComponent
 
     public void setObjects(List<Preferences> o) throws RaplaException {
         this.preferences = o.get(0);
-        if ( preferences.getOwnerId() == null) {
+        if ( preferences.getOwnerRef() == null) {
             messages.setText(getString("restart_options"));
         }
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
-        if ( preferences.getOwnerId() != null) {
+        if ( preferences.getOwnerRef() != null) {
             Collection<? extends Named> elements = getUserOptions();
             for (Named element:elements) {
                 root.add(  treeFactory.newNamedNode( element));

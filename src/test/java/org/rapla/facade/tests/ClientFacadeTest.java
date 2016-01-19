@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.tests;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,13 +35,19 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.QueryModule;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
 
 
 @RunWith(JUnit4.class)
@@ -68,15 +67,6 @@ public class ClientFacadeTest  {
     @After
     public void tearDown() throws Exception {
         clientFacade.logout();
-    }
-
-    private Reservation findReservation(QueryModule queryMod,String name) throws RaplaException {
-        Reservation[] reservations = queryMod.getReservationsForAllocatable(null,null,null,null);
-        for (int i=0;i<reservations.length;i++) {
-            if (reservations[i].getName(locale).equals(name))
-                return reservations[i];
-        }
-        return null;
     }
 
     @Test

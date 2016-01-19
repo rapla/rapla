@@ -16,8 +16,8 @@ import org.rapla.RaplaResources;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -85,8 +85,8 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     public List<Row> getAttributes(Allocatable allocatable,LinkController controller,  boolean excludeAdditionalInfos, User user) {
         ArrayList<Row> att = new ArrayList<Row>();
         att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos, controller, user) );
-        String ownerId = allocatable.getOwnerId();
-        String lastChangeById = allocatable.getLastChangedBy();
+        ReferenceInfo<User> ownerId = allocatable.getOwnerRef();
+        ReferenceInfo<User> lastChangeById = allocatable.getLastChangedBy();
         if ( ownerId != null)
         {
             final String ownerName = getUsername(ownerId);

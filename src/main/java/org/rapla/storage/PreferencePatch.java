@@ -1,6 +1,8 @@
 package org.rapla.storage;
 
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -21,6 +23,11 @@ public class PreferencePatch extends RaplaMapImpl {
     
     public String getUserId() {
         return userId;
+    }
+
+    public ReferenceInfo<User> getUserRef()
+    {
+        return new ReferenceInfo<User>(userId, User.class);
     }
     
     public Date getLastChanged() {

@@ -519,7 +519,7 @@ class ConflictFinder {
         }
         Reservation res1 = appointment1.getReservation();
         Reservation res2 = appointment2.getReservation();
-        Allocatable alloc = resolver.tryResolve(conflict.getAllocatableId(), Allocatable.class);
+        Allocatable alloc = resolver.tryResolve(conflict.getAllocatableId());
         if ( res1 == null || res2 == null || alloc == null)
         {
             return false;
@@ -533,9 +533,9 @@ class ConflictFinder {
         return res1.hasAllocated(alloc, appointment1) && res2.hasAllocated(alloc, appointment2);
     }
 	
-	private Appointment getAppointment(String id) 
+	private Appointment getAppointment(ReferenceInfo<Appointment> id)
 	{
-		return resolver.tryResolve(id, Appointment.class);
+		return resolver.tryResolve(id);
 	}
 
 	public static class ConflictChangeOperation
@@ -686,8 +686,8 @@ class ConflictFinder {
     		{
 	    		for ( Conflict conflict:conflicts.values())
 	    		{
-	    			String appointment1Id = conflict.getAppointment1();
-	    			String appointment2Id = conflict.getAppointment2();
+	    			ReferenceInfo<Appointment> appointment1Id = conflict.getAppointment1();
+                    ReferenceInfo<Appointment> appointment2Id = conflict.getAppointment2();
 	    			boolean contains1 = changedAppointments.contains( appointment1Id);
 					boolean contains2 = changedAppointments.contains( appointment2Id);
 					if ( contains1 || contains2)

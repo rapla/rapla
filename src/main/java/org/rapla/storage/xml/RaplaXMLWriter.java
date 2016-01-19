@@ -23,6 +23,7 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.Timestamp;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.dynamictype.Attribute;
@@ -30,6 +31,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
@@ -97,12 +99,18 @@ abstract public class RaplaXMLWriter extends XMLWriter
         {
             att("last-changed", SerializableDateTimeFormat.INSTANCE.formatTimestamp( lastChangeTime));
         }
-        String userId = stamp.getLastChangedBy();
+        ReferenceInfo<User> userId = stamp.getLastChangedBy();
         if ( userId != null)
         {  
             att("last-changed-by", userId);
         }
     }
+
+    protected void att(String key, ReferenceInfo ref) throws IOException {
+        att(key, ref.getId() );
+    }
+
+
     protected void printTranslation(MultiLanguageName name) throws IOException {
         Iterator<String> it= name.getAvailableLanguages().iterator();
         while (it.hasNext()) {
@@ -247,7 +255,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
 
 
     protected void printOwner(Ownable obj) throws IOException {
-        String userId = obj.getOwnerId();
+        ReferenceInfo<User> userId = obj.getOwnerRef();
         if (userId == null)
             return;
         att("owner", userId);

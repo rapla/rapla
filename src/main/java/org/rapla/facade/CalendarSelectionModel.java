@@ -1,7 +1,6 @@
 package org.rapla.facade;
 
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.RaplaException;

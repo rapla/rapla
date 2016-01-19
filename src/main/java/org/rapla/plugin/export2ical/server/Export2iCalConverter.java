@@ -46,6 +46,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaException;
@@ -257,8 +258,8 @@ public class Export2iCalConverter
         // means we do not export attendees so we do not have a meeting
         if (!doExportAsMeeting)
             return;
-        String ownerId = appointment.getOwnerId();
-        final User owner = facade.getOperator().resolve( ownerId, User.class);
+        ReferenceInfo<User> ownerId = appointment.getOwnerRef();
+        final User owner = facade.resolve( ownerId);
         try
         {
             Organizer organizer = null;

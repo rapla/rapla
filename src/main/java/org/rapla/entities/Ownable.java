@@ -17,7 +17,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 /**Should be implemented by objects which can be uniquely associated with a User. */
 public interface Ownable {
     void setOwner(User owner);
-    String getOwnerId();
     ReferenceInfo<User> getOwnerRef();
 }
 

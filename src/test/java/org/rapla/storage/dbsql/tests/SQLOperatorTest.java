@@ -12,29 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +35,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -71,6 +47,24 @@ import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
 
 @RunWith(JUnit4.class)
 public class SQLOperatorTest extends AbstractOperatorTest
@@ -144,7 +138,9 @@ public class SQLOperatorTest extends AbstractOperatorTest
         Set<Reservation> singleton = Collections.singleton(event);
         final Map<Entity, Entity> persistantMap = operator.getPersistant(singleton);
         Reservation event1 = (Reservation) persistantMap.get(event);
-        Repeating repeating = event1.getAppointments()[0].getRepeating();
+        final Appointment[] appointments = event1.getAppointments();
+        final Appointment appointment1 = appointments[0];
+        Repeating repeating = appointment1.getRepeating();
         Assert.assertNotNull(repeating);
         Assert.assertNull(repeating.getEnd());
         Assert.assertEquals(-1, repeating.getNumber());
@@ -577,11 +573,12 @@ public class SQLOperatorTest extends AbstractOperatorTest
         final String select = "SELECT ID, CHANGED_AT, ENTITY_CLASS, TYPE, XML_VALUE, ISDELETE FROM CHANGES WHERE id = ?";
         final User user = facade.getUser("homer");
         {// resources
-            final Allocatable newResource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
+            final Allocatable newResource = facade.newAllocatable(
+                    facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
             final Classification classification = newResource.getClassification();
             final Attribute attribute = classification.getAttributes()[0];
             classification.setValue(attribute, "newValue");
-            facade.storeAndRemove(new Entity[]{newResource}, Entity.ENTITY_ARRAY, user);
+            facade.storeAndRemove(new Entity[] { newResource }, Entity.ENTITY_ARRAY, user);
             try(final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
                 stmt.setString(1, newResource.getId());
@@ -601,7 +598,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             final Classification classification = newReservation.getClassification();
             final Attribute attribute = classification.getAttributes()[0];
             classification.setValue(attribute, "newReservation");
-            facade.storeAndRemove(new Entity[]{newReservation}, Entity.ENTITY_ARRAY, user);
+            facade.storeAndRemove(new Entity[] { newReservation }, Entity.ENTITY_ARRAY, user);
             try(final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
                 stmt.setString(1, newReservation.getId());
@@ -618,7 +615,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             newCategory.setKey("new");
             final Category superCategory = facade.edit(facade.getSuperCategory());
             superCategory.addCategory(newCategory);
-            facade.storeAndRemove(new Entity[]{superCategory}, Entity.ENTITY_ARRAY, user);
+            facade.storeAndRemove(new Entity[] { superCategory }, Entity.ENTITY_ARRAY, user);
             // TODO think about other categories...
             try(final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
@@ -637,7 +634,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             newUser.setEmail("123@456.789");
             newUser.setName("newUser");
             newUser.setUsername("new");
-            facade.storeAndRemove(new Entity[]{newUser}, Entity.ENTITY_ARRAY, user);
+            facade.storeAndRemove(new Entity[] { newUser }, Entity.ENTITY_ARRAY, user);
             try(final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
                 stmt.setString(1, newUser.getId());

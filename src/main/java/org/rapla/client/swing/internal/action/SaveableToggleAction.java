@@ -16,6 +16,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
@@ -52,11 +53,13 @@ public class SaveableToggleAction extends RaplaAction
         {
             try
             {
-                Preferences prefs = this.newEditablePreferences();
+                final User user = getUser();
+                final RaplaFacade facade = getFacade();
+                Preferences prefs = facade.edit( facade.getPreferences( user));
                 final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
                 boolean newSelected = !oldEntry;
                 prefs.putEntry(configEntry, newSelected);
-                getModification().store(prefs);
+                facade.store(prefs);
             }
             catch (Exception ex)
             {

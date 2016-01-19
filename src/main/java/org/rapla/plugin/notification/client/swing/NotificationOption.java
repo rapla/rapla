@@ -21,7 +21,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -106,7 +105,7 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
     public void commit() {
     	preferences.putEntry( NotificationPlugin.NOTIFY_IF_OWNER_CONFIG,  notifyIfOwnerCheckBox.isSelected());
         Collection<Allocatable> allocatables = selection.getAllocatables();
-		preferences.putEntry( NotificationPlugin.ALLOCATIONLISTENERS_CONFIG ,getModification().newRaplaMap( allocatables  ));
+		preferences.putEntry( NotificationPlugin.ALLOCATIONLISTENERS_CONFIG ,getFacade().newRaplaMap( allocatables  ));
     }
 
 

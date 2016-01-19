@@ -25,7 +25,6 @@ import org.rapla.entities.Category;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
@@ -280,7 +279,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
         preferences.putEntry( configEntry,newConfig);
         Set<Category> set = new LinkedHashSet<Category>();
     	this.groupField.mapToList( set);
-    	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, getModification().newRaplaMap( set) );
+    	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, getFacade().newRaplaMap( set) );
     }
 
 

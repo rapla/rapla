@@ -318,15 +318,6 @@ public class PreferencesImpl extends SimpleEntity
 		checkWritable();
 		String key = role.getId();
 		updateMap(key, entry);
-
-//        if ( entry == null)
-//        {
-//            map.remove( id);
-//        }
-//        else
-//        {
-//            map.put( id ,entry.toString());
-//        }
 	}
 
 
@@ -348,18 +339,6 @@ public class PreferencesImpl extends SimpleEntity
         return pluginConfig;
     }
 
-
-//	public static boolean isServerEntry(String configRole) {
-//		if ( configRole == null)
-//		{
-//			return false;
-//		}
-//		if ( configRole.startsWith("server.") || configRole.contains(".server."))
-//		{
-//			return true;
-//		}
-//		return false;
-//	}
 }
 
 

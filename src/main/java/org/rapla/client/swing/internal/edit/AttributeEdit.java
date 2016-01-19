@@ -24,7 +24,6 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -218,7 +217,7 @@ public class AttributeEdit extends RaplaGUIComponent
     void createAttribute() throws RaplaException {
         confirmEdits();
         AttributeType type = AttributeType.STRING;
-        Attribute att =  getModification().newAttribute(type);
+        Attribute att =  getFacade().newAttribute(type);
         String language = getRaplaLocale().getLocale().getLanguage();
 		att.getName().setName(language, getString("attribute"));
         att.setKey(createNewKey());

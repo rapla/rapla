@@ -72,9 +72,9 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
@@ -313,9 +313,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public String getUsername(String userId)
+    public String getUsername(ReferenceInfo<User> userId)
     {
-        User user = tryResolve(userId, User.class);
+        User user = tryResolve(userId);
         if ( user == null)
         {
             return "unknown";
@@ -545,12 +545,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
-    public String[] createIdentifier(Class<? extends Entity> raplaType, int count) throws RaplaException
+    public <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException
     {
-        String[] ids = new String[count];
+        ReferenceInfo<T>[] ids = new ReferenceInfo[count];
         for (int i = 0; i < count; i++)
         {
-            ids[i] = createId(raplaType);
+            final String id = createId(raplaType);
+            ids[i] = new ReferenceInfo<T>(id, raplaType);
         }
         return ids;
     }
@@ -770,10 +771,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
                 toStore.add(r);
-                final String ownerId = r.getOwnerId();
+                final ReferenceInfo<User> ownerId = r.getOwnerRef();
                 if (owner == null && ownerId != null)
                 {
-                    owner = tryResolve( ownerId, User.class);
+                    owner = tryResolve( ownerId );
                 }
             }
             getLogger().info("Migrating " + templateKey);
@@ -1373,18 +1374,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         else if (current instanceof Preferences)
         {
-            String owner = ((PreferencesImpl) current).getOwnerId();
+            ReferenceInfo<User> owner = ((PreferencesImpl) current).getOwnerRef();
             if (owner != null)
             {
-                entry.addUserIds(Collections.singletonList(owner));
+                entry.addUserIds(Collections.singletonList(owner.getId()));
             }
         }
         deleteUpdateSet.put(entry.getId(), entry);
     }
 
-    private void addPermissions(DeleteUpdateEntry entry, String reservation1)
+    private void addPermissions(DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation1)
     {
-        Reservation event = tryResolve(reservation1, Reservation.class);
+        Reservation event = tryResolve(reservation1);
         if (event != null)
         {
             entry.addPermissions(event, Permission.EDIT);
@@ -1534,14 +1535,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             DeleteUpdateEntry entry = this;
             if (current instanceof Ownable)
             {
-                String ownerId = current.getOwnerId();
+                ReferenceInfo<User> ownerId = current.getOwnerRef();
                 if (ownerId != null)
                 {
                     if (entry.affectedUserIds == null)
                     {
                         entry.affectedUserIds = new HashSet<String>(1);
                     }
-                    entry.affectedUserIds.add(ownerId);
+                    entry.affectedUserIds.add(ownerId.getId());
                 }
             }
             Collection<Permission> permissions = current.getPermissionList();
@@ -2125,8 +2126,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 // remove all internal resources (e.g. templates) that have the user as owner
                 if (((DynamicTypeImpl) type).isInternal())
                 {
-                    String ownerId = ((Ownable) entity).getOwnerId();
-                    if (ownerId != null && ownerId.equals(user.getId()))
+                    ReferenceInfo<User> ownerId = ((Ownable) entity).getOwnerRef();
+                    if (ownerId != null && ownerId.isSame(user.getReference()))
                     {
                         updateEvt.putRemove(entity);
                         if (type.getKey().equals(StorageOperator.RAPLA_TEMPLATE))
@@ -2141,16 +2142,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (entity instanceof Timestamp)
             {
                 Timestamp timestamp = (Timestamp) entity;
-                String lastChangedBy = timestamp.getLastChangedBy();
-                if (lastChangedBy == null || !lastChangedBy.equals(user.getId()))
+                ReferenceInfo<User> lastChangedBy = timestamp.getLastChangedBy();
+                if (lastChangedBy == null || !lastChangedBy.equals(user.getReference()))
                 {
                     continue;
                 }
                 if (entity instanceof Ownable)
                 {
-                    String ownerId = ((Ownable) entity).getOwnerId();
+                    ReferenceInfo<User> ownerId = ((Ownable) entity).getOwnerRef();
                     // we do nothing if the user is also owner,  that dependencies need to be resolved manually
-                    if (ownerId != null && ownerId.equals(user.getId()))
+                    if (ownerId != null && ownerId.equals(user.getReference()))
                     {
                         continue;
                     }
@@ -2735,10 +2736,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     String name = templateObj.getName(locale);
                     buf.append(" in template " + name);
-                    String ownerId = templateObj.getOwnerId();
+                    ReferenceInfo<User> ownerId = templateObj.getOwnerRef();
                     if (ownerId != null)
                     {
-                        User user = tryResolve( ownerId,User.class);
+                        User user = tryResolve( ownerId );
                         if ( user != null)
                         {
                             buf.append(" of user " + user.getUsername());
@@ -3299,9 +3300,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private <T extends Entity> void setNew(T entity) throws RaplaException
     {
 
-        Class<? extends Entity> raplaType = entity.getTypeClass();
-        String id = createIdentifier(raplaType, 1)[0];
-        ((RefEntity) entity).setId(id);
+        Class<T> raplaType = entity.getTypeClass();
+        ReferenceInfo<T> id = createIdentifier(raplaType, 1)[0];
+        ((RefEntity) entity).setId(id.getId());
     }
 
     private void setName(MultiLanguageName name, String to)
@@ -3390,19 +3391,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return getUpdateResult(since, null);
     }
 
-    @Override public Collection<Appointment> getAppointmentsFromUserCalendarModels(String userId, TimeInterval syncRange)
+    @Override public Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange)
     {
         checkConnected();
         return calendarModelCache.getAppointments(userId,syncRange);
     }
 
-    @Override public Collection<String> findUsersThatExport(Allocatable allocatable)
+    @Override public Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable)
     {
         checkConnected();
         return calendarModelCache.findMatchingUsers(allocatable);
     }
 
-    @Override public Collection<String> findUsersThatExport(Appointment appointment)
+    @Override public Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment)
     {
         checkConnected();
         return calendarModelCache.findMatchingUser( appointment );

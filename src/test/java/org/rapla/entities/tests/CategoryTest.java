@@ -21,37 +21,32 @@ import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
-import org.rapla.facade.UpdateModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class CategoryTest {
     CategoryImpl areas;
-    ModificationModule modificationMod;
-    QueryModule queryMod;
-    UpdateModule updateMod;
+    RaplaFacade raplaFacade;
+    ClientFacade clientFacade;
 
 
     @Before
     public void setUp() throws Exception {
-        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = facade.getRaplaFacade();
-        modificationMod = facade.getRaplaFacade();
-        updateMod = facade;
+        clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        raplaFacade = clientFacade.getRaplaFacade();
 
-        areas = (CategoryImpl) modificationMod.newCategory();
+        areas = (CategoryImpl) raplaFacade.newCategory();
         areas.setKey("areas");
         areas.getName().setName("en","areas");
-        Category area51 =  modificationMod.newCategory();
+        Category area51 =  raplaFacade.newCategory();
         area51.setKey("51");
         area51.getName().setName("en","area 51");
-        Category buildingA =  modificationMod.newCategory();
+        Category buildingA =  raplaFacade.newCategory();
         buildingA.setKey("A");
         buildingA.getName().setName("en","building A");
-        Category floor1 =  modificationMod.newCategory();
+        Category floor1 =  raplaFacade.newCategory();
         floor1.setKey("1");
         floor1.getName().setName("en","floor 1");
 
@@ -62,24 +57,24 @@ public class CategoryTest {
 
     @Test
     public void testStore2() throws Exception {
-        Category superCategory = modificationMod.edit(queryMod.getSuperCategory());
+        Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
         
         superCategory.addCategory(areas);
-        modificationMod.store(superCategory);
+        raplaFacade.store(superCategory);
         Assert.assertTrue(areas.getId() != null);
-        Category editObject =  modificationMod.edit(superCategory);
-        modificationMod.store(editObject);
+        Category editObject =  raplaFacade.edit(superCategory);
+        raplaFacade.store(editObject);
         Assert.assertTrue("reference to subcategory has changed", areas == superCategory.getCategory("areas"));
     }
 
     @Test
     public void testStore() throws Exception {
-        Category superCategory =modificationMod.edit(queryMod.getSuperCategory());
+        Category superCategory =raplaFacade.edit(raplaFacade.getSuperCategory());
         superCategory.addCategory(areas);
-        modificationMod.store(superCategory);
+        raplaFacade.store(superCategory);
         Assert.assertTrue(areas.getId() != null);
-        modificationMod.refresh();
-        Category[] categories = queryMod.getSuperCategory().getCategories();
+        raplaFacade.refresh();
+        Category[] categories = raplaFacade.getSuperCategory().getCategories();
         for (int i=0;i<categories.length;i++)
             if (categories[i].equals(areas))
                 return;
@@ -88,29 +83,29 @@ public class CategoryTest {
 
     @Test
     public void testStore3() throws Exception {
-        Category superCategory = queryMod.getSuperCategory();
-        Category department = modificationMod.edit( superCategory.getCategory("department") );
+        Category superCategory = raplaFacade.getSuperCategory();
+        Category department = raplaFacade.edit( superCategory.getCategory("department") );
         Category school = department.getCategory("elementary-springfield");
         try {
             department.removeCategory( school);
-            modificationMod.store( department );
+            raplaFacade.store( department );
             Assert.fail("No dependency exception thrown");
         } catch (DependencyException ex) {
         }
-        school = modificationMod.edit( superCategory.getCategory("department").getCategory("channel-6") );
-        modificationMod.store( school );
+        school = raplaFacade.edit( superCategory.getCategory("department").getCategory("channel-6") );
+        raplaFacade.store( school );
     }
 
     @Test
     public void testEditDeleted() throws Exception {
-        Category superCategory = queryMod.getSuperCategory();
-        Category department = modificationMod.edit( superCategory.getCategory("department") );
+        Category superCategory = raplaFacade.getSuperCategory();
+        Category department = raplaFacade.edit( superCategory.getCategory("department") );
         Category subDepartment = department.getCategory("testdepartment");
         department.removeCategory( subDepartment);
-        modificationMod.store( department );
+        raplaFacade.store( department );
         try {
-           Category subDepartmentEdit = modificationMod.edit( subDepartment );
-           modificationMod.store( subDepartmentEdit );
+           Category subDepartmentEdit = raplaFacade.edit( subDepartment );
+           raplaFacade.store( subDepartmentEdit );
             Assert.fail("store should throw an exception, when trying to edit a removed entity ");
         } catch ( RaplaException ex) {
         }

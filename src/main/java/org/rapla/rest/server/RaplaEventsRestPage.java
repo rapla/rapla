@@ -8,6 +8,7 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
@@ -93,8 +94,8 @@ public class RaplaEventsRestPage extends AbstractRestPage
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }
         event.setResolver( operator);
-        getModification().store( event);
-        ReservationImpl result = getModification().getPersistant( event);
+        getFacade().store( event);
+        ReservationImpl result = getFacade().getPersistant( event);
         return result;
     }
     
@@ -110,20 +111,20 @@ public class RaplaEventsRestPage extends AbstractRestPage
         {
             throw new RaplaException("Id has to be null for new events");
         }
-        String eventId = operator.createIdentifier(Reservation.class, 1)[0];
-        event.setId( eventId);
+        ReferenceInfo<Reservation> eventId = operator.createIdentifier(Reservation.class, 1)[0];
+        event.setId( eventId.getId());
         event.setCreateDate( operator.getCurrentTimestamp());
         Appointment[] appointments = event.getAppointments();
-        String[] appointmentIds = operator.createIdentifier(Appointment.class, 1);
+        ReferenceInfo<Appointment>[] appointmentIds = operator.createIdentifier(Appointment.class, 1);
         for ( int i=0;i<appointments.length;i++)
         {
             AppointmentImpl app = (AppointmentImpl)appointments[i];
-            String id = appointmentIds[i];
+            String id = appointmentIds[i].getId();
             app.setId(id);
         }
         event.setOwner( user );
-        getModification().store( event);
-        ReservationImpl result = getModification().getPersistant( event);
+        getFacade().store( event);
+        ReservationImpl result = getFacade().getPersistant( event);
         return result;
     }
    

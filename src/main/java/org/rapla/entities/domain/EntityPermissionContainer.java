@@ -16,6 +16,6 @@ package org.rapla.entities.domain;
 import org.rapla.entities.Entity;
 
 
-public interface EntityPermissionContainer<T> extends Entity<T>,PermissionContainer 
+public interface EntityPermissionContainer<T extends Entity> extends Entity<T>,PermissionContainer
 {
 }

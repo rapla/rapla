@@ -35,7 +35,6 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -393,7 +392,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		if (sortedModel.getSize() == 0) {
 			Date start = new Date(DateTools.cutDate(new Date()).getTime()+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE);
 			Date end = new Date(start.getTime()+ DateTools.MILLISECONDS_PER_HOUR);
-			appointment = getModification().newAppointment(start, end);
+			appointment = getFacade().newAppointment(start, end);
 		} else { 
 			// copy the selected appointment as template
 			// if no appointment is selected use the last
@@ -483,7 +482,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 				// Create single appointments for every time block
 				for (AppointmentBlock block: splits)
 				{
-					Appointment newApp = getModification().newAppointment(new Date(block.getStart()), new Date(block.getEnd()));
+					Appointment newApp = getFacade().newAppointment(new Date(block.getStart()), new Date(block.getEnd()));
 					// Add appointment to list
 					splitAppointments.add( newApp );
 					mutableReservation.addAppointment(newApp);

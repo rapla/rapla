@@ -41,7 +41,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -249,7 +248,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
 
                 private void createNewColorAttribute() throws RaplaException
                 {
-                    Attribute colorAttribute = getModification().newAttribute(AttributeType.STRING);
+                    Attribute colorAttribute = getFacade().newAttribute(AttributeType.STRING);
                     colorAttribute.setKey( "color");
                     colorAttribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
                     colorAttribute.getName().setName(getLocale().getLanguage(), getString("color"));

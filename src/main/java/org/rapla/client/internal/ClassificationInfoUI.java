@@ -21,6 +21,7 @@ import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -44,7 +45,7 @@ public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
         buf.append( "</strong>");
     }
 
-    public String getUsername(String userId)
+    public String getUsername(ReferenceInfo<User> userId)
     {
         String name = getFacade().getOperator().getUsername(userId);
         return name;

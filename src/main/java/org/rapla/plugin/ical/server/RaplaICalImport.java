@@ -27,6 +27,7 @@ import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -419,8 +420,8 @@ public class RaplaICalImport implements ICalImport {
         final List<Appointment> appointments = new ArrayList<Appointment>();
         for (Recur recur : recurList) {
         	// FIXME need to implement UTC mapping
-			String ownerId = start.getOwnerId();
-			User owner = facade.getOperator().tryResolve( ownerId, User.class) ;
+			ReferenceInfo<User> ownerId = start.getOwnerRef();
+			User owner = facade.tryResolve(ownerId) ;
             final Appointment appointment = facade.newAppointment(start.getStart(), start.getEnd(), owner);
             appointment.setRepeatingEnabled(true);
             WeekDayList dayList = recur.getDayList();

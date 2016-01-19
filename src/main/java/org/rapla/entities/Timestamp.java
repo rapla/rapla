@@ -12,11 +12,13 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.entities;
+import org.rapla.entities.storage.ReferenceInfo;
+
 import java.util.Date;
 
 public interface Timestamp extends LastChangedTimestamp {
     /** returns the creation date of the object. */
     Date getCreateTime();
-    String getLastChangedBy();
+    ReferenceInfo<User> getLastChangedBy();
     //String getId();
 }

@@ -4,7 +4,7 @@ import org.rapla.entities.Entity;
 
 /** returns if the entity is refering to the Object. */
 
-public class ReferenceInfo<T>
+public class ReferenceInfo<T extends Entity>
 {
     final private String id;
     final private Class<? extends Entity> type;
@@ -51,5 +51,12 @@ public class ReferenceInfo<T>
         return id.equals(object.getId() );
     }
 
+    /**
+     * typesafe implementation of equals
+     */
+    public boolean isSame(ReferenceInfo<T> other)
+    {
+        return equals( other);
+    }
 
 }

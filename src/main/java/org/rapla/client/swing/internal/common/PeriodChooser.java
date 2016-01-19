@@ -16,7 +16,6 @@ import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;

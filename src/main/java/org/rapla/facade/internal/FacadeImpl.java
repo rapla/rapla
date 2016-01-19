@@ -61,14 +61,13 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
-import org.rapla.facade.UserModule;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -86,7 +85,6 @@ import org.rapla.storage.dbrm.RemoteOperator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.lang.annotation.Repeatable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1305,7 +1303,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 
-	private <T extends Entity> void setNew(Collection<T> entities, Class<? extends Entity> raplaType,User user)
+	private <T extends Entity> void setNew(Collection<T> entities, Class<T> raplaType,User user)
 			throws RaplaException {
 
 		for ( T entity: entities)
@@ -1314,13 +1312,13 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
 			}
 		}
-		String[] ids = operator.createIdentifier(raplaType, entities.size());
+		ReferenceInfo<T>[] ids = operator.createIdentifier(raplaType, entities.size());
 		int i = 0;
 		for ( T uncasted: entities)
 		{
-			String id = ids[i++];
+			ReferenceInfo id = ids[i++];
 			SimpleEntity entity = (SimpleEntity) uncasted;
-			entity.setId(id);
+			entity.setId(id.getId());
 			entity.setResolver(operator);
 			if (getLogger() != null && getLogger().isDebugEnabled()) {
 				getLogger().debug("new " + entity.getId());
@@ -1337,7 +1335,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		}
 	}
 
-	public String getUsername(String userId) throws RaplaException
+	public String getUsername(ReferenceInfo<User> userId) throws RaplaException
 	{
 		return operator.getUsername(userId);
 	}
@@ -1393,8 +1391,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				T persistant = persistantVersions.get( entity);
 				if ( persistant != null)
 				{
-					String lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-					if (lastChangedBy != null && !getUser().getId().equals(lastChangedBy))
+					ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+					if (lastChangedBy != null && !getUser().getReference().equals(lastChangedBy))
 					{
 						final Locale locale = i18n.getLocale();
 						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();

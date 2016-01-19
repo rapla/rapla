@@ -14,6 +14,7 @@ import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
@@ -452,7 +453,9 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     	{
     		return;
     	}
-        final Preferences preferences =  newEditablePreferences();
+        final User user = getUser();
+        final RaplaFacade facade = getFacade();
+        final Preferences preferences = facade.edit(facade.getPreferences(user));
         Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
         Map<String,CalendarModelConfiguration> newMap = new TreeMap<String,CalendarModelConfiguration>();
         for (Iterator<String> it= exportMap.keySet().iterator();it.hasNext();) {
@@ -462,9 +465,9 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 				newMap.put( filename, entry);
             }
         }
-        preferences.putEntry( AutoExportPlugin.PLUGIN_ENTRY, getModification().newRaplaMap( newMap ));
+        preferences.putEntry(AutoExportPlugin.PLUGIN_ENTRY, facade.newRaplaMap(newMap));
 
-        getModification().store( preferences);
+        facade.store(preferences);
         // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
 //        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
 //        Collection<Preferences> newList = Collections.singletonList(preferences);
@@ -533,7 +536,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
                 if ( filename != null) {
                     textField.setText( filename.toString() );
                     try {
-                        final CalendarSelectionModel m = getModification().newCalendarModel( getUser());
+                        final CalendarSelectionModel m = getFacade().newCalendarModel( getUser());
                         if (filename.isDefault )
                         {
                          	m.load(null);

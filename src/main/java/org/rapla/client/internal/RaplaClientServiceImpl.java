@@ -36,11 +36,10 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
-import org.rapla.facade.UserModule;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.Disposable;
@@ -192,7 +191,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 
     }
 
-	public ClientFacade getFacade()  {
+	public ClientFacade getClientFacade()  {
         return  facade;
     }
 
@@ -201,7 +200,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
             return;
         try {
         	getLogger().debug("RaplaClient started");
-            ClientFacade facade = getFacade();
+            ClientFacade facade = getClientFacade();
             facade.addUpdateErrorListener(this);
             StorageOperator operator = facade.getRaplaFacade().getOperator();
             if ( operator instanceof RemoteOperator)
@@ -270,7 +269,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
      */
     private void beginRaplaSession() throws Exception {
         initLanguage();
-        ClientFacade facade = getFacade();
+        ClientFacade facade = getClientFacade();
 
 //        StorageOperator operator = facade.getOperator();
 
@@ -349,7 +348,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     
     private void initLanguage() throws RaplaException
     {
-        RaplaFacade facade = getFacade().getRaplaFacade();
+        RaplaFacade facade = getClientFacade().getRaplaFacade();
         if ( !defaultLanguageChoosen)
         {
             Preferences prefs = facade.edit(facade.getPreferences());
@@ -418,7 +417,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 
     public void switchTo(User user) throws RaplaException 
     {
-        ClientFacade facade = getFacade();
+        ClientFacade facade = getClientFacade();
         if ( user == null)
         {
             if ( reconnectInfo == null || reconnectInfo.getConnectAs() == null)
@@ -467,7 +466,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 
         RaplaGUIComponent.setMainComponent( null );
         try {
-            ClientFacade facade = getFacade();
+            ClientFacade facade = getClientFacade();
             facade.removeUpdateErrorListener( this);
             if ( facade.isSessionActive())
             {
@@ -650,7 +649,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 
     private boolean login(ConnectInfo connect) throws RaplaException 
     {
-        UserModule facade = getFacade();
+        ClientFacade facade = getClientFacade();
         if (facade.login(connect)) {
             this.reconnectInfo = connect;
             return true;

@@ -43,9 +43,8 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -323,7 +322,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     
     public void addAppointment( Date start, Date end) throws RaplaException 
     {
-       	Appointment appointment = getModification().newAppointment( start, end );
+       	Appointment appointment = getFacade().newAppointment( start, end );
        	AppointmentController controller = appointmentEdit.getAppointmentController();
        	Repeating repeating= controller.getRepeating();
         if ( repeating!= null  )
@@ -364,7 +363,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             dlg.setIcon("icon.warning");
             dlg.start(true);
             this.original = newReservation;
-            setReservation(getModification().edit(newReservation) , null);
+            setReservation(getFacade().edit(newReservation) , null);
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex,new SwingPopupContext(frame, null));
         }
@@ -375,14 +374,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     }
 
     public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException  {
-    	ModificationModule mod = getModification();
+    	RaplaFacade mod = getFacade();
         boolean bNew = false;
         if ( reservation.isReadOnly()) {
             mutableReservation =  mod.edit(reservation);
             original = reservation;
         } else {
             try {
-                original = getModification().getPersistant( reservation);
+                original = mod.getPersistant( reservation);
             } catch ( EntityNotFoundException ex)  {
                 bNew = true;
                 original = null;

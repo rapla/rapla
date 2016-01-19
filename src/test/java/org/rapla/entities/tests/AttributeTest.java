@@ -21,39 +21,34 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationModule;
-import org.rapla.facade.QueryModule;
-import org.rapla.facade.UpdateModule;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class AttributeTest  {
-    ModificationModule modificationMod;
-    QueryModule queryMod;
-    UpdateModule updateMod;
+    RaplaFacade raplaFacade;
+    ClientFacade clientFacade;
     DynamicType type;
     
 
     @Before
     public void setUp() throws Exception {
-        ClientFacade facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
-        queryMod = facade.getRaplaFacade();
-        modificationMod = facade.getRaplaFacade();
-        updateMod = facade;
+        clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
+        raplaFacade = clientFacade.getRaplaFacade();
     }
 
     @org.junit.Test
     public void testAnnotations() throws Exception {
-        type = modificationMod.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        type = raplaFacade.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         type.setKey("test-type");
-        Attribute a1 = modificationMod.newAttribute(AttributeType.STRING);
+        Attribute a1 = raplaFacade.newAttribute(AttributeType.STRING);
         a1.setKey("test-attribute");
         a1.setAnnotation("expected-rows", "5");
         type.getName().setName("en", "test-type");
         type.addAttribute( a1 );
-        modificationMod.store( type );
+        raplaFacade.store(type);
 
-        DynamicType type2 = queryMod.getDynamicType("test-type");
+        DynamicType type2 = raplaFacade.getDynamicType("test-type");
         Attribute a2 = type2.getAttribute("test-attribute");
         
         Assert.assertEquals(a1, a2);
