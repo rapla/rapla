@@ -1,5 +1,13 @@
 package org.rapla.entities.dynamictype.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,18 +25,13 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.Logger;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbfile.tests.FileOperatorTest.MyFileIO;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class ParsedTextTest 
@@ -43,7 +46,10 @@ public class ParsedTextTest
     @Before
     public void setUp() throws Exception
     {
-        StorageOperator operator = null;
+        Logger logger = RaplaTestCase.initLoger();
+        String file = "testdefault.xml";
+        String resolvedPath = RaplaTestCase.getTestDataFile(file);
+        StorageOperator operator = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath,logger)).getOperator();
         permissionController = DefaultPermissionControllerSupport.getController(operator);
         this.user = null;
         LocalCache cache = new LocalCache(permissionController);
@@ -74,6 +80,7 @@ public class ParsedTextTest
         
         type = new DynamicTypeImpl();
         type.setResolver(cache);
+        type.setOperator(operator);
         type.setKey("test");
         type.setId("d1");
         

@@ -202,9 +202,7 @@ public abstract class AbstractOperatorTest  {
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).contains( resourceId));
-			Collection<UpdateResult.HistoryEntry> historyEntries = updates.getUnresolvedHistoryEntry(resourceId);
-			Assert.assertEquals(1, historyEntries.size());
-			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+            final Entity unresolvedEntity = updates.getLastKnown(resourceId);
 			Assert.assertTrue(unresolvedEntity instanceof Allocatable);
 			final Allocatable allocUnresolved = (Allocatable) unresolvedEntity;
 			Assert.assertEquals(newValue, allocUnresolved.getClassification().getValue("name"));
@@ -226,9 +224,7 @@ public abstract class AbstractOperatorTest  {
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).contains( reservationId));
-			Collection<UpdateResult.HistoryEntry> historyEntries = updates.getUnresolvedHistoryEntry(reservationId);
-			Assert.assertEquals(1, historyEntries.size());
-			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+			final Entity unresolvedEntity = updates.getLastKnown(reservationId);
 			Assert.assertTrue(unresolvedEntity instanceof Reservation);
 			final Reservation reservationUnresolved = (Reservation) unresolvedEntity;
 			Assert.assertEquals(newValue, reservationUnresolved.getClassification().getValue("name"));
@@ -243,19 +239,18 @@ public abstract class AbstractOperatorTest  {
 			userId = newUser.getId();
 			final String newValue = "New resource";
 			newUser.setName(newValue);
+			newUser.setUsername("newUserName");
 			facade.storeAndRemove(new Entity[]{newUser}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).contains( userId));
-			Collection<UpdateResult.HistoryEntry> historyEntries = updates.getUnresolvedHistoryEntry(userId);
-			Assert.assertEquals(1, historyEntries.size());
-			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
+			final Entity unresolvedEntity = updates.getLastKnown(userId);
 			Assert.assertTrue(unresolvedEntity instanceof User);
 			final User allocUnresolved = (User) unresolvedEntity;
 			Assert.assertEquals(newValue, allocUnresolved.getName());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Add.class).size());
-			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).isEmpty());
-			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).isEmpty());
+			Assert.assertTrue(updates.getIds(UpdateResult.Change.class).isEmpty());
+			Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).isEmpty());
 		}
 		final String categoryId;
 		{// Category

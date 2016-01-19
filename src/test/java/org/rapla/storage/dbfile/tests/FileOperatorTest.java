@@ -51,12 +51,12 @@ public class FileOperatorTest extends AbstractOperatorTest {
         facade = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath,logger));
     }
 
-    static class MyFileIO implements FileOperator.FileIO
+    public static class MyFileIO implements FileOperator.FileIO
     {
         byte[] data;
         Logger logger;
 
-        MyFileIO(final String resolvedPath,final Logger logger) throws IOException
+        public MyFileIO(final String resolvedPath,final Logger logger) throws IOException
         {
             this.logger = logger;
             Path path = Paths.get(resolvedPath);
