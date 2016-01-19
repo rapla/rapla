@@ -74,7 +74,7 @@ public class RaplaGUIComponent extends RaplaComponent
 	public RaplaGUIComponent(ClientFacade facade,RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
-		this.clientFacade = clientFacade;
+		this.clientFacade = facade;
     }
 
 	protected User getUser() throws RaplaException
