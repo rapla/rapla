@@ -745,9 +745,10 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         Date connectionTimestamp = null;
         try
         {
+            connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
             if (needsGlobalLock)
             {
-                raplaSQLOutput.getGlobalLock(connection);
+                raplaSQLOutput.getGlobalLock(connection, connectionTimestamp);
             }
             else
             {
@@ -760,9 +761,8 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
                     }
                     ids.add(userId);
                 }
-                raplaSQLOutput.getLocks(connection, ids);
+                raplaSQLOutput.getLocks(connection, connectionTimestamp, ids, null);
             }
-            connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
             for (ReferenceInfo id : removeObjects)
             {
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
@@ -1077,14 +1077,15 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     }
 
     @Override
-    public Date getLock(String id) throws RaplaException
+    public Date getLock(String id, Long validMilliseconds) throws RaplaException
     {
         // no commit needed as getLocks will do a commit
         try(Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            raplaSQL.getLocks(con, Collections.singletonList(id));
+            final Date databaseTimestamp = raplaSQL.getDatabaseTimestamp(con);
+            raplaSQL.getLocks(con, databaseTimestamp, Collections.singletonList(id), validMilliseconds);
             final Date lastRequested = raplaSQL.getLastRequested(con, id);
             return lastRequested;
         }

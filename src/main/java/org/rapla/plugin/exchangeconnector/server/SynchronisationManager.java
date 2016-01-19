@@ -64,6 +64,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
 @Singleton public class SynchronisationManager
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
+    private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
     private final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.retryUser");
     private final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.resyncUser");
@@ -116,7 +117,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
                 Date updatedUntil = null;
                 try
                 {
-                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
+                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                     synchronize(updateResult);
                     // set it as last, so update must have been successful
@@ -150,7 +151,7 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
             final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
             try
             {                
-                cachableStorageOperator.getLock(EXCHANGE_LOCK_ID);
+                cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();

@@ -336,7 +336,7 @@ class RaplaSQL {
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
     
@@ -349,7 +349,7 @@ class RaplaSQL {
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
 
@@ -362,7 +362,7 @@ class RaplaSQL {
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
     
@@ -375,33 +375,33 @@ class RaplaSQL {
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
 
-    public void getLocks(Connection connection, Collection<String> ids) throws SQLException
+    public void getLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException
     {
         try
         {
-            lockStorage.setConnection(connection, null);
-            lockStorage.getLocks(ids);
+            lockStorage.setConnection(connection, connectionTimestamp);
+            lockStorage.getLocks(ids, validMilliseconds);
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
     
-    public Date getGlobalLock(Connection connection) throws SQLException
+    public Date getGlobalLock(Connection connection, Date connectionTimestamp) throws SQLException
     {
         try
         {
-            lockStorage.setConnection(connection, null);
+            lockStorage.setConnection(connection, connectionTimestamp);
             return lockStorage.getGlobalLock();
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
 
@@ -414,7 +414,7 @@ class RaplaSQL {
         }
         finally
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
 
@@ -427,7 +427,7 @@ class RaplaSQL {
         }
         finally 
         {
-            lockStorage.setConnection(null, null);
+            lockStorage.removeConnection();
         }
     }
 
@@ -467,16 +467,16 @@ class LockStorage extends AbstractTableStorage
 {
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "' AND ACTIVE = 1";
-    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE (LAST_CHANGED < ? AND LOCKID <> '" + GLOBAL_LOCK + "') OR (LAST_CHANGED < ? AND LOCKID = '"+GLOBAL_LOCK+"')";
-    private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP WHERE LOCKID = ? AND ACTIVE <> 1";
+    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE VALID_UNTIL < CURRENT_TIMESTAMP";
+    private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP, VALID_UNTIL = ? WHERE LOCKID = ? AND ACTIVE <> 1";
     private final String deactivateWithLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = ? WHERE LOCKID = ?";
     private final String deactivateWithoutLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE LOCKID = ?";
     private String readTimestampInclusiveLockedSql;
     private String requestTimestampSql;
     public LockStorage(Logger logger)
     {
-        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP", "LAST_REQUESTED TIMESTAMP", "ACTIVE INTEGER NOT NULL"}, false);
-        insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED, LAST_REQUESTED, ACTIVE) values (?, CURRENT_TIMESTAMP, ?, 1)";
+        super("WRITE_LOCK", logger, new String[] {"LOCKID VARCHAR(255) NOT NULL PRIMARY KEY","LAST_CHANGED TIMESTAMP", "LAST_REQUESTED TIMESTAMP", "VALID_UNTIL TIMESTAMP", "ACTIVE INTEGER NOT NULL"}, false);
+        insertSql = "insert into WRITE_LOCK (LOCKID, LAST_CHANGED, LAST_REQUESTED, VALID_UNTIL, ACTIVE) values (?, CURRENT_TIMESTAMP, ?, ?, 1)";
         deleteSql = null;//"delete from WRITE_LOCK WHERE LOCKID = ?";
         selectSql += " WHERE LOCKID = ?";
     }
@@ -487,6 +487,7 @@ class LockStorage extends AbstractTableStorage
         super.createOrUpdateIfNecessary(schema);
         checkAndAdd(schema, "LAST_REQUESTED");
         checkAndAdd(schema, "ACTIVE");
+        checkAndAdd(schema, "VALID_UNTIL");
     }
     
     @Override
@@ -535,13 +536,8 @@ class LockStorage extends AbstractTableStorage
     
     void cleanupOldLocks() throws RaplaException
     {
-        final Date now = getDatabaseTimestamp();
         try(final PreparedStatement deleteStmt = con.prepareStatement(cleanupSql))
         {
-            // max 60 sec wait
-            deleteStmt.setTimestamp(1, new java.sql.Timestamp(now.getTime() - 60000l));
-            // max 5 min wait
-            deleteStmt.setTimestamp(2, new java.sql.Timestamp(now.getTime() - 300000l));
             deleteStmt.addBatch();
             final int[] executeBatch = deleteStmt.executeBatch();
             logger.debug("deleted logs: "+Arrays.toString(executeBatch));
@@ -605,7 +601,7 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
-    public void getLocks(Collection<String> ids) throws RaplaException
+    public void getLocks(Collection<String> ids, Long validMilliseconds) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
@@ -618,15 +614,28 @@ class LockStorage extends AbstractTableStorage
         {
             boolean executeUpdate = false;
             boolean executeInsert = false;
+            final Date databaseTimestamp = getDatabaseTimestamp();
             for (String id : ids)
             {
+                final long validOffset;
+                if(validMilliseconds == null || validMilliseconds.longValue() <= 0)
+                {
+                    validOffset = validMilliseconds;
+                }
+                else
+                {
+                    final long millisecondsPerMinute = DateTools.MILLISECONDS_PER_MINUTE;
+                    validOffset = id.startsWith(GLOBAL_LOCK) ? millisecondsPerMinute * 5 : millisecondsPerMinute;
+                }
+                final Date validUntil = new Date(databaseTimestamp.getTime() + validOffset);
                 // for each id first check, if a lock was already requested once. if so just update otherwise insert new
                 containsStmt.setString(1, id);
                 final ResultSet executeQuery = containsStmt.executeQuery();
                 if (executeQuery != null && executeQuery.next() && executeQuery.getInt(1) > 0)
                 {//update
                     executeUpdate = true;
-                    updateStatement.setString(1, id);
+                    setTimestamp(updateStatement, 1, validUntil);
+                    updateStatement.setString(2, id);
                     updateStatement.addBatch();
                 }
                 else
@@ -634,6 +643,7 @@ class LockStorage extends AbstractTableStorage
                     executeInsert = true;
                     insertStmt.setString(1, id);
                     insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
+                    setTimestamp(insertStmt, 3, validUntil);
                     insertStmt.addBatch();
                 }
             }

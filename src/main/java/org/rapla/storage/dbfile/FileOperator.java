@@ -12,6 +12,25 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Named;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaContentHandler;
@@ -59,24 +78,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
-
-import javax.inject.Named;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 /** Use this Operator to keep the data stored in an XML-File.
  @see AbstractCachableOperator
@@ -538,8 +539,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
         private boolean active;
     }
     private final Map<String, SystemLock> locks = new HashMap<String, SystemLock>();
+
     @Override
-    public Date getLock(String id) throws RaplaException
+    public Date getLock(String id, Long validMilliseconds) throws RaplaException
     {
         SystemLock systemLock = locks.get(id);
         if(systemLock == null)

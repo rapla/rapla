@@ -29,6 +29,7 @@ import javax.inject.Provider;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -64,6 +65,7 @@ public class NotificationService
     ServerExtension
 {
     private static final String NOTIFICATION_LOCK_ID = "MAIL";
+    private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
     Provider<MailToUserImpl> mailToUserInterface;
     protected CommandScheduler mailQueue;
@@ -102,7 +104,7 @@ public class NotificationService
                 Date updatedUntil = null;
                 try
                 {
-                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID);
+                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
                     final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
                     changed(updateResult);
                     // set it as last, so update must have been successful
