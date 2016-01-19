@@ -999,7 +999,7 @@ import java.util.concurrent.locks.Lock;
         cache.getSuperCategory().setReadOnly();
         for (User user : cache.getUsers())
         {
-            String id = user.getId();
+            ReferenceInfo<User> id = user.getReference();
             String password = entityStore.getPassword(id);
             cache.putPassword(id, password);
         }
@@ -1038,7 +1038,7 @@ import java.util.concurrent.locks.Lock;
         cache.getSuperCategory().setReadOnly();
         for (User user : cache.getUsers())
         {
-            String id = user.getId();
+            ReferenceInfo id = user.getReference();
             String password = entityStore.getPassword(id);
             cache.putPassword(id, password);
         }

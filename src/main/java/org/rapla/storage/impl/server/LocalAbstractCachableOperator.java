@@ -595,7 +595,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (user != null)
             {
                 String userId = user.getId();
-                if (checkPassword(userId, password))
+                if (checkPassword(user.getReference(), password))
                 {
                     return userId;
                 }
@@ -617,7 +617,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
     {
         getLogger().info("Change password for User " + user.getUsername());
-        String userId = user.getId();
+        ReferenceInfo userId = user.getReference();
         String password = new String(newPassword);
         if (encryption != null)
             password = encrypt(encryption, password);
@@ -2799,7 +2799,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    private boolean checkPassword(String userId, String password) throws RaplaException
+    private boolean checkPassword(ReferenceInfo<User> userId, String password) throws RaplaException
     {
         if (userId == null)
             return false;
@@ -3195,7 +3195,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         UserImpl user = cache.getUser("admin");
         String password = "";
-        cache.putPassword(user.getId(), password);
+        cache.putPassword(user.getReference(), password);
         cache.getSuperCategory().setReadOnly();
 
         AllocatableImpl allocatable = new AllocatableImpl(now, now);

@@ -22,6 +22,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
@@ -141,9 +142,10 @@ public class RaplaMainWriter extends RaplaXMLWriter
         UserWriter userWriter = (UserWriter)getWriterFor(User.class);
         println("<!-- Users of the system -->");
         for (User user:cache.getUsers()) {
-        	String userId = user.getId();
+            final ReferenceInfo<User> reference = user.getReference();
+            String userId = reference.getId();
 			PreferencesImpl preferences = cache.getPreferencesForUserId( userId);
-			String password = cache.getPassword(userId);
+			String password = cache.getPassword(reference);
 			userWriter.printUser( user, password, preferences);
         }
         closeElement("rapla:users");

@@ -309,7 +309,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             cache.getSuperCategory().setReadOnly();
             for (User user : cache.getUsers())
             {
-                String id = user.getId();
+                ReferenceInfo<User> id = user.getReference();
                 String password = entityStore.getPassword(id);
                 //System.out.println("Storing password in cache" + password);
                 cache.putPassword(id, password);

@@ -64,7 +64,7 @@ public class UserReader extends RaplaXMLReader
             preferenceHandler.setUser( user );
             if ( password != null)
             {
-                putPassword( id, password );
+                putPassword( user.getReference(), password );
             }
         }
 

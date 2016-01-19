@@ -397,14 +397,14 @@ public class LocalCache implements EntityResolver
         return casted;
     }
 
-    public String getPassword(String userId)
+    public String getPassword(ReferenceInfo<User> userReferenceInfo)
     {
-        return passwords.get(userId);
+        return passwords.get(userReferenceInfo.getId());
     }
 
-    public void putPassword(String userId, String password)
+    public void putPassword(ReferenceInfo<User> userReferenceInfo, String password)
     {
-        passwords.put(userId, password);
+        passwords.put(userReferenceInfo.getId(), password);
     }
 
     public void putAll(Collection<? extends Entity> list)

@@ -2103,7 +2103,7 @@ class UserStorage extends RaplaTypeStorage<User> {
     protected int write(PreparedStatement stmt,User user) throws SQLException, RaplaException {
     	setId(stmt, 1, user);
     	setString(stmt,2,user.getUsername());
-    	String password = cache.getPassword(user.getId());
+    	String password = cache.getPassword(user.getReference());
     	setString(stmt,3,password);
     	//setId(stmt,4,user.getPerson());
     	setString(stmt,4,user.getName());
