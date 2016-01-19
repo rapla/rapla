@@ -46,7 +46,7 @@ public interface RemoteStorage  {
      * @param annotationQuery */
     FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
 
-    FutureResult<UpdateEvent> getEntityRecursive(String... id);
+    FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos );
 
     FutureResult<UpdateEvent> refresh(String lastSyncedTime);
     

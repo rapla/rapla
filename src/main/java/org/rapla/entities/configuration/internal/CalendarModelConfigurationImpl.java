@@ -134,13 +134,21 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 
 	public Collection<Entity> getSelected() {
 		ArrayList<Entity> result = new ArrayList<Entity>();
+
+        int i=0;
 		for ( String id: selected)
 		{
-			Entity entity = resolver.tryResolve(id);
-			if ( entity != null)
-			{
-				result.add( entity);
-			}
+            String type = typeList.get(i);
+            final Class<? extends Entity> aClass = RaplaType.find(type);
+            if ( aClass != null)
+            {
+                Entity entity = resolver.tryResolve(id, aClass);
+                if (entity != null)
+                {
+                    result.add(entity);
+                }
+            }
+            i++;
 		}
 		return result;
     }

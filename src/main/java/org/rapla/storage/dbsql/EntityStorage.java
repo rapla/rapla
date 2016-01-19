@@ -16,6 +16,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Timestamp;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
@@ -134,11 +135,11 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         }
     }
 
-	protected String readId(ResultSet rset, int column, Class<? extends Entity> class1) throws SQLException, RaplaException {
+	protected <T extends Entity> ReferenceInfo<T> readId(ResultSet rset, int column, Class<T> class1) throws SQLException, RaplaException {
 		return readId(rset, column, class1, false);
 	}
 
-	protected String readId(ResultSet rset, int column, @SuppressWarnings("unused") Class<? extends Entity> class1, boolean nullAllowed) throws SQLException, RaplaException {
+	protected <T extends Entity> ReferenceInfo readId(ResultSet rset, int column, @SuppressWarnings("unused") Class<T> class1, boolean nullAllowed) throws SQLException, RaplaException {
 		String id = rset.getString( column );
 		if ( rset.wasNull() || id == null )
 		{
@@ -148,7 +149,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 			}
 			throw new RaplaException("Id can't be null for " + getTableName());
 		}
-		return id;
+		return new ReferenceInfo(id, class1);
 	}
 
     protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException
@@ -426,7 +427,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         return entityStore;
     }
 
-    protected void putPassword( String userId, String password )
+    protected void putPassword( ReferenceInfo<User> userId, String password )
     {
         entityStore.putPassword( userId, password);
     }

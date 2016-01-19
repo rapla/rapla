@@ -365,8 +365,8 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             // we try to convert ids
             if ( value instanceof String)
             {
-                Entity result = resolver.tryResolve( (String) value);
-                if ( result != null && result instanceof Allocatable)
+                Allocatable result = resolver.tryResolve( (String) value, Allocatable.class);
+                if ( result != null )
                 {
                     return result;
                 }
@@ -461,8 +461,8 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             }
             else if ( value instanceof String)
             {
-                Entity result = resolver.tryResolve( (String) value);
-                if ( result != null && result instanceof Category)
+                Category result = resolver.tryResolve( (String) value, Category.class);
+                if ( result != null )
                 {
                     return result;
                 }
@@ -563,7 +563,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             }
             if ( resolver != null)
             {
-                if ( resolver.tryResolve( path) != null)
+                if ( resolver.tryResolve( path, Category.class) != null)
                 {
                     return path;
                 }
@@ -745,7 +745,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		Class<? extends Entity> refType = getRefType();
 		if (refType != null) 
 		{
-		    Entity resolved = resolver.resolve( value );
+		    Entity resolved = resolver.resolve( value, refType );
 			return resolved;
 		}
 		Object result;

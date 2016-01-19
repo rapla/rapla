@@ -885,7 +885,13 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     public Map<ReferenceInfo,Entity> getFromId(Collection<ReferenceInfo> idSet, boolean throwEntityNotFound) throws RaplaException
     {
      	RemoteStorage serv = getRemoteStorage();
-     	String[] array = idSet.toArray(new String[] {});
+        UpdateEvent.SerializableReferenceInfo[] array = new UpdateEvent.SerializableReferenceInfo[ idSet.size()];
+        int i=0;
+        for ( ReferenceInfo ref: idSet)
+        {
+            final UpdateEvent.SerializableReferenceInfo serializableReferenceInfo = new UpdateEvent.SerializableReferenceInfo(ref);
+            array[i] = serializableReferenceInfo;
+        }
      	Map<ReferenceInfo,Entity> result = new HashMap<ReferenceInfo,Entity>();
      	try
      	{

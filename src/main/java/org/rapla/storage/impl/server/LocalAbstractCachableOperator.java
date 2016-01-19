@@ -1139,7 +1139,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 ReferenceInfo referenceInfo = op.getReference();
                 boolean isDelete = op instanceof Remove;
-                Entity current = tryResolve( referenceInfo.getId());
+                Entity current = tryResolve( referenceInfo.getId(),Preferences.class);
                 if ( current != null)
                 {
                     Date timestamp =((Preferences)current).getLastChanged();
@@ -1582,7 +1582,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         private void addGroupIds(DeleteUpdateEntry entry, String groupId)
         {
-            final Entity entity = tryResolve(groupId);
+            final Entity entity = tryResolve(groupId, Category.class);
             if (entity == null)
             {
                 return;

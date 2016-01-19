@@ -490,22 +490,6 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             return getLinkClass();
         }
 
-        public Iterable<String> getReferencedIds()
-        {
-            Set<String> result = new HashSet<String>();
-            if (links != null)
-            {
-                for (List<String> entries : links.values())
-                {
-                    for (String id : entries)
-                    {
-                        result.add(id);
-                    }
-                }
-            }
-            return result;
-        }
-
         public Entity getEntity(String key)
         {
             Class<? extends Entity> linkClass = getLinkClass();
@@ -529,12 +513,20 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
                         return linkClass;
                     }
                 }
+                throw new IllegalArgumentException("Unsupported Linktype in map " + linkType);
             }
-            return null;
+            else {
+                throw new IllegalArgumentException("Linktype in map not set "  + toString());
+            }
+
         }
 
         public void setLinkType(String type)
         {
+            if ( linkType != null && !linkType.equals(type))
+            {
+                throw new IllegalStateException("Can't put " + type + " in a rapla map containing " + linkType);
+            }
             this.linkType = type;
             linkClass = null;
         }
@@ -572,7 +564,8 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             {
                 throw new IllegalStateException("Resolver not set in links map. ");
             }
-            Entity resolve = resolver.tryResolve(id);
+            final Class<? extends Entity> linkClass = links.getLinkClass();
+            Entity resolve = resolver.tryResolve(id, linkClass);
             return resolve;
         }
 
@@ -593,7 +586,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 
         public String toString()
         {
-            Entity value = links.getResolver().tryResolve(id);
+            Entity value = links.getResolver().tryResolve(id, links.getLinkClass());
             return key + "=" + ((value != null) ? value : "unresolvable_" + id);
         }
     }

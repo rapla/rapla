@@ -18,8 +18,10 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -807,7 +809,7 @@ public abstract class OldEntityStorage<T extends Entity<T>>  {
     
     protected void putPassword( String userId, String password )
     {
-        entityStore.putPassword( userId, password);
+        entityStore.putPassword( new ReferenceInfo<User>(userId, User.class), password);
     }
 
     protected DynamicType getDynamicType( String typeKey )

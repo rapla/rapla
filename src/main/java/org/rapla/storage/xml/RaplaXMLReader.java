@@ -34,6 +34,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -242,6 +243,14 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         return str;
     }
 
+    protected <T extends Entity> ReferenceInfo<T> getRef( RaplaSAXAttributes atts, String key, Class<T> clazz )
+            throws RaplaSAXParseException
+    {
+        final String string = getString(atts, key);
+        return new ReferenceInfo<T>(string, clazz);
+    }
+
+
     /** return the new id */
     protected String setId( Entity entity, RaplaSAXAttributes atts )
     	throws RaplaSAXParseException
@@ -418,7 +427,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     }
     
     
-    protected void putPassword( String userid, String password )
+    protected void putPassword( ReferenceInfo<User> userid, String password )
     {
         store.putPassword( userid, password);
     }

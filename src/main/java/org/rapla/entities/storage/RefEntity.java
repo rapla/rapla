@@ -22,6 +22,7 @@ storage-backend.
 public interface RefEntity extends EntityReferencer
 {
     void setId(String id);
+    void setId(ReferenceInfo id);
     String getId();
     void setReadOnly();
     

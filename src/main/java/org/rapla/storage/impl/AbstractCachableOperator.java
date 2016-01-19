@@ -529,19 +529,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 	
 	@Override
-	public Entity tryResolve(String id) 
-	{
-	    return tryResolve( id, null);
-	}
-
-
-	@Override
-    public Entity resolve(String id) throws EntityNotFoundException 
-    {
-        return resolve( id, null);
-    }
-
-	@Override
 	public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
 	{
 		final Class<T> type = (Class<T>)referenceInfo.getType();

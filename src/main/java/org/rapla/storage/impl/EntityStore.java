@@ -16,6 +16,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
@@ -30,7 +31,7 @@ import java.util.LinkedHashMap;
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
-    HashMap<String,String> passwordList = new HashMap<String,String>();
+    HashMap<ReferenceInfo<User>,String> passwordList = new HashMap<ReferenceInfo<User>,String>();
     CategoryImpl superCategory;
     
     EntityResolver parent;
@@ -87,21 +88,16 @@ public class EntityStore implements EntityResolver {
         return superCategory;
     }
 
-    public void putPassword( String userid, String password )
+    public void putPassword( ReferenceInfo<User> userid, String password )
     {
         passwordList.put(userid, password);
     }
     
-    public String getPassword( String userid)
+    public String getPassword( ReferenceInfo<User> userid)
     {
         return passwordList.get(userid);
     }
 
-    
-    public Entity resolve(String id) throws EntityNotFoundException {
-        return resolve(id, null);
-    }
-    
     public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException {
         T entity = tryResolve(id, entityClass);
         SimpleEntity.checkResolveResult(id, entityClass, entity);
@@ -122,12 +118,6 @@ public class EntityStore implements EntityResolver {
         return resolve(referenceInfo.getId(), type);
     }
 
-
-    @Override
-    public Entity tryResolve(String id) {
-        return tryResolve(id, null);
-    }
-    
     @Override
     public <T extends Entity> T tryResolve(String id,Class<T> entityClass)  {
         Assert.notNull( id);

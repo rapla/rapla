@@ -91,7 +91,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
      * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
     public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, Date today)
     {
-        this(allocatable, app1, app2, today, createId(allocatable.getId(), app1.getId(), app2.getId()));
+        this(allocatable, app1, app2, today, createId(allocatable.getReference(), app1.getReference(), app2.getReference()));
     }
 
     /** Note that app1 does not necessarily go to appointment1 field.
@@ -229,7 +229,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return date;
     }
 
-    static public String createId(String allocId, String id1, String id2)
+    static public String createId(ReferenceInfo<Allocatable> allocId, ReferenceInfo<Appointment> id1, ReferenceInfo<Appointment> id2)
     {
         StringBuilder buf = new StringBuilder();
         //String id1 = getId("appointment1");

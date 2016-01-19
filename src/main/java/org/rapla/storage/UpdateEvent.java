@@ -61,7 +61,7 @@ public class UpdateEvent
     List<ConflictImpl> conflicts;
     List<ImportExportEntityImpl> importExports;
 
-    private Set<RemoveEntry> removeSet;
+    private Set<SerializableReferenceInfo> removeSet;
 
 
     private String userId;
@@ -72,18 +72,18 @@ public class UpdateEvent
     private String lastValidated;
     private int timezoneOffset;
 
-    public static class RemoveEntry
+    public static class SerializableReferenceInfo
     {
         String id;
         String localname;
 
-        RemoveEntry(ReferenceInfo info)
+        public SerializableReferenceInfo(ReferenceInfo info)
         {
             this.id = info.getId();
             this.localname = RaplaType.getLocalName(info.getType());
         }
 
-        public RemoveEntry()
+        public SerializableReferenceInfo()
         {
         }
 
@@ -94,7 +94,7 @@ public class UpdateEvent
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            RemoveEntry that = (RemoveEntry) o;
+            SerializableReferenceInfo that = (SerializableReferenceInfo) o;
 
             if (id != null ? !id.equals(that.id) : that.id != null)
                 return false;
@@ -179,7 +179,7 @@ public class UpdateEvent
             return Collections.emptyList();
         }
         Collection<ReferenceInfo> result = new ArrayList<ReferenceInfo>();
-        for (RemoveEntry entry:removeSet)
+        for (SerializableReferenceInfo entry:removeSet)
         {
             final ReferenceInfo reference = entry.getReference();
             result.add (reference);
@@ -318,10 +318,10 @@ public class UpdateEvent
 
     public void putRemoveId(ReferenceInfo ref)
     {
-        final RemoveEntry id = new RemoveEntry(ref);
+        final SerializableReferenceInfo id = new SerializableReferenceInfo(ref);
         if (removeSet == null)
         {
-            removeSet = new LinkedHashSet<RemoveEntry>();
+            removeSet = new LinkedHashSet<SerializableReferenceInfo>();
             removeSet.add(id);
         }
         else if (!removeSet.contains(id))

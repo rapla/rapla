@@ -908,7 +908,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 
 class CategoryStorage extends RaplaTypeStorage<Category> {
 	Map<Category,Integer> orderMap =  new HashMap<Category,Integer>();
-    Map<Category,String> categoriesWithoutParent = new TreeMap<Category,String>(new Comparator<Category>()
+    Map<Category,ReferenceInfo<Category>> categoriesWithoutParent = new TreeMap<Category,ReferenceInfo<Category>>(new Comparator<Category>()
         {
             public int compare( Category o1, Category o2 )
             {
@@ -977,7 +977,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         super.insert(transitiveCategories);
     }
     
-    // get
+    /*
     private Collection<String> getTransitiveIds(String parentId) throws SQLException, RaplaException {
 		Set<String> childIds = new HashSet<String>();
 		String sql = "SELECT ID FROM CATEGORY WHERE PARENT_ID=?";
@@ -1005,6 +1005,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         result.add( parentId);
 		return result;
     }
+    */
 
     @Override
 	protected int write(PreparedStatement stmt,Category category) throws SQLException, RaplaException {
@@ -1045,8 +1046,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-    	String id = readId(rset, 1, Category.class);
-    	String parentId = readId(rset, 2, Category.class, true);
+    	ReferenceInfo<Category> id = readId(rset, 1, Category.class);
+        ReferenceInfo<Category> parentId = readId(rset, 2, Category.class, true);
 
         String xml = getText( rset, 4 );
     	Integer order = getInt(rset, 5 );
@@ -1079,15 +1080,15 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     	categoriesWithoutParent.clear();
     	super.loadAll();
     	// then we rebuild the hierarchy
-    	Iterator<Map.Entry<Category,String>> it = categoriesWithoutParent.entrySet().iterator();
+    	Iterator<Map.Entry<Category,ReferenceInfo<Category>>> it = categoriesWithoutParent.entrySet().iterator();
     	while (it.hasNext()) {
-    		Map.Entry<Category,String> entry = it.next();
-    		String parentId = entry.getValue();
+    		Map.Entry<Category,ReferenceInfo<Category>> entry = it.next();
+            ReferenceInfo<Category> parentId = entry.getValue();
     		Category category =  entry.getKey();
     		Category parent;
             Assert.notNull( category );
     		if ( parentId != null) {
-    		    parent = entityStore.resolve( parentId ,Category.class);
+    		    parent = entityStore.resolve( parentId );
             } else {
     		    parent = getSuperCategory();
             }
@@ -1114,8 +1115,8 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 }
 
 class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
-    Map<String,Classification> classificationMap = new HashMap<String,Classification>();
-    Map<String,Allocatable> allocatableMap = new HashMap<String,Allocatable>();
+    Map<ReferenceInfo<? extends Entity>,Classification> classificationMap = new HashMap<ReferenceInfo<? extends Entity>,Classification>();
+    Map<ReferenceInfo<? extends Entity>,Allocatable> allocatableMap = new HashMap<ReferenceInfo<? extends Entity>,Allocatable>();
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
     PermissionStorage<Allocatable> permissionStorage;
 
@@ -1155,7 +1156,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     }
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        String id= readId(rset,1, Allocatable.class);
+        ReferenceInfo<Allocatable> id= readId(rset,1, Allocatable.class);
     	String typeKey = getString(rset,2 , null);
 		final Date createDate = getTimestampOrNow( rset, 4);
 		final Date lastChanged = getTimestampOrNow( rset, 5);
@@ -1193,8 +1194,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
 }
 
 class ReservationStorage extends RaplaTypeStorage<Reservation> {
-    Map<String,Classification> classificationMap = new HashMap<String,Classification>();
-    Map<String,Reservation> reservationMap = new HashMap<String,Reservation>();
+    Map<ReferenceInfo<? extends Entity>,Classification> classificationMap = new HashMap<ReferenceInfo<? extends Entity>,Classification>();
+    Map<ReferenceInfo<? extends Entity>,Reservation> reservationMap = new HashMap<ReferenceInfo<? extends Entity>,Reservation>();
     AttributeValueStorage<Reservation> attributeValueStorage;
     // appointmentstorage is not a sub store but a delegate
 	AppointmentStorage appointmentStorage;
@@ -1269,7 +1270,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	final Date createDate = getTimestampOrNow(rset,4);
         final Date lastChanged = getTimestampOrNow(rset, 5);
         ReservationImpl event = new ReservationImpl(createDate, lastChanged);
-    	String id = readId(rset,1,Reservation.class);
+    	ReferenceInfo<Reservation> id = readId(rset,1,Reservation.class);
 		event.setId( id);
         event.setResolver(entityStore);
         String typeKey = getString(rset, 2, null);
@@ -1318,14 +1319,14 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
 }
 
 class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implements  SubStorage<T> {
-    Map<String,Classification> classificationMap;
-    Map<String,? extends Annotatable> annotableMap;
+    Map<ReferenceInfo<? extends Entity>,Classification> classificationMap;
+    Map<ReferenceInfo<? extends Entity>,? extends Annotatable> annotableMap;
     final String foreignKeyName;
     // TODO Write conversion script to update all old entries to new entries
     public final static String OLD_ANNOTATION_PREFIX = "annotation:";
   	public final static String ANNOTATION_PREFIX = "rapla:";
 
-    public AttributeValueStorage(RaplaXMLContext context,String tablename, String foreignKeyName, Map<String,Classification> classificationMap, Map<String, ? extends Annotatable> annotableMap) throws RaplaException {
+    public AttributeValueStorage(RaplaXMLContext context,String tablename, String foreignKeyName, Map<ReferenceInfo<? extends Entity>,Classification> classificationMap, Map<ReferenceInfo<? extends Entity>, ? extends Annotatable> annotableMap) throws RaplaException {
     	super(context, tablename, new String[]{foreignKeyName + " VARCHAR(255) NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(255)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
@@ -1375,7 +1376,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         Class<? extends Entity> idClass = foreignKeyName.indexOf("RESOURCE")>=0 ? Allocatable.class : Reservation.class;
-		String classifiableId = readId(rset, 1, idClass);
+        ReferenceInfo<?> classifiableId = readId(rset, 1, idClass);
         String attributekey = rset.getString( 2 );
         boolean annotationPrefix = attributekey.startsWith(ANNOTATION_PREFIX);
 		boolean oldAnnotationPrefix = attributekey.startsWith(OLD_ANNOTATION_PREFIX);
@@ -1433,8 +1434,8 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 }
 
  class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  implements  SubStorage<T> {
-    Map<String,T> referenceMap;
-    public PermissionStorage(RaplaXMLContext context,String type,Map<String,T> idMap) throws RaplaException {
+    Map<ReferenceInfo<? extends Entity>,T> referenceMap;
+    public PermissionStorage(RaplaXMLContext context,String type,Map<ReferenceInfo<? extends Entity>,T> idMap) throws RaplaException {
         super(context,type+"_PERMISSION",new String[] {type + "_ID VARCHAR(255) NOT NULL KEY","USER_ID VARCHAR(255)","GROUP_ID VARCHAR(255)","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.referenceMap = idMap;
     }
@@ -1461,7 +1462,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
         Class<? extends Entity> clazz = null;
-        String referenceIdInt = readId(rset, 1, clazz);
+        ReferenceInfo<? extends Entity> referenceIdInt = readId(rset, 1, clazz);
         PermissionContainer allocatable = referenceMap.get(referenceIdInt);
         if ( allocatable == null)
         {
@@ -1570,7 +1571,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 
     @Override
 	protected void load(ResultSet rset) throws SQLException, RaplaException {
-        String id = readId(rset, 1, Appointment.class);
+        ReferenceInfo<Appointment> id = readId(rset, 1, Appointment.class);
         Reservation reservation = resolveFromId(rset, 2, Reservation.class);
         if ( reservation == null)
         {
@@ -1747,7 +1748,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
 
 	protected void load(ResultSet rset) throws SQLException,RaplaException {
     	@SuppressWarnings("unused")
-        String id = readId(rset, 1, DynamicType.class);
+        ReferenceInfo<DynamicType> id = readId(rset, 1, DynamicType.class);
 	    String xml = getText(rset,3);
         DynamicTypeReader typeReader = (DynamicTypeReader)context.lookup(PreferenceReader.READERMAP).get(DynamicType.class);
         processXML(typeReader, xml);
@@ -1980,28 +1981,30 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     	//  yes read value
     	//  no read xml
 
-        String userId = readId(rset, 1,User.class, true);
+        ReferenceInfo<User> userRef = readId(rset, 1,User.class, true);
         User owner;
-        if  ( userId == null || userId.equals(Preferences.SYSTEM_PREFERENCES_ID) )
+        String userId = userRef != null ? userRef.getId() : null;
+        ReferenceInfo<Preferences> preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        if  ( preferenceId.isSame(Preferences.SYSTEM_PREFERENCES_ID) )
         {
         	owner = null;
         }
         else
         {
-        	User user = entityStore.tryResolve( userId,User.class);
+        	User user = entityStore.tryResolve( userRef);
         	if ( user != null)
         	{
         		owner = user;
         	}
         	else
         	{
-        		getLogger().warn("User with id  " + userId + " not found ingnoring preference entry.");
+        		getLogger().warn("User with id  " + userRef + " not found ingnoring preference entry.");
         		return;
         	}
         }
    
         String configRole = getString( rset, 2, null);
-        ReferenceInfo<Preferences> preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+
         if ( configRole == null)
         {
         	getLogger().warn("Configuration role for " + preferenceId + " is null. Ignoring preference entry.");
@@ -2114,7 +2117,7 @@ class UserStorage extends RaplaTypeStorage<User> {
     
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        String userId = readId(rset,1, User.class );
+        ReferenceInfo<User> userId = readId(rset,1, User.class );
         String username = getString(rset,2, null);
         if ( username == null)
         {
@@ -2217,9 +2220,9 @@ class ConflictStorage extends RaplaTypeStorage<Conflict> {
     
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        String allocatableId = readId(rset,1, Allocatable.class );
-        String appointment1Id = readId(rset,2, Appointment.class );
-        String appointment2Id = readId(rset,3, Appointment.class );
+        ReferenceInfo<Allocatable> allocatableId = readId(rset,1, Allocatable.class );
+        ReferenceInfo<Appointment> appointment1Id = readId(rset,2, Appointment.class );
+        ReferenceInfo<Appointment> appointment2Id = readId(rset,3, Appointment.class );
 
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;

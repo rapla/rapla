@@ -99,7 +99,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return readOnly;
     }
     
-    protected String getOwnerId()
+    public String getOwnerId()
     {
         return getId("owner");
     }
@@ -114,7 +114,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
     
 	public ReferenceInfo<User> getLastChangedBy() {
-		return getRef("last_changed_by",User.class);
+		return getRef("last_changed_by", User.class);
 	}
 
 	public void setLastChangedBy(User user) {
@@ -147,6 +147,18 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     		id = id.intern();
     	}
         this.id= id;
+    }
+
+    public void setId(ReferenceInfo ref)
+    {
+        if ( ref == null)
+        {
+            id = null;
+        }
+        else
+        {
+            setId( ref.getId());
+        }
     }
 
     /** @return the identifier of the object.

@@ -121,7 +121,7 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    public FutureResult<UpdateEvent> getEntityRecursive(String... ids)
+    public FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... ids)
     {
         try
         {
@@ -130,9 +130,10 @@ public class RemoteStorageImpl implements RemoteStorage
             User sessionUser = getSessionUser();
 
             ArrayList<Entity> completeList = new ArrayList<Entity>();
-            for (String id : ids)
+            for (UpdateEvent.SerializableReferenceInfo id : ids)
             {
-                Entity entity = operator.resolve(id);
+                final ReferenceInfo reference = id.getReference();
+                Entity entity = operator.resolve(reference);
                 if (entity instanceof Classifiable)
                 {
                     if (!DynamicTypeImpl.isTransferedToClient((Classifiable) entity))

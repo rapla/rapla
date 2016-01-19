@@ -15,6 +15,9 @@ package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
@@ -36,9 +39,9 @@ public class ConflictReader extends RaplaXMLReader
         if (!namespaceURI.equals( RAPLA_NS ))
             return;
 
-        String allocId = getString(atts, "resource");
-        String appId1 = getString(atts, "appointment1");
-        String appId2 = getString(atts, "appointment2");
+        ReferenceInfo<Allocatable> allocId = getRef(atts, "resource", Allocatable.class);
+        ReferenceInfo<Appointment> appId1 = getRef(atts, "appointment1", Appointment.class);
+        ReferenceInfo<Appointment> appId2 = getRef(atts, "appointment2", Appointment.class);
         String id = ConflictImpl.createId(allocId, appId1, appId2);
         Date today = getReadTimestamp();
         ConflictImpl conflict;

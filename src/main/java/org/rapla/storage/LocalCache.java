@@ -381,24 +381,12 @@ public class LocalCache implements EntityResolver
         return resolve(referenceInfo.getId(), type);
     }
 
-    // Implementation of EntityResolver
-    @Override public Entity resolve(String id) throws EntityNotFoundException
-    {
-        return resolve(id, null);
-    }
-
     public <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException
     {
         T entity = tryResolve(id, entityClass);
         SimpleEntity.checkResolveResult(id, entityClass, entity);
         return entity;
     }
-
-    @Override public Entity tryResolve(String id)
-    {
-        return tryResolve(id, null);
-    }
-
 
     @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
     {

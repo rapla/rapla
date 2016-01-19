@@ -308,7 +308,7 @@ class ConflictFinder {
                     }
                     if ( appointment2.overlaps(appointment1))
                     {
-                        String id = ConflictImpl.createId(allocatable.getId(), appointment1.getId(), appointment2.getId());
+                        String id = ConflictImpl.createId(allocatable.getReference(), appointment1.getReference(), appointment2.getReference());
                         if ( foundConflictIds.contains(id ))
                         {
                             continue;

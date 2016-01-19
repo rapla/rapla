@@ -4,7 +4,7 @@ import org.rapla.entities.Entity;
 
 /** returns if the entity is refering to the Object. */
 
-public class ReferenceInfo<T extends Entity>
+public class ReferenceInfo<T extends Entity> implements Comparable
 {
     final private String id;
     final private Class<? extends Entity> type;
@@ -59,4 +59,8 @@ public class ReferenceInfo<T extends Entity>
         return equals( other);
     }
 
+    @Override public int compareTo(Object o)
+    {
+        return id.compareTo( id);
+    }
 }
