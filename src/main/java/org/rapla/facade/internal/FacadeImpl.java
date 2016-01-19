@@ -1651,42 +1651,42 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
-		if (storeObjects.length == 0 && removedObjects.length == 0)
-			return;
-		long time = System.currentTimeMillis();
-		for (int i = 0; i < storeObjects.length; i++) {
-			if (storeObjects[i] == null) {
-				throw new RaplaException("Stored Objects cant be null");
-			}
-			if (storeObjects[i].getTypeClass() == Reservation.class) {
-				checkReservation((Reservation) storeObjects[i]);
-			}
-		}
-
-		for (int i = 0; i < removedObjects.length; i++) {
-			if (removedObjects[i] == null) {
-				throw new RaplaException("Removed Objects cant be null");
-			}
-		}
-
-		ArrayList<Entity>storeList = new ArrayList<Entity>();
-		ArrayList<Entity>removeList = new ArrayList<Entity>();
-		for (Entity toStore : storeObjects) {
-			storeList.add( toStore);
-		}
-		for (Entity<?> toRemove : removedObjects) {
-			removeList.add( toRemove);
-		}
-		User workingUser = getWorkingUser();
-		operator.storeAndRemove(storeList, removeList, workingUser);
-	
-		if (getLogger().isDebugEnabled())
-			getLogger().debug("Storing took " + (System.currentTimeMillis() - time)	+ " ms.");
+        User workingUser = getWorkingUser();
+        storeAndRemove(storeObjects, removedObjects, workingUser);
 	}
 
 	@Override public void storeAndRemove(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
 	{
+        if (storedObjects.length == 0 && removedObjects.length == 0)
+            return;
+        long time = System.currentTimeMillis();
+        for (int i = 0; i < storedObjects.length; i++) {
+            if (storedObjects[i] == null) {
+                throw new RaplaException("Stored Objects cant be null");
+            }
+            if (storedObjects[i].getTypeClass() == Reservation.class) {
+                checkReservation((Reservation) storedObjects[i]);
+            }
+        }
 
+        for (int i = 0; i < removedObjects.length; i++) {
+            if (removedObjects[i] == null) {
+                throw new RaplaException("Removed Objects cant be null");
+            }
+        }
+
+        ArrayList<Entity>storeList = new ArrayList<Entity>();
+        ArrayList<Entity>removeList = new ArrayList<Entity>();
+        for (Entity toStore : storedObjects) {
+            storeList.add( toStore);
+        }
+        for (Entity<?> toRemove : removedObjects) {
+            removeList.add( toRemove);
+        }
+        operator.storeAndRemove(storeList, removeList, user);
+    
+        if (getLogger().isDebugEnabled())
+            getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
 	}
 
 	public CommandHistory getCommandHistory() 

@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
 
+import java.util.Collection;
+import java.util.Date;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.rapla.entities.Category;
@@ -25,13 +28,11 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateResult;
-
-import java.util.Collection;
-import java.util.Date;
 
 public abstract class AbstractOperatorTest  {
 
@@ -45,13 +46,14 @@ public abstract class AbstractOperatorTest  {
 	@Test
     public void testReservationStore() throws RaplaException {
 		RaplaFacade facade = getFacade();
+		final User user = facade.getUsers()[0];
         // abspeichern
         {
-	        Reservation r = facade.newReservation();
+	        Reservation r = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
 	        r.getClassification().setValue("name","test");
-	        Appointment app = facade.newAppointment( new Date(), new Date());
-	        Appointment app2 = facade.newAppointment( new Date(), new Date());
-	        Allocatable resource = facade.newResource();
+	        Appointment app = facade.newAppointment( new Date(), new Date(), user);
+	        Appointment app2 = facade.newAppointment( new Date(), new Date(), user);
+	        Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
 	        r.addAppointment( app);
 	        r.addAppointment( app2);
 	        r.addAllocatable(resource );
@@ -60,7 +62,7 @@ public abstract class AbstractOperatorTest  {
 	        app.getRepeating().setType(Repeating.DAILY);
 	        app.getRepeating().setNumber( 10);
 	        app.getRepeating().addException( new Date());
-	        facade.storeObjects( new Entity[] { r, resource });
+	        facade.storeAndRemove(new Entity[] { r, resource }, Entity.ENTITY_ARRAY, user);
 	    }
 		CachableStorageOperator operator = getOperator();
         operator.disconnect();
@@ -126,6 +128,7 @@ public abstract class AbstractOperatorTest  {
 	@Test
     public void testAttributeStore() throws RaplaException {
 		RaplaFacade facade = getFacade();
+		final User user = facade.getUser("homer");
 		CachableStorageOperator operator = getOperator();
         // abspeichern
         {
@@ -135,22 +138,22 @@ public abstract class AbstractOperatorTest  {
 	        att.setKey("test-att");
 	        type.addAttribute( att );
 
-	        Reservation r = facade.newReservation();
+	        Reservation r = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
 	        try {
 	        	r.setClassification( type.newClassification() );
 				Assert.fail("Should have thrown an IllegalStateException");
 	        } catch (IllegalStateException ex) {
 	        }
 
-	        facade.store( type );
+	        facade.storeAndRemove(new Entity[]{type}, Entity.ENTITY_ARRAY, user);
 
 	        r.setClassification( facade.getPersistant(type).newClassification() );
 
 	        r.getClassification().setValue("name","test");
 	        r.getClassification().setValue("test-att","test-att-value");
-	        Appointment app = facade.newAppointment( new Date(), new Date());
-	        Appointment app2 = facade.newAppointment( new Date(), new Date());
-	        Allocatable resource = facade.newResource();
+	        Appointment app = facade.newAppointment( new Date(), new Date(), user);
+	        Appointment app2 = facade.newAppointment( new Date(), new Date(), user);
+	        Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
 	        r.addAppointment( app);
 	        r.addAppointment( app2);
 	        r.addAllocatable(resource );
@@ -159,7 +162,7 @@ public abstract class AbstractOperatorTest  {
 	        app.getRepeating().setType(Repeating.DAILY);
 	        app.getRepeating().setNumber( 10);
 	        app.getRepeating().addException( new Date());
-	        facade.storeObjects( new Entity[] { r, resource });
+	        facade.storeAndRemove(new Entity[] { r, resource }, Entity.ENTITY_ARRAY, user);
         	operator.disconnect();
 	    }
         // einlesen
@@ -187,14 +190,15 @@ public abstract class AbstractOperatorTest  {
 		Date startAll = new Date();
 		CachableStorageOperator operator = getOperator();
 		RaplaFacade facade = getFacade();
+		final User user = facade.getUser("homer");
 		final String resourceId;
 		{// resources
 			Date startDate=operator.getCurrentTimestamp();
-			Allocatable resource = facade.newResource();
+            Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
 			resourceId = resource.getId();
 			final String newValue = "New resource";
 			resource.getClassification().setValue("name", newValue);
-			facade.store( resource);
+			facade.storeAndRemove(new Entity[]{resource}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).contains( resourceId));
@@ -211,14 +215,14 @@ public abstract class AbstractOperatorTest  {
 		final String reservationId;
 		{// Reservation
 			Date startDate=operator.getCurrentTimestamp();
-			Reservation reservation = facade.newReservation();
+			Reservation reservation = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
 			reservationId = reservation.getId();
 			final String newValue = "New resource";
 			reservation.getClassification().setValue("name", newValue);
 			Date appStartDate = new Date();
 			Date appEndDate = new Date(appStartDate.getTime() + 120000);
-			reservation.addAppointment(facade.newAppointment(appStartDate, appEndDate));
-			facade.store( reservation);
+			reservation.addAppointment(facade.newAppointment(appStartDate, appEndDate, user));
+			facade.storeAndRemove(new Entity[]{reservation}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).contains( reservationId));
@@ -235,11 +239,11 @@ public abstract class AbstractOperatorTest  {
 		final String userId;
 		{// user
 			Date startDate=operator.getCurrentTimestamp();
-			User user = facade.newUser();
-			userId = user.getId();
+			User newUser = facade.newUser();
+			userId = newUser.getId();
 			final String newValue = "New resource";
-			user.setName(newValue);
-			facade.store( user);
+			newUser.setName(newValue);
+			facade.storeAndRemove(new Entity[]{newUser}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertTrue(updates.getIds(UpdateResult.Add.class).contains( userId));
@@ -261,7 +265,7 @@ public abstract class AbstractOperatorTest  {
 			final String newValue = "New resource";
 			Category superCategory = facade.edit(facade.getSuperCategory());
 			superCategory.addCategory(category);
-			facade.store( superCategory);
+			facade.storeAndRemove(new Entity[]{superCategory}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -294,7 +298,7 @@ public abstract class AbstractOperatorTest  {
 			final String newValue = "changedValue";
 			final String attributeId = "name";
 			resource.getClassification().setValue(attributeId, newValue);
-			facade.store(resource);
+			facade.storeAndRemove(new Entity[]{resource}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -316,7 +320,7 @@ public abstract class AbstractOperatorTest  {
 			reservation.getClassification().setValue(attributeId, newValue);
 			final Date newAppStart = new Date();
 			reservation.getAppointments()[0].move(newAppStart);
-			facade.store(reservation);
+			facade.storeAndRemove(new Entity[]{reservation}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -333,10 +337,10 @@ public abstract class AbstractOperatorTest  {
 		}
 		{// User
 			Date startDate = new Date();
-			final User user = facade.edit(facade.getOperator().tryResolve(userId, User.class));
+			final User editUser = facade.edit(facade.getOperator().tryResolve(userId, User.class));
 			final String newValue = "changedValue";
-			user.setName(newValue);
-			facade.store(user);
+			editUser.setName(newValue);
+			facade.storeAndRemove(new Entity[]{editUser}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -355,7 +359,7 @@ public abstract class AbstractOperatorTest  {
 			final Category category = facade.edit(facade.getOperator().tryResolve(categoryId, Category.class));
 			final String newValue = "changedValue";
 			category.setKey(newValue);
-			facade.store(category);
+			facade.storeAndRemove(new Entity[]{category}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -373,7 +377,7 @@ public abstract class AbstractOperatorTest  {
 		{// resource
 			final Date startDate = new Date();
 			final Entity entity = facade.getOperator().tryResolve(resourceId);
-			facade.remove(entity);
+			facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{entity}, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -384,7 +388,7 @@ public abstract class AbstractOperatorTest  {
 		{// Reservation
 			final Date startDate = new Date();
 			final Entity entity = facade.getOperator().tryResolve(reservationId);
-			facade.remove(entity);
+			facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{entity}, user);
 			operator.refresh();
 			final UpdateResult updateResult = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updateResult.getIds(UpdateResult.Add.class).size());
@@ -395,7 +399,7 @@ public abstract class AbstractOperatorTest  {
 		{// User
 			final Date startDate = new Date();
 			final Entity entity = facade.getOperator().tryResolve(userId);
-			facade.remove(entity);
+			facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{entity}, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
@@ -408,7 +412,7 @@ public abstract class AbstractOperatorTest  {
 			final Category entity = facade.getOperator().resolve(resourceId, Category.class);
 			final Category superCategory = facade.edit(facade.getSuperCategory());
 			superCategory.removeCategory(entity);
-			facade.store(superCategory);
+			facade.storeAndRemove(new Entity[]{superCategory}, Entity.ENTITY_ARRAY, user);
 			operator.refresh();
 			final UpdateResult updates = operator.getUpdateResult(startDate);
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
