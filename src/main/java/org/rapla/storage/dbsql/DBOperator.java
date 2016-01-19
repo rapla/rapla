@@ -121,33 +121,31 @@ import java.util.concurrent.locks.Lock;
 
     public void scheduleCleanupAndRefresh(final CommandScheduler scheduler)
     {
-        if(startAllTasks)
+        final int delay = 15000;
+        cleanupOldLocks = scheduler.schedule(new Command()
         {
-            final int delay = 15000;
-            cleanupOldLocks = scheduler.schedule(new Command()
+            @Override
+            public void execute() throws Exception
             {
-                @Override public void execute() throws Exception
+                final Lock writeLock = writeLock();
+                try (final Connection connection = createConnection())
                 {
-                    final Lock writeLock = writeLock();
-                    try (final Connection connection = createConnection())
-                    {
-                        final RaplaDefaultXMLContext context = createOutputContext(cache);
-                        final RaplaSQL raplaSQL = new RaplaSQL(context);
-                        raplaSQL.cleanupOldLocks(connection);
-                        connection.commit();
-                    }
-                    catch (Throwable t)
-                    {
-                        DBOperator.this.logger.info("Could not release old locks");
-                    }
-                    finally
-                    {
-                        unlock(writeLock);
-                    }
-                    scheduler.schedule(this, delay);
+                    final RaplaDefaultXMLContext context = createOutputContext(cache);
+                    final RaplaSQL raplaSQL = new RaplaSQL(context);
+                    raplaSQL.cleanupOldLocks(connection);
+                    connection.commit();
                 }
-            }, delay);
-        }
+                catch (Throwable t)
+                {
+                    DBOperator.this.logger.info("Could not release old locks");
+                }
+                finally
+                {
+                    unlock(writeLock);
+                }
+                scheduler.schedule(this, delay);
+            }
+        }, delay);
     }
 
     public boolean supportsActiveMonitoring()

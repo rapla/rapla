@@ -13,6 +13,30 @@
 
 package org.rapla.storage.impl.server;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
@@ -103,30 +127,6 @@ import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
     InitStatus connectStatus = InitStatus.Disconnected;
@@ -181,7 +181,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
-    protected boolean startAllTasks = true;
 
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
@@ -1037,25 +1036,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
-        if(startAllTasks)
+        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
+        final int refreshPeriod = 1000 * 3;
+        refreshTask = scheduler.schedule(new Command()
         {
-            cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
-            final int refreshPeriod = 1000 * 3;
-            refreshTask = scheduler.schedule(new Command()
+            @Override public void execute() throws Exception
             {
-                @Override public void execute() throws Exception
+                try
                 {
-                    try
-                    {
-                        refresh();
-                    }
-                    catch (Throwable t)
-                    {
-                        getLogger().info("Could not refresh data");
-                    }
+                    refresh();
                 }
-            }, delay, refreshPeriod);
-        }
+                catch (Throwable t)
+                {
+                    getLogger().info("Could not refresh data");
+                }
+            }
+        }, delay, refreshPeriod);
 
     }
 
