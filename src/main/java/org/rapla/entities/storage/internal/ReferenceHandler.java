@@ -115,6 +115,10 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     protected <T extends Entity> ReferenceInfo<T> getReferenceFor(String key, Class<T> typeClass)
     {
         String id = getId(key);
+        if ( id == null)
+        {
+            return null;
+        }
         return getReferenceForId(id, typeClass);
     }
 
@@ -202,7 +206,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 			return Collections.emptyList();
 		}
 		return entries;
-	}	
+	}
 
     public void putEntity(String key,Entity entity) {
         synchronized (this)
