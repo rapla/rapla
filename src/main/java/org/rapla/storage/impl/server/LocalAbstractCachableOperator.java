@@ -1007,7 +1007,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         };
 
 
-        for (String id : history.getAllIds())
+        for (ReferenceInfo id : history.getAllIds())
         {
             EntityHistory.HistoryEntry entry = history.getLatest(id);
             addToDeleteUpdate(entry);
@@ -1109,7 +1109,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Collection<UpdateOperation> conflictChanges = new ArrayList<UpdateOperation>();
         for (UpdateOperation op : result.getOperations())
         {
-            String id = op.getCurrentId();
+            ReferenceInfo id = op.getReference();
             final Entity newEntity;
             if (op instanceof Remove)
             {
@@ -1185,7 +1185,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (ConflictFinder.ConflictChangeOperation updateOperation : calculatedConflictChanges)
         {
             final UpdateOperation operation = updateOperation.getOperation();
-            final String currentId = operation.getCurrentId();
             ReferenceInfo referenceInfo = operation.getReference();
             final Conflict conflict;
             boolean isDelete;
@@ -1198,7 +1197,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             else
             {
-                conflict = conflictFinder.findConflict(currentId);
+                conflict = conflictFinder.findConflict(referenceInfo);
                 timestamp = conflict.getLastChanged();
                 isDelete = false;
             }
@@ -1237,11 +1236,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         List<Allocatable> removedAllocatables = bindingResult.removedAllocatables;
         for (Add add : result.getOperations(Add.class))
         {
-            String id = add.getCurrentId();
-            final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
-            if (lastKnown instanceof Reservation)
+            ReferenceInfo id = add.getReference();
+            if (id.getType() == Reservation.class)
             {
-                Reservation newReservation = (Reservation) lastKnown;
+                Reservation newReservation = result.getLastKnown((ReferenceInfo<Reservation>)id);//.getUnresolvedEntity();
                 for (Appointment app : newReservation.getAppointments())
                 {
                     updateBindings(toUpdate, newReservation, app, false);
@@ -1250,7 +1248,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         for (Change changes : result.getOperations(Change.class))
         {
-            String id = changes.getCurrentId();
+            ReferenceInfo id = changes.getReference();
             final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
             if (lastKnown instanceof Reservation)
             {
@@ -1299,8 +1297,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         for (Remove removed : result.getOperations(Remove.class))
         {
-            String id = removed.getCurrentId();
-            final Entity lastKnown = result.getLastEntryBeforeUpdate(id);
+            final Entity lastKnown = result.getLastEntryBeforeUpdate(removed.getReference());
             if (lastKnown instanceof Reservation)
             {
                 Reservation old = (Reservation) lastKnown;
@@ -1331,10 +1328,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void addToDeleteUpdate(EntityHistory.HistoryEntry historyEntry)
     {
         Entity current = history.getEntity(historyEntry);
-        String id = historyEntry.getId();
         final boolean isDelete = historyEntry.isDelete();
         final Date timestamp = new Date(historyEntry.getTimestamp());
-        ReferenceInfo ref = new ReferenceInfo(id, historyEntry.getTypeClass());
+        ReferenceInfo ref = historyEntry.getId();
         addToDeleteUpdate(ref, timestamp, isDelete, current);
     }
 
@@ -1681,10 +1677,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             if (remove)
             {
-                final Collection<String> ids = ((ReservationImpl) reservation).getAllocatableIdsFor(app);
-                for (String id : ids)
+                final Collection<ReferenceInfo<Allocatable>> ids = ((ReservationImpl) reservation).getAllocatableIdsFor(app);
+                for (ReferenceInfo<Allocatable> id : ids)
                 {
-                    final Allocatable allocatable = tryResolve(id, Allocatable.class);
+                    final Allocatable allocatable = tryResolve(id);
                     if (allocatable != null)
                     {
                         allocatablesToProcess.add(allocatable);
@@ -3142,7 +3138,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Date now = getCurrentTimestamp();
 
         PreferencesImpl newPref = new PreferencesImpl(now, now);
-        newPref.setId(PreferencesImpl.getPreferenceIdFromUser(null));
+        newPref.setId(PreferencesImpl.getPreferenceIdFromUser(null).getId());
         newPref.setResolver(this);
         newPref.putEntry(CalendarModel.ONLY_MY_EVENTS_DEFAULT, false);
         newPref.setReadOnly();
@@ -3336,41 +3332,39 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // FIXME check if history supports since
         Date until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
-        Map<String, Entity> oldEntities = new LinkedHashMap<String, Entity>();
+        Map<ReferenceInfo, Entity> oldEntities = new LinkedHashMap<ReferenceInfo, Entity>();
         Collection<Entity> updatedEntities = new ArrayList<Entity>();
         for (ReferenceInfo update : toUpdate)
         {
-            String id = update.getId();
             Entity oldEntity;
             Entity newEntity;
             final Class<? extends Entity> type = update.getType();
             if (type == Conflict.class)
             {
-                final Conflict conflict = conflictFinder.findConflict(id);
+                final Conflict conflict = conflictFinder.findConflict((ReferenceInfo<Conflict>)update);
                 newEntity = cache.fillConflictDisableInformation(user, conflict);
                 oldEntity = null;
             }
             else if (type == Preferences.class)
             {
-                newEntity = resolve(id);
+                newEntity = resolve(update);
                 oldEntity = newEntity;
             }
             else
             {
-                oldEntity = history.get(id, since);
-                newEntity = resolve(id);
+                oldEntity = history.get(update, since);
+                newEntity = resolve(update);
             }
 
             updatedEntities.add(newEntity);
             if (oldEntity != null)
             {
-                oldEntities.put(id, oldEntity);
+                oldEntities.put(update, oldEntity);
             }
         }
         Collection<ReferenceInfo> toRemove = getEntities(user, since, true);
         for (ReferenceInfo update : toRemove)
         {
-            String id = update.getId();
             Entity entity;
             if (update.getType() == Conflict.class)
             {
@@ -3378,11 +3372,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             else
             {
-                entity = history.get(id, since);
+                entity = history.get(update, since);
             }
             if (entity != null)
             {
-                oldEntities.put(id, entity);
+                oldEntities.put(update, entity);
             }
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);

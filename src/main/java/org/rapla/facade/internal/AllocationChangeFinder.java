@@ -23,6 +23,7 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.StorageOperator;
@@ -49,15 +50,15 @@ public class AllocationChangeFinder
         if ( updateResult == null)
             return;
         for (UpdateResult.Add addOp: updateResult.getOperations( UpdateResult.Add.class )) {
-            added(  updateResult.getLastKnown(addOp.getCurrentId()), user );
+            added(  updateResult.getLastKnown(addOp.getReference()), user );
         }
         for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
-            final Entity removedEvent = updateResult.getLastEntryBeforeUpdate(removeOp.getCurrentId());
+            final Entity removedEvent = updateResult.getLastEntryBeforeUpdate(removeOp.getReference());
             removed( removedEvent, user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
-            Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getCurrentId());
-            Entity newObj = updateResult.getLastKnown(changeOp.getCurrentId());
+            Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getReference());
+            Entity newObj = updateResult.getLastKnown(changeOp.getReference());
             changed(old , newObj, user );
         }
     }
@@ -116,19 +117,19 @@ public class AllocationChangeFinder
         final ArrayList<Allocatable> result = new ArrayList<Allocatable>();
         ReservationImpl resImpl = ((ReservationImpl)reservation);
         final Appointment[] appointments = resImpl.getAppointments();
-        Collection<String> allocatableIds = new HashSet<String>();
+        Collection<ReferenceInfo<Allocatable>> allocatableIds = new HashSet<ReferenceInfo<Allocatable>>();
         for (Appointment appointment : appointments)
         {
-            final Collection<String> allocatableIdsFor = resImpl.getAllocatableIdsFor(appointment);
+            final Collection<ReferenceInfo<Allocatable>> allocatableIdsFor = resImpl.getAllocatableIdsFor(appointment);
             allocatableIds.addAll(allocatableIdsFor);
         }
-        for (String allocatableId : allocatableIds)
+        for (ReferenceInfo<Allocatable> allocatableId : allocatableIds)
         {
-            Allocatable alloc = resolver.tryResolve(allocatableId, Allocatable.class);
+            Allocatable alloc = resolver.tryResolve(allocatableId);
             if (alloc == null)
             {
                 AllocatableImpl unresolved = new AllocatableImpl(null, null);
-                unresolved.setId(allocatableId);
+                unresolved.setId(allocatableId.getId());
                 DynamicType dynamicType = resolver.getDynamicType(StorageOperator.UNRESOLVED_RESOURCE_TYPE);
                 if (dynamicType == null)
                 {// TODO log?

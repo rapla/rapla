@@ -31,11 +31,10 @@ public class UpdateResult
 	//Set<RaplaType> modified = new HashSet<RaplaType>();
 	private final Date since;
 	private final Date until;
-    private final Map<String, Entity> oldEntities;
-    private final Map<String, Entity> updatedEntities;
+    private final Map<ReferenceInfo, Entity> oldEntities;
+    private final Map<ReferenceInfo, Entity> updatedEntities;
 
-
-    public UpdateResult(Date since, Date until, Map<String, Entity> oldEntities,Map<String, Entity> updatedEntities)
+    public UpdateResult(Date since, Date until, Map<ReferenceInfo, Entity> oldEntities,Map<ReferenceInfo, Entity> updatedEntities)
     {
         this.since = since;
         this.until = until;
@@ -82,24 +81,24 @@ public class UpdateResult
     	return Collections.unmodifiableCollection(operations);
     }
 
-    public Collection<HistoryEntry> getUnresolvedHistoryEntry(String id)
+    public Collection<HistoryEntry> getUnresolvedHistoryEntry(ReferenceInfo id)
     {
         // FIXME
         return null;
     }
 
     /** returns null if no entity exisits before update*/
-    public Entity getLastEntryBeforeUpdate(String id)
+    public <T extends Entity> T getLastEntryBeforeUpdate(ReferenceInfo<T> id)
     {
         // FIXME Conflict resolution
-        final Entity entity = oldEntities.get(id);
+        final T entity = (T) oldEntities.get(id);
         return entity;
     }
 
-    public Entity getLastKnown(String id)
+    public <T extends Entity> T getLastKnown(ReferenceInfo<T> id)
     {
         // FIXME Conflict resolution
-        return updatedEntities.get( id );
+        return (T) updatedEntities.get( id );
     }
 
     public void addOperation(Entity<?> newEntity, Entity<?> oldEntity, UpdateOperation operation)
@@ -107,16 +106,16 @@ public class UpdateResult
         addOperation(operation);
         if(operation instanceof Remove)
         {
-            oldEntities.put(oldEntity.getId(), oldEntity);
+            oldEntities.put(oldEntity.getReference(), oldEntity);
         }
         else if(operation instanceof Change)
         {
-            oldEntities.put(oldEntity.getId(), oldEntity);
-            updatedEntities.put(newEntity.getId(), newEntity);
+            oldEntities.put(oldEntity.getReference(), oldEntity);
+            updatedEntities.put(newEntity.getReference(), newEntity);
         }
         else if(operation instanceof Add)
         {
-            updatedEntities.put(newEntity.getId(), newEntity);
+            updatedEntities.put(newEntity.getReference(), newEntity);
         }
     }
 
@@ -134,12 +133,7 @@ public class UpdateResult
         
         public String toString()
         {
-        	return "Add " + getCurrentId();
-        }
-
-        @Override public String getCurrentId()
-        {
-            return info.getId();
+        	return "Add " + info;
         }
 
         @Override public Class<? extends Entity> getType()
@@ -160,11 +154,6 @@ public class UpdateResult
             return info;
         }
 
-        @Override public String getCurrentId()
-        {
-            return info.getId();
-        }
-
         @Override public Class<? extends Entity> getType()
         {
             return info.getType();
@@ -172,7 +161,7 @@ public class UpdateResult
 
         public String toString()
         {
-        	return "Remove " + getCurrentId();
+        	return "Remove " + info;
         }
 
     }
@@ -189,10 +178,6 @@ public class UpdateResult
         {
             return info;
         }
-        @Override public String getCurrentId()
-        {
-            return info.getId();
-        }
 
         @Override public Class<? extends Entity> getType()
         {
@@ -201,7 +186,7 @@ public class UpdateResult
 
         public String toString()
         {
-        	return "Change " + getCurrentId();//  + " to " + newObj;
+        	return "Change " + info;//  + " to " + newObj;
         }
     }
     
@@ -225,26 +210,26 @@ public class UpdateResult
     }
 
 
-    public Collection<String> getAddedAndChangedIds()
+    public Collection<ReferenceInfo> getAddedAndChangedIds()
     {
-        Set<String> result = new LinkedHashSet<String>();
+        Set<ReferenceInfo> result = new LinkedHashSet<ReferenceInfo>();
         fillIds(result, Add.class);
         fillIds(result, Change.class);
         return result;
     }
 
-    private <T extends UpdateOperation> void fillIds(Set<String> result, final Class<T> operationClass)
+    private <T extends UpdateOperation> void fillIds(Set<ReferenceInfo> result, final Class<T> operationClass)
     {
         final Collection<T> operations = getOperations(operationClass);
         for (UpdateOperation operation : operations)
         {
-            result.add(operation.getCurrentId());
+            result.add(operation.getReference());
         }
     }
 
-    public <T extends UpdateOperation> Collection<String> getIds(final Class<T> operationClass)
+    public <T extends UpdateOperation> Collection<ReferenceInfo> getIds(final Class<T> operationClass)
     {
-        final LinkedHashSet<String> result = new LinkedHashSet<String>();
+        final LinkedHashSet<ReferenceInfo> result = new LinkedHashSet<ReferenceInfo>();
         fillIds(result, operationClass);
         return result;
     }

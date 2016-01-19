@@ -14,6 +14,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -32,7 +33,7 @@ import java.util.Set;
 
 public class EntityHistory
 {
-    public Collection<String> getAllIds()
+    public Collection<ReferenceInfo> getAllIds()
     {
         return map.keySet();
     }
@@ -46,33 +47,26 @@ public class EntityHistory
     public static class HistoryEntry
     {
         private long timestamp;
-        private String id;
+        ReferenceInfo ref;
         private String json;
-        Class typeClass;
         private boolean isDelete;
 
         private HistoryEntry()
         {
         }
 
-        private HistoryEntry(String id, long timestamp, String json, Class typeClass, boolean isDelete)
+        private HistoryEntry(ReferenceInfo id, long timestamp, String json, boolean isDelete)
         {
             super();
-            this.id = id;
+            this.ref = id;
             this.isDelete = isDelete;
             this.timestamp = timestamp;
             this.json = json;
-            this.typeClass = typeClass;
         }
 
-        public Class getTypeClass()
+        public ReferenceInfo getId()
         {
-            return typeClass;
-        }
-
-        public String getId()
-        {
-            return id;
+            return ref;
         }
 
         public long getTimestamp()
@@ -87,11 +81,11 @@ public class EntityHistory
 
         @Override public String toString()
         {
-            return "HistoryEntry [timestamp=" + timestamp + ", id=" + id + "]";
+            return "HistoryEntry [timestamp=" + timestamp + ", id=" + ref + "]";
         }
     }
 
-    private final Map<String, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<String, List<EntityHistory.HistoryEntry>>();
+    private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<ReferenceInfo, List<EntityHistory.HistoryEntry>>();
     private final Gson gson;
 
     public EntityHistory()
@@ -101,7 +95,7 @@ public class EntityHistory
         gson = gsonBuilder.create();
     }
 
-    public HistoryEntry getLatest(String id)
+    public HistoryEntry getLatest(ReferenceInfo id)
     {
         final List<HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null || historyEntries.isEmpty())
@@ -113,7 +107,7 @@ public class EntityHistory
     }
 
     /** returns the history entry with a timestamp<= since or null if no such entry exists*/
-    public Entity get(String id, Date since)
+    public Entity get(ReferenceInfo id, Date since)
     {
         final List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
@@ -168,13 +162,13 @@ public class EntityHistory
     public Entity getEntity(HistoryEntry entry)
     {
         String json = entry.json;
-        final Class typeClass = entry.typeClass;
+        final Class typeClass = entry.getId().getType();
         final Class<? extends Entity> implementingClass = typeImpl.get(typeClass);
         final Entity entity = gson.fromJson(json, implementingClass);
         return entity;
     }
 
-    public EntityHistory.HistoryEntry addHistoryEntry(String id, String json, Class typeClass, Date timestamp, boolean isDelete)
+    public EntityHistory.HistoryEntry addHistoryEntry(ReferenceInfo id, String json, Date timestamp, boolean isDelete)
     {
         List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
@@ -182,7 +176,7 @@ public class EntityHistory
             historyEntries = new ArrayList<EntityHistory.HistoryEntry>();
             map.put(id, historyEntries);
         }
-        final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, typeClass, isDelete);
+        final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, isDelete);
         int index = historyEntries.size();
         insert(historyEntries, newEntry, index);
         return newEntry;
@@ -214,16 +208,16 @@ public class EntityHistory
 
     public EntityHistory.HistoryEntry addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)
     {
-        final String id = entity.getId();
+        final ReferenceInfo id = entity.getReference();
         final String json = gson.toJson(entity);
-        return addHistoryEntry(id, json, entity.getTypeClass(), timestamp, isDelete);
+        return addHistoryEntry(id, json, timestamp, isDelete);
     }
 
     public EntityHistory.HistoryEntry addHistoryDeleteEntry(Entity entity, Date timestamp, boolean isDelete)
     {
-        final String id = entity.getId();
+        final ReferenceInfo id = entity.getReference();
         final String json = gson.toJson(entity);
-        return addHistoryEntry(id, json, entity.getTypeClass(), timestamp, isDelete);
+        return addHistoryEntry(id, json,  timestamp, isDelete);
     }
 
     public void clear()
@@ -231,16 +225,16 @@ public class EntityHistory
         map.clear();
     }
 
-    List<HistoryEntry> getHistoryList(String key)
+    List<HistoryEntry> getHistoryList(ReferenceInfo key)
     {
         return map.get(key);
     }
 
     public void removeUnneeded(Date date)
     {
-        final Set<String> keySet = map.keySet();
+        final Set<ReferenceInfo> keySet = map.keySet();
         final long time = date.getTime();
-        for (String key : keySet)
+        for (ReferenceInfo key : keySet)
         {
             final List<HistoryEntry> list = map.get(key);
             while (list.size() >= 2 && list.get(1).timestamp < time)
@@ -256,7 +250,7 @@ public class EntityHistory
      * @param timestamp
      * @return
      */
-    public HistoryEntry getLastChangedUntil(String id, Date timestamp)
+    public HistoryEntry getLastChangedUntil(ReferenceInfo id, Date timestamp)
     {
         final long time = timestamp.getTime();
         final List<HistoryEntry> list = map.get(id);

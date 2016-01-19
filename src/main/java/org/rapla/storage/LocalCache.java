@@ -311,8 +311,8 @@ public class LocalCache implements EntityResolver
 
     public PreferencesImpl getPreferencesForUserId(String userId)
     {
-        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
-        PreferencesImpl pref = (PreferencesImpl) tryResolve(preferenceId, Preferences.class);
+        ReferenceInfo<Preferences> preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        PreferencesImpl pref = (PreferencesImpl) tryResolve(preferenceId);
         return pref;
     }
 

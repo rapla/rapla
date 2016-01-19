@@ -542,7 +542,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         appointments.add(appointmentId);
     }
 
-	public List<String> getRestrictionPrivate(String allocatableId) {
+	private List<String> getRestrictionPrivate(String allocatableId) {
         Assert.notNull(allocatableId,"Allocatable object has no ID");
         if (restrictions != null) {
             List<String> restriction =  restrictions.get(allocatableId);
@@ -584,9 +584,9 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return set.toArray( Allocatable.ALLOCATABLE_ARRAY);
     }
 
-    public Collection<String> getAllocatableIdsFor(Appointment appointment)
+    public Collection<ReferenceInfo<Allocatable>> getAllocatableIdsFor(Appointment appointment)
     {
-        HashSet<String> set = new HashSet<String>();
+        HashSet<ReferenceInfo<Allocatable>> set = new HashSet<ReferenceInfo<Allocatable>>();
         Collection<String> list = getIds("resources");
         String id = appointment.getId();
         for (String allocatableId:list) {
@@ -606,18 +606,18 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             }
             if (found )
             {
-                set.add( allocatableId);
+                set.add( new ReferenceInfo<Allocatable>(allocatableId, Allocatable.class));
             }
         }
         return set;
     }
 
     public Allocatable[] getAllocatablesFor(Appointment appointment) {
-        final Collection<String> allocatableIds = getAllocatableIdsFor(appointment);
+        final Collection<ReferenceInfo<Allocatable>> allocatableIds = getAllocatableIdsFor(appointment);
         HashSet<Allocatable> set = new HashSet<Allocatable>();
-        for(String id : allocatableIds)
+        for(ReferenceInfo<Allocatable> id : allocatableIds)
         {
-            final Allocatable alloc = getResolver().tryResolve(id, Allocatable.class);
+            final Allocatable alloc = getResolver().tryResolve(id);
             if ( alloc == null)
             {
                 throw new UnresolvableReferenceExcpetion( Allocatable.class.getName() + ":" + id, toString());

@@ -45,6 +45,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.OldIdMapping;
@@ -888,7 +889,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
    
         String configRole = getString( rset, 2, null);
-        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        ReferenceInfo<Preferences> preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
         if ( configRole == null)
         {
         	getLogger().warn("Configuration role for " + preferenceId + " is null. Ignoring preference entry.");
@@ -901,12 +902,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 //        	return;
 //        }
         
-        PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId, Preferences.class ): null;
+        PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId ): null;
         if ( preferences == null) 
         {
         	Date now =getCurrentTimestamp();
 			preferences = new PreferencesImpl(now,now);
-        	preferences.setId(preferenceId);
+        	preferences.setId(preferenceId.getId());
         	preferences.setOwner(owner);
         	put( preferences );
         }

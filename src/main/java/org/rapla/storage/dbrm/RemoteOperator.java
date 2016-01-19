@@ -1164,7 +1164,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 		updated.removeAll( toRemove);
 		toUpdate.retainAll(newEntities);
 		
-		HashMap<String,Entity> oldEntityMap = new HashMap<String,Entity>();
+		HashMap<ReferenceInfo,Entity> oldEntityMap = new HashMap<ReferenceInfo,Entity>();
 		for ( Entity oldEntity: toUpdate)
 		{
 			@SuppressWarnings("unchecked")
@@ -1172,7 +1172,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             Entity newEntity = cache.tryResolve( oldEntity.getId(), typeClass);
 			if ( newEntity != null)
 			{
-				oldEntityMap.put( newEntity.getId(), oldEntity);
+				oldEntityMap.put( newEntity.getReference(), oldEntity);
 			}
 		}
 		TimeInterval invalidateInterval = new TimeInterval( null,null);

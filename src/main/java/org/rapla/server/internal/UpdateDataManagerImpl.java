@@ -110,44 +110,36 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         return clone;
     }
 
-//    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult, User user)
-//    {
-//        UpdateEvent saveEvent = new UpdateEvent();
-////        Category categoryToAdd = null;
-//        if (user != null)
-//        {
-//            saveEvent.setUserId(user.getId());
-//        }
-//        {
-//            for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
-//            {
-//                Entity newEntity = updateResult.getLastKnown(add.getCurrentId());
-//                if(newEntity instanceof Category)
-//                {
-////                    categoryToAdd = 
-//                }
-//                else
-//                {
-//                    saveEvent.putStore(newEntity);
-//                }
-//            }
-//        }
-//        {
-//            for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
-//            {
-//                Entity newEntity = updateResult.getLastKnown(change.getCurrentId());
-//                saveEvent.putStore(newEntity);
-//            }
-//        }
-//        {
-//            for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
-//            {
-//                ReferenceInfo removeEntity =  remove.getReference();
-//                saveEvent.putRemoveId(removeEntity);
-//            }
-//        }
-//        return saveEvent;
-//    }
+    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult, User user)
+    {
+        UpdateEvent saveEvent = new UpdateEvent();
+        if (user != null)
+        {
+            saveEvent.setUserId(user.getId());
+        }
+        {
+            for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
+            {
+                Entity newEntity = updateResult.getLastKnown(add.getReference());
+                saveEvent.putStore(newEntity);
+            }
+        }
+        {
+            for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
+            {
+                Entity newEntity = updateResult.getLastKnown(change.getReference());
+                saveEvent.putStore(newEntity);
+            }
+        }
+        {
+            for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
+            {
+                ReferenceInfo removeEntity =  remove.getReference();
+                saveEvent.putRemoveId(removeEntity);
+            }
+        }
+        return saveEvent;
+    }
 
 //    public TimeInterval calulateInvalidateInterval(UpdateResult result) {
 //        TimeInterval currentInterval = null;
@@ -243,10 +235,14 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
         for (Change operation : updateResult.getOperations(UpdateResult.Change.class))
         {
-            final String currentId = operation.getCurrentId();
+            final ReferenceInfo currentId = operation.getReference();
+            final Class<? extends Entity> typeClass = currentId.getType();
             Entity newObject = updateResult.getLastKnown(currentId);
+            if ( newObject == null)
+            {
+                getLogger().error("Object with id " + currentId + " not found in history. Ignoring. ");
+            }
             // we get all the permissions that have changed on an allocatable
-            final Class<? extends Entity> typeClass = newObject.getTypeClass();
             if (typeClass == Allocatable.class && isTransferedToClient(newObject))
             {
                 PermissionContainer current = (PermissionContainer) updateResult.getLastEntryBeforeUpdate(currentId);
@@ -389,7 +385,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         {
             //Collection<Entity> updatedEntities = operator.getUpdatedEntities(user, lastSynced);
 
-            for (String id : updateResult.getAddedAndChangedIds())
+            for (ReferenceInfo id : updateResult.getAddedAndChangedIds())
             {
                 final Entity obj = updateResult.getLastKnown(id);
                 final Class<? extends  Entity> raplaType = obj.getTypeClass();
@@ -427,8 +423,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
                 }
                 if ( type == Reservation.class)
                 {
-                    final String id = ref.getId();
-                    final Entity entity = updateResult.getLastEntryBeforeUpdate(id);
+                    final Entity entity = updateResult.getLastEntryBeforeUpdate(ref);
                     if ( entity != null)
                     {
                         timeInterval = expandInterval(entity, timeInterval);

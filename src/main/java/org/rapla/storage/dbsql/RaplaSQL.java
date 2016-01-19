@@ -313,7 +313,7 @@ class RaplaSQL {
         }
     }
 
-    public Collection<String> update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
+    public Collection<ReferenceInfo> update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
     {
         history.setConnection( c, connectionTimestamp);
         try
@@ -2003,7 +2003,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         }
    
         String configRole = getString( rset, 2, null);
-        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+        ReferenceInfo<Preferences> preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
         if ( configRole == null)
         {
         	getLogger().warn("Configuration role for " + preferenceId + " is null. Ignoring preference entry.");
@@ -2016,12 +2016,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 //        	return;
 //        }
         
-        PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId, Preferences.class ): null;
+        PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId ): null;
         if ( preferences == null) 
         {
             Date now = getConnectionTimestamp();
             preferences = new PreferencesImpl(now, now);
-            preferences.setId(preferenceId);
+            preferences.setId(preferenceId.getId());
             preferences.setOwner(owner);
             put( preferences );
         }
@@ -2564,9 +2564,9 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             }
         }
         {
-            final Collection<String> allIds = history.getAllIds();
+            final Collection<ReferenceInfo> allIds = history.getAllIds();
             final Date connectionTimestamp = getConnectionTimestamp();
-            for (String id : allIds)
+            for (ReferenceInfo id : allIds)
             {
                 final Entity<?> entity = entityStore.tryResolve(id);
                 if(entity == null)
@@ -2611,7 +2611,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final String json = getText(rs, 4);
         final Date lastChanged = new Date(rs.getTimestamp( 5).getTime());
         final Integer isDelete = getInt( rs, 6);
-        history.addHistoryEntry(id, json, typeClass, lastChanged, isDelete != null && isDelete == 1);
+        history.addHistoryEntry(new ReferenceInfo(id,typeClass), json, lastChanged, isDelete != null && isDelete == 1);
     }
     
 }

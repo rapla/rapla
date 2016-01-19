@@ -330,17 +330,16 @@ import java.util.concurrent.locks.Lock;
         {
             return;
         }
-        final Collection<String> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
+        final Collection<ReferenceInfo> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
         Collection<Entity> toStore = new LinkedHashSet<Entity>();
         Set<ReferenceInfo> toRemove = new HashSet<>();
         List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
-        for (String id : allIds)
+        for (ReferenceInfo id : allIds)
         {
             final HistoryEntry before = history.getLatest(id);//LastChangedUntil(id, connectionTime);
             if (before.isDelete())
             {
-                final ReferenceInfo referenceInfo = new ReferenceInfo(before.getId(), before.getTypeClass());
-                toRemove.add(referenceInfo);
+                toRemove.add(before.getId());
             }
             else
             {
@@ -733,14 +732,14 @@ import java.util.concurrent.locks.Lock;
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects, Connection connection)
     {
         RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
-        final LinkedHashSet<String> ids = new LinkedHashSet<String>();
+        final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<ReferenceInfo>();
         for (Entity entity : storeObjects)
         {
-            ids.add(entity.getId());
+            ids.add(entity.getReference());
         }
         for (ReferenceInfo referenceInfo : removeObjects)
         {
-            ids.add(referenceInfo.getId());
+            ids.add(referenceInfo);
         }
         final boolean needsGlobalLock = containsDynamicType(ids);
         Date connectionTimestamp = null;
@@ -755,14 +754,9 @@ import java.util.concurrent.locks.Lock;
             {
                 for (PreferencePatch patch : preferencePatches)
                 {
-                    String userId = patch.getUserId();
-                    if (userId == null)
-                    {
-                        userId = Preferences.SYSTEM_PREFERENCES_ID;
-                    }
-                    ids.add(userId);
+                    ids.add( patch.getReference());
                 }
-                raplaSQLOutput.getLocks(connection, connectionTimestamp, ids, null);
+                raplaSQLOutput.getLocks(connection, connectionTimestamp, getLockIds(ids), null);
             }
             for (ReferenceInfo id : removeObjects)
             {
@@ -813,7 +807,7 @@ import java.util.concurrent.locks.Lock;
                 }
                 else
                 {
-                    raplaSQLOutput.removeLocks(connection, ids, connectionTimestamp);
+                    raplaSQLOutput.removeLocks(connection, getLockIds(ids), connectionTimestamp);
                 }
                 if (connection.getMetaData().supportsTransactions())
                 {
@@ -827,9 +821,19 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    private boolean containsDynamicType(Set<String> ids)
+    private Collection<String> getLockIds(Collection<ReferenceInfo> ids )
     {
-        for (String id : ids)
+        List<String> result = new ArrayList<String>();
+        for ( ReferenceInfo info:ids)
+        {
+            result.add( info.getId());
+        }
+        return result;
+    }
+
+    private boolean containsDynamicType(Set<ReferenceInfo> ids)
+    {
+        for (ReferenceInfo id : ids)
         {
             final Entity entity = tryResolve(id);
             if (entity != null && entity.getTypeClass() == DynamicType.class)

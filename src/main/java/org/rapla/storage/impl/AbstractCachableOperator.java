@@ -298,7 +298,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-	protected Map<String,PreferencesImpl> emptyPreferencesProxy = new HashMap<String, PreferencesImpl>();
+	protected Map<ReferenceInfo<Preferences>,PreferencesImpl> emptyPreferencesProxy = new HashMap<ReferenceInfo<Preferences>, PreferencesImpl>();
 
 	public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException {
 		checkLoaded();
@@ -307,8 +307,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			resolve(user.getId(), User.class);
 		}
 		String userId = user != null ? user.getId() : null;
-        String preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
-		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId, Preferences.class);
+        ReferenceInfo<Preferences> preferenceId = PreferencesImpl.getPreferenceIdFromUser(userId);
+		PreferencesImpl pref = (PreferencesImpl) cache.tryResolve( preferenceId);
 		if (pref == null && createIfNotNull )
 		{
 	        synchronized ( emptyPreferencesProxy) { 
@@ -333,7 +333,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 
     private PreferencesImpl newPreferences(final String userId) throws EntityNotFoundException {
         Date now = getCurrentTimestamp();
-        String id = PreferencesImpl.getPreferenceIdFromUser(userId);
+        ReferenceInfo<Preferences> id = PreferencesImpl.getPreferenceIdFromUser(userId);
         PreferencesImpl newPref = new PreferencesImpl(now,now);
         newPref.setResolver( this);
         if ( userId != null)
@@ -341,7 +341,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
             User user = resolve( userId, User.class);
             newPref.setOwner(user);
         }
-        newPref.setId( id );
+        newPref.setId( id.getId() );
         return newPref;
     }
 
@@ -604,7 +604,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
 			Collection<ReferenceInfo> removedIds)
 	{
-		HashMap<String,Entity> oldEntities = new HashMap<String,Entity>();
+		HashMap<ReferenceInfo,Entity> oldEntities = new HashMap<ReferenceInfo,Entity>();
 		// First make a copy of the old entities
 		Collection<Entity>storeObjects = new LinkedHashSet<Entity>(storeObjects1);
 		for (Entity entity : storeObjects)
@@ -628,7 +628,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			else
 			{
 				Entity oldEntity = persistantEntity;
-				oldEntities.put(persistantEntity.getId(), oldEntity);
+				oldEntities.put(persistantEntity.getReference(), oldEntity);
 			}
 
 		}
@@ -646,7 +646,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
                 clone = oldEntity.clone();
             }
             clone.applyPatch( patch);
-            oldEntities.put(clone.getId(), oldEntity);
+            oldEntities.put(clone.getReference(), oldEntity);
             storeObjects.add( clone);
 
 		}
@@ -675,7 +675,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
             Entity persistantVersion = cache.tryResolve(id );
 			if (persistantVersion != null) {
 			    cache.remove(persistantVersion);
-			    oldEntities.put(id.getId(), persistantVersion);
+			    oldEntities.put(id, persistantVersion);
 			    toRemove.add( id);
 			}
 			else if ( id.getType() == Conflict.class)
@@ -697,7 +697,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
     }
 
 	protected UpdateResult createUpdateResult(
-			Map<String,Entity> oldEntities,
+			Map<ReferenceInfo,Entity> oldEntities,
 			Collection<Entity>updatedEntities,
 			Collection<ReferenceInfo>toRemove,
 			Date since,
@@ -709,10 +709,10 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 //			user = resolve(cache,userId, User.class);
 //		}
 
-		Map<String,Entity> updatedEntityMap = new LinkedHashMap<String,Entity>();
+		Map<ReferenceInfo,Entity> updatedEntityMap = new LinkedHashMap<ReferenceInfo,Entity>();
 		for (Entity toUpdate:updatedEntities)
 		{
-			updatedEntityMap.put(toUpdate.getId(), toUpdate);
+			updatedEntityMap.put(toUpdate.getReference(), toUpdate);
 		}
 		UpdateResult result = new UpdateResult(since, until, oldEntities, updatedEntityMap);
 

@@ -304,7 +304,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(0, updateResult.getOperations(Remove.class).size());
                 final Collection<Add> addObjects = updateResult.getOperations(Add.class);
                 Assert.assertEquals(1, addObjects.size());
-                final Entity first = updateResult.getLastKnown(addObjects.iterator().next().getCurrentId());
+                final Entity first = updateResult.getLastKnown(addObjects.iterator().next().getReference());
                 Assert.assertTrue(first instanceof Reservation);
                 Reservation newReserv = (Reservation) first;
                 final Classification classification2 = newReserv.getClassification();
@@ -340,7 +340,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 lastUpdated = updateResult.getUntil();
                 final Collection<Add> addObjects = updateResult.getOperations(Add.class);
                 Assert.assertEquals(1, addObjects.size());
-                final Entity addedObj = updateResult.getLastKnown(addObjects.iterator().next().getCurrentId());
+                final Entity addedObj = updateResult.getLastKnown(addObjects.iterator().next().getReference());
                 Assert.assertTrue(addedObj instanceof Category);
                 Category newCat = (Category) addedObj;
                 Assert.assertEquals(key, newCat.getKey());
@@ -370,7 +370,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Iterator<Change> iterator = changed.iterator();
                 while(iterator.hasNext())
                 {
-                    final Entity next = updateResult.getLastKnown(iterator.next().getCurrentId());
+                    final Entity next = updateResult.getLastKnown(iterator.next().getReference());
                     Assert.assertTrue(next instanceof Allocatable);
                     Allocatable alloc = (Allocatable) next;
                     final String renamedFirstAttribute = rename.get(alloc.getId());
@@ -396,7 +396,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 lastUpdated = updateResult.getUntil();
                 final Collection<Change> changed = updateResult.getOperations(Change.class);
                 Assert.assertEquals(1, changed.size());
-                final Entity next = updateResult.getLastKnown(changed.iterator().next().getCurrentId());
+                final Entity next = updateResult.getLastKnown(changed.iterator().next().getReference());
                 Assert.assertTrue(next instanceof Reservation);
                 Reservation newReservation = (Reservation) next;
                 Assert.assertEquals(allocatables.length, newReservation.getAllocatables().length);
@@ -424,7 +424,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     lastUpdated = updateResult.getUntil();
                     final Collection<Add> addObjects = updateResult.getOperations(Add.class);
                     Assert.assertEquals(1, addObjects.size());
-                    final Entity next = updateResult.getLastKnown(addObjects.iterator().next().getCurrentId());
+                    final Entity next = updateResult.getLastKnown(addObjects.iterator().next().getReference());
                     Assert.assertTrue(next instanceof User);
                     User addedUser = (User) next;
                     Assert.assertEquals(email, addedUser.getEmail());
@@ -447,7 +447,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     lastUpdated = updateResult.getUntil();
                     final Collection<Change> changed = updateResult.getOperations(Change.class);
                     Assert.assertEquals(1, changed.size());
-                    final Entity next = updateResult.getLastKnown(changed.iterator().next().getCurrentId());
+                    final Entity next = updateResult.getLastKnown(changed.iterator().next().getReference());
                     Assert.assertTrue(next instanceof User);
                     User changedUser = (User) next;
                     final Category[] categories = writeFacade.getUserGroupsCategory().getCategories();

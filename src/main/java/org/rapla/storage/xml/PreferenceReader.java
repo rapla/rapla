@@ -19,6 +19,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 
@@ -54,14 +55,16 @@ public class PreferenceReader extends RaplaXMLReader {
         	TimestampDates ts = readTimestamps(atts);
             preferences = new PreferencesImpl(ts.createTime, ts.changeTime);
             preferences.setResolver( store);
+            String ownerId = owner != null ? owner.getId() :null;
+            ReferenceInfo<Preferences> ref = PreferencesImpl.getPreferenceIdFromUser( ownerId);
             if ( owner == null )
             {
-            	preferences.setId( Preferences.SYSTEM_PREFERENCES_ID);
+            	preferences.setId( ref.getId());
             } 
             else
             {
                 preferences.setOwner( owner );
-                preferences.setId( Preferences.ID_PREFIX + owner.getId());
+                preferences.setId( ref.getId());
             }
             return;
         }

@@ -1,6 +1,8 @@
 package org.rapla.storage;
 
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 
@@ -47,5 +49,9 @@ public class PreferencePatch extends RaplaMapImpl {
     public String toString() {
         return "Patch for " + userId + " " + super.toString() + " Removed " + removedEntries.toString(); 
     }
-    
+
+    public ReferenceInfo<Preferences> getReference()
+    {
+        return PreferencesImpl.getPreferenceIdFromUser( getUserId());
+    }
 }

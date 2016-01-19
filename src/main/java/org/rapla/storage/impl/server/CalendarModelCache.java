@@ -45,7 +45,7 @@ public class CalendarModelCache
         this.i18n = i18n;
     }
 
-    private void removeCalendarModelFor(String userId)
+    private void removeCalendarModelFor(ReferenceInfo<User> userId)
     {
         Lock lock = writeLock();
         try
@@ -250,13 +250,14 @@ public class CalendarModelCache
             if (raplaType == Preferences.class)
             {
                 final Preferences preferences;
+                UpdateOperation<Preferences> op = operation;
                 if (operation instanceof UpdateResult.Add)
                 {
-                    preferences = (Preferences) evt.getLastKnown(operation.getCurrentId());
+                    preferences = evt.getLastKnown(op.getReference());
                 }
                 else if (operation instanceof UpdateResult.Change)
                 {
-                    preferences = (Preferences) evt.getLastKnown(operation.getCurrentId());
+                    preferences = evt.getLastKnown(op.getReference());
                 }
                 else
                 {
@@ -276,9 +277,9 @@ public class CalendarModelCache
             }
             else if (raplaType == User.class)
             {
-                String userId = operation.getCurrentId();
                 if (operation instanceof UpdateResult.Remove)
                 {
+                    ReferenceInfo<User> userId = operation.getReference();
                     removeCalendarModelFor(userId);
                 }
             }

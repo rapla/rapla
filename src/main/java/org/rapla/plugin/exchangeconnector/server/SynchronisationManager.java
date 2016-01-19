@@ -261,10 +261,11 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             final Class<? extends Entity> raplaType = operation.getType();
             if (raplaType == Reservation.class)
             {
+                UpdateOperation<Reservation> op = operation;
                 if (operation instanceof UpdateResult.Remove)
                 {
-                    Entity<?> current = evt.getLastEntryBeforeUpdate(operation.getCurrentId());
-                    Reservation oldReservation = (Reservation) current;
+                    Reservation current = evt.getLastEntryBeforeUpdate(op.getReference());
+                    Reservation oldReservation = current;
                     for (Appointment app : oldReservation.getAppointments())
                     {
                         Collection<SynchronizationTask> result = updateTasksSetDelete(app);
@@ -273,8 +274,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 else if (operation instanceof UpdateResult.Add)
                 {
-                    Entity<?> current = evt.getLastKnown(operation.getCurrentId());
-                    Reservation newReservation = (Reservation) current;
+                    Reservation newReservation = evt.getLastKnown(op.getReference());
                     for (Appointment app : newReservation.getAppointments())
                     {
                         Collection<SynchronizationTask> result = updateOrCreateTasks(app);
@@ -283,8 +283,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 else //if ( operation instanceof UpdateResult.Change)
                 {
-                    Reservation oldReservation = (Reservation) evt.getLastEntryBeforeUpdate(operation.getCurrentId());
-                    Reservation newReservation = (Reservation) evt.getLastKnown(operation.getCurrentId());
+                    Reservation oldReservation =  evt.getLastEntryBeforeUpdate(op.getReference());
+                    Reservation newReservation = evt.getLastKnown(op.getReference());
                     Map<String, Appointment> oldAppointments = Appointment.AppointmentUtil.idMap(oldReservation.getAppointments());
                     Map<String, Appointment> newAppointments = Appointment.AppointmentUtil.idMap(newReservation.getAppointments());
                     for (Appointment oldApp : oldAppointments.values())
@@ -324,13 +324,14 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             else if (raplaType == Preferences.class)
             {
                 final Preferences preferences;
+                UpdateOperation<Preferences> op = operation;
                 if (operation instanceof UpdateResult.Add)
                 {
-                    preferences = (Preferences) evt.getLastKnown(operation.getCurrentId());
+                    preferences = evt.getLastKnown(op.getReference());
                 }
                 else if (operation instanceof UpdateResult.Change)
                 {
-                    preferences = (Preferences) evt.getLastKnown(operation.getCurrentId());
+                    preferences = evt.getLastKnown(op.getReference());
                     boolean savePreferences = false;
                     if(preferences.getEntryAsBoolean(RETRY_USER, false))
                     {
@@ -354,7 +355,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                     }
                     if(savePreferences)
                     {
-                        final Preferences editPreferences = facade.edit(operator.resolve(preferences.getId(), Preferences.class));
+                        final Preferences resolve = operator.resolve(preferences.getReference());
+                        final Preferences editPreferences = facade.edit(resolve);
                         editPreferences.putEntry(RESYNC_USER, false);
                         editPreferences.putEntry(RETRY_USER, false);
                         preferencesToStore.add(editPreferences);
@@ -396,7 +398,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             {
                 if (operation instanceof UpdateResult.Change)
                 {
-                    Allocatable allocatable = (Allocatable) evt.getLastKnown(operation.getCurrentId());
+                    UpdateOperation<Allocatable> op = operation;
+                    Allocatable allocatable = evt.getLastKnown(op.getReference());
                     final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                     if (!isInternal)
                     {

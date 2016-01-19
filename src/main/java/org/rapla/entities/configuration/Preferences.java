@@ -17,6 +17,7 @@ import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.Timestamp;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.TypedComponentRole;
 
 /** Preferences store user-specific Information.
@@ -26,7 +27,7 @@ import org.rapla.framework.TypedComponentRole;
  */
 public interface Preferences extends Entity<Preferences>,Ownable,Timestamp, Named {
     String ID_PREFIX  = "preferences_";
-    String SYSTEM_PREFERENCES_ID = ID_PREFIX + "0";
+    ReferenceInfo<Preferences> SYSTEM_PREFERENCES_ID = new ReferenceInfo<Preferences>(ID_PREFIX + "0",Preferences.class);
     /** returns if there are any preference-entries */
     boolean isEmpty();
     boolean hasEntry(TypedComponentRole<?> role);

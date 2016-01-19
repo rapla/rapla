@@ -72,14 +72,14 @@ class ConflictFinder {
         this.resolver = resolver;
 	}
     
-    public Conflict findConflict(String id)
+    public Conflict findConflict(ReferenceInfo<Conflict> ref)
     {
         Date dummyLastChanged = new Date();
         ConflictImpl dummyConflict;
         try {
             //
             Date date = new Date();
-            dummyConflict = new ConflictImpl(id, date, dummyLastChanged);
+            dummyConflict = new ConflictImpl(ref.getId(), date, dummyLastChanged);
         } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -93,7 +93,7 @@ class ConflictFinder {
         }
         else
         {
-            final Conflict conflict = set.get(id);
+            final Conflict conflict = set.get(ref);
             return conflict;
         }
     }
@@ -574,12 +574,13 @@ class ConflictFinder {
         Collection<Allocatable> removedAllocatables = bindingsResult.removedAllocatables;
 		for (UpdateResult.Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
 		{
-		    String nextId = change.getCurrentId();
-			RaplaObject current = currentUpdateResult.getLastKnown(nextId);
-			if ( current.getTypeClass() == Allocatable.class)
+		    ReferenceInfo nextId = change.getReference();
+			if ( nextId.getType() == Allocatable.class)
 			{
-				Allocatable old = (Allocatable) currentUpdateResult.getLastEntryBeforeUpdate(nextId);
-				Allocatable newAlloc = (Allocatable) current;
+                final ReferenceInfo<Allocatable> allocatableId = (ReferenceInfo<Allocatable>) nextId;
+                Allocatable current = currentUpdateResult.getLastKnown(allocatableId);
+                Allocatable old = currentUpdateResult.getLastEntryBeforeUpdate(allocatableId);
+				Allocatable newAlloc = current;
 				if ( old != null && newAlloc != null )
 				{
 					if (isConflictIgnored(old) != isConflictIgnored(newAlloc))
@@ -656,11 +657,11 @@ class ConflictFinder {
     	Map<Allocatable, Set<String>> appointmentUpdateMap = new LinkedHashMap<Allocatable, Set<String>>();
     	for (Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
     	{
-    	    String id = change.getCurrentId();
-            final Entity obj = currentUpdateResult.getLastKnown(id);//.getUnresolvedEntity();
-            if ( obj.getTypeClass().equals( Reservation.class))
+    	    ReferenceInfo ref = change.getReference();
+
+            if ( ref.getType() == Reservation.class)
     		{
-    			Reservation reservation = (Reservation) obj;
+                Reservation reservation = currentUpdateResult.getLastKnown( (ReferenceInfo<Reservation>) ref);
     			for (Appointment app: reservation.getAppointments())
     			{
 	    			for ( Allocatable alloc:reservation.getAllocatablesFor( app))

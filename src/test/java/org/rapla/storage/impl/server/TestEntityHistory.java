@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Date;
 
@@ -24,30 +25,33 @@ public class TestEntityHistory
     {
         final Date timestamp = new Date();
         // insert 10 entries
-        final String key = "testId";
+        ReferenceInfo<Allocatable> ref = new ReferenceInfo<Allocatable>("testId", Allocatable.class);
+
         for(int i = 0; i < 10; i++)
         {
-            entityHistory.addHistoryEntry(key, "test" + i, Allocatable.class, new Date(timestamp.getTime() + i), false);
+            String json = null;
+            entityHistory.addHistoryEntry(ref, json, new Date(timestamp.getTime() + i), false);
         }
         // remove unneeded for next ms. So no one should be removed
         entityHistory.removeUnneeded(new Date(timestamp.getTime() + 1));
-        Assert.assertEquals("" + entityHistory.getHistoryList(key), 10, entityHistory.getHistoryList(key).size());
+        Assert.assertEquals("" + entityHistory.getHistoryList(ref), 10, entityHistory.getHistoryList(ref).size());
         // now delete all 6 ms in future. as we expect to have one left before, the size must be 5
         entityHistory.removeUnneeded(new Date(timestamp.getTime() + 6));
-        Assert.assertEquals("" + entityHistory.getHistoryList(key), 5, entityHistory.getHistoryList(key).size());
+        Assert.assertEquals("" + entityHistory.getHistoryList(ref), 5, entityHistory.getHistoryList(ref).size());
         // delete all 
         entityHistory.removeUnneeded(new Date(timestamp.getTime() + 50));
-        Assert.assertEquals(""+entityHistory.getHistoryList(key), 1, entityHistory.getHistoryList(key).size());
+        Assert.assertEquals(""+entityHistory.getHistoryList(ref), 1, entityHistory.getHistoryList(ref).size());
     }
     
     @Test
     public void duplicateInsert()
     {
         final Date timestamp = new Date();
-        final String key = "test";
-        entityHistory.addHistoryEntry(key, "test", Allocatable.class, timestamp, false);
-        Assert.assertEquals(entityHistory.getHistoryList(key)+"", 1, entityHistory.getHistoryList(key).size());
-        entityHistory.addHistoryEntry(key, "test", Allocatable.class, timestamp, false);
-        Assert.assertEquals(entityHistory.getHistoryList(key)+"", 1, entityHistory.getHistoryList(key).size());
+        ReferenceInfo<Allocatable> ref = new ReferenceInfo<Allocatable>("test" , Allocatable.class);
+        String json = null;
+        entityHistory.addHistoryEntry(ref,json, timestamp, false);
+        Assert.assertEquals(entityHistory.getHistoryList(ref)+"", 1, entityHistory.getHistoryList(ref).size());
+        entityHistory.addHistoryEntry(ref,json, timestamp, false);
+        Assert.assertEquals(entityHistory.getHistoryList(ref)+"", 1, entityHistory.getHistoryList(ref).size());
     }
 }

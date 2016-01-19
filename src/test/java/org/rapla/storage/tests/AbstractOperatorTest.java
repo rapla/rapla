@@ -26,6 +26,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
@@ -192,10 +193,10 @@ public abstract class AbstractOperatorTest  {
 		Date startAll = startDate;
 		RaplaFacade facade = getFacade();
 		final User user = facade.getUser("homer");
-		final String resourceId;
+		final ReferenceInfo<Allocatable> resourceId;
 		{// resources
             Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
-			resourceId = resource.getId();
+			resourceId = resource.getReference();
 			final String newValue = "New resource";
 			resource.getClassification().setValue("name", newValue);
 			facade.storeAndRemove(new Entity[]{resource}, Entity.ENTITY_ARRAY, user);
@@ -211,10 +212,10 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertTrue(updates.getIds(UpdateResult.Change.class).isEmpty());
 			Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).isEmpty());
 		}
-		final String reservationId;
+		final ReferenceInfo<Reservation> reservationId;
 		{// Reservation
 			Reservation reservation = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
-			reservationId = reservation.getId();
+			reservationId = reservation.getReference();
 			final String newValue = "New resource";
 			reservation.getClassification().setValue("name", newValue);
 			Date appStartDate = new Date();
@@ -233,10 +234,10 @@ public abstract class AbstractOperatorTest  {
             Assert.assertTrue(updates.getIds(UpdateResult.Change.class).isEmpty());
 			Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).isEmpty());
 		}
-		final String userId;
+		final ReferenceInfo<User> userId;
 		{// user
 			User newUser = facade.newUser();
-			userId = newUser.getId();
+			userId = newUser.getReference();
 			final String newValue = "New resource";
 			newUser.setName(newValue);
 			newUser.setUsername("newUserName");
@@ -253,10 +254,10 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertTrue(updates.getIds(UpdateResult.Change.class).isEmpty());
 			Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).isEmpty());
 		}
-		final String categoryId;
+		final ReferenceInfo<Category> categoryId;
 		{// Category
 			Category category = facade.newCategory();
-			categoryId = category.getId();
+			categoryId = category.getReference();
 			category.setKey("testKey");
 			final String newValue = "New resource";
 			Category superCategory = facade.edit(facade.getSuperCategory());
@@ -267,7 +268,7 @@ public abstract class AbstractOperatorTest  {
             startDate = updates.getUntil();
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
-			Collection<UpdateResult.HistoryEntry> historyEntries = updates.getUnresolvedHistoryEntry(superCategory.getId());
+			Collection<UpdateResult.HistoryEntry> historyEntries = updates.getUnresolvedHistoryEntry(superCategory.getReference());
 			Assert.assertEquals(1, historyEntries.size());
 			final Entity unresolvedEntity = historyEntries.iterator().next().getUnresolvedEntity();
 			Assert.assertTrue(unresolvedEntity instanceof Category);
@@ -290,7 +291,7 @@ public abstract class AbstractOperatorTest  {
 		}
 		// Start changing
 		{// resource
-			final Allocatable resource = facade.edit(facade.getOperator().tryResolve(resourceId, Allocatable.class));
+			final Allocatable resource = facade.edit(facade.tryResolve(resourceId));
 			final String newValue = "changedValue";
 			final String attributeId = "name";
 			resource.getClassification().setValue(attributeId, newValue);
@@ -301,7 +302,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Remove.class).size());
-			final String changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
+			final ReferenceInfo changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
 			final Collection<UpdateResult.HistoryEntry> unresolvedHistoryEntry = updates.getUnresolvedHistoryEntry(changedId);
 			Assert.assertEquals(1, unresolvedHistoryEntry.size());
 			final Entity unresolvedEntity = updates.getLastKnown(changedId);//.getUnresolvedEntity();
@@ -310,7 +311,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(newValue, unresolvedAllocatable.getClassification().getValue(attributeId));
 		}
 		{// Reservation
-			final Reservation reservation = facade.edit(facade.getOperator().tryResolve(reservationId, Reservation.class));
+			final Reservation reservation = facade.edit(facade.tryResolve(reservationId));
 			final String newValue = "changedValue";
 			final String attributeId = "name";
 			reservation.getClassification().setValue(attributeId, newValue);
@@ -323,7 +324,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Remove.class).size());
-			final String changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
+			final ReferenceInfo changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
 			final Collection<UpdateResult.HistoryEntry> unresolvedHistoryEntry = updates.getUnresolvedHistoryEntry(changedId);
 			Assert.assertEquals(1, unresolvedHistoryEntry.size());
 			final Entity unresolvedEntity = updates.getLastKnown(changedId);//.getUnresolvedEntity();
@@ -333,7 +334,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(newAppStart, unresolvedReservation.getAppointments()[0].getStart());
 		}
 		{// User
-			final User editUser = facade.edit(facade.getOperator().tryResolve(userId, User.class));
+			final User editUser = facade.edit(facade.getOperator().tryResolve(userId));
 			final String newValue = "changedValue";
 			editUser.setName(newValue);
 			facade.storeAndRemove(new Entity[]{editUser}, Entity.ENTITY_ARRAY, user);
@@ -343,7 +344,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Remove.class).size());
-			final String changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
+			final ReferenceInfo changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
 			final Collection<UpdateResult.HistoryEntry> unresolvedHistoryEntry = updates.getUnresolvedHistoryEntry(changedId);
 			Assert.assertEquals(1, unresolvedHistoryEntry.size());
 			final Entity unresolvedEntity = updates.getLastKnown(changedId);//.getUnresolvedEntity();
@@ -352,7 +353,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(newValue, unresolvedUser.getName());
 		}
 		{// Category
-			final Category category = facade.edit(facade.getOperator().tryResolve(categoryId, Category.class));
+			final Category category = facade.edit(facade.resolve(categoryId));
 			final String newValue = "changedValue";
 			category.setKey(newValue);
 			facade.storeAndRemove(new Entity[]{category}, Entity.ENTITY_ARRAY, user);
@@ -362,7 +363,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Remove.class).size());
-			final String changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
+			final ReferenceInfo changedId = updates.getIds(UpdateResult.Change.class).iterator().next();
 			final Collection<UpdateResult.HistoryEntry> unresolvedHistoryEntry = updates.getUnresolvedHistoryEntry(changedId);
 			Assert.assertEquals(2, unresolvedHistoryEntry.size());
 			final Entity unresolvedEntity = updates.getLastKnown(changedId);//.getUnresolvedEntity();
@@ -405,7 +406,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).contains(userId));
 		}
 		{// Category
-			final Category entity = facade.getOperator().resolve(resourceId, Category.class);
+			final Category entity = facade.resolve(categoryId);
 			final Category superCategory = facade.edit(facade.getSuperCategory());
 			superCategory.removeCategory(entity);
 			facade.storeAndRemove(new Entity[]{superCategory}, Entity.ENTITY_ARRAY, user);
@@ -415,7 +416,7 @@ public abstract class AbstractOperatorTest  {
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
 			Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
 			Assert.assertEquals(0, updates.getIds(UpdateResult.Remove.class).size());
-			Assert.assertFalse(((Category)updates.getLastKnown(superCategory.getId())).hasCategory(entity));
+			Assert.assertFalse(((Category)updates.getLastKnown(superCategory.getReference())).hasCategory(entity));
 		}
 		final UpdateResult updates = operator.getUpdateResult(startAll);
 		Assert.assertTrue(updates.getIds(UpdateResult.Add.class).isEmpty());

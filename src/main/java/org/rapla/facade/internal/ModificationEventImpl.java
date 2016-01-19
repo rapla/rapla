@@ -37,15 +37,15 @@ public class ModificationEventImpl implements ModificationEvent
             modified.add(typeClass);
             if(op instanceof UpdateResult.Remove)
             {
-                removedReferences.add(new ReferenceInfo(op.getCurrentId(), typeClass));
+                removedReferences.add(op.getReference());
             }
             else if(op instanceof UpdateResult.Change)
             {
-                changed.add(updateResult.getLastKnown(op.getCurrentId()));
+                changed.add(updateResult.getLastKnown(op.getReference()));
             }
             else if(op instanceof UpdateResult.Add)
             {
-                added.add(updateResult.getLastKnown(op.getCurrentId()));
+                added.add(updateResult.getLastKnown(op.getReference()));
             }
         }
     }
