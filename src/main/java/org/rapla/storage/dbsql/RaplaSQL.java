@@ -538,9 +538,9 @@ class LockStorage extends AbstractTableStorage
     {
         try(final PreparedStatement deleteStmt = con.prepareStatement(cleanupSql))
         {
-            deleteStmt.addBatch();
-            final int[] executeBatch = deleteStmt.executeBatch();
-            logger.debug("deleted logs: "+Arrays.toString(executeBatch));
+            deleteStmt.setQueryTimeout(60);
+            final int executeBatch = deleteStmt.executeUpdate();
+            logger.debug("deleted logs: " + executeBatch);
         }
         catch(Exception e)
         {
@@ -637,8 +637,6 @@ class LockStorage extends AbstractTableStorage
                 final PreparedStatement updateStatement = con.prepareStatement(activateSql);
                 final PreparedStatement containsStmt = con.prepareStatement("SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID = ?"))
         {
-            boolean executeUpdate = false;
-            boolean executeInsert = false;
             final Date databaseTimestamp = getDatabaseTimestamp();
             for (String id : ids)
             {
@@ -649,33 +647,22 @@ class LockStorage extends AbstractTableStorage
                 final ResultSet executeQuery = containsStmt.executeQuery();
                 if (executeQuery != null && executeQuery.next() && executeQuery.getInt(1) > 0)
                 {//update
-                    executeUpdate = true;
+                    updateStatement.setQueryTimeout(10);
                     updateStatement.setTimestamp(1, validUntil);
                     updateStatement.setString(2, id);
-                    updateStatement.addBatch();
-                }
-                else
-                {// insert
-                    executeInsert = true;
-                    insertStmt.setString(1, id);
-                    insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
-                    insertStmt.setTimestamp(3, validUntil);
-                    insertStmt.addBatch();
-                }
-            }
-            if (executeInsert)
-            {
-                insertStmt.executeBatch();
-            }
-            if (executeUpdate)
-            {
-                final int[] updates = updateStatement.executeBatch();
-                for (int numColumnsChanged : updates)
-                {
-                    if(numColumnsChanged != 1)
+                    int columsUpdated = updateStatement.executeUpdate();
+                    if(columsUpdated != 1)
                     {
                         throw new IllegalStateException();
                     }
+                }
+                else
+                {// insert
+                    insertStmt.setQueryTimeout(10);
+                    insertStmt.setString(1, id);
+                    insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
+                    insertStmt.setTimestamp(3, validUntil);
+                    insertStmt.executeUpdate();
                 }
             }
             if (con.getMetaData().supportsTransactions())
