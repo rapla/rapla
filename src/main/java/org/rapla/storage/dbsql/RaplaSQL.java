@@ -12,8 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -70,30 +93,8 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -616,24 +617,15 @@ class LockStorage extends AbstractTableStorage
             final Date databaseTimestamp = getDatabaseTimestamp();
             for (String id : ids)
             {
-                final long validOffset;
-                if(validMilliseconds == null || validMilliseconds.longValue() <= 0)
-                {
-                    final long millisecondsPerMinute = DateTools.MILLISECONDS_PER_MINUTE;
-                    validOffset = id.startsWith(GLOBAL_LOCK) ? millisecondsPerMinute * 5 : millisecondsPerMinute;
-                }
-                else
-                {
-                    validOffset = validMilliseconds;
-                }
-                final Date validUntil = new Date(databaseTimestamp.getTime() + validOffset);
+                final long validOffset = calcValidOffset(validMilliseconds, id);
+                final java.sql.Timestamp validUntil = new java.sql.Timestamp(databaseTimestamp.getTime() + validOffset);
                 // for each id first check, if a lock was already requested once. if so just update otherwise insert new
                 containsStmt.setString(1, id);
                 final ResultSet executeQuery = containsStmt.executeQuery();
                 if (executeQuery != null && executeQuery.next() && executeQuery.getInt(1) > 0)
                 {//update
                     executeUpdate = true;
-                    setTimestamp(updateStatement, 1, validUntil);
+                    updateStatement.setTimestamp(1, validUntil);
                     updateStatement.setString(2, id);
                     updateStatement.addBatch();
                 }
@@ -642,7 +634,7 @@ class LockStorage extends AbstractTableStorage
                     executeInsert = true;
                     insertStmt.setString(1, id);
                     insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
-                    setTimestamp(insertStmt, 3, validUntil);
+                    insertStmt.setTimestamp(3, validUntil);
                     insertStmt.addBatch();
                 }
             }
@@ -692,6 +684,21 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
+    private long calcValidOffset(Long validMilliseconds, String id)
+    {
+        final long validOffset;
+        if(validMilliseconds == null || validMilliseconds.longValue() <= 0)
+        {
+            final long millisecondsPerMinute = DateTools.MILLISECONDS_PER_MINUTE;
+            validOffset = id.startsWith(GLOBAL_LOCK) ? millisecondsPerMinute * 5 : millisecondsPerMinute;
+        }
+        else
+        {
+            validOffset = validMilliseconds;
+        }
+        return validOffset;
+    }
+
     public Date getGlobalLock() throws RaplaException
     {
         final Date lastLocked = readLockTimestamp();
@@ -704,6 +711,11 @@ class LockStorage extends AbstractTableStorage
         try(final PreparedStatement stmt = con.prepareStatement(insertSql))
         {
             stmt.setString(1, lockId);
+            final long validOffset = calcValidOffset(null, lockId);
+            final Date connectionTimestamp = getConnectionTimestamp();
+            final java.sql.Timestamp validDate = new java.sql.Timestamp(connectionTimestamp.getTime() + validOffset);
+            stmt.setTimestamp(2, validDate);
+            stmt.setTimestamp(3, validDate);
             stmt.executeUpdate();
             final Date newLockTimestamp = readLockTimestamp();
             if(!newLockTimestamp.after(lastLocked))
@@ -2521,7 +2533,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         return 1;
     }
     
-    public Collection<String> update(Date lastUpdated) throws SQLException
+    public Collection<ReferenceInfo> update(Date lastUpdated) throws SQLException
     {
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
@@ -2531,12 +2543,14 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             {
                 return Collections.emptyList();
             }
-            Collection<String> ids = new HashSet<String>();
+            Collection<ReferenceInfo>ids = new HashSet<ReferenceInfo>();
             while(result.next())
             {
                 load(result);
                 final String id = result.getString(1);
-                ids.add(id);
+                final String raplaTypeLocalName = result.getString(2);
+                final Class<? extends Entity> typeClass = RaplaType.find(raplaTypeLocalName);
+                ids.add(new ReferenceInfo(id, typeClass));
             }
             return ids;
         }
