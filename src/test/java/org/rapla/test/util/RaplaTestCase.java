@@ -22,6 +22,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -105,7 +106,7 @@ public abstract class RaplaTestCase
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
-        CommandScheduler scheduler = new DefaultScheduler(logger);
+        final DefaultScheduler scheduler = new DefaultScheduler(logger);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
 
         Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
@@ -120,6 +121,14 @@ public abstract class RaplaTestCase
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
         operator.setFileIO(fileIO);
+        operator.addDisconnectListener(new Disposable()
+        {
+            @Override
+            public void dispose()
+            {
+                scheduler.cancel();
+            }
+        });
         operator.connect();
         return facade;
     }
@@ -145,7 +154,7 @@ public abstract class RaplaTestCase
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
-        CommandScheduler scheduler = new DefaultScheduler(logger);
+        final DefaultScheduler scheduler = new DefaultScheduler(logger);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
 
         Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
@@ -170,6 +179,14 @@ public abstract class RaplaTestCase
 
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
+        operator.addDisconnectListener(new Disposable()
+        {
+            @Override
+            public void dispose()
+            {
+                scheduler.cancel();
+            }
+        });
         operator.connect();
         return facade;
     }

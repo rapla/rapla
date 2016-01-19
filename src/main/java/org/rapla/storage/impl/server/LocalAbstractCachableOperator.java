@@ -178,10 +178,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private CommandScheduler scheduler;
     private Cancelable cleanConflictsTask;
     private Cancelable refreshTask;
-
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
 
+    private final List<Disposable> disconnectListeners = new ArrayList<Disposable>();
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
@@ -191,6 +191,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.history = new EntityHistory();
 
         calendarModelCache = new CalendarModelCache(this, i18n);
+    }
+    
+    public void addDisconnectListener(Disposable listener)
+    {
+        disconnectListeners.add(listener);
     }
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
@@ -1064,6 +1069,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if ( refreshTask != null)
         {
             refreshTask.cancel();
+        }
+        for (Disposable disconnectListener : this.disconnectListeners)
+        {
+            disconnectListener.dispose();
         }
     }
 
