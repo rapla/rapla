@@ -568,7 +568,7 @@ class LockStorage extends AbstractTableStorage
     
     private void checkGlobalLockThrowException() throws RaplaException
     {
-        try(final PreparedStatement stmt = con.prepareStatement(selectSql))
+        try(final PreparedStatement stmt = con.prepareStatement(selectSql + " AND ACTIVE = 1"))
         {
             stmt.setString(1, GLOBAL_LOCK);
             final ResultSet result = stmt.executeQuery();
@@ -608,6 +608,31 @@ class LockStorage extends AbstractTableStorage
             return;
         }
         checkGlobalLockThrowException();
+        activateLocks(ids, validMilliseconds);
+        try
+        {
+            checkGlobalLockThrowException();
+        }
+        catch(RaplaException e)
+        {
+            removeLocks(ids, null);
+            try
+            {
+                if(con.getMetaData().supportsTransactions())
+                {
+                    con.commit();
+                }
+            }
+            catch(SQLException re)
+            {
+                logger.error("Could not commit remove of locks (" + ids + ") caused by: " + re.getMessage(), re);
+            }
+            throw e;
+        }
+    }
+
+    private void activateLocks(Collection<String> ids, Long validMilliseconds)
+    {
         try (final PreparedStatement insertStmt = con.prepareStatement(insertSql);
                 final PreparedStatement updateStatement = con.prepareStatement(activateSql);
                 final PreparedStatement containsStmt = con.prepareStatement("SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID = ?"))
@@ -662,26 +687,6 @@ class LockStorage extends AbstractTableStorage
         {
             throw new RaplaException("Could not get Locks", e);
         }
-        try
-        {
-            checkGlobalLockThrowException();
-        }
-        catch(RaplaException e)
-        {
-            removeLocks(ids, null);
-            try
-            {
-                if(con.getMetaData().supportsTransactions())
-                {
-                    con.commit();
-                }
-            }
-            catch(SQLException re)
-            {
-                logger.error("Could not commit remove of locks (" + ids + ") caused by: " + re.getMessage(), re);
-            }
-            throw e;
-        }
     }
 
     private long calcValidOffset(Long validMilliseconds, String id)
@@ -706,17 +711,11 @@ class LockStorage extends AbstractTableStorage
         return lockTimestamp;
     }
 
-    private Date requestLock(String lockId, Date lastLocked)
+    private Date requestLock(String lockId, Date lastLocked) throws RaplaException
     {
-        try(final PreparedStatement stmt = con.prepareStatement(insertSql))
+        try
         {
-            stmt.setString(1, lockId);
-            final long validOffset = calcValidOffset(null, lockId);
-            final Date connectionTimestamp = getConnectionTimestamp();
-            final java.sql.Timestamp validDate = new java.sql.Timestamp(connectionTimestamp.getTime() + validOffset);
-            stmt.setTimestamp(2, validDate);
-            stmt.setTimestamp(3, validDate);
-            stmt.executeUpdate();
+            activateLocks(Collections.singleton(lockId), null);
             final Date newLockTimestamp = readLockTimestamp();
             if(!newLockTimestamp.after(lastLocked))
             {
