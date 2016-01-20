@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
-import org.apache.http.conn.OperatedClientConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -87,7 +86,6 @@ public class SQLOperatorTest extends AbstractOperatorTest
         String xmlFile = "testdefault.xml";
         facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
         CachableStorageOperator operator = getOperator();
-        operator.connect();
         ((DBOperator) operator).removeAll();
         operator.disconnect();
         operator.connect();
@@ -96,7 +94,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     @After
     public void shutDown()
     {
-        facade.getOperator().disconnect();
+        RaplaTestCase.dispose(facade);
     }
     
     @Test

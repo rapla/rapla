@@ -103,6 +103,7 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -181,7 +182,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
 
-    private final List<Disposable> disconnectListeners = new ArrayList<Disposable>();
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
@@ -192,11 +192,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         calendarModelCache = new CalendarModelCache(this, i18n);
     }
-    
-    public void addDisconnectListener(Disposable listener)
+
+    public CommandScheduler getScheduler()
     {
-        disconnectListeners.add(listener);
+        return  scheduler;
     }
+
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -1060,8 +1061,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
+    @Override
     public void disconnect()
     {
+        super.disconnect();
         if ( cleanConflictsTask != null)
         {
             cleanConflictsTask.cancel();
@@ -1069,10 +1072,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if ( refreshTask != null)
         {
             refreshTask.cancel();
-        }
-        for (Disposable disconnectListener : this.disconnectListeners)
-        {
-            disconnectListener.dispose();
         }
     }
 

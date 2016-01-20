@@ -34,6 +34,7 @@ import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.MyCustomConnector;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
@@ -44,6 +45,7 @@ import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.dbrm.RemoteStorage_JavaJsonProxy;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.xml.sax.InputSource;
 
 import javax.inject.Provider;
@@ -121,16 +123,24 @@ public abstract class RaplaTestCase
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
         operator.setFileIO(fileIO);
-        operator.addDisconnectListener(new Disposable()
-        {
-            @Override
-            public void dispose()
-            {
-                scheduler.cancel();
-            }
-        });
         operator.connect();
         return facade;
+    }
+
+    static public  void dispose(RaplaFacade facade)
+    {
+        final StorageOperator operator = facade.getOperator();
+        final DefaultScheduler scheduler;
+        if ( operator instanceof LocalAbstractCachableOperator)
+        {
+            scheduler = (DefaultScheduler)((LocalAbstractCachableOperator) operator).getScheduler();
+            scheduler.dispose();
+        }
+        else if ( operator instanceof RemoteOperator)
+        {
+            scheduler = (DefaultScheduler)((RemoteOperator) operator).getScheduler();
+            scheduler.dispose();
+        }
     }
 
     static class MyImportExportManagerProvider implements Provider<ImportExportManager>
@@ -179,14 +189,6 @@ public abstract class RaplaTestCase
 
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
-        operator.addDisconnectListener(new Disposable()
-        {
-            @Override
-            public void dispose()
-            {
-                scheduler.cancel();
-            }
-        });
         operator.connect();
         return facade;
     }

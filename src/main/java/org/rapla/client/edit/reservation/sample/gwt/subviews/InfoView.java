@@ -84,7 +84,7 @@ public class InfoView implements ReservationViewPart
             final Collection<DropDownItem> values = new ArrayList<DropDownInputField.DropDownItem>(dynamicTypes.size());
             for (final DynamicType dynamicType : dynamicTypes)
             {
-                boolean selected = dynamicType.getId().equals(classification.getType().getId());
+                boolean selected = dynamicType.equals(classification.getType());
                 values.add(new DropDownItem(dynamicType.getName(locale), dynamicType.getId(), selected));
                 idToDynamicType.put(dynamicType.getId(), dynamicType);
             }
