@@ -1811,6 +1811,8 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                 {
                     preferencePatch.putPrivate(role, entityAsString);
                 }
+                final Date lastChanged = new Date(result.getTimestamp( 5).getTime());
+                preferencePatch.setLastChanged(lastChanged);
             }
         }
         return patches;
