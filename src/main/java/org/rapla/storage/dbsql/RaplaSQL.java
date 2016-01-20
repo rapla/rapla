@@ -1724,7 +1724,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType> {
         setString(stmt,2, type.getKey());
         RaplaXMLWriter typeWriter = context.lookup( PreferenceWriter.WRITERMAP ).get(DynamicType.class);
         setText(stmt,3,  getXML( typeWriter,type) );
-        setDate(stmt, 4,type.getLastChanged() );
+        setTimestamp(stmt, 4, type.getLastChanged() );
         setTimestamp(stmt, 5, null);
 //    	setDate(stmt, 5,timestamp.getLastChanged() );
 //    	setId( stmt,6,timestamp.getLastChangedBy() );

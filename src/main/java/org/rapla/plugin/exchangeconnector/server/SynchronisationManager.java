@@ -44,6 +44,8 @@ import org.rapla.storage.UpdateResult;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -177,7 +179,13 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
             catch (Exception ex)
             {
-                logger.error(ex.getMessage(), ex);
+                logger.warn("Could not synchronize with exchange: "+ex.getMessage());
+                if(logger.isDebugEnabled())
+                {
+                    final StringWriter sw = new StringWriter();
+                    ex.printStackTrace(new PrintWriter(sw));
+                    logger.debug(sw.toString());
+                }
             }
         }
     }
