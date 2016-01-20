@@ -3352,19 +3352,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             else if (type == Preferences.class)
             {
-                newEntity = resolve(update);
+                newEntity = tryResolve(update);
                 oldEntity = newEntity;
             }
             else
             {
                 oldEntity = history.get(update, since);
-                newEntity = resolve(update);
+                newEntity = tryResolve(update);
             }
-
-            updatedEntities.add(newEntity);
-            if (oldEntity != null)
+            // if newEntity is null, then it must be deleted and witin the to removed entities
+            if(newEntity != null)
             {
-                oldEntities.put(update, oldEntity);
+                updatedEntities.add(newEntity);
+                if (oldEntity != null)
+                {
+                    oldEntities.put(update, oldEntity);
+                }
             }
         }
         Collection<ReferenceInfo> toRemove = getEntities(user, since, true);

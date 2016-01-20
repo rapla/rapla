@@ -207,7 +207,8 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
             stmt.setString(1, id);
             stmt.execute();
             final ResultSet resultSet = stmt.getResultSet();
-            return resultSet != null && resultSet.next() && resultSet.getInt(1) == 1;
+            final boolean has = resultSet != null && resultSet.next() && resultSet.getInt(1) == 1;
+            return has;
         }
         catch(Exception e)
         {

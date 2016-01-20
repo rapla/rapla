@@ -112,7 +112,7 @@ public class NotificationService
                 }
                 catch(Throwable t)
                 {
-                    NotificationService.this.logger.debug("Could not send mail: "+t.getMessage());
+                    NotificationService.this.logger.warn("Could not send mail: "+t.getMessage());
                 }
                 finally
                 {

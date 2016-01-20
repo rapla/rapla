@@ -50,15 +50,19 @@ public class AllocationChangeFinder
         if ( updateResult == null)
             return;
         for (UpdateResult.Add addOp: updateResult.getOperations( UpdateResult.Add.class )) {
-            added(  updateResult.getLastKnown(addOp.getReference()), user );
+            final ReferenceInfo reference = addOp.getReference();
+            final Entity lastKnown = updateResult.getLastKnown(reference);
+            added(  lastKnown, user );
         }
         for (UpdateResult.Remove removeOp: updateResult.getOperations( UpdateResult.Remove.class )) {
-            final Entity removedEvent = updateResult.getLastEntryBeforeUpdate(removeOp.getReference());
-            removed( removedEvent, user );
+            final ReferenceInfo reference = removeOp.getReference();
+            final Entity removedEvent = updateResult.getLastEntryBeforeUpdate(reference);
+            removed( reference, removedEvent, user );
         }
         for (UpdateResult.Change changeOp :updateResult.getOperations( UpdateResult.Change.class )) {
-            Entity old =  updateResult.getLastEntryBeforeUpdate(changeOp.getReference());
-            Entity newObj = updateResult.getLastKnown(changeOp.getReference());
+            final ReferenceInfo reference = changeOp.getReference();
+            Entity old =  updateResult.getLastEntryBeforeUpdate(reference);
+            Entity newObj = updateResult.getLastKnown(reference);
             changed(old , newObj, user );
         }
     }
@@ -85,8 +89,8 @@ public class AllocationChangeFinder
         }
     }
 
-    private void removed(Entity removedEntity, User user) {
-        if ( removedEntity.getTypeClass() == Reservation.class ) {
+    private void removed(ReferenceInfo reference, Entity removedEntity, User user) {
+        if ( reference.getType() == Reservation.class ) {
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Reservation removed: " + removedEntity.getId());
             Reservation oldRes = (Reservation) removedEntity;
