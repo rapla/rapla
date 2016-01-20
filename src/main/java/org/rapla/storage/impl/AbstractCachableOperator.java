@@ -41,6 +41,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -727,5 +728,9 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	{
 		final FunctionFactory functionFactory = functionFactoryMap.get(functionName);
 		return functionFactory;
+	}
+
+	public void disconnect()
+	{
 	}
 }

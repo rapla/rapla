@@ -138,6 +138,11 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
     User user;
 
+    public CommandScheduler getScheduler()
+    {
+        return  commandQueue;
+    }
+
     synchronized public User connect(ConnectInfo connectInfo) throws RaplaException {
        
         if (isConnected())
@@ -487,8 +492,10 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 	    }		
 
     }
-   
-    synchronized public void disconnect() throws RaplaException { 
+
+    @Override
+    synchronized public void disconnect() throws RaplaException {
+        super.disconnect();
     	connectionInfo.setAccessToken( null);
     	this.connectInfo = null;
     	connectionInfo.setReconnectInfo( null );
