@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
+import org.hsqldb.jdbc.JDBCDataSource;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -73,24 +75,26 @@ public class SQLOperatorTest extends AbstractOperatorTest
 
     RaplaFacade facade;
     Logger logger;
-    org.hsqldb.jdbc.JDBCDataSource datasource;
+
     
     @Before
     public void setUp() throws SQLException
     {
         logger = RaplaTestCase.initLoger();
-        datasource = new org.hsqldb.jdbc.JDBCDataSource();
+        org.hsqldb.jdbc.JDBCDataSource datasource = createDatasource();
+        String xmlFile = "testdefault.xml";
+        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
+    }
+
+    @NotNull public JDBCDataSource createDatasource()
+    {
+        JDBCDataSource datasource = new JDBCDataSource();
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
-        String xmlFile = "testdefault.xml";
-        facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
-        CachableStorageOperator operator = getOperator();
-        ((DBOperator) operator).removeAll();
-        operator.disconnect();
-        operator.connect();
+        return datasource;
     }
-    
+
     @After
     public void shutDown()
     {
@@ -265,10 +269,19 @@ public class SQLOperatorTest extends AbstractOperatorTest
         Date lastUpdated = new Date();
         {// create second writeFacade
             String reservationId = null;
+            ReferenceInfo<Allocatable> resourceId = null;
             String xmlFile = null;
+            org.hsqldb.jdbc.JDBCDataSource datasource = createDatasource();
             RaplaFacade writeFacade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
             final User user = writeFacade.getUsers()[0];
             { // Reservation test with an attribute, appointment and permission
+
+                final Allocatable newResource = writeFacade.newAllocatable(
+                        writeFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
+                newResource.getClassification().setValue("name","Test Room");
+                resourceId =newResource.getReference();
+                writeFacade.store( newResource);
+
                 final Reservation newReservation = writeFacade.newReservation(writeFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
                 reservationId = newReservation.getId();
                 Date endDate = new Date();
@@ -301,10 +314,13 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(0, updateResult.getOperations(Change.class).size());
                 Assert.assertEquals(0, updateResult.getOperations(Remove.class).size());
                 final Collection<Add> addObjects = updateResult.getOperations(Add.class);
-                Assert.assertEquals(1, addObjects.size());
-                final Entity first = updateResult.getLastKnown(addObjects.iterator().next().getReference());
-                Assert.assertTrue(first instanceof Reservation);
-                Reservation newReserv = (Reservation) first;
+                Assert.assertEquals(2, addObjects.size());
+                final Iterator<Add> iterator = addObjects.iterator();
+                final Entity first = updateResult.getLastKnown(iterator.next().getReference());
+                final Entity second = updateResult.getLastKnown(iterator.next().getReference());
+                Assert.assertTrue(first instanceof Allocatable);
+                Assert.assertTrue(second instanceof Reservation);
+                Reservation newReserv = (Reservation) second;
                 final Classification classification2 = newReserv.getClassification();
                 final Attribute attribute2 = classification2.getAttributes()[0];
                 final Object value2 = classification2.getValue(attribute2);
@@ -467,8 +483,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(existingReservaton.getId(), next.getId());
             }
             {// Delete of an resource
-                final Allocatable[] allocatables = writeFacade.getAllocatables();
-                final Allocatable allocatable = allocatables[0];
+                final Allocatable allocatable = writeFacade.tryResolve( resourceId);
                 writeFacade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{allocatable}, user);
                 readFacade.refresh();
 //                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
@@ -494,8 +509,10 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(newUser.getId(), next.getId());
             }
             {// Delete of a category
-                final Category newCategory = writeFacade.edit(writeFacade.getOperator().tryResolve(categoryId, Category.class));
-                writeFacade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{newCategory}, user);
+                final Category category = writeFacade.getOperator().tryResolve(categoryId, Category.class);
+                final Category parentCategory = writeFacade.edit(category.getParent());
+                parentCategory.removeCategory(category);
+                writeFacade.storeAndRemove(new Entity[]{parentCategory},Entity.ENTITY_ARRAY, user);
                 readFacade.refresh();
 //                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
 //                Assert.assertTrue(tryAcquire);
@@ -504,7 +521,11 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Collection<Remove> removed = updateResult.getOperations(Remove.class);
                 Assert.assertEquals(1, removed.size());
                 final ReferenceInfo next = removed.iterator().next().getReference();
-                Assert.assertEquals(newCategory.getId(), next.getId());
+                Assert.assertEquals(category.getId(), next.getId());
+                final Collection<Change> changed = updateResult.getOperations(Change.class);
+                Assert.assertEquals(1, changed.size());
+                final ReferenceInfo parent = changed.iterator().next().getReference();
+                Assert.assertEquals(parentCategory.getId(), parent.getId());
             }
         }
     }
@@ -571,10 +592,10 @@ public class SQLOperatorTest extends AbstractOperatorTest
      * Test update of the changes table 
      */
     @Test
-    public void updateChanges() throws Exception
+    public void testUpdateChanges() throws Exception
     {
+        final DBOperator operator = (DBOperator) facade.getOperator();
         // create a reading instance for the new table
-        final Connection readConnection = datasource.getConnection();
         Calendar datetimeCal = Calendar.getInstance( TimeZone.getDefault());
         final String select = "SELECT ID, CHANGED_AT, ENTITY_CLASS, TYPE, XML_VALUE, ISDELETE FROM CHANGES WHERE id = ?";
         final User user = facade.getUser("homer");
@@ -585,15 +606,15 @@ public class SQLOperatorTest extends AbstractOperatorTest
             final Attribute attribute = classification.getAttributes()[0];
             classification.setValue(attribute, "newValue");
             facade.storeAndRemove(new Entity[] { newResource }, Entity.ENTITY_ARRAY, user);
-            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            try (final Connection readConnection = operator.createConnection();final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
-                stmt.setString(1, newResource.getId());
-                final ResultSet executeQuery = stmt.executeQuery();
-                Assert.assertTrue(executeQuery.next());
-                final Timestamp lastChangedAt = executeQuery.getTimestamp(2, datetimeCal);
-                Assert.assertEquals(newResource.getLastChanged().getTime(), lastChangedAt.getTime());
-                final String type = executeQuery.getString(4);
-                Assert.assertEquals(RaplaType.getLocalName(newResource), type);
+                    stmt.setString(1, newResource.getId());
+                    final ResultSet executeQuery = stmt.executeQuery();
+                    Assert.assertTrue(executeQuery.next());
+                    final Timestamp lastChangedAt = executeQuery.getTimestamp(2, datetimeCal);
+                    Assert.assertEquals(newResource.getLastChanged().getTime(), lastChangedAt.getTime());
+                    final String type = executeQuery.getString(4);
+                    Assert.assertEquals(RaplaType.getLocalName(newResource), type);
             }
         }
         {// events
@@ -605,7 +626,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             final Attribute attribute = classification.getAttributes()[0];
             classification.setValue(attribute, "newReservation");
             facade.storeAndRemove(new Entity[] { newReservation }, Entity.ENTITY_ARRAY, user);
-            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            try (final Connection readConnection = operator.createConnection();final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
                 stmt.setString(1, newReservation.getId());
                 final ResultSet executeQuery = stmt.executeQuery();
@@ -623,7 +644,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             superCategory.addCategory(newCategory);
             facade.storeAndRemove(new Entity[] { superCategory }, Entity.ENTITY_ARRAY, user);
             // TODO think about other categories...
-            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            try(final Connection readConnection = operator.createConnection();final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
                 stmt.setString(1, newCategory.getId());
                 final ResultSet executeQuery = stmt.executeQuery();
@@ -641,7 +662,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             newUser.setName("newUser");
             newUser.setUsername("new");
             facade.storeAndRemove(new Entity[] { newUser }, Entity.ENTITY_ARRAY, user);
-            try(final PreparedStatement stmt = readConnection.prepareStatement(select))
+            try(final Connection readConnection = operator.createConnection();final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
                 stmt.setString(1, newUser.getId());
                 final ResultSet executeQuery = stmt.executeQuery();

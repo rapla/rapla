@@ -28,6 +28,7 @@ import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
@@ -84,9 +85,7 @@ import java.util.concurrent.locks.Lock;
     DataSource lookup;
 
     private String connectionName;
-    Cancelable cleanupOldLocks;
     Provider<ImportExportManager> importExportManager;
-    CommandScheduler scheduler;
 
     @Inject public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Provider<ImportExportManager> importExportManager, DataSource dataSource,
@@ -94,7 +93,6 @@ import java.util.concurrent.locks.Lock;
     {
         super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
-        this.scheduler = scheduler;
         this.importExportManager = importExportManager;
         //        String backupFile = config.getChild("backup").getValue("");
         //        if (backupFile != null)
@@ -119,15 +117,15 @@ import java.util.concurrent.locks.Lock;
 
     }
 
-    public void scheduleCleanupAndRefresh(final CommandScheduler scheduler)
+    private void scheduleCleanupAndRefresh()
     {
-        final int delay = 15000;
-        cleanupOldLocks = scheduler.schedule(new Command()
+        final int delay = 30000;
+        final int period = 15000;
+
+        scheduleConnectedTasks(new Command()
         {
-            @Override
-            public void execute() throws Exception
+            @Override public void execute() throws Exception
             {
-                final Lock writeLock = writeLock();
                 try (final Connection connection = createConnection())
                 {
                     final RaplaDefaultXMLContext context = createOutputContext(cache);
@@ -139,13 +137,8 @@ import java.util.concurrent.locks.Lock;
                 {
                     DBOperator.this.logger.info("Could not release old locks");
                 }
-                finally
-                {
-                    unlock(writeLock);
-                }
-                scheduler.schedule(this, delay);
             }
-        }, delay);
+        }, delay, period);
     }
 
     public boolean supportsActiveMonitoring()
@@ -247,6 +240,7 @@ import java.util.concurrent.locks.Lock;
             {
                 connection.setAutoCommit(true);
             }
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             //connection.createStatement().execute( "ALTER TABLE RESOURCE RENAME TO RAPLA_RESOURCE");
             // 		     connection.commit();
             return connection;
@@ -270,8 +264,7 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    @Override
-    synchronized public void connect() throws RaplaException
+    @Override synchronized public void connect() throws RaplaException
     {
         if (!isConnected())
         {
@@ -280,7 +273,7 @@ import java.util.concurrent.locks.Lock;
             changeStatus(InitStatus.Loaded);
             initIndizes();
             changeStatus(InitStatus.Connected);
-            scheduleCleanupAndRefresh(scheduler);
+            scheduleCleanupAndRefresh();
         }
         /*
         if (connectInfo != null)
@@ -301,19 +294,34 @@ import java.util.concurrent.locks.Lock;
 
     @Override public void refresh() throws RaplaException
     {
-        final Lock writeLock = writeLock();
-        try (Connection c = createConnection())
+
+        // test if the storage is writable
+        // if not we skip until the next update cycle
+        Lock writeLock = lock.writeLock();
+        // dispatch also does an refresh without lock so we get the new data each time a store is called
+        boolean tryLock = writeLock.tryLock();
+        if ( tryLock)
         {
-            refreshWithoutLock(c);
-        }
-        catch (Throwable e)
-        {
-            Date lastUpdated = getLastRefreshed();
-            logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
-        }
-        finally
-        {
-            unlock(writeLock);
+            try
+            {
+                if (!isConnected())
+                {
+                    return;
+                }
+                try (Connection c = createConnection())
+                {
+                    refreshWithoutLock(c);
+                }
+                catch (Throwable e)
+                {
+                    Date lastUpdated = getLastRefreshed();
+                    logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
+                }
+            }
+            finally
+            {
+                unlock(writeLock);
+            }
         }
     }
 
@@ -353,20 +361,6 @@ import java.util.concurrent.locks.Lock;
     synchronized public void disconnect() throws RaplaException
     {
         super.disconnect();
-        changeStatus(InitStatus.Disconnected);
-        if (cleanupOldLocks != null)
-        {
-            cleanupOldLocks.cancel();
-            cleanupOldLocks = null;
-        }
-        if (!isConnected())
-            return;
-        //        backupData();
-        getLogger().info("Disconnecting: " + getConnectionName());
-
-        cache.clearAll();
-        //idTable.setCache( cache );
-        history.clear();
 
         // HSQLDB Special
         if (hsqldb)
@@ -374,6 +368,7 @@ import java.util.concurrent.locks.Lock;
             String sql = "SHUTDOWN COMPACT";
             try
             {
+                getLogger().info("Disconnecting: " + getConnectionName());
                 Connection connection = createConnection();
                 Statement statement = connection.createStatement();
                 statement.execute(sql);
@@ -390,7 +385,7 @@ import java.util.concurrent.locks.Lock;
     {
 
         Connection c = null;
-        Lock writeLock = writeLock();
+        final Lock writeLock = RaplaComponent.lock(this.lock.writeLock(), 10);
         try
         {
             c = createConnection();
@@ -727,9 +722,9 @@ import java.util.concurrent.locks.Lock;
         //fireStorageUpdated(result);
     }
 
-    private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects, Connection connection)
+    private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects,
+            Connection connection)
     {
-        RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
         final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<ReferenceInfo>();
         for (Entity entity : storeObjects)
         {
@@ -739,23 +734,19 @@ import java.util.concurrent.locks.Lock;
         {
             ids.add(referenceInfo);
         }
+        for (PreferencePatch patch : preferencePatches)
+        {
+            ids.add(patch.getReference());
+        }
         final boolean needsGlobalLock = containsDynamicType(ids);
         Date connectionTimestamp = null;
+        // FIXME uncomment locks
+        final Collection<String> lockIds = /*needsGlobalLock ? getLockIds(ids) : */Collections.singletonList(LockStorage.GLOBAL_LOCK);
+        RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
         try
         {
             connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
-            if (needsGlobalLock)
-            {
-                raplaSQLOutput.getGlobalLock(connection, connectionTimestamp);
-            }
-            else
-            {
-                for (PreferencePatch patch : preferencePatches)
-                {
-                    ids.add( patch.getReference());
-                }
-                raplaSQLOutput.getLocks(connection, connectionTimestamp, getLockIds(ids), null);
-            }
+            raplaSQLOutput.getLocks(connection, connectionTimestamp, lockIds, null);
             for (ReferenceInfo id : removeObjects)
             {
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
@@ -799,15 +790,8 @@ import java.util.concurrent.locks.Lock;
         {
             try
             {
-                if (needsGlobalLock)
-                {
-                    raplaSQLOutput.removeGlobalLock(connection, connectionTimestamp);
-                }
-                else
-                {
-                    raplaSQLOutput.removeLocks(connection, getLockIds(ids), connectionTimestamp);
-                }
-                if (connection.getMetaData().supportsTransactions())
+                raplaSQLOutput.removeLocks(connection, lockIds, connectionTimestamp);
+                if (bSupportsTransactions)
                 {
                     connection.commit();
                 }
@@ -819,12 +803,12 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    private Collection<String> getLockIds(Collection<ReferenceInfo> ids )
+    private Collection<String> getLockIds(Collection<ReferenceInfo> ids)
     {
         List<String> result = new ArrayList<String>();
-        for ( ReferenceInfo info:ids)
+        for (ReferenceInfo info : ids)
         {
-            result.add( info.getId());
+            result.add(info.getId());
         }
         return result;
     }
@@ -960,7 +944,7 @@ import java.util.concurrent.locks.Lock;
         final Date date = new Date(getLastRefreshed().getTime() - HISTORY_DURATION);
         return date;
     }
-    
+
     private Date loadInitialLastUpdateFromDb(Connection connection) throws SQLException
     {
         final RaplaDefaultXMLContext createOutputContext = createOutputContext(cache);
@@ -973,7 +957,7 @@ import java.util.concurrent.locks.Lock;
     {
         final Date lastUpdated = loadInitialLastUpdateFromDb(connection);
         setLastRefreshed(lastUpdated);
-        setConnectStart( lastUpdated );
+        setConnectStart(lastUpdated);
         EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
@@ -1063,27 +1047,25 @@ import java.util.concurrent.locks.Lock;
 
     }
 
-    @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
+    @Override public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
-        try(Connection con = createConnection())
+        try (Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
             final Collection<ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(systemId, importExportDirection, con);
             return importExportEntities;
         }
-        catch(SQLException e)
+        catch (SQLException e)
         {
             throw new RaplaException("Error connecting to database");
         }
     }
 
-    @Override
-    public Date getLock(String id, Long validMilliseconds) throws RaplaException
+    @Override public Date getLock(String id, Long validMilliseconds) throws RaplaException
     {
         // no commit needed as getLocks will do a commit
-        try(Connection con = createConnection())
+        try (Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
@@ -1092,23 +1074,22 @@ import java.util.concurrent.locks.Lock;
             final Date lastRequested = raplaSQL.getLastRequested(con, id);
             return lastRequested;
         }
-        catch(SQLException e)
+        catch (SQLException e)
         {
             throw new RaplaException("Error connecting to database");
         }
     }
 
-    @Override
-    public void releaseLock(String id, Date updatedUntil)
+    @Override public void releaseLock(String id, Date updatedUntil)
     {
-        try(Connection con = createConnection())
+        try (Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
             raplaSQL.removeLocks(con, Collections.singletonList(id), updatedUntil);
             con.commit();
         }
-        catch(SQLException e)
+        catch (SQLException e)
         {
             throw new RaplaException("Error connecting to database");
         }

@@ -71,7 +71,7 @@ import com.google.gwt.uibinder.attributeparsers.SafeUriAttributeParser;
  */
 @DefaultImplementation(of=UpdateDataManager.class, context = InjectionContext.server)
 @Singleton
-public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
+public class UpdateDataManagerImpl implements  UpdateDataManager
 {
     private CachableStorageOperator operator;
 
@@ -89,7 +89,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         this.security = securityManager;
     }
 
-    public Logger getLogger()
+    protected Logger getLogger()
     {
         return logger;
     }
@@ -98,7 +98,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
     {
         Preferences clone = preferences.clone();
         {
-            //removeOldPluginConfigs(preferences, clone);
             for (String role : ((PreferencesImpl) preferences).getPreferenceEntries())
             {
                 if (role.contains(".server."))
@@ -110,64 +109,7 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
         return clone;
     }
 
-    static UpdateEvent createTransactionSafeUpdateEvent(UpdateResult updateResult, User user)
-    {
-        UpdateEvent saveEvent = new UpdateEvent();
-        if (user != null)
-        {
-            saveEvent.setUserId(user.getId());
-        }
-        {
-            for (UpdateResult.Add add : updateResult.getOperations(UpdateResult.Add.class))
-            {
-                Entity newEntity = updateResult.getLastKnown(add.getReference());
-                saveEvent.putStore(newEntity);
-            }
-        }
-        {
-            for (UpdateResult.Change change : updateResult.getOperations(UpdateResult.Change.class))
-            {
-                Entity newEntity = updateResult.getLastKnown(change.getReference());
-                saveEvent.putStore(newEntity);
-            }
-        }
-        {
-            for (UpdateResult.Remove remove : updateResult.getOperations(UpdateResult.Remove.class))
-            {
-                ReferenceInfo removeEntity =  remove.getReference();
-                saveEvent.putRemoveId(removeEntity);
-            }
-        }
-        return saveEvent;
-    }
 
-//    public TimeInterval calulateInvalidateInterval(UpdateResult result) {
-//        TimeInterval currentInterval = null;
-//        {
-//            Collection<Change> operations = result.getOperations(Change.class);
-//            for (Change change:operations)
-//            {
-//                currentInterval = expandInterval( result.getLastKnown(change.getCurrentId()), currentInterval);
-//                currentInterval = expandInterval( result.getLastEntryBeforeUpdate(change.getCurrentId()).getUnresolvedEntity(), currentInterval);
-//            }
-//        }
-//        {
-//            Collection<UpdateResult.Add> operations = result.getOperations(UpdateResult.Add.class);
-//            for (UpdateResult.Add add:operations)
-//            {
-//                currentInterval = expandInterval( result.getLastKnown(add.getCurrentId()), currentInterval);
-//            }
-//        }
-//
-//        {
-//            Collection<Remove> operations = result.getOperations(Remove.class);
-//            for (Remove remove:operations)
-//            {
-//                currentInterval = expandInterval( result.getLastKnown(remove.getCurrentId()), currentInterval);
-//            }
-//        }
-//        return currentInterval;
-//    }
 
     private TimeInterval expandInterval(RaplaObject obj,
             TimeInterval currentInterval)
@@ -532,54 +474,6 @@ public class UpdateDataManagerImpl implements  Disposable, UpdateDataManager
 
     }
 
-    @Override public void dispose()
-    {
-
-    }
-
-    static public void convertToNewPluginConfig(RaplaFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
-            throws RaplaXMLContextException
-    {
-        try
-        {
-            PreferencesImpl clone = (PreferencesImpl) facade.edit(facade.getSystemPreferences());
-            RaplaConfiguration entry = clone.getEntry(RaplaComponent.PLUGIN_CONFIG, null);
-            if (entry == null)
-            {
-                return;
-            }
-            RaplaConfiguration newPluginConfigEntry = entry.clone();
-            DefaultConfiguration pluginConfig = (DefaultConfiguration) newPluginConfigEntry.find("class", className);
-            // we split the config entry in the plugin config and the new config entry;
-            if (pluginConfig != null)
-            {
-                logger.info("Converting plugin conf " + className + " to preference entry " + newConfKey);
-                newPluginConfigEntry.removeChild(pluginConfig);
-                boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
-                RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
-                newPluginConfig.setAttribute("enabled", enabled);
-                newPluginConfig.setAttribute("class", className);
-                newPluginConfigEntry.addChild(newPluginConfig);
-
-                RaplaConfiguration newConfigEntry = new RaplaConfiguration(pluginConfig);
-
-                newConfigEntry.setAttribute("enabled", null);
-                newConfigEntry.setAttribute("class", null);
-
-                clone.putEntry(newConfKey, newConfigEntry);
-                clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newPluginConfigEntry);
-                facade.store(clone);
-            }
-        }
-        catch (RaplaException ex)
-        {
-            if (ex instanceof RaplaXMLContextException)
-            {
-                throw ex;
-            }
-            throw new RaplaXMLContextException(ex.getMessage(), ex);
-        }
-    }
 
 }
 

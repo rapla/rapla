@@ -14,11 +14,11 @@ package org.rapla.plugin.jndi.server;
 
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
-import org.rapla.server.internal.UpdateDataManagerImpl;
 
 public class JNDIServerPlugin  {
     
@@ -28,7 +28,7 @@ public class JNDIServerPlugin  {
         TypedComponentRole<RaplaConfiguration> newConfKey = JNDIPlugin.JNDISERVER_CONFIG;
         if ( config.getAttributeNames().length > 2)
         {
-            UpdateDataManagerImpl.convertToNewPluginConfig(facade,logger, className, newConfKey);
+            FacadeImpl.convertToNewPluginConfig(facade, logger, className, newConfKey);
         }
     }
     

@@ -16,6 +16,8 @@ public interface TableStorage
 
     void removeConnection();
 
+    void deleteAll() throws SQLException;
+
     // void update( Collection<Entity>> entities) throws SQLException,RaplaException ;
     List<String> getCreateSQL();
 }

@@ -129,18 +129,30 @@ public abstract class RaplaTestCase
 
     static public  void dispose(RaplaFacade facade)
     {
+        if ( facade == null)
+        {
+            return;
+        }
         final StorageOperator operator = facade.getOperator();
-        final DefaultScheduler scheduler;
+        operator.disconnect();
         if ( operator instanceof LocalAbstractCachableOperator)
         {
-            scheduler = (DefaultScheduler)((LocalAbstractCachableOperator) operator).getScheduler();
+            final DefaultScheduler scheduler = (DefaultScheduler)((LocalAbstractCachableOperator) operator).getScheduler();
             scheduler.dispose();
         }
         else if ( operator instanceof RemoteOperator)
         {
-            scheduler = (DefaultScheduler)((RemoteOperator) operator).getScheduler();
-            scheduler.dispose();
+            final CommandScheduler scheduler = ((RemoteOperator) operator).getScheduler();
+            if ( scheduler instanceof DefaultScheduler )
+            {
+                ((DefaultScheduler)scheduler).dispose();
+            }
+            if ( scheduler instanceof org.rapla.client.gwt.GwtCommandScheduler)
+            {
+                ((org.rapla.client.gwt.GwtCommandScheduler)scheduler).dispose();
+            }
         }
+
     }
 
     static class MyImportExportManagerProvider implements Provider<ImportExportManager>
@@ -185,8 +197,8 @@ public abstract class RaplaTestCase
                     DefaultPermissionControllerSupport.getPermissionExtensions());
             fileOperator.setFileIO(new VoidFileIO());
             importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));
+            operator.removeAll();
         }
-
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
         operator.connect();

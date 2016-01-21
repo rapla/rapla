@@ -222,13 +222,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
     final public void disconnect() throws RaplaException
     {
         super.disconnect();
-        boolean wasConnected = isConnected();
-        if (wasConnected)
-        {
-            changeStatus( InitStatus.Disconnected);
-            cache.clearAll();
-            history.clear();
-        }
     }
 
     final public void refresh() throws RaplaException
@@ -530,7 +523,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public String toString()
     {
-        return "FileOpertator for " + getURL();
+        return "FileOperator for " + getURL();
     }
     
     private static class SystemLock

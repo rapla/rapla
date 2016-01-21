@@ -39,6 +39,7 @@ import java.util.TreeMap;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -174,7 +175,9 @@ class RaplaSQL {
     throws SQLException
     {
         Date connectionTimestamp = getDatabaseTimestamp(con);
-		for (RaplaTypeStorage storage: stores) {
+        final Collection<TableStorage> storeIt = (Collection)stores;
+        final Collection<TableStorage> lockStorages = (Collection) Collections.singletonList(lockStorage);
+        for (TableStorage storage: new IterableChain<TableStorage>(storeIt, lockStorages)) {
             storage.setConnection(con, connectionTimestamp);
             try
             {
@@ -185,6 +188,7 @@ class RaplaSQL {
             	storage.removeConnection();
             }
         }
+
     }
 
     synchronized public void loadAll(Connection con) throws SQLException,RaplaException {
@@ -327,110 +331,6 @@ class RaplaSQL {
         }
     }
 
-    public void cleanupOldLocks(Connection c) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(c, null);
-            lockStorage.cleanupOldLocks();
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-    
-    public Date getLastUpdated(Connection c) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(c, null);
-            return lockStorage.readLockTimestamp();
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-
-    public Date getLastRequested(Connection c, String id) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(c, null);
-            return lockStorage.readLastRequested(id);
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-    
-    synchronized public Date getDatabaseTimestamp(Connection con) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(con, null);
-            return lockStorage.getDatabaseTimestamp();
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-
-    public void getLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(connection, connectionTimestamp);
-            lockStorage.getLocks(ids, validMilliseconds);
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-    
-    public Date getGlobalLock(Connection connection, Date connectionTimestamp) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(connection, connectionTimestamp);
-            return lockStorage.getGlobalLock();
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-
-    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(connection, null);
-            lockStorage.removeLocks(ids, updatedUntil);
-        }
-        finally
-        {
-            lockStorage.removeConnection();
-        }
-    }
-
-    public void removeGlobalLock(Connection connection, Date connectionTimestamp) throws SQLException
-    {
-        try
-        {
-            lockStorage.setConnection(connection, null);
-            lockStorage.removeLocks(Collections.singleton(LockStorage.GLOBAL_LOCK), connectionTimestamp);
-        }
-        finally 
-        {
-            lockStorage.removeConnection();
-        }
-    }
-
     public List<PreferencePatch> getPatches(Connection c, Date lastUpdated) throws SQLException
     {
         try
@@ -458,6 +358,96 @@ class RaplaSQL {
         finally
         {
             importExportStorage.removeConnection();
+        }
+    }
+
+
+    public Date getLastUpdated(Connection c) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(c, null);
+            return lockStorage.readLockTimestamp();
+        }
+        finally
+        {
+            lockStorage.removeConnection();
+        }
+    }
+
+    public Date getLastRequested(Connection c, String id) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(c, null);
+            return lockStorage.readLastRequested(id);
+        }
+        finally
+        {
+            lockStorage.removeConnection();
+        }
+    }
+
+    synchronized public Date getDatabaseTimestamp(Connection con) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(con, null);
+            return lockStorage.getDatabaseTimestamp();
+        }
+        finally
+        {
+            lockStorage.removeConnection();
+        }
+    }
+
+    public void getLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(connection, connectionTimestamp);
+            if ( ids.contains( LockStorage.GLOBAL_LOCK))
+            {
+                if  (ids.size() > 1)
+                {
+                    getLogger().warn("More then one lock requested when using a global lock.");
+                }
+                lockStorage.getGlobalLock();
+            }
+            else
+            {
+                lockStorage.getLocks(ids, validMilliseconds);
+            }
+        }
+        finally
+        {
+            lockStorage.removeConnection();
+        }
+    }
+
+    public void cleanupOldLocks(Connection c) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(c, null);
+            lockStorage.cleanupOldLocks();
+        }
+        finally
+        {
+            lockStorage.removeConnection();
+        }
+    }
+
+    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException
+    {
+        try
+        {
+            lockStorage.setConnection(connection, null);
+            lockStorage.removeLocks(ids, updatedUntil);
+        }
+        finally
+        {
+            lockStorage.removeConnection();
         }
     }
 }
@@ -525,6 +515,7 @@ class LockStorage extends AbstractTableStorage
                 stmt.setString(i, id);
                 stmt.addBatch();
             }
+
             final int[] result = stmt.executeBatch();
             logger.debug("deactivated logs: "+Arrays.toString(result));
         }
@@ -601,43 +592,13 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
-    public void getLocks(Collection<String> ids, Long validMilliseconds) throws RaplaException
-    {
-        if (ids == null || ids.isEmpty())
-        {
-            return;
-        }
-        checkGlobalLockThrowException();
-        activateLocks(ids, validMilliseconds);
-        try
-        {
-            checkGlobalLockThrowException();
-        }
-        catch(RaplaException e)
-        {
-            removeLocks(ids, null);
-            try
-            {
-                if(con.getMetaData().supportsTransactions())
-                {
-                    con.commit();
-                }
-            }
-            catch(SQLException re)
-            {
-                logger.error("Could not commit remove of locks (" + ids + ") caused by: " + re.getMessage(), re);
-            }
-            throw e;
-        }
-    }
-
     private void activateLocks(Collection<String> ids, Long validMilliseconds)
     {
         try (final PreparedStatement insertStmt = con.prepareStatement(insertSql);
                 final PreparedStatement updateStatement = con.prepareStatement(activateSql);
                 final PreparedStatement containsStmt = con.prepareStatement("SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID = ?"))
         {
-            final Date databaseTimestamp = getDatabaseTimestamp();
+            final Date databaseTimestamp = getConnectionTimestamp();
             for (String id : ids)
             {
                 final long validOffset = calcValidOffset(validMilliseconds, id);
@@ -653,7 +614,7 @@ class LockStorage extends AbstractTableStorage
                     int columsUpdated = updateStatement.executeUpdate();
                     if(columsUpdated != 1)
                     {
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("could not activate lock for "+id);
                     }
                 }
                 else
@@ -691,6 +652,37 @@ class LockStorage extends AbstractTableStorage
         return validOffset;
     }
 
+    public void getLocks(Collection<String> ids, Long validMilliseconds) throws RaplaException
+    {
+        if (ids == null || ids.isEmpty())
+        {
+            return;
+        }
+        checkGlobalLockThrowException();
+        activateLocks(ids, validMilliseconds);
+        try
+        {
+            checkGlobalLockThrowException();
+        }
+        catch(RaplaException e)
+        {
+            removeLocks(ids, null);
+            try
+            {
+                if(con.getMetaData().supportsTransactions())
+                {
+                    con.commit();
+                }
+            }
+            catch(SQLException re)
+            {
+                logger.error("Could not commit remove of locks (" + ids + ") caused by: " + re.getMessage(), re);
+            }
+            throw e;
+        }
+    }
+
+
     public Date getGlobalLock() throws RaplaException
     {
         final Date lastLocked = readLockTimestamp();
@@ -713,10 +705,6 @@ class LockStorage extends AbstractTableStorage
             }
             else
             {
-                if(con.getMetaData().supportsTransactions())
-                {// Commit so others see the global lock and do not get locks by their own
-                    con.commit();
-                }
                 final long startWaitingTime = System.currentTimeMillis();
                 try(PreparedStatement cstmt = con.prepareStatement(countLocksSql))
                 {
@@ -744,7 +732,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch(Exception e)
         {
-            throw new RaplaException("Error receiving lock for " + lockId);
+            throw new RaplaException("Error receiving lock for " + lockId,e);
         }
     }
 
@@ -761,8 +749,9 @@ class LockStorage extends AbstractTableStorage
         }
         catch(Exception e)
         {
+            throw new RaplaException("Could not read Timestamp from DB", e);
         }
-        throw new RaplaException("Could not read Timestamp from DB");
+        throw new RaplaException("Could not read Timestamp from DB. No timestamp found.");
     }
 }
 abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
@@ -2416,8 +2405,8 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     @Override public void save(Iterable<T> entities) throws RaplaException, SQLException
     {
-        Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
-        insert(entitiesWithTransitiveCategories, false);
+        //Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
+        insert(entities, false);
     }
 
     @Override
@@ -2473,6 +2462,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             T entity = cache.tryResolve( ref);
             if ( entity != null)
             {
+                /*
                 if (entity instanceof Category)
                 {
                     final Collection<Category> transitiveCategories = getTransitiveCategories((Category) entity);
@@ -2484,7 +2474,8 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 else
                 {
                     entitiesWithTransitiveCategories.add(entity);
-                }
+                }*/
+                entitiesWithTransitiveCategories.add(entity);
             }
             else {
                 getLogger().error("can't create history event for remove entity with id " + ref);

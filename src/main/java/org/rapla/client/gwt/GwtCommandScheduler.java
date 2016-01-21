@@ -6,6 +6,7 @@ import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.framework.Disposable;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -15,7 +16,7 @@ import javax.inject.Singleton;
 
 @DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
 @Singleton
-public final class GwtCommandScheduler implements CommandScheduler
+public final class GwtCommandScheduler implements CommandScheduler, Disposable
 {
     private final Logger gwtLogger;
 
@@ -103,5 +104,10 @@ public final class GwtCommandScheduler implements CommandScheduler
     public Cancelable scheduleSynchronized(Object synchronizationObject, Command command, long delay)
     {
         return schedule(command, delay);
+    }
+
+    public void dispose()
+    {
+        // FIXME remove tasks that are canceled
     }
 }

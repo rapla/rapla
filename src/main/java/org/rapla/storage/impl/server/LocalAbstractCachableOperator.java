@@ -15,6 +15,9 @@ package org.rapla.storage.impl.server;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +39,8 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
@@ -177,8 +182,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
-    private Cancelable cleanConflictsTask;
-    private Cancelable refreshTask;
+    private List<Cancelable> scheduledTasks = new ArrayList<Cancelable>();
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
 
@@ -588,6 +592,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public String authenticate(String username, String password) throws RaplaException
     {
+        checkConnected();
         Lock readLock = readLock();
         try
         {
@@ -839,6 +844,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     public Collection<Conflict> getConflicts(User user) throws RaplaException
     {
+        checkConnected();
         Lock readLock = readLock();
         try
         {
@@ -874,16 +880,38 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         try
         {
-            if (cleanConflictsTask != null)
-            {
-                cleanConflictsTask.cancel();
-            }
             forceDisconnect();
         }
         finally
         {
             disposing = false;
         }
+    }
+
+    ReentrantReadWriteLock disconnectLock = new ReentrantReadWriteLock();
+    final protected void scheduleConnectedTasks(final Command command, long delay, long period)
+    {
+//        if (true)
+//            return;
+        final Command wrapper = new Command()
+        {
+            @Override public void execute() throws Exception
+            {
+                final Lock lock = RaplaComponent.lock(disconnectLock.readLock(), 3);
+                try
+                {
+                    if (isConnected())
+                    {
+                        command.execute();
+                    }
+                }
+                finally
+                {
+                    RaplaComponent.unlock( lock );
+                }
+            }
+        };
+        scheduler.schedule(wrapper, delay, period);
     }
 
     protected void forceDisconnect()
@@ -1042,9 +1070,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
-        cleanConflictsTask = scheduler.schedule(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
+        scheduleConnectedTasks(cleanUpConflicts,delay, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 3;
-        refreshTask = scheduler.schedule(new Command()
+        scheduleConnectedTasks(new Command()
         {
             @Override public void execute() throws Exception
             {
@@ -1062,17 +1090,52 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public void disconnect()
+    synchronized public void disconnect()
     {
-        super.disconnect();
-        if ( cleanConflictsTask != null)
+        if (!isConnected())
+            return;
+        Lock writeLock = null;
+        try
         {
-            cleanConflictsTask.cancel();
+            writeLock = writeLock();
         }
-        if ( refreshTask != null)
+        catch (Exception ex)
         {
-            refreshTask.cancel();
+            getLogger().error("Could not get writeLock. Scheduled task is probably running > 10sec. Forcing disconnect." + ex.getMessage(), ex);
+            writeLock = null;
         }
+        Lock disconnectLock;
+        try
+        {
+            disconnectLock = RaplaComponent.lock(this.disconnectLock.writeLock(), 60);
+        }
+        catch (Exception ex)
+        {
+            getLogger().error("Could not get disconnectLock. Scheduled task is probably running > 10sec. Forcing disconnect." + ex.getMessage(), ex);
+            disconnectLock = null;
+        }
+        try
+        {
+            changeStatus(LocalAbstractCachableOperator.InitStatus.Disconnected);
+            cache.clearAll();
+            history.clear();
+        }
+        finally
+        {
+            RaplaComponent.unlock(writeLock);
+        }
+
+            try
+            {
+                for (Cancelable task : scheduledTasks)
+                {
+                    task.cancel();
+                }
+            }
+            finally
+            {
+                RaplaComponent.unlock(disconnectLock);
+            }
     }
 
     /*
@@ -3016,6 +3079,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public Collection<Entity> getVisibleEntities(final User user) throws RaplaException
     {
+        checkLoaded();
         Lock readLock = readLock();
         try
         {

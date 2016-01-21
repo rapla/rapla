@@ -51,6 +51,7 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,15 +81,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class AbstractCachableOperator implements StorageOperator {
 
-	protected RaplaLocale raplaLocale;
+	final protected RaplaLocale raplaLocale;
 	
-	protected LocalCache cache;
-	protected RaplaResources i18n;
-	protected Logger logger;
-	protected ReadWriteLock lock = new ReentrantReadWriteLock();
-	protected final Map<String,FunctionFactory> functionFactoryMap;
+	final protected LocalCache cache;
+	final protected RaplaResources i18n;
+	final protected Logger logger;
+	final protected ReadWriteLock lock = new ReentrantReadWriteLock();
+	final protected Map<String,FunctionFactory> functionFactoryMap;
 	private volatile Date lastRefreshed;
-	protected PermissionController permissionController;
+	final protected PermissionController permissionController;
 
 	public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)  {
 		this.logger = logger;
@@ -350,14 +351,47 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return cache.getSuperCategory();
 	}
 
-	
-
 	protected Lock writeLock() throws RaplaException {
-		return RaplaComponent.lock( lock.writeLock(), 60);
+		final Lock lock = RaplaComponent.lock(this.lock.writeLock(), 60);
+		try
+		{
+			checkLoaded();
+		}
+		catch (Throwable ex)
+		{
+			unlock( lock);
+			if ( ex instanceof  RaplaException)
+			{
+				throw ex;
+			}
+			else
+			{
+				throw new RaplaException( ex);
+			}
+		}
+		return lock;
 	}
 
 	protected Lock readLock() throws RaplaException {
-		return RaplaComponent.lock( lock.readLock(), 20);
+		final Lock lock = RaplaComponent.lock(this.lock.readLock(), 20);
+		/*
+		try
+		{
+			checkLoaded();
+		}
+		catch (Throwable ex)
+		{
+			unlock( lock);
+			if ( ex instanceof  RaplaException)
+			{
+				throw ex;
+			}
+			else
+			{
+				throw new RaplaException( ex);
+			}
+		}*/
+		return lock;
 	}
 	
 	protected void unlock(Lock lock) {
@@ -730,7 +764,4 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return functionFactory;
 	}
 
-	public void disconnect()
-	{
-	}
 }

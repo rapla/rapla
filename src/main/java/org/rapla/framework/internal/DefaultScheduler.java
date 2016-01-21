@@ -267,6 +267,7 @@ public class DefaultScheduler implements CommandScheduler, Disposable
 					getLogger().warn("Interrupted active task " + task );
 				}
 			}
+			executor.awaitTermination(3, TimeUnit.SECONDS);
 			getLogger().info("Stopped scheduler thread.");
 		}
 		catch ( Throwable ex)
@@ -276,7 +277,7 @@ public class DefaultScheduler implements CommandScheduler, Disposable
 		// we give the update threads some time to execute
 		try
 		{
-			Thread.sleep( 50);
+			Thread.sleep(50);
 		}
 		catch (InterruptedException e) 
 		{

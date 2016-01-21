@@ -44,6 +44,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
@@ -148,11 +149,12 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         if (isConnected())
             throw new RaplaException("Already connected");
         getLogger().info("Connecting to server and starting login..");
-	    User user;
 	    if ( connectInfo != null)
 	    {
-    		user = loginAndLoadData(connectInfo);
-    		connectionInfo.setReconnectInfo( connectInfo);
+            this.connectInfo = connectInfo;
+            login();
+            getLogger().info("login successfull");
+            connectionInfo.setReconnectInfo( connectInfo);
 //    		connectionInfo.setReAuthenticateCommand(
 //    		        
 //    		        new FutureResult<String>() {
@@ -174,11 +176,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 //    	            }
 //    	        });
 	    }
-	    else
-	    {
-	        user = loadData();
-	    }
-        this.user = user;
+        user = loadData();
 		initRefresh();
 		return user;
     }
@@ -217,7 +215,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
                     @Override
                     public void onSuccess(UpdateEvent evt) {
-                        
+                        Lock writeLock = RaplaComponent.lock(RemoteOperator.this.lock.writeLock(), 10);
                         try {
                             User user = loadData(evt);
                             initRefresh();
@@ -225,21 +223,16 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                         } catch (RaplaException e) {
                             callback.onFailure( e);
                         }
-                        
+                        finally
+                        {
+                            unlock(writeLock);
+                        }
                     }
                 });
             }
         };
     }
 	
-	private User loginAndLoadData(ConnectInfo connectInfo) throws RaplaException {
-		this.connectInfo = connectInfo;
-		login();
-        getLogger().info("login successfull");
-		User user = loadData();
-        return user;
-	}
-
 	protected String login() throws RaplaException {
 		try {
 		    return loginWithoutDisconnect();
@@ -495,7 +488,6 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
 
     @Override
     synchronized public void disconnect() throws RaplaException {
-        super.disconnect();
     	connectionInfo.setAccessToken( null);
     	this.connectInfo = null;
     	connectionInfo.setReconnectInfo( null );
@@ -626,7 +618,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         }
     }
 
-    public User loadData() throws RaplaException {
+    private User loadData() throws RaplaException {
         RemoteStorage serv = getRemoteStorage();
         FutureResult<UpdateEvent> resources = serv.getResources();
         try
@@ -646,10 +638,8 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
     }
 
     private User loadData(UpdateEvent evt) throws RaplaException {
-        Lock writeLock = writeLock();
         Date lastUpdated = evt.getLastValidated();
         setLastRefreshed(lastUpdated);
-        try
         {
             this.userId = evt.getUserId();
             if ( userId != null)
@@ -672,11 +662,9 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             getLogger().debug("Data flushed");
             bSessionActive = true;
             User user = cache.resolve( userId, User.class);
-            return user;        }
-        finally
-        {
-            unlock(writeLock);
+            return user;
         }
+
 
 
     }
@@ -1156,7 +1144,15 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
             unlock(readLock);
         }
-        loadData();
+        Lock writeLock = writeLock();
+        try
+        {
+            loadData();
+        }
+        finally
+        {
+            unlock(writeLock);
+        }
 		
         
 		Collection<Entity> newEntities; 

@@ -54,10 +54,6 @@ public class TestUpdateDataManager
                 facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
 //        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         operator = (CachableStorageOperator) facade.getOperator();
-        operator.connect();
-                ((DBOperator) operator).removeAll();
-                operator.disconnect();
-                operator.connect();
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);

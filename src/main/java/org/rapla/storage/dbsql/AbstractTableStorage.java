@@ -75,6 +75,11 @@ public class AbstractTableStorage implements TableStorage
         }
     }
 
+	@Override public void deleteAll() throws SQLException
+	{
+		executeBatchedStatement(con, deleteAllSql);
+	}
+
 	protected Logger getLogger() {
         return logger;
     }
