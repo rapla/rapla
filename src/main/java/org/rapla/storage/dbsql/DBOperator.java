@@ -854,13 +854,23 @@ import java.util.concurrent.locks.Lock;
     public void removeAll() throws RaplaException
     {
         Connection connection = createConnection();
+
         try
         {
-            RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
-            raplaSQLOutput.removeAll(connection);
-            connection.commit();
-            // do something here
-            getLogger().info("DB cleared");
+            Map<String, TableDef> schema = loadDBSchema(connection);
+            TableDef dynamicTypeDef = schema.get("DYNAMIC_TYPE");
+            if ( dynamicTypeDef != null)
+            {
+                RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
+                raplaSQLOutput.removeAll(connection);
+                connection.commit();
+                // do something here
+                getLogger().info("DB cleared");
+            }
+            else
+            {
+                getLogger().warn("DB is not created. Could not remove all");
+            }
         }
         catch (SQLException ex)
         {
