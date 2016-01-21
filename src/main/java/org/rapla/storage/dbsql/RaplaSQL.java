@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -599,31 +600,55 @@ class LockStorage extends AbstractTableStorage
                 final PreparedStatement containsStmt = con.prepareStatement("SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID = ?"))
         {
             final Date databaseTimestamp = getConnectionTimestamp();
+            BitSet existingIds = new BitSet(ids.size());
+            int index = 0;
+            for (String id : ids)
+            {// extract existing ids from DB
+                containsStmt.setString(1, id);
+                final ResultSet result = containsStmt.executeQuery();
+                if(result != null && result.next() && result.getInt(1) != 0)
+                {
+                    existingIds.set(index);
+                }
+                index++;
+            }
+            boolean executeUpdate = false;
+            boolean executeInsert = false;
+            index = 0;
             for (String id : ids)
             {
                 final long validOffset = calcValidOffset(validMilliseconds, id);
                 final java.sql.Timestamp validUntil = new java.sql.Timestamp(databaseTimestamp.getTime() + validOffset);
-                // for each id first check, if a lock was already requested once. if so just update otherwise insert new
-                containsStmt.setString(1, id);
-                final ResultSet executeQuery = containsStmt.executeQuery();
-                if (executeQuery != null && executeQuery.next() && executeQuery.getInt(1) > 0)
+                if (existingIds.get(index))
                 {//update
-                    updateStatement.setQueryTimeout(10);
                     updateStatement.setTimestamp(1, validUntil);
                     updateStatement.setString(2, id);
-                    int columsUpdated = updateStatement.executeUpdate();
-                    if(columsUpdated != 1)
-                    {
-                        throw new IllegalStateException("could not activate lock for "+id);
-                    }
+                    updateStatement.addBatch();
+                    executeUpdate = true;
                 }
                 else
                 {// insert
-                    insertStmt.setQueryTimeout(10);
                     insertStmt.setString(1, id);
                     insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
                     insertStmt.setTimestamp(3, validUntil);
-                    insertStmt.executeUpdate();
+                    insertStmt.addBatch();
+                    executeInsert = true;
+                }
+                index++;
+            }
+            if (executeInsert)
+            {
+                insertStmt.executeBatch();
+            }
+            if (executeUpdate)
+            {
+                final int[] updateResult = updateStatement.executeBatch();
+                for (int columnsUpdated : updateResult)
+                {
+                    if (columnsUpdated != 1)
+                    {
+                        throw new IllegalStateException("could not activate lock for " + ids);
+                    }
                 }
             }
             if (con.getMetaData().supportsTransactions())
@@ -631,7 +656,7 @@ class LockStorage extends AbstractTableStorage
                 con.commit();
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RaplaException("Could not get Locks", e);
         }
