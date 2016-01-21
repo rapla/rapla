@@ -197,7 +197,9 @@ public abstract class RaplaTestCase
                     DefaultPermissionControllerSupport.getPermissionExtensions());
             fileOperator.setFileIO(new VoidFileIO());
             importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));
+            operator.connect();
             operator.removeAll();
+            operator.disconnect();
         }
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
