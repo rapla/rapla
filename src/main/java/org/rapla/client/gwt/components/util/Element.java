@@ -1,8 +1,8 @@
 package org.rapla.client.gwt.components.util;
 
-import com.google.gwt.core.client.js.JsType;
+import jsinterop.annotations.JsType;
 
-@JsType(prototype = "Element")
+@JsType(isNative = true)
 public interface Element
 {
 

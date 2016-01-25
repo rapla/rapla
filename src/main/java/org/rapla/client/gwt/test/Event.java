@@ -1,10 +1,10 @@
 package org.rapla.client.gwt.test;
 
-import com.google.gwt.core.client.js.JsType;
+import jsinterop.annotations.JsType;
 
 /**
  * Created by Christopher on 26.08.2015.
  */
-@JsType(prototype = "Event")
+@JsType(isNative = true)
 public interface Event {
 }
