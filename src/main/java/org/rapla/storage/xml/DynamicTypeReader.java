@@ -257,7 +257,10 @@ public class DynamicTypeReader extends RaplaXMLReader
             if (attribute.getConstraintClass( constraintKey ) == Category.class)
             {
                 ReferenceInfo<Category> idRef = getKeyAndPathResolver().getIdForCategory(content);
-                attribute.setContraintRefId( constraintKey,idRef);
+                if(idRef != null)
+                {
+                    attribute.setContraintRefId( constraintKey,idRef);
+                }
             }
             else if (attribute.getConstraintClass( constraintKey ) == DynamicType.class)
             {
