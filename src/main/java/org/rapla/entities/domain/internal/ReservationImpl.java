@@ -16,6 +16,17 @@ package org.rapla.entities.domain.internal;
  *  @see org.rapla.facade.RaplaFacade
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
@@ -44,17 +55,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
@@ -68,9 +68,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     transient HashMap<String,AppointmentImpl> appointmentIndex;
         
-	// this is only used when you add a resource that is not yet stored, so the resolver won't find it
-	transient Map<String,AllocatableImpl> nonpersistantAllocatables;
-	
     ReservationImpl() {
         this (null, null);
     }
@@ -341,20 +338,12 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             return;
         }
-        addAllocatablePrivate(allocatable.getId());
-        if ( !allocatable.isReadOnly())
-        {
-        	if ( nonpersistantAllocatables == null)
-        	{
-        		nonpersistantAllocatables = new LinkedHashMap<String,AllocatableImpl>();
-        	}
-        	nonpersistantAllocatables.put( allocatable.getId(), (AllocatableImpl) allocatable);
-        }
+        addAllocatablePrivate(allocatable);
     }
 
-	private void addAllocatablePrivate(String allocatableId) {
+	private void addAllocatablePrivate(Allocatable allocatable) {
 		synchronized (this) {
-		    addId("resources",allocatableId);
+		    add("resources",allocatable);
 		}
 	}
 
@@ -376,20 +365,6 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public Allocatable[] getPersons() {
         Collection<Allocatable> allocatables = getAllocatables(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 		return 	allocatables.toArray(new Allocatable[allocatables.size()]);
-    }
-    
-    @Override
-    protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
-    {
-    	T entity = super.tryResolve(id, entityClass);
-    	if ( entity == null && nonpersistantAllocatables != null)
-    	{
-    		AllocatableImpl allocatableImpl = nonpersistantAllocatables.get( id);
-            @SuppressWarnings("unchecked")
-            T casted = (T) allocatableImpl;
-            entity = casted;
-    	}
-		return entity;
     }
     
     public Collection<Allocatable> getAllocatables(String annotationType) {

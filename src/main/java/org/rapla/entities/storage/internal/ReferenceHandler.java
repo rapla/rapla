@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import org.rapla.components.util.Assert;
-import org.rapla.entities.Entity;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +20,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.rapla.entities.Entity;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
@@ -172,6 +171,17 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 			addId( key, entity.getId());
         }
 	}
+    
+    public void putEntity(String key,Entity entity) {
+        synchronized (this)
+        {
+            if (entity == null) {
+                links.remove(key);
+                return;
+            }
+            links.put(key, Collections.singletonList(entity.getId()) );
+        }
+    }
 
     public void putIds(String key,Collection<String> ids) {
         synchronized (this) 
@@ -219,17 +229,6 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 		}
 		return entries;
 	}
-
-    public void putEntity(String key,Entity entity) {
-        synchronized (this)
-        {
-	        if (entity == null) {
-	            links.remove(key);
-	            return;
-	        }
-	        links.put(key, Collections.singletonList(entity.getId()) );
-        }
-    }
     
     public void putList(String key, Collection<Entity>entities) {
         synchronized (this) 

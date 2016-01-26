@@ -12,6 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -20,20 +29,8 @@ import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 final public class CategoryImpl extends SimpleEntity implements Category, ModifiableTimestamp
 {
@@ -76,7 +73,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     }
 
     void setParent(CategoryImpl parent) {
-		putEntity("parent", parent);
+        putEntity("parent", parent);
 	}
 
     public void setParentId(ReferenceInfo<Category> parent) {
@@ -156,7 +153,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         {
         	Assert.isTrue( !categoryImpl.isAncestorOf( this), "Can't add a parent category to one of its ancestors.");
         }
-        addId("childs", category.getId());
+        add("childs", category);
         categoryImpl.setParent(this);
     }
 

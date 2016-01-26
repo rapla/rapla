@@ -12,6 +12,34 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
@@ -31,37 +59,12 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
+import org.rapla.entities.MultiLanguageName;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-
-import javax.inject.Inject;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JTree;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.Category")
 public class CategoryEditUI extends RaplaGUIComponent
@@ -88,13 +91,15 @@ public class CategoryEditUI extends RaplaGUIComponent
     private final TreeFactory treeFactory;
 
     private final DialogUiFactoryInterface dialogUiFactory;
+    
+    private final Map<String, Category> editableCategories = new HashMap<String,Category>();
 
     @Inject
     public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)  {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
-        detailPanel = new CategoryDetail(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, multiLanguageFieldFactory, textFieldFactory);
+        detailPanel = new CategoryDetail(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, multiLanguageFieldFactory, textFieldFactory, editableCategories);
         panel.setPreferredSize( new Dimension( 690,350 ) );
         treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
         treeEdit.setListDimension( new Dimension( 250,100 ) );
@@ -187,6 +192,7 @@ public class CategoryEditUI extends RaplaGUIComponent
 
     public void setObjects(List<Category> o) throws RaplaException {
         this.rootCategory = o.get(0);
+        editableCategories.clear();
         updateModel();
     }
     
@@ -242,8 +248,18 @@ public class CategoryEditUI extends RaplaGUIComponent
     // creates a new Category
     private Category createNewNodeAt(NamedNode parentNode) throws RaplaException {
         Category newCategory = getFacade().newCategory();
-
-        Category parent =  (Category) parentNode.getUserObject();
+        editableCategories.put(newCategory.getId(), newCategory);
+        Category parent = (Category) parentNode.getUserObject();
+        final String parentId = parent.getId();
+        if(editableCategories.containsKey(parentId))
+        {
+            parent = editableCategories.get(parentId);
+        }
+        else
+        {
+            parent = parent.clone();
+            editableCategories.put(parentId, parent);
+        }
         newCategory.setKey(createNewKey(parent.getCategories()));
         newCategory.getName().setName(getI18n().getLang(), getString("new_category") );
         parent.addCategory(newCategory);
@@ -354,7 +370,17 @@ public class CategoryEditUI extends RaplaGUIComponent
             }
             for (int i=0;i<size;i++) {
                 Category subCategory = (Category)childs[i].getUserObject();
-                subCategory.getParent().removeCategory(subCategory);
+                Category parent = subCategory.getParent();
+                if(editableCategories.containsKey(parent.getId()))
+                {
+                    parent = editableCategories.get(parent.getId());
+                }
+                else
+                {
+                    parent = parent.clone();
+                    editableCategories.put(parent.getId(), parent);
+                }
+                parent.removeCategory(subCategory);
                 getLogger().debug("category removed " + subCategory);
             }
         }
@@ -366,11 +392,14 @@ public class CategoryEditUI extends RaplaGUIComponent
     }
 
     public List<Category> getObjects() {
-        return Collections.singletonList(this.rootCategory);
+        final ArrayList<Category> result = new ArrayList<Category>(editableCategories.values());
+        return result;
     }
 
     private void updateModel()  {
-        model = treeFactory.createModel( rootCategory);
+        final ArrayList<Category> arrayList = new ArrayList<Category>(editableCategories.values());
+        arrayList.add(rootCategory);
+        model = treeFactory.createModel( arrayList, true);
         RaplaTree.exchangeTreeModel( model , treeEdit.getTree() );
     }
 
@@ -378,6 +407,15 @@ public class CategoryEditUI extends RaplaGUIComponent
         if ( getSelectedIndex() < 0 )
             return;
         Category category = (Category) treeEdit.getSelectedValue();
+        if(editableCategories.containsKey(category.getId()))
+        {
+            category = editableCategories.get(category.getId());
+        }
+        else
+        {
+            category = category.clone();
+            editableCategories.put(category.getId(),category);
+        }
         detailPanel.mapTo ( category );
         TreePath path = treeEdit.getTree().getSelectionPath();
         if (path != null)
@@ -433,11 +471,13 @@ class CategoryDetail extends RaplaGUIComponent
     
 	RaplaArrowButton addButton = new RaplaArrowButton('>', 25);
 	RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
+    private final Map<String, Category> clonedCategories;
 
 
-    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
+    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, Map<String, Category> clonedCategories)
     {
         super(facade, i18n, raplaLocale, logger);
+        this.clonedCategories = clonedCategories;
         name = multiLanguageFieldFactory.create();
         key = textFieldFactory.create();
         colorTextField = textFieldFactory.create();
@@ -516,7 +556,7 @@ class CategoryDetail extends RaplaGUIComponent
     }
 
     public void mapFrom(Category category) {
-        name.setValue( category.getName());
+        name.setValue( (MultiLanguageName) category.getName().clone());
         key.setValue( category.getKey());
         String color = category.getAnnotation( CategoryAnnotations.KEY_NAME_COLOR);
         if ( color != null)
