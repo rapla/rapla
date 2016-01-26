@@ -80,7 +80,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     }
 
     @Override
-    public boolean hasAccess(Classification object, Attribute attribute, User user, AccessLevel edit)
+    public boolean hasAccess(Classification classification, Attribute attribute, User user, AccessLevel edit)
     {
         return true;
     }

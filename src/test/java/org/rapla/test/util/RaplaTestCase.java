@@ -85,12 +85,12 @@ public abstract class RaplaTestCase
 
     public static ClientFacade createSimpleSimpsonsWithHomer()
     {
-        ClientFacade facade = RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
+        ClientFacade facade = (ClientFacade)RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
         facade.login("homer","duffs".toCharArray());
         return facade;
     }
 
-    public static ClientFacade createFacadeWithFile(Logger logger, String xmlFile)
+    public static RaplaFacade createFacadeWithFile(Logger logger, String xmlFile)
     {
         String resolvedPath = getTestDataFile(xmlFile);
         return _createFacadeWithFile(logger, resolvedPath, new VoidFileIO());
@@ -251,7 +251,7 @@ public abstract class RaplaTestCase
         return clientFacadeProvider;
     }
 
-    private static class VoidFileIO extends FileOperator.DefaultFileIO
+    public static class VoidFileIO extends FileOperator.DefaultFileIO
     {
         @Override public void write(FileOperator.RaplaWriter writer, URI storageURL) throws IOException
         {

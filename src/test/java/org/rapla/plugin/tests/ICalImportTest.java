@@ -40,8 +40,7 @@ public class ICalImportTest {
     public void setUp()
     {
         logger = RaplaTestCase.initLoger();
-        ClientFacade clientFacade = RaplaTestCase.createFacadeWithFile(logger, "testdefault.xml");
-        clientFacade.login("homer","duffs".toCharArray());
+        ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         user = clientFacade.getUser();
         facade = clientFacade.getRaplaFacade();
     }
