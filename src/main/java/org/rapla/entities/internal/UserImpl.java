@@ -13,6 +13,7 @@
 package org.rapla.entities.internal;
 
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
@@ -160,6 +161,20 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         }
         addId("groups", groupId.getId());
     }
+
+    protected Class<? extends Entity> getInfoClass(String key) {
+        final Class<? extends Entity> infoClass = super.getInfoClass(key);
+        if ( infoClass != null)
+        {
+            return infoClass;
+        }
+        if ( key.equals("groups"))
+        {
+            return Category.class;
+        }
+        return null;
+    }
+
 
     public boolean removeGroup(Category group)   {
         checkWritable();

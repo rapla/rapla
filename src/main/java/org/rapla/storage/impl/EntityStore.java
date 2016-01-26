@@ -76,7 +76,14 @@ public class EntityStore implements EntityResolver {
             final List<String> pathForCategory = getPathForCategory(category);
             final String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
             categories.put(keyPathString, category);
-            categoryPath.put ( category.getId(), keyPathString);
+            final String id1 = category.getId();
+            categoryPath.put (id1, keyPathString);
+            final ReferenceInfo<Category> parentRef = category.getParentRef();
+            if ( parentRef == null || parentRef.getId().equals(Category.SUPER_CATEGORY_ID))
+            {
+                final CategoryImpl superCategory = getSuperCategory();
+                superCategory.addId("childs", id1);
+            }
         }
         entities.put(id,entity);
 

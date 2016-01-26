@@ -134,6 +134,18 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         return isRefering("childs", category.getId());
     }
 
+    protected Class<? extends Entity> getInfoClass(String key) {
+        final Class<? extends Entity> infoClass = super.getInfoClass(key);
+        if ( infoClass != null)
+        {
+            return infoClass;
+        }
+        if ( key.equals("childs"))
+        {
+            return Category.class;
+        }
+        return null;
+    }
     public void addCategory(Category category) {
         checkWritable();
         Assert.isTrue(category.getParent() == null || category.getParent().equals(this)

@@ -2469,7 +2469,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Entity entity = (Entity) iterator.next();
             try
             {
-                checkConsitency(entity);
+                checkConsitency(entity, cache);
             }
             catch (RaplaException | IllegalStateException e)
             {
@@ -2506,12 +2506,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         for (Entity entity : evt.getStoreObjects())
         {
-            checkConsitency(entity);
+            checkConsitency(entity, store);
         }
 
     }
 
-    protected void checkConsitency(Entity entity) throws RaplaException
+    protected void checkConsitency(Entity entity, EntityResolver store) throws RaplaException
     {
         Class<? extends Entity> raplaType = entity.getTypeClass();
         if (Category.class == raplaType)

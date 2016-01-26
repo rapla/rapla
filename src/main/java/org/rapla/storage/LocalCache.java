@@ -317,7 +317,7 @@ public class LocalCache implements EntityResolver
 
         for (Category child:cat.getCategoryList())
         {
-            result.add( child);
+            addRecursive((CategoryImpl)child, result);
         }
     }
 
