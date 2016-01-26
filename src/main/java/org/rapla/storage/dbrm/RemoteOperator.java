@@ -559,7 +559,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         {
             return;
         }
-        EntityStore store = new EntityStore( this, getSuperCategory())
+        EntityStore store = new EntityStore( this )
         {
             protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {
                 T tryResolve = super.tryResolveParent(id, entityClass);

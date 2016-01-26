@@ -20,6 +20,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.RaplaException;
 
@@ -65,8 +66,8 @@ public class PermissionReader extends RaplaXMLReader
                 String groupName = atts.getValue( "group" );
                 if (groupName != null)
                 {
-                    Category group= getGroup( groupName);
-                    permission.setGroup( group);
+                    ReferenceInfo<Category> group= getGroupWithKeyRef(groupName);
+                    permission.setGroupId(group);
                 }
             }
 

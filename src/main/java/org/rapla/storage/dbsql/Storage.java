@@ -27,6 +27,7 @@ interface Storage<T extends Entity<T>> extends TableStorage
     void save( Iterable<T> entities) throws SQLException,RaplaException ;
     void insert( Iterable<T> entities) throws SQLException,RaplaException ;
 
+
     //void update( String id) throws SQLException;
 }
 

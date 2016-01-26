@@ -26,14 +26,9 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
@@ -58,13 +53,14 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     private RaplaResources i18n;
     private Date now;
     private RaplaXMLContext context;
+    private KeyAndPathResolver keyAndPathResolver;
     
     public static class TimestampDates
     {
     	public Date createTime;
     	public Date changeTime;
     }
-    
+
     public Date getReadTimestamp()
     {
         return now;
@@ -89,7 +85,8 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         logger = context.lookup( Logger.class );
         this.i18n = context.lookup(RaplaResources.class);
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
-        this.store = context.lookup( EntityStore.class); 
+        this.store = context.lookup( EntityStore.class);
+        this.keyAndPathResolver = new KeyAndPathResolver( store);
         this.idTable = context.lookup( IdCreator.class );
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
@@ -201,6 +198,8 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         }
     }
 
+
+
     public Date parseDateTime( String date, String time ) throws RaplaSAXParseException
     {
         try
@@ -252,13 +251,12 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 
 
     /** return the new id */
-    protected String setId( Entity entity, RaplaSAXAttributes atts )
+    protected void setId( Entity entity, RaplaSAXAttributes atts )
     	throws RaplaSAXParseException
     {
         String idString = atts.getValue( "id" );
-        String id = getId( entity.getTypeClass(), idString );
-        ((SimpleEntity)entity).setId( id );
-        return id;
+        ReferenceInfo id = getId( entity.getTypeClass(), idString );
+        ((SimpleEntity)entity).setId(id);
     }
 
     /** return the new id */
@@ -305,7 +303,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 
 
     @SuppressWarnings("deprecation")
-    protected String getId( Class<? extends Entity> typeClass, String str ) throws RaplaSAXParseException
+    protected ReferenceInfo getId( Class<? extends Entity> typeClass, String str ) throws RaplaSAXParseException
     {
         try
         {
@@ -322,7 +320,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             {
                 id = str;
             }
-            return id;
+            return new ReferenceInfo(id, typeClass);
         }
         catch (RaplaException ex)
         {
@@ -340,49 +338,25 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         throw createSAXParseException( "Method getType() not implemented by subclass " + this.getClass().getName() );
     }
-    
+
+    /*
     protected CategoryImpl getSuperCategory()
     {
         return store.getSuperCategory();
     }
-
-    public DynamicType getDynamicType( String keyref )
-    {
-        return store.getDynamicType( keyref);
-    }
+    */
 
     protected <T extends Entity> T resolve( Class<T> typeClass, String str ) throws RaplaSAXParseException
     {
         try
         {
-            String id = getId( typeClass, str );
-            T resolved = store.resolve( id, typeClass );
+            ReferenceInfo<T> id = getId( typeClass, str );
+            T resolved = store.resolve( id );
 			return resolved;
         }
         catch (EntityNotFoundException ex)
         {
             throw createSAXParseException(ex.getMessage() , ex);
-        }
-    }
-    
-    protected Object parseAttributeValue( Attribute attribute, String text ) throws RaplaSAXParseException
-    {
-        try
-        {
-            AttributeType type = attribute.getType();
-            if ( type == AttributeType.CATEGORY )
-            {
-                text = getId(Category.class, text);
-            }
-            else if ( type == AttributeType.ALLOCATABLE )
-            {
-                text = getId(Allocatable.class, text);
-            }
-            return AttributeImpl.parseAttributeValue( attribute, text);
-        }
-        catch (RaplaException ex)
-        {
-            throw createSAXParseException( ex.getMessage() );
         }
     }
     
@@ -396,37 +370,24 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
          }
         store.put(entity);
     }
-    
-    protected Category getCategoryFromPath( String path ) throws RaplaSAXParseException 
+
+    protected KeyAndPathResolver getKeyAndPathResolver()
     {
-        try
-        {
-            return getSuperCategory().getCategoryFromPath( path );
-        }
-        catch (Exception ex)
-        {
-            throw createSAXParseException( ex.getMessage() );
-        }
+        return  keyAndPathResolver;
     }
-    
-    protected Category getGroup(String groupKey) throws RaplaSAXParseException{
-        CategoryImpl groupCategory = (CategoryImpl) getSuperCategory().getCategory(
-            Permission.GROUP_CATEGORY_KEY );
-        if (groupCategory == null)
-        {
-            throw createSAXParseException( Permission.GROUP_CATEGORY_KEY + " category not found" );
-        }
-        try
-        {
-            return groupCategory.getCategoryFromPath( groupKey );
-        }
-        catch (Exception ex)
-        {
-            throw createSAXParseException( ex.getMessage(),ex );
-        }
+
+    protected ReferenceInfo<Category> getGroup(String groupKey) throws RaplaSAXParseException{
+        final String keyref = "category[key='" + groupKey + "']";
+        return getGroupWithKeyRef(keyref);
     }
-    
-    
+
+    protected ReferenceInfo<Category> getGroupWithKeyRef(String keyref) throws RaplaSAXParseException{
+        final String keyrefParent = "category[key='"+Permission.GROUP_CATEGORY_KEY+"']";
+        final String key = keyrefParent + "/" + keyref;
+        final ReferenceInfo<Category> idForCategory = keyAndPathResolver.getIdForCategory(key);
+        return idForCategory;
+    }
+
     protected void putPassword( ReferenceInfo<User> userid, String password )
     {
         store.putPassword( userid, password);

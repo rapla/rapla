@@ -20,4 +20,8 @@ public interface TableStorage
 
     // void update( Collection<Entity>> entities) throws SQLException,RaplaException ;
     List<String> getCreateSQL();
+
+    String getTableName();
+
+    String getIdColumn();
 }

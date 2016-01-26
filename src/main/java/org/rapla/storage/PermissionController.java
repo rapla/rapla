@@ -20,6 +20,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
@@ -27,7 +28,6 @@ import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 
 public class PermissionController
@@ -55,7 +55,10 @@ public class PermissionController
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
         {
-            if (!permissionExtension.hasAccess(container, user, accessLevel))
+            final Date start = null;
+            final Date end = null;
+            final Date today = null;
+            if (!permissionExtension.hasAccess(container, user, accessLevel, start, end, today,false))
             {
                 return false;
             }
@@ -115,6 +118,10 @@ public class PermissionController
      */
     private boolean canReadPrivate(PermissionContainer container, User user)
     {
+        if ( user.isAdmin())
+        {
+            return true;
+        }
         if (isOwner(container, user))
         {
             return true;
@@ -158,7 +165,6 @@ public class PermissionController
 
     public boolean canCreateConflicts(Allocatable container, User user)
     {
-        Collection<Permission> permissions = container.getPermissionList();
         if (!canReadType(container, user))
         {
             return false;
@@ -168,12 +174,12 @@ public class PermissionController
         final Date today = null;
         final AccessLevel permission = Permission.ALLOCATE_CONFLICTS;
         final boolean checkOnlyToday = false;
-        return hasAccess(permissions, user, permission, start, end, today, checkOnlyToday);
+        return hasAccess(container, user, permission, start, end, today, checkOnlyToday);
     }
 
     public boolean hasPermissionToAllocate(User user, Allocatable a)
     {
-        Collection<Category> groups = getGroupsIncludingParents(user);
+        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
         for (Permission p : a.getPermissionList())
         {
             if (!affectsUser(user, p, groups))
@@ -207,8 +213,7 @@ public class PermissionController
      */
     public boolean canAllocate(Allocatable container, User user, Date start, Date end, Date today)
     {
-        Collection<Permission> permissions = container.getPermissionList();
-        return hasAccess(permissions, user, Permission.ALLOCATE, start, end, today, false);
+        return hasAccess(container, user, Permission.ALLOCATE, start, end, today, false);
     }
 
     /**
@@ -220,12 +225,11 @@ public class PermissionController
      */
     public boolean canAllocate(Allocatable container, User user, Date today)
     {
-        Collection<Permission> permissions = container.getPermissionList();
         if (!canReadType(container, user))
         {
             return false;
         }
-        boolean hasAccess = hasAccess(permissions, user, Permission.ALLOCATE, null, null, today, true);
+        boolean hasAccess = hasAccess(container, user, Permission.ALLOCATE, null, null, today, true);
         return hasAccess;
 
     }
@@ -236,7 +240,7 @@ public class PermissionController
         {
             return true;
         }
-        Collection<Category> groups = getGroupsIncludingParents(user);
+        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
 
         Date start = appointment.getStart();
         Date end = appointment.getMaxEnd();
@@ -314,7 +318,7 @@ public class PermissionController
         return true;
     }
 
-    private boolean hasAccess(Collection<Permission> permissions, User user, final AccessLevel permission, final Date start, final Date end, final Date today,
+    private boolean hasAccess(PermissionContainer permissions, User user, final AccessLevel permission, final Date start, final Date end, final Date today,
             final boolean checkOnlyToday)
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
@@ -327,7 +331,7 @@ public class PermissionController
         return true;
     }
 
-    private boolean affectsUser(User user, Permission p, Collection<Category> groups)
+    private boolean affectsUser(User user, Permission p, Collection<String> groups)
     {
         int userEffect = PermissionContainer.Util.getUserEffect(user, p, groups);
         return userEffect > PermissionImpl.NO_PERMISSION;
@@ -349,7 +353,7 @@ public class PermissionController
         if (user == null || user.isAdmin())
             return true;
 
-        Collection<Category> groups = getGroupsIncludingParents(user);
+        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
         for (Permission p : permissions)
         {
             for (AccessLevel accessLevel : accessLevels)
@@ -365,34 +369,6 @@ public class PermissionController
             }
         }
         return false;
-    }
-
-    private Collection<Category> getGroupsIncludingParents(User user)
-    {
-        Collection<Category> groups = new HashSet<Category>();
-        for (Category group : user.getGroupList())
-        {
-            groups.add(group);
-            Category parent = group.getParent();
-            while (parent != null)
-            {
-                if (parent == group)
-                {
-                    throw new IllegalStateException("Parent added to own child");
-                }
-                if (parent == null || parent.getParent() == null || parent.getKey().equals("user-groups"))
-                {
-                    break;
-                }
-                if (!groups.contains(parent))
-                {
-                    groups.add(parent);
-                }
-                parent = parent.getParent();
-
-            }
-        }
-        return groups;
     }
 
     /** returns if the session user is a registerer */
@@ -529,18 +505,18 @@ public class PermissionController
         if (object instanceof Ownable)
         {
             Ownable ownable = (Ownable) object;
-            ReferenceInfo<User> ownerId = ownable.getOwnerRef();
-            if (ownerId != null && user.getReference().isSame(ownerId))
+            if ( isOwner( ownable, user))
             {
                 return true;
             }
-            if (ownerId == null && object instanceof Classifiable)
-            {
-                if (canCreate((Classifiable) object, user))
-                {
-                    return true;
-                }
-            }
+            // fallback for old entities that dont an owner
+//            if (ownerId == null && object instanceof Classifiable)
+//            {
+//                if (canCreate((Classifiable) object, user))
+//                {
+//                    return true;
+//                }
+//            }
         }
         if ( object instanceof Conflict)
         {
@@ -607,10 +583,11 @@ public class PermissionController
         {
             return true;
         }
-        if (canModify(reservation, user))
-        {
-            return true;
-        }
+        // canRead includes canModify
+//        if (canModify(reservation, user))
+//        {
+//            return true;
+//        }
         if (canReadTemplate(reservation, user))
         {
             return true;
@@ -620,10 +597,11 @@ public class PermissionController
 
     public boolean canRead(Allocatable allocatable, User user)
     {
-        if (canModify(allocatable, user))
-        {
-            return true;
-        }
+        // canRead includes canModify
+//        if (canModify(allocatable, user))
+//        {
+//            return true;
+//        }
         return canReadPrivate(allocatable, user);
     }
 

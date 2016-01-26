@@ -1475,9 +1475,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
     */
 
-    private boolean isAffected(DeleteUpdateEntry entry, User user)
+    private boolean isAffected(DeleteUpdateEntry entry, String userId, final Collection<String> groupsIncludingParents)
     {
-        if (entry.affectAll || user == null || user.isAdmin())
+        if (entry.affectAll )
         {
             return true;
         }
@@ -1485,17 +1485,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             if (entry.affectedGroupIds != null)
             {
-                for (String id : ((UserImpl) user).getGroupIdList())
+                if ( !Collections.disjoint( entry.affectedGroupIds,groupsIncludingParents))
                 {
-                    if (entry.affectedGroupIds.contains(id))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             if (entry.affectedUserIds != null)
             {
-                String userId = user.getId();
                 if (entry.affectedUserIds.contains(userId))
                 {
                     return true;
@@ -1711,6 +1707,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
 
         Lock lock = readLock();
+        final Collection<String> groupsIncludingParents = user != null ? UserImpl.getGroupsIncludingParents(user) : null;
+        String userId = user != null ? user.getId() : null;
         try
         {
             SortedMap<DeleteUpdateEntry, String> tailMap = deleteUpdateSet.inverseBidiMap().tailMap(fromElement);
@@ -1721,7 +1719,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     continue;
                 }
-                if (isAffected(entry, user))
+                if ( user == null || user.isAdmin() || isAffected(entry, userId, groupsIncludingParents))
                 {
                     ReferenceInfo deletedReference = entry.reference;
                     result.add(deletedReference);
@@ -1982,7 +1980,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void preprocessEventStorage(final UpdateEvent evt) throws RaplaException
     {
-        EntityStore store = new EntityStore(this, this.getSuperCategory());
+        EntityStore store = new EntityStore(this);
         Collection<Entity> storeObjects = evt.getStoreObjects();
         store.addAll(storeObjects);
         for (Entity entity : storeObjects)
@@ -2471,7 +2469,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Entity entity = (Entity) iterator.next();
             try
             {
-                checkConsitency(entity, cache.getSuperCategory());
+                checkConsitency(entity);
             }
             catch (RaplaException e)
             {
@@ -2508,17 +2506,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         for (Entity entity : evt.getStoreObjects())
         {
-            checkConsitency(entity, store.getSuperCategory());
+            checkConsitency(entity);
         }
 
     }
 
-    protected void checkConsitency(Entity entity, Category superCategory) throws RaplaException
+    protected void checkConsitency(Entity entity) throws RaplaException
     {
         Class<? extends Entity> raplaType = entity.getTypeClass();
         if (Category.class == raplaType)
         {
-            if (entity.equals(superCategory))
+            final String superCategoryId = Category.SUPER_CATEGORY_ID;
+            if (entity.getId().equals(superCategoryId))
             {
                 // Check if the user group is missing
                 Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
@@ -2545,7 +2544,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         {
                             throw new RaplaException("Category needs to be a child of super category.");
                         }
-                        else if (parent.equals(superCategory))
+                        else if (parent.getId().equals(superCategoryId))
                         {
                             break;
                         }
@@ -3201,7 +3200,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void createDefaultSystem(LocalCache cache) throws RaplaException
     {
-        EntityStore store = new EntityStore(cache, cache.getSuperCategory());
+        EntityStore store = new EntityStore(cache);
 
         Date now = getCurrentTimestamp();
 

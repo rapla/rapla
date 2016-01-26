@@ -327,7 +327,7 @@ import java.util.concurrent.locks.Lock;
 
     private void refreshWithoutLock(Connection c) throws SQLException
     {
-        final EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+        final EntityStore entityStore = new EntityStore(cache);
         final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
         Date lastUpdated = getLastRefreshed();
         Date connectionTime = raplaSQLInput.getLastUpdated(c);
@@ -454,7 +454,7 @@ import java.util.concurrent.locks.Lock;
             }
 
             {
-                org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput = new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+                org.rapla.storage.dbsql.RaplaSQL raplaSQLOutput = new org.rapla.storage.dbsql.RaplaSQL(createOutputContext(cache));
                 Map<String, String> idColumnMap = raplaSQLOutput.getIdColumns();
                 oldIdColumnCount = idColumnMap.size();
                 for (Map.Entry<String, String> entry : idColumnMap.entrySet())
@@ -487,25 +487,9 @@ import java.util.concurrent.locks.Lock;
         }
         if (!empty && (unpatchedTables == oldIdColumnCount && unpatchedTables > 0))
         {
-            getLogger().warn("Old database schema detected. Initializing conversion!");
-            org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput = new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
-            raplaSQLOutput.createOrUpdateIfNecessary(c, schema);
-
-            ImportExportManager manager = importExportManager.get();
-            CachableStorageOperator sourceOperator = manager.getSource();
-            if (sourceOperator == this)
-            {
-                throw new RaplaException("Can't export old db data, because no data export is set.");
-            }
-            LocalCache cache = new LocalCache(permissionController);
-            cache.clearAll();
-            addInternalTypes(cache);
-            loadOldData(c, cache);
-
-            getLogger().info("Old database loaded in memory. Now exporting to xml: " + sourceOperator);
-            sourceOperator.saveData(cache, "1.1");
-            getLogger().info("XML export done.");
-
+            final String message = "Old database schema detected. Please export data.xml with 1.8 rapla version and import in new !";
+            getLogger().error(message);
+            throw new RaplaException( message);
             //close( c);
         }
 
@@ -528,9 +512,9 @@ import java.util.concurrent.locks.Lock;
             sourceOperator.connect();
             if (unpatchedTables > 0)
             {
-                org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLOutput = new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(createOutputContext(cache));
+                org.rapla.storage.dbsql.RaplaSQL raplaSQLOutput = new org.rapla.storage.dbsql.RaplaSQL(createOutputContext(cache));
                 getLogger().warn("Dropping database tables and reimport from " + sourceOperator);
-                raplaSQLOutput.dropAll(c);
+                raplaSQLOutput.removeAll(c);
                 // we need to load the new schema after dropping
                 schema = loadDBSchema(c);
             }
@@ -968,7 +952,7 @@ import java.util.concurrent.locks.Lock;
         final Date lastUpdated = loadInitialLastUpdateFromDb(connection);
         setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
-        EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+        EntityStore entityStore = new EntityStore(cache);
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
@@ -998,44 +982,6 @@ import java.util.concurrent.locks.Lock;
             cache.putPassword(id, password);
         }
         processPermissionGroups();
-    }
-
-    @SuppressWarnings("deprecation") protected void loadOldData(Connection connection, LocalCache cache) throws RaplaException, SQLException
-    {
-        EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
-        IdCreator idCreator = new IdCreator()
-        {
-
-            @Override public String createId(Class<? extends Entity> type, String seed) throws RaplaException
-            {
-                String id = org.rapla.storage.OldIdMapping.getId(type, seed);
-                return id;
-            }
-
-            @Override public String createId(Class<? extends Entity> raplaType) throws RaplaException
-            {
-                throw new RaplaException("Can't create new ids in " + getClass().getName() + " this class is import only for old data ");
-            }
-        };
-        RaplaDefaultXMLContext inputContext = createInputContext(entityStore, idCreator);
-
-        org.rapla.storage.dbsql.pre18.RaplaPre18SQL raplaSQLInput = new org.rapla.storage.dbsql.pre18.RaplaPre18SQL(inputContext);
-        raplaSQLInput.loadAll(connection);
-        Collection<Entity> list = entityStore.getList();
-        cache.putAll(list);
-        resolveInitial(list, cache);
-        // It is important to do the read only later because some resolve might involve write to referenced objects
-        for (Entity entity : list)
-        {
-            ((RefEntity) entity).setReadOnly();
-        }
-        cache.getSuperCategory().setReadOnly();
-        for (User user : cache.getUsers())
-        {
-            ReferenceInfo id = user.getReference();
-            String password = entityStore.getPassword(id);
-            cache.putPassword(id, password);
-        }
     }
 
     private RaplaDefaultXMLContext createInputContext(EntityStore store, IdCreator idCreator) throws RaplaException

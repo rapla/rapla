@@ -14,9 +14,7 @@ import java.util.Date;
 @ExtensionPoint(context = InjectionContext.all, id = "org.rapla.entities.domain.Permission")
 public interface PermissionExtension
 {
-    boolean hasAccess(PermissionContainer container, User user, AccessLevel accessLevel);
-
-    boolean hasAccess(Iterable<? extends Permission> permissions, User user, AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday);
+    boolean hasAccess(PermissionContainer container, User user, AccessLevel accessLevel, Date start, Date end, Date today, boolean checkOnlyToday);
 
     boolean hasAccess(Classification objectList, Attribute attribute, User user, AccessLevel edit);
 }

@@ -19,8 +19,10 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 class DynAttReader extends RaplaXMLReader {
@@ -42,20 +44,23 @@ class DynAttReader extends RaplaXMLReader {
         if (level == entryLevel) {
         	DynamicType dynamicType;
             String id = atts.getValue("idref");
-            if ( id!= null) {
-                dynamicType = resolve(DynamicType.class,id);
-            } else {
+            ReferenceInfo<DynamicType> refInfo;
+            if ( id== null) {
                 String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
                 if ( typeName.equals("rapla:crypto"))
                 {
                     return;
                 }
-                dynamicType = getDynamicType(typeName);
-                if (dynamicType == null)
-                    throw createSAXParseException( "Dynanic type with name  '" + typeName + "' not found." );
-
+                refInfo = getKeyAndPathResolver().getIdForDynamicType(typeName);
+                if (refInfo == null)
+                {
+                    throw createSAXParseException("Dynanic type with name  '" + typeName + "' not found.");
+                }
             }
-
+            else {
+                refInfo = getId(DynamicType.class, id);
+            }
+            dynamicType = store.resolve(refInfo);
         	Classification newClassification = ((DynamicTypeImpl)dynamicType).newClassificationWithoutCheck(false);
             classification = (ClassificationImpl)newClassification;
             classifiable.setClassification(classification);
@@ -90,11 +95,23 @@ class DynAttReader extends RaplaXMLReader {
     }
 
     private void parseContent(String content) throws RaplaSAXParseException {
-        Object value = parseAttributeValue(attribute, content);
-        if ( value != null)
+        if ( attribute.getRefType() != null)
         {
-            classification.addValue( attribute, value);
+            final ReferenceInfo id = AttributeImpl.parseRefType(attribute, content, getKeyAndPathResolver());
+            if ( id != null)
+            {
+                classification.addRefValue(attribute, id);
+            }
         }
+        else
+        {
+            Object value = AttributeImpl.parseAttributeValueWithoutRef(attribute, content);
+            if ( value != null)
+            {
+                classification.addValue( attribute, value);
+            }
+        }
+
     }
     
 }

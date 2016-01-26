@@ -15,12 +15,14 @@ package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
@@ -99,22 +101,30 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
             if ( CalendarModelConfigurationImpl.canReference(typeClass))
             {
                 final Class<? extends Entity> entityClass = (Class<? extends Entity>) typeClass;
-                String id = getId( entityClass, refid);
-                idList.add( id);
+                ReferenceInfo id = getId( entityClass, refid);
+                idList.add( id.getId());
                 idTypeList.add(entityClass);
             }
         } 
         else if ( keyref != null)
         {
-            final Class<? extends RaplaObject> typeClass = getTypeForLocalName( localName );
+            final Class<? extends RaplaObject> typeClass = getTypeForLocalName(localName);
             // Test if raplaType can be referenced by the model (categories and periods cannot, but old versions allowed to store them
             if ( CalendarModelConfigurationImpl.canReference(typeClass))
             {
-                DynamicType type = getDynamicType( keyref );
-                if ( type != null)
+                ReferenceInfo id = null;
+                if (typeClass == Category.class)
                 {
-                    idList.add( type.getId());
-                    idTypeList.add( DynamicType.class);
+                    id = getKeyAndPathResolver().getIdForCategory(keyref);
+                }
+                else if (typeClass == DynamicType.class)
+                {
+                    id = getKeyAndPathResolver().getIdForDynamicType(keyref);
+                }
+                if ( id != null)
+                {
+                    idList.add(id.getId());
+                    idTypeList.add( (Class<? extends Entity>)typeClass);
                 }
                 else
                 {

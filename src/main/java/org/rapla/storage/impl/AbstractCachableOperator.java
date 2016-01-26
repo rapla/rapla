@@ -680,15 +680,15 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			if (persistant == entity) {
 				continue;
 			}
-			if ( entity instanceof Category)
-			{
-				Category category = (Category)entity;
-				CategoryImpl parent = (CategoryImpl)category.getParent();
-				if ( parent != null)
-				{
-					parent.replace( category);
-				}
-			}
+			//if ( entity instanceof Category)
+			//{
+			//	Category category = (Category)entity;
+			//	CategoryImpl parent = (CategoryImpl)category.getParent();
+			//	if ( parent != null)
+			//	{
+			//		parent.replace( category);
+			//	}
+			//}
 			cache.put(entity);
 			updatedEntities.add(entity);
 		}

@@ -17,11 +17,13 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
 
 public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
@@ -33,6 +35,8 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     
     private Date lastChanged;
     private Date createDate;
+
+
 
     @Override public Class<User> getTypeClass()
     {
@@ -147,6 +151,16 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         add("groups",group);
     }
 
+    public void addGroupId(ReferenceInfo<Category> groupId) {
+        checkWritable();
+        final String id = groupId.getId();
+        if ( isRefering("groups", id))
+        {
+            return;
+        }
+        addId("groups", groupId.getId());
+    }
+
     public boolean removeGroup(Category group)   {
         checkWritable();
         return removeId(group.getId());
@@ -188,14 +202,8 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
      */
     public boolean belongsTo( Category group )
     {
-    	for (Category uGroup:getGroupList())
-    	{
-    		if (group.equals( uGroup) || group.isAncestorOf( uGroup))
-    		{
-    			return true;
-    		}
-    	}
-        return false;
+        final Collection<String> groupsIncludingParents = getGroupsIncludingParents(this);
+        return groupsIncludingParents.contains( group.getId());
     }
 
     public User clone() {
@@ -251,8 +259,35 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         return person;
     }
 
-    
-
+    public static Collection<String> getGroupsIncludingParents(User user) {
+        Collection<String> groups = new HashSet<String>( );
+        for ( Category group: user.getGroupList())
+        {
+            groups.add( group.getId());
+            Category parent = group.getParent();
+            while ( parent != null)
+            {
+                if ( parent == group)
+                {
+                    throw new IllegalStateException("Parent added to own child");
+                }
+                if (parent == null  || parent.getParent() == null || parent.getKey().equals("user-groups"))
+                {
+                    break;
+                }
+                if ( ! groups.contains( parent.getId()))
+                {
+                    groups.add( parent.getId());
+                }
+                else
+                {
+                    break;
+                }
+                parent = parent.getParent();
+            }
+        }
+        return groups;
+    }
     
 
 }

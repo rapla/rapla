@@ -21,6 +21,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
 import java.util.Date;
@@ -55,14 +56,26 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
         Class<? extends Entity> refType = attribute.getRefType();
         for (int i=0;i<ruleValues.length;i++) {
             Object ruleValue = ruleValues[i];
-			if (ruleValue instanceof Entity)
-			{
-			    putEntity(String.valueOf(i),(Entity)ruleValue);
-                //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
-            }
-            else if (refType != null && (ruleValue instanceof String) /*&& refType.isId(ruleValue)*/)
+            if (refType != null)
             {
-                putId(String.valueOf(i),(String)ruleValue);
+                final String key = String.valueOf(i);
+                if (ruleValue instanceof Entity)
+			    {
+    			    putEntity(key, (Entity) ruleValue);
+                    //unresolvedRuleValues[i] = ((Entity)ruleValues[i]).getId();
+                }
+                else if (ruleValue instanceof ReferenceInfo)
+                {
+                    putId(key,((ReferenceInfo)ruleValue).getId());
+                }
+                else if ( ruleValue == null)
+                {
+                    putId(key,(String)null);
+                }
+                else
+                {
+                    throw new IllegalStateException("Unsuppoted type for reference " + ruleValue);
+                }
             }
             else
             {
@@ -148,13 +161,14 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
 	private Object getValue(Attribute attribute, int index) 
 	{
 		 AttributeType type = attribute.getType();
-		 if (type == AttributeType.CATEGORY )
+        final String key = String.valueOf(index);
+        if (type == AttributeType.CATEGORY )
 		 {
-			 return getEntity(String.valueOf(index), Category.class);
+			 return getEntity(key, Category.class);
 		 }
 		 else if (type == AttributeType.ALLOCATABLE)
 		 {
-		     return getEntity(String.valueOf(index), Allocatable.class);
+		     return getEntity(key, Allocatable.class);
 		 }
 		 String stringValue =  ruleValues[index];
 		 if ( stringValue == null)
@@ -193,11 +207,17 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     private void setValue(int i, Object ruleValue)
     {
     	String newValue;
-    	if (ruleValue instanceof Entity)
+        final String key = String.valueOf(i);
+        if (ruleValue instanceof Entity)
     	{
-    		putEntity(String.valueOf(i), (Entity)ruleValue);
+    		putEntity(key, (Entity)ruleValue);
     		newValue = null;
     	}
+        else if (ruleValue instanceof ReferenceInfo)
+        {
+            putId(key, ((ReferenceInfo) ruleValue).getId());
+            newValue = null;
+        }
     	else if ( ruleValue instanceof Date)
     	{
     		Date date = (Date) ruleValue;
@@ -206,7 +226,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     	else
     	{
     		newValue = ruleValue != null ? ruleValue.toString() : null;
-        	removeId( String.valueOf( i));
+        	removeId(key);
     	}
     	ruleValues[i] = newValue;
 

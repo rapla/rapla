@@ -26,6 +26,11 @@ public class AssertionError extends RuntimeException {
     public String toString() {
         return text;
     }
+
+    @Override public String getMessage()
+    {
+        return text;
+    }
 }
 
 

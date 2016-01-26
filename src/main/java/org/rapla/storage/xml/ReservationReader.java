@@ -26,14 +26,16 @@ import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.Date;
 
 public class ReservationReader extends RaplaXMLReader {
     ReservationImpl reservation;
-    private String allocatableId = null;
+    private ReferenceInfo<Allocatable> allocatableId = null;
     private AppointmentImpl appointment = null;
     private Repeating repeating = null;
     
@@ -156,10 +158,10 @@ public class ReservationReader extends RaplaXMLReader {
         if (localName.equals("allocate")) {
             String id = getString( atts, "idref" );
             allocatableId = getId( Allocatable.class, id);
-            reservation.addId("resources", allocatableId );
+            reservation.addId("resources", allocatableId.getId() );
             if ( appointment != null )
             {
-                reservation.addRestrictionForId( allocatableId, appointment.getId());
+                reservation.addRestrictionForId( allocatableId.getId(), appointment.getId());
             }
         }
 
@@ -223,13 +225,12 @@ public class ReservationReader extends RaplaXMLReader {
             }
         }
     }
-	
+
 	private void addNewPermissionWithGroup(PermissionContainer container, Permission.AccessLevel acceassLevel, String groupKey) {
-        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        Category group = userGroups.getCategory(groupKey);
-        Permission permission = container.newPermission();
+        ReferenceInfo<Category> group = getGroup(groupKey);
+        PermissionImpl permission = (PermissionImpl)container.newPermission();
         permission.setAccessLevel( acceassLevel);
-        permission.setGroup( group);
+        permission.setGroupId(group);
         container.addPermission( permission);
     }
 }

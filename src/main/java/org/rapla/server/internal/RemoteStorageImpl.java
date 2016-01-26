@@ -534,7 +534,7 @@ public class RemoteStorageImpl implements RemoteStorage
                 user = getSessionUser();
             }
             Collection<Entity> storeObjects = evt.getStoreObjects();
-            EntityStore store = new EntityStore(operator, operator.getSuperCategory());
+            EntityStore store = new EntityStore(operator);
             store.addAll(storeObjects);
             for (EntityReferencer references : evt.getEntityReferences())
             {

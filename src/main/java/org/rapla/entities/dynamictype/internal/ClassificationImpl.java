@@ -12,10 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -25,10 +27,12 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -361,7 +365,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		ArrayList<String> newValues = new ArrayList<String>();
 		for (Object value:values)
 		{
-			String stringValue = ((AttributeImpl)attribute).toStringValue(value);
+			String stringValue = toStringValue(attribute,value);
 			if ( stringValue != null)
 			{
 				newValues.add(stringValue);
@@ -372,30 +376,43 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         name = null;
     }
 
-    private String toSafeString(Attribute attribute, Object value) throws IllegalArgumentException
+    public void addRefValue(Attribute attribute, ReferenceInfo info)
     {
-        final AttributeImpl attributeImpl = (AttributeImpl)attribute;
-        String stringValue = attributeImpl.toStringValue(value);
-        return stringValue;
+        if ( info == null)
+        {
+            return;
+        }
+        if ( attribute.getRefType() != info.getType())
+        {
+            throw new RaplaException("Different reference type exepcted " + attribute.getRefType() + " but was " + info.getType());
+        }
+        String attributeKey = attribute.getKey();
+        final String id = info.getId();
+        addValue(attributeKey, id);
     }
 
     public <T> void addValue(Attribute attribute,T value) {
     	checkWritable();
     	String attributeKey = attribute.getKey();
-    	String stringValue = ((AttributeImpl)attribute).toStringValue( value);
+    	String stringValue = toStringValue( attribute,value);
         if ( stringValue == null)
         {
         	return;
         }
-    	List<String> l = data.get(attributeKey);
-    	if ( l == null) 
-    	{
-    		l = new ArrayList<String>();
-    		data.put(attributeKey, l);
-    	}
-    	l.add(stringValue);
+        addValue(attributeKey, stringValue);
     }
-    
+
+    private void addValue(String attributeKey, String stringValue)
+    {
+        List<String> l = data.get(attributeKey);
+        if ( l == null)
+        {
+            l = new ArrayList<String>();
+            data.put(attributeKey, l);
+        }
+        l.add(stringValue);
+    }
+
     public Collection<Object> getValues(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
@@ -412,14 +429,56 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
         	Object obj;
 			try {
-				obj = ((AttributeImpl)attribute).fromString(resolver,value);
+				obj = fromString(attribute,resolver,value);
 				result.add( obj);
 			} catch (EntityNotFoundException e) {
 			}
         }
         return result;
     }
-    
+
+    /** returns the string representation of the given value. if attribute is a reference then the id of the referenced object is returned.*/
+    private String toStringValue( Attribute attribute,Object value) {
+        String stringValue = null;
+        Class<? extends Entity> refType = attribute.getRefType();
+        if (refType != null)
+        {
+            if ( value instanceof Entity && ((Entity)value).getTypeClass() == refType)
+            {
+                stringValue = ((Entity) value).getId();
+            }
+            else
+            {
+                throw new RaplaException("entity expected. but id used please use addRefValue instead of addValue in reading");
+            }
+        }
+        else if (type.equals( AttributeType.DATE )) {
+            return new SerializableDateTimeFormat().formatDate((Date)value);
+        }
+        else if ( value != null)
+        {
+            stringValue = value.toString();
+        }
+        return stringValue;
+    }
+
+    private Object fromString(Attribute attribute,EntityResolver resolver, String value) throws EntityNotFoundException {
+        Class<? extends Entity> refType = attribute.getRefType();
+        final AttributeType type = attribute.getType();
+        if (refType != null)
+        {
+            Entity resolved = resolver.resolve( value, refType );
+            return resolved;
+        }
+        Object result;
+        try {
+            result = AttributeImpl.parseAttributeValueWithoutRef(attribute, value);
+        } catch (RaplaException e) {
+            throw new IllegalStateException("Value not parsable");
+        }
+        return result;
+    }
+
     public Object getValue(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
@@ -434,7 +493,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         String stringRep = o.get(0);
         Object fromString;
 		try {
-			fromString = ((AttributeImpl)attribute).fromString(resolver, stringRep);
+			fromString = fromString(attribute,resolver, stringRep);
 			return fromString;
 		} catch (EntityNotFoundException e) {
 			throw new IllegalStateException(e.getMessage());

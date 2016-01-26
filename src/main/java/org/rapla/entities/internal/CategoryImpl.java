@@ -21,6 +21,7 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 
 import java.util.Collection;
@@ -34,15 +35,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-final public class CategoryImpl extends SimpleEntity implements Category, ParentEntity, ModifiableTimestamp
+final public class CategoryImpl extends SimpleEntity implements Category, ModifiableTimestamp
 {
     private MultiLanguageName name = new MultiLanguageName();
     private String key;
-    Set<CategoryImpl> childs = new LinkedHashSet<CategoryImpl>();
     private Date lastChanged;
     private Date createDate;
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
-    private transient Category parent;
     public CategoryImpl()
     {
         this(new Date(), new Date());
@@ -56,16 +55,8 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     @Override
     public void setResolver(EntityResolver resolver) {
     	super.setResolver(resolver);
-        for (CategoryImpl child:childs)
-        {
-        	child.setParent( this);
-        }
     }
-    @Override
-    public void addEntity(Entity entity) {
-    	childs.add( (CategoryImpl) entity);
-    }
-    
+
     public Date getLastChanged() {
         return lastChanged;
     }
@@ -77,10 +68,6 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     public void setLastChanged(Date date) {
         checkWritable();
         lastChanged = date;
-        for ( CategoryImpl child:childs)
-        {
-            child.setLastChanged(date);
-        }
     }
 
     @Override public Class<Category> getTypeClass()
@@ -90,32 +77,36 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 
     void setParent(CategoryImpl parent) {
 		putEntity("parent", parent);
-		this.parent = parent;
 	}
+
+    public void setParentId(ReferenceInfo<Category> parent) {
+        putId("parent", parent);
+    }
 
     public void removeParent()
     {
         removeWithKey("parent");
-        this.parent = null;
     }
     
     public Category getParent()
     {
-    	if ( parent == null)
-    	{
-    		parent = getEntity("parent", Category.class);
-    	}
-		return parent;
+        return getEntity("parent", Category.class);
+    }
+
+    public ReferenceInfo<Category> getParentRef()
+    {
+        return getRef("parent",Category.class);
     }
 
     public Category[] getCategories() {
+        final Collection<Category> childs = getCategoryList();
         return childs.toArray(Category.CATEGORY_ARRAY);
     }
 
-	@SuppressWarnings("unchecked")
-	public Collection<CategoryImpl> getSubEntities() {
-		return childs;
-	}
+    public Collection<Category> getCategoryList()
+    {
+        return getList("childs", Category.class);
+    }
 
     /** returns true if this is a direct or transitive parent of the passed category*/
     public boolean isAncestorOf(Category category) {
@@ -130,7 +121,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     }
 
     public Category getCategory(String key) {
-        for (Entity ref: getSubEntities())
+        for (Entity ref: getCategoryList())
         {	
             Category cat = (Category) ref;
             if (cat.getKey().equals(key))
@@ -140,7 +131,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
     }
 
     public boolean hasCategory(Category category) {
-        return childs.contains(category);
+        return isRefering("childs", category.getId());
     }
 
     public void addCategory(Category category) {
@@ -153,8 +144,8 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         {
         	Assert.isTrue( !categoryImpl.isAncestorOf( this), "Can't add a parent category to one of its ancestors.");
         }
-        addEntity(category);
-		categoryImpl.setParent(this);
+        addId("childs", category.getId());
+        categoryImpl.setParent(this);
     }
 
     public int getRootPathLength() {
@@ -185,7 +176,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         checkWritable();
         if ( findCategory( category ) == null)
             return;
-        childs.remove(category);
+        removeId(category.getId());
         //if (category.getParent().equals(this))
         ((CategoryImpl)category).setParent(null);
     }
@@ -368,16 +359,10 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         CategoryImpl clone = new CategoryImpl();
         super.deepClone(clone);
         clone.name = (MultiLanguageName) name.clone();
-        clone.parent = parent;
         clone.annotations = (HashMap<String,String>) ((HashMap<String,String>)annotations).clone();
         clone.key = key;
         clone.lastChanged = lastChanged;
         clone.createDate = createDate;
-        for (Entity ref:clone.getSubEntities())
-        {
-            ((CategoryImpl)ref).setParent(clone);
-        }
-        
         return clone;
     }
     
@@ -424,7 +409,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
         CategoryImpl parent2 = (CategoryImpl) c2.getParent();
         Assert.isTrue(parent.equals( parent2 ));
 
-        Collection<CategoryImpl> categories = parent.getSubEntities();
+        Collection<Category> categories =parent.getCategoryList();
         for ( Category category: categories)
         {
             if ( category.equals( c1))
@@ -440,6 +425,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
    }
 
 
+    /*
     public void replace(Category category) {
 		String id = category.getId();
 		CategoryImpl existingEntity = (CategoryImpl) findEntityForId(id);
@@ -453,6 +439,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Parent
 			childs = newChilds;
 		}
 	}
+	*/
 
 	
 }

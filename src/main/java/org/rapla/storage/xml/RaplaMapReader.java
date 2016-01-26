@@ -21,6 +21,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 public class RaplaMapReader extends RaplaXMLReader  {
@@ -70,30 +71,26 @@ public class RaplaMapReader extends RaplaXMLReader  {
             if ( !entityMap.isTypeSupportedAsLink(typeClass)) {
                 return;
             }
-            String id = getId( typeClass, refid);
-            entityMap.putIdPrivate( key,  id, typeClass);
+            ReferenceInfo id = getId( typeClass, refid);
+            entityMap.putIdPrivate( key,  id);
         }  else if ( keyref != null) {
             childReader = null;
+            ReferenceInfo id;
             if ( raplaType == DynamicType.class)
             {
-                DynamicType type = getDynamicType( keyref );
-                if ( type != null) {
-                	String id = type.getId();
-                    entityMap.putIdPrivate( key,  id, DynamicType.class);
-                }
+                id = getKeyAndPathResolver().getIdForDynamicType(keyref);
             }
-            if ( raplaType == Category.class)
+            else
             {
-                try
-                {
-                    Category cat = getSuperCategory().getCategoryFromPath(keyref);
-                    String id = cat.getId();
-                    entityMap.putIdPrivate( key,  id, DynamicType.class);
-                }
-                catch (EntityNotFoundException e)
-                {
-                    getLogger().warn(e.getMessage(),e);
-                }
+                id = getKeyAndPathResolver().getIdForCategory(keyref);
+            }
+            if ( id != null)
+            {
+                entityMap.putIdPrivate(key, id);
+            }
+            else
+            {
+                getLogger().warn("Can't find " + raplaType + " for keyref " + keyref);
             }
         } else {
             childReader = getChildHandlerForType( raplaType );

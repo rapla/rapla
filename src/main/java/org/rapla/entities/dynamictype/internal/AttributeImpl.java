@@ -28,7 +28,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 
@@ -157,8 +157,14 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		    multiSelect = constraint != null && "true".equalsIgnoreCase( constraint.toString());
 		}
 	}
-	
-	@Override
+
+    public void setContraintRefId(String key,ReferenceInfo constraintRefId )
+    {
+        putId("constraint." + key,constraintRefId.getId());
+    }
+
+
+    @Override
 	protected Class<? extends Entity> getInfoClass(String key) 
 	{
 	    Class<? extends Entity> infoClass = super.getInfoClass(key);
@@ -197,6 +203,26 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
     }
 
+    public void setDefaultValueRef(ReferenceInfo ref)
+    {
+        checkWritable();
+        if ( ref == null)
+        {
+            removeWithKey("default.category");
+            defaultValue = null;
+        }
+        if (ref.getType() != getRefType())
+        {
+            throw new IllegalArgumentException("Illegal type default value for expected " + getRefType() + " but was "  + ref.getType());
+        }
+
+        if ( type.equals( AttributeType.CATEGORY))
+        {
+            putId("default.category", ref.getId());
+            defaultValue = null;
+        }
+    }
+
     public Object getConstraint(String key) {
         if ( key.equals(ConstraintIds.KEY_MULTI_SELECT))
         {
@@ -210,6 +236,21 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
         return null;
     }
+
+
+    public ReferenceInfo getRefConstraintId(String key) {
+        Class<?> constraintClass = getConstraintClass( key );
+        if ( constraintClass == Category.class || constraintClass == DynamicType.class) {
+            @SuppressWarnings("unchecked")
+            Class<? extends Entity> class1 = (Class<? extends Entity>) constraintClass;
+            final String id = getId("constraint." + key);
+            if ( id == null)
+                return null;
+            return new ReferenceInfo(id, class1);
+        }
+        return null;
+    }
+
 
     public Class<?> getConstraintClass(String key) {
         if (key.equals(ConstraintIds.KEY_ROOT_CATEGORY)) {
@@ -541,62 +582,14 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
     }
 
-    @SuppressWarnings("deprecation")
-    static public Object parseAttributeValue(Attribute attribute,String text) throws RaplaException {
+    public static Object parseAttributeValueWithoutRef(Attribute attribute, String text)
+    {
         AttributeType type = attribute.getType();
         final String trim = text.trim();
-        EntityResolver resolver = ((AttributeImpl)attribute).getResolver();
         if (type.equals( AttributeType.STRING )) {
             return text;
         }
-        else if (type.equals( AttributeType.ALLOCATABLE)) {
-            String path = trim;
-            if (path.length() == 0) {
-                return null;
-            }
-            return path;
-        }
-        else if (type.equals( AttributeType.CATEGORY )) {
-            String path = trim;
-            if (path.length() == 0) {
-                return null;
-            }
-            if ( resolver != null)
-            {
-                if ( resolver.tryResolve( path, Category.class) != null)
-                {
-                    return path;
-                }
-            }
-            if (org.rapla.storage.OldIdMapping.isTextId(Category.class,path) ) {
-            	String id = org.rapla.storage.OldIdMapping.getId( Category.class, path);
-            	return id ;
-            } else {
-                CategoryImpl rootCategory = (CategoryImpl)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-                 if (rootCategory == null) {
-                   //System.out.println( attribute.getConstraintKeys());
-                   throw new RaplaException("Can't find " + ConstraintIds.KEY_ROOT_CATEGORY + " for attribute " + attribute);
-                }
-                Category categoryFromPath; 
-                try
-                {
-                    categoryFromPath = rootCategory.getCategoryFromPath(path);
-                } 
-                catch (EntityNotFoundException ex)
-                {
-                    while ( rootCategory.getParent() != null)
-                    {
-                        rootCategory = (CategoryImpl) rootCategory.getParent();
-                        if ( rootCategory.isAncestorOf( rootCategory))
-                        {
-                            throw new IllegalStateException("Illegal category circle detected!");
-                        }
-                    }
-                    categoryFromPath = rootCategory.getCategoryFromPath(path);
-                }
-                return categoryFromPath;
-            }
-        } else if (trim.length() == 0)
+        else if (trim.length() == 0)
         {
             return null;
         }
@@ -616,8 +609,31 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 throw new RaplaException( ex.getMessage());
             }
         }
-        
+
         throw new RaplaException("Unknown attribute type: " + type );
+    }
+
+    public static ReferenceInfo parseRefType(Attribute attribute,  String text, KeyAndPathResolver categoryFinder)
+    {
+        Class<? extends Entity> refType = attribute.getRefType();
+        if (refType == Category.class)
+            {
+                String path = text;
+                if (path.length() == 0)
+                {
+                    return null;
+                }
+                final ReferenceInfo<Category> parentCategory = ((AttributeImpl)attribute).getRefConstraintId(ConstraintIds.KEY_ROOT_CATEGORY );
+                final ReferenceInfo<Category> idForCategory = categoryFinder.getIdForCategory(parentCategory,text);
+                return idForCategory;
+            }
+            else {
+                String path = text;
+                if (path.length() == 0) {
+                    return null;
+                }
+                return new ReferenceInfo(path, refType);
+        }
     }
 
     public static String attributeValueToString( Attribute attribute, Object value, boolean idOnly) throws EntityNotFoundException {
@@ -644,6 +660,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 	        return value.toString() ;
 	    }
     }
+
 
     static public class IntStrategy {
         String[] constraintKeys = new String[] {"min","max"};
@@ -717,45 +734,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		 }
 	}
 
-	public String toStringValue( Object value) {
-		String stringValue = null;
-		Class<? extends Entity> refType = getRefType();
-		if (refType != null) 
-		{
-			if ( value instanceof Entity)
-			{
-				stringValue = ((Entity) value).getId();
-			}
-			else 
-			{
-				stringValue = value.toString();
-			}
-		} 
-		else if (type.equals( AttributeType.DATE )) {
-			return new SerializableDateTimeFormat().formatDate((Date)value);
-		}
-		else if ( value != null)
-		{
-			stringValue = value.toString();
-		}
-		return stringValue;
-	}
 
-	public Object fromString(EntityResolver resolver, String value) throws EntityNotFoundException {
-		Class<? extends Entity> refType = getRefType();
-		if (refType != null) 
-		{
-		    Entity resolved = resolver.resolve( value, refType );
-			return resolved;
-		}
-		Object result;
-		try {
-			result = parseAttributeValue(this, value);
-		} catch (RaplaException e) {
-			throw new IllegalStateException("Value not parsable");
-		}
-		return result;
-	}
     
 
 }

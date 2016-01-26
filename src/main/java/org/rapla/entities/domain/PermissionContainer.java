@@ -23,6 +23,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.internal.UserImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -93,10 +94,10 @@ public interface PermissionContainer extends Ownable
          * @return USER_PERMISSION if permission specifies the current user
          * @return if the permission affects a users group the depth of the permission group category specified 
          */
-        static public int getUserEffect(User user,Permission p, Collection<Category> groups) 
+        static public int getUserEffect(User user,Permission p, Collection<String> groups)
         {
             User pUser = p.getUser();
-            Category pGroup = p.getGroup();
+            String pGroup = ((PermissionImpl)p).getGroupId();
             if ( pUser == null  && pGroup == null ) 
             {
                 return PermissionImpl.ALL_USER_PERMISSION;
@@ -115,14 +116,14 @@ public interface PermissionContainer extends Ownable
             return PermissionImpl.NO_PERMISSION;
         }
 
-        
+        // TODO check if union is correct
         static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,Date today,  Permission.AccessLevel requestedAccessLevel ) {
             if ( user == null || user.isAdmin() )
                 return new TimeInterval( null, null);
           
             TimeInterval interval = null;
             int maxEffectLevel = PermissionImpl.NO_PERMISSION;
-            Collection<Category> groups = getGroupsIncludingParents( user );
+            Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
             for ( Permission p:permissionList) 
             {
                 int effectLevel = getUserEffect(user,p,groups);
@@ -159,36 +160,6 @@ public interface PermissionContainer extends Ownable
             return interval;
         }
 
-
-        
-        public static Collection<Category> getGroupsIncludingParents(User user) {
-            Collection<Category> groups = new HashSet<Category>( );
-            for ( Category group: user.getGroupList())
-            {
-                groups.add( group);
-                Category parent = group.getParent();
-                while ( parent != null)
-                {
-                    if ( parent == group)
-                    {
-                        throw new IllegalStateException("Parent added to own child");
-                    }
-                    if (parent == null  || parent.getParent() == null || parent.getKey().equals("user-groups"))
-                    {
-                        break;
-                    }
-                    if ( ! groups.contains( parent))
-                    {
-                        groups.add( parent);
-                    }
-                    parent = parent.getParent();
-                    
-                }
-            }
-            return groups;
-        }
-        
-        
         private static void addDifferences(Set<Permission> invalidatePermissions, Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
             // we leave this condition for a faster equals check
             int size = oldPermissions.size();

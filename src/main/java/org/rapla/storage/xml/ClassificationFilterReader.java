@@ -19,7 +19,9 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
@@ -62,16 +64,20 @@ class ClassificationFilterReader extends RaplaXMLReader {
         if (localName.equals("classificationfilter"))
         {
             String id = atts.getValue("dynamictypeidref");
-            if ( id != null) {
-                dynamicType =  resolve(DynamicType.class,id);
-            } else {
-                String typeName = getString(atts,"dynamictype");
-                dynamicType = getDynamicType( typeName );
-                if (dynamicType == null) {
-                    getLogger().error("Error reading filter with " + DynamicType.class + " " + typeName,null);
-                    return;
-                } 
+            ReferenceInfo<DynamicType> refInfo;
+            if ( id== null) {
+                String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
+                refInfo = getKeyAndPathResolver().getIdForDynamicType(typeName);
+                if (refInfo == null)
+                {
+                    throw createSAXParseException("Dynanic type with name  '" + typeName + "' not found.");
+                }
             }
+            else {
+                refInfo = getId(DynamicType.class, id);
+            }
+            dynamicType =  store.resolve(refInfo);
+
             final String annotation = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
             boolean eventType = annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
             if (eventType )
@@ -126,7 +132,17 @@ class ClassificationFilterReader extends RaplaXMLReader {
 
         if (localName.equals("orCond") && attribute!= null)
         {
-            Object value = parseAttributeValue(attribute, readContent().trim());
+            final String trim = readContent().trim();
+            Object value;
+            if ( attribute.getRefType() != null)
+            {
+                final ReferenceInfo referenceInfo = AttributeImpl.parseRefType(attribute, trim, getKeyAndPathResolver());
+                value = referenceInfo;
+            }
+            else
+            {
+                value = AttributeImpl.parseAttributeValueWithoutRef( attribute, trim);
+            }
             conditions.add(new Object[] {operator,value});
         }
 

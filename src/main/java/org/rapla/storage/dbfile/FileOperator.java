@@ -244,7 +244,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
 
-        EntityStore entityStore = new EntityStore(cache, cache.getSuperCategory());
+        EntityStore entityStore = new EntityStore(cache);
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this);
         RaplaMainReader contentHandler = new RaplaMainReader(inputContext);
         try

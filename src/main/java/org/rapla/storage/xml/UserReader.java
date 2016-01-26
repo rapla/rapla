@@ -20,6 +20,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.Date;
@@ -49,7 +50,7 @@ public class UserReader extends RaplaXMLReader
         {
             TimestampDates ts = readTimestamps( atts);
             user = new UserImpl(ts.createTime, ts.changeTime);
-            String id = setId( user, atts );
+            setId( user, atts );
 //            String idString = getString(atts, "person",null);
 //            if ( idString != null)
 //            {
@@ -74,16 +75,16 @@ public class UserReader extends RaplaXMLReader
             String groupId = atts.getValue( "idref" );
             if (groupId !=null)
             {
-            	String newGroupId = getId(Category.class, groupId);
-                user.addId("groups",newGroupId);
+            	ReferenceInfo<Category> newGroupId = getId(Category.class, groupId);
+                user.addId("groups",newGroupId.getId());
             }
             else
             {
                 String groupKey = getString( atts, "key" );
-                Category group = getGroup( groupKey);
+                ReferenceInfo<Category> group = getGroupWithKeyRef( groupKey);
                 if (group != null)
                 {
-                    user.addGroup( group );
+                    ((UserImpl)user).addGroupId( group );
                 }
             }
         }
@@ -118,17 +119,20 @@ public class UserReader extends RaplaXMLReader
     }
     
     private void addNewGroup(User user, String groupKey) throws RaplaSAXParseException {
-        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        Category group = userGroups.getCategory(groupKey);
-        if ( group != null)
-        {   
-            // add the groups to the user if the groups were not there in a previous version
-            Date createTime = group.getCreateTime();
-            RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.class);
-            Date categoryCreateTime = dynamicTypeReader.getReadTimestamp();
-            if ( categoryCreateTime.equals(createTime ))
+        ReferenceInfo<Category> groupId = getGroup(groupKey);
+        if ( groupId != null)
+        {
+            final Category group = store.tryResolve(groupId);
+            if ( group != null)
             {
-                user.addGroup( group);
+                // add the groups to the user if the groups were not there in a previous version
+                Date createTime = group.getCreateTime();
+                RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.class);
+                Date categoryCreateTime = dynamicTypeReader.getReadTimestamp();
+                if (categoryCreateTime.equals(createTime))
+                {
+                    ((UserImpl)user).addGroupId(groupId);
+                }
             }
         }
     }

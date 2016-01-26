@@ -20,6 +20,7 @@ import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
 import java.util.ArrayList;
@@ -138,6 +139,15 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         putEntity("group", group);
     }
 
+    public void setGroupId(ReferenceInfo<Category> group) {
+        if (group != null)
+        {
+            putEntity("user", null);
+        }
+        putId("group", group);
+
+    }
+
     public ReferenceHandler getReferenceHandler() {
         return this;
     }
@@ -204,7 +214,12 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
             //System.out.println( " end before permission ");
             return false;
         }
+
         if ( minAdvance != null ) {
+            if ( today == null)
+            {
+                return false;
+            }
             long pStartTime = today.getTime()
                 + DateTools.MILLISECONDS_PER_DAY * minAdvance.longValue();
 
@@ -214,6 +229,10 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
             }
         }
         if ( maxAdvance != null ) {
+            if ( today == null)
+            {
+                return false;
+            }
             long pEndTime = today.getTime()
                 + DateTools.MILLISECONDS_PER_DAY * (maxAdvance.longValue() + 1);
             if ( end == null || end.getTime() > pEndTime   ) {

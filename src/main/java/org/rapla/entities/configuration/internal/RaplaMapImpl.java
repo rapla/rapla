@@ -143,13 +143,12 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         if (value instanceof Entity)
         {
             Entity entity = (Entity) value;
-            String id = entity.getId();
             Class<? extends  Entity> raplaType = entity.getTypeClass();
             if (!isTypeSupportedAsLink(raplaType))
             {
                 throw new IllegalArgumentException("RaplaType " + raplaType + " cannot be stored as link in map");
             }
-            putIdPrivate(key, id, raplaType);
+            putIdPrivate(key,entity.getReference());
         }
         else if (value instanceof RaplaConfiguration)
         {
@@ -225,12 +224,13 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         this.map.putAll(map);
     }
 
-    public void putIdPrivate(String key, String id, Class<?extends Entity> typeClass)
+    public void putIdPrivate(String key, ReferenceInfo referenceInfo)
     {
         cachedEntries = null;
         if (links == null)
         {
             links = new LinkReferenceHandler();
+            Class<? extends Entity> typeClass = referenceInfo.getType();
             String localname = RaplaType.getLocalName( typeClass);
             links.setLinkType(localname);
             if (resolver != null)
@@ -238,7 +238,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
                 links.setResolver(resolver);
             }
         }
-        links.putId(key, id);
+        links.putId(key, referenceInfo.getId());
         map = null;
     }
 

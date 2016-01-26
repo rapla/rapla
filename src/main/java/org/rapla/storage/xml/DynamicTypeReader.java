@@ -21,6 +21,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -29,6 +30,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.Date;
@@ -252,106 +254,66 @@ public class DynamicTypeReader extends RaplaXMLReader
         else if (localName.equals( "constraint" ) && namespaceURI.equals( RAPLA_NS ))
         {
             String content = readContent().trim();
-            Object constraint = null;
             if (attribute.getConstraintClass( constraintKey ) == Category.class)
             {
-                @SuppressWarnings("deprecation")
-                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.class, content );
-                if (idContent)
-                {
-                    String id = getId( Category.class, content );
-                    constraint = store.tryResolve( id, Category.class );
-                    if ( constraint == null)
-                    {
-                        getLogger().error("Can't resolve root category for " + dynamicType.getKey() + "." + attribute.getKey() + " id is " + id + " (" + content + ")");
-                    }
-                }
-                else
-                {
-                    constraint = getCategoryFromPath( content );
-                }
+                ReferenceInfo<Category> idRef = getKeyAndPathResolver().getIdForCategory(content);
+                attribute.setContraintRefId( constraintKey,idRef);
             }
             else if (attribute.getConstraintClass( constraintKey ) == DynamicType.class)
             {
-                @SuppressWarnings("deprecation")
-                boolean idContent = org.rapla.storage.OldIdMapping.isTextId( DynamicType.class, content );
-                if (idContent)
+                ReferenceInfo<Category> idRef = getKeyAndPathResolver().getIdForDynamicType(content);
+                if (idRef == null)
                 {
-					constraint = content.trim();
-                }
-                else
-                {
-                	String elementKey = content;
-                	// check if the dynamic type refers to itself
-                	if (elementKey.equals( dynamicType.getKey()))
-                	{
-                		constraint = dynamicType;
-                	}
-                	else
-                	{
-	                	// this only works if the dynamic type is already loaded
-	                    constraint = getDynamicType(elementKey);
-	                    // so we cache the contraint attributes in a map to be filled when the types are loaded
-	                    if (constraint == null)
-	                    {
-	                    	Map<Attribute,String> collection = unresolvedDynamicTypeConstraints.get( elementKey);
-	                    	if ( collection == null)
-	                    	{
-	                    		collection = new HashMap<Attribute,String>();
-	                    		unresolvedDynamicTypeConstraints.put( elementKey, collection);
-	                    	}
-	                    	collection.put( attribute, constraintKey);
-	                    }
-                	}
+                    String elementKey = content;
+                    Map<Attribute,String> collection = unresolvedDynamicTypeConstraints.get( elementKey);
+                    if ( collection == null)
+                    {
+                        collection = new HashMap<Attribute,String>();
+                        unresolvedDynamicTypeConstraints.put( elementKey, collection);
+                    }
+                    collection.put( attribute, constraintKey);
                 }
             }
             else if (attribute.getConstraintClass( constraintKey ) == Integer.class)
             {
-                constraint = parseLong( content );
+                Long constraint = parseLong( content );
+                attribute.setConstraint( constraintKey, constraint );
             }
             else if (attribute.getConstraintClass( constraintKey ) == Boolean.class)
             {
-                constraint = parseBoolean( content );
+                Boolean constraint = parseBoolean( content );
+                attribute.setConstraint( constraintKey, constraint );
             }
             else
             {
-                constraint = content;
+                attribute.setConstraint( constraintKey, content );
             }
-            attribute.setConstraint( constraintKey, constraint );
+
         }
         
         if (localName.equals( "default" ) && namespaceURI.equals( RAPLA_NS ))
         {
             String content = readContent().trim();
-            final Object defaultValue;
             final AttributeType type = attribute.getType();
             if (type == AttributeType.CATEGORY)
             {
-                @SuppressWarnings("deprecation")
-                boolean idContent = org.rapla.storage.OldIdMapping.isTextId(Category.class, content );
-                if (idContent)
-                {
-                    defaultValue = resolve( Category.class, content );
-                }
-                else
-                {
-                    defaultValue = getCategoryFromPath( content );
-                }
+                ReferenceInfo<Category> refInfo = getKeyAndPathResolver().getIdForCategory(content);
+                attribute.setDefaultValueRef( refInfo);
             }
             else 
             {
                 Object value;
                 try 
                 {
-                    value = parseAttributeValue(attribute, content);
+                    value = AttributeImpl.parseAttributeValueWithoutRef(attribute, content);
                 } 
                 catch (RaplaException e) 
                 {
                     value = null;
                 }
-                defaultValue = value;
+                attribute.setDefaultValue(value );
             }
-            attribute.setDefaultValue(defaultValue );
+
         }
     }
 
@@ -382,9 +344,9 @@ public class DynamicTypeReader extends RaplaXMLReader
         }
     }
 
-    private void addNewPermissionWithGroup(DynamicTypeImpl dynamicType, Permission.AccessLevel acceassLevel, String groupKey, boolean create) throws RaplaSAXParseException {
-        Category userGroups = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        Category group = userGroups.getCategory(groupKey);
+    private void addNewPermissionWithGroup(DynamicTypeImpl dynamicType, Permission.AccessLevel accessLevel, String groupKey, boolean create) throws RaplaSAXParseException {
+        final String keyref = "category[key='user-groups']/category[key='" + groupKey + "'";
+        ReferenceInfo<Category> group = getKeyAndPathResolver().getIdForCategory(keyref);
         if ( group == null)
         {   
             if ( !create )
@@ -396,12 +358,14 @@ public class DynamicTypeReader extends RaplaXMLReader
             setNewId( category );
             category.setKey( groupKey );
             category.getName().setName("en", groupKey);
-            userGroups.addCategory(category);
-            group = category;
+            final String keyrefParent = "category[key='user-groups']";
+            ReferenceInfo<Category> parent = getKeyAndPathResolver().getIdForCategory(keyrefParent);
+            category.setParentId( parent);
+            //userGroup.addCategory(category);
         }
         Permission permission = dynamicType.newPermission();
-        permission.setAccessLevel( acceassLevel);
-        permission.setGroup( group);
+        permission.setAccessLevel( accessLevel);
+        ((PermissionImpl)permission).setGroupId(group);
         dynamicType.addPermission( permission);
     }
 

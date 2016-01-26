@@ -48,8 +48,8 @@ public class PermissionTest  {
     RaplaFacade testFacade;
     ClientFacade testFacadeClient;
     Locale locale;
-    private Server server;
-    ServerServiceContainer servlet;
+    private Server applicationServer;
+    ServerServiceContainer serverContainer;
 
     @Before
     public void setUp() throws Exception
@@ -57,11 +57,11 @@ public class PermissionTest  {
         locale = Locale.getDefault();
         Logger logger = RaplaTestCase.initLoger();
         int port = 8052;
-        servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
-        this.server = ServletTestBase.createServer(servlet, port);
+        serverContainer = RaplaTestCase.createServer(logger, "testdefault.xml");
+        this.applicationServer = ServletTestBase.createServer(serverContainer, port);
         Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
-        ClientFacade adminFacadeClient = clientFacadeProvider.get();
-        ClientFacade testFacadeClient = clientFacadeProvider.get();
+        adminFacadeClient = clientFacadeProvider.get();
+        testFacadeClient = clientFacadeProvider.get();
         adminFacade = adminFacadeClient.getRaplaFacade();
         testFacade = testFacadeClient.getRaplaFacade();
         adminFacadeClient.login("homer","duffs".toCharArray());
@@ -92,9 +92,7 @@ public class PermissionTest  {
     @After
     public void tearDown() throws  Exception
     {
-        adminFacadeClient.logout();
-        testFacadeClient.logout();
-        server.stop();
+        applicationServer.stop();
     }
 
     @Test

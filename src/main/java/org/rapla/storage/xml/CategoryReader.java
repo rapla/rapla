@@ -21,6 +21,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 import java.util.Stack;
@@ -31,7 +32,6 @@ public class CategoryReader extends RaplaXMLReader
     Annotatable currentAnnotatable = null;
     String currentLang = null;
     Stack<CategoryImpl> categoryStack = new Stack<CategoryImpl>();
-    CategoryImpl superCategory;
     String annotationKey = null;
     CategoryImpl lastProcessedCategory = null;
     boolean readOnlyThisCategory;
@@ -39,9 +39,6 @@ public class CategoryReader extends RaplaXMLReader
     public CategoryReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
-        superCategory = getSuperCategory();
-        currentName = superCategory.getName();
-
     }
 
     public void setReadOnlyThisCategory( boolean enable )
@@ -86,19 +83,27 @@ public class CategoryReader extends RaplaXMLReader
                     String parentId = atts.getValue( "parentid"); 
                     if (  parentId!= null)
                     {
+                        ReferenceInfo parentIdN = getId( Category.class, parentId);
+                        category.putId("parent", parentIdN);
+                        /*
                     	if (parentId.equals(Category.SUPER_CATEGORY_ID)) {
-                    	    superCategory.addCategory( category);
-                    	    category.putEntity("parent", superCategory);
+                            String parentIdN = getId( Category.class, parentId);
+                            category.putId("parent", parentIdN);
                     	} else {
                     		String parentIdN = getId( Category.class, parentId);
                     	    category.putId("parent", parentIdN);
                     	}
-                    } 
+                    	*/
+                    }
                     else 
                     {
-                        superCategory.addCategory( category);
+                        category.putId("parent", Category.SUPER_CATEGORY_ID);
                     }
                 }
+            }
+            if (!readOnlyThisCategory)
+            {
+                add( category );
             }
             categoryStack.push( category );
            /*
@@ -142,16 +147,15 @@ public class CategoryReader extends RaplaXMLReader
 
             CategoryImpl category =  categoryStack.pop();
             setCurrentTranslations( category.getName());
-            if (!readOnlyThisCategory)
-            {
-               add( category );
-            }
             lastProcessedCategory = category;
         }
         else if (localName.equals( "name" ) && namespaceURI.equals( ANNOTATION_NS ))
         {
             String translation = readContent();
-            currentName.setName( currentLang, translation );
+            if ( currentName != null)
+            {
+                currentName.setName(currentLang, translation);
+            }
         }
         else if (localName.equals( "annotation" ) && namespaceURI.equals( RAPLA_NS ))
         {

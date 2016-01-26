@@ -9,6 +9,7 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.internal.UserImpl;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
 
@@ -25,31 +26,26 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     {
     }
 
+
     @Override
-    public boolean hasAccess(PermissionContainer container, User user, AccessLevel accessLevel)
+    public boolean hasAccess(PermissionContainer container, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today,
+            boolean checkOnlyToday)
     {
         Iterable<? extends Permission> permissions = container.getPermissionList();
+        if (user == null || user.isAdmin())
+            return true;
+
         if (PermissionController.isOwner(container, user))
         {
             return true;
         }
-        return hasAccess(permissions, user, accessLevel, null, null, null, false);
-    }
-
-    @Override
-    public boolean hasAccess(Iterable<? extends Permission> permissions, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today,
-            boolean checkOnlyToday)
-    {
-        if (user == null || user.isAdmin())
-            return true;
 
         AccessLevel maxAccessLevel = AccessLevel.DENIED;
         int maxEffectLevel = PermissionImpl.NO_PERMISSION;
-        Collection<Category> groups = PermissionContainer.Util.getGroupsIncludingParents(user);
+        Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
         for (Permission p : permissions)
         {
             int effectLevel = PermissionContainer.Util.getUserEffect(user, p, groups);
-
             if (effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
             {
                 if (p.hasTimeLimits() && accessLevel.includes(Permission.ALLOCATE) && today != null)

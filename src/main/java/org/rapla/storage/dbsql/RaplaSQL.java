@@ -12,31 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.IterableChain;
@@ -72,6 +49,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
@@ -84,6 +62,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
+import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.xml.CategoryReader;
@@ -94,8 +73,30 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -131,6 +132,20 @@ class RaplaSQL {
 		// now set delegate because reservation storage should also use appointment storage
 		reservationStorage.setAppointmentStorage( appointmentStorage);
 	}
+
+    public Map<String, String> getIdColumns() {
+        Map<String,String> idColumns = new LinkedHashMap<String,String>();
+        for (TableStorage storage:getStoresWithChildren())
+        {
+            String tableName = storage.getTableName();
+            String idColumn =storage.getIdColumn();
+            if (idColumn != null)
+            {
+                idColumns.put(tableName, idColumn);
+            }
+        }
+        return idColumns;
+    }
     
     private List<Storage<?>> getStoresWithChildren()
     {
@@ -1314,12 +1329,17 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
     // TODO Write conversion script to update all old entries to new entries
     public final static String OLD_ANNOTATION_PREFIX = "annotation:";
   	public final static String ANNOTATION_PREFIX = "rapla:";
+    private KeyAndPathResolver keyAndPathResolver;
 
     public AttributeValueStorage(RaplaXMLContext context,String tablename, String foreignKeyName, Map<ReferenceInfo<? extends Entity>,Classification> classificationMap, Map<ReferenceInfo<? extends Entity>, ? extends Annotatable> annotableMap) throws RaplaException {
     	super(context, tablename, new String[]{foreignKeyName + " VARCHAR(255) NOT NULL KEY","ATTRIBUTE_KEY VARCHAR(255)","ATTRIBUTE_VALUE VARCHAR(20000)"});
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
         this.annotableMap = annotableMap;
+        if ( this.entityStore != null)
+        {
+            this.keyAndPathResolver =new KeyAndPathResolver(entityStore);
+        }
     }
     
     @Override
@@ -1407,11 +1427,23 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
             {
     	        try
     	        {
-    	            Object value = AttributeImpl.parseAttributeValue(attribute, valueAsString);
-    	            if ( value != null)
-    	            {
-    	                classification.addValue( attribute, value);
-    	            }
+                    final Class<? extends Entity> refType = attribute.getRefType();
+                    if ( refType != null)
+                    {
+                        ReferenceInfo id = AttributeImpl.parseRefType(attribute, valueAsString,keyAndPathResolver);
+                        if ( id != null)
+                        {
+                            classification.addRefValue( attribute, id);
+                        }
+                    }
+                    else
+                    {
+                        Object value = AttributeImpl.parseAttributeValueWithoutRef(attribute, valueAsString);
+                        if (value != null)
+                        {
+                            classification.addValue(attribute, value);
+                        }
+                    }
     	        }
     	        catch(RaplaException e)
     	        {
@@ -2382,7 +2414,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         entites.addAll(cache.getDynamicTypes());
         entites.addAll(cache.getReservations());
         entites.addAll(cache.getUsers());
-        entites.addAll(getTransitiveCategories(getSuperCategory()));
+        entites.addAll(getTransitiveCategories(cache.getSuperCategory()));
         if(entites.isEmpty())
         {
             return;

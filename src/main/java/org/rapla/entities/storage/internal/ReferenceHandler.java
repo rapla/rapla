@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -135,6 +136,17 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
      */
     public void putId(String key,String id) {
     	putIds( key, Collections.singleton(id));
+    }
+
+    public void putId(String key,ReferenceInfo id) {
+        if (id == null)
+        {
+            removeWithKey( key);
+        }
+        else
+        {
+            putIds( key, Collections.singleton(id.getId()));
+        }
     }
     
     public void addId(String key,String id) {
@@ -262,7 +274,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 
 	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass) 
 	{
-		return resolver.tryResolve( id , entityClass);
+        return resolver.tryResolve( id , entityClass);
 	}	
 
 //    public Entity getEntity(String key) {
@@ -315,6 +327,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         return removed;
     }
 
+    // TODO if list is performant for many reference, e.g. hasAllocated
     protected boolean isRefering(String key,String id) {
         List<String> ids  = links.get(key);
         if ( ids == null)

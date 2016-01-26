@@ -29,7 +29,6 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -46,12 +45,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -62,9 +56,6 @@ import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
-import org.rapla.storage.xml.RaplaXMLContextException;
-
-import com.google.gwt.uibinder.attributeparsers.SafeUriAttributeParser;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
