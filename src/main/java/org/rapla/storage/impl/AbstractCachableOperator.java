@@ -492,7 +492,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 
 	protected void testResolve(Collection<? extends Entity> entities) throws EntityNotFoundException {
-		EntityStore store = new EntityStore( this, getSuperCategory());
+		EntityStore store = new EntityStore( this);
 		store.addAll( entities);
 		for (Entity entity: entities) {
 		    if (entity instanceof EntityReferencer)
