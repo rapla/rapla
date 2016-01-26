@@ -12,18 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TimeZone;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
@@ -56,6 +46,14 @@ import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TimeZone;
 
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
@@ -313,7 +311,6 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             String userId = user.getId();
             safeResultEvent.setNeedResourcesRefresh(resourceRefresh);
         }
-        boolean superCategoryToAdd = false;
         if (!resourceRefresh)
         {
             //Collection<Entity> updatedEntities = operator.getUpdatedEntities(user, lastSynced);
@@ -335,15 +332,8 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                         timeInterval = new TimeInterval( null, null);
                     }
                 }
-                if(obj instanceof Category)
-                {
-                    superCategoryToAdd = true;
-                }
-                else
-                {
                     // Add entity to result
-                    processClientReadable(user, safeResultEvent, obj, false);
-                }
+                processClientReadable(user, safeResultEvent, obj, false);
             }
             Collection<Remove> removedEntities = updateResult.getOperations(UpdateResult.Remove.class);
             for (Remove remove : removedEntities)
@@ -366,10 +356,6 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                         timeInterval = new TimeInterval( null, null);
                     }
                 }
-                if ( type == Category.class )
-                {
-                    superCategoryToAdd = true;
-                }
             }
         }
         {
@@ -378,10 +364,6 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                 timeInterval = new TimeInterval(null, null);
             }
             safeResultEvent.setInvalidateInterval(timeInterval);
-        }
-        if(superCategoryToAdd)
-        {
-            safeResultEvent.putStore(operator.getSuperCategory());
         }
         return safeResultEvent;
     }

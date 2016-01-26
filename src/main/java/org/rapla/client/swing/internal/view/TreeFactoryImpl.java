@@ -843,6 +843,16 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     		}
     		uniqueCategegories.add( cat);
     	}
+        for (Category cat:uniqueCategegories)
+        {
+            NamedNode node = nodeMap.get(cat);
+            if (node == null)
+            {
+                node = new NamedNode(cat);
+                nodeMap.put(cat, node);
+            }
+        }
+
     	LinkedList<Category> list = new LinkedList<Category>();
 		list.addAll( uniqueCategegories);
 		while ( !list.isEmpty())
