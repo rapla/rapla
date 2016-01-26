@@ -441,6 +441,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     private String toStringValue( Attribute attribute,Object value) {
         String stringValue = null;
         Class<? extends Entity> refType = attribute.getRefType();
+        AttributeType attributeType = attribute.getType();
         if (refType != null)
         {
             if ( value instanceof Entity && ((Entity)value).getTypeClass() == refType)
@@ -452,7 +453,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
                 throw new RaplaException("entity expected. but id used please use addRefValue instead of addValue in reading");
             }
         }
-        else if (type.equals( AttributeType.DATE )) {
+        else if (attributeType.equals( AttributeType.DATE )) {
             return new SerializableDateTimeFormat().formatDate((Date)value);
         }
         else if ( value != null)
@@ -462,9 +463,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         return stringValue;
     }
 
-    private Object fromString(Attribute attribute,EntityResolver resolver, String value) throws EntityNotFoundException {
+    private Object fromString(Attribute attribute,EntityResolver resolver, String value) throws RaplaException {
         Class<? extends Entity> refType = attribute.getRefType();
-        final AttributeType type = attribute.getType();
         if (refType != null)
         {
             Entity resolved = resolver.resolve( value, refType );

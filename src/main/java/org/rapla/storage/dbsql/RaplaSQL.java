@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.IterableChain;

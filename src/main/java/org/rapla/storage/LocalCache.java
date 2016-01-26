@@ -73,7 +73,7 @@ public class LocalCache implements EntityResolver
         users = new LinkedHashMap<String, UserImpl>();
         resources = new LinkedHashMap<String, AllocatableImpl>();
         dynamicTypes = new LinkedHashMap<String, DynamicTypeImpl>();
-        initSuperCategory();
+        //initSuperCategory();
     }
 
     public String getClientUserId()
@@ -272,21 +272,6 @@ public class LocalCache implements EntityResolver
         disabledConflictApp1.clear();
         disabledConflictApp2.clear();
         conflictLastChanged.clear();
-        initSuperCategory();
-    }
-
-    private void initSuperCategory()
-    {
-        CategoryImpl superCategory = new CategoryImpl(null, null);
-        superCategory.setId(Category.SUPER_CATEGORY_ID);
-        superCategory.setKey("supercategory");
-        superCategory.getName().setName("en", "Root");
-        entities.put(Category.SUPER_CATEGORY_ID, superCategory);
-        Category[] childs = superCategory.getCategories();
-        for (int i = 0; i < childs.length; i++)
-        {
-            superCategory.removeCategory(childs[i]);
-        }
     }
 
     public CategoryImpl getSuperCategory()
@@ -326,10 +311,21 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
+    private void addRecursive(CategoryImpl cat, List<Entity> result)
+    {
+        result.add( cat);
+
+        for (Category child:cat.getCategoryList())
+        {
+            result.add( child);
+        }
+    }
+
     public List<Entity> getVisibleEntities(final User forUser)
     {
         List<Entity> result = new ArrayList<Entity>();
-        result.add(getSuperCategory());
+        final CategoryImpl superCategory = getSuperCategory();
+        addRecursive(superCategory,result);
         result.addAll(getDynamicTypes());
         for ( User user:getUsers())
         {

@@ -2471,7 +2471,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 checkConsitency(entity);
             }
-            catch (RaplaException e)
+            catch (RaplaException | IllegalStateException e)
             {
                 if (entity instanceof Reservation)
                 {

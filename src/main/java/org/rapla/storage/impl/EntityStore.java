@@ -47,6 +47,9 @@ public class EntityStore implements EntityResolver {
         this.superCategory = new CategoryImpl();
         superCategory.setId(Category.SUPER_CATEGORY_ID);
         superCategory.setResolver( this);
+        superCategory.setKey("supercategory");
+        superCategory.getName().setName("en", "Root");
+        entities.put(Category.SUPER_CATEGORY_ID, superCategory);
     }
     
     public void addAll(Collection<? extends Entity>collection) {
