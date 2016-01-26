@@ -25,10 +25,10 @@ public class CategoryListField extends ListField<Category>  {
 
     public CategoryListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,Category rootCategory) {
         super(facade, i18n, raplaLocale, logger, true);
-        this.rootCategory = rootCategory;
+        this.rootCategory = rootCategory != null ? rootCategory : facade.getRaplaFacade().getSuperCategory();
 
-        Category[] obj = rootCategory.getCategories();
         Vector<Category> list = new Vector<Category>();
+        Category[] obj = this.rootCategory.getCategories();
         for (int i=0;i<obj.length;i++)
             list.add(obj[i]);
         setVector(list);

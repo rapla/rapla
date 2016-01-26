@@ -206,7 +206,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			Category defaultCategory = (Category) attribute.defaultValue();
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-            if (rootCategory.getDepth() > 2 || multipleSelectionPossible) {
+            if ((rootCategory != null && rootCategory.getDepth() > 2) || multipleSelectionPossible) {
                 CategorySelectField catField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
                 catField.setFieldName( label );
