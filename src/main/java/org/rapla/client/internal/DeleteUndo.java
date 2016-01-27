@@ -60,35 +60,35 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	    List<T> toRemove = new ArrayList<T>();
 	    for ( T entity: entities)
 		{
-			if ( entity.getTypeClass() == Category.class)
-	    	{
-				Entity casted = entity;
-				// to avoid compiler error
-				Category category = (Category) casted;
-	    	    Category parent = category.getParent();
-	            Category parentClone = null;
-	    	    if ( toStore.contains( parent))
-	    	    {
-	    	    	for ( Category cat: toStore)
-	    	    	{
-	    	    		if ( cat.equals(parent))
-	    	    		{
-	    	    			parentClone = parent;
-	    	    		}
-	    	    	}
-	    	    }
-	    	    else
-	    	    {
-		            parentClone = getFacade().edit( parent );
-		            toStore.add( parentClone);
-	    	    }
-	    	    if ( parentClone != null)
-	    	    {
-	    	    	removedCategories.put( category, parent);
-	    	    	parentClone.removeCategory( parentClone.findCategory( category));
-	    	    }
-	    	}
-			else
+//			if ( entity.getTypeClass() == Category.class)
+//	    	{
+//				Entity casted = entity;
+//				// to avoid compiler error
+//				Category category = (Category) casted;
+//	    	    Category parent = category.getParent();
+//	            Category parentClone = null;
+//	    	    if ( toStore.contains( parent))
+//	    	    {
+//	    	    	for ( Category cat: toStore)
+//	    	    	{
+//	    	    		if ( cat.equals(parent))
+//	    	    		{
+//	    	    			parentClone = parent;
+//	    	    		}
+//	    	    	}
+//	    	    }
+//	    	    else
+//	    	    {
+//		            parentClone = getFacade().edit( parent );
+//		            toStore.add( parentClone);
+//	    	    }
+//	    	    if ( parentClone != null)
+//	    	    {
+//	    	    	removedCategories.put( category, parent);
+//	    	    	parentClone.removeCategory( parentClone.findCategory( category));
+//	    	    }
+//	    	}
+//			else
 			{
 				toRemove.add( entity);
 			}

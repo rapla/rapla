@@ -692,11 +692,6 @@ public class ParsedText implements Serializable
             return parent.getCategory(key);
         }
 
-        public Category findCategory(Category copy)
-        {
-            return parent.findCategory(copy);
-        }
-
         public Category getParent()
         {
             return parent.getParent();

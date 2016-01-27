@@ -30,8 +30,6 @@ public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp,
     /** returns the subcategory with the specified key.
      * null if subcategory was not found. */
     Category getCategory(String key);
-    /** find a sub-category in that equals the specified category. */
-    Category findCategory(Category copy);
     /** Returns the parent of this category or null if the category has no parent.*/
     Category getParent();
     /** returns true if the passed category is a direct child of this category */

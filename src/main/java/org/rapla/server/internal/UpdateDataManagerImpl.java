@@ -14,6 +14,7 @@ package org.rapla.server.internal;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
@@ -340,7 +341,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             {
                 ReferenceInfo ref = remove.getReference();
                 Class<? extends Entity> type = ref.getType();
-                if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class)
+                if (type == Allocatable.class || type == Conflict.class || type == DynamicType.class || type == User.class || type == Category.class)
                 {
                     safeResultEvent.putRemoveId(ref);
                 }

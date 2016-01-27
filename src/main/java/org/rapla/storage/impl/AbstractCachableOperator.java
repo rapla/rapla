@@ -169,7 +169,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		if (user != null) {
 			evt.setUserId(user.getId());
 		}
-		List<Category> categoriesToStore = new ArrayList<Category>();
 		for (Entity obj : storeObjects) {
 		    if ( obj instanceof Preferences)
 		    {
@@ -178,32 +177,12 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		    }
 		    else
 		    {
-		        if(obj instanceof Category)
-		        {
-		            categoriesToStore.add((Category)obj);
-		        }
-		        else
-		        {
-		              evt.putStore(obj);
-		        }
+	              evt.putStore(obj);
 		    }
 		}
-		Collections.sort(categoriesToStore, new Comparator<Category>()
-        {
-            @Override
-            public int compare(Category o1, Category o2)
-            {
-                return o1.compareTo(o2);
-            }
-        });
-		for (Category category : categoriesToStore)
-        {
-		    evt.putStore(category);
-        }
-		
 		for (Entity entity : removeObjects) {
 			Class<? extends Entity> type = entity.getTypeClass();
-			if (Appointment.class ==type || Category.class == type || Attribute.class ==  type) {
+			if (Appointment.class ==type || Attribute.class ==  type) {
 				String name = getName( entity);
 				throw new RaplaException(getI18n().format("error.remove_object",name));
 			} 

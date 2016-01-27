@@ -15,9 +15,6 @@ package org.rapla.storage.impl.server;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,7 +36,6 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.collections4.SortedBidiMap;
@@ -108,7 +104,6 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -1982,18 +1977,30 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         EntityStore store = new EntityStore(this);
         Collection<Entity> storeObjects = evt.getStoreObjects();
-        store.addAll(storeObjects);
+        for ( Entity entity:storeObjects)
+        {
+            store.put(entity);
+        }
+//    Map<String,Category> categoriesToStore = new LinkedHashMap<String,Category>();
+//    Collections.sort(categoriesToStore, new Comparator<Category>()
+//        {
+//            @Override
+//            public int compare(Category o1, Category o2)
+//            {
+//                return o1.compareTo(o2);
+//            }
+//        });
+//        for (Category category : categoriesToStore.values())
+//        {
+//            evt.putStore(category);
+//        }
+
         for (Entity entity : storeObjects)
         {
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Contextualizing " + entity);
             ((EntityReferencer) entity).setResolver(store);
             // add all child categories to store
-            if (entity instanceof Category)
-            {
-                Set<Category> children = getAllCategories((Category) entity);
-                store.addAll(children);
-            }
         }
         //        Collection<Entity>removeObjects = evt.getRemoveIds();
         //        store.addAll( removeObjects );
@@ -2033,6 +2040,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 processOldPermssionModify(store, entity);
             }
         }
+        Set<String> categoriesToRemove = new HashSet<String>();
+        Set<String> categoriesToStore = new HashSet<String>();
         for (Entity entity : storeObjects)
         {
             // update old classifiables, that may not been update before via a change event
@@ -2052,6 +2061,48 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                 }
             }
+            if (entity instanceof Category )
+            {
+                final CategoryImpl category = (CategoryImpl) entity;
+                final ReferenceInfo<Category> reference = entity.getReference();
+                ReferenceInfo<Category> parentReference = category.getParentRef();
+                categoriesToStore.add( reference.getId());
+                // remove childs categories from cache if stored version does not contain the childs anymore
+                {
+                    final Collection<String> storedChildIds = category.getChildIds();
+                    categoriesToStore.addAll(storedChildIds);
+                    // test if category already exists
+                    final CategoryImpl exisiting = (CategoryImpl) cache.tryResolve(reference);
+                    if (exisiting != null)
+                    {
+                        final Collection<String> exisitingChildIds = exisiting.getChildIds();
+                        final Collection<String> toRemove = new HashSet(exisitingChildIds);
+                        toRemove.removeAll(storedChildIds);
+                        categoriesToRemove.addAll(toRemove);
+                    }
+                }
+                if ( !reference.getId().equals(Category.SUPER_CATEGORY_ID))
+                {
+                    // add to supercategory if no parent is specfied
+                    if ( parentReference == null )
+                    {
+                        parentReference = new ReferenceInfo<Category>(Category.SUPER_CATEGORY_ID,Category.class);
+                    }
+                    // if parent of category is not submitted then try to find parent and edit parent as well
+                    final CategoryImpl exisitingParent = (CategoryImpl)cache.tryResolve(parentReference);
+                    if ( exisitingParent != null && !exisitingParent.hasCategory( category))
+                    {
+                        Category editableParent = (Category) evt.findEntity(exisitingParent);
+                        if ( editableParent == null)
+                        {
+                            editableParent = exisitingParent.clone();
+                            evt.putStore( editableParent);
+                            categoriesToStore.add( exisitingParent.getReference().getId());
+                        }
+                        editableParent.addCategory( category);
+                    }
+                }
+            }
 
             // TODO add conversion of classification filters or other dynamictypedependent that are stored in preferences
             //			for (PreferencePatch patch:evt.getPreferencePatches())
@@ -2066,6 +2117,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             //			    }
             //			}
         }
+
+        categoriesToRemove.removeAll( categoriesToStore);
 
         for (ReferenceInfo removeId : removeIds)
         {
@@ -2085,11 +2138,54 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 addRemovedUserDependant(evt, store, (User) entity);
             }
+            if ( Category.class == raplaType)
+            {
+
+                CategoryImpl category = (CategoryImpl) tryResolve( removeId);
+                if ( category != null)
+                {
+                    ReferenceInfo<Category> parentReference = category.getParentRef();
+                    final CategoryImpl exisitingParent = (CategoryImpl) cache.tryResolve(parentReference);
+                    if (exisitingParent != null && exisitingParent.hasCategory( category))
+                    {
+                        Category editableParent = (Category) evt.findEntity(exisitingParent);
+                        if ( editableParent == null)
+                        {
+                            editableParent = exisitingParent.clone();
+                            evt.putStore( editableParent);
+                            categoriesToStore.add( exisitingParent.getReference().getId());
+                        }
+                        editableParent.removeCategory(category);
+                    }
+                    categoriesToRemove.add(removeId.getId());
+                }
+            }
         }
-        Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
-        for (Entity entity : deletedCategories)
+        for ( String categoryId:categoriesToRemove)
         {
-            evt.putRemove(entity);
+            addCatgoryToRemove(evt, categoriesToStore, categoryId, 0);
+        }
+    }
+
+    private void addCatgoryToRemove(UpdateEvent evt, Set<String> categoriesToStore, String categoryId, int depth)
+    {
+        if ( depth > 20)
+        {
+            throw new IllegalStateException("Category Cycle detected while removing");
+        }
+        final ReferenceInfo<Category> ref = new ReferenceInfo(categoryId, Category.class);
+        if ( !categoriesToStore.contains( ref.getId()))
+        {
+            evt.putRemoveId(ref);
+            Category existing = cache.tryResolve(ref);
+            if (existing != null)
+            {
+                final Collection<String> childIds = ((CategoryImpl) existing).getChildIds();
+                for ( String childId:childIds)
+                {
+                    addCatgoryToRemove( evt, categoriesToStore, childId, depth+1);
+                }
+            }
         }
     }
 
@@ -2610,7 +2706,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
         Collection<Entity> storeObjects = new HashSet<Entity>(evt.getStoreObjects());
         HashSet<Entity> dep = new HashSet<Entity>();
-        Set<Entity> deletedCategories = getDeletedCategories(storeObjects);
         Collection<Entity> removeEntities = new ArrayList<Entity>();
         for (ReferenceInfo id : removedIds)
         {
@@ -2620,9 +2715,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 removeEntities.add(persistant);
             }
         }
-        IterableChain<Entity> iteratorChain = new IterableChain<Entity>(deletedCategories, removeEntities);
-
-        for (Entity entity : iteratorChain)
+        //IterableChain<Entity> iteratorChain = new IterableChain<Entity>(deletedCategories, removeEntities);
+        for (Entity entity : removeEntities)
         {
             // First we add the dependencies from the stored object list
             for (Entity obj : storeObjects)
@@ -2710,38 +2804,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         return false;
-    }
-
-    private Set<Entity> getDeletedCategories(Iterable<Entity> storeObjects)
-    {
-        Set<Entity> deletedCategories = new HashSet<Entity>();
-        for (Entity entity : storeObjects)
-        {
-            if (entity.getTypeClass() == Category.class)
-            {
-                Category newCat = (Category) entity;
-                Category old = tryResolve(entity.getId(), Category.class);
-                if (old != null)
-                {
-                    Set<Category> oldSet = getAllCategories(old);
-                    Set<Category> newSet = getAllCategories(newCat);
-                    oldSet.removeAll(newSet);
-                    deletedCategories.addAll(oldSet);
-                }
-            }
-        }
-        return deletedCategories;
-    }
-
-    private Set<Category> getAllCategories(Category old)
-    {
-        HashSet<Category> result = new HashSet<Category>();
-        result.add(old);
-        for (Category child : old.getCategories())
-        {
-            result.addAll(getAllCategories(child));
-        }
-        return result;
     }
 
     protected String getDependentName(Entity obj)

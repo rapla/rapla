@@ -34,8 +34,6 @@ import java.util.List;
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
-    HashMap<String,Category> categories = new HashMap<String,Category>();
-    HashMap<String,String> categoryPath = new HashMap<String,String>();
     HashMap<ReferenceInfo<User>,String> passwordList = new HashMap<ReferenceInfo<User>,String>();
     CategoryImpl superCategory;
 
@@ -72,52 +70,20 @@ public class EntityStore implements EntityResolver {
         if ( raplaType == Category.class)
         {
             CategoryImpl category = (CategoryImpl) entity;
-            //final ReferenceInfo<Category> parentRef = category.getParentRef();
-            final List<String> pathForCategory = getPathForCategory(category);
-            final String keyPathString = CategoryImpl.getKeyPathString(pathForCategory);
-            categories.put(keyPathString, category);
-            final String id1 = category.getId();
-            categoryPath.put (id1, keyPathString);
             final ReferenceInfo<Category> parentRef = category.getParentRef();
             if ( parentRef == null || parentRef.getId().equals(Category.SUPER_CATEGORY_ID))
             {
                 final CategoryImpl superCategory = getSuperCategory();
+                final String id1 = category.getId();
                 superCategory.addId("childs", id1);
             }
+
+
         }
         entities.put(id,entity);
 
     }
 
-    public List<String> getPathForCategory(Category searchCategory) throws EntityNotFoundException {
-        LinkedList<String> result = new LinkedList<String>();
-        Category category = searchCategory;
-        Category parent = null;
-        int depth = 0;
-        while (true) {
-            String entry ="category[key='" + category.getKey() +  "']";
-            result.addFirst(entry);
-            final ReferenceInfo<Category> parentRef = ((CategoryImpl) category).getParentRef();
-            if (parentRef == null || parentRef.getId() == Category.SUPER_CATEGORY_ID)
-            {
-                return result;
-            }
-            parent = resolve(parentRef);
-            category = parent;
-            if ( depth > 20)
-            {
-                throw new EntityNotFoundException("Possible category cycle detected " + result);
-            }
-            else {
-                depth++;
-            }
-        }
-    }
-
-    public Category getCategory(String path)
-    {
-        return categories.get( path);
-    }
 
     public DynamicType getDynamicType(String key)
     {
@@ -196,9 +162,4 @@ public class EntityStore implements EntityResolver {
         return tryResolve;
     }
 
-    public String getPath(ReferenceInfo<Category> category)
-    {
-        final String id = category.getId();
-        return categoryPath.get(id);
-    }
 }

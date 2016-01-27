@@ -86,7 +86,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         this.i18n = context.lookup(RaplaResources.class);
         RaplaLocale raplaLocale = context.lookup( RaplaLocale.class );
         this.store = context.lookup( EntityStore.class);
-        this.keyAndPathResolver = new KeyAndPathResolver( store);
+        this.keyAndPathResolver = context.lookup(KeyAndPathResolver.class);
         this.idTable = context.lookup( IdCreator.class );
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
@@ -369,6 +369,10 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
          	}
          }
         store.put(entity);
+        if ( entity instanceof  Category)
+        {
+            keyAndPathResolver.addCategory((Category)entity);
+        }
     }
 
     protected KeyAndPathResolver getKeyAndPathResolver()

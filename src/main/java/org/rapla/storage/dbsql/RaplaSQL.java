@@ -939,6 +939,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 
 class CategoryStorage extends RaplaTypeStorage<Category> {
 	Map<Category,Integer> orderMap =  new HashMap<Category,Integer>();
+    KeyAndPathResolver keyAndPathResolver;
     Map<Category,ReferenceInfo<Category>> categoriesWithoutParent = new TreeMap<Category,ReferenceInfo<Category>>(new Comparator<Category>()
         {
             public int compare( Category o1, Category o2 )
@@ -973,6 +974,10 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 
     public CategoryStorage(RaplaXMLContext context) throws RaplaException {
     	super(context,Category.class, "CATEGORY",new String[] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","PARENT_ID VARCHAR(255) KEY","CATEGORY_KEY VARCHAR(255) NOT NULL","DEFINITION TEXT NOT NULL","PARENT_ORDER INTEGER", "LAST_CHANGED TIMESTAMP KEY"});
+        if ( entityStore != null)
+        {
+            keyAndPathResolver = context.lookup( KeyAndPathResolver.class);
+        }
     }
 
     @Override
@@ -1099,6 +1104,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         final Date lastChanged = getTimestampOrNow(rset, 6);
         category.setLastChanged( lastChanged);
 		category.setId( id);
+        keyAndPathResolver.addCategory( category);
         put( category );
 
         orderMap.put( category, order);
@@ -1365,7 +1371,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
         this.annotableMap = annotableMap;
         if ( this.entityStore != null)
         {
-            this.keyAndPathResolver =new KeyAndPathResolver(entityStore);
+            this.keyAndPathResolver =context.lookup(KeyAndPathResolver.class);
         }
     }
     

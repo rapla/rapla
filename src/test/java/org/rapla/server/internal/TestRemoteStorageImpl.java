@@ -41,7 +41,7 @@ public class TestRemoteStorageImpl
         int port = 8052;
         ServerContainerContext container = new ServerContainerContext();
         String xmlFile = "testdefault.xml";
-        container.setFileDatasource(RaplaTestCase.getTestDataFile(xmlFile));
+        container.addFileDatasource("raplafile",RaplaTestCase.getTestDataFile(xmlFile));
         ServerServiceImpl serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, container);
         server = ServletTestBase.createServer(serverService, port);
         Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);

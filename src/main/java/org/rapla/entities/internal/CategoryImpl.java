@@ -105,8 +105,21 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         return getList("childs", Category.class);
     }
 
+    public Collection<String> getChildIds()
+    {
+        return getIds("childs");
+    }
+
     /** returns true if this is a direct or transitive parent of the passed category*/
     public boolean isAncestorOf(Category category) {
+        return isAncestorOf( category, 0);
+    }
+
+    private boolean isAncestorOf(Category category, int depth) {
+        if ( depth > 20)
+        {
+            throw new IllegalStateException("Categorycyle detected in isAncestorOf " + category.toString() + " and " + toString());
+        }
         if (category == null)
             return false;
         if (category.getParent() == null)
@@ -114,7 +127,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         if (category.getParent().equals(this))
             return true;
         else
-            return isAncestorOf(category.getParent());
+            return isAncestorOf(category.getParent(), depth+ 1);
     }
 
     public Category getCategory(String key) {
@@ -183,16 +196,13 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public void removeCategory(Category category) {
         checkWritable();
-        if ( findCategory( category ) == null)
+        if ( !hasCategory( category))
             return;
         removeId(category.getId());
         //if (category.getParent().equals(this))
         ((CategoryImpl)category).setParent(null);
     }
 
-    public Category findCategory(Category copy) {
-        return (Category) super.findEntity(copy);
-    }
 
     public MultiLanguageName getName() {
         return name;

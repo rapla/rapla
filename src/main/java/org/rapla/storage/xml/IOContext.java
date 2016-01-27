@@ -15,6 +15,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -88,7 +89,8 @@ public class IOContext
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put(EntityStore.class, store);
         ioContext.put(IdCreator.class,idTable);
-        ioContext.put( Logger.class,logger );
+        ioContext.put(Logger.class, logger);
+        ioContext.put(KeyAndPathResolver.class,new KeyAndPathResolver(store));
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
         Map<Class<? extends  RaplaObject>,RaplaXMLReader> readerMap = new HashMap<Class<? extends  RaplaObject>,RaplaXMLReader>();
         ioContext.put(PreferenceReader.READERMAP, readerMap);
