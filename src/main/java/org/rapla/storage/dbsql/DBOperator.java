@@ -724,8 +724,7 @@ import java.util.concurrent.locks.Lock;
         }
         final boolean needsGlobalLock = containsDynamicType(ids);
         Date connectionTimestamp = null;
-        // FIXME uncomment locks
-        final Collection<String> lockIds = /*needsGlobalLock ? getLockIds(ids) : */Collections.singletonList(LockStorage.GLOBAL_LOCK);
+        final Collection<String> lockIds = needsGlobalLock ? Collections.singletonList(LockStorage.GLOBAL_LOCK) : getLockIds(ids);
         RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
         try
         {
