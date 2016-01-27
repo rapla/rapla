@@ -66,11 +66,10 @@ import java.sql.Statement;
             connection.createStatement().execute("DROP SCHEMA PUBLIC CASCADE;");
             connection.commit();
         }
-        container.setDbDatasource(datasource);
-        container.setIsDbDatasource( true);
+        container.addDbDatasource("jdbc/rapladb",datasource);
 
         String xmlFile = "testdefault.xml";
-        container.setFileDatasource(RaplaTestCase.getTestDataFile(xmlFile));
+        container.addFileDatasource("raplafile",RaplaTestCase.getTestDataFile(xmlFile));
         return container;
     }
 

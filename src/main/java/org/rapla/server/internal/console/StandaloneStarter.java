@@ -11,8 +11,8 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.client.gwt.MockProxy;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
+import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
@@ -28,10 +28,10 @@ public class StandaloneStarter extends GUIStarter
         return DaggerClientCreator.create(env);
     }
 
-    public StandaloneStarter(Logger logger, RaplaJNDIContext jndi, URL mockDownloadUrl) 
+    public StandaloneStarter(Logger logger, ServerContainerContext backendContext, URL mockDownloadUrl, String startupUser)
     {
-        super(logger, jndi);
-        serverStarter  = new ServerStarter(logger, jndi);
+        super(logger, startupUser, backendContext.getShutdownCommand());
+        serverStarter  = new ServerStarter(logger, backendContext);
         this.mockDownloadUrl = mockDownloadUrl;
     }
 

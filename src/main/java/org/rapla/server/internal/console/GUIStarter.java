@@ -5,7 +5,6 @@ import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.server.internal.RaplaJNDIContext;
 
 import java.util.concurrent.Semaphore;
 
@@ -18,11 +17,11 @@ class GUIStarter
     Runnable shutdownCommand;
     protected String startupUser;
     
-    public GUIStarter(Logger logger,RaplaJNDIContext jndi)
+    public GUIStarter(Logger logger,String startupUser, Runnable shutdownCommand)
     {
         this.logger = logger;
-        startupUser = jndi.lookupEnvString(  "rapla_startup_user", false);
-        shutdownCommand = (Runnable) jndi.lookup("rapla_shutdown_command", false);
+        this.startupUser = startupUser;
+        this.shutdownCommand = shutdownCommand;
     }
       
     

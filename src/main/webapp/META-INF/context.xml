@@ -15,7 +15,7 @@ auth="Container" type="javax.sql.DataSource"
   <Environment name="raplafile" value="${catalina.home}/data/data.xml" type="java.lang.String" override="false"/>
   <!-- 
 	Replace raplafile with rapladb and uncomment the used database driver. Place the driver in the tomcat/lib folder
-  <Environment name="rapladatasource" value="raplafile"   type="java.lang.String" override="false"/>
+  <Environment name="rapladatasource" value="rapladb"   type="java.lang.String" override="false"/>
    -->
   <!-- 
   <Resource name="mail/Session" auth="Container"

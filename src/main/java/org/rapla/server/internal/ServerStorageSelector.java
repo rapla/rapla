@@ -54,7 +54,8 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
 
     @NotNull private FileOperator createFileOperator()
     {
-        final String fileDatasource = containerContext.getFileDatasource() != null ? containerContext.getFileDatasource() : "data/data.xml";
+        final String raplafile = containerContext.getMainFilesource();
+        final String fileDatasource = raplafile != null ? raplafile : "data/data.xml";
         return new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
     }
 
@@ -81,7 +82,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     @NotNull private DBOperator createDbOperator()
     {
         Provider<ImportExportManager> importExportMananger = getImportExportManager();
-        final DataSource dbDatasource = containerContext.getDbDatasource();
+        final DataSource dbDatasource = containerContext.getMainDbDatasource();
         return new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
     }
 

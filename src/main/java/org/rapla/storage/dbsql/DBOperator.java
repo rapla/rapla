@@ -87,7 +87,7 @@ import java.util.concurrent.locks.Lock;
     private String connectionName;
     Provider<ImportExportManager> importExportManager;
 
-    @Inject public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler,
+    public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Provider<ImportExportManager> importExportManager, DataSource dataSource,
             Set<PermissionExtension> permissionExtensions)
     {

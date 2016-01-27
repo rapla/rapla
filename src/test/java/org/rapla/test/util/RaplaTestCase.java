@@ -66,7 +66,7 @@ public abstract class RaplaTestCase
     public static ServerServiceContainer createServer( Logger logger, String xmlFile) throws Exception
     {
         ServerContainerContext containerContext = new ServerContainerContext();
-        containerContext.setFileDatasource(getTestDataFile(xmlFile));
+        containerContext.addFileDatasource("raplafile",getTestDataFile(xmlFile));
         return createServer(logger, containerContext);
     }
 

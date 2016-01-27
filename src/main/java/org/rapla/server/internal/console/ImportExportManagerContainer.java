@@ -5,9 +5,7 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
 import org.rapla.server.ServerService;
-import org.rapla.server.internal.RaplaJNDIContext;
 import org.rapla.server.internal.ServerContainerContext;
-import org.rapla.server.internal.ServerStarter;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
@@ -21,12 +19,11 @@ public class ImportExportManagerContainer extends ContainerImpl{
 
     private Runnable shutdownCommand;
 
-    public ImportExportManagerContainer(Logger logger, RaplaJNDIContext jndi) throws RaplaException 
+    public ImportExportManagerContainer(Logger logger, ServerContainerContext backendContext) throws RaplaException
     {
         super(logger);
-        shutdownCommand = (Runnable) jndi.lookup("rapla_shutdown_command", false);
-        ServerContainerContext backendContext = ServerStarter.createBackendContext(logger, jndi);
-        String fileDatasource = backendContext.getFileDatasource();
+        this.shutdownCommand = backendContext.getShutdownCommand();
+        String fileDatasource = backendContext.getMainFilesource();
         if ( fileDatasource != null)
         {
             addContainerProvidedComponentInstance( ServerService.ENV_RAPLAFILE, fileDatasource );
@@ -36,7 +33,7 @@ public class ImportExportManagerContainer extends ContainerImpl{
         {
             throw new RaplaException("No file configured for import/export");
         }
-        DataSource dbDatasource = backendContext.getDbDatasource();
+        DataSource dbDatasource = backendContext.getMainDbDatasource();
         if ( dbDatasource != null)
         {
             addContainerProvidedComponentInstance( DataSource.class, dbDatasource );

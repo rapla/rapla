@@ -1,16 +1,16 @@
 package org.rapla.server.internal;
 
 import javax.sql.DataSource;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-/**
- * Created by Christopher on 23.11.2015.
- */
 public class ServerContainerContext
 {
-    private DataSource dbDatasource;
-    private String fileDatasource;
+    private Map<String,DataSource> dbDatasources = new LinkedHashMap<String,DataSource>();
+    private Map<String,String> fileDatasources = new LinkedHashMap<String,String>();
     private Object mailSession;
-    private boolean isDbDatasource;
+    Runnable shutdownCommand;
+
     private ShutdownService shutdownService = new ShutdownService()
     {
         @Override public void shutdown(boolean restart)
@@ -20,9 +20,25 @@ public class ServerContainerContext
         }
     };
 
-    public String getFileDatasource()
+    public Runnable getShutdownCommand()
     {
-        return fileDatasource;
+        return shutdownCommand;
+    }
+
+    public void setShutdownCommand(Runnable runnable)
+    {
+        shutdownCommand = runnable;
+    }
+
+    public String getMainFilesource()
+    {
+        return getFileDatasource("raplafile");
+    }
+
+    public String getFileDatasource(String datasourename)
+    {
+        final String s = fileDatasources.get(datasourename);
+        return s;
     }
 
     public Object getMailSession()
@@ -30,14 +46,19 @@ public class ServerContainerContext
         return mailSession;
     }
 
-    public DataSource getDbDatasource()
+    public DataSource getMainDbDatasource()
     {
-        return dbDatasource;
+        return getDbDatasource("jdbc/rapladb");
+    }
+
+    public DataSource getDbDatasource(String key)
+    {
+        return dbDatasources.get( key);
     }
 
     public boolean isDbDatasource()
     {
-        return isDbDatasource;
+        return getMainDbDatasource() != null;
     }
 
     public ShutdownService getShutdownService()
@@ -45,24 +66,19 @@ public class ServerContainerContext
         return shutdownService;
     }
 
-    public void setDbDatasource(DataSource dbDatasource)
+    public void addDbDatasource(String key,DataSource dbDatasource)
     {
-        this.dbDatasource = dbDatasource;
+        dbDatasources.put(key, dbDatasource);
     }
 
-    public void setFileDatasource(String fileDatasource)
+    public void addFileDatasource(String key,String fileDatasource)
     {
-        this.fileDatasource = fileDatasource;
+        fileDatasources.put(key, fileDatasource);
     }
 
     public void setMailSession(Object mailSession)
     {
         this.mailSession = mailSession;
-    }
-
-    public void setIsDbDatasource(boolean isDbDatasource)
-    {
-        this.isDbDatasource = isDbDatasource;
     }
 
     public void setShutdownService(ShutdownService shutdownService)

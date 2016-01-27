@@ -113,7 +113,7 @@ public class ServerTest
     {
         ServerContainerContext container = new ServerContainerContext();
         String xmlFile = "testdefault.xml";
-        container.setFileDatasource(RaplaTestCase.getTestDataFile(xmlFile));
+        container.addFileDatasource("raplafile", RaplaTestCase.getTestDataFile(xmlFile));
         return container;
     }
 

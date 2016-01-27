@@ -26,20 +26,14 @@ detected.
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/rapla.war</Set>
   -->
   <Set name="contextPath">/</Set>
-  <New id="raplafile" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg></Arg>
 	<Arg>raplafile</Arg>
 	<Arg type="java.lang.String">data/data.xml</Arg>
 	<Arg type="boolean">true</Arg>
   </New>
-  <New id="rapladevelop" class="org.eclipse.jetty.plus.jndi.EnvEntry">
-    <Arg></Arg>
-	<Arg>rapla_development</Arg>
-	<Arg type="java.lang.Boolean">true</Arg>
-	<Arg type="boolean">true</Arg>
-  </New>
   <!-- if you want to use a database instead of the data.xml file storage uncomment and configure a database bellow and set rapladatasource to rapladb-->
-  <New id="rapladb" class="org.eclipse.jetty.plus.jndi.Resource">
+  <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg>jdbc/rapladb</Arg>
 	<Arg>
 		<!--  HSQLDB is provided with the jetty bundled with rapla	-->
@@ -87,8 +81,8 @@ detected.
  <New id="rapladatasource" class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg></Arg>
 	<Arg>rapladatasource</Arg>
-	<!--  change to rapladb if you want to use a database as datasource -->
-	<Arg type="java.lang.String">raplafile</Arg>
+	<!--  change to jdbc/rapladb,raplafile if you want to use a database as datasource -->
+	<Arg type="java.lang.String">jdbc/rapladb,raplafile</Arg>
 	<Arg type="boolean">true</Arg>
  </New>
 
