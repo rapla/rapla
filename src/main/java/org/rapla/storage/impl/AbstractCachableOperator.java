@@ -13,6 +13,23 @@
 
 package org.rapla.storage.impl;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -32,7 +49,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -41,7 +57,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -51,23 +66,6 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * An abstract implementation of the StorageOperator-Interface. It operates on a
@@ -171,6 +169,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		if (user != null) {
 			evt.setUserId(user.getId());
 		}
+		List<Category> categoriesToStore = new ArrayList<Category>();
 		for (Entity obj : storeObjects) {
 		    if ( obj instanceof Preferences)
 		    {
@@ -179,10 +178,29 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		    }
 		    else
 		    {
-		        evt.putStore(obj);
+		        if(obj instanceof Category)
+		        {
+		            categoriesToStore.add((Category)obj);
+		        }
+		        else
+		        {
+		              evt.putStore(obj);
+		        }
 		    }
 		}
-
+		Collections.sort(categoriesToStore, new Comparator<Category>()
+        {
+            @Override
+            public int compare(Category o1, Category o2)
+            {
+                return o1.compareTo(o2);
+            }
+        });
+		for (Category category : categoriesToStore)
+        {
+		    evt.putStore(category);
+        }
+		
 		for (Entity entity : removeObjects) {
 			Class<? extends Entity> type = entity.getTypeClass();
 			if (Appointment.class ==type || Category.class == type || Attribute.class ==  type) {
