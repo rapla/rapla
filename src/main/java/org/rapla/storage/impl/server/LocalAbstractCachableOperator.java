@@ -140,19 +140,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Connected
     }
 
-    @Override
-    final public boolean isConnected()
+    @Override final public boolean isConnected()
     {
         return connectStatus == InitStatus.Connected;
     }
 
-    @Override
-    public boolean isLoaded()
+    @Override public boolean isLoaded()
     {
-        return connectStatus.ordinal()>= InitStatus.Loaded.ordinal();
+        return connectStatus.ordinal() >= InitStatus.Loaded.ordinal();
     }
 
-    protected void changeStatus( InitStatus status)
+    protected void changeStatus(InitStatus status)
     {
         connectStatus = status;
         getLogger().debug("Initstatus " + status);
@@ -162,7 +160,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      * The duration which the history must support, only one older Entry than the specified time are needed.
      */
     public static final long HISTORY_DURATION = DateTools.MILLISECONDS_PER_HOUR;
-    
+
     /**
      * set encryption if you want to enable password encryption. Possible values
      * are "sha" or "md5".
@@ -194,9 +192,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public CommandScheduler getScheduler()
     {
-        return  scheduler;
+        return scheduler;
     }
-
 
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
@@ -317,16 +314,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    @Override
-    public String getUsername(ReferenceInfo<User> userId)
+    @Override public String getUsername(ReferenceInfo<User> userId)
     {
         User user = tryResolve(userId);
-        if ( user == null)
+        if (user == null)
         {
             return "unknown";
         }
         Locale locale = raplaLocale.getLocale();
-        String name =user.getName(locale);
+        String name = user.getName(locale);
         return name;
     }
 
@@ -500,8 +496,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
-    @Override
-    public String createId(Class<? extends Entity> raplaType, String seed) throws RaplaException
+    @Override public String createId(Class<? extends Entity> raplaType, String seed) throws RaplaException
     {
 
         byte[] data = new byte[16];
@@ -705,7 +700,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             if (entity instanceof DynamicType)
             {
-                ((DynamicTypeImpl)entity).setOperator( this );
+                ((DynamicTypeImpl) entity).setOperator(this);
             }
         }
         processUserPersonLink(entities);
@@ -768,7 +763,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final ReferenceInfo<User> ownerId = r.getOwnerRef();
                 if (owner == null && ownerId != null)
                 {
-                    owner = tryResolve( ownerId );
+                    owner = tryResolve(ownerId);
                 }
             }
             getLogger().info("Migrating " + templateKey);
@@ -872,10 +867,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     ReentrantReadWriteLock disconnectLock = new ReentrantReadWriteLock();
+
     final protected void scheduleConnectedTasks(final Command command, long delay, long period)
     {
-//        if (true)
-//            return;
+        //        if (true)
+        //            return;
         final Command wrapper = new Command()
         {
             @Override public void execute() throws Exception
@@ -890,7 +886,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 finally
                 {
-                    RaplaComponent.unlock( lock );
+                    RaplaComponent.unlock(lock);
                 }
             }
         };
@@ -1022,7 +1018,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         };
 
-
         for (ReferenceInfo id : history.getAllIds())
         {
             EntityHistory.HistoryEntry entry = history.getLatest(id);
@@ -1031,7 +1026,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Collection<Conflict> conflicts = conflictFinder.getConflicts(null);
         for (Conflict conflict : conflicts)
         {
-            ReferenceInfo referenceInfo =conflict.getReference();
+            ReferenceInfo referenceInfo = conflict.getReference();
             boolean isDelete = false;
             Date timestamp = conflict.getLastChanged();
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, conflict);
@@ -1039,7 +1034,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         final Collection<User> users = cache.getUsers();
         final Set<User> systemUser = Collections.singleton(null);
-        for (User user: new IterableChain<>(users, systemUser))
+        for (User user : new IterableChain<>(users, systemUser))
         {
             String userId = user != null ? user.getId() : null;
             Preferences preference = cache.getPreferencesForUserId(userId);
@@ -1053,7 +1048,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
-        scheduleConnectedTasks(cleanUpConflicts,delay, DateTools.MILLISECONDS_PER_HOUR);
+        scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 3;
         scheduleConnectedTasks(new Command()
         {
@@ -1061,7 +1056,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 try
                 {
-                    refresh();
+                    Lock writeLock = lock.writeLock();
+                    // dispatch also does an refresh without lock so we get the new data each time a store is called
+                    boolean tryLock = writeLock.tryLock();
+                    // dispatch also does an refresh without lock so we get the new data each time a store is called
+                    if (tryLock)
+                    {
+                        try
+                        {
+                            refreshWithoutLock();
+                        }
+                        finally
+                        {
+                            RaplaComponent.unlock(writeLock);
+                        }
+                    }
                 }
                 catch (Throwable t)
                 {
@@ -1072,8 +1081,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
-    @Override
-    synchronized public void disconnect()
+    @Override public void refresh() throws RaplaException
+    {
+        final Lock lock = writeLock();
+        try
+        {
+            refreshWithoutLock();
+        }
+        finally
+        {
+            RaplaComponent.unlock(lock);
+        }
+    }
+
+    abstract protected void refreshWithoutLock();
+
+    @Override synchronized public void disconnect()
     {
         if (!isConnected())
             return;
@@ -1108,17 +1131,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             RaplaComponent.unlock(writeLock);
         }
 
-            try
+        try
+        {
+            for (Cancelable task : scheduledTasks)
             {
-                for (Cancelable task : scheduledTasks)
-                {
-                    task.cancel();
-                }
+                task.cancel();
             }
-            finally
-            {
-                RaplaComponent.unlock(disconnectLock);
-            }
+        }
+        finally
+        {
+            RaplaComponent.unlock(disconnectLock);
+        }
     }
 
     /*
@@ -1155,7 +1178,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
     private Collection<ConflictFinder.ConflictChangeOperation> updateIndizes(UpdateResult result)
     {
-        calendarModelCache.synchronizeCalendars( result );
+        calendarModelCache.synchronizeCalendars(result);
         final Collection<UpdateOperation> conflictChanges = new ArrayList<UpdateOperation>();
         for (UpdateOperation op : result.getOperations())
         {
@@ -1169,9 +1192,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 newEntity = result.getLastKnown(id);
             }
-            final Class<? extends  Entity> raplaType = newEntity.getTypeClass();
+            final Class<? extends Entity> raplaType = newEntity.getTypeClass();
             if (raplaType == Conflict.class || raplaType == Allocatable.class || raplaType == Reservation.class || raplaType == DynamicType.class
-                    || raplaType == User.class|| raplaType == Category.class)
+                    || raplaType == User.class || raplaType == Category.class)
             {
                 //history.getBefore(id, now);
                 //Date timestamp = ((LastChangedTimestamp) newEntity).getLastChanged();
@@ -1184,11 +1207,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 ReferenceInfo referenceInfo = op.getReference();
                 boolean isDelete = op instanceof Remove;
-                Entity current = tryResolve( referenceInfo.getId(),Preferences.class);
-                if ( current != null)
+                Entity current = tryResolve(referenceInfo.getId(), Preferences.class);
+                if (current != null)
                 {
-                    Date timestamp =((Preferences)current).getLastChanged();
-                    addToDeleteUpdate(referenceInfo,timestamp,isDelete, current);
+                    Date timestamp = ((Preferences) current).getLastChanged();
+                    addToDeleteUpdate(referenceInfo, timestamp, isDelete, current);
                 }
             }
             if (raplaType == Conflict.class)
@@ -1289,7 +1312,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             ReferenceInfo id = add.getReference();
             if (id.getType() == Reservation.class)
             {
-                Reservation newReservation = result.getLastKnown((ReferenceInfo<Reservation>)id);//.getUnresolvedEntity();
+                Reservation newReservation = result.getLastKnown((ReferenceInfo<Reservation>) id);//.getUnresolvedEntity();
                 for (Appointment app : newReservation.getAppointments())
                 {
                     updateBindings(toUpdate, newReservation, app, false);
@@ -1460,7 +1483,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean isAffected(DeleteUpdateEntry entry, String userId, final Collection<String> groupsIncludingParents)
     {
-        if (entry.affectAll )
+        if (entry.affectAll)
         {
             return true;
         }
@@ -1468,7 +1491,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             if (entry.affectedGroupIds != null)
             {
-                if ( !Collections.disjoint( entry.affectedGroupIds,groupsIncludingParents))
+                if (!Collections.disjoint(entry.affectedGroupIds, groupsIncludingParents))
                 {
                     return true;
                 }
@@ -1679,14 +1702,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     */
 
     /**
-     * returns all entities with a timestampe >= the passed timestamp
+     * returns all entities with a timestamp > the passed timestamp
      */
     private Collection<ReferenceInfo> getEntities(User user, final Date timestamp, boolean isDelete) throws RaplaException
     {
+        Assert.notNull(timestamp);
         // we use an empty id here because the implmentation of the DeleteUpdateEntry compare compares idStrings if timestamps are equal
         // so tailMap returns all entities with a timestamp >= timestamp
         final String dummyId = "";
-        DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), timestamp, isDelete);
+        // we need to add +1 so that we dont get entities with the passed (guaranteed timestamp)
+        DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), new Date(timestamp.getTime() + 1), isDelete);
         LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
 
         Lock lock = readLock();
@@ -1702,7 +1727,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     continue;
                 }
-                if ( user == null || user.isAdmin() || isAffected(entry, userId, groupsIncludingParents))
+                if (user == null || user.isAdmin() || isAffected(entry, userId, groupsIncludingParents))
                 {
                     ReferenceInfo deletedReference = entry.reference;
                     result.add(deletedReference);
@@ -1964,23 +1989,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         EntityStore store = new EntityStore(this);
         Collection<Entity> storeObjects = evt.getStoreObjects();
-        for ( Entity entity:storeObjects)
+        for (Entity entity : storeObjects)
         {
             store.put(entity);
         }
-//    Map<String,Category> categoriesToStore = new LinkedHashMap<String,Category>();
-//    Collections.sort(categoriesToStore, new Comparator<Category>()
-//        {
-//            @Override
-//            public int compare(Category o1, Category o2)
-//            {
-//                return o1.compareTo(o2);
-//            }
-//        });
-//        for (Category category : categoriesToStore.values())
-//        {
-//            evt.putStore(category);
-//        }
+        //    Map<String,Category> categoriesToStore = new LinkedHashMap<String,Category>();
+        //    Collections.sort(categoriesToStore, new Comparator<Category>()
+        //        {
+        //            @Override
+        //            public int compare(Category o1, Category o2)
+        //            {
+        //                return o1.compareTo(o2);
+        //            }
+        //        });
+        //        for (Category category : categoriesToStore.values())
+        //        {
+        //            evt.putStore(category);
+        //        }
 
         for (Entity entity : storeObjects)
         {
@@ -2016,7 +2041,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Entity entity : storeObjects)
         {
             //evt.putStore(entity);
-            Class<?extends Entity> raplaType = entity.getTypeClass();
+            Class<? extends Entity> raplaType = entity.getTypeClass();
             if (raplaType == DynamicType.class)
             {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
@@ -2048,12 +2073,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                 }
             }
-            if (entity instanceof Category )
+            if (entity instanceof Category)
             {
                 final CategoryImpl category = (CategoryImpl) entity;
                 final ReferenceInfo<Category> reference = entity.getReference();
                 ReferenceInfo<Category> parentReference = category.getParentRef();
-                categoriesToStore.add( reference.getId());
+                categoriesToStore.add(reference.getId());
                 // remove childs categories from cache if stored version does not contain the childs anymore
                 {
                     final Collection<String> storedChildIds = category.getChildIds();
@@ -2068,25 +2093,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         categoriesToRemove.addAll(toRemove);
                     }
                 }
-                if ( !reference.getId().equals(Category.SUPER_CATEGORY_ID))
+                if (!reference.getId().equals(Category.SUPER_CATEGORY_ID))
                 {
                     // add to supercategory if no parent is specfied
-                    if ( parentReference == null )
+                    if (parentReference == null)
                     {
-                        parentReference = new ReferenceInfo<Category>(Category.SUPER_CATEGORY_ID,Category.class);
+                        parentReference = new ReferenceInfo<Category>(Category.SUPER_CATEGORY_ID, Category.class);
                     }
                     // if parent of category is not submitted then try to find parent and edit parent as well
-                    final CategoryImpl exisitingParent = (CategoryImpl)cache.tryResolve(parentReference);
-                    if ( exisitingParent != null && !exisitingParent.hasCategory( category))
+                    final CategoryImpl exisitingParent = (CategoryImpl) cache.tryResolve(parentReference);
+                    if (exisitingParent != null && !exisitingParent.hasCategory(category))
                     {
                         Category editableParent = (Category) evt.findEntity(exisitingParent);
-                        if ( editableParent == null)
+                        if (editableParent == null)
                         {
                             editableParent = exisitingParent.clone();
-                            evt.putStore( editableParent);
-                            categoriesToStore.add( exisitingParent.getReference().getId());
+                            evt.putStore(editableParent);
+                            categoriesToStore.add(exisitingParent.getReference().getId());
                         }
-                        editableParent.addCategory( category);
+                        editableParent.addCategory(category);
                     }
                 }
             }
@@ -2105,11 +2130,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             //			}
         }
 
-        categoriesToRemove.removeAll( categoriesToStore);
+        categoriesToRemove.removeAll(categoriesToStore);
 
         for (ReferenceInfo removeId : removeIds)
         {
-            final Class<?extends  Entity> raplaType = removeId.getType();
+            final Class<? extends Entity> raplaType = removeId.getType();
             Entity entity = store.tryResolve(removeId);
             if (entity == null)
             {
@@ -2125,22 +2150,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 addRemovedUserDependant(evt, store, (User) entity);
             }
-            if ( Category.class == raplaType)
+            if (Category.class == raplaType)
             {
 
-                CategoryImpl category = (CategoryImpl) tryResolve( removeId);
-                if ( category != null)
+                CategoryImpl category = (CategoryImpl) tryResolve(removeId);
+                if (category != null)
                 {
                     ReferenceInfo<Category> parentReference = category.getParentRef();
                     final CategoryImpl exisitingParent = (CategoryImpl) cache.tryResolve(parentReference);
-                    if (exisitingParent != null && exisitingParent.hasCategory( category))
+                    if (exisitingParent != null && exisitingParent.hasCategory(category))
                     {
                         Category editableParent = (Category) evt.findEntity(exisitingParent);
-                        if ( editableParent == null)
+                        if (editableParent == null)
                         {
                             editableParent = exisitingParent.clone();
-                            evt.putStore( editableParent);
-                            categoriesToStore.add( exisitingParent.getReference().getId());
+                            evt.putStore(editableParent);
+                            categoriesToStore.add(exisitingParent.getReference().getId());
                         }
                         editableParent.removeCategory(category);
                     }
@@ -2148,7 +2173,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        for ( String categoryId:categoriesToRemove)
+        for (String categoryId : categoriesToRemove)
         {
             addCatgoryToRemove(evt, categoriesToStore, categoryId, 0);
         }
@@ -2156,21 +2181,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void addCatgoryToRemove(UpdateEvent evt, Set<String> categoriesToStore, String categoryId, int depth)
     {
-        if ( depth > 20)
+        if (depth > 20)
         {
             throw new IllegalStateException("Category Cycle detected while removing");
         }
         final ReferenceInfo<Category> ref = new ReferenceInfo(categoryId, Category.class);
-        if ( !categoriesToStore.contains( ref.getId()))
+        if (!categoriesToStore.contains(ref.getId()))
         {
             evt.putRemoveId(ref);
             Category existing = cache.tryResolve(ref);
             if (existing != null)
             {
                 final Collection<String> childIds = ((CategoryImpl) existing).getChildIds();
-                for ( String childId:childIds)
+                for (String childId : childIds)
                 {
-                    addCatgoryToRemove( evt, categoriesToStore, childId, depth+1);
+                    addCatgoryToRemove(evt, categoriesToStore, childId, depth + 1);
                 }
             }
         }
@@ -2215,11 +2240,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    private void addChangedDependencies(UpdateEvent evt, EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove)
-            throws RaplaException
+    private void addChangedDependencies(UpdateEvent evt, EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove) throws RaplaException
     {
         DynamicTypeDependant dependant = (DynamicTypeDependant) evt.findEntity(entity);
-        if ( dependant == null)
+        if (dependant == null)
         {
             // no, then create a clone of the classfiable object and add to list
             User user = null;
@@ -2305,7 +2329,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 // check if entity is already in updateEvent (e.g. is modified)
                 final Entity updateEntity = updateEvt.findEntity(entity);
-                if (updateEntity != null )
+                if (updateEntity != null)
                 {
                     ((SimpleEntity) updateEntity).setLastChangedBy(null);
                 }
@@ -2853,8 +2877,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     ReferenceInfo<User> ownerId = templateObj.getOwnerRef();
                     if (ownerId != null)
                     {
-                        User user = tryResolve( ownerId );
-                        if ( user != null)
+                        User user = tryResolve(ownerId);
+                        if (user != null)
                         {
                             buf.append(" of user " + user.getUsername());
                         }
@@ -3457,7 +3481,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final Class<? extends Entity> type = update.getType();
             if (type == Conflict.class)
             {
-                final Conflict conflict = conflictFinder.findConflict((ReferenceInfo<Conflict>)update);
+                final Conflict conflict = conflictFinder.findConflict((ReferenceInfo<Conflict>) update);
                 newEntity = cache.fillConflictDisableInformation(user, conflict);
                 oldEntity = null;
             }
@@ -3472,7 +3496,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 newEntity = tryResolve(update);
             }
             // if newEntity is null, then it must be deleted and witin the to removed entities
-            if(newEntity != null)
+            if (newEntity != null)
             {
                 updatedEntities.add(newEntity);
                 if (oldEntity != null)
@@ -3482,8 +3506,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         Collection<ReferenceInfo> toRemove = getEntities(user, since, true);
-        for (ReferenceInfo update : toRemove)
+        for(Iterator<ReferenceInfo> it=toRemove.iterator();it.hasNext();)
         {
+            ReferenceInfo update = it.next();
             Entity entity;
             if (update.getType() == Conflict.class)
             {
@@ -3496,6 +3521,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (entity != null)
             {
                 oldEntities.put(update, entity);
+            }
+            else
+            {
+                it.remove();
             }
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
@@ -3510,7 +3539,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override public Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange)
     {
         checkConnected();
-        return calendarModelCache.getAppointments(userId,syncRange);
+        return calendarModelCache.getAppointments(userId, syncRange);
     }
 
     @Override public Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable)
@@ -3522,6 +3551,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override public Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment)
     {
         checkConnected();
-        return calendarModelCache.findMatchingUser( appointment );
+        return calendarModelCache.findMatchingUser(appointment);
     }
 }

@@ -87,9 +87,8 @@ import java.util.concurrent.locks.Lock;
     private String connectionName;
     Provider<ImportExportManager> importExportManager;
 
-    public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler,
-            Map<String, FunctionFactory> functionFactoryMap, Provider<ImportExportManager> importExportManager, DataSource dataSource,
-            Set<PermissionExtension> permissionExtensions)
+    public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+            Provider<ImportExportManager> importExportManager, DataSource dataSource, Set<PermissionExtension> permissionExtensions)
     {
         super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
@@ -292,36 +291,20 @@ import java.util.concurrent.locks.Lock;
         }*/
     }
 
-    @Override public void refresh() throws RaplaException
+    @Override protected void refreshWithoutLock()
     {
-
-        // test if the storage is writable
-        // if not we skip until the next update cycle
-        Lock writeLock = lock.writeLock();
-        // dispatch also does an refresh without lock so we get the new data each time a store is called
-        boolean tryLock = writeLock.tryLock();
-        if ( tryLock)
+        if (!isConnected())
         {
-            try
-            {
-                if (!isConnected())
-                {
-                    return;
-                }
-                try (Connection c = createConnection())
-                {
-                    refreshWithoutLock(c);
-                }
-                catch (Throwable e)
-                {
-                    Date lastUpdated = getLastRefreshed();
-                    logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
-                }
-            }
-            finally
-            {
-                unlock(writeLock);
-            }
+            return;
+        }
+        try (Connection c = createConnection())
+        {
+            refreshWithoutLock(c);
+        }
+        catch (Throwable e)
+        {
+            Date lastUpdated = getLastRefreshed();
+            logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
         }
     }
 
@@ -489,7 +472,7 @@ import java.util.concurrent.locks.Lock;
         {
             final String message = "Old database schema detected. Please export data.xml with 1.8 rapla version and import in new !";
             getLogger().error(message);
-            throw new RaplaException( message);
+            throw new RaplaException(message);
             //close( c);
         }
 
@@ -842,7 +825,7 @@ import java.util.concurrent.locks.Lock;
         {
             Map<String, TableDef> schema = loadDBSchema(connection);
             TableDef dynamicTypeDef = schema.get("DYNAMIC_TYPE");
-            if ( dynamicTypeDef != null)
+            if (dynamicTypeDef != null)
             {
                 RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
                 raplaSQLOutput.removeAll(connection);

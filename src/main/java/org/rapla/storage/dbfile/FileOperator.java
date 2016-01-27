@@ -224,7 +224,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
         super.disconnect();
     }
 
-    final public void refresh() throws RaplaException
+    @Override
+    protected void refreshWithoutLock()
     {
         //getLogger().warn("Incremental refreshs are not supported");
         setLastRefreshed( getCurrentTimestamp());

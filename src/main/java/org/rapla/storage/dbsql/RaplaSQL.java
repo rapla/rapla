@@ -2028,12 +2028,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 //        	entityStore.putServerPreferences(owner,configRole, value);
 //        	return;
 //        }
-        
+        final Date lastUpdateDate = getTimestampOrNow( rset, 5);
+
         PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve( preferenceId ): null;
         if ( preferences == null) 
         {
-            Date now = getConnectionTimestamp();
-            preferences = new PreferencesImpl(now, now);
+            preferences = new PreferencesImpl(lastUpdateDate, lastUpdateDate);
             preferences.setId(preferenceId.getId());
             preferences.setOwner(owner);
             put( preferences );
@@ -2050,6 +2050,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 		        RaplaObject type = preferenceReader.getChildType();
 		        preferences.putEntryPrivate(configRole, type);
 	        }
+        }
+        final Date lastChanged = preferences.getLastChanged();
+        // update last changed
+        if (  lastChanged.before( lastUpdateDate))
+        {
+            preferences.setLastChanged(lastUpdateDate);
         }
     }
 

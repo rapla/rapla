@@ -81,12 +81,6 @@ public class UpdateResult
     	return Collections.unmodifiableCollection(operations);
     }
 
-    public Collection<HistoryEntry> getUnresolvedHistoryEntry(ReferenceInfo id)
-    {
-        // FIXME
-        return null;
-    }
-
     /** returns null if no entity exisits before update*/
     public <T extends Entity> T getLastEntryBeforeUpdate(ReferenceInfo<T> id)
     {
