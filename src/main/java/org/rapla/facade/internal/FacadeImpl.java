@@ -1725,6 +1725,18 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         ArrayList<Entity>storeList = new ArrayList<Entity>();
         ArrayList<Entity>removeList = new ArrayList<Entity>();
         for (Entity toStore : storedObjects) {
+			if ( toStore instanceof Category)
+			{
+				// add non resolvable categories
+				final Iterable<Category> categoryList = ((Category) toStore).getCategoryList();
+				for (Category cat:categoryList)
+				{
+					if (tryResolve(cat.getReference())== null)
+					{
+						storeList.add( cat );
+					}
+				}
+			}
             storeList.add( toStore);
         }
         for (Entity<?> toRemove : removedObjects) {

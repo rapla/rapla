@@ -311,21 +311,11 @@ public class LocalCache implements EntityResolver
         return null;
     }
 
-    private void addRecursive(CategoryImpl cat, List<Entity> result)
-    {
-        result.add( cat);
-
-        for (Category child:cat.getCategoryList())
-        {
-            addRecursive((CategoryImpl)child, result);
-        }
-    }
-
     public List<Entity> getVisibleEntities(final User forUser)
     {
         List<Entity> result = new ArrayList<Entity>();
         final CategoryImpl superCategory = getSuperCategory();
-        addRecursive(superCategory,result);
+        result.addAll(CategoryImpl.getRecursive(superCategory));
         result.addAll(getDynamicTypes());
         for ( User user:getUsers())
         {

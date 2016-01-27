@@ -330,18 +330,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return name;
     }
 
-    protected void processPermissionGroups() throws RaplaException
-    {
-        Category userCategory = getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        if (userCategory != null)
-        {
-            User user = null;
-            DynamicType t = getDynamicType(RAPLA_TEMPLATE);
-            //DynamicType templateType = editObject(t, user);
-            // TODO What does this method do?
-        }
-    }
-
     @Override public Date getConnectStart()
     {
         return connectStart;
@@ -1871,7 +1859,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // conflicts
             update.addOperation(op.getNewConflict(), op.getOldConflict(), op.getOperation());
         }
-        processPermissionGroups();
         return update;
     }
 

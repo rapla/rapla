@@ -543,6 +543,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 	
 	public DynamicType getDynamicType(String key) {
+		checkLoaded();
 		Lock readLock = null;
 		try {
 			readLock = readLock();

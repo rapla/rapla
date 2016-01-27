@@ -981,7 +981,6 @@ import java.util.concurrent.locks.Lock;
             String password = entityStore.getPassword(id);
             cache.putPassword(id, password);
         }
-        processPermissionGroups();
     }
 
     private RaplaDefaultXMLContext createInputContext(EntityStore store, IdCreator idCreator) throws RaplaException

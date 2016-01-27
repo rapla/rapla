@@ -59,4 +59,5 @@ public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp,
     
     Category[] CATEGORY_ARRAY = new Category[0];
 
+    Iterable<Category> getCategoryList();
 }
