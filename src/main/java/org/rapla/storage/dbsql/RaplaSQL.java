@@ -12,32 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.rapla.components.util.Assert;
@@ -98,8 +72,31 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -842,6 +839,7 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 	    //return raplaXMLReader;
 	}
 
+
 //    public void update( Date lastUpdated, UpdateResult updateResult) throws SQLException
 //    {
 //        if (!hasLastChangedTimestamp)
@@ -925,15 +923,6 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T> {
 //        sb.append(")");
 //        return sb;
 //    }
-    protected Collection<Category> getTransitiveCategories(Category cat) {
-        Set<Category> allChilds = new LinkedHashSet<Category>();
-        allChilds.add( cat);
-        for ( Category child: cat.getCategories())
-        {
-            allChilds.addAll(getTransitiveCategories(child));
-        }
-        return allChilds;
-    }
 
 }
 
@@ -988,31 +977,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         checkAndDrop(schema, "DELETED");
     }
 
-    @Override
-    public void deleteEntities(Iterable<ReferenceInfo<Category>> entities) throws SQLException,RaplaException {
-        Set<ReferenceInfo<Category>> transitiveCategories = new HashSet<ReferenceInfo<Category>>();
-    	for ( ReferenceInfo<Category> catRef:entities)
-    	{
-            final Collection<Category> transitiveCategories1 = getTransitiveCategories(cache.resolve(catRef));
-            for ( Category cat:transitiveCategories1)
-            {
-                final ReferenceInfo<Category> transitiveReference = cat.getReference();
-                transitiveCategories.add (transitiveReference);
-            }
-    	}
-        super.deleteEntities( transitiveCategories );
-    }
-    
-    @Override
-    public void insert(Iterable<Category> entities) throws SQLException, RaplaException {
-        Set<Category> transitiveCategories = new LinkedHashSet<Category>();
-        for ( Category cat: entities)
-        {
-            transitiveCategories.addAll(getTransitiveCategories(cat));
-        }
-        super.insert(transitiveCategories);
-    }
-    
     /*
     private Collection<String> getTransitiveIds(String parentId) throws SQLException, RaplaException {
 		Set<String> childIds = new HashSet<String>();
@@ -1105,7 +1069,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         category.setLastChanged( lastChanged);
 		category.setId( id);
         keyAndPathResolver.addCategory( category);
-        put( category );
+        put(category);
 
         orderMap.put( category, order);
         // parentId can also be null
@@ -1137,18 +1101,10 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 	@Override
 	void insertAll() throws SQLException, RaplaException {
 		CategoryImpl superCategory = cache.getSuperCategory();
-		Set<Category> childs = new HashSet<Category>();
-		addChildren(childs, superCategory);
-		insert( childs);
+		insert( CategoryImpl.getRecursive( superCategory));
 	}
 	
-	private void addChildren(Collection<Category> list, Category category) {
-		for (Category child:category.getCategories())
-		{
-			list.add( child );
-			addChildren(list, child);
-		}
-	}
+
 }
 
 class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
@@ -2447,7 +2403,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         entites.addAll(cache.getDynamicTypes());
         entites.addAll(cache.getReservations());
         entites.addAll(cache.getUsers());
-        entites.addAll(getTransitiveCategories(cache.getSuperCategory()));
+        entites.addAll(CategoryImpl.getRecursive(cache.getSuperCategory()));
         if(entites.isEmpty())
         {
             return;
@@ -2470,7 +2426,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     @Override public void save(Iterable<T> entities) throws RaplaException, SQLException
     {
-        //Collection<T> entitiesWithTransitiveCategories = getEntitiesWithTransitiveCategories(entities);
         insert(entities, false);
     }
 
@@ -2478,8 +2433,25 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     public void deleteEntities(Iterable<ReferenceInfo<T>> referenceInfos) throws SQLException, RaplaException
     {
         // only write history entry if entity is deleted and not updated
-        Collection<T> entitiesWithTransitiveCategories = getDeleteEntitiesWithTransitiveCategories(referenceInfos);
+        Collection<T> entitiesWithTransitiveCategories = getResolvableEntities(referenceInfos);
         insert(entitiesWithTransitiveCategories, true);
+    }
+
+    protected Collection<T> getResolvableEntities(Iterable<ReferenceInfo<T>> referenceInfos)
+    {
+        Collection<T> resolvedEntities = new LinkedList<T>();
+        for(ReferenceInfo<T> ref : referenceInfos)
+        {
+            T entity = cache.tryResolve( ref);
+            if ( entity != null)
+            {
+                resolvedEntities.add(entity);
+            }
+            else {
+                getLogger().error("can't create resolve event for remove entity with id " + ref);
+            }
+        }
+        return resolvedEntities;
     }
 
     private void insert(Iterable<T> entities, boolean asDelete) throws SQLException,RaplaException {
@@ -2496,57 +2468,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         } catch (SQLException ex) {
             throw ex;
         }
-    }
-
-    protected Collection<T> getEntitiesWithTransitiveCategories(Iterable<T> entities)
-    {
-        Collection<T> entitiesWithTransitiveCategories = new LinkedList<T>();
-        for(T entity : entities)
-        {
-            if(entity instanceof Category)
-            {
-                final Collection<Category> transitiveCategories = getTransitiveCategories((Category) entity);
-                for (Category category : transitiveCategories)
-                {
-                    entitiesWithTransitiveCategories.add((T) category);
-                }
-            }
-            else
-            {
-                entitiesWithTransitiveCategories.add(entity);
-            }
-        }
-        return entitiesWithTransitiveCategories;
-    }
-
-    protected Collection<T> getDeleteEntitiesWithTransitiveCategories(Iterable<ReferenceInfo<T>> referenceInfos)
-    {
-        Collection<T> entitiesWithTransitiveCategories = new LinkedList<T>();
-        for(ReferenceInfo<T> ref : referenceInfos)
-        {
-            T entity = cache.tryResolve( ref);
-            if ( entity != null)
-            {
-                /*
-                if (entity instanceof Category)
-                {
-                    final Collection<Category> transitiveCategories = getTransitiveCategories((Category) entity);
-                    for (Category category : transitiveCategories)
-                    {
-                        entitiesWithTransitiveCategories.add((T) category);
-                    }
-                }
-                else
-                {
-                    entitiesWithTransitiveCategories.add(entity);
-                }*/
-                entitiesWithTransitiveCategories.add(entity);
-            }
-            else {
-                getLogger().error("can't create history event for remove entity with id " + ref);
-            }
-        }
-        return entitiesWithTransitiveCategories;
     }
     
     @Override

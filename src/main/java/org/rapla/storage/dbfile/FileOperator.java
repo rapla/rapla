@@ -310,7 +310,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
             // contextualize all Entities
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Entities contextualized");
-            processPermissionGroups();
         }
         catch (RaplaException ex)
         {

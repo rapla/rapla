@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,6 +48,22 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     public CategoryImpl(Date createDate, Date lastChanged) {
     	this.createDate = createDate;
     	this.lastChanged = lastChanged;
+    }
+
+    public static Collection<Category> getRecursive(Category cat)
+    {
+        List<Category> result = new ArrayList<Category>();
+        addRecursive( cat, result, 0 );
+        return result;
+    }
+
+    private static void addRecursive(Category cat, List<Category> result,int depth)
+    {
+        result.add( cat );
+        for (Category child:cat.getCategoryList())
+        {
+            addRecursive((CategoryImpl)child, result,depth + 1);
+        }
     }
 
     @Override

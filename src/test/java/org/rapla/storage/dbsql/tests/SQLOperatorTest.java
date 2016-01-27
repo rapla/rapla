@@ -226,10 +226,10 @@ public class SQLOperatorTest extends AbstractOperatorTest
         type.addAttribute(att);
         facade.store(type);
         printTypeIds();
-        operator.disconnect();
         DynamicType typeAfterEdit = facade.getDynamicType("event");
         String idAfterEdit = typeAfterEdit.getId();
         Assert.assertEquals(id, idAfterEdit);
+        Assert.assertNotNull(typeAfterEdit.getAttribute("test-att"));
     }
 
     private void printTypeIds() throws RaplaException, SQLException

@@ -732,6 +732,11 @@ public class ParsedText implements Serializable
             return parent.getRootPathLength();
         }
 
+        @Override public Iterable<Category> getCategoryList()
+        {
+            return parent.getCategoryList();
+        }
+
         public int compareTo(Object o)
         {
             return parent.compareTo(o);
@@ -751,7 +756,6 @@ public class ParsedText implements Serializable
         @Override public void addCategory(Category category)
         {
             throw new IllegalStateException();
-
         }
 
         @Override public void setKey(String key)
