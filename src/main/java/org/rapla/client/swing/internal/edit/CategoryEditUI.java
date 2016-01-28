@@ -394,15 +394,32 @@ public class CategoryEditUI extends RaplaGUIComponent
         final ArrayList<Category> result = new ArrayList<Category>(editableCategories.values());
         return result;
     }
+    
+    private void fillCategoriesArray(Category cat, List<Category> list)
+    {
+        final String id = cat.getId();
+        if(editableCategories.containsKey(id))
+        {
+            cat = editableCategories.get(id);
+        }
+        list.add(cat);
+        final Category[] categories = cat.getCategories();
+        if(categories != null)
+        {
+            for (Category category : categories)
+            {
+                if(category.getParent().equals(cat))
+                {
+                    fillCategoriesArray(category, list);
+                }
+            }
+        }
+    }
 
     private void updateModel()  {
         final ArrayList<Category> arrayList = new ArrayList<Category>();
-        if(!editableCategories.containsKey(rootCategory.getId()))
-        {
-            arrayList.add(rootCategory);
-        }
-        arrayList.addAll(editableCategories.values());
-        model = treeFactory.createModel( arrayList, true);
+        fillCategoriesArray(rootCategory, arrayList);
+        model = treeFactory.createModel( arrayList, false);
         RaplaTree.exchangeTreeModel( model , treeEdit.getTree() );
     }
 
