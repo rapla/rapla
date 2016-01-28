@@ -183,17 +183,21 @@ public class TestRemoteStorageImpl
             newCategory.setKey("cat1");
             final Category newCategory2 = raplaFacade.newCategory();
             newCategory2.setKey("cat2");
+            final Category newCategory3 = raplaFacade.newCategory();
+            newCategory3.setKey("cat3");
             superCategory.addCategory(newCategory);
             newCategory.addCategory(newCategory2);
-            raplaFacade.storeObjects(new Entity[]{newCategory2, newCategory, superCategory});
+            newCategory2.addCategory(newCategory3);
+            raplaFacade.storeObjects(new Entity[]{newCategory2, newCategory, superCategory, newCategory3});
         }
         {// now delete cat1 and cat2 but also say cat1 has changed as cat2 is no more child of cat1
             final Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
             final Category cat1 = raplaFacade.edit(superCategory.getCategory("cat1"));
             final Category cat2 = raplaFacade.edit(cat1.getCategory("cat2"));
-            cat1.removeCategory(cat2);
+            final Category cat3 = raplaFacade.edit(cat2.getCategory("cat3"));
             superCategory.removeCategory(cat1);
-            raplaFacade.storeAndRemove(new Entity[]{superCategory, cat1}, new Entity[]{cat1, cat2});
+            cat2.removeCategory(cat3);
+            raplaFacade.storeAndRemove(new Entity[]{superCategory, cat1, cat2}, new Entity[]{cat1, cat3});
         }
     }
 }
