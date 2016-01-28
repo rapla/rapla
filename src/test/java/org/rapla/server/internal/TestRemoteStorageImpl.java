@@ -172,4 +172,28 @@ public class TestRemoteStorageImpl
         // check if we can resolve the new category
         Assert.assertNotNull(raplaFacade.getSuperCategory().getCategory("newCategory"));
     }
+    
+    @Test
+    public void testDeleteUpdateCategory() throws Exception
+    {
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        {// init data
+            final Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
+            final Category newCategory = raplaFacade.newCategory();
+            newCategory.setKey("cat1");
+            final Category newCategory2 = raplaFacade.newCategory();
+            newCategory2.setKey("cat2");
+            superCategory.addCategory(newCategory);
+            newCategory.addCategory(newCategory2);
+            raplaFacade.storeObjects(new Entity[]{newCategory2, newCategory, superCategory});
+        }
+        {// now delete cat1 and cat2 but also say cat1 has changed as cat2 is no more child of cat1
+            final Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
+            final Category cat1 = raplaFacade.edit(superCategory.getCategory("cat1"));
+            final Category cat2 = raplaFacade.edit(cat1.getCategory("cat2"));
+            cat1.removeCategory(cat2);
+            superCategory.removeCategory(cat1);
+            raplaFacade.storeAndRemove(new Entity[]{superCategory, cat1}, new Entity[]{cat1, cat2});
+        }
+    }
 }
