@@ -78,7 +78,7 @@ detected.
 
     </Arg>
   </New>
- <New id="rapladatasource" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+ <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg></Arg>
 	<Arg>rapladatasource</Arg>
 	<!--  change to jdbc/rapladb,raplafile if you want to use a database as datasource -->
@@ -88,14 +88,11 @@ detected.
 
   <!-- Normaly you don't have to modify the settings below -->
 
-  <New class="org.eclipse.jetty.plus.jndi.Resource">
-  	<Arg>raplaservices</Arg>
-  	<Arg>
-	  	<New class="java.util.HashMap">
-<!-- 	  		<Put name="exchange">false</Put> -->
-<!-- 	  		<Put name="notification">false</Put> -->
-	  	</New>
-  	</Arg>
+  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+      <Arg></Arg>
+      <Arg>raplaservices</Arg>
+      <Arg type="java.lang.String">org.rapla.plugin.notification=false,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
+      <Arg type="boolean">true</Arg>
   </New>
 
  <!--  this is important for large data sets to submit -->

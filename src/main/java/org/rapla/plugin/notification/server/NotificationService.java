@@ -60,7 +60,7 @@ import java.util.Set;
 
 /** Sends Notification Mails on allocation change.*/
 
-@Extension(provides = ServerExtension.class, id ="notification")
+@Extension(provides = ServerExtension.class, id =NotificationPlugin.PLUGIN_ID)
 public class NotificationService
     implements
     ServerExtension
@@ -74,13 +74,12 @@ public class NotificationService
     private final NotificationResources notificationI18n;
     private final RaplaResources raplaI18n;
     private final CachableStorageOperator operator;
-    private final boolean startNotificationService;
 
     Logger logger;
 
     @Inject
-    public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, RaplaLocale raplaLocale,
-            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger, ServerContainerContext serverContainerContext)
+    public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n,
+            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger)
                     throws RaplaException
     {
         this.notificationI18n = notificationI18n;
@@ -93,15 +92,12 @@ public class NotificationService
         //raplaFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
-        getLogger().info("NotificationServer Plugin started");
-        startNotificationService = serverContainerContext.startService("notification");
     }
 
     @Override public void start()
     {
-        if(startNotificationService)
-        {
-            getLogger().info("scheduling command for NotificationSercice");
+        getLogger().info("NotificationServer Plugin started");
+        getLogger().info("scheduling command for NotificationSercice");
             mailQueue.schedule(new Command()
             {
                 
@@ -131,7 +127,6 @@ public class NotificationService
                     }
                 }
             }, 0, 30000l);
-        }
     }
 
     protected  Logger getLogger()

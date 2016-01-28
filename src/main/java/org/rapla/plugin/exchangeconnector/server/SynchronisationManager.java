@@ -83,12 +83,13 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     private final String exchangeAppointmentCategory;
 
     private final int syncPeriodPast;
-
+    CommandScheduler scheduler;
     @Inject public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
             TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
-            CommandScheduler scheduler, ConfigReader config, ServerContainerContext serverContainerContext) throws RaplaException
+            CommandScheduler scheduler, ConfigReader config) throws RaplaException
     {
         super();
+        this.scheduler = scheduler;
         this.converter = converter;
         this.logger = logger;
         this.facade = facade;
@@ -104,46 +105,47 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         syncPeriodPast = config.getSyncPeriodPast();
 
         this.appointmentStorage = appointmentStorage;
-        long delay = 0;
 
-        if(serverContainerContext.startService("exchange"))
-        {
-            logger.info("Scheduling Exchange synchronization tasks");
-            scheduler.schedule(new RetryCommand(), delay, SCHEDULE_PERIOD);
-
-            scheduler.schedule(new Command()
-            {
-
-                @Override
-                public void execute() throws Exception
-                {
-                    final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
-                    Date lastUpdated = null;
-                    Date updatedUntil = null;
-                    try
-                    {
-                        lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
-                        final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
-                        synchronize(updateResult);
-                        // set it as last, so update must have been successful
-                        updatedUntil = updateResult.getUntil();
-                    }
-                    catch (Throwable t)
-                    {
-                        SynchronisationManager.this.logger.debug("Error updating exchange queue");
-                    }
-                    finally
-                    {
-                        if (lastUpdated != null)
-                        {
-                            cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
-                        }
-                    }
-                }
-            }, delay, 20000);
-        }
         //final Timer scheduledDownloadTimer = new Timer("ScheduledDownloadThread",true);
         //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
+    }
+
+    public void start()
+    {
+        long delay = 0;
+        logger.info("Scheduling Exchange synchronization tasks");
+        scheduler.schedule(new RetryCommand(), delay, SCHEDULE_PERIOD);
+
+        scheduler.schedule(new Command()
+        {
+
+            @Override
+            public void execute() throws Exception
+            {
+                final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
+                Date lastUpdated = null;
+                Date updatedUntil = null;
+                try
+                {
+                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                    final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
+                    synchronize(updateResult);
+                    // set it as last, so update must have been successful
+                    updatedUntil = updateResult.getUntil();
+                }
+                catch (Throwable t)
+                {
+                    SynchronisationManager.this.logger.debug("Error updating exchange queue");
+                }
+                finally
+                {
+                    if (lastUpdated != null)
+                    {
+                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
+                    }
+                }
+            }
+        }, delay, 20000);
     }
 
 

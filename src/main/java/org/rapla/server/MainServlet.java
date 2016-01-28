@@ -121,20 +121,16 @@ public class MainServlet extends HttpServlet
             }
         }
         {
-            Object services = jndi.lookupResource("raplaservices", true);
-            if(services != null && services instanceof Map)
+            String services = jndi.lookupEnvString("raplaservices", true);
+            if(services != null )
             {
-                Map servicesMap = (Map)services;
-                final Set keySet = servicesMap.keySet();
-                for (Object key : keySet)
+                String[] splits = services.split(",");
+                for (String key : splits)
                 {
-                    if(key != null)
-                    {
-                        final Object value = servicesMap.get(key);
-                        final boolean start = value != null && value.toString().toUpperCase().equals("FALSE");
-                        final String string = key.toString();
-                        backendContext.putServiceState(string, start);
-                    }
+                    String[] split2 = key.split("=");
+                    String service = split2[0].trim();
+                    boolean disabled = split2.length > 1 && split2[1].trim().toLowerCase().equals("false");
+                    backendContext.putServiceState(service, !disabled);
                 }
             }
         }

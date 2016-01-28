@@ -129,22 +129,22 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     /** returns true if this is a direct or transitive parent of the passed category*/
     public boolean isAncestorOf(Category category) {
-        return isAncestorOf( category, 0);
+        return isAncestorOf( defaultResolver,this,category, 0);
     }
 
-    private boolean isAncestorOf(Category category, int depth) {
+    static private boolean isAncestorOf(ParentResolver<Category> parentResolver,Category thisCategory,Category category, int depth) {
         if ( depth > 20)
         {
-            throw new IllegalStateException("Categorycyle detected in isAncestorOf " + category.toString() + " and " + toString());
+            throw new IllegalStateException("Categorycyle detected in isAncestorOf " + category.toString() + " and " + thisCategory.toString());
         }
         if (category == null)
             return false;
-        if (category.getParent() == null)
+        if (parentResolver.getParent(category) == null)
             return false;
-        if (category.getParent().equals(this))
+        if (parentResolver.getParent(category).equals(thisCategory))
             return true;
         else
-            return isAncestorOf(category.getParent(), depth+ 1);
+            return isAncestorOf(parentResolver,thisCategory,parentResolver.getParent(category), depth+ 1);
     }
 
     public Category getCategory(String key) {
@@ -188,17 +188,34 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     }
 
     public int getRootPathLength() {
-    	Category parent = getParent();
-		if ( parent == null)
-		{
-			return 0;
-		}
-		else
-		{
-			int parentDepth = parent.getRootPathLength();
-			return parentDepth + 1;
-		}
+        return getRootPathLength( defaultResolver, this);
     }
+
+     static public <T> int getRootPathLength(ParentResolver<T> parentResolver, T obj ) {
+        T parent = parentResolver.getParent(obj);
+        if ( parent == null)
+        {
+            return 0;
+        }
+        else
+        {
+            int parentDepth = getRootPathLength(parentResolver, parent);
+            return parentDepth + 1;
+        }
+    }
+
+    interface ParentResolver<T>
+    {
+        T getParent(T category);
+    }
+
+    static ParentResolver<Category> defaultResolver = new  ParentResolver<Category>()
+    {
+        public Category getParent(Category category)
+        {
+            return category.getParent();
+        }
+    };
     
     public int getDepth() {
         int max = 0;
@@ -364,10 +381,6 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         return category;
     }
 
-    public Category findCategory(Object copy) {
-        return (Category) super.findEntity((Entity)copy);
-    }
-
     public String getAnnotation(String key) {
         return annotations.get(key);
     }
@@ -403,48 +416,53 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     }
     
     public int compareTo(Object o) {
-        if ( o == this )
+        Category c1= this;
+        Category c2= (Category) o;
+        return compareTo(c1, c2, defaultResolver);
+   }
+
+    static int compareTo(Category c1, Category c2, ParentResolver<Category> parentResolver)
+    {
+        if ( c2 == c1 )
         {
             return 0;
         }
-        if ( equals( o ))
+        if ( c1.equals(c2))
         {
         	return 0;
         }
-        Category c1= this;
-        Category c2= (Category) o;
-        if ( c1.isAncestorOf( c2))
+        if ( isAncestorOf(parentResolver,c1,c2,0))
         {
         	return -1;
         }
-        if ( c2.isAncestorOf( c1))
+        if ( isAncestorOf(parentResolver, c2,c1,0))
         {
         	return 1;
         }
-        while ( c1.getRootPathLength() > c2.getRootPathLength())
+        while ( getRootPathLength(parentResolver, c1) > getRootPathLength(parentResolver, c2))
         {
         	c1 = c1.getParent();
         }
-        while ( c2.getRootPathLength() > c1.getRootPathLength())
+        while ( getRootPathLength(parentResolver, c2) > getRootPathLength(parentResolver, c1))
         {
         	c2 = c2.getParent();
         }
-        while ( c1.getParent() != null && c2.getParent() != null && (!c1.getParent().equals( c2.getParent())))
+        while ( parentResolver.getParent(c1) != null && parentResolver.getParent(c2) != null && (!parentResolver.getParent(c1).equals(
+                parentResolver.getParent(c2))))
         {
         	c1 = c1.getParent();
         	c2 = c2.getParent();
         }
         //now the two categories have the same parent
-        if ( c1.getParent() == null || c2.getParent() == null)
+        if ( parentResolver.getParent(c1) == null || parentResolver.getParent(c2) == null)
         {
             // they are not under the same super category, so compare by id
             //return super.compareTo(o);
             return compare_((CategoryImpl)c1, (CategoryImpl)c2);
         }
-        CategoryImpl parent = (CategoryImpl) c1.getParent();
-        CategoryImpl parent2 = (CategoryImpl) c2.getParent();
-        Assert.isTrue(parent.equals( parent2 ));
-
+        CategoryImpl parent = (CategoryImpl) parentResolver.getParent(c1);
+        CategoryImpl parent2 = (CategoryImpl) parentResolver.getParent(c2);
+        Assert.isTrue(parent.equals(parent2));
         Collection<Category> categories =parent.getCategoryList();
         for ( Category category: categories)
         {
@@ -457,8 +475,8 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
                 return 1;
             }
         }
-        return super.compareTo( o);
-   }
+        return compare_((CategoryImpl) c1, (CategoryImpl) c2);
+    }
 
 
     /*

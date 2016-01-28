@@ -82,8 +82,8 @@ public class ServerServiceImpl implements ServerServiceContainer
 
 
     @Inject
-    public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Set<ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices,CommandScheduler scheduler)
+    public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Map<String,ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices,CommandScheduler scheduler, ServerContainerContext serverContainerContext)
     {
         this.scheduler = scheduler;
         this.logger = logger;
@@ -179,9 +179,15 @@ public class ServerServiceImpl implements ServerServiceContainer
 
         this.pageMap = pageMap.get();
 
-        for (ServerExtension extension : serverExtensions.get())
+        final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
+        for (Map.Entry<String,ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
         {
-            extension.start();
+            final String key = extensionEntry.getKey();
+            ServerExtension extension = extensionEntry.getValue();
+            if (serverContainerContext.isServiceEnabled(key))
+            {
+                extension.start();
+            }
         }
     }
 

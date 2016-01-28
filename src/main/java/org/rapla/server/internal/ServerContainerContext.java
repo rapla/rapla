@@ -77,7 +77,7 @@ public class ServerContainerContext
         services.put(key, value);
     }
     
-    public boolean startService(String serviceKey)
+    public boolean isServiceEnabled(String serviceKey)
     {
         if(services.containsKey(serviceKey))
         {

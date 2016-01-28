@@ -17,7 +17,7 @@ public class SynchronisationManagerInitializer implements ServerExtension{
     @Override
     public void start()
     {
-        
+		manager.start();
     }
 
 }
