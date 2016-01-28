@@ -24,6 +24,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
@@ -36,6 +37,7 @@ import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronize
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
+import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.CachableStorageOperator;
@@ -62,7 +64,8 @@ import java.util.TreeMap;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
-@Singleton public class SynchronisationManager
+@Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=ServerExtension.class)
+@Singleton public class SynchronisationManager implements ServerExtension
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
@@ -110,6 +113,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
     }
 
+    @Override
     public void start()
     {
         long delay = 0;
