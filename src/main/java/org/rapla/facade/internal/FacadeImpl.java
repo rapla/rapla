@@ -123,7 +123,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
 	//private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
 	private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
-	private I18nBundle i18n;
+	private RaplaResources i18n;
 	private PeriodModelImpl periodModel;
 //	private ConflictFinder conflictFinder;
 	private Vector<ModificationListener> directListenerList = new Vector<ModificationListener>();
@@ -142,6 +142,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		this.i18n = i18n;
 		this.notifyQueue = notifyQueue;
 		locale = i18n.getLocale();
+	}
+
+	public RaplaResources getI18n()
+	{
+		return i18n;
 	}
 
 	static public void convertToNewPluginConfig(RaplaFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
@@ -1728,8 +1733,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			if ( toStore instanceof Category)
 			{
 				// add non resolvable categories
-				final Iterable<Category> categoryList = ((Category) toStore).getCategoryList();
-				for (Category cat:categoryList)
+				for (Category cat:((CategoryImpl) toStore).getTransientCategoryList())
 				{
 					if (tryResolve(cat.getReference())== null)
 					{

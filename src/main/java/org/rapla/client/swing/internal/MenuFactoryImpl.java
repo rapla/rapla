@@ -548,7 +548,7 @@ import java.util.TreeMap;
         while (it.hasNext())
         {
             Entity<?> o = it.next();
-            if (permissionController.canAdmin(o, user) && !o.equals(superCategory))
+            if (permissionController.canDelete(o, user) && !o.equals(superCategory))
                 deletableObjects.add(o);
         }
         return deletableObjects;

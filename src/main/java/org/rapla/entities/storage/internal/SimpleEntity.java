@@ -13,6 +13,7 @@
 package org.rapla.entities.storage.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -45,7 +46,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
     }
     
     // this is only used when you add a resource that is not yet stored, so the resolver won't find it
-    transient Map<String,Entity> nonpersistantEntities;
+    private transient Map<String,Entity> nonpersistantEntities;
     
     @Override
     protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
@@ -72,6 +73,17 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
                 nonpersistantEntities = new LinkedHashMap<String,Entity>();
             }
             nonpersistantEntities.put( entity.getId(), entity);
+        }
+    }
+
+    protected Collection<Entity> getNonpersistantEntities()
+    {
+        if ( nonpersistantEntities == null)
+        {
+            return Collections.emptyList();
+        }
+        else {
+            return nonpersistantEntities.values();
         }
     }
     

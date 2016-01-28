@@ -57,6 +57,7 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -115,6 +116,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
         treeSelection.setMultiSelect(true);
         treeSelection.getTree().setSelectionModel(((TreeFactoryImpl) getTreeFactory()).createComplexTreeSelectionModel());
+        final TreeCellRenderer renderer = getTreeFactory().createRenderer();
+        treeSelection.getTree().setCellRenderer(renderer);
 
         updateTree();
         updateSelection();
@@ -166,17 +169,19 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
      * 
      * @see org.rapla.client.swing.gui.internal.view.ITreeFactory#createClassifiableModel(org.rapla.entities.dynamictype.Classifiable[], org.rapla.entities.dynamictype.DynamicType[])
      */
-    protected void updateTree() throws RaplaException {
+    protected void updateTree()  {
 
         treeSelection.getTree().setRootVisible(false);
         treeSelection.getTree().setShowsRootHandles(true);
-        treeSelection.getTree().setCellRenderer(getTreeFactory().createRenderer());
-        
         DefaultTreeModel treeModel = generateTree();
-        try {
+        try
+        {
             treeListenersEnabled = false;
             treeSelection.exchangeTreeModel(treeModel);
             updateSelection();
+        } catch ( Exception ex)
+        {
+            getLogger().error(ex.getMessage(),ex);
         } finally {
             treeListenersEnabled = true;
         }

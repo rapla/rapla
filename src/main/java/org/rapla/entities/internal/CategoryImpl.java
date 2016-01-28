@@ -84,6 +84,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         lastChanged = date;
     }
 
+
     @Override public Class<Category> getTypeClass()
     {
         return Category.class;
@@ -157,6 +158,10 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         return null;
     }
 
+    public Collection<Category> getTransientCategoryList()
+    {
+        return (Collection)getNonpersistantEntities();
+    }
     public boolean hasCategory(Category category) {
         return isRefering("childs", category.getId());
     }
@@ -431,11 +436,11 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         {
         	return 0;
         }
-        if ( isAncestorOf(parentResolver,c1,c2,0))
+        if ( isAncestorOf(parentResolver, c1, c2, 0))
         {
         	return -1;
         }
-        if ( isAncestorOf(parentResolver, c2,c1,0))
+        if ( isAncestorOf(parentResolver, c2, c1, 0))
         {
         	return 1;
         }

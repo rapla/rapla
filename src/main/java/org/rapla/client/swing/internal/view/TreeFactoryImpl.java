@@ -990,11 +990,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         
         Border nonIconBorder = BorderFactory.createEmptyBorder(1, 0, 1, 0);
         Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
-        Date today;
 
         public ComplexTreeCellRenderer() {
             setLeafIcon(defaultIcon);
-            today = getQuery().today();
         }
 
         public void setLeaf(Object object) {
@@ -1003,7 +1001,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 Allocatable allocatable = (Allocatable) object;
                 try {
     				User user = getUser();
-    				if ( !getFacade().getPermissionController().canAllocate(allocatable, user, today))
+                    Date today = getQuery().today();
+                    if ( !getFacade().getPermissionController().canAllocate(allocatable, user, today))
     				{
     					icon = forbiddenIcon;
     				}

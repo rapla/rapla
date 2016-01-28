@@ -414,7 +414,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
         final User user = getUserModule().getUser();
-        deleteButton.setEnabled( permissionController.canAdmin( reservation, user ));
+        deleteButton.setEnabled( permissionController.canDelete( reservation, user ));
         if ( !permissionController.canModify( reservation, user) )
         {
             disableComponentAndAllChildren(appointmentEdit.getComponent());

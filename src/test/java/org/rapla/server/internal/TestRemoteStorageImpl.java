@@ -1,13 +1,17 @@
 package org.rapla.server.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.inject.Provider;
 
+import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -15,13 +19,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.RaplaResources;
 import org.rapla.ServletTestBase;
+import org.rapla.client.internal.DeleteUndo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.test.util.RaplaTestCase;
@@ -197,7 +204,17 @@ public class TestRemoteStorageImpl
             final Category cat3 = raplaFacade.edit(cat2.getCategory("cat3"));
             superCategory.removeCategory(cat1);
             cat2.removeCategory(cat3);
-            raplaFacade.storeAndRemove(new Entity[]{superCategory, cat1, cat2}, new Entity[]{cat1, cat3});
+            RaplaResources i18n = ((FacadeImpl) raplaFacade).getI18n();
+            final List<Category> entities = Arrays.asList(new Category[] { cat1, cat3 });
+            DeleteUndo<Category> undo = new DeleteUndo<Category>(raplaFacade, i18n, entities,clientFacade.getUser());
+            undo.execute();
+            raplaFacade.refresh();
+            TestCase.assertNull(raplaFacade.getSuperCategory().getCategory("cat1"));
+            undo.undo();
+            raplaFacade.refresh();
+            TestCase.assertNotNull(raplaFacade.getSuperCategory().getCategory("cat1"));
         }
     }
+
+
 }

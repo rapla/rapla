@@ -2081,6 +2081,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 categoriesToStore.add(reference.getId());
                 // remove childs categories from cache if stored version does not contain the childs anymore
                 {
+                    // support a move from one parent to the next. We dont add the category to remove if its found as child in on of the stored categories
                     final Collection<String> storedChildIds = category.getChildIds();
                     categoriesToStore.addAll(storedChildIds);
                     // test if category already exists
@@ -2152,22 +2153,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             if (Category.class == raplaType)
             {
-
                 CategoryImpl category = (CategoryImpl) tryResolve(removeId);
                 if (category != null)
                 {
                     ReferenceInfo<Category> parentReference = category.getParentRef();
                     final CategoryImpl exisitingParent = (CategoryImpl) cache.tryResolve(parentReference);
-                    if (exisitingParent != null && exisitingParent.hasCategory(category))
+                    if (exisitingParent != null && exisitingParent.hasCategory(category) )
                     {
-                        Category editableParent = (Category) evt.findEntity(exisitingParent);
-                        if (editableParent == null)
+                        if ( !isInDeleted(exisitingParent, categoriesToRemove,0))
                         {
-                            editableParent = exisitingParent.clone();
-                            evt.putStore(editableParent);
-                            categoriesToStore.add(exisitingParent.getReference().getId());
+                            Category editableParent = (Category) evt.findEntity(exisitingParent);
+                            if (editableParent == null)
+                            {
+                                editableParent = exisitingParent.clone();
+                                evt.putStore(editableParent);
+                                categoriesToStore.add(exisitingParent.getReference().getId());
+                            }
+                            editableParent.removeCategory(category);
                         }
-                        editableParent.removeCategory(category);
                     }
                     categoriesToRemove.add(removeId.getId());
                 }
@@ -2175,11 +2178,35 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         for (String categoryId : categoriesToRemove)
         {
-            addCatgoryToRemove(evt, categoriesToStore, categoryId, 0);
+            addCategoryToRemove(evt, categoriesToStore, categoryId, 0);
         }
     }
 
-    private void addCatgoryToRemove(UpdateEvent evt, Set<String> categoriesToStore, String categoryId, int depth)
+    private boolean isInDeleted(Category exisitingParent, Set<String> categoriesToRemove, int depth)
+    {
+        if ( depth > 20)
+        {
+            throw new IllegalStateException("Category Cycle detected in " + exisitingParent);
+        }
+        final ReferenceInfo<Category> ref = exisitingParent.getReference();
+        if (  categoriesToRemove.contains( ref.getId()))
+        {
+            return true;
+        }
+        final ReferenceInfo<Category> parentRef = ((CategoryImpl)exisitingParent).getParentRef();
+        if ( parentRef == null)
+        {
+            return false;
+        }
+        final Category parent = cache.tryResolve(parentRef);
+        if ( parent == null)
+        {
+            return false;
+        }
+        return isInDeleted(parent, categoriesToRemove, depth + 1);
+    }
+
+    private void addCategoryToRemove(UpdateEvent evt, Set<String> categoriesToStore, String categoryId, int depth)
     {
         if (depth > 20)
         {
@@ -2195,7 +2222,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final Collection<String> childIds = ((CategoryImpl) existing).getChildIds();
                 for (String childId : childIds)
                 {
-                    addCatgoryToRemove(evt, categoriesToStore, childId, depth + 1);
+                    addCategoryToRemove(evt, categoriesToStore, childId, depth + 1);
                 }
             }
         }
@@ -3506,7 +3533,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         Collection<ReferenceInfo> toRemove = getEntities(user, since, true);
-        for(Iterator<ReferenceInfo> it=toRemove.iterator();it.hasNext();)
+        for (Iterator<ReferenceInfo> it = toRemove.iterator(); it.hasNext(); )
         {
             ReferenceInfo update = it.next();
             Entity entity;

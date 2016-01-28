@@ -65,8 +65,16 @@ public class SecurityManager
         operator = facade.getOperator();
         permissionController = facade.getPermissionController();
     }
-    
-    void checkWritePermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException {
+
+    void checkDeletePermissions(User user,Entity entity) throws RaplaSecurityException {
+        checkModifyPermissions(user,entity,true);
+    }
+    void checkWritePermissions(User user,Entity entity) throws RaplaSecurityException
+    {
+        checkModifyPermissions(user,entity,false);
+    }
+    private void checkModifyPermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException
+    {
         if (user.isAdmin())
             return;
 

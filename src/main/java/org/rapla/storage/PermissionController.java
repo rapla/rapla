@@ -75,6 +75,11 @@ public class PermissionController
         return hasAccess(container, user, Permission.EDIT);
     }
 
+    public boolean canDelete(Entity<?> object, User user)
+    {
+        return canAdmin( object, user);
+    }
+
     public boolean canAdmin(Entity<?> object, User user)
     {
         if (!canModify(object, user))

@@ -542,7 +542,7 @@ public class RemoteStorageImpl implements RemoteStorage
             }
             for (Entity entity : storeObjects)
             {
-                security.checkWritePermissions(user, entity, false);
+                security.checkWritePermissions(user, entity);
             }
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             for (PreferencePatch patch : preferencePatches)
@@ -555,7 +555,7 @@ public class RemoteStorageImpl implements RemoteStorage
                 Entity entity = operator.tryResolve(id);
                 if (entity != null)
                 {
-                    security.checkWritePermissions(user, entity, true);
+                    security.checkDeletePermissions(user, entity);
                 }
             }
             if (this.getLogger().isDebugEnabled())

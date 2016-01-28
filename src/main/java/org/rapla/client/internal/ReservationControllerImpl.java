@@ -291,7 +291,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 	    private Map<Appointment,Reservation> parentReservations = new HashMap<Appointment,Reservation>();
 	      
 	    public DeleteBlocksCommand(Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd) {
-	        super( ReservationControllerImpl.this.getClientFacade(),ReservationControllerImpl.this.getI18n(),reservationsToRemove);
+	        super( ReservationControllerImpl.this.getClientFacade().getRaplaFacade(),ReservationControllerImpl.this.getI18n(),reservationsToRemove, ReservationControllerImpl.this.getClientFacade().getUser());
 	        this.reservationsToRemove = reservationsToRemove;
 	        this.appointmentsToRemove = appointmentsToRemove;
 	        this.exceptionsToAdd = exceptionsToAdd;
