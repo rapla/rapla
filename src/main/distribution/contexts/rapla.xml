@@ -68,6 +68,17 @@
 
   <!-- Normaly you don't have to modify the settings below -->
 
+  <New class="org.eclipse.jetty.plus.jndi.Resource">
+  	<Arg>raplaservices</Arg>
+  	<Arg>
+	  	<New class="java.util.HashMap">
+	  	<!-- uncomment one of the following lines if you want to disable a service on one host -->
+<!-- 	  		<Put name="exchange">false</Put> -->
+<!-- 	  		<Put name="notification">false</Put> -->
+	  	</New>
+  	</Arg>
+  </New>
+
 <!-- You can manualy select a  storage option here.  If not specified , a database will be used if configured above or the file if no database is configured.-->
  	 
   <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="." />/etc/webdefault.xml</Set>

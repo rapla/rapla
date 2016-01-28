@@ -120,6 +120,24 @@ public class MainServlet extends HttpServlet
                 }
             }
         }
+        {
+            Object services = jndi.lookupResource("raplaservices", true);
+            if(services != null && services instanceof Map)
+            {
+                Map servicesMap = (Map)services;
+                final Set keySet = servicesMap.keySet();
+                for (Object key : keySet)
+                {
+                    if(key != null)
+                    {
+                        final Object value = servicesMap.get(key);
+                        final boolean start = value != null && value.toString().toUpperCase().equals("FALSE");
+                        final String string = key.toString();
+                        backendContext.putServiceState(string, start);
+                    }
+                }
+            }
+        }
         env_raplamail = jndi.lookupResource("mail/Session", false);
         if (env_raplamail != null)
         {

@@ -8,6 +8,7 @@ public class ServerContainerContext
 {
     private Map<String,DataSource> dbDatasources = new LinkedHashMap<String,DataSource>();
     private Map<String,String> fileDatasources = new LinkedHashMap<String,String>();
+    private Map<String,Boolean> services = new LinkedHashMap<>(); 
     private Object mailSession;
     Runnable shutdownCommand;
 
@@ -69,6 +70,20 @@ public class ServerContainerContext
     public void addDbDatasource(String key,DataSource dbDatasource)
     {
         dbDatasources.put(key, dbDatasource);
+    }
+    
+    public void putServiceState(String key, boolean value)
+    {
+        services.put(key, value);
+    }
+    
+    public boolean startService(String serviceKey)
+    {
+        if(services.containsKey(serviceKey))
+        {
+            return services.get(serviceKey);
+        }
+        return true;
     }
 
     public void addFileDatasource(String key,String fileDatasource)

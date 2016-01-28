@@ -40,6 +40,7 @@ import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
@@ -73,13 +74,13 @@ public class NotificationService
     private final NotificationResources notificationI18n;
     private final RaplaResources raplaI18n;
     private final CachableStorageOperator operator;
+    private final boolean startNotificationService;
 
     Logger logger;
 
-    // FIXME same as synchronisation manager
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, RaplaLocale raplaLocale,
-            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger)
+            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger, ServerContainerContext serverContainerContext)
                     throws RaplaException
     {
         this.notificationI18n = notificationI18n;
@@ -93,43 +94,44 @@ public class NotificationService
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
         getLogger().info("NotificationServer Plugin started");
-        // FIXME get if start needed, the interval and so on
-        mailQueue.schedule(new Command()
-        {
-            
-            @Override
-            public void execute() throws Exception
-            {
-                Date lastUpdated = null;
-                Date updatedUntil = null;
-                try
-                {
-                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
-                    final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
-                    changed(updateResult);
-                    // set it as last, so update must have been successful
-                    updatedUntil = updateResult.getUntil();
-                }
-                catch(Throwable t)
-                {
-                    NotificationService.this.logger.warn("Could not send mail: "+t.getMessage());
-                }
-                finally
-                {
-                    if(lastUpdated != null)
-                    {
-                        operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
-                    }
-                }
-            }
-        }, 0, 30000l);
-        
+        startNotificationService = serverContainerContext.startService("notification");
     }
 
     @Override public void start()
     {
-        //UpdateResult result = operator.getUpdateResult( since);
-        //AllocationChangeFinder.getTriggerEvents( result, user, logger);
+        if(startNotificationService)
+        {
+            getLogger().info("scheduling command for NotificationSercice");
+            mailQueue.schedule(new Command()
+            {
+                
+                @Override
+                public void execute() throws Exception
+                {
+                    Date lastUpdated = null;
+                    Date updatedUntil = null;
+                    try
+                    {
+                        lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+                        final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
+                        changed(updateResult);
+                        // set it as last, so update must have been successful
+                        updatedUntil = updateResult.getUntil();
+                    }
+                    catch(Throwable t)
+                    {
+                        NotificationService.this.logger.warn("Could not send mail: "+t.getMessage());
+                    }
+                    finally
+                    {
+                        if(lastUpdated != null)
+                        {
+                            operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
+                        }
+                    }
+                }
+            }, 0, 30000l);
+        }
     }
 
     protected  Logger getLogger()
