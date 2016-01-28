@@ -262,6 +262,9 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         if (key.equals(ConstraintIds.KEY_MULTI_SELECT)) {
             return Boolean.class;
         }
+        if (key.equals(ConstraintIds.KEY_BELONGS_TO)) {
+            return Boolean.class;
+        }
         return String.class;
     }
 
@@ -270,7 +273,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             return new String[] {ConstraintIds.KEY_ROOT_CATEGORY, ConstraintIds.KEY_MULTI_SELECT};
         } 
         if (type.equals( AttributeType.ALLOCATABLE)) {
-            return new String[] {ConstraintIds.KEY_DYNAMIC_TYPE, ConstraintIds.KEY_MULTI_SELECT};
+            return new String[] {ConstraintIds.KEY_DYNAMIC_TYPE, ConstraintIds.KEY_MULTI_SELECT, ConstraintIds.KEY_BELONGS_TO};
         } else {
             return new String[0];
         }

@@ -20,11 +20,11 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 
-@Extension(provides= AnnotationEditAttributeExtension.class, id="email")
+@Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_EMAIL)
 public class EmailAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
-    private final String annotationName = AttributeAnnotations.KEY_EMAIL;
+    static private final String annotationName = AttributeAnnotations.KEY_EMAIL;
     private final BooleanFieldFactory booleanFieldFactory;
 
     @Inject
@@ -46,7 +46,7 @@ public class EmailAnnotationEdit extends RaplaGUIComponent implements Annotation
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = booleanFieldFactory.create(getString(annotationName));
+        BooleanField field = booleanFieldFactory.create(getString(AttributeAnnotations.KEY_EMAIL));
         if ( annotation != null )
         {
             field.setValue( annotation.equalsIgnoreCase("true"));

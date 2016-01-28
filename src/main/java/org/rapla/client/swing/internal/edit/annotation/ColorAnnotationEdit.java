@@ -20,7 +20,7 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 
-@Extension(provides= AnnotationEditAttributeExtension.class, id="colorannotation")
+@Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_COLOR)
 public class ColorAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
@@ -46,7 +46,7 @@ public class ColorAnnotationEdit extends RaplaGUIComponent implements Annotation
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        BooleanField field = booleanFieldFactory.create(getString(annotationName));
+        BooleanField field = booleanFieldFactory.create(getString(AttributeAnnotations.KEY_COLOR));
         if ( annotation != null)
         {
             field.setValue( annotation.equalsIgnoreCase("true"));

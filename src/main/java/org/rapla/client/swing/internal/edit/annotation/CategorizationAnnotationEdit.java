@@ -10,6 +10,8 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -20,7 +22,7 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 
-@Extension(provides = AnnotationEditAttributeExtension.class, id = "categorization")
+@Extension(provides = AnnotationEditAttributeExtension.class, id = AttributeAnnotations.KEY_CATEGORIZATION)
 public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension
 {
 
@@ -42,7 +44,14 @@ public class CategorizationAnnotationEdit extends RaplaGUIComponent implements A
             return Collections.emptyList();
         }
         Attribute attribute = (Attribute) annotatable;
+        DynamicType dynamicType = attribute.getDynamicType();
+        String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+        if ( classificationType == null || !(classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON ) || classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)))
+        {
+            return Collections.emptyList();
+        }
         String annotation = annotatable.getAnnotation(annotationName);
+
         BooleanField field = booleanFieldFactory.create(getString(annotationName));
         if (annotation != null)
         {

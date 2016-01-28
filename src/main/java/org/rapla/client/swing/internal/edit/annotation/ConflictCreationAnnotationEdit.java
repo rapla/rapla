@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-@Extension(provides= AnnotationEditTypeExtension.class, id="conflictcreation")
+@Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_CONFLICTS)
 public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
 

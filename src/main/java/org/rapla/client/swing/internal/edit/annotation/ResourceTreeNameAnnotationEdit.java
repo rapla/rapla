@@ -48,7 +48,7 @@ public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        TextField field = textFieldFactory.create(getString(annotationName));
+        TextField field = textFieldFactory.create(getString(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING));
         if ( annotation != null)
         {
             field.setValue( annotation);

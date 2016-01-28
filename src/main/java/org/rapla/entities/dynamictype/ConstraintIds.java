@@ -16,7 +16,7 @@ public interface ConstraintIds{
     String KEY_ROOT_CATEGORY="root-category";
     String KEY_DYNAMIC_TYPE="dynamic-type";
     String KEY_MULTI_SELECT = "multi-select";
-    
+    String KEY_BELONGS_TO = "belongsTo";
 }
 
 

@@ -85,6 +85,11 @@ public class AttributeDefaultConstraints extends AbstractEditField
             ,AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW
     };
 
+    String multiSelectOptions[] = {
+            "yes"
+            ,"no"
+            ,"belongsTo"
+    };
     boolean mapping = false;
     MultiLanguageField name ;
     TextField key;
@@ -95,7 +100,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
     CategorySelectField defaultSelectCategory;
     TextField defaultSelectText;
     BooleanField defaultSelectBoolean;
-    BooleanField multiSelect;
+    JComboBox multiSelect = new JComboBox();
     RaplaNumber defaultSelectNumber = new RaplaNumber(new Long(0),null,null, false);
     RaplaCalendar defaultSelectDate ;
     RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
@@ -136,7 +141,6 @@ public class AttributeDefaultConstraints extends AbstractEditField
         defaultSelectDate = createRaplaCalendar(dateRenderer, ioInterface);
         defaultSelectDate.setNullValuePossible( true);
         defaultSelectDate.setDate( null);
-        multiSelect = booleanFieldFactory.create();
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout( new double[][]
@@ -162,7 +166,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         panel.add("3,9,l,t", defaultSelectDate);
         panel.add("3,9,l,t", defaultSelectNumber);
         panel.add("1,11,l,t", multiSelectLabel);
-        panel.add("3,11,l,t", multiSelect.getComponent());
+        panel.add("3,11,l,t", multiSelect);
         panel.add("1,13,l,t", tabLabel);
         panel.add("3,13,l,t", tabSelect);
         panel.add("1,15,l,t", specialkeyLabel); // BJO
@@ -209,7 +213,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         key.addChangeListener ( this );
         classSelect.addActionListener ( this );
         tabSelect.addActionListener( this);
-        multiSelect.addChangeListener( this );
+        multiSelect.addActionListener(this);
         defaultSelectCategory.addChangeListener( this );
         defaultSelectText.addChangeListener( this );
         defaultSelectBoolean.addChangeListener( this );
@@ -226,16 +230,22 @@ public class AttributeDefaultConstraints extends AbstractEditField
 	@SuppressWarnings("unchecked")
 	private void setModel() {
 		DefaultComboBoxModel model = new DefaultComboBoxModel();
-        for ( int i = 0; i < types.length; i++ ) {
-            model.addElement(getString("type." + types[i]));
+        for (AttributeType type:types) {
+            model.addElement(getString("type." + type));
         }
         classSelect.setModel( model );
 
         model = new DefaultComboBoxModel();
-        for ( int i = 0; i < tabs.length; i++ ) {
-            model.addElement(getString(tabs[i]));
+        for ( String tab:tabs ) {
+            model.addElement(getString(tab));
         }
         tabSelect.setModel( model );
+
+        model = new DefaultComboBoxModel();
+        for ( String tab:multiSelectOptions ) {
+            model.addElement(getString(tab));
+        }
+        multiSelect.setModel( model );
 	}
 
     public JComponent getComponent() {
@@ -249,7 +259,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
          defaultSelectBoolean.setValue( null);
          defaultSelectNumber.setNumber(null);
          defaultSelectDate.setDate(null);
-         multiSelect.setValue( Boolean.FALSE);
+         multiSelect.setSelectedItem( getString("no"));
 	}
 
     public void mapFrom(Attribute attribute) throws RaplaException  {
@@ -394,7 +404,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         defaultSelectNumber.setVisible( numberVisible);
         defaultSelectDate.setVisible( dateVisible);
         multiSelectLabel.setVisible( categoryVisible || allocatableVisible);
-        multiSelect.getComponent().setVisible( categoryVisible || allocatableVisible);
+        multiSelect.setVisible( categoryVisible || allocatableVisible);
     }
 
     private void showAnnotationDialog() throws RaplaException

@@ -18,7 +18,7 @@ import org.rapla.framework.TypedComponentRole;
 
 /** Users can subscribe for allocation change notifications for selected resources or persons.*/
 
-public class NotificationPlugin
+public interface NotificationPlugin
 {
     public static final String PLUGIN_ID ="org.rapla.plugin.notification";
     public final static TypedComponentRole<Boolean> NOTIFY_IF_OWNER_CONFIG = new TypedComponentRole<Boolean>(PLUGIN_ID + ".notify_if_owner");

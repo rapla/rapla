@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 
-@Extension(provides= AnnotationEditTypeExtension.class, id="exporteventdescription")
+@Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT)
 public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT;
@@ -49,7 +49,7 @@ public class ExportEventDescriptionAnnotationEdit extends RaplaGUIComponent impl
             return Collections.emptyList();
         }
         String annotation = annotatable.getAnnotation(annotationName);
-        TextField field = textFieldFactory.create(getString(annotationName));
+        TextField field = textFieldFactory.create(getString(DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT));
         if ( annotation != null)
         {
             field.setValue( annotation);

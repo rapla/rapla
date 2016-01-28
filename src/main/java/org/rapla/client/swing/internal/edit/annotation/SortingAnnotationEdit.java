@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-@Extension(provides= AnnotationEditAttributeExtension.class, id="sorting")
+@Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_SORTING)
 public class SortingAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
