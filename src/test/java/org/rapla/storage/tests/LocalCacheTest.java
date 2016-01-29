@@ -17,6 +17,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.RaplaResources;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -25,6 +27,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.domain.permission.PermissionExtension;
+import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -33,21 +37,32 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.dynamictype.internal.StandardFunctions;
+import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.DefaultScheduler;
+import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class LocalCacheTest  {
@@ -89,12 +104,29 @@ public class LocalCacheTest  {
 
     @Test
     public void testAllocatable() throws Exception {
-        StorageOperator operator = null;
+        String resolvedPath = "";
+        Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        RaplaResources i18n = new RaplaResources(bundleManager);
+
+        final DefaultScheduler scheduler = new DefaultScheduler(logger);
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+
+        Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
+        StandardFunctions functions = new StandardFunctions(raplaLocale);
+        functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
+
+        RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
+        Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
+        permissionExtensions.add(defaultPermission);
+        FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
+                permissionExtensions);
         final PermissionController controller = DefaultPermissionControllerSupport.getController(operator);
         LocalCache cache = new LocalCache(controller);
 
         DynamicTypeImpl type = createDynamicType();
         type.setResolver( cache);
+        type.setOperator(operator);
         type.setReadOnly(  );
         cache.put( type );
         AllocatableImpl resource1 = createResource(cache,1,type,"Adrian");
