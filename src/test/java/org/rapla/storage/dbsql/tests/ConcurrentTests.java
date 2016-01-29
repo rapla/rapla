@@ -562,7 +562,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     @Test public void testLockTimestamp() throws Throwable
     {
-        final PreparedStatement stmt = con1.prepareStatement("INSERT INTO WRITE_LOCK (ID, LAST_CHANGED) VALUES (?, CURRENT_TIMESTAMP)");
+        final PreparedStatement stmt = con1.prepareStatement("INSERT INTO WRITE_LOCK (LOCKID, LAST_CHANGED) VALUES (?, CURRENT_TIMESTAMP)");
         stmt.setString(1, "TEST");
         stmt.addBatch();
         stmt.executeBatch();
@@ -583,10 +583,10 @@ import java.util.concurrent.atomic.AtomicReference;
                 try
                 {
                     Thread.sleep(300);
-                    final PreparedStatement ustmt = con.prepareStatement("UPDATE WRITE_LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE ID = ? ");
+                    final PreparedStatement ustmt = con.prepareStatement("UPDATE WRITE_LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE LOCKID = ? ");
                     ustmt.setString(1, "TEST");
                     ustmt.executeUpdate();
-                    final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ID = ?");
+                    final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE LOCKID = ?");
                     rstmt.setString(1, "TEST");
                     final ResultSet result = rstmt.executeQuery();
                     Assert.assertTrue(result.next());
@@ -613,11 +613,11 @@ import java.util.concurrent.atomic.AtomicReference;
                 try
                 {
                     Thread.sleep(200);
-                    final PreparedStatement ustmt = con.prepareStatement("UPDATE WRITE_LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE ID = ? ");
+                    final PreparedStatement ustmt = con.prepareStatement("UPDATE WRITE_LOCK SET LAST_CHANGED = CURRENT_TIMESTAMP WHERE LOCKID = ? ");
                     ustmt.setString(1, "TEST");
                     ustmt.executeUpdate();
                     Thread.sleep(300);
-                    final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ID = ?");
+                    final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE LOCKID = ?");
                     rstmt.setString(1, "TEST");
                     final ResultSet executeQuery = rstmt.executeQuery();
                     Assert.assertTrue(executeQuery.next());
