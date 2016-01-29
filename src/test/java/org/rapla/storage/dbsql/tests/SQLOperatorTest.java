@@ -511,7 +511,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             {// Delete of a category
                 final Category category = writeFacade.getOperator().tryResolve(categoryId, Category.class);
                 final Category parentCategory = writeFacade.edit(category.getParent());
-                parentCategory.removeCategory(category);
+                parentCategory.removeCategory( writeFacade.edit(category));
                 writeFacade.storeAndRemove(new Entity[]{parentCategory},Entity.ENTITY_ARRAY, user);
                 readFacade.refresh();
 //                final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.MINUTES);
@@ -897,7 +897,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     		Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).contains(userId));
     	}
     	{// Category
-    		final Category entity = facade.resolve(categoryId);
+    		final Category entity = facade.edit(facade.resolve(categoryId));
     		final Category superCategory = facade.edit(facade.getSuperCategory());
     		superCategory.removeCategory(entity);
     		facade.storeAndRemove(new Entity[]{superCategory}, Entity.ENTITY_ARRAY, user);

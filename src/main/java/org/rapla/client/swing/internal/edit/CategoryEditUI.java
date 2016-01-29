@@ -60,6 +60,7 @@ import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -286,52 +287,7 @@ public class CategoryEditUI extends RaplaGUIComponent
         if ( parent == null || selectedCategory.equals( rootCategory))
             return;
 
-        Category[] childs = parent.getCategories();
-        for ( int i=0;i<childs.length;i++)
-        {
-            parent.removeCategory( childs[i]);
-        }
-        if ( direction == -1)
-        {
-            Category last = null;
-            for ( int i=0;i<childs.length;i++)
-            {
-                Category current = childs[i];
-                if ( current.equals( selectedCategory)) {
-                    parent.addCategory( current);
-                }
-                if ( last != null && !last.equals( selectedCategory))
-                {
-                    parent.addCategory(last);
-                }
-                last = current;
-            }
-            if  (last != null && !last.equals( selectedCategory)) {
-                parent.addCategory(last);
-            }
-        }
-        else
-        {
-            boolean insertNow = false;
-            for ( int i=0;i<childs.length;i++)
-            {
-                Category current = childs[i];
-                if ( !current.equals( selectedCategory)) {
-                    parent.addCategory( current);
-                } else {
-                    insertNow = true;
-                    continue;
-                }
-                if ( insertNow)
-                {
-                    insertNow = false;
-                    parent.addCategory( selectedCategory);
-                }
-            }
-            if  ( insertNow) {
-                parent.addCategory( selectedCategory);
-            }
-        }
+        ((CategoryImpl)parent).moveCategory(selectedCategory, direction);
         updateModel();
 
     }
@@ -379,7 +335,8 @@ public class CategoryEditUI extends RaplaGUIComponent
                 Category parent = subCategory.getParent();
                 parent = getOrCreateEditableVersion(parent);
                 editableCategories.remove(subCategory.getId());
-                parent.removeCategory(subCategory);
+                Category removeableCategory = subCategory.clone();
+                parent.removeCategory(removeableCategory);
                 getLogger().debug("category removed " + subCategory);
             }
         }

@@ -52,8 +52,12 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 	private MultiLanguageName name = new MultiLanguageName();
     private AttributeType type;
     private String key;
+
+    // the constraints
     private boolean multiSelect;
-    private boolean bOptional = false;
+    private boolean belongsTo;
+    private boolean optional = true;
+
     private Map<String,String> annotations = new LinkedHashMap<String,String>();
     private String defaultValue =null;
     private transient DynamicTypeImpl parent;
@@ -109,8 +113,20 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             oldValue = getEntity("default.category", Category.class);
         }
+        if (type != this.type)
+        {
+            clearReferences();
+            clearConstraints();
+        }
         this.type = type;
         setDefaultValue(convertValue( oldValue));
+    }
+
+    private void clearConstraints()
+    {
+        multiSelect = false;
+        belongsTo = false;
+        optional = true;
     }
 
     public MultiLanguageName getName() {
@@ -155,7 +171,20 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		if ( key.equals( ConstraintIds.KEY_MULTI_SELECT))
 		{
 		    multiSelect = constraint != null && "true".equalsIgnoreCase( constraint.toString());
+            if ( multiSelect )
+            {
+                belongsTo = false;
+            }
 		}
+        else if ( key.equals( ConstraintIds.KEY_BELONGS_TO))
+        {
+            if ( type != AttributeType.ALLOCATABLE)
+            {
+                throw new IllegalStateException("Can only set belongs_to key on attribute types that link to resources");
+            }
+            belongsTo =  constraint != null && "true".equalsIgnoreCase( constraint.toString());
+            multiSelect = false;
+        }
 	}
 
     public void setContraintRefId(String key,ReferenceInfo constraintRefId )
@@ -228,6 +257,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             return multiSelect;
         }
+        if ( key.equals(ConstraintIds.KEY_BELONGS_TO))
+        {
+            return belongsTo;
+        }
         Class<?> constraintClass = getConstraintClass( key );
         if ( constraintClass == Category.class || constraintClass == DynamicType.class) {
             @SuppressWarnings("unchecked")
@@ -289,12 +322,12 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     }
 
     public boolean isOptional() {
-        return bOptional;
+        return optional;
     }
 
     public void setOptional(boolean bOptional) {
         checkWritable();
-        this.bOptional = bOptional;
+        this.optional = bOptional;
     }
 
     public Object defaultValue() 
@@ -565,6 +598,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		clone.annotations = annotationClone;
         clone.type = getType();
         clone.multiSelect = multiSelect;
+        clone.belongsTo = belongsTo;
         clone.setKey(getKey());
         clone.setOptional(isOptional());
         String[] constraintKeys = getConstraintKeys();

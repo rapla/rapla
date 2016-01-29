@@ -196,6 +196,15 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	        links.put(key, entries);
         }
     }
+
+    public void putReferences(String key,Collection<? extends ReferenceInfo> refs) {
+        List<String> ids = new ArrayList<String>();
+        for (ReferenceInfo ref:refs)
+        {
+            ids.add( ref.getId());
+        }
+        putIds(key, ids);
+    }
     
     public String getId(String key)
     {

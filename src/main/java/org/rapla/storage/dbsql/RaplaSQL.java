@@ -1009,8 +1009,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 
     @Override
 	protected int write(PreparedStatement stmt,Category category) throws SQLException, RaplaException {
-    	Category root = getSuperCategory();
-        if ( category.equals( root ))
+    	if ( category.getId().equals(Category.SUPER_CATEGORY_ID))
             return 0;
         setId( stmt,1, category);
 		setId( stmt,2, category.getParent());
@@ -1079,8 +1078,11 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     public void loadAll() throws RaplaException, SQLException {
     	categoriesWithoutParent.clear();
     	super.loadAll();
+        CategoryReader categoryReader = (CategoryReader )context.lookup(PreferenceReader.READERMAP).get(Category.class);
+        Category superCategory = categoryReader.getSuperCategory();
     	// then we rebuild the hierarchy
     	Iterator<Map.Entry<Category,ReferenceInfo<Category>>> it = categoriesWithoutParent.entrySet().iterator();
+
     	while (it.hasNext()) {
     		Map.Entry<Category,ReferenceInfo<Category>> entry = it.next();
             ReferenceInfo<Category> parentId = entry.getValue();
@@ -1090,7 +1092,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
     		if ( parentId != null) {
     		    parent = entityStore.resolve( parentId );
             } else {
-    		    parent = getSuperCategory();
+    		    parent = superCategory;
             }
             Assert.notNull( parent );
             parent.addCategory( category );
@@ -1106,7 +1108,10 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 		CategoryImpl superCategory = cache.getSuperCategory();
 		insert( CategoryImpl.getRecursive( superCategory));
 	}
-	
+
+
+
+
 
 }
 

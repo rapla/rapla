@@ -300,7 +300,8 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                                  ,true
                                  ,panel
                                  ,new String[] { getString("apply"),getString("cancel")});
-        
+
+        final Collection<T> newValues = new LinkedHashSet<T>();
         tree.addMouseListener(new MouseAdapter() {
             // End dialog when a leaf is double clicked
             public void mousePressed(MouseEvent e) {
@@ -314,6 +315,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                 if (selPath != null && e.getClickCount() == 2) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode)selPath.getLastPathComponent();
                     if (node.isLeaf()) {
+                        newValues.addAll(getValues(tree));
                         dialog.getAction(0).execute();
                     }
                 }
@@ -322,30 +324,45 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         dialog.setTitle(getString("select"));
         dialog.start(true);
         tree.requestFocus();
-        if (dialog.getSelectedIndex() == 0) {
-            TreePath[] paths = tree.getSelectionPaths();
-            Collection<T> newValues = new LinkedHashSet<T>();
-            if ( paths != null)
+        // we did a double clidk
+        if ( !newValues.isEmpty())
+        {
+            if ( !newValues.equals(selectedValues))
             {
-	            for (TreePath path:paths) 
-	            {
-	            	Object valueObject = ((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
-	            	T value = getValue(valueObject);
-	            	if ( value != null)
-	            	{
-	            		newValues.add(value);
-	            	}
-	            }
+                setValues(newValues);
+                fireContentChanged();
             }
-            if ( !newValues.equals(selectedValues)) 
+        }
+        else if (dialog.getSelectedIndex() == 0 ) {
+            newValues.addAll(getValues(tree));
+            if ( !newValues.equals(selectedValues))
             {
-                setValues( newValues );
+                setValues(newValues);
                 fireContentChanged();
             }
         }
     }
 
-	protected T getValue(Object valueObject) {
+    private Collection<T> getValues(JTree tree)
+    {
+        Collection<T> newValues = new LinkedHashSet<T>();
+        TreePath[] paths = tree.getSelectionPaths();
+        if ( paths != null)
+        {
+            for (TreePath path:paths)
+            {
+                Object valueObject = ((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+                T value = getValue(valueObject);
+                if ( value != null)
+                {
+                    newValues.add(value);
+                }
+            }
+        }
+        return newValues;
+    }
+
+    protected T getValue(Object valueObject) {
 		@SuppressWarnings("unchecked")
 		T casted = (T) valueObject;
 		return casted;

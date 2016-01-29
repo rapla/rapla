@@ -88,6 +88,11 @@ public class AttributeDefaultConstraints extends AbstractEditField
     String multiSelectOptions[] = {
             "yes"
             ,"no"
+    };
+
+    String multiSelectOptionsAllocatable[] = {
+            "yes"
+            ,"no"
             ,"belongsTo"
     };
     boolean mapping = false;
@@ -242,8 +247,8 @@ public class AttributeDefaultConstraints extends AbstractEditField
         tabSelect.setModel( model );
 
         model = new DefaultComboBoxModel();
-        for ( String tab:multiSelectOptions ) {
-            model.addElement(getString(tab));
+        for ( String select:multiSelectOptions ) {
+            model.addElement(getString(select));
         }
         multiSelect.setModel( model );
 	}
@@ -259,12 +264,11 @@ public class AttributeDefaultConstraints extends AbstractEditField
          defaultSelectBoolean.setValue( null);
          defaultSelectNumber.setNumber(null);
          defaultSelectDate.setDate(null);
-         multiSelect.setSelectedItem( getString("no"));
+         multiSelect.setSelectedItem(null);
 	}
 
     public void mapFrom(Attribute attribute) throws RaplaException  {
-    	clearValues();
-        try {
+    	try {
             mapping = true;
             this.attribute = attribute;
             clearValues();
@@ -304,7 +308,17 @@ public class AttributeDefaultConstraints extends AbstractEditField
 
             if (attributeType.equals(AttributeType.CATEGORY) || attributeType.equals(AttributeType.ALLOCATABLE)) {
             	Boolean multiSelectValue = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT) ;
-//            	multiSelect.setValue( multiSelectValue != null ? multiSelectValue: Boolean.FALSE );
+                final boolean aBoolean = multiSelectValue != null ? multiSelectValue : Boolean.FALSE;
+                Boolean belongsToBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO) ;
+                final boolean belongsTo = belongsToBoolean != null ? belongsToBoolean : Boolean.FALSE;
+                if ( belongsTo )
+                {
+                    multiSelect.setSelectedItem(getString("belongsTo"));
+                }
+                else
+                {
+                    multiSelect.setSelectedItem(aBoolean ? getString("yes") : getString("no"));
+                }
             }
             String selectedTab = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             tabSelect.setSelectedItem(getString(selectedTab));
@@ -347,8 +361,17 @@ public class AttributeDefaultConstraints extends AbstractEditField
 
         if ( type.equals(AttributeType.ALLOCATABLE) || type.equals(AttributeType.CATEGORY))
         {
-//            Boolean value = multiSelect.getValue();
-//            attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, value);
+            final Object selectedItem = multiSelect.getSelectedItem();
+            if ( selectedItem == null)
+            {
+                attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, null);
+                attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, null);
+            }
+            else
+            {
+                attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, selectedItem.equals(getString("yes")));
+                attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, selectedItem.equals(getString("belongsTo")));
+            }
         }
         else
         {
@@ -393,6 +416,19 @@ public class AttributeDefaultConstraints extends AbstractEditField
         final boolean booleanVisible = type.equals(AttributeType.BOOLEAN);
         final boolean numberVisible = type.equals(AttributeType.INT);
         final boolean dateVisible  = type.equals(AttributeType.DATE);
+        {
+            final Object selectedItem = multiSelect.getSelectedItem();
+            DefaultComboBoxModel model = new DefaultComboBoxModel();
+            for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
+            {
+                model.addElement(getString(select));
+            }
+            multiSelect.setModel(model);
+            if ( selectedItem != null)
+            {
+                multiSelect.setSelectedItem(selectedItem);
+            }
+        }
         categoryLabel.setVisible( categoryVisible );
         categorySelect.getComponent().setVisible( categoryVisible );
         dynamicTypeLabel.setVisible( allocatableVisible);
@@ -404,7 +440,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         defaultSelectNumber.setVisible( numberVisible);
         defaultSelectDate.setVisible( dateVisible);
         multiSelectLabel.setVisible( categoryVisible || allocatableVisible);
-        multiSelect.setVisible( categoryVisible || allocatableVisible);
+        multiSelect.setVisible(categoryVisible || allocatableVisible);
     }
 
     private void showAnnotationDialog() throws RaplaException

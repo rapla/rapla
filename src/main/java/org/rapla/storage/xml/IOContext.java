@@ -82,15 +82,16 @@ public class IOContext
         writerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsWriter(context) );
     }
 
-    public RaplaDefaultXMLContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable) throws RaplaException {
+    public RaplaDefaultXMLContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable, Category superCategory) throws RaplaException {
          
         RaplaDefaultXMLContext ioContext = new RaplaDefaultXMLContext( );
         ioContext.put(RaplaResources.class, i18n);
         ioContext.put(RaplaLocale.class, locale);
         ioContext.put(EntityStore.class, store);
+        ioContext.put(Category.class, superCategory);
         ioContext.put(IdCreator.class,idTable);
         ioContext.put(Logger.class, logger);
-        ioContext.put(KeyAndPathResolver.class,new KeyAndPathResolver(store));
+        ioContext.put(KeyAndPathResolver.class,new KeyAndPathResolver(store, superCategory));
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
         Map<Class<? extends  RaplaObject>,RaplaXMLReader> readerMap = new HashMap<Class<? extends  RaplaObject>,RaplaXMLReader>();
         ioContext.put(PreferenceReader.READERMAP, readerMap);

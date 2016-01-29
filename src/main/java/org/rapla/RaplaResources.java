@@ -23,16 +23,19 @@ public class RaplaResources extends AbstractBundle {
     {
       super(BUNDLENAME, bundleManager);
     }
+    @Override
     public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key)
     {
         return super.getString(key);
     }
 
+    @Override
     public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key,Locale locale)
     {
         return super.getString(key, locale);
     }
 
+    @Override
     public String format(@PropertyKey(resourceBundle = BUNDLENAME) String key, Object... obj)
     {
         return super.format(key, obj);

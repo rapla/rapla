@@ -50,6 +50,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
@@ -246,7 +247,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
         setConnectStart(lastUpdated);
 
         EntityStore entityStore = new EntityStore(cache);
-        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this);
+        CategoryImpl superCategory = new CategoryImpl();
+        superCategory.setId(Category.SUPER_CATEGORY_ID);
+        superCategory.setResolver(this);
+        superCategory.setKey("supercategory");
+        superCategory.getName().setName("en", "Root");
+        entityStore.put( superCategory);
+
+        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this, superCategory);
         RaplaMainReader contentHandler = new RaplaMainReader(inputContext);
         try
         {

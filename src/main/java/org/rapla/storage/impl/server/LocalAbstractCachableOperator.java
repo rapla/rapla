@@ -86,6 +86,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
@@ -2169,7 +2170,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 evt.putStore(editableParent);
                                 categoriesToStore.add(exisitingParent.getReference().getId());
                             }
-                            editableParent.removeCategory(category);
+                            Category removableCategory = category.clone();
+                            editableParent.removeCategory(removableCategory);
                         }
                     }
                     categoriesToRemove.add(removeId.getId());
@@ -2648,6 +2650,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void checkConsitency(Entity entity, EntityResolver store) throws RaplaException
     {
         Class<? extends Entity> raplaType = entity.getTypeClass();
+        final RaplaResources i18n = getI18n();
         if (Category.class == raplaType)
         {
             final String superCategoryId = Category.SUPER_CATEGORY_ID;
@@ -2700,7 +2703,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         else if (DynamicType.class == raplaType)
         {
             DynamicType type = (DynamicType) entity;
-            DynamicTypeImpl.validate(type, i18n);
+            DynamicTypeImpl.validate(type, this.i18n);
         }
         else if (Allocatable.class == raplaType)
         {
@@ -2722,7 +2725,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 if (keyName != null)
                 {
-                    throw new RaplaException(getI18n().format("error.no_entry_for", keyName));
+                    throw new RaplaException(i18n.format("error.no_entry_for", keyName));
+                }
+            }
+        }
+        if ( entity instanceof  Classifiable)
+        {
+            final Classification classification = ((Classifiable) entity).getClassification();
+            if ( classification != null)
+            {
+                final Attribute[] attributes = classification.getAttributes();
+                for (Attribute att:attributes)
+                {
+                    final Boolean belongsTo = (Boolean)att.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+                    if (belongsTo != null && belongsTo)
+                    {
+                        final Object target = classification.getValue(att);
+                        if ( target != null)
+                        {
+                            if ( target.equals( entity))
+                            {
+                                final String name = getName(entity);
+                                final String format = i18n.format("error.belongsToCantReferToSelf", name);
+                                throw new RaplaException(format);
+                            }
+                        }
+                    }
                 }
             }
         }

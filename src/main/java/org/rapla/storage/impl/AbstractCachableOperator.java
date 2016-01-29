@@ -395,7 +395,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		RaplaComponent.unlock( lock );
 	}
 	
-	protected I18nBundle getI18n() {
+	protected RaplaResources getI18n() {
 		return i18n;
 	}
 	

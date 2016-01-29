@@ -66,6 +66,54 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         }
     }
 
+    public  void moveCategory(Category selectedCategory, int direction)
+    {
+        CategoryImpl parent = this;
+        final Collection<Category> childs = getCategoryList();
+        final Collection<ReferenceInfo<Category>> newRefs = new ArrayList<ReferenceInfo<Category>>();
+        if ( direction == -1)
+        {
+            Category last = null;
+            for ( Category current: childs)
+            {
+                if ( current.equals( selectedCategory)) {
+                    newRefs.add(current.getReference());
+                }
+                if ( last != null && !last.equals( selectedCategory))
+                {
+                    newRefs.add(last.getReference());
+                }
+                last = current;
+            }
+            if  (last != null && !last.equals( selectedCategory)) {
+                parent.addCategory(last);
+            }
+        }
+        else
+        {
+            boolean insertNow = false;
+            for ( Category current: childs)
+            {
+                if ( !current.equals( selectedCategory)) {
+                    newRefs.add(current.getReference());
+                } else {
+                    insertNow = true;
+                    continue;
+                }
+                if ( insertNow)
+                {
+                    insertNow = false;
+                    newRefs.add( selectedCategory.getReference());
+                }
+            }
+            if  ( insertNow) {
+                newRefs.add( selectedCategory.getReference());
+            }
+        }
+
+        putReferences("childs", newRefs);
+    }
+
     @Override
     public void setResolver(EntityResolver resolver) {
     	super.setResolver(resolver);
@@ -91,6 +139,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     }
 
     void setParent(CategoryImpl parent) {
+        checkWritable();
         putEntity("parent", parent);
 	}
 
