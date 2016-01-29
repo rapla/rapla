@@ -191,7 +191,7 @@ import java.sql.Statement;
         Thread.sleep(200);
         operator.connect();
         operator.getVisibleEntities(null);
-        operator.disconnect();
+        //operator.disconnect();
         Thread.sleep(100);
         super.tearDown();
         Thread.sleep(500);

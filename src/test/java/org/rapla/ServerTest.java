@@ -302,13 +302,12 @@ public class ServerTest
     @Test
     public void testRemoveCategory() throws Exception
     {
-        Category superCategoryClone = getRaplaFacade1().edit(getRaplaFacade1().getSuperCategory());
-        Category department = superCategoryClone.getCategory("department");
+        Category department = getRaplaFacade1().edit(getRaplaFacade1().getSuperCategory().getCategory("department"));
         Category powerplant = department.getCategory("springfield-powerplant");
-        powerplant.getParent().removeCategory(powerplant);
+        department.removeCategory(powerplant.clone());
         try
         {
-            getRaplaFacade1().store(superCategoryClone);
+            getRaplaFacade1().store(department);
             Assert.fail("Dependency Exception should have been thrown");
         }
         catch (DependencyException ex)
@@ -345,7 +344,7 @@ public class ServerTest
         getRaplaFacade1().store(type);
         Category superCategoryClone = getRaplaFacade1().edit(getRaplaFacade1().getSuperCategory());
         Category department = superCategoryClone.getCategory("department");
-        superCategoryClone.removeCategory(department);
+        superCategoryClone.removeCategory(department.clone());
         try
         {
             getRaplaFacade1().store(superCategoryClone);
@@ -411,7 +410,7 @@ public class ServerTest
         try
         {
             Category parent = getRaplaFacade1().edit(testdepartment.getParent());
-            parent.removeCategory(testdepartment);
+            parent.removeCategory(testdepartment.clone());
             getRaplaFacade1().store(parent);
         }
         catch (DependencyException ex)
