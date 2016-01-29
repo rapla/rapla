@@ -16,11 +16,7 @@ import java.util.Collection;
 public interface TreeFactory {
 	
 	TreeModel createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations);
-	
-	TreeModel createClassifiableModel(Allocatable[] classifiables);
-	
-	TreeModel createClassifiableModel(Reservation[] classifiables);
-	
+
 	TreeModel createConflictModel(Collection<Conflict> conflicts ) throws RaplaException;
 	
     DefaultMutableTreeNode newNamedNode(Named element);

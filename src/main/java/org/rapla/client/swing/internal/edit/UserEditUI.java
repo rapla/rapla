@@ -266,7 +266,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 }
             }
             final Allocatable[] allocatableArray = allocatablesWithEmail.toArray(Allocatable.ALLOCATABLE_ARRAY);
-            treeSelection.exchangeTreeModel(treeFactory.createClassifiableModel(allocatableArray,true));
+            treeSelection.exchangeTreeModel(treeFactory.createClassifiableModel(allocatableArray, true));
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             

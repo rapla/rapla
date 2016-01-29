@@ -178,11 +178,13 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 		}
         else if ( key.equals( ConstraintIds.KEY_BELONGS_TO))
         {
-            if ( type != AttributeType.ALLOCATABLE)
+
+            final boolean newValue = constraint != null && "true".equalsIgnoreCase(constraint.toString());
+            if ( newValue && type != AttributeType.ALLOCATABLE)
             {
                 throw new IllegalStateException("Can only set belongs_to key on attribute types that link to resources");
             }
-            belongsTo =  constraint != null && "true".equalsIgnoreCase( constraint.toString());
+            belongsTo = newValue;
             multiSelect = false;
         }
 	}

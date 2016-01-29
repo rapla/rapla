@@ -89,7 +89,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
         addButton.setAction(addAction);
         treeSelection.addChangeListener(this);
         treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
-        treeSelection.getTree().setModel( treeFactory.createClassifiableModel( Allocatable.ALLOCATABLE_ARRAY));
+        treeSelection.getTree().setModel( treeFactory.createClassifiableModel( Allocatable.ALLOCATABLE_ARRAY, false));
         addDialogTitle = getString( "add") ;
      }
     

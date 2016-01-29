@@ -168,12 +168,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 		}
     }
     
-    public TreeModel createClassifiableModel(Reservation[] classifiables) {
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        Comparator<Classifiable> comp = new InverseComparator(new ReservationStartComparator(getLocale()));
-        return createClassifiableModel( classifiables, comp,false);
-    }
-   
     public TreeModel createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations) {
         @SuppressWarnings({ "rawtypes" })
         Comparator<Classifiable> comp = new SortedClassifiableComparator(getLocale());
@@ -252,11 +246,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         
     }
     
-    public TreeModel createClassifiableModel(Allocatable[] classifiables) {
-    	boolean useCategorizations = true;
-    	return createClassifiableModel( classifiables, useCategorizations);
-    }
-   
     private TreeModel createClassifiableModel(Classifiable[] classifiables, Comparator<Classifiable> comp,boolean useCategorizations) {
         Set<DynamicType> typeSet = new LinkedHashSet<DynamicType>();
     	for (Classifiable classifiable: classifiables)
@@ -308,7 +297,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             {
                 continue;
             }
-            DefaultMutableTreeNode parentNode = typeNode;
             Attribute categorizationAtt = getCategorizationAttribute(classification);
             if (useCategorizations && categorizationAtt != null && classification.getValues(categorizationAtt).size() > 0)
             {
@@ -318,7 +306,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             		NamedNode childNode = new NamedNode((Named) classifiable);
                     childNodes.add( childNode);
                     Map<Object, DefaultMutableTreeNode> map = categorization.get(type);
-            		parentNode = map.get( value);
+                    DefaultMutableTreeNode parentNode = map.get( value);
             		if ( parentNode == null)
             		{
             			String name = getName( value);
@@ -335,6 +323,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 Assert.notNull(typeNode);
                 uncategorized.get(type).add( childNode);
             }
+            Attribute belongsAtt = getCategorizationAttribute(classification);
+
         }
 		for ( DynamicType type:categorization.keySet())
 		{

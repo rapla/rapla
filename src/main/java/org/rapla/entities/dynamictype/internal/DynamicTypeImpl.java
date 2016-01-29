@@ -30,9 +30,11 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.Function;
@@ -616,14 +618,41 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
         checkKey(i18n,dynamicType.getKey());
         Attribute[] attributes = dynamicType.getAttributes();
+        boolean categorizationSet = false;
+        boolean belongsToSet = false;
         for (int i=0;i<attributes.length;i++) {
-            String key = attributes[i].getKey();
+            final Attribute attribute = attributes[i];
+            String key = attribute.getKey();
             if (key == null || key.trim().equals(""))
                 throw new RaplaException(i18n.format("error.no_key","(" + i + ")"));
             checkKey(i18n,key);
             for (int j=i+1;j<attributes.length;j++) {
                 if ((key.equals(attributes[j].getKey()))) {
                     throw new UniqueKeyException(i18n.format("error.not_unique",key));
+                }
+            }
+            final Boolean belongsTo = (Boolean)attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+            final boolean categorization = attribute.getAnnotation(AttributeAnnotations.KEY_CATEGORIZATION, "false").equals("true");
+            if ( categorization)
+            {
+                if ( categorizationSet)
+                {
+                    throw new UniqueKeyException("categorization set for more then one attribute in type " + dynamicType.getName(i18n.getLocale()));
+                }
+                else
+                {
+                    categorizationSet = true;
+                }
+            }
+            if ( belongsTo != null && belongsTo)
+            {
+                if ( belongsToSet)
+                {
+                    throw new UniqueKeyException("belongsTo set for more then one attribute in type " + dynamicType.getName(i18n.getLocale()));
+                }
+                else
+                {
+                    belongsToSet = true;
                 }
             }
         }

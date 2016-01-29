@@ -2,7 +2,6 @@ package org.rapla.client.swing.internal.edit.annotation;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
-import org.rapla.client.swing.AnnotationEditExtension;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -23,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Extension(provides = AnnotationEditAttributeExtension.class, id = AttributeAnnotations.KEY_CATEGORIZATION)
-public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditExtension
+public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
     final String annotationName = AttributeAnnotations.KEY_CATEGORIZATION;

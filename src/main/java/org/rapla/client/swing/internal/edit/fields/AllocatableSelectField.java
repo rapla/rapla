@@ -60,7 +60,7 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
     @Override
 	public TreeModel createModel() throws RaplaException {
 		Allocatable[] allocatables = getAllocatables();
-		TreeModel treeModel = getTreeFactory().createClassifiableModel(allocatables);
+		TreeModel treeModel = getTreeFactory().createClassifiableModel(allocatables, true);
 		if (dynamicTypeConstraint !=null)
 		{
 			TreeNode treeNode = (TreeNode)treeModel.getRoot();
