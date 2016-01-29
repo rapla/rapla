@@ -13,6 +13,7 @@
 
 package org.rapla.storage.xml;
 
+import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.dynamictype.Attribute;
@@ -66,7 +67,7 @@ class ClassificationFilterReader extends RaplaXMLReader {
             String id = atts.getValue("dynamictypeidref");
             ReferenceInfo<DynamicType> refInfo;
             if ( id== null) {
-                String typeName =  Namespaces.EXTENSION_NS.equals(namespaceURI) ? "rapla:" + localName : localName;
+                String typeName = getString(atts,"dynamictype");
                 refInfo = getKeyAndPathResolver().getIdForDynamicType(typeName);
                 if (refInfo == null)
                 {

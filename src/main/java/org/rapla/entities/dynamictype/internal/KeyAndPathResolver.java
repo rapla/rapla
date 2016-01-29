@@ -1,15 +1,15 @@
 package org.rapla.entities.dynamictype.internal;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.storage.impl.EntityStore;
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 
 public class KeyAndPathResolver
 {
@@ -21,6 +21,20 @@ public class KeyAndPathResolver
     public KeyAndPathResolver(EntityStore store)
     {
         this.store = store;
+        final CategoryImpl superCategory = store.getSuperCategory();
+        fillCategoriesAndPaths(superCategory);
+    }
+
+    private void fillCategoriesAndPaths(Category category)
+    {
+        addCategory(category);
+        for(Category cat : category.getCategories())
+        {
+            if(cat.getParent().getId().equals(category.getId()))
+            {
+                fillCategoriesAndPaths(cat);
+            }
+        }
     }
 
     public String getPath(ReferenceInfo<Category> category)

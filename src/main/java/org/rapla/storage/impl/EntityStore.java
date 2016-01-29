@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.impl;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -20,16 +25,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 
 public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
@@ -42,11 +39,19 @@ public class EntityStore implements EntityResolver {
     public EntityStore(EntityResolver parent) {
         Assert.notNull( parent);
         this.parent = parent;
-        this.superCategory = new CategoryImpl();
-        superCategory.setId(Category.SUPER_CATEGORY_ID);
-        superCategory.setResolver( this);
-        superCategory.setKey("supercategory");
-        superCategory.getName().setName("en", "Root");
+        final Category tryResolve = parent.tryResolve(Category.SUPER_CATEGORY_ID, Category.class);
+        if(tryResolve != null)
+        {
+            superCategory = (CategoryImpl) tryResolve;
+        }
+        else
+        {
+            this.superCategory = new CategoryImpl();
+            superCategory.setId(Category.SUPER_CATEGORY_ID);
+            superCategory.setResolver(this);
+            superCategory.setKey("supercategory");
+            superCategory.getName().setName("en", "Root");
+        }
         entities.put(Category.SUPER_CATEGORY_ID, superCategory);
     }
     
@@ -71,17 +76,18 @@ public class EntityStore implements EntityResolver {
         {
             CategoryImpl category = (CategoryImpl) entity;
             final ReferenceInfo<Category> parentRef = category.getParentRef();
-            if ( parentRef == null || parentRef.getId().equals(Category.SUPER_CATEGORY_ID))
+            if(category.getId().equals(Category.SUPER_CATEGORY_ID))
             {
+                superCategory = category;
+            }
+            else if ( parentRef == null || parentRef.getId().equals(Category.SUPER_CATEGORY_ID))
+            {// on load from db we don't have a parent for all categories
                 final CategoryImpl superCategory = getSuperCategory();
                 final String id1 = category.getId();
                 superCategory.addId("childs", id1);
             }
-
-
         }
         entities.put(id,entity);
-
     }
 
 

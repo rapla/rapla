@@ -1068,7 +1068,6 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
         final Date lastChanged = getTimestampOrNow(rset, 6);
         category.setLastChanged( lastChanged);
 		category.setId( id);
-        keyAndPathResolver.addCategory( category);
         put(category);
 
         orderMap.put( category, order);
@@ -1096,6 +1095,10 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
             Assert.notNull( parent );
             parent.addCategory( category );
     	}
+    	for (Category category : categoriesWithoutParent.keySet())
+        {
+            keyAndPathResolver.addCategory( category);
+        }
     }
 
 	@Override
