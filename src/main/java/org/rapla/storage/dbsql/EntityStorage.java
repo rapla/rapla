@@ -438,15 +438,6 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         return entityStore.getDynamicType( typeKey);
     }
 
-    protected Category getSuperCategory()
-    {
-        if ( cache != null)
-        {
-            return cache.getSuperCategory();
-        }
-        return entityStore.getSuperCategory();
-    }
-
 }
 
 

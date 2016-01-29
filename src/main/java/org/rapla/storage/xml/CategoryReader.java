@@ -35,10 +35,17 @@ public class CategoryReader extends RaplaXMLReader
     String annotationKey = null;
     CategoryImpl lastProcessedCategory = null;
     boolean readOnlyThisCategory;
+    Category superCategory;
 
     public CategoryReader( RaplaXMLContext context ) throws RaplaException
     {
         super( context );
+        superCategory = context.lookup(Category.class);
+    }
+
+    public Category getSuperCategory()
+    {
+        return superCategory;
     }
 
     public void setReadOnlyThisCategory( boolean enable )
@@ -52,6 +59,7 @@ public class CategoryReader extends RaplaXMLReader
         String localName,
         RaplaSAXAttributes atts ) throws RaplaSAXParseException
     {
+
         if (localName.equals( "category" ) && namespaceURI.equals( RAPLA_NS ))
         {
             String key = atts.getValue( "key" );
@@ -80,10 +88,11 @@ public class CategoryReader extends RaplaXMLReader
                 }
                 else
                 {
-                    String parentId = atts.getValue( "parentid"); 
+                    String parentId = atts.getValue( "parentid");
+                    final ReferenceInfo parentIdN;
                     if (  parentId!= null)
                     {
-                        ReferenceInfo parentIdN = getId( Category.class, parentId);
+                        parentIdN = getId( Category.class, parentId);
                         category.putId("parent", parentIdN);
                         /*
                     	if (parentId.equals(Category.SUPER_CATEGORY_ID)) {
@@ -97,8 +106,14 @@ public class CategoryReader extends RaplaXMLReader
                     }
                     else 
                     {
-                        category.putId("parent", Category.SUPER_CATEGORY_ID);
+                        parentIdN = new ReferenceInfo(Category.SUPER_CATEGORY_ID,Category.class);
                     }
+                    if (parentIdN.equals(superCategory.getReference()))
+                    {
+                        superCategory.addCategory( category);
+                    }
+                    category.putId("parent", parentIdN);
+
                 }
             }
             if (!readOnlyThisCategory)

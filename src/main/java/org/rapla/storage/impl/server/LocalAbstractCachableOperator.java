@@ -2169,7 +2169,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 evt.putStore(editableParent);
                                 categoriesToStore.add(exisitingParent.getReference().getId());
                             }
-                            editableParent.removeCategory(category);
+                            Category removableCategory = category.clone();
+                            editableParent.removeCategory(removableCategory);
                         }
                     }
                     categoriesToRemove.add(removeId.getId());

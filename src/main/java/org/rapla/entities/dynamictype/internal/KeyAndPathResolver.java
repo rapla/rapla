@@ -18,21 +18,25 @@ public class KeyAndPathResolver
     HashMap<String,Category> categories = new HashMap<String,Category>();
     HashMap<String,String> categoryPath = new HashMap<String,String>();
 
-    public KeyAndPathResolver(EntityStore store)
+    public KeyAndPathResolver(EntityStore store, Category superCategory)
     {
         this.store = store;
-        final CategoryImpl superCategory = store.getSuperCategory();
-        fillCategoriesAndPaths(superCategory);
+        fillCategoriesAndPaths(superCategory, 0);
     }
 
-    private void fillCategoriesAndPaths(Category category)
+    private void fillCategoriesAndPaths(Category category, int depth)
     {
+        if ( depth > 40)
+        {
+            throw new IllegalStateException("Category cycle detected in " + category );
+        }
         addCategory(category);
         for(Category cat : category.getCategories())
         {
-            if(cat.getParent().getId().equals(category.getId()))
+            final Category parent = cat.getParent();
+            if(parent.getId().equals(category.getId()))
             {
-                fillCategoriesAndPaths(cat);
+                fillCategoriesAndPaths(cat, depth + 1);
             }
         }
     }

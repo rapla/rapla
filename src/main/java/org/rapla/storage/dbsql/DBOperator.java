@@ -17,12 +17,14 @@ import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
@@ -311,7 +313,8 @@ import java.util.concurrent.locks.Lock;
     private void refreshWithoutLock(Connection c) throws SQLException
     {
         final EntityStore entityStore = new EntityStore(cache);
-        final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this));
+        final Category superCategory = cache.getSuperCategory();
+        final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this, superCategory));
         Date lastUpdated = getLastRefreshed();
         Date connectionTime = raplaSQLInput.getLastUpdated(c);
 
@@ -935,7 +938,13 @@ import java.util.concurrent.locks.Lock;
         setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
         EntityStore entityStore = new EntityStore(cache);
-        final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this);
+        CategoryImpl superCategory = new CategoryImpl();
+        superCategory.setId(Category.SUPER_CATEGORY_ID);
+        superCategory.setResolver(this);
+        superCategory.setKey("supercategory");
+        superCategory.getName().setName("en", "Root");
+        entityStore.put( superCategory);
+        final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this, superCategory);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
@@ -965,9 +974,9 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    private RaplaDefaultXMLContext createInputContext(EntityStore store, IdCreator idCreator) throws RaplaException
+    private RaplaDefaultXMLContext createInputContext(EntityStore store, IdCreator idCreator, Category superCategory) throws RaplaException
     {
-        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator);
+        RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator, superCategory);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
         inputContext.put(Date.class, new Date(getLastRefreshed().getTime() - HISTORY_DURATION));

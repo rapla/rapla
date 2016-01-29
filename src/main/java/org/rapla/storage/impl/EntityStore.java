@@ -32,27 +32,14 @@ public class EntityStore implements EntityResolver {
     HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
     HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
     HashMap<ReferenceInfo<User>,String> passwordList = new HashMap<ReferenceInfo<User>,String>();
-    CategoryImpl superCategory;
 
     EntityResolver parent;
     
     public EntityStore(EntityResolver parent) {
         Assert.notNull( parent);
         this.parent = parent;
-        final Category tryResolve = parent.tryResolve(Category.SUPER_CATEGORY_ID, Category.class);
-        if(tryResolve != null)
-        {
-            superCategory = (CategoryImpl) tryResolve;
-        }
-        else
-        {
-            this.superCategory = new CategoryImpl();
-            superCategory.setId(Category.SUPER_CATEGORY_ID);
-            superCategory.setResolver(this);
-            superCategory.setKey("supercategory");
-            superCategory.getName().setName("en", "Root");
-        }
-        entities.put(Category.SUPER_CATEGORY_ID, superCategory);
+    //    final Category tryResolve = parent.tryResolve(Category.SUPER_CATEGORY_ID, Category.class);
+
     }
     
     public void addAll(Collection<? extends Entity>collection) {
@@ -72,6 +59,7 @@ public class EntityStore implements EntityResolver {
             DynamicType dynamicType = (DynamicType) entity;
             dynamicTypes.put ( dynamicType.getKey(), dynamicType);
         }
+        /*
         if ( raplaType == Category.class)
         {
             CategoryImpl category = (CategoryImpl) entity;
@@ -87,6 +75,7 @@ public class EntityStore implements EntityResolver {
                 superCategory.addId("childs", id1);
             }
         }
+        */
         entities.put(id,entity);
     }
 
@@ -104,11 +93,13 @@ public class EntityStore implements EntityResolver {
     public Collection<Entity>getList() {
         return entities.values();
     }
-    
+
+    /*
     public CategoryImpl getSuperCategory()
     {
         return superCategory;
     }
+    */
 
     public void putPassword( ReferenceInfo<User> userid, String password )
     {
@@ -150,12 +141,14 @@ public class EntityStore implements EntityResolver {
             return casted;
         }
 
+        /*
         if ( id.equals( superCategory.getId()) && (entityClass == null || isCategoryClass(entityClass)))
         {
             @SuppressWarnings("unchecked")
             T casted = (T) superCategory;
             return casted;
         }
+        */
         return tryResolveParent(id, entityClass);
     }
 
