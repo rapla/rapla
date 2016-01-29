@@ -1119,7 +1119,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
     public AllocatableStorage(RaplaXMLContext context ) throws RaplaException {
         super(context,Allocatable.class,"RAPLA_RESOURCE",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255)","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
         resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context,"RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID",classificationMap, allocatableMap);
-        permissionStorage = new PermissionStorage<Allocatable>( context, "RESOURCE",allocatableMap);
+        permissionStorage = new PermissionStorage<Allocatable>( context, "RESOURCE",allocatableMap, Allocatable.class);
         addSubStorage(resourceAttributeStorage);
         addSubStorage(permissionStorage);
     }
@@ -1201,7 +1201,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
         super(context,Reservation.class, "EVENT",new String [] {"ID VARCHAR(255) NOT NULL PRIMARY KEY","TYPE_KEY VARCHAR(255) NOT NULL","OWNER_ID VARCHAR(255) NOT NULL","CREATION_TIME TIMESTAMP","LAST_CHANGED TIMESTAMP KEY","LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL"});
         attributeValueStorage = new AttributeValueStorage<Reservation>(context,"EVENT_ATTRIBUTE_VALUE","EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
-        permissionStorage = new PermissionStorage<Reservation>( context,"EVENT", reservationMap);
+        permissionStorage = new PermissionStorage<Reservation>( context,"EVENT", reservationMap, Reservation.class);
         addSubStorage(permissionStorage);
     }
 
@@ -1448,9 +1448,11 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 
  class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T>  implements  SubStorage<T> {
     Map<ReferenceInfo<? extends Entity>,T> referenceMap;
-    public PermissionStorage(RaplaXMLContext context,String type,Map<ReferenceInfo<? extends Entity>,T> idMap) throws RaplaException {
+    private Class<? extends Entity> parentStoreClass;
+    public PermissionStorage(RaplaXMLContext context,String type,Map<ReferenceInfo<? extends Entity>,T> idMap, Class<? extends Entity> parentStoreClass) throws RaplaException {
         super(context,type+"_PERMISSION",new String[] {type + "_ID VARCHAR(255) NOT NULL KEY","USER_ID VARCHAR(255)","GROUP_ID VARCHAR(255)","ACCESS_LEVEL INTEGER NOT NULL","MIN_ADVANCE INTEGER","MAX_ADVANCE INTEGER","START_DATE DATETIME","END_DATE DATETIME"});
         this.referenceMap = idMap;
+        this.parentStoreClass = parentStoreClass;
     }
 
     protected int write(PreparedStatement stmt, EntityPermissionContainer container) throws SQLException, RaplaException {
@@ -1474,7 +1476,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
     }
 
     protected void load(ResultSet rset) throws SQLException, RaplaException {
-        Class<? extends Entity> clazz = null;
+        Class<? extends Entity> clazz = parentStoreClass;
         ReferenceInfo<? extends Entity> referenceIdInt = readId(rset, 1, clazz);
         PermissionContainer allocatable = referenceMap.get(referenceIdInt);
         if ( allocatable == null)
