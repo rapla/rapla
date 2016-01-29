@@ -43,6 +43,7 @@ public abstract class ServletTestBase
         Server jettyServer = new Server(port);
         String contextPath = "rapla";
         WebAppContext context = new WebAppContext(jettyServer, contextPath, "/");
+        context.addFilter(org.rapla.server.HTTPMethodOverrideFilter.class, "/rapla/*", null);
         context.setResourceBase(webappFolder.getAbsolutePath());
         context.setMaxFormContentSize(64000000);
 

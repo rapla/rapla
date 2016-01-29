@@ -1,8 +1,13 @@
 package org.rapla.server.internal;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
@@ -12,12 +17,9 @@ import org.rapla.jsonrpc.server.WebserviceCreator;
 import org.rapla.jsonrpc.server.WebserviceCreatorMap;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 
 public class RaplaRpcAndRestProcessor
 {
@@ -51,11 +53,12 @@ public class RaplaRpcAndRestProcessor
         String appendix = null;
         String requestURI = request.getPathInfo();
         String subPath;
-        if ( page != null)
-        {
-            subPath = page;
-        }
-        else if (requestURI != null && requestURI.startsWith("/rapla/"))
+//        if ( page != null)
+//        {
+//            subPath = page;
+//        }
+//        else 
+            if (requestURI != null && requestURI.startsWith("/rapla/"))
         {
             subPath = requestURI.substring("/rapla/".length());
         }
