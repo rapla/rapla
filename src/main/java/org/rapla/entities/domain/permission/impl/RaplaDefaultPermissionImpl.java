@@ -31,7 +31,6 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     public boolean hasAccess(PermissionContainer container, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today,
             boolean checkOnlyToday)
     {
-        Iterable<? extends Permission> permissions = container.getPermissionList();
         if (user == null || user.isAdmin())
             return true;
 
@@ -43,6 +42,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
         AccessLevel maxAccessLevel = AccessLevel.DENIED;
         int maxEffectLevel = PermissionImpl.NO_PERMISSION;
         Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+        Iterable<? extends Permission> permissions = container.getPermissionList();
         for (Permission p : permissions)
         {
             int effectLevel = PermissionContainer.Util.getUserEffect(user, p, groups);

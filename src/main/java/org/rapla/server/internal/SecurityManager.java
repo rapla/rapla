@@ -12,6 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
@@ -35,14 +44,6 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
 
 /** checks if the client can store or delete an entity */
 @Singleton
@@ -91,39 +92,39 @@ public class SecurityManager
 
         boolean ownable = entity instanceof Ownable;
 		if (ownable || entity instanceof Appointment) {
-            ReferenceInfo<User> entityOwnerId;
+            ReferenceInfo<User> entityOwnerReference;
             if ( ownable)
             {
-            	entityOwnerId = ((Ownable) entity).getOwnerRef();
+            	entityOwnerReference = ((Ownable) entity).getOwnerRef();
             }
             else
             {
-            	entityOwnerId = ((Appointment) entity).getOwnerRef();
+            	entityOwnerReference = ((Appointment) entity).getOwnerRef();
             }
             if (original == null) {
-                permitted = entityOwnerId != null && user.getId().equals(entityOwnerId);
+                permitted = entityOwnerReference != null && user.getReference().equals(entityOwnerReference);
                 if (getLogger().isDebugEnabled())
                 {
-                    getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerId));
+                    getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerReference));
                 }
             } else {
-            	ReferenceInfo<User> originalOwnerId;
+            	ReferenceInfo<User> originalOwnerReference;
                 if ( ownable)
                 {
-                	originalOwnerId = ((Ownable) original).getOwnerRef();
+                	originalOwnerReference = ((Ownable) original).getOwnerRef();
                 }
                 else
                 {
-                	originalOwnerId = ((Appointment) original).getOwnerRef();
+                	originalOwnerReference = ((Appointment) original).getOwnerRef();
                 }
 
                 if (getLogger().isDebugEnabled())
                 {
-                    final User entityOwner = operator.tryResolve(entityOwnerId);
-                    final User originalOwner = operator.tryResolve(originalOwnerId);
+                    final User entityOwner = operator.tryResolve(entityOwnerReference);
+                    final User originalOwner = operator.tryResolve(originalOwnerReference);
                     getLogger().debug("Permissions for existing object " + entity + "\nUser check: " + user + " = " + entityOwner + " = " + originalOwner);
                 }
-                permitted = (originalOwnerId != null) && originalOwnerId.equals(user.getId()) && originalOwnerId.equals(entityOwnerId);
+                permitted = (originalOwnerReference != null) && originalOwnerReference.equals(user.getReference()) && originalOwnerReference.equals(entityOwnerReference);
                 if ( !permitted && !admin) {
                 	canExchange = canExchange( user, entity, original );
                 	permitted = canExchange;
@@ -150,7 +151,7 @@ public class SecurityManager
         if (!permitted && entity instanceof Appointment)
         {
             final Reservation reservation = ((Appointment)entity).getReservation();
-            Reservation originalReservation = operator.tryResolve(reservation.getId(), Reservation.class);
+            Reservation originalReservation = operator.tryResolve(reservation.getReference());
             if ( originalReservation != null)
             {
             	permitted = permissionController.canModify(originalReservation, user);
@@ -415,8 +416,8 @@ public class SecurityManager
 		if ( raplaType == Preferences.class)
 		{
 		    Ownable ownable = (Preferences) entity;
-		    ReferenceInfo<User> ownerId = ownable.getOwnerRef();
-		    if (  user != null && !user.isAdmin() && (ownerId == null || !user.getReference().equals(ownerId)))
+		    ReferenceInfo<User> ownerReference = ownable.getOwnerRef();
+		    if (  user != null && !user.isAdmin() && (ownerReference == null || !user.getReference().equals(ownerReference)))
 			{
 				throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
 			}
@@ -426,11 +427,10 @@ public class SecurityManager
 
     public void checkWritePermissions(User user, PreferencePatch patch) throws RaplaSecurityException 
     {
-
-        String ownerId = patch.getUserId();
-        if (  user != null && !user.isAdmin() && (ownerId == null || !user.getId().equals( ownerId)))
+        ReferenceInfo<User> ownerRef = patch.getUserRef();
+        if (  user != null && !user.isAdmin() && (ownerRef == null || !user.getReference().equals( ownerRef)))
         {
-            throw new RaplaSecurityException("User " + user + " can't modify preferences " + ownerId);
+            throw new RaplaSecurityException("User " + user + " can't modify preferences " + ownerRef);
         }
         
     }
