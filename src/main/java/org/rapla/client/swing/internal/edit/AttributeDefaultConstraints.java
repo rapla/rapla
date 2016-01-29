@@ -304,7 +304,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
 
             if (attributeType.equals(AttributeType.CATEGORY) || attributeType.equals(AttributeType.ALLOCATABLE)) {
             	Boolean multiSelectValue = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT) ;
-            	multiSelect.setValue( multiSelectValue != null ? multiSelectValue: Boolean.FALSE );
+//            	multiSelect.setValue( multiSelectValue != null ? multiSelectValue: Boolean.FALSE );
             }
             String selectedTab = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             tabSelect.setSelectedItem(getString(selectedTab));
@@ -347,8 +347,8 @@ public class AttributeDefaultConstraints extends AbstractEditField
 
         if ( type.equals(AttributeType.ALLOCATABLE) || type.equals(AttributeType.CATEGORY))
         {
-            Boolean value = multiSelect.getValue();
-            attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, value);
+//            Boolean value = multiSelect.getValue();
+//            attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, value);
         }
         else
         {
