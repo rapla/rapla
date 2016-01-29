@@ -31,6 +31,7 @@ import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -192,8 +193,30 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.ALLOCATABLE)) {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
+            final Boolean belongsTo = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
-				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory);
+				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory)
+                 {
+                     @Override protected Allocatable[] getAllocatables()
+                     {
+                         final Allocatable[] allocatables = super.getAllocatables();
+                         if (belongsTo == null || !belongsTo)
+                         {
+                             return allocatables;
+                         }
+                         List<Allocatable> filteredAllocatables = new ArrayList<Allocatable>();
+                         for ( Allocatable allocatable: allocatables)
+                         {
+//                             final List<Classification> objects = getObjects();
+//                             if ( allocatable.getClassification())
+//                             {
+//
+//                             }
+                             filteredAllocatables.add( allocatable);
+                         }
+                         return filteredAllocatables.toArray(Allocatable.ALLOCATABLE_ARRAY);
+                     }
+                 };
 				 allocField.setFieldName(label);
 				 allocField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
 				 field = allocField;

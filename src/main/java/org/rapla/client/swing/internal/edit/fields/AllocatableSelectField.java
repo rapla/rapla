@@ -28,7 +28,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
-
+import java.util.List;
 
 public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 {
@@ -59,17 +59,7 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 
     @Override
 	public TreeModel createModel() throws RaplaException {
-    	Allocatable[] allocatables;
-    	if (dynamicTypeConstraint !=null)
-    	{
-      		ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
-			ClassificationFilter[] filters = new ClassificationFilter[] {filter};
-			allocatables = getQuery().getAllocatables(filters);
-    	}
-    	else
-    	{
-    		allocatables = getQuery().getAllocatables();
-    	}
+		Allocatable[] allocatables = getAllocatables();
 		TreeModel treeModel = getTreeFactory().createClassifiableModel(allocatables);
 		if (dynamicTypeConstraint !=null)
 		{
@@ -88,6 +78,21 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 		return treeModel;
     }
 
+	protected Allocatable[] getAllocatables()
+	{
+		Allocatable[] allocatables;
+		if (dynamicTypeConstraint !=null)
+        {
+			ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
+            ClassificationFilter[] filters = new ClassificationFilter[] {filter};
+            allocatables = getQuery().getAllocatables(filters);
+        }
+        else
+        {
+            allocatables = getQuery().getAllocatables();
+        }
+		return allocatables;
+	}
 
 }
 

@@ -417,8 +417,8 @@ public class AttributeDefaultConstraints extends AbstractEditField
         final boolean numberVisible = type.equals(AttributeType.INT);
         final boolean dateVisible  = type.equals(AttributeType.DATE);
         {
+            final Object selectedItem = multiSelect.getSelectedItem();
             DefaultComboBoxModel model = new DefaultComboBoxModel();
-            final Object selectedItem = model.getSelectedItem();
             for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
             {
                 model.addElement(getString(select));
