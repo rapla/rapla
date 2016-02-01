@@ -16,7 +16,6 @@ package org.rapla.storage.impl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,11 +31,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Named;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -739,8 +738,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		for (Entity toUpdate:updatedEntities)
 		{
 			Entity newEntity = toUpdate;
-			Entity oldEntity = oldEntities.get(toUpdate.getReference());
-			if (oldEntity != null) {
+			boolean createdBeforeSince = isCreatedBeforeSince(since, newEntity);
+			if ( createdBeforeSince) {
 				result.addOperation(new UpdateResult.Change( newEntity.getReference()));
 			} else {
 
@@ -754,6 +753,30 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 
 		return result;
+	}
+
+	protected boolean isCreatedBeforeSince(Date since, Entity newEntity)
+	{
+		boolean createdBeforeSince;
+		if ( newEntity instanceof Timestamp)
+        {
+            Date createTime = ((Timestamp)newEntity).getCreateTime();
+            if ( createTime != null )
+            {
+                createdBeforeSince = createTime.before( since);
+            }
+            else
+            {
+                getLogger().warn("No create date set for entity " + newEntity.getReference());
+                createdBeforeSince = true;
+            }
+        }
+        else
+        {
+            getLogger().warn("entity  " + newEntity.getReference() + " does not implement timestamp");
+            createdBeforeSince = true;
+        }
+		return createdBeforeSince;
 	}
 
 	@Override public FunctionFactory getFunctionFactory(String functionName)

@@ -129,8 +129,9 @@ public class AttributeDefaultConstraints extends AbstractEditField
         annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, attributeExtensionSet);
         key = textFieldFactory.create();
         name = multiLanguageFieldFactory.create();
+        final DynamicType[] dynamicTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         Collection<DynamicType> typeList = new ArrayList<DynamicType>(
-                Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)));
+                Arrays.asList(dynamicTypes));
         typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
         dynamicTypeSelect = new ListField<DynamicType>(facade, i18n, raplaLocale, logger, true);
         dynamicTypeSelect.setVector( typeList );

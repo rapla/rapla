@@ -423,7 +423,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             final Collection<ReferenceInfo> removeIds = evt.getRemoveIds();
             final List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             final Collection<Entity> storeObjects = evt.getStoreObjects();
-            UpdateResult result = refresh(since, until, storeObjects, preferencePatches, removeIds);
+            refresh(since, until, storeObjects, preferencePatches, removeIds);
             saveData(cache, null, includeIds);
         }
         finally
@@ -459,8 +459,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
             if ( EntityHistory.isSupportedEntity( id.getType()))
             {
                 final Entity e = tryResolve(id);
-                final boolean isDelete = true;
-                history.addHistoryEntry(e, currentTime, isDelete);
+                if ( e == null)
+                {
+                    getLogger().warn("Trying to remove an already removed entity " + id);
+                }
+                else
+                {
+                    final boolean isDelete = true;
+                    history.addHistoryEntry(e, currentTime, isDelete);
+                }
             }
         }
         for ( PreferencePatch patch: evt.getPreferencePatches())

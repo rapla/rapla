@@ -3550,7 +3550,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 oldEntity = history.get(update, since);
                 newEntity = tryResolve(update);
             }
-            // if newEntity is null, then it must be deleted and witin the to removed entities
+            // if newEntity is null, then it must be deleted and within the to removed entities
             if (newEntity != null)
             {
                 updatedEntities.add(newEntity);
@@ -3573,13 +3573,33 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 entity = history.get(update, since);
             }
+            Entity oldEntity = null;
             if (entity != null)
             {
-                oldEntities.put(update, entity);
+                oldEntity = entity;
             }
             else
             {
-                it.remove();
+                final EntityHistory.HistoryEntry latest = history.getLatest(update);
+                if ( latest != null)
+                {
+                    oldEntity = history.getEntity(latest);
+                }
+                else
+                {
+                    getLogger().warn("the entity " + update + " was deleted but not found in the history.");
+                }
+            }
+            if ( oldEntity != null)
+            {
+                if (isCreatedBeforeSince(since, oldEntity))
+                {
+                    oldEntities.put(update, oldEntity);
+                }
+                else
+                {
+                    it.remove();
+                }
             }
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);

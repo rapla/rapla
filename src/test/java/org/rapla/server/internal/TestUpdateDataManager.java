@@ -78,7 +78,7 @@ public class TestUpdateDataManager
     @Test
     public void testInsertChangeAndDeleteSimple()
     {
-        testInsertChangeAndDelete(10, 1);
+        testInsertChangeAndDelete(1, 1);
     }
 
     @Test
@@ -87,48 +87,64 @@ public class TestUpdateDataManager
         testInsertChangeAndDelete(500, 150);
     }
 
-    private void testInsertChangeAndDelete(int countInsert, int countDelete)
+    private void testInsertChangeAndDelete(final int countInsert, final int countDelete)
     {
         // create second user first
         final User readUser = facade.getUser("monty");
         final User writeUser = facade.getUser("homer");
         // do an init so we don't get the resources and reservations from the test data
         final int startAllocatables;
+        boolean createAndRemoveResources = true;
+        boolean createAndRemoveEvents = true;
         Date lastSynced = updateManager.createUpdateEvent(readUser, new Date()).getLastValidated();
         final int storedReservations;
+        final int maxNumberGeneratedItems = countInsert;
         final int storedAllocatables;
         {// create some Data
             List<Entity> entitiesToStore = new ArrayList<Entity>();
             Allocatable[] allocatables = facade.getAllocatables();
             startAllocatables = allocatables.length;
-            final int maxNumberGeneratedItems = countInsert;
-            for (int i = 0; i < maxNumberGeneratedItems; i++)
+            if ( createAndRemoveResources)
             {
-                Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
-                final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-                newResource.getClassification().setValue("name", "newResource" + i);
-                entitiesToStore.add(newResource);
+                for (int i = 0; i < maxNumberGeneratedItems; i++)
+                {
+                    Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
+                    final Allocatable newResource = facade.newAllocatable(classification, writeUser);
+                    newResource.getClassification().setValue("name", "newResource" + i);
+                    entitiesToStore.add(newResource);
+                }
+                storedAllocatables = entitiesToStore.size();
+                facade.storeAndRemove(entitiesToStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, writeUser);
+                entitiesToStore.clear();
             }
-            storedAllocatables = entitiesToStore.size();
-            facade.storeAndRemove(entitiesToStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, writeUser);
-            entitiesToStore.clear();
+            else
+            {
+                storedAllocatables = 0;
+            }
             allocatables = facade.getAllocatables();
-            for (int i = 0; i <maxNumberGeneratedItems; i++)
+            if ( createAndRemoveEvents)
             {
-                Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
-                final Reservation newReservation = facade.newReservation( classification, writeUser );
-                newReservation.getClassification().setValue("name", "newReservation" + i);
-                Date startDate = new Date();
-                // half an hour duration
-                Date endDate = new Date(startDate.getTime() + 30000);
-                newReservation.addAppointment(facade.newAppointment(startDate, endDate, writeUser));
-                // we take always another allocatable as we want no conflicts for now
-                newReservation.addAllocatable(allocatables[i]);
-                entitiesToStore.add(newReservation);
+                for (int i = 0; i < maxNumberGeneratedItems; i++)
+                {
+                    Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+                    final Reservation newReservation = facade.newReservation(classification, writeUser);
+                    newReservation.getClassification().setValue("name", "newReservation" + i);
+                    Date startDate = new Date();
+                    // half an hour duration
+                    Date endDate = new Date(startDate.getTime() + 30000);
+                    newReservation.addAppointment(facade.newAppointment(startDate, endDate, writeUser));
+                    // we take always another allocatable as we want no conflicts for now
+                    newReservation.addAllocatable(allocatables[startAllocatables + i]);
+                    entitiesToStore.add(newReservation);
+                }
+                storedReservations = entitiesToStore.size();
+                facade.storeAndRemove(entitiesToStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, writeUser);
             }
-            storedReservations = entitiesToStore.size();
-            facade.storeAndRemove(entitiesToStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, writeUser);
-        }
+            else
+            {
+                storedReservations = 0;
+            }
+            }
         {
             // check the created entities
             final UpdateResult updateResult = operator.getUpdateResult(lastSynced,readUser);
@@ -161,25 +177,40 @@ public class TestUpdateDataManager
         }
         final int updatedAllocatables;
         final int updatedReservations;
+
         {// change some reservations and allocatables
             final Allocatable[] allocatables = facade.getAllocatables();
             final int maxChangesPerType = countInsert;
             final ArrayList<Entity> changedEntities = new ArrayList<Entity>();
-            for (int i = 0; i < maxChangesPerType; i++)
+            if ( createAndRemoveResources)
             {
-                final Allocatable allocatable = facade.edit(allocatables[i + startAllocatables]);
-                allocatable.getClassification().setValue("name", "changedAllocatable" + i);
-                changedEntities.add(allocatable);
+                for (int i = 0; i < maxChangesPerType; i++)
+                {
+                    final Allocatable allocatable = facade.edit(allocatables[i + startAllocatables]);
+                    allocatable.getClassification().setValue("name", "changedAllocatable" + i);
+                    changedEntities.add(allocatable);
+                }
+                updatedAllocatables = changedEntities.size();
             }
-            updatedAllocatables = changedEntities.size();
-            final Reservation[] reservations = facade.getReservationsForAllocatable(allocatables, null, null, null);
-            for (int i = 0; i < maxChangesPerType; i++)
+            else
             {
-                final Reservation reservation = facade.edit(reservations[i]);
-                reservation.getClassification().setValue("name", "changedReservation" + i);
-                changedEntities.add(reservation);
+                updatedAllocatables = 0;
             }
-            updatedReservations = changedEntities.size() - updatedAllocatables;
+            if ( createAndRemoveEvents)
+            {
+                final Reservation[] reservations = facade.getReservationsForAllocatable(allocatables, null, null, null);
+                for (int i = 0; i < maxChangesPerType; i++)
+                {
+                    final Reservation reservation = facade.edit(reservations[i]);
+                    reservation.getClassification().setValue("name", "changedReservation" + i);
+                    changedEntities.add(reservation);
+                }
+                updatedReservations = changedEntities.size() - updatedAllocatables;
+            }
+            else
+            {
+                updatedReservations = 0;
+            }
             facade.storeAndRemove(changedEntities.toArray(new Entity[changedEntities.size()]), Entity.ENTITY_ARRAY, writeUser);
         }
         {
@@ -209,14 +240,25 @@ public class TestUpdateDataManager
             final Allocatable[] allocatables = facade.getAllocatables();
             final int maxToDelete = countDelete;
             List<Entity> toDelete = new ArrayList<Entity>();
-            Set<String> removedIds = new HashSet<String>();
-            for (int i = allocatables.length - 1; i > allocatables.length - 1 - maxToDelete; i--)
+            Set<ReferenceInfo> removedIds = new HashSet<ReferenceInfo>();
+            if ( createAndRemoveResources)
             {
-                toDelete.add(allocatables[i]);
-                removedIds.add(allocatables[i].getId());
+                for (int i = allocatables.length - 1; i > allocatables.length - 1 - maxToDelete; i--)
+                {
+                    toDelete.add(allocatables[i]);
+                    removedIds.add(allocatables[i].getReference());
+                }
             }
             final Reservation[] reservations = facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null);
-            toDelete.addAll(Arrays.asList(reservations));
+            if ( createAndRemoveEvents)
+            {
+                for ( Reservation event:reservations)
+                {
+                    toDelete.add(event);
+                    removedIds.add( event.getReference());
+                }
+
+            }
             facade.storeAndRemove(Entity.ENTITY_ARRAY, toDelete.toArray(new Entity[0]), writeUser);
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             final Collection<ReferenceInfo> removeIds = updateEvent.getRemoveIds();

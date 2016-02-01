@@ -172,7 +172,7 @@ public class ExchangeAppointmentStorage
         return null;
     }
 
-    public Collection<SynchronizationTask> getTasks(Appointment appointment) throws RaplaException
+    public Collection<SynchronizationTask> getTasks(ReferenceInfo appointment) throws RaplaException
     {
         String appointmentId = appointment.getId();
         Lock lock = readLock();

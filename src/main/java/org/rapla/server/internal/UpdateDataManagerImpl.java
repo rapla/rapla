@@ -99,8 +99,6 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         return clone;
     }
 
-
-
     private TimeInterval expandInterval(RaplaObject obj,
             TimeInterval currentInterval)
     {
@@ -215,6 +213,11 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             {
                 Ownable newOwnable = (Ownable) newObject;
                 Ownable oldOwnable = (Ownable) updateResult.getLastEntryBeforeUpdate(currentId);
+                if ( oldOwnable == null)
+                {
+                    resourceRefresh = true;
+                    continue;
+                }
                 ReferenceInfo<User> newOwnerId = newOwnable.getOwnerRef();
                 ReferenceInfo<User> oldOwnerId = oldOwnable.getOwnerRef();
                 if (newOwnerId != null && oldOwnerId != null && (!newOwnerId.equals(oldOwnerId)))

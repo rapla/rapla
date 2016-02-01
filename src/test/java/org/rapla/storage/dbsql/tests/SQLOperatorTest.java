@@ -679,6 +679,20 @@ public class SQLOperatorTest extends AbstractOperatorTest
     }
 
     @Test
+    public void testInsertAndDelete()
+    {
+        final User user = facade.getUser("homer");
+        Reservation reservation = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
+        ReferenceInfo<Reservation> reservationId = reservation.getReference();
+        final String newValue = "New event";
+        reservation.getClassification().setValue("name", newValue);
+        Date appStartDate = new Date();
+        Date appEndDate = new Date(appStartDate.getTime() + 120000);
+        reservation.addAppointment(facade.newAppointment(appStartDate, appEndDate, user));
+        facade.storeAndRemove(new Entity[]{reservation}, Entity.ENTITY_ARRAY, user);
+        facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{reservation} , user);
+    }
+    @Test
     public void testChangesAddChangeDelete()
     {
     	CachableStorageOperator operator = getOperator();

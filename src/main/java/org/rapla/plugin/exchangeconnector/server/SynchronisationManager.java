@@ -226,10 +226,10 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         facade.store(userPreferences);
     }
 
-    private Collection<SynchronizationTask> updateTasksSetDelete(Appointment appointment) throws RaplaException
+    private Collection<SynchronizationTask> updateTasksSetDelete(ReferenceInfo<Appointment> appointmentId) throws RaplaException
     {
         Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
-        Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment);
+        Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointmentId);
         for (SynchronizationTask task : taskList)
         {
             task.setStatus(SyncStatus.toDelete);
@@ -243,7 +243,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
         if (isInSyncInterval(appointment))
         {
-            Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment);
+            Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment.getReference());
             result.addAll(taskList);
             Collection<ReferenceInfo<User>> matchingUserIds = operator.findUsersThatExport(appointment);
             // delete all appointments that are no longer covered
@@ -288,7 +288,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                     Reservation oldReservation = current;
                     for (Appointment app : oldReservation.getAppointments())
                     {
-                        Collection<SynchronizationTask> result = updateTasksSetDelete(app);
+                        Collection<SynchronizationTask> result = updateTasksSetDelete(app.getReference());
                         tasks.addAll(result);
                     }
                 }
@@ -314,7 +314,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                             continue;
                         }
                         // remove all appointments that are no longer used
-                        Collection<SynchronizationTask> result = updateTasksSetDelete(oldApp);
+                        Collection<SynchronizationTask> result = updateTasksSetDelete(oldApp.getReference());
                         tasks.addAll(result);
                     }
                     for (Appointment newApp : newAppointments.values())
