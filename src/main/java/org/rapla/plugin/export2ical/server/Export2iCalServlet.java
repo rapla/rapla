@@ -20,17 +20,18 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
@@ -40,9 +41,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.SimpleTimeZone;
 
-@Extension(provides = RaplaPageExtension.class, id = "ical")
+@Path("ical")
 @Singleton
-public class Export2iCalServlet  implements RaplaPageExtension
+public class Export2iCalServlet
 {
 	private int global_daysBefore;
 	private int global_daysAfter;
@@ -94,7 +95,9 @@ public class Export2iCalServlet  implements RaplaPageExtension
 		return logger;
 	}
 
-	public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	@GET
+	@Produces(MediaType.TEXT_HTML)
+	public void generatePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
 		//this.response = response;
 

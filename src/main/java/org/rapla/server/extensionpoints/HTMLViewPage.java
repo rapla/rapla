@@ -25,9 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/** add your own views to Rapla, by providing a org.rapla.client.swing.gui.ViewFactory
- * @see SwingViewFactory
- * */
 @ExtensionPoint(context = InjectionContext.server,id ="htmlexport")
 public interface HTMLViewPage
 {

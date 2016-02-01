@@ -3,6 +3,7 @@ package org.rapla.rest.server;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -10,10 +11,10 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.jws.WebParam;
@@ -30,23 +31,79 @@ import java.util.List;
 import java.util.Map;
 
 @Path("resources")
-@RemoteJsonMethod
-public class RaplaResourcesRestPage extends AbstractRestPage {
+public class RaplaResourcesRestPage  {
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 	private final User user;
+	private final RaplaFacade facade;
+	private final StorageOperator operator;
 
 	@Inject
 	public RaplaResourcesRestPage(RaplaFacade facade, RemoteSession session) throws RaplaException {
-		super(facade);
+		this.facade = facade;
+		this.operator = facade.getOperator();
 		this.user = session.getUser();
 	}
+
+	public static ClassificationFilter[] getClassificationFilter(RaplaFacade facade,Map<String, String> simpleFilter, Collection<String> selectedClassificationTypes,
+            Collection<String> typeNames) throws RaplaException
+    {
+        ClassificationFilter[] filters = null;
+        if (simpleFilter == null && typeNames == null)
+        {
+            return null;
+        }
+        {
+            DynamicType[] types = facade.getDynamicTypes(null);
+            List<ClassificationFilter> filterList = new ArrayList<ClassificationFilter>();
+            for (DynamicType type : types)
+            {
+                String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+                if (classificationType == null || !selectedClassificationTypes.contains(classificationType))
+                {
+                    continue;
+                }
+                ClassificationFilter classificationFilter = type.newClassificationFilter();
+                if (typeNames != null)
+                {
+                    if (!typeNames.contains(type.getKey()))
+                    {
+                        continue;
+                    }
+                }
+                if (simpleFilter != null)
+                {
+                    for (String key : simpleFilter.keySet())
+                    {
+                        Attribute att = type.getAttribute(key);
+                        if (att != null)
+                        {
+                            String value = simpleFilter.get(key);
+                            // convert from string to attribute type
+                            Object object = att.convertValue(value);
+                            if (object != null)
+                            {
+                                classificationFilter.addEqualsRule(att.getKey(), object);
+                            }
+                            filterList.add(classificationFilter);
+                        }
+                    }
+                }
+                else
+                {
+                    filterList.add(classificationFilter);
+                }
+            }
+            filters = filterList.toArray(new ClassificationFilter[] {});
+        }
+        return filters;
+    }
 
 	@GET
 	public List<AllocatableImpl> list( @QueryParam("resourceTypes") List<String> resourceTypes,
 			@WebParam(name = "attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
-		ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
+		ClassificationFilter[] filters = getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
 		List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
 		PermissionController permissionController = facade.getPermissionController();
@@ -76,8 +133,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
 		resource.setResolver(operator);
-		getFacade().store(resource);
-		AllocatableImpl result = getFacade().getPersistant(resource);
+		facade.store(resource);
+		AllocatableImpl result = facade.getPersistant(resource);
 		return result;
 	}
 
@@ -97,8 +154,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage {
 		resource.setResolver(operator);
 		resource.setCreateDate(operator.getCurrentTimestamp());
 		resource.setOwner(user);
-		getFacade().store(resource);
-		AllocatableImpl result = getFacade().getPersistant(resource);
+		facade.store(resource);
+		AllocatableImpl result = facade.getPersistant(resource);
 		return result;
 	}
 

@@ -34,9 +34,7 @@ import org.rapla.jsonrpc.server.WebserviceCreatorMap;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.servletpages.RaplaPageGenerator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
@@ -65,7 +63,6 @@ import java.util.TreeSet;
     final protected RaplaFacade facade;
     final Logger logger;
 
-    private final Map<String, RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
     private final RaplaRpcAndRestProcessor apiPage;
     private final RaplaLocale raplaLocale;
@@ -80,8 +77,7 @@ import java.util.TreeSet;
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices, CommandScheduler scheduler,
-            ServerContainerContext serverContainerContext)
+            Provider<WebserviceCreatorMap> webservices, CommandScheduler scheduler, ServerContainerContext serverContainerContext)
     {
         this.scheduler = scheduler;
         this.logger = logger;
@@ -175,8 +171,6 @@ import java.util.TreeSet;
         //initializePlugins(preferences, ServerServiceContainer.class);
         // start server provides
         this.requestPreProcessors = requestPreProcessors.get();
-
-        this.pageMap = pageMap.get();
 
         final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
         for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
@@ -289,23 +283,17 @@ import java.util.TreeSet;
             appendix = null;
         }
         final ServletContext servletContext = request.getServletContext();
-        final RaplaPageGenerator servletPage = getWebpage(pagename);
-        if (servletPage != null)
+
+        final RaplaRpcAndRestProcessor.Path b = apiPage.find(pagename, appendix);
+        if (b != null)
         {
-            servletPage.generatePage(servletContext, request, response);
+            apiPage.generate(servletContext, request, response, b);
         }
         else
         {
-            final RaplaRpcAndRestProcessor.Path b = apiPage.find(pagename, appendix);
-            if (b != null)
-            {
-                apiPage.generate(servletContext, request, response, b);
-            }
-            else
-            {
-                print404Response(response, pagename);
-            }
+            print404Response(response, pagename);
         }
+
     }
 
     public <T> T getMockService(final Class<T> test, final String accessToken)
@@ -351,13 +339,6 @@ import java.util.TreeSet;
                 out.close();
             }
         }
-    }
-
-    private RaplaPageGenerator getWebpage(String page)
-    {
-        String lowerCase = page.toLowerCase();
-        @SuppressWarnings("deprecation") RaplaPageGenerator factory = pageMap.get(lowerCase);
-        return factory;
     }
 
     private void stop()

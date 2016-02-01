@@ -30,8 +30,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 @Path("auth")
-@RemoteJsonMethod
-public class RaplaAuthRestPage extends AbstractRestPage
+public class RaplaAuthRestPage
 {
 
     private final RaplaAuthentificationService authentificationService;
@@ -43,7 +42,6 @@ public class RaplaAuthRestPage extends AbstractRestPage
     @Inject
     public RaplaAuthRestPage(RaplaFacade facade, RaplaAuthentificationService authentificationService, RaplaResources i18n, Logger logger, TokenHandler tokenHandler) throws RaplaException
     {
-        super(facade);
         this.facade = facade;
         this.authentificationService = authentificationService;
         this.i18n = i18n;

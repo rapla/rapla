@@ -3,26 +3,27 @@
  */
 package org.rapla.server.servletpages;
 
-import org.rapla.inject.Extension;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Collection;
 
-@Extension(provides = RaplaPageExtension.class,id="raplaapplet")
 @Singleton
-public class RaplaAppletPageGenerator implements RaplaPageExtension
+@Path("raplaapplet")
+public class RaplaAppletPageGenerator
 {
     private final String moduleId;
-
     @Inject
     public RaplaAppletPageGenerator()
     {
@@ -48,7 +49,10 @@ public class RaplaAppletPageGenerator implements RaplaPageExtension
     }
 
 
-    public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response ) throws IOException {
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public void generatePage(HttpServletRequest request, HttpServletResponse response ) throws IOException {
+        ServletContext context = request.getServletContext();
     	String linkPrefix = request.getPathTranslated() != null ? "../": "";
 		response.setContentType("text/html; charset=ISO-8859-1");
         java.io.PrintWriter out = response.getWriter();

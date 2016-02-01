@@ -9,16 +9,18 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.inject.Extension;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -27,9 +29,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-@Extension(provides = RaplaPageExtension.class,id="raplaclient.jnlp")
+@Path("raplaclient.jnlp")
 @Singleton
-public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
+public class RaplaJNLPPageGenerator  {
 
     private final RaplaFacade facade;
     private final RaplaResources i18n;
@@ -121,8 +123,10 @@ public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
         List<String> list = new ArrayList<String>();
         return list;
     }
-    
-    public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response ) throws IOException {
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public void generatePage( HttpServletRequest request, HttpServletResponse response ) throws IOException {
         java.io.PrintWriter out = response.getWriter();
         String webstartRoot = ".";
         long currentTimeMillis = System.currentTimeMillis();
@@ -179,7 +183,7 @@ public class RaplaJNLPPageGenerator  implements RaplaPageExtension{
             String moduleIdProperty = "jnlp.org.rapla.moduleId";
             out.println("  <property name=\"" +moduleIdProperty +"\" value=\"" + moduleId + "\"/>");
         }
-        out.println(getLibsJNLP(context, webstartRoot));
+        out.println(getLibsJNLP(request.getServletContext(), webstartRoot));
         out.println("</resources>");
         out.println("<application-desc main-class=\"org.rapla.client.MainWebstart\">");
         for (Iterator<String> it = getProgramArguments().iterator(); it.hasNext();)

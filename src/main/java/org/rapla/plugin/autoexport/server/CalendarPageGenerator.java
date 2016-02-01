@@ -27,20 +27,21 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Arrays;
@@ -69,8 +70,9 @@ import java.util.TreeSet;
  * &year=<year>:  int-value of the year
  * &today:  will set the view to the current day. Ignores day, month and year
  */
-@Extension(provides = RaplaPageExtension.class, id = AutoExportPlugin.CALENDAR_GENERATOR) @Singleton public class CalendarPageGenerator
-        implements RaplaPageExtension
+@Path(AutoExportPlugin.CALENDAR_GENERATOR)
+@Singleton
+public class CalendarPageGenerator
 {
     final private Map<String, Provider<HTMLViewPage>> factoryMap;
     RaplaFacade facade;
@@ -125,7 +127,7 @@ import java.util.TreeSet;
         }
     }
 
-    public void generatePageList(User[] users, ServletContext servletContext, HttpServletRequest request, HttpServletResponse response)
+    private void generatePageList(User[] users,  HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
         java.io.PrintWriter out = response.getWriter();
@@ -218,7 +220,9 @@ import java.util.TreeSet;
         }
     }
 
-    public void generatePage(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public void generatePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         try
         {
@@ -235,7 +239,7 @@ import java.util.TreeSet;
                 {
                     users = facade.getUsers();
                 }
-                generatePageList(users, servletContext, request, response);
+                generatePageList(users, request, response);
                 return;
             }
             String filename = request.getParameter("file");
@@ -307,7 +311,7 @@ import java.util.TreeSet;
                 {
                     try
                     {
-                        currentView.generatePage(servletContext, request, response, model);
+                        currentView.generatePage(request.getServletContext(), request, response, model);
                     }
                     catch (ServletException ex)
                     {

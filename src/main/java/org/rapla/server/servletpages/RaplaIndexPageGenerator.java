@@ -8,26 +8,27 @@ import org.rapla.components.util.Tools;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
-import org.rapla.server.extensionpoints.RaplaPageExtension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-@Extension(provides = RaplaPageExtension.class,id="index")
+@Path("index")
 @Singleton
-public class RaplaIndexPageGenerator implements RaplaPageExtension
+public class RaplaIndexPageGenerator
 {
 	Set<RaplaMenuGenerator> entries;
 	RaplaResources i18n;
@@ -41,7 +42,9 @@ public class RaplaIndexPageGenerator implements RaplaPageExtension
         this.entries = new LinkedHashSet<RaplaMenuGenerator>(entries);
     }
 
-    public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response )
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public void generatePage(HttpServletRequest request, HttpServletResponse response )
             throws IOException, ServletException
     {
         if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/"))

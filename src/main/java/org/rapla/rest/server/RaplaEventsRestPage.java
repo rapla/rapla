@@ -11,10 +11,10 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -32,15 +32,16 @@ import java.util.Map;
 
 
 @Path("events")
-@RemoteJsonMethod
-public class RaplaEventsRestPage extends AbstractRestPage 
+public class RaplaEventsRestPage
 {
-
     private final User user;
+    RaplaFacade facade;
+    StorageOperator operator;
 
     @Inject
     public RaplaEventsRestPage(RaplaFacade facade,   RemoteSession session) throws RaplaException {
-		super(facade);
+		this.facade = facade;
+        this.operator = facade.getOperator();
         user = session.getUser();
 	}
 
@@ -52,11 +53,11 @@ public class RaplaEventsRestPage extends AbstractRestPage
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id :resources)
         {
-            Allocatable allocatable = operator.resolve(id, Allocatable.class);
+            Allocatable allocatable = facade.resolve(new ReferenceInfo<Allocatable>(id, Allocatable.class));
             allocatables.add( allocatable);
         }
  
-        ClassificationFilter[] filters = getClassificationFilter(simpleFilter, CLASSIFICATION_TYPES, eventTypes);
+        ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         Map<String, String> annotationQuery = null;
         User owner = null;
         Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery).get();
@@ -94,8 +95,8 @@ public class RaplaEventsRestPage extends AbstractRestPage
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }
         event.setResolver( operator);
-        getFacade().store( event);
-        ReservationImpl result = getFacade().getPersistant( event);
+        facade.store(event);
+        ReservationImpl result = facade.getPersistant( event);
         return result;
     }
     
@@ -123,8 +124,8 @@ public class RaplaEventsRestPage extends AbstractRestPage
             app.setId(id);
         }
         event.setOwner( user );
-        getFacade().store( event);
-        ReservationImpl result = getFacade().getPersistant( event);
+        facade.store(event);
+        ReservationImpl result = facade.getPersistant(event);
         return result;
     }
    
