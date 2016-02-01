@@ -9,6 +9,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.Extension;
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.extensionpoints.RaplaPageExtension;
 
@@ -49,14 +50,12 @@ public class RaplaIndexPageGenerator implements RaplaPageExtension
         }
 		response.setContentType("text/html; charset=ISO-8859-1");
 		java.io.PrintWriter out = response.getWriter();
-		String linkPrefix = request.getPathTranslated() != null ? "../": "";
-		    	
 		out.println("<html>");
 		out.println("  <head>");
 		// add the link to the stylesheet for this page within the <head> tag
-		out.println("    <link REL=\"stylesheet\" href=\""+linkPrefix+"default.css\" type=\"text/css\">");
+		out.println("    " + AbstractHTMLCalendarPage.getCssLine(request,"default.css"));
 		// tell the html page where its favourite icon is stored
-		out.println("    <link REL=\"shortcut icon\" type=\"image/x-icon\" href=\""+linkPrefix+"images/favicon.ico\">");
+		out.println("    " + AbstractHTMLCalendarPage.getFavIconLine(request));
 		out.println("    <title>");
 		 String title;
 		 final String defaultTitle = i18n.getString("rapla.title");

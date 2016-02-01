@@ -1,5 +1,7 @@
 package org.rapla.server.servletpages;
 
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+
 import javax.servlet.http.HttpServletRequest;
 import java.io.PrintWriter;
 
@@ -34,7 +36,7 @@ public class DefaultHTMLMenuEntry  implements RaplaMenuGenerator
     {
 		// writing the html code line for a button
 		// including the link to the appropriate servletpage
-		out.println("<span class=\"button\"><a href=\"" + getLinkName() + "\">" + getName() + "</a></span>");
+		out.println("<span class=\"button\"><a href=\"" + AbstractHTMLCalendarPage.getUrl(request,getLinkName()) + "\">" + getName() + "</a></span>");
     }
 
 }

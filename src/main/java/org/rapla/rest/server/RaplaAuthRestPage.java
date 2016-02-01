@@ -76,8 +76,31 @@ public class RaplaAuthRestPage extends AbstractRestPage
     }
 
     @POST
+    public String createPlain(@QueryParam("credentials") LoginCredentials credentials) throws Exception
+    {
+        User user = null;
+        try
+        {
+            user = authentificationService.authenticate(credentials.getUsername(), credentials.getPassword(), credentials.getConnectAs(), logger);
+        }
+        catch(Exception e)
+        {
+            logger.error(e.getMessage());
+            final String loginErrorMessage = i18n.getString("error.login");
+            throw new RaplaSecurityException(loginErrorMessage);
+        }
+        final LoginTokens loginTokens = tokenHandler.generateAccessToken(user);
+        if (loginTokens.isValid())
+        {
+            return loginTokens.getAccessToken();
+        }
+        final String loginErrorMessage = i18n.getString("error.login");
+        throw new RaplaSecurityException(loginErrorMessage);
+    }
+
+    @POST
     @Produces(MediaType.TEXT_HTML)
-    public void create_(@QueryParam("url") String url, @QueryParam("userName") String user, @QueryParam("password") String password,
+    public void create_(@QueryParam("url") String url, @QueryParam("username") String user, @QueryParam("password") String password,
             @QueryParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
         final String targetUrl = Tools.createXssSafeString(url);

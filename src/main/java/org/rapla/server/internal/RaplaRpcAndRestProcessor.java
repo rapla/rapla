@@ -31,6 +31,10 @@ public class RaplaRpcAndRestProcessor
     {
         this.logger = logger;
         this.webserviceMap = webservices.asMap();
+        for (String key : webserviceMap.keySet())
+        {
+
+        }
     }
 
     Map<Class, JsonServlet> servletMap = new HashMap<Class, JsonServlet>();
@@ -47,45 +51,13 @@ public class RaplaRpcAndRestProcessor
         }
     }
 
-    public Path find(HttpServletRequest request, String page)
+    public Path find(String pagename,String appendix)
     {
-        String path = null;
-        String appendix = null;
-        String requestURI = request.getPathInfo();
-        String subPath;
-//        if ( page != null)
-//        {
-//            subPath = page;
-//        }
-//        else 
-            if (requestURI != null && requestURI.startsWith("/rapla/"))
-        {
-            subPath = requestURI.substring("/rapla/".length());
-        }
-        else if (requestURI != null && requestURI.length() > 0)
-        {
-            subPath = requestURI.substring(1);
-        }
-        else
-        {
-            return  null;
-        }
-        for (String key : webserviceMap.keySet())
-        {
-            if (subPath.startsWith(key))
-            {
-                path = key;
-                if (subPath.length() > key.length())
-                {
-                    appendix = subPath.substring(key.length() + 1);
-                }
-            }
-        }
-        if (path == null)
+        if (!webserviceMap.containsKey( pagename))
         {
             return null;
         }
-        return new Path(path, appendix);
+        return new Path(pagename, appendix);
     }
 
     public void generate(ServletContext servletContext, HttpServletRequest request, HttpServletResponse response, Path path) throws IOException

@@ -19,7 +19,6 @@ import org.rapla.framework.TypedComponentRole;
 public class AutoExportPlugin
 {
 	public static final String CALENDAR_GENERATOR = "calendar";
-    public static final String CALENDAR_LIST_GENERATOR = "calendarlist";
     public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> PLUGIN_ENTRY = CalendarModelConfiguration.EXPORT_ENTRY;
     public static final String HTML_EXPORT= PLUGIN_ENTRY + ".selected";
     public static final String SHOW_CALENDAR_LIST_IN_HTML_MENU = "show_calendar_list_in_html_menu";

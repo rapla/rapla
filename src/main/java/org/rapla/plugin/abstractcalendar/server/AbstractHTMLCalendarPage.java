@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.abstractcalendar.server;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.ParseDateException;
@@ -213,17 +214,17 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
      */
     protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Calendar currentDate) throws ServletException, UnsupportedEncodingException {
         boolean navigationVisible = isNavigationVisible( request );
-        String linkPrefix = request.getPathTranslated() != null ? "../": "";
-		        
+
         calendarviewHTML = view.getHtml();
         out.println("<!DOCTYPE html>"); // we have HTML5 
 		out.println("<html>");
 		out.println("<head>");
 		out.println("  <title>" + getTitle() + "</title>");
-		out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "calendar.css\" type=\"text/css\">");
-		out.println("  <link REL=\"stylesheet\" href=\"" + linkPrefix + "default.css\" type=\"text/css\">");
-		// tell the html page where its favourite icon is stored
-		out.println("    <link REL=\"shortcut icon\" type=\"image/x-icon\" href=\""+linkPrefix + "images/favicon.ico\">");
+        final String formAction = getUrl(request,"rapla");
+
+        out.println("  " + getCssLine(request, "calendar.css"));
+        out.println("  " + getCssLine(request, "default.css"));
+		out.println("  " + getFavIconLine(request));
 		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetNonUtf() + "\">");
 		out.println("</head>");
 		out.println("<body>");
@@ -243,7 +244,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 			if (navigationVisible)
 			{
 				out.println("<div class=\"datechooser\">");
-				out.println("<form action=\""+linkPrefix + "rapla\" method=\"get\">");
+                out.println("<form action=\"" + formAction + "\" method=\"get\">");
 				String keyParamter = request.getParameter("key");
 				if (keyParamter != null)
 				{
@@ -294,6 +295,32 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		}
 		out.println("</body>");
 		out.println("</html>");
+    }
+
+    static public String getFavIconLine(HttpServletRequest request)
+    {
+        return "<link REL=\"shortcut icon\" type=\"image/x-icon\" href=\"" + getUrl(request, "images/favicon.ico") + "\">";
+    }
+
+    static public String getCssLine(HttpServletRequest request, String cssName)
+    {
+        final String cssLink = getUrl(request, cssName);
+        return "<link REL=\"stylesheet\" href=\"" + cssLink + "\" type=\"text/css\">";
+    }
+
+    static public String getUrl(HttpServletRequest request, String cssName)
+    {
+        final String contextPath = request.getServletContext().getContextPath();
+        String linkPrefix =  contextPath;
+        if ( !linkPrefix.startsWith("/"))
+        {
+            linkPrefix= "/" + linkPrefix;
+        }
+        if ( !linkPrefix.endsWith("/"))
+        {
+            linkPrefix= linkPrefix + "/";
+        }
+        return linkPrefix + cssName;
     }
 
     static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Allocatable[] selectedAllocatables) throws UnsupportedEncodingException {

@@ -1,13 +1,10 @@
 package org.rapla.framework.logger;
 
 import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapter;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-@DefaultImplementation(of=Logger.class,context = InjectionContext.server)
 @Singleton
 public class RaplaBootstrapLogger implements Provider<Logger> {
 
@@ -15,7 +12,6 @@ public class RaplaBootstrapLogger implements Provider<Logger> {
     {
         return createRaplaLogger();
     }
-
 
     public static Logger createRaplaLogger()
     {

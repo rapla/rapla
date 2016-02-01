@@ -58,15 +58,14 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
 
-
-@DefaultImplementation(of=ServerServiceContainer.class,context = InjectionContext.server,export = true)
-public class ServerServiceImpl implements ServerServiceContainer
+@DefaultImplementation(of = ServerServiceContainer.class, context = InjectionContext.server, export = true) public class ServerServiceImpl
+        implements ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
     final protected RaplaFacade facade;
     final Logger logger;
 
-    private final Map<String,RaplaPageExtension> pageMap;
+    private final Map<String, RaplaPageExtension> pageMap;
     private boolean passwordCheckDisabled;
     private final RaplaRpcAndRestProcessor apiPage;
     private final RaplaLocale raplaLocale;
@@ -79,24 +78,23 @@ public class ServerServiceImpl implements ServerServiceContainer
         return requestPreProcessors;
     }
 
-
-
-    @Inject
-    public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale, Logger logger, final Provider<Map<String,ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices,CommandScheduler scheduler, ServerContainerContext serverContainerContext)
+    @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
+            Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            final Provider<Map<String, RaplaPageExtension>> pageMap, Provider<WebserviceCreatorMap> webservices, CommandScheduler scheduler,
+            ServerContainerContext serverContainerContext)
     {
         this.scheduler = scheduler;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
         //webMethods.setList( );
-//        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
-//        if (containerContext.mailSession != null)
-//        {
-//            externalMailSession.setValue(containerContext.getMailSession());
-//        }
+        //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
+        //        if (containerContext.mailSession != null)
+        //        {
+        //            externalMailSession.setValue(containerContext.getMailSession());
+        //        }
         this.operator = operator;
         this.facade = facade;
-        ((FacadeImpl)facade).setOperator( operator);
+        ((FacadeImpl) facade).setOperator(operator);
         this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
@@ -152,7 +150,8 @@ public class ServerServiceImpl implements ServerServiceContainer
         }
         catch (Exception rc)
         {
-            logger.error("Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
+            logger.error(
+                    "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
         }
 
         /*
@@ -169,7 +168,7 @@ public class ServerServiceImpl implements ServerServiceContainer
             }
         }
         */
-        
+
         //User user = getFirstAdmin(operator);
         //adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
         //addContainerProvidedComponentInstance(RemoteSession.class, adminSession);
@@ -180,7 +179,7 @@ public class ServerServiceImpl implements ServerServiceContainer
         this.pageMap = pageMap.get();
 
         final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
-        for (Map.Entry<String,ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
+        for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
         {
             final String key = extensionEntry.getKey();
             ServerExtension extension = extensionEntry.getValue();
@@ -240,51 +239,71 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     @Override public void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        String page =  request.getParameter("page");
-        String requestURI =request.getRequestURI();
-        if ( page == null)
+        String requestURI = request.getRequestURI();
+        String raplaPrefix = "rapla/";
+        String contextPath = request.getContextPath();
+        String toParse;
+        if (requestURI.startsWith(contextPath))
         {
-            String raplaPrefix = "rapla/";
-            String contextPath = request.getContextPath();
-            String toParse;
-            if (requestURI.startsWith( contextPath))
-            {
-                toParse = requestURI.substring( contextPath.length());
-            }
-            else
-            {
-                toParse = requestURI;
-            }
-            int pageContextIndex = toParse.lastIndexOf(raplaPrefix);
-            if ( pageContextIndex>= 0)
-            {
-                page = toParse.substring( pageContextIndex + raplaPrefix.length());
-                int firstSeparator = page.indexOf('/');
-                if ( firstSeparator>1)
-                {
-                    page = page.substring(0,firstSeparator );
-                }
-            }
-        }
-        if ( page == null || page.trim().length() == 0) {
-            page = "index";
-        }
-        final ServletContext servletContext = request.getServletContext();
-        final RaplaPageGenerator  servletPage = getWebpage( page);
-        if ( servletPage != null)
-        {
-            servletPage.generatePage(servletContext,request, response);
+            toParse = requestURI.substring(contextPath.length());
         }
         else
         {
-            final RaplaRpcAndRestProcessor.Path b = apiPage.find( request,page);
-            if ( b != null)
+            toParse = requestURI;
+        }
+        if (toParse.startsWith("/"))
+        {
+            toParse = toParse.substring(1);
+        }
+        while (toParse.toLowerCase().startsWith(raplaPrefix))
+        {
+            toParse = toParse.substring(raplaPrefix.length());
+        }
+        String path = toParse;
+        final String pagename;
+        final String appendix;
+        int firstSeparator = path.indexOf('/');
+        if (firstSeparator > 1)
+        {
+            pagename = path.substring(0, firstSeparator);
+            appendix = path.substring(firstSeparator + 1);
+        }
+        else
+        {
+            if (path.trim().isEmpty() || path.toLowerCase().equals("rapla"))
+            {
+                final String pageParam = request.getParameter("page");
+                if (pageParam != null && !pageParam.trim().isEmpty())
+                {
+                    pagename = pageParam;
+                }
+                else
+                {
+                    pagename = "index";
+                }
+            }
+            else
+            {
+                pagename = path;
+            }
+            appendix = null;
+        }
+        final ServletContext servletContext = request.getServletContext();
+        final RaplaPageGenerator servletPage = getWebpage(pagename);
+        if (servletPage != null)
+        {
+            servletPage.generatePage(servletContext, request, response);
+        }
+        else
+        {
+            final RaplaRpcAndRestProcessor.Path b = apiPage.find(pagename, appendix);
+            if (b != null)
             {
                 apiPage.generate(servletContext, request, response, b);
             }
             else
             {
-                print404Response(response, page);
+                print404Response(response, pagename);
             }
         }
     }
@@ -295,36 +314,39 @@ public class ServerServiceImpl implements ServerServiceContainer
         {
             @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
             {
-                if ( method.getName().equals("getParameter"))
+                if (method.getName().equals("getParameter"))
                 {
-                    String key = (String)args[0];
-                    if ( key.equals( "access_token"))
+                    String key = (String) args[0];
+                    if (key.equals("access_token"))
                     {
-                        return  accessToken;
+                        return accessToken;
                     }
                 }
                 return null;
             }
         };
-        HttpServletRequest request = (HttpServletRequest)Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {HttpServletRequest.class}, invocationHandler);
-        HttpServletResponse response = (HttpServletResponse)Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {HttpServletResponse.class}, invocationHandler);
+        HttpServletRequest request = (HttpServletRequest) Proxy
+                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletRequest.class }, invocationHandler);
+        HttpServletResponse response = (HttpServletResponse) Proxy
+                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletResponse.class }, invocationHandler);
         final T o = (T) apiPage.webserviceMap.get(test.getCanonicalName()).create(request, response);
         return o;
     }
 
     private void print404Response(HttpServletResponse response, String page) throws IOException
     {
-        response.setStatus( 404 );
+        response.setStatus(404);
         java.io.PrintWriter out = null;
         try
         {
-            out =	response.getWriter();
+            out = response.getWriter();
             String message = "404: Page " + page + " not found in Rapla context";
             out.print(message);
-            logger.getChildLogger("server.html.404").warn( message);
-        } finally
+            logger.getChildLogger("server.html.404").warn(message);
+        }
+        finally
         {
-            if ( out != null)
+            if (out != null)
             {
                 out.close();
             }
@@ -334,14 +356,13 @@ public class ServerServiceImpl implements ServerServiceContainer
     private RaplaPageGenerator getWebpage(String page)
     {
         String lowerCase = page.toLowerCase();
-        @SuppressWarnings("deprecation")
-        RaplaPageGenerator factory = pageMap.get(lowerCase);
+        @SuppressWarnings("deprecation") RaplaPageGenerator factory = pageMap.get(lowerCase);
         return factory;
     }
 
     private void stop()
     {
-        ((DefaultScheduler)scheduler).dispose();
+        ((DefaultScheduler) scheduler).dispose();
         boolean wasConnected = operator.isConnected();
         Logger logger = getLogger();
         try
@@ -370,6 +391,5 @@ public class ServerServiceImpl implements ServerServiceContainer
     {
         return operator;
     }
-
 
 }
