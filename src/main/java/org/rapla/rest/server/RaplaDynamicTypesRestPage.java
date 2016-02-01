@@ -1,21 +1,20 @@
 package org.rapla.rest.server;
 
-import com.sun.deploy.util.SessionState;
-import org.rapla.entities.User;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
-import org.rapla.server.RemoteSession;
-import org.rapla.storage.PermissionController;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.rapla.entities.User;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.server.RemoteSession;
+import org.rapla.storage.PermissionController;
 
 @Path("dynamictypes")
 public class RaplaDynamicTypesRestPage
