@@ -303,7 +303,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public String getName(Locale locale)
     {
-        return name.getNameFromLocale(locale);
+        return name.getName(locale);
     }
 
     public String getKey() {

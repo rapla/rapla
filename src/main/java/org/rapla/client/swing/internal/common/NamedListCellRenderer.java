@@ -41,10 +41,17 @@ public class NamedListCellRenderer extends DefaultListCellRenderer {
                                                   int index,
                                                   boolean isSelected,
                                                   boolean cellHasFocus) {
+        Object newValue;
         if (value instanceof Named)
-            value = ((Named) value).getName(locale);
+        {
+            newValue = ((Named) value).getName(locale);
+        }
+        else
+        {
+            newValue = value;
+        }
         if (format != null)
-            value = format.format(new Object[] {value});
-        return super.getListCellRendererComponent(list,value,index,isSelected,cellHasFocus);
+            newValue = format.format(new Object[] {newValue});
+        return super.getListCellRendererComponent(list,newValue,index,isSelected,cellHasFocus);
     }
 }

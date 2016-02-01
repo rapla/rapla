@@ -140,7 +140,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
 
     public String getName(Locale locale)
     {
-        return name.getNameFromLocale(locale);
+        return name.getName(locale);
     }
 
     public String getKey() {

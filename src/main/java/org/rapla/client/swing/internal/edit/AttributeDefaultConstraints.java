@@ -7,6 +7,7 @@ import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
 import org.rapla.client.swing.internal.edit.fields.AbstractEditField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField;
@@ -54,6 +55,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class AttributeDefaultConstraints extends AbstractEditField
@@ -132,6 +134,9 @@ public class AttributeDefaultConstraints extends AbstractEditField
         typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
         dynamicTypeSelect = new ListField<DynamicType>(facade, i18n, raplaLocale, logger, true);
         dynamicTypeSelect.setVector( typeList );
+        final Locale locale = raplaLocale.getLocale();
+        dynamicTypeSelect.setRenderer( new NamedListCellRenderer(locale));
+
         rootCategory = getQuery().getSuperCategory();
 
         categorySelect = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
