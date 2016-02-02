@@ -12,61 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
-import org.rapla.components.util.Assert;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.InverseComparator;
-import org.rapla.components.util.iterator.FilterIterable;
-import org.rapla.entities.Category;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.Named;
-import org.rapla.entities.NamedComparator;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ReservationStartComparator;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.storage.StorageOperator;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JTree;
-import javax.swing.UIManager;
-import javax.swing.border.Border;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.DefaultTreeSelectionModel;
-import javax.swing.tree.MutableTreeNode;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import javax.swing.tree.TreeSelectionModel;
 import java.awt.Component;
 import java.awt.Font;
 import java.util.ArrayList;
@@ -88,6 +33,61 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JTree;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.DefaultTreeSelectionModel;
+import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
+import org.rapla.components.util.Assert;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.iterator.FilterIterable;
+import org.rapla.entities.Category;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.Named;
+import org.rapla.entities.NamedComparator;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.AttributeAnnotations;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.ConstraintIds;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.storage.StorageOperator;
 
 @Singleton
 @DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
@@ -278,6 +278,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 	{
 		Map<DynamicType,Map<Object,DefaultMutableTreeNode>> categorization = new LinkedHashMap<DynamicType, Map<Object,DefaultMutableTreeNode>>();
         Map<Classifiable, Collection<NamedNode>> childMap = new HashMap<Classifiable, Collection<NamedNode>>();
+        Map<Classifiable, Collection<Classifiable>> belongsToMap = new HashMap<Classifiable, Collection<Classifiable>>();
+        Map<Classifiable, NamedNode> objectToNamedNode = new HashMap<Classifiable, NamedNode>();
 		Map<DynamicType,Collection<NamedNode>> uncategorized = new LinkedHashMap<DynamicType, Collection<NamedNode>>();
         for ( DynamicType type: nodeMap.keySet())
         {
@@ -298,6 +300,18 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 continue;
             }
             Attribute categorizationAtt = getCategorizationAttribute(classification);
+            Attribute belongsAtt = getBelongsToAttribute(classification);
+            if(belongsAtt != null && classification.getValue(belongsAtt) != null)
+            {
+                Classifiable parent = (Classifiable) classification.getValue(belongsAtt);
+                Collection<Classifiable> parts = belongsToMap.get(parent);
+                if( parts == null )
+                {
+                    parts = new ArrayList<Classifiable>();
+                    belongsToMap.put(parent, parts);
+                }
+                parts.add(classifiable);
+            }
             if (useCategorizations && categorizationAtt != null && classification.getValues(categorizationAtt).size() > 0)
             {
             	Collection<Object> values = classification.getValues(categorizationAtt);
@@ -319,12 +333,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             else
             {	
             	NamedNode childNode = new NamedNode((Named) classifiable);
+            	objectToNamedNode.put(classifiable, childNode);
                 childNodes.add( childNode);
                 Assert.notNull(typeNode);
                 uncategorized.get(type).add( childNode);
             }
-            Attribute belongsAtt = getCategorizationAttribute(classification);
-
         }
 		for ( DynamicType type:categorization.keySet())
 		{
@@ -347,7 +360,45 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 				parentNode.add(node);
 			}
 		}
+		if(useCategorizations)
+		{
+		    for (Classifiable classifiable : classifiables)
+		    {
+		        final NamedNode node = objectToNamedNode.get(classifiable);
+		        if(node != null)
+		        {
+		            addBelongsToNodes(belongsToMap, classifiable, node);
+		        }
+		    }
+		}
 		return childMap;
+	}
+
+    private void addBelongsToNodes(Map<Classifiable, Collection<Classifiable>> belongsToMap, Classifiable classifiable, final NamedNode node)
+    {
+        final Collection<Classifiable> parts = belongsToMap.get(classifiable);
+        if(parts != null)
+        {
+            for (Classifiable belongsTo : parts)
+            {
+                final NamedNode newChildNode = new NamedNode((Named) belongsTo);
+                node.add(newChildNode);
+                addBelongsToNodes(belongsToMap, belongsTo, newChildNode);
+            }
+        }
+    }
+	
+	protected Attribute getBelongsToAttribute(Classification classification)
+	{
+        for (Attribute attribute: classification.getType().getAttributeIterable())
+        {
+            final Object belongsTo = attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+            if(belongsTo != null && (boolean) belongsTo)
+            {
+                return attribute;
+            }
+        }
+        return null;
 	}
 
     protected Attribute getCategorizationAttribute(Classification classification) {
