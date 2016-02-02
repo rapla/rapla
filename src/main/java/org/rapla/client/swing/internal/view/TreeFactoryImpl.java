@@ -1036,9 +1036,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             setLeafIcon(defaultIcon);
         }
 
-        public void setLeaf(Object object) {
+        private void setIcon(Object object, boolean leaf) {
             Icon icon = null;
+            boolean isAllocatable = false;
             if (object instanceof Allocatable) {
+                isAllocatable = true;
                 Allocatable allocatable = (Allocatable) object;
                 try {
     				User user = getUser();
@@ -1070,7 +1072,16 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             if (icon == null) {
                 setBorder(nonIconBorder);
             }
-            setLeafIcon(icon);
+            if ( leaf)
+            {
+                setLeafIcon(icon);
+            }
+            else if (isAllocatable)
+            {
+                setOpenIcon( icon);
+                setClosedIcon( icon);
+                setIcon( icon);
+            }
         }
         
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
@@ -1108,9 +1119,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 {
 	                setClosedIcon(folderClosedIcon);
 	                setOpenIcon(folderOpenIcon);
-	                if (leaf) {
-	                    setLeaf(nodeInfo);
-	                }
+	                //if (leaf) {
+	                    setIcon(nodeInfo,leaf);
+	                //}
                 }
             }
             Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
