@@ -114,7 +114,7 @@ public class TestRemoteStorageImpl
         // now delete parent, so category with key newCategory
         final Category parentCat = raplaFacade.edit(raplaFacade.getSuperCategory().getCategory("newCategory"));
         final Category toDelCat = parentCat.getCategory("newChild");
-        parentCat.removeCategory(toDelCat);
+        parentCat.removeCategory(raplaFacade.edit(toDelCat));
         raplaFacade.store(parentCat);
         final boolean tryAcquire = waitFor.tryAcquire(3, TimeUnit.SECONDS);
         Assert.assertTrue(tryAcquire);
