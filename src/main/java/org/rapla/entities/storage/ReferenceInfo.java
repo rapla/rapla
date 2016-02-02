@@ -61,6 +61,6 @@ public class ReferenceInfo<T extends Entity> implements Comparable
 
     @Override public int compareTo(Object o)
     {
-        return id.compareTo( id);
+        return id.compareTo( ((ReferenceInfo) o).id);
     }
 }

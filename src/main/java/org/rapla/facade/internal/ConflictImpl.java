@@ -239,11 +239,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             throw new IllegalStateException("ids of conflicting appointments are the same " + id1);
         }
         buf.append("CONFLICT;");
-        buf.append(allocId);
+        buf.append(allocId.getId());
         buf.append(';');
-        buf.append(id1.compareTo(id2) < 0 ? id1 : id2);
+        buf.append(id1.compareTo(id2) < 0 ? id1.getId() : id2.getId());
         buf.append(';');
-        buf.append(id1.compareTo(id2) < 0 ? id2 : id1);
+        buf.append(id1.compareTo(id2) < 0 ? id2.getId() : id1.getId());
         return buf.toString();
     }
 

@@ -885,7 +885,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
         for ( ReferenceInfo ref: idSet)
         {
             final UpdateEvent.SerializableReferenceInfo serializableReferenceInfo = new UpdateEvent.SerializableReferenceInfo(ref);
-            array[i] = serializableReferenceInfo;
+            array[i++] = serializableReferenceInfo;
         }
      	Map<ReferenceInfo,Entity> result = new HashMap<ReferenceInfo,Entity>();
      	try

@@ -168,7 +168,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     private String encryption = "sha-1";
     private ConflictFinder conflictFinder;
-    private Map<String, SortedSet<Appointment>> appointmentMap;
+    private Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap;
     //private SortedSet<LastChangedTimestamp> timestampSet;
     // we need a bidi to sort the values instead of the keys
     protected final EntityHistory history;
@@ -973,7 +973,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         deleteUpdateSet = new DualTreeBidiMap<String, DeleteUpdateEntry>();
         // The appointment map
 
-        appointmentMap = new HashMap<String, SortedSet<Appointment>>();
+        appointmentMap = new HashMap<ReferenceInfo<Allocatable>, SortedSet<Appointment>>();
         for (Reservation r : cache.getReservations())
         {
             for (Appointment app : ((ReservationImpl) r).getAppointmentList())
@@ -1172,8 +1172,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     static public class UpdateBindingsResult
     {
-        Map<Allocatable, AllocationChange> toUpdate = new HashMap<Allocatable, AllocationChange>();
-        List<Allocatable> removedAllocatables = new ArrayList<Allocatable>();
+        Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate = new HashMap<ReferenceInfo<Allocatable>, AllocationChange>();
+        List<ReferenceInfo<Allocatable>> removedAllocatables = new ArrayList<ReferenceInfo<Allocatable>>();
     }
 
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
@@ -1184,16 +1184,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (UpdateOperation op : result.getOperations())
         {
             ReferenceInfo id = op.getReference();
-            final Entity newEntity;
-            if (op instanceof Remove)
-            {
-                newEntity = result.getLastEntryBeforeUpdate(id);
-            }
-            else
-            {
-                newEntity = result.getLastKnown(id);
-            }
-            final Class<? extends Entity> raplaType = newEntity.getTypeClass();
+            final Class<? extends Entity> raplaType = op.getType();
             if (raplaType == Conflict.class || raplaType == Allocatable.class || raplaType == Reservation.class || raplaType == DynamicType.class
                     || raplaType == User.class || raplaType == Category.class)
             {
@@ -1267,13 +1258,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 conflict = null;
                 isDelete = true;
-                timestamp = new Date();
+                timestamp = getCurrentTimestamp();
             }
             else
             {
                 conflict = conflictFinder.findConflict(referenceInfo);
-                timestamp = conflict.getLastChanged();
-                isDelete = false;
+                timestamp = conflict != null ? conflict.getLastChanged() : getCurrentTimestamp();
+                isDelete = conflict == null;
             }
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, conflict);
             conflictChanges.add(operation);
@@ -1306,8 +1297,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private UpdateBindingsResult updateAppointmentBindings(UpdateResult result)
     {
         UpdateBindingsResult bindingResult = new UpdateBindingsResult();
-        Map<Allocatable, AllocationChange> toUpdate = bindingResult.toUpdate;
-        List<Allocatable> removedAllocatables = bindingResult.removedAllocatables;
+        Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate = bindingResult.toUpdate;
+        List<ReferenceInfo<Allocatable>> removedAllocatables = bindingResult.removedAllocatables;
         for (Add add : result.getOperations(Add.class))
         {
             ReferenceInfo id = add.getReference();
@@ -1328,8 +1319,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id);
                 Reservation newReservation = (Reservation) lastKnown;
-                Appointment[] oldAppointments = oldReservation.getAppointments();
-                for (Appointment oldApp : oldAppointments)
+                for (Appointment oldApp : oldReservation.getAppointments())
                 {
                     updateBindings(toUpdate, oldReservation, oldApp, true);
                 }
@@ -1344,7 +1334,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 DynamicType dynamicType = (DynamicType) lastKnown;
                 DynamicType old = (DynamicType) result.getLastEntryBeforeUpdate(id);
                 String conflictsNew = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
-                String conflictsOld = old.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS);
+                String conflictsOld = old != null ? old.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS) : null;
                 if (conflictsNew != conflictsOld)
                 {
                     if (conflictsNew == null || conflictsOld == null || !conflictsNew.equals(conflictsOld))
@@ -1371,22 +1361,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         for (Remove removed : result.getOperations(Remove.class))
         {
-            final Entity lastKnown = result.getLastEntryBeforeUpdate(removed.getReference());
-            if (lastKnown instanceof Reservation)
+            final ReferenceInfo reference = removed.getReference();
+            final Class<? extends Entity> type = reference.getType();
+            if (type ==Reservation.class)
             {
+                final Entity lastKnown = result.getLastEntryBeforeUpdate(reference);
                 Reservation old = (Reservation) lastKnown;
                 for (Appointment app : old.getAppointments())
                 {
                     updateBindings(toUpdate, old, app, true);
                 }
             }
-            else if (lastKnown instanceof Allocatable)
+            else if (type == Allocatable.class)
             {
-                Allocatable old = (Allocatable) lastKnown;
-                removedAllocatables.add(old);
+                removedAllocatables.add(reference);
             }
         }
-        for (Allocatable alloc : removedAllocatables)
+        for (ReferenceInfo<Allocatable> alloc : removedAllocatables)
         {
             SortedSet<Appointment> sortedSet = appointmentMap.get(alloc);
             if (sortedSet != null && !sortedSet.isEmpty())
@@ -1742,7 +1733,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
-    protected void updateBindings(Map<Allocatable, AllocationChange> toUpdate, Reservation reservation, Appointment app, boolean remove)
+    protected void updateBindings(Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate, Reservation reservation, Appointment app, boolean remove)
     {
 
         Set<Allocatable> allocatablesToProcess = new HashSet<Allocatable>();
@@ -1805,7 +1796,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 if (updateSet == null)
                 {
                     updateSet = new AllocationChange();
-                    toUpdate.put(allocatable, updateSet);
+                    toUpdate.put(allocatable.getReference(), updateSet);
                 }
             }
             else
@@ -1853,7 +1844,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected SortedSet<Appointment> getAppointments(Allocatable allocatable)
     {
-        String allocatableId = allocatable != null ? allocatable.getId() : null;
+        ReferenceInfo<Allocatable> allocatableId = allocatable != null ? allocatable.getReference() : null;
         SortedSet<Appointment> s = appointmentMap.get(allocatableId);
         if (s == null)
         {
@@ -1862,9 +1853,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return Collections.unmodifiableSortedSet(s);
     }
 
-    private SortedSet<Appointment> getAndCreateList(Map<String, SortedSet<Appointment>> appointmentMap, Allocatable alloc)
+    private SortedSet<Appointment> getAndCreateList(Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap, Allocatable alloc)
     {
-        String allocationId = alloc != null ? alloc.getId() : null;
+        ReferenceInfo<Allocatable> allocationId = alloc != null ? alloc.getReference() : null;
         SortedSet<Appointment> set = appointmentMap.get(allocationId);
         if (set == null)
         {
@@ -3227,7 +3218,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             for (Allocatable allocatable : allocatables)
             {
-                SortedSet<Appointment> appointmentSet = this.appointmentMap.get(allocatable.getId());
+                SortedSet<Appointment> appointmentSet = this.appointmentMap.get(allocatable.getReference());
                 if (appointmentSet == null)
                 {
                     continue;
@@ -3578,7 +3569,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 oldEntity = entity;
             }
-            else
+            else if ( update.getType() != Conflict.class)
             {
                 final EntityHistory.HistoryEntry latest = history.getLatest(update);
                 if ( latest != null)
