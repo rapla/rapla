@@ -84,6 +84,19 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     	this.lastChanged = lastChanged;
     }
 
+    public Attribute getBelongsToAttribute()
+    {
+        for (Attribute attribute : attributes)
+        {
+            final Object belongsTo = attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+            if (belongsTo != null && (boolean) belongsTo)
+            {
+                return attribute;
+            }
+        }
+        return null;
+    }
+
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
         // TODO replace with seperate method for setting StorageOperator

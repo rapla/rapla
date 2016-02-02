@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -1842,15 +1843,57 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     static final SortedSet<Appointment> EMPTY_SORTED_SET = Collections.unmodifiableSortedSet(new TreeSet<Appointment>());
 
+    /** returs all appointments for the allocatable and all groupMembers and belongsTo*/
     protected SortedSet<Appointment> getAppointments(Allocatable allocatable)
     {
-        ReferenceInfo<Allocatable> allocatableId = allocatable != null ? allocatable.getReference() : null;
-        SortedSet<Appointment> s = appointmentMap.get(allocatableId);
-        if (s == null)
+        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
+        fillBelongsTo(allocatable, allocatableIds, 0);
+        if ( allocatableIds.size() == 0)
         {
             return EMPTY_SORTED_SET;
         }
-        return Collections.unmodifiableSortedSet(s);
+        else if ( allocatableIds.size() == 1)
+        {
+            SortedSet<Appointment> s = appointmentMap.get(allocatableIds.iterator().next());
+            if ( s== null)
+            {
+                return EMPTY_SORTED_SET;
+            }
+            return Collections.unmodifiableSortedSet(s);
+        }
+        else
+        {
+            SortedSet<Appointment> transitive = new TreeSet<Appointment>(new AppointmentStartComparator());
+            for ( ReferenceInfo<Allocatable> allocatableId: allocatableIds)
+            {
+                SortedSet<Appointment> s = appointmentMap.get(allocatableId);
+                if ( s != null)
+                {
+                    transitive.addAll(s);
+                }
+            }
+            return transitive;
+        }
+    }
+
+    private void fillBelongsTo(Allocatable allocatable, Set<ReferenceInfo<Allocatable>> allocatableIds, int depth)
+    {
+        if ( depth > 20)
+        {
+            throw new IllegalStateException("Cycle in belongsTo detected");
+        }
+        if ( allocatable != null)
+        {
+            allocatableIds.add( allocatable.getReference());
+            final Classification classification = allocatable.getClassification();
+            final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
+            if ( belongsToAttribute != null)
+            {
+                final Allocatable parent = (Allocatable)classification.getValue(belongsToAttribute);
+                fillBelongsTo( parent, allocatableIds, depth + 1);
+            }
+
+        }
     }
 
     private SortedSet<Appointment> getAndCreateList(Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap, Allocatable alloc)
@@ -3058,31 +3101,34 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Map<Allocatable, Map<Appointment, Collection<Appointment>>> map = new HashMap<Allocatable, Map<Appointment, Collection<Appointment>>>();
         for (Allocatable allocatable : allocatables)
         {
-            String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
-            boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
-            if (holdBackConflicts)
             {
-                continue;
-            }
-            SortedSet<Appointment> appointmentSet = getAppointments(allocatable);
-            if (appointmentSet == null)
-            {
-                continue;
-            }
-            map.put(allocatable, new HashMap<Appointment, Collection<Appointment>>());
-            for (Appointment appointment : appointments)
-            {
-                Set<Appointment> conflictingAppointments = AppointmentImpl
-                        .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
-                if (conflictingAppointments.size() > 0)
+                String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
+                boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+                if (holdBackConflicts)
                 {
-                    Map<Appointment, Collection<Appointment>> appMap = map.get(allocatable);
-                    if (appMap == null)
+                    continue;
+                }
+                // TODO check also parents and children from allocatables
+                SortedSet<Appointment> appointmentSet = getAppointments(allocatable);
+                if (appointmentSet == null)
+                {
+                    continue;
+                }
+                map.put(allocatable, new HashMap<Appointment, Collection<Appointment>>());
+                for (Appointment appointment : appointments)
+                {
+                    Set<Appointment> conflictingAppointments = AppointmentImpl
+                            .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
+                    if (conflictingAppointments.size() > 0)
                     {
-                        appMap = new HashMap<Appointment, Collection<Appointment>>();
-                        map.put(allocatable, appMap);
+                        Map<Appointment, Collection<Appointment>> appMap = map.get(allocatable);
+                        if (appMap == null)
+                        {
+                            appMap = new HashMap<Appointment, Collection<Appointment>>();
+                            map.put(allocatable, appMap);
+                        }
+                        appMap.put(appointment, conflictingAppointments);
                     }
-                    appMap.put(appointment, conflictingAppointments);
                 }
             }
         }

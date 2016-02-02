@@ -837,32 +837,32 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 //		return false;
 //	}
 
-	@Deprecated
-	public Allocatable[] getAllocatableBindings(Appointment forAppointment)	throws RaplaException {
-		List<Allocatable> allocatableList = Arrays.asList(getAllocatables());
-		List<Allocatable> result = new ArrayList<Allocatable>();
-		
-		FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = getAllocatableBindings( allocatableList, Collections.singletonList(forAppointment));
-        Map<Allocatable, Collection<Appointment>> bindings;
-        try {
-            bindings = allocatableBindings.get();
-        } catch (RaplaException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RaplaException(e.getMessage());
-        }
-		for (Map.Entry<Allocatable, Collection<Appointment>> entry: bindings.entrySet())
-		{
-			Collection<Appointment> appointments = entry.getValue();
-			if ( appointments.contains( forAppointment))
-			{
-				Allocatable alloc = entry.getKey();
-				result.add( alloc);
-			}
-		}
-		return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
-
-	}
+//	@Deprecated
+//	public Allocatable[] getAllocatableBindings(Appointment forAppointment)	throws RaplaException {
+//		List<Allocatable> allocatableList = Arrays.asList(getAllocatables());
+//		List<Allocatable> result = new ArrayList<Allocatable>();
+//
+//		FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = getAllocatableBindings( allocatableList, Collections.singletonList(forAppointment));
+//        Map<Allocatable, Collection<Appointment>> bindings;
+//        try {
+//            bindings = allocatableBindings.get();
+//        } catch (RaplaException e) {
+//            throw e;
+//        } catch (Exception e) {
+//            throw new RaplaException(e.getMessage());
+//        }
+//		for (Map.Entry<Allocatable, Collection<Appointment>> entry: bindings.entrySet())
+//		{
+//			Collection<Appointment> appointments = entry.getValue();
+//			if ( appointments.contains( forAppointment))
+//			{
+//				Allocatable alloc = entry.getKey();
+//				result.add( alloc);
+//			}
+//		}
+//		return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
+//
+//	}
 	
 	public FutureResult<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
 		Collection<Reservation> ignoreList = new HashSet<Reservation>();

@@ -120,12 +120,6 @@ public interface RaplaFacade
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
     FutureResult<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
 
-    /** returns all allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment
-     * @deprecated use {@link #getAllocatableBindings(Collection,Collection)} instead
-     * */
-    @Deprecated
-    Allocatable[] getAllocatableBindings(Appointment appointment) throws RaplaException;
-
     /** returns all existing conflicts with the reservation */
     Conflict[] getConflicts(Reservation reservation) throws RaplaException;
 
@@ -217,6 +211,11 @@ public interface RaplaFacade
 
     Category newCategory() throws RaplaException;
 
+    /**
+     * @param classificationType @see DynamicTypeAnnotations
+     * @return
+     * @throws RaplaException
+     */
     DynamicType newDynamicType(String classificationType) throws RaplaException;
     Attribute newAttribute(AttributeType attributeType) throws RaplaException;
     User newUser() throws RaplaException;

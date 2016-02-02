@@ -75,7 +75,6 @@ import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -300,7 +299,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 continue;
             }
             Attribute categorizationAtt = getCategorizationAttribute(classification);
-            Attribute belongsAtt = getBelongsToAttribute(classification);
+            Attribute belongsAtt = ((DynamicTypeImpl)classification.getType()).getBelongsToAttribute();
             if(belongsAtt != null && classification.getValue(belongsAtt) != null)
             {
                 Classifiable parent = (Classifiable) classification.getValue(belongsAtt);
@@ -387,19 +386,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             }
         }
     }
-	
-	protected Attribute getBelongsToAttribute(Classification classification)
-	{
-        for (Attribute attribute: classification.getType().getAttributeIterable())
-        {
-            final Object belongsTo = attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
-            if(belongsTo != null && (boolean) belongsTo)
-            {
-                return attribute;
-            }
-        }
-        return null;
-	}
 
     protected Attribute getCategorizationAttribute(Classification classification) {
         for (Attribute attribute: classification.getType().getAttributeIterable())
