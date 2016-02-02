@@ -276,7 +276,7 @@ public class LocalCache implements EntityResolver
 
     public CategoryImpl getSuperCategory()
     {
-        return (CategoryImpl) get(Category.SUPER_CATEGORY_ID);
+        return (CategoryImpl) get(Category.SUPER_CATEGORY_REF.getId());
     }
 
     public UserImpl getUser(String username)

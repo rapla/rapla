@@ -1025,7 +1025,7 @@ class CategoryStorage extends RaplaTypeStorage<Category> {
 
     @Override
 	protected int write(PreparedStatement stmt,Category category) throws SQLException, RaplaException {
-    	if ( category.getId().equals(Category.SUPER_CATEGORY_ID))
+    	if ( category.getReference().equals(Category.SUPER_CATEGORY_REF))
             return 0;
         setId( stmt,1, category);
 		setId( stmt,2, category.getParent());

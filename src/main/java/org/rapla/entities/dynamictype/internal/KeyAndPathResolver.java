@@ -66,7 +66,7 @@ public class KeyAndPathResolver
             String entry ="category[key='" + category.getKey() +  "']";
             result.addFirst(entry);
             final ReferenceInfo<Category> parentRef = ((CategoryImpl) category).getParentRef();
-            if (parentRef == null || parentRef.getId() == Category.SUPER_CATEGORY_ID)
+            if (parentRef == null || parentRef.equals(Category.SUPER_CATEGORY_REF))
             {
                 return result;
             }

@@ -18,6 +18,7 @@ import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
@@ -35,7 +36,7 @@ public class PeriodReader extends DynAttReader {
     {
         if (namespaceURI.equals(RAPLA_NS) && localName.equals("period")) {	 
         	AllocatableImpl period = new AllocatableImpl(new Date(), new Date());
-        	Classification classification = store.getDynamicType(StorageOperator.PERIOD_TYPE).newClassification();
+        	Classification classification = ((DynamicTypeImpl)store.getDynamicType(StorageOperator.PERIOD_TYPE)).newClassificationWithoutCheck(true);
             classification.setValue("name", getString(atts,"name"));
             classification.setValue("start",parseDate(getString(atts,"start"),false));
             classification.setValue("end",parseDate(getString(atts,"end"),true));

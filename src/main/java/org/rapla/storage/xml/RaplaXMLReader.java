@@ -308,9 +308,9 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         try
         {
             final String id;
-            if ( str.equals(Category.SUPER_CATEGORY_ID))
+            if ( str.equals(Category.SUPER_CATEGORY_REF.getId()))
             {
-                id = Category.SUPER_CATEGORY_ID;
+                return Category.SUPER_CATEGORY_REF;
             }
             else if (org.rapla.storage.OldIdMapping.isTextId(typeClass, str))
             {

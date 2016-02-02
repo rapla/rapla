@@ -939,7 +939,7 @@ import java.util.concurrent.locks.Lock;
         setConnectStart(lastUpdated);
         EntityStore entityStore = new EntityStore(cache);
         CategoryImpl superCategory = new CategoryImpl();
-        superCategory.setId(Category.SUPER_CATEGORY_ID);
+        superCategory.setId(Category.SUPER_CATEGORY_REF);
         superCategory.setResolver(this);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
@@ -948,6 +948,15 @@ import java.util.concurrent.locks.Lock;
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
         Collection<Entity> list = entityStore.getList();
+        final HistoryEntry latest = history.getLatest(Category.SUPER_CATEGORY_REF);
+        if ( latest != null)
+        {
+            final Category historyCategory = (Category)history.getEntity(latest);
+            superCategory.setLastChanged( historyCategory.getLastChanged());
+            superCategory.setCreateTime( historyCategory.getCreateTime());
+        }
+
+
         cache.putAll(list);
         resolveInitial(list, this);
         removeInconsistentEntities(cache, list);

@@ -84,14 +84,12 @@ public class UpdateResult
     /** returns null if no entity exisits before update*/
     public <T extends Entity> T getLastEntryBeforeUpdate(ReferenceInfo<T> id)
     {
-        // FIXME Conflict resolution
         final T entity = (T) oldEntities.get(id);
         return entity;
     }
 
     public <T extends Entity> T getLastKnown(ReferenceInfo<T> id)
     {
-        // FIXME Conflict resolution
         return (T) updatedEntities.get( id );
     }
 

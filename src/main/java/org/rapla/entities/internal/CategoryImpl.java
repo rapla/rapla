@@ -258,6 +258,12 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         }
     }
 
+    public void setCreateTime(Date createTime)
+    {
+        checkWritable();
+        this.createDate = createTime;
+    }
+
     interface ParentResolver<T>
     {
         T getParent(T category);

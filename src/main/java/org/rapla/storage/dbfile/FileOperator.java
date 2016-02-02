@@ -248,7 +248,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
         EntityStore entityStore = new EntityStore(cache);
         CategoryImpl superCategory = new CategoryImpl();
-        superCategory.setId(Category.SUPER_CATEGORY_ID);
+        superCategory.setId(Category.SUPER_CATEGORY_REF);
         superCategory.setResolver(this);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
@@ -256,15 +256,17 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, entityStore, this, superCategory);
         RaplaMainReader contentHandler = new RaplaMainReader(inputContext);
+        boolean isLowerThen1_2 = false;
         try
         {
             parseData(contentHandler);
+            isLowerThen1_2 = inputContext.lookup(RaplaMainReader.VERSION) < 1.2;
         }
         catch (FileNotFoundException ex)
         {
             getLogger().warn("Data file not found " + getURL() + " creating default system.");
-            createDefaultSystem(cache);
-            return;
+            createDefaultSystem(entityStore);
+            isLowerThen1_2 = false;
         }
         catch (IOException ex)
         {
@@ -293,7 +295,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
             resolveInitial(list, this);
             // It is important to do the read only later because some resolve might involve write to referenced objects
-            if (inputContext.lookup(RaplaMainReader.VERSION) < 1.2)
+            if (isLowerThen1_2)
             {
                 migrateSpecialAttributes(list);
             }
@@ -430,8 +432,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             unlock(writeLock);
         }
-        // TODO check if still needed
-        //fireStorageUpdated(result);
     }
 
     private void updateHistory(UpdateEvent evt) throws RaplaException {

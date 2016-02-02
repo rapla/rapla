@@ -95,24 +95,22 @@ public class EntityHistory
         gson = gsonBuilder.create();
     }
 
-    public HistoryEntry getLatest(ReferenceInfo id)
+    public HistoryEntry getLatest(ReferenceInfo id) throws RaplaException
     {
         final List<HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null || historyEntries.isEmpty())
         {
-            // FIXME handle history ends
             throw new RaplaException("History not available for id " + id);
         }
         return historyEntries.get(historyEntries.size() - 1);
     }
 
     /** returns the history entry with a timestamp<= since or null if no such entry exists*/
-    public Entity get(ReferenceInfo id, Date since)
+    public Entity get(ReferenceInfo id, Date since) throws RaplaException
     {
         final List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
         {
-            // FIXME handle history ends
             throw new RaplaException("History not available for id " + id);
         }
         final EntityHistory.HistoryEntry emptyEntryWithTimestamp = new EntityHistory.HistoryEntry();

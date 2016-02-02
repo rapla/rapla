@@ -11,6 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
+import org.rapla.entities.storage.ReferenceInfo;
+
 import java.util.Locale;
 
 /** Hierarchical categorization of information.
@@ -19,7 +21,7 @@ import java.util.Locale;
  */
 public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp, Annotatable, Comparable
 {
-    String SUPER_CATEGORY_ID = "category_0";
+    ReferenceInfo<Category> SUPER_CATEGORY_REF = new ReferenceInfo<Category>("category_0", Category.class);
     /** add a sub-category.
      * This category is set as parent of the passed category.*/
     void addCategory(Category category);

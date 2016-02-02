@@ -1936,8 +1936,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 unlock(writeLock);
             }
         }
-        // TODO Check if needed
-        //fireStorageUpdated( result );
     }
 
     protected void removeConflictsFromCache(Collection<ReferenceInfo<Conflict>> disabledConflicts)
@@ -2086,12 +2084,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         categoriesToRemove.addAll(toRemove);
                     }
                 }
-                if (!reference.getId().equals(Category.SUPER_CATEGORY_ID))
+                if (!reference.equals(Category.SUPER_CATEGORY_REF))
                 {
                     // add to supercategory if no parent is specfied
                     if (parentReference == null)
                     {
-                        parentReference = new ReferenceInfo<Category>(Category.SUPER_CATEGORY_ID, Category.class);
+                        parentReference = Category.SUPER_CATEGORY_REF;
                     }
                     // if parent of category is not submitted then try to find parent and edit parent as well
                     final CategoryImpl exisitingParent = (CategoryImpl) cache.tryResolve(parentReference);
@@ -2227,16 +2225,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Classifiable persistant = (Classifiable) tryResolve(entity.getId(), clazz);
         Util.processOldPermissionModify((Classifiable) entity, persistant);
     }
-
-    //	protected void setCache(final LocalCache cache) {
-    //		super.setCache( cache);
-    //		if ( idTable == null)
-    //		{
-    //			idTable = new IdTable();
-    //		}
-    //		idTable.setCache(cache);
-    //	}
-    //
 
     protected void addChangedDynamicTypeDependant(UpdateEvent evt, EntityStore store, DynamicTypeImpl type, boolean toRemove) throws RaplaException
     {
@@ -2644,8 +2632,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final RaplaResources i18n = getI18n();
         if (Category.class == raplaType)
         {
-            final String superCategoryId = Category.SUPER_CATEGORY_ID;
-            if (entity.getId().equals(superCategoryId))
+            if (entity.getReference().equals(Category.SUPER_CATEGORY_REF))
             {
                 // Check if the user group is missing
                 Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
@@ -2672,7 +2659,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         {
                             throw new RaplaException("Category needs to be a child of super category.");
                         }
-                        else if (parent.getId().equals(superCategoryId))
+                        else if (parent.getReference().equals(Category.SUPER_CATEGORY_REF))
                         {
                             break;
                         }
@@ -3317,15 +3304,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    protected void createDefaultSystem(LocalCache cache) throws RaplaException
+    protected void createDefaultSystem(EntityStore store) throws RaplaException
     {
-        EntityStore store = new EntityStore(cache);
-
         Date now = getCurrentTimestamp();
 
         PreferencesImpl newPref = new PreferencesImpl(now, now);
         newPref.setId(PreferencesImpl.getPreferenceIdFromUser(null).getId());
-        newPref.setResolver(this);
+        newPref.setResolver(store);
         newPref.putEntry(CalendarModel.ONLY_MY_EVENTS_DEFAULT, false);
         newPref.setReadOnly();
         store.put(newPref);
@@ -3335,6 +3320,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         CategoryImpl groupsCategory = new CategoryImpl(now, now);
         groupsCategory.setKey("user-groups");
+        groupsCategory.setResolver( store );
         setName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
@@ -3345,21 +3331,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             setNew(group);
             setName(group.getName(), group.getKey());
             groupsCategory.addCategory(group);
+            group.setResolver( store );
             store.put(group);
         }
-        cache.getSuperCategory().addCategory(groupsCategory);
+        final Category superCategory = store.resolve(Category.SUPER_CATEGORY_REF);
+        superCategory.addCategory(groupsCategory);
 
-        DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, "resource", groupsCategory);
+        DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, "resource", groupsCategory, store);
         setName(resourceType.getName(), "resource");
         add(store, resourceType);
         Assert.isTrue(
                 DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(resourceType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE)));
 
-        DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, "person", groupsCategory);
+        DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, "person", groupsCategory, store);
         setName(personType.getName(), "person");
         add(store, personType);
 
-        DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event", groupsCategory);
+        DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event", groupsCategory, store);
         setName(eventType.getName(), "event");
         add(store, eventType);
 
@@ -3370,27 +3358,30 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         store.put(admin);
 
         Collection<Entity> list = store.getList();
-        cache.putAll(list);
-        testResolve(list);
-        setResolver(list);
+        for (Entity entity:list)
+        {
+            if (entity instanceof EntityReferencer)
+            {
+                ((EntityReferencer) entity).setResolver(store);
+            }
+        }
 
-        UserImpl user = cache.getUser("admin");
         String password = "";
-        cache.putPassword(user.getReference(), password);
-        cache.getSuperCategory().setReadOnly();
+        store.putPassword(admin.getReference(), password);
+        ((CategoryImpl)superCategory).setReadOnly();
 
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
-        allocatable.setResolver(this);
-        DynamicType dynamicType = cache.getDynamicType("resource");
-        Classification classification = dynamicType.newClassification();
+        allocatable.setResolver(store);
+        Classification classification = resourceType.newClassificationWithoutCheck( true);
+
         allocatable.setClassification(classification);
-        PermissionContainer.Util.copyPermissions(dynamicType, allocatable);
+        PermissionContainer.Util.copyPermissions(resourceType, allocatable);
         setNew(allocatable);
         classification.setValue("name", getString("test_resource"));
-        allocatable.setOwner(user);
+        allocatable.setOwner(admin);
 
-        cache.put(allocatable);
-        final DynamicType type = allocatable.getClassification().getType();
+        store.put(allocatable);
+
     }
 
     private void add(EntityStore list, DynamicTypeImpl type)
@@ -3420,10 +3411,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return attribute;
     }
 
-    private DynamicTypeImpl newDynamicType(String classificationType, String key, Category userGroups) throws RaplaException
+    private DynamicTypeImpl newDynamicType(String classificationType, String key, Category userGroups, EntityResolver resolver) throws RaplaException
     {
         DynamicTypeImpl dynamicType = new DynamicTypeImpl();
-        dynamicType.setResolver(this);
+        dynamicType.setResolver(resolver);
         dynamicType.setAnnotation("classification-type", classificationType);
         dynamicType.setKey(key);
         setNew(dynamicType);
@@ -3529,7 +3520,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 final Conflict conflict = conflictFinder.findConflict((ReferenceInfo<Conflict>) update);
                 newEntity = cache.fillConflictDisableInformation(user, conflict);
-                oldEntity = null;
+                // can be null if no conflict disalbe information is stored
+                oldEntity = history.get(update, since);
             }
             else if (type == Preferences.class)
             {

@@ -471,7 +471,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		for (Entity entity: entities) {
 			if (entity instanceof  DynamicType)
 			{
-				((DynamicTypeImpl) entity).setOperator( this);
+				((DynamicTypeImpl) entity).setOperator(this);
 			}
 		    if (entity instanceof EntityReferencer)
             {

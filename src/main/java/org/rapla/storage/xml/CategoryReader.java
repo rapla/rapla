@@ -106,7 +106,7 @@ public class CategoryReader extends RaplaXMLReader
                     }
                     else 
                     {
-                        parentIdN = new ReferenceInfo(Category.SUPER_CATEGORY_ID,Category.class);
+                        parentIdN = Category.SUPER_CATEGORY_REF;
                     }
                     if (parentIdN.equals(superCategory.getReference()))
                     {
