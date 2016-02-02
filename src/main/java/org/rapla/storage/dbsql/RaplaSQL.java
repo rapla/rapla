@@ -277,18 +277,34 @@ class RaplaSQL {
                 throw new RaplaException("No Storage-Sublass matches this object: " + entity.getClass());
             }   
         }
+        // always update history at the end
+        boolean updateHistory = false;
         for ( Storage storage: store.keySet())
         {
-            storage.setConnection(con,connectionTimestamp);
-            try
+            if(storage instanceof HistoryStorage)
             {
-            	List<Entity>list = store.get( storage);
-            	storage.save(list);
+                updateHistory = true;
+                continue;
             }
-            finally
-            {
-            	storage.removeConnection();
-            }
+            store(con, connectionTimestamp, store, storage);
+        }
+        if(updateHistory)
+        {
+            store(con, connectionTimestamp, store, history);
+        }
+    }
+
+    private void store(Connection con, Date connectionTimestamp, Map<Storage, List<Entity>> store, Storage storage) throws SQLException
+    {
+        List<Entity>list = store.get( storage);
+        storage.setConnection(con,connectionTimestamp);
+        try
+        {
+        	storage.save(list);
+        }
+        finally
+        {
+        	storage.removeConnection();
         }
     }
 
@@ -2521,7 +2537,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     {
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {
-            setTimestamp(stmt, 1, lastUpdated);
+            stmt.setTimestamp(1, new java.sql.Timestamp(lastUpdated.getTime()));
             final ResultSet result = stmt.executeQuery();
             if(result == null)
             {
