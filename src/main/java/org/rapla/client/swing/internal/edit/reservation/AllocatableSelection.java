@@ -1999,17 +1999,25 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
             Allocatable allocatable = null;
 
-            if (leaf)
+//            if (leaf)
             {
                 if (nodeInfo instanceof Allocatable)
                 {
                     allocatable = (Allocatable) nodeInfo;
-                    setLeafIcon(getIcon(allocatable));
+                    final Icon icon = getIcon(allocatable);
+                    setLeafIcon(icon);
+                    setOpenIcon(icon);
+                    setClosedIcon(icon);
                     Classification classification = allocatable.getClassification();
                     if (classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
                     {
                         value = classification.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
                     }
+                }
+                else
+                {
+                    setOpenIcon(getIconFromKey("icon.folder"));
+                    setClosedIcon(getIconFromKey("icon.folder"));
                 }
             }
             Component component = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
