@@ -242,6 +242,84 @@ public class ClientFacadeTest  {
     }
     
     @Test
+    public void testGroup() throws Exception
+    {
+        // set up model
+        final DynamicType newDynamicType = facade.newDynamicType("package");
+        final Attribute nameAttribute = facade.newAttribute(AttributeType.STRING);
+        nameAttribute.setKey("name");
+        final Attribute packageAttribute = facade.newAttribute(AttributeType.ALLOCATABLE);
+        packageAttribute.setKey("package");
+        newDynamicType.getName().setName("en", "packageType");
+        newDynamicType.addAttribute(nameAttribute);
+        newDynamicType.addAttribute(packageAttribute);
+        packageAttribute.setConstraint(ConstraintIds.KEY_PACKAGE, Boolean.TRUE);
+        facade.store(newDynamicType);
+        // create example package
+        final Classification packageClassification = newDynamicType.newClassification();
+        final User user = clientFacade.getUser();
+        final Allocatable packageAllocatable = facade.newAllocatable(packageClassification, user);
+        packageClassification.setValue(nameAttribute, "test package");
+        final Allocatable[] allocatables = facade.getAllocatables();
+        Collection<Allocatable> referencedAllocatables = new ArrayList<Allocatable>();
+        final Allocatable alloc1 = allocatables[0];
+        referencedAllocatables.add(alloc1);
+        final Allocatable alloc2 = allocatables[1];
+        referencedAllocatables.add(alloc2);
+        packageClassification.setValues(packageAttribute, referencedAllocatables);
+        facade.store(packageAllocatable);
+        // check allocationBindings
+        Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+        final Reservation reservation1 = facade.newReservation(classification, user);
+        {
+            reservation1.addAppointment(facade.newAppointment(DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 00, 00))), DateTools.toDateTime(new Date(), new Date(DateTools.toTime(12, 00, 00)))));
+            reservation1.addAllocatable(alloc1);
+            {
+                Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
+                Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
+                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+                final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+                for (Allocatable allocatable : allocatablesFromAppointment)
+                {
+                    final Collection<Appointment> collection = result.get(allocatable);
+                    Assert.assertEquals(0, collection.size());
+                }
+            }
+            facade.store(reservation1);
+        }
+        {// clone second with group booked
+            final Reservation clone = facade.clone(reservation1, user);
+            clone.removeAllocatable(alloc1);
+            clone.addAllocatable(packageAllocatable);
+            {
+                Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(clone.getAllocatables()[0]);
+                Collection<Appointment> forAppointment = Arrays.asList(clone.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
+                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+                final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+                for (Allocatable allocatable : allocatablesFromAppointment)
+                {
+                    final Collection<Appointment> collection = result.get(allocatable);
+                    Assert.assertEquals(1, collection.size());
+                }
+            }
+            facade.store(clone);
+        }
+        {// check other direction
+            {
+                Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
+                Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
+                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+                final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+                for (Allocatable allocatable : allocatablesFromAppointment)
+                {
+                    final Collection<Appointment> collection = result.get(allocatable);
+                    Assert.assertEquals(1, collection.size());
+                }
+            }
+        }
+    }
+
+    @Test
     public void testConflicts() throws Exception {
         Conflict[] conflicts= facade.getConflicts( );
         Reservation[] all = facade.getReservationsForAllocatable(null, null, null, null);
