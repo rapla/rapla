@@ -12,6 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.tests;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,16 +58,6 @@ import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 @RunWith(JUnit4.class)
 public class ClientFacadeTest  {
     ClientFacade clientFacade;
@@ -81,7 +80,8 @@ public class ClientFacadeTest  {
     }
 
     @Test
-    public void testAllocations() throws Exception {
+    public void testBelongsTo() throws Exception
+    {
         Reservation[] all = facade.getReservationsForAllocatable(null, null, null, null);
         facade.removeObjects( all );
         Reservation orig =  facade.newReservation();
@@ -97,7 +97,7 @@ public class ClientFacadeTest  {
         attribute.setConstraint(ConstraintIds.KEY_DYNAMIC_TYPE, resourceType);
         resourceBelongsTo.addAttribute( attribute );
         facade.store( resourceBelongsTo);
-        Allocatable childResource;
+        final Allocatable childResource;
         {
             final Classification classification = resourceBelongsTo.newClassification();
             classification.setValue("belongsTo", parentResource);
@@ -105,6 +105,15 @@ public class ClientFacadeTest  {
             final Allocatable resourceChild = facade.newAllocatable(classification, user);
             facade.store( resourceChild);
             childResource = facade.getPersistant( resourceChild);
+        }
+        final Allocatable childChildResource;
+        {
+            final Classification classification = resourceBelongsTo.newClassification();
+            classification.setValue("belongsTo", childResource);
+            classification.setValue("name","erwin_left_left");
+            final Allocatable resourceChild = facade.newAllocatable(classification, user);
+            facade.store( resourceChild);
+            childChildResource = facade.getPersistant( resourceChild);
         }
 
         orig.getClassification().setValue("name", "new");
@@ -179,13 +188,59 @@ public class ClientFacadeTest  {
                 Assert.assertEquals(1, allocatedAppointments.size());
             }
         }
+        // now test transitive
+        {
+            newEvent = facade.clone(orig, user);
+            newEvent.removeAllocatable( parentResource);
+            newEvent.addAllocatable(childChildResource);
+            Appointment firstAppointment = newEvent.getAppointments()[0];
+            final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
+            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+                    .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            for (Allocatable allocatable : allocatables)
+            {
+                final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
+                Assert.assertTrue(allocatedAppointments.contains(firstAppointment));
+                Assert.assertEquals(1, allocatedAppointments.size());
+            }
+            // and store the event
+            facade.store(newEvent);
+        }
+        {// now check from parent
+            final Appointment firstAppointment = orig.getAppointments()[0];
+            final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
+            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+                    .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            for (Allocatable allocatable : allocatables)
+            {
+                final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
+                Assert.assertTrue(allocatedAppointments.contains(firstAppointment));
+                Assert.assertEquals(1, allocatedAppointments.size());
+            }
+        }
+        {// check that your own booking is not shown
+            // first remove the new stored event
+            facade.remove(newEvent);
+            // now add the childChildResource to parent and store it
+            final Reservation edit = facade.edit(orig);
+            edit.addAllocatable(childChildResource);
+            facade.store(edit);
+            final Appointment firstAppointment = orig.getAppointments()[0];
+            final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
+            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+                    .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            for (Allocatable allocatable : allocatables)
+            {
+                final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
+                Assert.assertTrue(allocatedAppointments.contains(firstAppointment));
+                Assert.assertEquals(0, allocatedAppointments.size());
+            }
+        }
     }
-
-    public void testBelongsTo()
-    {
-
-    }
-
+    
     @Test
     public void testConflicts() throws Exception {
         Conflict[] conflicts= facade.getConflicts( );
