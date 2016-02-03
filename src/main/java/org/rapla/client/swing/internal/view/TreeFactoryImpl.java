@@ -336,7 +336,12 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 childNodes.add( childNode);
                 Assert.notNull(typeNode);
                 uncategorized.get(type).add( childNode);
+                if(useCategorizations)
+                {
+                    fillPackages(classification, childNode);
+                }
             }
+
         }
 		for ( DynamicType type:categorization.keySet())
 		{
@@ -372,6 +377,27 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 		}
 		return childMap;
 	}
+
+
+    private void fillPackages(Classification classification, NamedNode node)
+    {
+        final Attribute packagesAttribute = ((DynamicTypeImpl)classification.getType()).getPackagesAttribute();
+        if (packagesAttribute != null)
+        {
+            final Collection<Object> values = classification.getValues(packagesAttribute);
+            for (Object target : values)
+            {
+                if(target instanceof Classifiable)
+                {
+                    final Classifiable classifiable = (Classifiable)target;
+                    NamedNode childNode = new NamedNode((Named) classifiable);
+                    node.add(childNode);
+                    final Classification childClassification = classifiable.getClassification();
+                    fillPackages(childClassification, childNode);
+                }
+            }
+        }
+    }
 
     private void addBelongsToNodes(Map<Classifiable, Collection<Classifiable>> belongsToMap, Classifiable classifiable, final NamedNode node)
     {
