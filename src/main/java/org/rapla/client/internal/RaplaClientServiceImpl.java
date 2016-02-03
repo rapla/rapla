@@ -157,8 +157,8 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         defaults.put("CheckBoxMenuItem.font", textFont);
         defaults.put("CheckBox.font", textFont);
         defaults.put("ComboBox.font", textFont);
-        defaults.put("Tree.expandedIcon",RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/tree_minus.gif"));
-        defaults.put("Tree.collapsedIcon",RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/tree_plus.gif"));
+        defaults.put("Tree.expandedIcon",RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_minus.gif"));
+        defaults.put("Tree.collapsedIcon",RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_plus.gif"));
         defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN,(float)10.));
         lookAndFeelSet = true;
     }
