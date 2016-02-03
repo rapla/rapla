@@ -96,6 +96,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
             "yes"
             ,"no"
             ,"belongsTo"
+            ,"package"
     };
     boolean mapping = false;
     MultiLanguageField name ;
@@ -312,14 +313,35 @@ public class AttributeDefaultConstraints extends AbstractEditField
                 defaultSelectDate.setDate( (Date)attribute.defaultValue());
             }
 
+            {
+                AttributeType type = types[classSelect.getSelectedIndex()];
+                final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
+                final Object selectedItem = multiSelect.getSelectedItem();
+                DefaultComboBoxModel model = new DefaultComboBoxModel();
+                for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
+                {
+                    model.addElement(getString(select));
+                }
+                multiSelect.setModel(model);
+                if ( selectedItem != null)
+                {
+                    multiSelect.setSelectedItem(selectedItem);
+                }
+            }
             if (attributeType.equals(AttributeType.CATEGORY) || attributeType.equals(AttributeType.ALLOCATABLE)) {
             	Boolean multiSelectValue = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT) ;
                 final boolean aBoolean = multiSelectValue != null ? multiSelectValue : Boolean.FALSE;
                 Boolean belongsToBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO) ;
                 final boolean belongsTo = belongsToBoolean != null ? belongsToBoolean : Boolean.FALSE;
+                Boolean packageBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_PACKAGE) ;
+                final boolean packages = packageBoolean != null ? packageBoolean : Boolean.FALSE;
                 if ( belongsTo )
                 {
                     multiSelect.setSelectedItem(getString("belongsTo"));
+                }
+                else if(packages)
+                {
+                    multiSelect.setSelectedItem(getString("package"));
                 }
                 else
                 {
@@ -372,11 +394,13 @@ public class AttributeDefaultConstraints extends AbstractEditField
             {
                 attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, null);
                 attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, null);
+                attribute.setConstraint(ConstraintIds.KEY_PACKAGE, null);
             }
             else
             {
                 attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, selectedItem.equals(getString("yes")));
                 attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, selectedItem.equals(getString("belongsTo")));
+                attribute.setConstraint(ConstraintIds.KEY_PACKAGE, selectedItem.equals(getString("package")));
             }
         }
         else
@@ -422,19 +446,6 @@ public class AttributeDefaultConstraints extends AbstractEditField
         final boolean booleanVisible = type.equals(AttributeType.BOOLEAN);
         final boolean numberVisible = type.equals(AttributeType.INT);
         final boolean dateVisible  = type.equals(AttributeType.DATE);
-        {
-            final Object selectedItem = multiSelect.getSelectedItem();
-            DefaultComboBoxModel model = new DefaultComboBoxModel();
-            for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
-            {
-                model.addElement(getString(select));
-            }
-            multiSelect.setModel(model);
-            if ( selectedItem != null)
-            {
-                multiSelect.setSelectedItem(selectedItem);
-            }
-        }
         categoryLabel.setVisible( categoryVisible );
         categorySelect.getComponent().setVisible( categoryVisible );
         dynamicTypeLabel.setVisible( allocatableVisible);

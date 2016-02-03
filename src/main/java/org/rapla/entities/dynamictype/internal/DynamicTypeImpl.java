@@ -96,6 +96,19 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
         return null;
     }
+    
+    public Attribute getPackagesAttribute()
+    {
+        for (Attribute attribute : attributes)
+        {
+            final Boolean packages = (Boolean) attribute.getConstraint(ConstraintIds.KEY_PACKAGE);
+            if(packages != null && packages)
+            {
+                return attribute;
+            }
+        }
+        return null;
+    }
 
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
@@ -633,6 +646,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         Attribute[] attributes = dynamicType.getAttributes();
         boolean categorizationSet = false;
         boolean belongsToSet = false;
+        boolean packagesSet = false;
         for (int i=0;i<attributes.length;i++) {
             final Attribute attribute = attributes[i];
             String key = attribute.getKey();
@@ -645,6 +659,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 }
             }
             final Boolean belongsTo = (Boolean)attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+            final Boolean packages = (Boolean)attribute.getConstraint(ConstraintIds.KEY_PACKAGE);
             final boolean categorization = attribute.getAnnotation(AttributeAnnotations.KEY_CATEGORIZATION, "false").equals("true");
             if ( categorization)
             {
@@ -666,6 +681,17 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 else
                 {
                     belongsToSet = true;
+                }
+            }
+            if ( packages != null && packages)
+            {
+                if ( packagesSet)
+                {
+                    throw new UniqueKeyException("package set for more then one attribute in type " + dynamicType.getName(i18n.getLocale()));
+                }
+                else
+                {
+                    packagesSet = true;
                 }
             }
         }

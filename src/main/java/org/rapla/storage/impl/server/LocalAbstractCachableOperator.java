@@ -2750,9 +2750,66 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
+        checkBelongsTo(entity, 0);
+        checkPackages(entity, 0);
+    }
+
+    private void checkPackages(final Object entity, final int depth)
+    {
+        if(depth > 20)
+        {
+            final String name = getName(entity);
+            final String format = i18n.format("error.packageCycle", name);
+            throw new RaplaException(format);
+        }                   
         if ( entity instanceof  Classifiable)
         {
-            final Classification classification = ((Classifiable) entity).getClassification();
+            final Classifiable classifiable = (Classifiable) entity;
+            final Classification classification = classifiable.getClassification();
+            if ( classification != null)
+            {
+                final Attribute[] attributes = classification.getAttributes();
+                for (Attribute att:attributes)
+                {
+                    final Boolean packages = (Boolean)att.getConstraint(ConstraintIds.KEY_PACKAGE);
+                    if (packages != null && packages)
+                    {
+                        final Collection<Object> targets = classification.getValues(att);
+                        if ( targets != null)
+                        {
+                            for (Object target : targets)
+                            {
+                                if ( target.equals( entity))
+                                {
+                                    final String name = getName(entity);
+                                    final String format = getI18n().format("error.packageCantReferToSelf", name);
+                                    throw new RaplaException(format);
+                                }
+                                else 
+                                {
+                                    checkPackages(target, depth + 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void checkBelongsTo(final Object entity, final int depth)
+    {
+        if(depth > 20)
+        {
+            final String name = getName(entity);
+            final String format = i18n.format("error.belongsToCycle", name);
+            throw new RaplaException(format);
+        }                                
+
+        if ( entity instanceof  Classifiable)
+        {
+            final Classifiable classifiable = (Classifiable) entity;
+            final Classification classification = classifiable.getClassification();
             if ( classification != null)
             {
                 final Attribute[] attributes = classification.getAttributes();
@@ -2767,15 +2824,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                             if ( target.equals( entity))
                             {
                                 final String name = getName(entity);
-                                final String format = i18n.format("error.belongsToCantReferToSelf", name);
+                                final String format = getI18n().format("error.belongsToCantReferToSelf", name);
                                 throw new RaplaException(format);
+                            }
+                            else 
+                            {
+                                checkBelongsTo(target, depth + 1);
                             }
                         }
                     }
                 }
             }
         }
-
     }
 
     protected void checkReservation(Reservation reservation) throws RaplaException

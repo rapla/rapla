@@ -193,29 +193,31 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.ALLOCATABLE)) {
 			DynamicType dynamicTypeConstraint = (DynamicType)attribute.getConstraint( ConstraintIds.KEY_DYNAMIC_TYPE);
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-            final Boolean belongsTo = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+			// TODO think about filtering the parent or itself so user can't select wrong
+//            final Boolean belongsTo = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+//            final Boolean groups = (Boolean) attribute.getConstraint(ConstraintIds.KEY_GROUPS);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
 				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory)
                  {
-                     @Override protected Allocatable[] getAllocatables()
-                     {
-                         final Allocatable[] allocatables = super.getAllocatables();
-                         if (belongsTo == null || !belongsTo)
-                         {
-                             return allocatables;
-                         }
-                         List<Allocatable> filteredAllocatables = new ArrayList<Allocatable>();
-                         for ( Allocatable allocatable: allocatables)
-                         {
-//                             final List<Classification> objects = getObjects();
-//                             if ( allocatable.getClassification())
-//                             {
-//
-//                             }
-                             filteredAllocatables.add( allocatable);
-                         }
-                         return filteredAllocatables.toArray(Allocatable.ALLOCATABLE_ARRAY);
-                     }
+//                     @Override protected Allocatable[] getAllocatables()
+//                     {
+//                         final Allocatable[] allocatables = super.getAllocatables();
+//                         if (belongsTo == null || !belongsTo)
+//                         {
+//                             return allocatables;
+//                         }
+//                         List<Allocatable> filteredAllocatables = new ArrayList<Allocatable>();
+//                         for ( Allocatable allocatable: allocatables)
+//                         {
+////                             final List<Classification> objects = getObjects();
+////                             if ( allocatable.getClassification())
+////                             {
+////
+////                             }
+//                             filteredAllocatables.add( allocatable);
+//                         }
+//                         return filteredAllocatables.toArray(Allocatable.ALLOCATABLE_ARRAY);
+//                     }
                  };
 				 allocField.setFieldName(label);
 				 allocField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);

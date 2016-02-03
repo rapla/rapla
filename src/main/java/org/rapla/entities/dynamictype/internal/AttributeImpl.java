@@ -58,6 +58,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     // the constraints
     private boolean multiSelect;
     private boolean belongsTo;
+    private boolean packages;
     private boolean optional = true;
 
     private Map<String, String> annotations = new LinkedHashMap<String, String>();
@@ -185,10 +186,11 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         if (key.equals(ConstraintIds.KEY_MULTI_SELECT))
         {
             multiSelect = constraint != null && "true".equalsIgnoreCase(constraint.toString());
-            if (multiSelect)
-            {
+//            if (multiSelect)
+//            {
                 belongsTo = false;
-            }
+                packages = false;
+//            }
         }
         else if (key.equals(ConstraintIds.KEY_BELONGS_TO))
         {
@@ -199,7 +201,23 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 throw new IllegalStateException("Can only set belongs_to key on attribute types that link to resources");
             }
             belongsTo = newValue;
-            multiSelect = false;
+            if(belongsTo)
+            {
+                multiSelect = false;
+            }
+        }
+        else if (key.equals(ConstraintIds.KEY_PACKAGE))
+        {
+            final boolean newValue = constraint != null && "true".equalsIgnoreCase(constraint.toString());
+            if (newValue && type != AttributeType.ALLOCATABLE)
+            {
+                throw new IllegalStateException("Can only set package key on attribute types that link to resources");
+            }
+            packages = newValue;
+            if(packages)
+            {
+                multiSelect = true;
+            }
         }
     }
 
@@ -275,6 +293,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             return belongsTo;
         }
+        if (key.equals(ConstraintIds.KEY_PACKAGE))
+        {
+            return packages;
+        }
         Class<?> constraintClass = getConstraintClass(key);
         if (constraintClass == Category.class || constraintClass == DynamicType.class)
         {
@@ -316,6 +338,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             return Boolean.class;
         }
+        if (key.equals(ConstraintIds.KEY_PACKAGE))
+        {
+            return Boolean.class;
+        }
         return String.class;
     }
 
@@ -327,7 +353,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
         if (type.equals(AttributeType.ALLOCATABLE))
         {
-            return new String[] { ConstraintIds.KEY_DYNAMIC_TYPE, ConstraintIds.KEY_MULTI_SELECT, ConstraintIds.KEY_BELONGS_TO };
+            return new String[] { ConstraintIds.KEY_DYNAMIC_TYPE, ConstraintIds.KEY_MULTI_SELECT, ConstraintIds.KEY_BELONGS_TO, ConstraintIds.KEY_PACKAGE };
         }
         else
         {
