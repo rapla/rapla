@@ -287,8 +287,9 @@ public class ClientFacadeTest  {
             }
             facade.store(reservation1);
         }
+        final Reservation clone ;
         {// clone second with group booked
-            final Reservation clone = facade.clone(reservation1, user);
+            clone = facade.clone(reservation1, user);
             clone.removeAllocatable(alloc1);
             clone.addAllocatable(packageAllocatable);
             {
@@ -305,16 +306,26 @@ public class ClientFacadeTest  {
             facade.store(clone);
         }
         {// check other direction
+            Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
+            Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
+            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+            final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+            for (Allocatable allocatable : allocatablesFromAppointment)
             {
-                Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
-                Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
-                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
-                final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
-                for (Allocatable allocatable : allocatablesFromAppointment)
-                {
-                    final Collection<Appointment> collection = result.get(allocatable);
-                    Assert.assertEquals(1, collection.size());
-                }
+                final Collection<Appointment> collection = result.get(allocatable);
+                Assert.assertEquals(1, collection.size());
+            }
+        }
+        {// remove other so clone has no conflict any more
+            facade.remove(reservation1);
+            Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(clone.getAllocatables()[0]);
+            Collection<Appointment> forAppointment = Arrays.asList(clone.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
+            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+            final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+            for (Allocatable allocatable : allocatablesFromAppointment)
+            {
+                final Collection<Appointment> collection = result.get(allocatable);
+                Assert.assertEquals(0, collection.size());
             }
         }
     }
