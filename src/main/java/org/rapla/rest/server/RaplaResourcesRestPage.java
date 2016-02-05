@@ -1,5 +1,6 @@
 package org.rapla.rest.server;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
@@ -152,9 +153,8 @@ public class RaplaResourcesRestPage  {
 		ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1)[0];
 		resource.setId(resourceRef.getId());
 		resource.setResolver(operator);
-		resource.setCreateDate(operator.getCurrentTimestamp());
 		resource.setOwner(user);
-		facade.store(resource);
+		facade.storeAndRemove(new Entity[]{resource},Entity.ENTITY_ARRAY, user);
 		AllocatableImpl result = facade.getPersistant(resource);
 		return result;
 	}

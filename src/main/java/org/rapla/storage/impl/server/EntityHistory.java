@@ -105,6 +105,12 @@ public class EntityHistory
         return historyEntries.get(historyEntries.size() - 1);
     }
 
+    public boolean hasHistory(ReferenceInfo id)
+    {
+        final boolean result = map.get(id) != null;
+        return result;
+    }
+
     /** returns the history entry with a timestamp<= since or null if no such entry exists*/
     public Entity get(ReferenceInfo id, Date since) throws RaplaException
     {

@@ -123,7 +123,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         return lastChanged;
     }
     
-    public Date getCreateTime() {
+    public Date getCreateDate() {
         return createDate;
     }
 
@@ -258,7 +258,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         }
     }
 
-    public void setCreateTime(Date createTime)
+    public void setCreateDate(Date createTime)
     {
         checkWritable();
         this.createDate = createTime;

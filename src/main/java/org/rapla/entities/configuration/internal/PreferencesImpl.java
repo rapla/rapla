@@ -73,9 +73,15 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         return lastChanged;
     }
 
-    public Date getCreateTime()
+    public Date getCreateDate()
     {
         return createDate;
+    }
+
+    @Override public void setCreateDate(Date date)
+    {
+        checkWritable();
+        this.createDate = date;
     }
 
     public void setLastChanged(Date date)

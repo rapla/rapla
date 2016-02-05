@@ -34,6 +34,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -1488,6 +1489,9 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 					saveAppointment = copyAppointment(fromAppointment);	
 					saveAppointment.move(new Date(saveAppointment.getStart().getTime() + offset));
 		        }
+                else {
+                    saveAppointment = copyAppointment(saveAppointment );
+                }
 				mutableReservation.addAppointment(saveAppointment);
 				mutableReservation.setRestriction(saveAppointment, restrictedAllocatables);
 	        }

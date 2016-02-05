@@ -140,14 +140,6 @@ public abstract class RaplaBuilder
         return logger;
     }
     
-    
-    protected EntityResolver getEntityResolver()
-    {
-        return raplaFacade.getOperator();
-    }
-
-
-
     public void setFromModel(CalendarModel model, Date startDate, Date endDate) throws RaplaException {
     	Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
 
@@ -164,7 +156,7 @@ public abstract class RaplaBuilder
         {
 
 //            long time = System.currentTimeMillis();
-            allocatables = Arrays.asList(  model.getSelectedAllocatables());
+            allocatables = model.getSelectedAllocatablesSorted();
 //            getLogger().info("Kram took " + (System.currentTimeMillis() - time) + " ms ");
 
         }
@@ -198,7 +190,7 @@ public abstract class RaplaBuilder
         isResourceColoring =calendarOptions.isResourceColoring();
         isEventColoring =calendarOptions.isEventColoring();
 		Collection<Reservation> reservations = new HashSet<Reservation>(filteredReservations);
-        selectReservations( reservations );
+        this.selectedReservations= reservations;
         setEditingUser( user);
         setExceptionsExcluded( !calendarOptions.isExceptionsVisible());
 
@@ -215,7 +207,14 @@ public abstract class RaplaBuilder
                 }
             }
         }*/
-        selectAllocatables( allocatables );
+
+        selectedAllocatables.clear();
+        if (allocatables != null ) {
+            List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
+            Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
+            selectedAllocatables.addAll(new HashSet<Allocatable>(list));
+        }
+        createColorMap();
     }
 
 
@@ -359,35 +358,6 @@ public abstract class RaplaBuilder
         return color;
     }
 
-    /**
-       diese reservierungen werden vom WeekView angezeigt.
-    */
-    public void selectReservations(Collection<Reservation> reservations)
-    {
-        this.selectedReservations= reservations;
-    }
-
-    /**
-       nur diese resourcen werden angezeigt.
-    */
-    public void selectAllocatables(Collection<Allocatable> allocatables)
-    {
-        selectedAllocatables.clear();
-        if (allocatables != null ) {
-            List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
-            Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
-            selectedAllocatables.addAll(new HashSet<Allocatable>(list));
-        }
-        createColorMap();
-    }
-
-    
-    public static List<Appointment> getAppointments(
-			Reservation[] reservations,
-			Allocatable[] allocatables) {
-    	return AppointmentImpl.getAppointments( Arrays.asList( reservations), Arrays.asList( allocatables));
-    }
-    
     static public class SplittedBlock extends AppointmentBlock
     {
     	public SplittedBlock(AppointmentBlock original,long start, long end, Appointment appointment,

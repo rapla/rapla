@@ -761,7 +761,7 @@ public class Export2iCalConverter
     private void addCreateDateToEvent(Appointment appointment, PropertyList properties)
     {
 
-        Date createTime = appointment.getReservation().getCreateTime();
+        Date createTime = appointment.getReservation().getCreateDate();
         properties.add(new Created(convertRaplaLocaleToUTC(createTime)));
     }
 

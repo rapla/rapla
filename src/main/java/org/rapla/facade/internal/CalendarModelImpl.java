@@ -19,6 +19,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
+import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -974,13 +975,22 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override
     public Allocatable[] getSelectedAllocatables() throws RaplaException {
-        Collection<Allocatable> result = getSelectedAllocatablesAsList();
-         return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
+        List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
+        Collections.sort(result, new NamedComparator<Allocatable>( locale ));
+        return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
    }
+
+    @Override
+    public List<Allocatable> getSelectedAllocatablesSorted()
+    {
+        List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
+        Collections.sort(result, new NamedComparator<Allocatable>( locale ));
+        return result;
+    }
 
     protected Collection<Allocatable> getSelectedAllocatablesAsList()
             throws RaplaException {
-        
+
         Collection<Allocatable> result = new HashSet<Allocatable>();
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
         boolean conflictsDetected = false;
@@ -1402,6 +1412,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         List<Appointment> result = AppointmentImpl.getAppointments(reservations, allocatables);
         return result;
     }
+
+
 
     
 }

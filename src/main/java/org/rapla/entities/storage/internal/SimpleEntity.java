@@ -333,8 +333,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         // first try to compare the entities with their create time
         if ( o1 instanceof Timestamp && o2 instanceof Timestamp)
         {
-        	Date c1 = ((Timestamp)o1).getCreateTime();
-           	Date c2 = ((Timestamp)o2).getCreateTime();
+        	Date c1 = ((Timestamp)o1).getCreateDate();
+           	Date c2 = ((Timestamp)o2).getCreateDate();
            	if ( c1 != null && c2 != null)
            	{
            		int result = c1.compareTo( c2);
@@ -369,8 +369,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             return 0;
         }
-        Date d1 = t1.getCreateTime();
-        Date d2 = t2.getCreateTime();
+        Date d1 = t1.getCreateDate();
+        Date d2 = t2.getCreateDate();
         if ( d1 == null && d2 == null)
         {
             return 0;

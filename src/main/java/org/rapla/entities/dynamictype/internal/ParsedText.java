@@ -627,9 +627,9 @@ public class ParsedText implements Serializable
             return parent.getId();
         }
 
-        public Date getCreateTime()
+        public Date getCreateDate()
         {
-            return parent.getCreateTime();
+            return parent.getCreateDate();
         }
 
         @Override public Class<Category> getTypeClass()

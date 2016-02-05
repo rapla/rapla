@@ -83,22 +83,14 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater);
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
+        builder.setNonFilteredEventsVisible( false);
 		builder.setFromModel( model, startDate, endDate  );
-		builder.setNonFilteredEventsVisible( false);
         return builder;
     }
 
     abstract protected AbstractHTMLView createCalendarView();
     abstract protected int getIncrementSize();
 
-    public List<Allocatable> getSortedAllocatables() throws RaplaException
-	 {
-	        Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
-	    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>( Arrays.asList( selectedAllocatables));
-	        Collections.sort(sortedAllocatables, new NamedComparator<Allocatable>( raplaLocale.getLocale() ));
-	        return sortedAllocatables;
-	 }
-    
     public String getCalendarHTML() {
         return calendarviewHTML;
     }

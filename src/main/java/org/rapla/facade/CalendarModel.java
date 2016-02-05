@@ -46,6 +46,8 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     
     Collection<RaplaObject> getSelectedObjectsAndChildren() throws RaplaException;
 
+    List<Allocatable> getSelectedAllocatablesSorted();
+
     /** Convenience method to extract the allocatables from the selectedObjects and their children
      * @see #getSelectedObjectsAndChildren */
     Allocatable[] getSelectedAllocatables() throws RaplaException;
@@ -66,6 +68,8 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 	Collection<TimeInterval> getMarkedIntervals();
     
 	Collection<Allocatable> getMarkedAllocatables();
+
+    Collection<Appointment> getAppointments(TimeInterval interval) throws RaplaException;
 	
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
 

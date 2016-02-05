@@ -5,6 +5,7 @@ import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ValidationException;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -149,9 +150,7 @@ public class Export2iCalServlet
 				return;
 			}
 
-			final Reservation[] reserv = isAllAppointmentsSet ? getAllReservations(calModel) : calModel.getReservations();
-			Allocatable[] allocatables = calModel.getSelectedAllocatables();
-			Collection<Appointment> appointments = AppointmentImpl.getAppointments(Arrays.asList( reserv), Arrays.asList(allocatables));
+			Collection<Appointment> appointments = calModel.getAppointments(new TimeInterval(null, null));
 			write(response, appointments, filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
@@ -214,19 +213,6 @@ public class Export2iCalServlet
 		{
 			return null;
 		}
-	}
-
-	private Reservation[] getAllReservations(final CalendarModel calModel) throws RaplaException {
-        final java.util.Calendar calendar = raplaLocale.createCalendar();
-
-		calendar.set(calendar.getMinimum(java.util.Calendar.YEAR), calendar.getMinimum(java.util.Calendar.MONTH), calendar.getMinimum(java.util.Calendar.DAY_OF_MONTH));
-		calModel.setStartDate(calendar.getTime());
-
-		// Calendar.getMaximum doesn't work with iCal4j. Using 9999
-		calendar.set(9999, calendar.getMaximum(java.util.Calendar.MONTH), calendar.getMaximum(java.util.Calendar.DAY_OF_MONTH));
-		calModel.setEndDate(calendar.getTime());
-
-		return calModel.getReservations();
 	}
 
 	private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, User user,final Preferences preferences) throws RaplaException, IOException {

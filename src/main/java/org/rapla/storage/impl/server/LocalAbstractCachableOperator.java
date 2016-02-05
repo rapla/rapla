@@ -133,6 +133,7 @@ import org.rapla.storage.impl.EntityStore;
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
     InitStatus connectStatus = InitStatus.Disconnected;
+    AppointmentMapClass appointmentBindings;
 
     protected enum InitStatus
     {
@@ -169,7 +170,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     private String encryption = "sha-1";
     private ConflictFinder conflictFinder;
-    private Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap;
     //private SortedSet<LastChangedTimestamp> timestampSet;
     // we need a bidi to sort the values instead of the keys
     protected final EntityHistory history;
@@ -188,7 +188,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.scheduler = scheduler;
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
-
+        appointmentBindings = new AppointmentMapClass(logger);
         calendarModelCache = new CalendarModelCache(this, i18n);
     }
 
@@ -974,24 +974,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         deleteUpdateSet = new DualTreeBidiMap<String, DeleteUpdateEntry>();
         // The appointment map
 
-        appointmentMap = new HashMap<ReferenceInfo<Allocatable>, SortedSet<Appointment>>();
-        for (Reservation r : cache.getReservations())
-        {
-            for (Appointment app : ((ReservationImpl) r).getAppointmentList())
-            {
-                Reservation reservation = app.getReservation();
-                Allocatable[] allocatables = reservation.getAllocatablesFor(app);
-                {
-                    Collection<Appointment> list = getAndCreateList(appointmentMap, null);
-                    list.add(app);
-                }
-                for (Allocatable alloc : allocatables)
-                {
-                    Collection<Appointment> list = getAndCreateList(appointmentMap, alloc);
-                    list.add(app);
-                }
-            }
-        }
+        appointmentBindings.initAppointmentBindings(cache.getReservations());
         Date today2 = today();
         AllocationMap allocationMap = new AllocationMap()
         {
@@ -1300,6 +1283,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         UpdateBindingsResult bindingResult = new UpdateBindingsResult();
         Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate = bindingResult.toUpdate;
         List<ReferenceInfo<Allocatable>> removedAllocatables = bindingResult.removedAllocatables;
+        boolean rebuildAllBindings = false;
         for (Add add : result.getOperations(Add.class))
         {
             ReferenceInfo id = add.getReference();
@@ -1320,6 +1304,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 Reservation oldReservation = (Reservation) result.getLastEntryBeforeUpdate(id);
                 Reservation newReservation = (Reservation) lastKnown;
+                if (oldReservation == null)
+                {
+                    rebuildAllBindings = true;
+                    getLogger().error("can't find last entry before update for " + id + " rebuilding appointmentbindings index");
+                    break;
+                }
                 for (Appointment oldApp : oldReservation.getAppointments())
                 {
                     updateBindings(toUpdate, oldReservation, oldApp, true);
@@ -1360,34 +1350,42 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        for (Remove removed : result.getOperations(Remove.class))
+        if (!rebuildAllBindings)
         {
-            final ReferenceInfo reference = removed.getReference();
-            final Class<? extends Entity> type = reference.getType();
-            if (type ==Reservation.class)
+            for (Remove removed : result.getOperations(Remove.class))
             {
-                final Entity lastKnown = result.getLastEntryBeforeUpdate(reference);
-                Reservation old = (Reservation) lastKnown;
-                for (Appointment app : old.getAppointments())
+                final ReferenceInfo reference = removed.getReference();
+                final Class<? extends Entity> type = reference.getType();
+                if (type == Reservation.class)
                 {
-                    updateBindings(toUpdate, old, app, true);
+                    final Entity lastKnown = result.getLastEntryBeforeUpdate(reference);
+                    Reservation old = (Reservation) lastKnown;
+                    if (old == null)
+                    {
+                        rebuildAllBindings = true;
+                        getLogger().error("can't find last entry before update for " + reference + " rebuilding appointmentbindings index");
+                        break;
+                    }
+                    for (Appointment app : old.getAppointments())
+                    {
+                        updateBindings(toUpdate, old, app, true);
+                    }
+                }
+                else if (type == Allocatable.class)
+                {
+                    removedAllocatables.add(reference);
                 }
             }
-            else if (type == Allocatable.class)
-            {
-                removedAllocatables.add(reference);
-            }
         }
-        for (ReferenceInfo<Allocatable> alloc : removedAllocatables)
+        if (!rebuildAllBindings)
         {
-            SortedSet<Appointment> sortedSet = appointmentMap.get(alloc);
-            if (sortedSet != null && !sortedSet.isEmpty())
-            {
-                getLogger().error("Removing non empty appointment map for resource " + alloc + " Appointments:" + sortedSet);
-            }
-            appointmentMap.remove(alloc);
+            appointmentBindings.removeBindings(removedAllocatables);
         }
-        checkAbandonedAppointments();
+        if (rebuildAllBindings)
+        {
+            appointmentBindings.initAppointmentBindings(cache.getReservations());
+        }
+        appointmentBindings.checkAbandonedAppointments( cache);
         return bindingResult;
     }
 
@@ -1739,6 +1737,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         Set<Allocatable> allocatablesToProcess = new HashSet<Allocatable>();
         allocatablesToProcess.add(null);
+        final ReferenceInfo<Appointment> appRef = app.getReference();
         if (reservation != null)
         {
             if (remove)
@@ -1806,24 +1805,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             if (remove)
             {
-                Collection<Appointment> appointmentSet = getAndCreateList(appointmentMap, allocatable);
-                // binary search could fail if the appointment has changed since the last add, which should not
-                // happen as we only put and search immutable objects in the map. But the method is left here as a failsafe
-                // with a log messaget
-                if (!appointmentSet.remove(app))
-                {
-                    getLogger().error("Appointent has changed, so its not found in indexed binding map. Removing via full search");
-                    // so we need to traverse all appointment
-                    Iterator<Appointment> it = appointmentSet.iterator();
-                    while (it.hasNext())
-                    {
-                        if (app.equals(it.next()))
-                        {
-                            it.remove();
-                            break;
-                        }
-                    }
-                }
+                appointmentBindings.removeAppointmentBinding(app, allocatable);
                 if (updateSet != null)
                 {
                     updateSet.toRemove.add(app);
@@ -1831,8 +1813,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             else
             {
-                SortedSet<Appointment> appointmentSet = getAndCreateList(appointmentMap, allocatable);
-                appointmentSet.add(app);
+                appointmentBindings.addAppointmentBinding(app, allocatable);
                 if (updateSet != null)
                 {
                     updateSet.toChange.add(app);
@@ -1848,28 +1829,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
         fillBelongsTo(allocatable, allocatableIds, 0);
-        if ( allocatableIds.size() == 0)
+        if (allocatableIds.size() == 0)
         {
-            return EMPTY_SORTED_SET;
-        }
-        else if ( allocatableIds.size() == 1)
-        {
-            SortedSet<Appointment> s = appointmentMap.get(allocatableIds.iterator().next());
-            if ( s== null)
+            SortedSet<Appointment> s = appointmentBindings.getAppointments(null);
+            if ( s != null)
             {
-                return EMPTY_SORTED_SET;
+                return s;
             }
-            return Collections.unmodifiableSortedSet(s);
+            return EMPTY_SORTED_SET;
         }
         else
         {
             SortedSet<Appointment> transitive = new TreeSet<Appointment>(new AppointmentStartComparator());
-            for ( ReferenceInfo<Allocatable> allocatableId: allocatableIds)
+            for (ReferenceInfo<Allocatable> allocatableId : allocatableIds)
             {
-                SortedSet<Appointment> s = appointmentMap.get(allocatableId);
-                if ( s != null)
+                SortedSet<Appointment> s = appointmentBindings.getAppointments(allocatableId);
+                for (Appointment appointment : s)
                 {
-                    transitive.addAll(s);
+                    transitive.add(appointment);
                 }
             }
             return transitive;
@@ -1878,34 +1855,188 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void fillBelongsTo(Allocatable allocatable, Set<ReferenceInfo<Allocatable>> allocatableIds, int depth)
     {
-        if ( depth > 20)
+        if (depth > 20)
         {
             throw new IllegalStateException("Cycle in belongsTo detected");
         }
-        if ( allocatable != null)
+        if (allocatable != null)
         {
-            allocatableIds.add( allocatable.getReference());
+            allocatableIds.add(allocatable.getReference());
             final Classification classification = allocatable.getClassification();
             final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
-            if ( belongsToAttribute != null)
+            if (belongsToAttribute != null)
             {
-                final Allocatable parent = (Allocatable)classification.getValue(belongsToAttribute);
-                fillBelongsTo( parent, allocatableIds, depth + 1);
+                final Allocatable parent = (Allocatable) classification.getValue(belongsToAttribute);
+                fillBelongsTo(parent, allocatableIds, depth + 1);
             }
 
         }
     }
 
-    private SortedSet<Appointment> getAndCreateList(Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap, Allocatable alloc)
+    static final class AppointmentMapClass
     {
-        ReferenceInfo<Allocatable> allocationId = alloc != null ? alloc.getReference() : null;
-        SortedSet<Appointment> set = appointmentMap.get(allocationId);
-        if (set == null)
+        final private Logger logger;
+        private Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap;
+
+        private AppointmentMapClass(Logger newLogger)
         {
-            set = new TreeSet<Appointment>(new AppointmentStartComparator());
-            appointmentMap.put(allocationId, set);
+            logger = newLogger;
         }
-        return set;
+
+        private void initAppointmentBindings(Collection<Reservation> reservations)
+        {
+            appointmentMap = new HashMap<ReferenceInfo<Allocatable>, SortedSet<Appointment>>();
+            for (Reservation r : reservations)
+            {
+                for (Appointment app : ((ReservationImpl) r).getAppointmentList())
+                {
+                    Reservation reservation = app.getReservation();
+                    Allocatable[] allocatables = reservation.getAllocatablesFor(app);
+                    {
+                        final Allocatable alloc = null;
+                        addAppointmentBinding(app, alloc);
+                    }
+                    for (Allocatable alloc : allocatables)
+                    {
+                        addAppointmentBinding(app, alloc);
+                    }
+                }
+            }
+        }
+
+        private void removeAppointmentBinding(Appointment app, Allocatable alloc)
+        {
+            ReferenceInfo<Allocatable> allocationId = alloc != null ? alloc.getReference() : null;
+            Collection<Appointment> appointmentSet = appointmentMap.get(allocationId);
+            if (appointmentSet == null)
+            {
+                return;
+            }
+
+            // binary search could fail if the appointment has changed since the last add, which should not
+            // happen as we only put and search immutable objects in the map. But the method is left here as a failsafe
+            // with a log messaget
+            if (!appointmentSet.remove(app))
+            {
+                logger.error("Appointent has changed, so its not found in indexed binding map. Removing via full search");
+                // so we need to traverse all appointment
+                Iterator<Appointment> it = appointmentSet.iterator();
+                while (it.hasNext())
+                {
+                    if (app.equals(it.next()))
+                    {
+                        it.remove();
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void removeBindings(List<ReferenceInfo<Allocatable>> removedAllocatables)
+        {
+            for (ReferenceInfo<Allocatable> alloc : removedAllocatables)
+            {
+                SortedSet<Appointment> sortedSet = appointmentMap.get(alloc);
+                if (sortedSet != null && !sortedSet.isEmpty())
+                {
+                    logger.error("Removing non empty appointment map for resource " + alloc + " Appointments:" + sortedSet);
+                }
+                appointmentMap.remove(alloc);
+            }
+        }
+
+        private void addAppointmentBinding(Appointment appRef, Allocatable alloc)
+        {
+            ReferenceInfo<Allocatable> allocationId = alloc != null ? alloc.getReference() : null;
+            SortedSet<Appointment> set = appointmentMap.get(allocationId);
+            if (set == null)
+            {
+                set = new TreeSet<Appointment>(new AppointmentStartComparator());
+                appointmentMap.put(allocationId, set);
+            }
+            set.add(appRef);
+        }
+
+        // this check is only there to detect rapla bugs in the conflict api and can be removed if it causes performance issues
+        private void checkAbandonedAppointments(LocalCache cache)
+        {
+            Collection<? extends Allocatable> allocatables = cache.getAllocatables();
+            Logger logger = this.logger.getChildLogger("appointmentcheck");
+            try
+            {
+                for (Allocatable allocatable : allocatables)
+                {
+                    SortedSet<Appointment> appointmentSet = this.appointmentMap.get(allocatable.getReference());
+                    if (appointmentSet == null)
+                    {
+                        continue;
+                    }
+                    for (Appointment app : appointmentSet)
+                    {
+                        Reservation reservation = app.getReservation();
+                        if (reservation == null)
+                        {
+                            logger.error("Appointment without a reservation stored in cache " + app);
+                            appointmentSet.remove(app);
+                            continue;
+                        }
+                        else if (!reservation.hasAllocated(allocatable, app))
+                        {
+                            logger.error(
+                                    "Allocation is not stored correctly for " + reservation + " " + app + " " + allocatable + " removing binding for " + app);
+                            appointmentSet.remove(app);
+                            continue;
+                        }
+                        else
+                        {
+                            {
+                                Reservation original = reservation;
+                                ReferenceInfo<Reservation> id = original.getReference();
+                                if (id == null)
+                                {
+                                    logger.error("Empty id  for " + original);
+                                    continue;
+                                }
+                                Reservation persistant = cache.tryResolve(id);
+                                if (persistant != null)
+                                {
+                                    Date lastChanged = original.getLastChanged();
+                                    Date persistantLastChanged = persistant.getLastChanged();
+                                    if (persistantLastChanged != null && !persistantLastChanged.equals(lastChanged))
+                                    {
+                                        logger.error("Reservation stored in cache is not the same as in allocation store " + original);
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    logger.error("Reservation not stored in cache " + original + " removing binding for " + app);
+                                    appointmentSet.remove(app);
+                                    continue;
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.error(ex.getMessage(), ex);
+            }
+        }
+
+        final SortedSet<Appointment> EMPTY_SORTED_REF_SET = Collections.unmodifiableSortedSet(new TreeSet<Appointment>());
+
+        public SortedSet<Appointment> getAppointments(ReferenceInfo<Allocatable> allocatableId)
+        {
+            final SortedSet<Appointment> referenceInfos = appointmentMap.get(allocatableId);
+            if (referenceInfos != null)
+            {
+                return referenceInfos;
+            }
+            return EMPTY_SORTED_REF_SET;
+        }
     }
 
     protected UpdateResult refresh(Date since, Date until, Collection<Entity> storeObjects, Collection<PreferencePatch> preferencePatches,
@@ -2191,9 +2322,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     ReferenceInfo<Category> parentReference = category.getParentRef();
                     final CategoryImpl exisitingParent = (CategoryImpl) cache.tryResolve(parentReference);
-                    if (exisitingParent != null && exisitingParent.hasCategory(category) )
+                    if (exisitingParent != null && exisitingParent.hasCategory(category))
                     {
-                        if ( !isInDeleted(exisitingParent, categoriesToRemove,0))
+                        if (!isInDeleted(exisitingParent, categoriesToRemove, 0))
                         {
                             Category editableParent = (Category) evt.findEntity(exisitingParent);
                             if (editableParent == null)
@@ -2218,22 +2349,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean isInDeleted(Category exisitingParent, Set<String> categoriesToRemove, int depth)
     {
-        if ( depth > 20)
+        if (depth > 20)
         {
             throw new IllegalStateException("Category Cycle detected in " + exisitingParent);
         }
         final ReferenceInfo<Category> ref = exisitingParent.getReference();
-        if (  categoriesToRemove.contains( ref.getId()))
+        if (categoriesToRemove.contains(ref.getId()))
         {
             return true;
         }
-        final ReferenceInfo<Category> parentRef = ((CategoryImpl)exisitingParent).getParentRef();
-        if ( parentRef == null)
+        final ReferenceInfo<Category> parentRef = ((CategoryImpl) exisitingParent).getParentRef();
+        if (parentRef == null)
         {
             return false;
         }
         final Category parent = cache.tryResolve(parentRef);
-        if ( parent == null)
+        if (parent == null)
         {
             return false;
         }
@@ -2756,36 +2887,36 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void checkPackages(final Object entity, final int depth)
     {
-        if(depth > 20)
+        if (depth > 20)
         {
             final String name = getName(entity);
             final String format = i18n.format("error.packageCycle", name);
             throw new RaplaException(format);
-        }                   
-        if ( entity instanceof  Classifiable)
+        }
+        if (entity instanceof Classifiable)
         {
             final Classifiable classifiable = (Classifiable) entity;
             final Classification classification = classifiable.getClassification();
-            if ( classification != null)
+            if (classification != null)
             {
                 final Attribute[] attributes = classification.getAttributes();
-                for (Attribute att:attributes)
+                for (Attribute att : attributes)
                 {
-                    final Boolean packages = (Boolean)att.getConstraint(ConstraintIds.KEY_PACKAGE);
+                    final Boolean packages = (Boolean) att.getConstraint(ConstraintIds.KEY_PACKAGE);
                     if (packages != null && packages)
                     {
                         final Collection<Object> targets = classification.getValues(att);
-                        if ( targets != null)
+                        if (targets != null)
                         {
                             for (Object target : targets)
                             {
-                                if ( target.equals( entity))
+                                if (target.equals(entity))
                                 {
                                     final String name = getName(entity);
                                     final String format = getI18n().format("error.packageCantReferToSelf", name);
                                     throw new RaplaException(format);
                                 }
-                                else 
+                                else
                                 {
                                     checkPackages(target, depth + 1);
                                 }
@@ -2799,35 +2930,35 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void checkBelongsTo(final Object entity, final int depth)
     {
-        if(depth > 20)
+        if (depth > 20)
         {
             final String name = getName(entity);
             final String format = i18n.format("error.belongsToCycle", name);
             throw new RaplaException(format);
-        }                                
+        }
 
-        if ( entity instanceof  Classifiable)
+        if (entity instanceof Classifiable)
         {
             final Classifiable classifiable = (Classifiable) entity;
             final Classification classification = classifiable.getClassification();
-            if ( classification != null)
+            if (classification != null)
             {
                 final Attribute[] attributes = classification.getAttributes();
-                for (Attribute att:attributes)
+                for (Attribute att : attributes)
                 {
-                    final Boolean belongsTo = (Boolean)att.getConstraint(ConstraintIds.KEY_BELONGS_TO);
+                    final Boolean belongsTo = (Boolean) att.getConstraint(ConstraintIds.KEY_BELONGS_TO);
                     if (belongsTo != null && belongsTo)
                     {
                         final Object target = classification.getValue(att);
-                        if ( target != null)
+                        if (target != null)
                         {
-                            if ( target.equals( entity))
+                            if (target.equals(entity))
                             {
                                 final String name = getName(entity);
                                 final String format = getI18n().format("error.belongsToCantReferToSelf", name);
                                 throw new RaplaException(format);
                             }
-                            else 
+                            else
                             {
                                 checkBelongsTo(target, depth + 1);
                             }
@@ -3302,89 +3433,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    // this check is only there to detect rapla bugs in the conflict api and can be removed if it causes performance issues
-    private void checkAbandonedAppointments()
-    {
-        Collection<? extends Allocatable> allocatables = cache.getAllocatables();
-        Logger logger = getLogger().getChildLogger("appointmentcheck");
-        try
-        {
-            for (Allocatable allocatable : allocatables)
-            {
-                SortedSet<Appointment> appointmentSet = this.appointmentMap.get(allocatable.getReference());
-                if (appointmentSet == null)
-                {
-                    continue;
-                }
-                for (Appointment app : appointmentSet)
-                {
-                    {
-                        SimpleEntity original = (SimpleEntity) app;
-                        String id = original.getId();
-                        if (id == null)
-                        {
-                            logger.error("Empty id  for " + original);
-                            continue;
-                        }
-                        Appointment persistant = cache.tryResolve(id, Appointment.class);
-                        if (persistant == null)
-                        {
-                            logger.error("appointment not stored in cache " + original);
-                            continue;
-                        }
-                    }
-                    Reservation reservation = app.getReservation();
-                    if (reservation == null)
-                    {
-                        logger.error("Appointment without a reservation stored in cache " + app);
-                        appointmentSet.remove(app);
-                        continue;
-                    }
-                    else if (!reservation.hasAllocated(allocatable, app))
-                    {
-                        logger.error("Allocation is not stored correctly for " + reservation + " " + app + " " + allocatable + " removing binding for " + app);
-                        appointmentSet.remove(app);
-                        continue;
-                    }
-                    else
-                    {
-                        {
-                            Reservation original = reservation;
-                            String id = original.getId();
-                            if (id == null)
-                            {
-                                logger.error("Empty id  for " + original);
-                                continue;
-                            }
-                            Reservation persistant = cache.tryResolve(id, Reservation.class);
-                            if (persistant != null)
-                            {
-                                Date lastChanged = original.getLastChanged();
-                                Date persistantLastChanged = persistant.getLastChanged();
-                                if (persistantLastChanged != null && !persistantLastChanged.equals(lastChanged))
-                                {
-                                    logger.error("Reservation stored in cache is not the same as in allocation store " + original);
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                logger.error("Reservation not stored in cache " + original + " removing binding for " + app);
-                                appointmentSet.remove(app);
-                                continue;
-                            }
-                        }
-
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.error(ex.getMessage(), ex);
-        }
-    }
-
     @SuppressWarnings("deprecation") private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups)
     {
         {
@@ -3426,7 +3474,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         CategoryImpl groupsCategory = new CategoryImpl(now, now);
         groupsCategory.setKey("user-groups");
-        groupsCategory.setResolver( store );
+        groupsCategory.setResolver(store);
         setName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
@@ -3437,7 +3485,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             setNew(group);
             setName(group.getName(), group.getKey());
             groupsCategory.addCategory(group);
-            group.setResolver( store );
+            group.setResolver(store);
             store.put(group);
         }
         final Category superCategory = store.resolve(Category.SUPER_CATEGORY_REF);
@@ -3464,7 +3512,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         store.put(admin);
 
         Collection<Entity> list = store.getList();
-        for (Entity entity:list)
+        for (Entity entity : list)
         {
             if (entity instanceof EntityReferencer)
             {
@@ -3474,11 +3522,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         String password = "";
         store.putPassword(admin.getReference(), password);
-        ((CategoryImpl)superCategory).setReadOnly();
+        ((CategoryImpl) superCategory).setReadOnly();
 
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
         allocatable.setResolver(store);
-        Classification classification = resourceType.newClassificationWithoutCheck( true);
+        Classification classification = resourceType.newClassificationWithoutCheck(true);
 
         allocatable.setClassification(classification);
         PermissionContainer.Util.copyPermissions(resourceType, allocatable);
@@ -3627,7 +3675,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final Conflict conflict = conflictFinder.findConflict((ReferenceInfo<Conflict>) update);
                 newEntity = cache.fillConflictDisableInformation(user, conflict);
                 // can be null if no conflict disalbe information is stored
-                oldEntity = history.get(update, since);
+                if (history.hasHistory(update))
+                {
+                    oldEntity = history.get(update, since);
+                }
+                else
+                {
+                    oldEntity = null;
+                }
             }
             else if (type == Preferences.class)
             {
@@ -3667,10 +3722,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 oldEntity = entity;
             }
-            else if ( update.getType() != Conflict.class)
+            else if (update.getType() != Conflict.class)
             {
                 final EntityHistory.HistoryEntry latest = history.getLatest(update);
-                if ( latest != null)
+                if (latest != null)
                 {
                     oldEntity = history.getEntity(latest);
                 }
@@ -3679,16 +3734,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     getLogger().warn("the entity " + update + " was deleted but not found in the history.");
                 }
             }
-            if ( oldEntity != null)
+            if (oldEntity != null)
             {
-                if (isCreatedBeforeSince(since, oldEntity))
-                {
-                    oldEntities.put(update, oldEntity);
-                }
-                else
-                {
-                    it.remove();
-                }
+                oldEntities.put(update, oldEntity);
             }
         }
         UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);

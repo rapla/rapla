@@ -211,7 +211,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return lastChanged;
     }
     
-    public Date getCreateTime() {
+    public Date getCreateDate() {
         return createDate;
     }
 
@@ -220,10 +220,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     	lastChanged = date;
     }
     
-    public void setCreateDate(Date createDate)
+    @Override public void setCreateDate(Date date)
     {
         checkWritable();
-        this.createDate = createDate;
+        this.createDate = date;
     }
 
 

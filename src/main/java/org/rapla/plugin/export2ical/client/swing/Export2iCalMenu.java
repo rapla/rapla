@@ -10,13 +10,14 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalExport;
@@ -29,6 +30,7 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
@@ -68,7 +70,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 		try {
 		    Reservation[] reservations = calendarModel.getReservations();
 		    Allocatable[] allocatables = calendarModel.getSelectedAllocatables();
-		    List<Appointment> appointments= RaplaBuilder.getAppointments( reservations, allocatables);
+		    List<Appointment> appointments= AppointmentImpl.getAppointments(Arrays.asList(reservations), Arrays.asList(allocatables));
 		    String[] appointmentIds = new String[appointments.size()];
 		    for ( int i=0;i<appointmentIds.length;i++)
 		    {

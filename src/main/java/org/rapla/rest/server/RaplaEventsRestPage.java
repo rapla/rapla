@@ -1,5 +1,6 @@
 package org.rapla.rest.server;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -30,52 +31,48 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-
-@Path("events")
-public class RaplaEventsRestPage
+@Path("events") public class RaplaEventsRestPage
 {
     private final User user;
     RaplaFacade facade;
     StorageOperator operator;
 
-    @Inject
-    public RaplaEventsRestPage(RaplaFacade facade,   RemoteSession session) throws RaplaException {
-		this.facade = facade;
+    @Inject public RaplaEventsRestPage(RaplaFacade facade, RemoteSession session) throws RaplaException
+    {
+        this.facade = facade;
         this.operator = facade.getOperator();
         user = session.getUser();
-	}
+    }
 
-	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+    private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
-	@GET
-    public List<ReservationImpl> list( @QueryParam("start")Date start, @QueryParam("end")Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") List<String> eventTypes,@QueryParam("attributeFilter") Map<String,String> simpleFilter ) throws Exception
+    @GET public List<ReservationImpl> list(@QueryParam("start") Date start, @QueryParam("end") Date end, @QueryParam("resources") List<String> resources,
+            @QueryParam("eventTypes") List<String> eventTypes, @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
-        for (String id :resources)
+        for (String id : resources)
         {
             Allocatable allocatable = facade.resolve(new ReferenceInfo<Allocatable>(id, Allocatable.class));
-            allocatables.add( allocatable);
+            allocatables.add(allocatable);
         }
- 
+
         ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         Map<String, String> annotationQuery = null;
         User owner = null;
         Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery).get();
         List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         PermissionController permissionController = facade.getPermissionController();
-        for ( Reservation r:reservations)
+        for (Reservation r : reservations)
         {
-            if ( permissionController.canRead(r, user))
+            if (permissionController.canRead(r, user))
             {
                 result.add((ReservationImpl) r);
             }
         }
         return result;
     }
-    
-	@GET
-    @Path("{id}")
-	public ReservationImpl get( @PathParam("id") String id) throws RaplaException
+
+    @GET @Path("{id}") public ReservationImpl get(@PathParam("id") String id) throws RaplaException
     {
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
         PermissionController permissionController = facade.getPermissionController();
@@ -85,25 +82,23 @@ public class RaplaEventsRestPage
         }
         return event;
     }
-    
-	@PUT
-    public ReservationImpl update( ReservationImpl event) throws RaplaException
+
+    @PUT public ReservationImpl update(ReservationImpl event) throws RaplaException
     {
         PermissionController permissionController = facade.getPermissionController();
         if (!permissionController.canModify(event, user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
         }
-        event.setResolver( operator);
+        event.setResolver(operator);
         facade.store(event);
-        ReservationImpl result = facade.getPersistant( event);
+        ReservationImpl result = facade.getPersistant(event);
         return result;
     }
-    
-    @POST
-    public ReservationImpl create( ReservationImpl event) throws RaplaException
+
+    @POST public ReservationImpl create(ReservationImpl event) throws RaplaException
     {
-        event.setResolver( operator);
+        event.setResolver(operator);
         if (!facade.getPermissionController().canCreate(event.getClassification().getType(), user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);
@@ -113,20 +108,19 @@ public class RaplaEventsRestPage
             throw new RaplaException("Id has to be null for new events");
         }
         ReferenceInfo<Reservation> eventId = operator.createIdentifier(Reservation.class, 1)[0];
-        event.setId( eventId.getId());
-        event.setCreateDate( operator.getCurrentTimestamp());
+        event.setId(eventId.getId());
         Appointment[] appointments = event.getAppointments();
         ReferenceInfo<Appointment>[] appointmentIds = operator.createIdentifier(Appointment.class, 1);
-        for ( int i=0;i<appointments.length;i++)
+        for (int i = 0; i < appointments.length; i++)
         {
-            AppointmentImpl app = (AppointmentImpl)appointments[i];
+            AppointmentImpl app = (AppointmentImpl) appointments[i];
             String id = appointmentIds[i].getId();
             app.setId(id);
         }
-        event.setOwner( user );
-        facade.store(event);
+        event.setOwner(user);
+        facade.storeAndRemove(new Entity[] { event }, Entity.ENTITY_ARRAY, user);
         ReservationImpl result = facade.getPersistant(event);
         return result;
     }
-   
+
 }

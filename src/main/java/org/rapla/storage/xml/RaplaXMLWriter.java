@@ -89,7 +89,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
     protected void printTimestamp(Timestamp stamp) throws IOException {
-        final Date createTime = stamp.getCreateTime();
+        final Date createTime = stamp.getCreateDate();
         final Date lastChangeTime = stamp.getLastChanged();
         if ( createTime != null)
         {

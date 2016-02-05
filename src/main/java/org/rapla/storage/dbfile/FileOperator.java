@@ -450,7 +450,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
             {
                 ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp)e;
                 modifiableTimestamp.setLastChanged( currentTime);
-                modifiableTimestamp.setLastChangedBy( lastChangedBy );
+                if ( lastChangedBy != null)
+                {
+                    modifiableTimestamp.setLastChangedBy(lastChangedBy);
+                }
+                final Entity entity = tryResolve(e.getReference());
+                if ( entity == null)
+                {
+                    modifiableTimestamp.setCreateDate( currentTime);
+                }
                 history.addHistoryEntry(e,currentTime, isDelete);
             }
         }

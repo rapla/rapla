@@ -1609,13 +1609,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			} finally {
 			}
 		}
-		if (result instanceof ModifiableTimestamp) {
-			Date now = operator.getCurrentTimestamp();
-			((ModifiableTimestamp) result).setLastChanged(now);
-			if (user != null) {
-				((ModifiableTimestamp) result).setLastChangedBy(user);
-			}
-		}
 		return result;
 
 	}

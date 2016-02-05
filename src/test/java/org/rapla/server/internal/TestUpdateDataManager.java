@@ -296,7 +296,7 @@ public class TestUpdateDataManager
         facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{newResource}, writeUser);
         final UpdateEvent updateWithInsertAndDelete = updateManager.createUpdateEvent(readUser, lastSynced);
         Assert.assertEquals(0, updateWithInsertAndDelete.getStoreObjects().size());
-        Assert.assertEquals(0, updateWithInsertAndDelete.getRemoveIds().size());
+        Assert.assertEquals(1, updateWithInsertAndDelete.getRemoveIds().size());
         final UpdateEvent updateEventWithRemove = updateManager.createUpdateEvent(readUser, lastValidatedAfterInsert);
         Assert.assertEquals(0, updateEventWithRemove.getStoreObjects().size());
         Assert.assertEquals(1, updateEventWithRemove.getRemoveIds().size());

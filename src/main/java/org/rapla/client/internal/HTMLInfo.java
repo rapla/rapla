@@ -64,7 +64,7 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         return text;
     }
     protected void insertModificationRow( Timestamp timestamp, StringBuffer buf ) {
-        final Date createTime = timestamp.getCreateTime();
+        final Date createTime = timestamp.getCreateDate();
         final Date lastChangeTime = timestamp.getLastChanged();
         if ( lastChangeTime != null)
         {

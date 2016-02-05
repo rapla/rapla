@@ -21,5 +21,6 @@ import java.util.Date;
 public interface ModifiableTimestamp extends Timestamp {
     /** updates the last-changed timestamp */
     void setLastChanged(Date date);
+    void setCreateDate(Date date);
     void setLastChangedBy( User user);
 }

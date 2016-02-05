@@ -60,7 +60,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
 	       		 List<String> headerNames = new ArrayList<String>();
 	       		try
 	       		{
-		        		 List<Allocatable> sortedAllocatables = getSortedAllocatables();
+		        		 List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
 		        		 for (Allocatable alloc: sortedAllocatables)
 		        		 {
 		        			 headerNames.add( alloc.getName( getRaplaLocale().getLocale()));
@@ -111,9 +111,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
     		 startTimes.add( slot.getMinuteOfDay());
     	}
     	RaplaBuilder builder = super.createBuilder();
-   		final List<Allocatable> allocatables = getSortedAllocatables();
-   		builder.selectAllocatables( allocatables);
-
+   		final List<Allocatable> allocatables = model.getSelectedAllocatablesSorted();
    		builder.setSmallBlocks( true );
    		GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
    		strategy.setAllocatables(allocatables);

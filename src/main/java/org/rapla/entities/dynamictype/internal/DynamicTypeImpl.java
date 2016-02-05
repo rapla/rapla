@@ -297,8 +297,14 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     	return lastChanged;
     }
 
-    public Date getCreateTime() {
+    public Date getCreateDate() {
         return createDate;
+    }
+
+    @Override public void setCreateDate(Date date)
+    {
+        checkWritable();
+        this.createDate = date;
     }
 
     public void setLastChanged(Date date) {

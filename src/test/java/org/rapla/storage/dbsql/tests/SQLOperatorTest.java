@@ -769,7 +769,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     		categoryId = category.getReference();
     		category.setKey("testKey");
             final Category superCategory1 = facade.getSuperCategory();
-            superCategoryCreateDate = superCategory1.getCreateTime();
+            superCategoryCreateDate = superCategory1.getCreateDate();
             Category superCategory = facade.edit(superCategory1);
     		superCategory.addCategory(category);
     		facade.storeAndRemove(new Entity[]{superCategory}, Entity.ENTITY_ARRAY, user);
@@ -799,7 +799,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     	{
             final UpdateResult updatesBefore = operator.getUpdateResult(startAll);
             final Category newSupercategory = updatesBefore.getLastKnown(Category.SUPER_CATEGORY_REF);
-            Assert.assertEquals(superCategoryCreateDate, newSupercategory.getCreateTime());
+            Assert.assertEquals(superCategoryCreateDate, newSupercategory.getCreateDate());
             Assert.assertEquals(4, updatesBefore.getIds(UpdateResult.Add.class).size());
             Assert.assertEquals(1, updatesBefore.getIds(UpdateResult.Change.class).size());
             Assert.assertEquals(0, updatesBefore.getIds(UpdateResult.Remove.class).size());
@@ -936,7 +936,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     	final UpdateResult updates = operator.getUpdateResult(startAll);
     	Assert.assertTrue(updates.getIds(UpdateResult.Add.class).isEmpty());
     	Assert.assertEquals("Only super category expected to be changed.",1, updates.getIds(UpdateResult.Change.class).size());
-    	Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).isEmpty());
+    	Assert.assertEquals(1,updates.getIds(UpdateResult.Remove.class).size());
     
     }
 }

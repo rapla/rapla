@@ -120,7 +120,6 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
         builder.setSplitByAllocatables( true );
         
         final List<Allocatable> allocatables = getSortedAllocatables();
-        builder.selectAllocatables(allocatables);
         GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() )
         {
         	@Override

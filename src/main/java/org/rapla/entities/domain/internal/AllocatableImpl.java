@@ -93,18 +93,19 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         return lastChanged;
     }
     
-    public Date getCreateTime() {
+    public Date getCreateDate() {
         return createDate;
+    }
+
+    @Override public void setCreateDate(Date date)
+    {
+        checkWritable();
+        this.createDate = date;
     }
 
     public void setLastChanged(Date date) {
         checkWritable();
         lastChanged = date;
-    }
-    
-    public void setCreateDate(Date createDate) {
-        checkWritable();
-        this.createDate = createDate;
     }
     
     @Override public Class<Allocatable> getTypeClass()

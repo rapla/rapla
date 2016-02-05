@@ -1165,7 +1165,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>  {
 	  	setString(stmt,2, typeKey );
 		org.rapla.entities.Timestamp timestamp = allocatable;
 		setId(stmt,3, allocatable.getOwnerRef() );
-        setTimestamp(stmt, 4,timestamp.getCreateTime() );
+        setTimestamp(stmt, 4,timestamp.getCreateDate() );
 		setTimestamp(stmt, 5,timestamp.getLastChanged() );
 		setId( stmt,6,timestamp.getLastChangedBy() );
 		stmt.addBatch();
@@ -1267,7 +1267,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
       	setString(stmt,2, typeKey );
     	setId(stmt,3, event.getOwnerRef() );
     	org.rapla.entities.Timestamp timestamp = event;
-        Date createTime = timestamp.getCreateTime();
+        Date createTime = timestamp.getCreateDate();
         setTimestamp( stmt,4,createTime);
         setTimestamp( stmt,5,timestamp.getLastChanged());
         setId(stmt, 6, timestamp.getLastChangedBy());
@@ -2153,7 +2153,7 @@ class UserStorage extends RaplaTypeStorage<User> {
     	setString(stmt,4,user.getName());
     	setString(stmt,5,user.getEmail());
     	stmt.setInt(6,user.isAdmin()?1:0);
-        setTimestamp(stmt, 7, user.getCreateTime() );
+        setTimestamp(stmt, 7, user.getCreateDate() );
    		setTimestamp(stmt, 8, user.getLastChanged() );
    		stmt.addBatch();
    		return 1;

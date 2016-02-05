@@ -11,10 +11,13 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+import org.rapla.entities.storage.ReferenceInfo;
+
 import java.util.Comparator;
 
 
 public class AppointmentStartComparator implements Comparator<Appointment> {
+
     public int compare(Appointment a1,Appointment a2) {
         if ( a1.equals(a2)) return 0;
         if (a1.getStart().before(a2.getStart()))

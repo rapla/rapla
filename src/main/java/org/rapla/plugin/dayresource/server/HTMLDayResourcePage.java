@@ -21,6 +21,7 @@ import org.rapla.plugin.weekview.server.HTMLDayViewPage;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 import javax.inject.Inject;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
 
 	@Override
 	protected AbstractHTMLView createCalendarView() {
+		final List<Allocatable> selectedAllocatablesSorted = model.getSelectedAllocatablesSorted();
         HTMLWeekView weekView = new HTMLWeekView(){
             
             
@@ -45,7 +47,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
         	{
             	try 
             	{
-					Allocatable allocatable = getSortedAllocatables().get(i);
+					Allocatable allocatable = selectedAllocatablesSorted.get(i);
 					return  allocatable.getName( getRaplaLocale().getLocale());
 				} 
             	catch (RaplaException e) {
@@ -88,9 +90,8 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
 	protected RaplaBuilder createBuilder() throws RaplaException {
         RaplaBuilder builder = super.createBuilder();
 
-        final List<Allocatable> allocatables = getSortedAllocatables();
+        final List<Allocatable> allocatables = model.getSelectedAllocatablesSorted();
         builder.setSplitByAllocatables( true );
-        builder.selectAllocatables(allocatables);
         GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() )
         {
         	@Override

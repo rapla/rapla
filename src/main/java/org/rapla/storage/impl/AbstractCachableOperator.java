@@ -764,7 +764,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 		if ( newEntity instanceof Timestamp)
         {
-            Date createTime = ((Timestamp)newEntity).getCreateTime();
+            Date createTime = ((Timestamp)newEntity).getCreateDate();
             if ( createTime != null )
             {
                 createdBeforeSince = createTime.before( since);

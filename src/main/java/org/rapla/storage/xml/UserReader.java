@@ -126,7 +126,7 @@ public class UserReader extends RaplaXMLReader
             if ( group != null)
             {
                 // add the groups to the user if the groups were not there in a previous version
-                Date createTime = group.getCreateTime();
+                Date createTime = group.getCreateDate();
                 RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.class);
                 Date categoryCreateTime = dynamicTypeReader.getReadTimestamp();
                 if (categoryCreateTime.equals(createTime))

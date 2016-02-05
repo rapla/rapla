@@ -13,14 +13,12 @@
 package org.rapla.storage.dbsql;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.util.Cancelable;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -49,7 +47,6 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
-import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
@@ -538,20 +535,7 @@ import java.util.concurrent.locks.Lock;
         return false;
     }
 
-    protected void updateLastChangedUser(UpdateEvent evt) throws RaplaException
-    {
-        String userId = evt.getUserId();
-        User lastChangedBy = (userId != null) ? resolve(userId, User.class) : null;
 
-        for (Entity e : evt.getStoreObjects())
-        {
-            if (e instanceof ModifiableTimestamp)
-            {
-                ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp) e;
-                modifiableTimestamp.setLastChangedBy(lastChangedBy);
-            }
-        }
-    }
 
     private Map<String, TableDef> loadDBSchema(Connection c) throws SQLException
     {
@@ -658,7 +642,6 @@ import java.util.concurrent.locks.Lock;
         {
             //Date since = lastUpdated;
             preprocessEventStorage(evt);
-            updateLastChangedUser(evt);
             Collection<Entity> storeObjects = evt.getStoreObjects();
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
             Collection<ReferenceInfo> removeObjects = evt.getRemoveIds();
@@ -669,7 +652,7 @@ import java.util.concurrent.locks.Lock;
             Connection connection = createConnection();
             try
             {
-                dbStore(storeObjects, preferencePatches, removeObjects, connection);
+                dbStore(storeObjects, preferencePatches, removeObjects, connection, evt.getUserId());
                 try
                 {
                     refreshWithoutLock(connection);
@@ -693,7 +676,7 @@ import java.util.concurrent.locks.Lock;
     }
 
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects,
-            Connection connection)
+            Connection connection, String userId)
     {
         final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<ReferenceInfo>();
         for (Entity entity : storeObjects)
@@ -715,6 +698,24 @@ import java.util.concurrent.locks.Lock;
         try
         {
             connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
+            User lastChangedBy = (userId != null) ? resolve(userId, User.class) : null;
+            for (Entity e : storeObjects)
+            {
+                if (e instanceof ModifiableTimestamp)
+                {
+                    ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp) e;
+                    if ( lastChangedBy != null)
+                    {
+                        modifiableTimestamp.setLastChangedBy(lastChangedBy);
+                    }
+                    final Entity entity = tryResolve(e.getReference());
+                    if ( entity == null)
+                    {
+                        modifiableTimestamp.setCreateDate( connectionTimestamp );
+                    }
+                }
+            }
+
             raplaSQLOutput.getLocks(connection, connectionTimestamp, lockIds, null);
             for (ReferenceInfo id : removeObjects)
             {
@@ -811,7 +812,7 @@ import java.util.concurrent.locks.Lock;
         }
         try (Connection connection = createConnection())
         {
-            dbStore(storeObjects, preferencePatches, removeObjects, connection);
+            dbStore(storeObjects, preferencePatches, removeObjects, connection, null);
         }
         catch (Exception ex)
         {
@@ -953,10 +954,8 @@ import java.util.concurrent.locks.Lock;
         {
             final Category historyCategory = (Category)history.getEntity(latest);
             superCategory.setLastChanged( historyCategory.getLastChanged());
-            superCategory.setCreateTime( historyCategory.getCreateTime());
+            superCategory.setCreateDate(historyCategory.getCreateDate());
         }
-
-
         cache.putAll(list);
         resolveInitial(list, this);
         removeInconsistentEntities(cache, list);
@@ -964,7 +963,7 @@ import java.util.concurrent.locks.Lock;
         cache.putAll(migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
         Collection<ReferenceInfo> removeObjects = Collections.emptyList();
-        dbStore(migratedTemplates, preferencePatches, removeObjects, connection);
+        dbStore(migratedTemplates, preferencePatches, removeObjects, connection, null);
         // It is important to do the read only later because some resolve might involve write to referenced objects
         for (Entity entity : list)
         {

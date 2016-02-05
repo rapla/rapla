@@ -174,14 +174,21 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return lastChanged;
     }
 
-    public Date getCreateTime()
+    public Date getCreateDate()
     {
         return lastChanged;
     }
 
     public void setLastChanged(Date date)
     {
+        checkWritable();
         lastChanged = date;
+    }
+
+    @Override public void setCreateDate(Date date)
+    {
+        checkWritable();
+        this.lastChanged = date;
     }
 
     public String getReservation1Name()
