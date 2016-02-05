@@ -33,6 +33,7 @@ import javax.inject.Named;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
@@ -65,7 +66,6 @@ import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.UpdateResult;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
@@ -321,6 +321,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
             // contextualize all Entities
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Entities contextualized");
+            // init history
+            for (Entity entity : new IterableChain<>(list, migratedTemplates))
+            {
+                if(EntityHistory.isSupportedEntity(entity.getTypeClass()))
+                {
+                    history.addHistoryEntry(entity, lastUpdated, false);
+                }
+            }
         }
         catch (RaplaException ex)
         {
