@@ -877,7 +877,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				}
 			}
 		}
-		return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
+		final Collection<Allocatable> allocatablesWithDependent = operator.createWithDependent(allocatables);
+        return operator.getFirstAllocatableBindings(allocatablesWithDependent, appointments, ignoreList);
 	}
 	
 	

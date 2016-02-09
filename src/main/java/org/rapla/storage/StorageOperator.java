@@ -23,6 +23,11 @@
  */
 package org.rapla.storage;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -38,10 +43,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
 
 public interface StorageOperator extends EntityResolver {
 	int MAX_DEPENDENCY = 20;
@@ -128,5 +129,6 @@ public interface StorageOperator extends EntityResolver {
 	//Collection<String> getTemplateNames() throws RaplaException;
 
     FunctionFactory getFunctionFactory(String functionName);
+    List<Allocatable> createWithDependent(Collection<Allocatable> allocatables);
     
 }

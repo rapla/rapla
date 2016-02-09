@@ -662,6 +662,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
             getLogger().debug("Data flushed");
             bSessionActive = true;
             User user = cache.resolve( userId, User.class);
+            initIndizesForDependencies(storeObjects);
             return user;
         }
 
@@ -1116,6 +1117,7 @@ public class RemoteOperator  extends  AbstractCachableOperator implements  Resta
                 Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
                 Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
     	        result = update( since, until, storeObjects1, preferencePatches, removedIds);
+    	        updateIndizesForDependencies(result);
     	    }
     	    finally
     	    {

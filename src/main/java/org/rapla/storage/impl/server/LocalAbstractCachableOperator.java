@@ -196,7 +196,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         return scheduler;
     }
-
+    
     protected void addInternalTypes(LocalCache cache) throws RaplaException
     {
         {
@@ -1033,6 +1033,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
+        initIndizesForDependencies(cache.getAllocatables());
         scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 3;
         scheduleConnectedTasks(new Command()
@@ -1258,6 +1259,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Set<ReferenceInfo<Conflict>> conflictsToDelete = getConflictsToDelete(conflictChanges);
         removeConflictsFromDatabase(conflictsToDelete);
         removeConflictsFromCache(conflictsToDelete);
+        updateIndizesForDependencies(result);
         return calculatedConflictChanges;
 
         //      Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
@@ -1828,7 +1830,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected SortedSet<Appointment> getAppointments(Allocatable allocatable)
     {
         Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
-        fillBelongsTo(allocatable, allocatableIds, 0);
+        fillDependent(allocatable, allocatableIds);
         if (allocatableIds.size() == 0)
         {
             SortedSet<Appointment> s = appointmentBindings.getAppointments(null);
@@ -1850,26 +1852,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
             return transitive;
-        }
-    }
-
-    private void fillBelongsTo(Allocatable allocatable, Set<ReferenceInfo<Allocatable>> allocatableIds, int depth)
-    {
-        if (depth > 20)
-        {
-            throw new IllegalStateException("Cycle in belongsTo detected");
-        }
-        if (allocatable != null)
-        {
-            allocatableIds.add(allocatable.getReference());
-            final Classification classification = allocatable.getClassification();
-            final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
-            if (belongsToAttribute != null)
-            {
-                final Allocatable parent = (Allocatable) classification.getValue(belongsToAttribute);
-                fillBelongsTo(parent, allocatableIds, depth + 1);
-            }
-
         }
     }
 

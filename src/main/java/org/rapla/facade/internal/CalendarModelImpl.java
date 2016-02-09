@@ -985,7 +985,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
         Collections.sort(result, new NamedComparator<Allocatable>( locale ));
-        return result;
+        List<Allocatable> filled = operator.createWithDependent(result);
+        return filled;
     }
 
     protected Collection<Allocatable> getSelectedAllocatablesAsList()

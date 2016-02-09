@@ -211,7 +211,7 @@ public class ClientFacadeTest  {
             final Appointment firstAppointment = orig.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
             final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
-                    .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
+                    .getAllocatableBindings(allocatables, Arrays.asList(firstAppointment));
             final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
             for (Allocatable allocatable : allocatables)
             {
@@ -220,7 +220,7 @@ public class ClientFacadeTest  {
                 Assert.assertEquals(1, allocatedAppointments.size());
             }
         }
-        {// check that your own booking is not shown
+        {// check that your own booking is shown
             // first remove the new stored event
             facade.remove(newEvent);
             // now add the childChildResource to parent and store it
@@ -230,13 +230,13 @@ public class ClientFacadeTest  {
             final Appointment firstAppointment = orig.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
             final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
-                    .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
+                    .getAllocatableBindings(allocatables, Arrays.asList(firstAppointment));
             final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
             for (Allocatable allocatable : allocatables)
             {
                 final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
                 Assert.assertTrue(allocatedAppointments.contains(firstAppointment));
-                Assert.assertEquals(0, allocatedAppointments.size());
+                Assert.assertEquals(1, allocatedAppointments.size());
             }
         }
     }
@@ -329,7 +329,7 @@ public class ClientFacadeTest  {
             }
         }
     }
-
+    
     @Test
     public void testConflicts() throws Exception {
         Conflict[] conflicts= facade.getConflicts( );
