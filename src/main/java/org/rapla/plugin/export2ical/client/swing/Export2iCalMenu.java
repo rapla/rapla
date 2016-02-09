@@ -7,6 +7,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
@@ -30,8 +31,12 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{
@@ -68,13 +73,13 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	public void actionPerformed(ActionEvent evt) {
 		getCalendarOptions();
 		try {
-		    Reservation[] reservations = calendarModel.getReservations();
-		    Allocatable[] allocatables = calendarModel.getSelectedAllocatables();
-		    List<Appointment> appointments= AppointmentImpl.getAppointments(Arrays.asList(reservations), Arrays.asList(allocatables));
-		    String[] appointmentIds = new String[appointments.size()];
-		    for ( int i=0;i<appointmentIds.length;i++)
+
+			final TimeInterval interval = new TimeInterval(calendarModel.getStartDate(), calendarModel.getEndDate());
+			Collection<Appointment> appointments= calendarModel.getAppointments(interval);
+		    Set<String> appointmentIds = new LinkedHashSet<String>();
+		    for ( Appointment app:appointments)
 		    {
-		    	appointmentIds[i] =  appointments.get(i).getId();
+		    	appointmentIds.add(app.getId());
 		    }
 		    String result = exportService.export(appointmentIds);
 		    if ( result.trim().length() == 0)

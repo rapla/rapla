@@ -914,7 +914,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		 return null;
 	 }
 
-    public static List<Appointment> getAppointments(
+
+/*
+   public static List<Appointment> getAppointments(
     		Collection<Reservation> reservations,
     		Collection<Allocatable> allocatables) {
     	List<Appointment> appointments = new ArrayList<Appointment>();
@@ -947,7 +949,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         }
     	return appointments;
     }
-
+*/
 }
 
 

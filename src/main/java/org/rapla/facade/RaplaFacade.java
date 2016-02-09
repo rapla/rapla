@@ -40,13 +40,10 @@ import java.util.Map;
 
 /** A collection of all module-interfaces
 */
-
 public interface RaplaFacade
 {
     /** Methods for quering the various entities of the backend
      */
-
-
     StorageOperator getOperator();
     PermissionController getPermissionController();
 

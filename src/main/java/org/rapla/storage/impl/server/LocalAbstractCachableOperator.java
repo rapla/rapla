@@ -403,7 +403,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * @param user the owner of the reservation or null for reservations from all users
      */
-    public FutureResult<Collection<Reservation>> getReservations(User user, Collection<Allocatable> allocatables, Date start, Date end,
+    public FutureResult<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
             ClassificationFilter[] filters, Map<String, String> annotationQuery)
     {
         boolean excludeExceptions = false;
@@ -414,6 +414,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         try
         {
+            Map<Allocatable,Collection<Appointment>> result = new LinkedHashMap<Allocatable,Collection<Appointment>>();
             for (Allocatable allocatable : allocatables)
             {
                 Lock readLock = readLock();
@@ -440,19 +441,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         continue;
                     }
+                    if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
+                    {
+                        continue;
+                    }
                     if (!reservationSet.contains(reservation))
                     {
                         reservationSet.add(reservation);
                     }
+                    Collection<Appointment> appointmentCollection = result.get(allocatable);
+                    if(appointmentCollection == null)
+                    {
+                        appointmentCollection = new LinkedHashSet<>();
+                        result.put(allocatable, appointmentCollection);
+                    }
+                    appointmentCollection.add(appointment);
                 }
             }
-            ArrayList<Reservation> result = new ArrayList<Reservation>(reservationSet);
-            removeFilteredClassifications(result, filters);
-            return new ResultImpl<Collection<Reservation>>(result);
+            return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(result);
         }
         catch (RaplaException ex)
         {
-            return new ResultImpl<Collection<Reservation>>(ex);
+            return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(ex);
         }
     }
 
@@ -3747,4 +3757,204 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         checkConnected();
         return calendarModelCache.findMatchingUser(appointment);
     }
+
+    /*
+     * Dependencies for belongsTo and package
+     */
+    private final Map<Allocatable, Collection<Allocatable>> reversedBelongsToMap = new HashMap<Allocatable, Collection<Allocatable>>();
+    private final Map<Allocatable, Collection<Allocatable>> reversedPackage = new HashMap<Allocatable, Collection<Allocatable>>();
+
+    private void add(Entity entity)
+    {
+        if (entity instanceof Allocatable)
+        {
+            Allocatable alloc = (Allocatable) entity;
+            final Classification classification = alloc.getClassification();
+            final DynamicType type = classification.getType();
+            final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
+            if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
+            {
+                final Allocatable belongsToValue = (Allocatable) classification.getValue(belongsToAttribute);
+                Collection<Allocatable> collection = reversedBelongsToMap.get(belongsToValue);
+                if (collection == null)
+                {
+                    collection = new HashSet<Allocatable>();
+                    reversedBelongsToMap.put(belongsToValue, collection);
+                }
+                collection.add(alloc);
+            }
+            final Attribute packagesToAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
+            if (packagesToAttribute != null && classification.getValues(packagesToAttribute) != null)
+            {
+                final Collection<Object> values = classification.getValues(packagesToAttribute);
+                for (Object object : values)
+                {
+                    Allocatable target = (Allocatable) object;
+                    Collection<Allocatable> collection = reversedPackage.get(target);
+                    if (collection == null)
+                    {
+                        collection = new HashSet<Allocatable>();
+                        reversedPackage.put(target, collection);
+                    }
+                    collection.add(alloc);
+                }
+            }
+        }
+    }
+
+    private void remove(Entity entity)
+    {
+        if (entity instanceof Allocatable)
+        {
+            final Allocatable alloc = (Allocatable) entity;
+            final Classification classification = alloc.getClassification();
+            final DynamicType type = classification.getType();
+            final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
+            if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
+            {
+                Allocatable belongsTo = (Allocatable) classification.getValue(belongsToAttribute);
+                final Collection<Allocatable> collection = reversedBelongsToMap.get(belongsTo);
+                Assert.notNull(collection);
+                final boolean removed = collection.remove(alloc);
+                Assert.isTrue(removed);
+            }
+            final Attribute packageAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
+            if (packageAttribute != null && classification.getValues(packageAttribute) != null)
+            {
+                final Collection<Object> values = classification.getValues(packageAttribute);
+                for (Object object : values)
+                {
+                    Allocatable packageAlloc = (Allocatable) object;
+                    final Collection<Allocatable> collection = reversedPackage.get(packageAlloc);
+                    Assert.notNull(collection);
+                    final boolean removed = collection.remove(alloc);
+                    Assert.isTrue(removed);
+                }
+            }
+        }
+    }
+
+    protected final void initIndizesForDependencies(Collection<? extends Entity> entities)
+    {
+        for (Entity entity : entities)
+        {
+            add(entity);
+        }
+    }
+
+    protected final void updateIndizesForDependencies(UpdateResult updateResult)
+    {
+        final Iterable<UpdateOperation> operations = updateResult.getOperations();
+        for (UpdateOperation<Entity> operation : operations)
+        {
+            if (operation instanceof Add)
+            {
+                final Entity lastKnown = updateResult.getLastKnown(operation.getReference());
+                add(lastKnown);
+            }
+            else if (operation instanceof Change)
+            {
+                final Entity lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(operation.getReference());
+                remove(lastEntryBeforeUpdate);
+                final Entity lastKnown = updateResult.getLastKnown(operation.getReference());
+                add(lastKnown);
+            }
+            else if (operation instanceof Remove)
+            {
+                final Entity lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(operation.getReference());
+                remove(lastEntryBeforeUpdate);
+            }
+            else
+            {
+                logger.warn("unknown operation " + operation);
+            }
+        }
+    }
+
+    protected void fillDependent(final Allocatable allocatable, final Set<ReferenceInfo<Allocatable>> dependentAllocatables)
+    {
+        fillDependent(allocatable, dependentAllocatables, true, 0);
+        fillDependent(allocatable, dependentAllocatables, false, 0);
+    }
+
+    private void fillDependent(final Allocatable allocatable, final Set<ReferenceInfo<Allocatable>> dependentAllocatables, boolean downwards, final int depth)
+    {
+        if (depth > 20)
+        {
+            throw new IllegalStateException("Cycle in dependencies detected");
+        }
+        if (allocatable != null)
+        {
+            if (downwards)
+            {
+                final Collection<Allocatable> collection = reversedBelongsToMap.get(allocatable);
+                if (collection != null)
+                {
+                    for (Allocatable alloc : collection)
+                    {
+                        if (dependentAllocatables.add(alloc.getReference()))
+                        {
+                            fillDependent(alloc, dependentAllocatables, true, depth + 1);
+                        }
+                    }
+                }
+                final Classification classification = allocatable.getClassification();
+                final DynamicType type = classification.getType();
+                final Attribute packagesAttribute = ((DynamicTypeImpl)type).getPackagesAttribute();
+                if (packagesAttribute != null)
+                {
+                    final Collection<Object> values = classification.getValues(packagesAttribute);
+                    if(values != null)
+                    {
+                        for (Object target : values)
+                        {
+                            Allocatable alloc = (Allocatable) target;
+                            if (dependentAllocatables.add(alloc.getReference()))
+                            {
+                                fillDependent(alloc, dependentAllocatables, true, depth + 1);
+                                fillDependent(alloc, dependentAllocatables, false, depth + 1);
+                            }
+                        }
+                    }
+                }
+            }
+            {
+                if (dependentAllocatables.add(allocatable.getReference()))
+                {
+                    final Classification classification = allocatable.getClassification();
+                    final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
+                    if (belongsToAttribute != null)
+                    {
+                        final Allocatable parent = (Allocatable) classification.getValue(belongsToAttribute);
+                        fillDependent(parent, dependentAllocatables, false, depth + 1);
+                    }
+
+                    final Collection<Allocatable> collection = reversedPackage.get(allocatable);
+                    if (collection != null)
+                    {
+                        for (Allocatable alloc : collection)
+                        {
+                            dependentAllocatables.add(alloc.getReference());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public List<Allocatable> queryDependent(Collection<Allocatable> allocatables)
+    {
+        Set<ReferenceInfo<Allocatable>> ids = new LinkedHashSet<>();
+        for (Allocatable allocatable : allocatables)
+        {
+            fillDependent(allocatable, ids);
+        }
+        final ArrayList<Allocatable> result = new ArrayList<Allocatable>();
+        for (ReferenceInfo<Allocatable> id : ids)
+        {
+            result.add(resolve(id));
+        }
+        return result;
+    }
+
 }

@@ -93,11 +93,12 @@ public abstract class RaplaBuilder
     private boolean isResourceColoring;
     private boolean isEventColoring;
     private boolean nonFilteredEventsVisible;
+    Map<Allocatable,Collection<Appointment>> bindings;
 
     /** default buildStrategy is {@link GroupAllocatablesStrategy}.*/
     BuildStrategy buildStrategy;
 
-    HashSet<Reservation> allReservationsForAllocatables = new HashSet<Reservation>();
+    //HashSet<Reservation> allReservationsForAllocatables = new HashSet<Reservation>();
 
     
     public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
@@ -147,7 +148,6 @@ public abstract class RaplaBuilder
     	conflictsSelected.clear();
         conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
         Collection<Allocatable> allocatables ;
-        List<Reservation> filteredReservations;
         if ( !conflictsSelected.isEmpty() )
         {
             allocatables = Util.getAllocatables( conflictsSelected );
@@ -161,37 +161,42 @@ public abstract class RaplaBuilder
 
         }
      
-        allReservationsForAllocatables.clear();
         if ( startDate != null && !allocatables.isEmpty()) {
-            Reservation[] events = model.getReservations( startDate, endDate);
-            List<Reservation> reservationsForAllocatables = Arrays.asList(events);
-			allReservationsForAllocatables.addAll( reservationsForAllocatables);
+            // FIXME
+//            Reservation[] events = model.getReservations( startDate, endDate);
+//            List<Reservation> reservationsForAllocatables = Arrays.asList(events);
+//			allReservationsForAllocatables.addAll( reservationsForAllocatables);
         }
-    
+        bindings = model.queryAppointments(startDate, endDate);
         if ( !conflictsSelected.isEmpty() )
         {
-        	filteredReservations =  Arrays.asList(model.getReservations());
-        	conflictingAppointments = ConflictImpl.getMap( conflictsSelected, filteredReservations);
+            Collection<Appointment> all = new LinkedHashSet<Appointment>();
+            for ( Collection<Appointment> appointments: bindings.values())
+            {
+                all.addAll( appointments);
+            }
+        	conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
         }
         else
         {
-        	if ( allocatables.isEmpty() || startDate == null)
-        	{
-        		filteredReservations = Arrays.asList( model.getReservations(  startDate, endDate ));
-        	}
-        	else
-        	{
-        		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
-        	}
+            // FIXME check if needed
+//        	if ( allocatables.isEmpty() || startDate == null)
+            //        	{
+            //        		filteredReservations = Arrays.asList( model.getReservations(  startDate, endDate ));
+            //        	}
+            //        	else
+            //        	{
+            //        		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
+            //        	}
         }
+        selectedReservations = CalendarModelImpl.getAllReservations(bindings );
         User user = model.getUser();
 		CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions( user, getClientFacade());
         nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
         isResourceColoring =calendarOptions.isResourceColoring();
         isEventColoring =calendarOptions.isEventColoring();
-		Collection<Reservation> reservations = new HashSet<Reservation>(filteredReservations);
-        this.selectedReservations= reservations;
-        setEditingUser( user);
+
+        setEditingUser(user);
         setExceptionsExcluded( !calendarOptions.isExceptionsVisible());
 
         /* Uncomment this to color allocatables in the reservation view
@@ -413,11 +418,22 @@ public abstract class RaplaBuilder
     public PreperationResult prepareBuild(Date start,Date end) {
     	boolean excludeExceptions = isExceptionsExcluded();
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
-        HashSet<Reservation> allReservations = new HashSet<Reservation>( selectedReservations);
-        allReservations.addAll( allReservationsForAllocatables);
-        
+
         //long time = System.currentTimeMillis();
-        Collection<Appointment> appointments = AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
+        Collection<Appointment> appointments = new LinkedHashSet<Appointment>();
+        // FIXME
+        if ( nonFilteredEventsVisible)
+        {
+
+        }
+        else
+        {
+        }
+        for ( Allocatable allocatable:bindings.keySet())
+        {
+            appointments.addAll( bindings.get( allocatable));
+        }
+        //= AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
         // Add appointment to the blocks
         final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();

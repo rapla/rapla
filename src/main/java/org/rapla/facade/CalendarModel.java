@@ -14,6 +14,7 @@ import org.rapla.framework.TypedComponentRole;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public interface CalendarModel extends Cloneable, ClassifiableFilter 
 {
@@ -52,6 +53,11 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
      * @see #getSelectedObjectsAndChildren */
     Allocatable[] getSelectedAllocatables() throws RaplaException;
 
+
+    //Map<Allocatable,Collection<Reservation>> queryReservations( Date startDate, Date endDate ) throws RaplaException;
+
+    /** use get */
+    @Deprecated
     Reservation[] getReservations( Date startDate, Date endDate ) throws RaplaException;
 
     Reservation[] getReservations() throws RaplaException;
@@ -72,5 +78,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     Collection<Appointment> getAppointments(TimeInterval interval) throws RaplaException;
 	
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
+
+    Map<Allocatable,Collection<Appointment>> queryAppointments(Date startDate, Date endDate);
 
 }

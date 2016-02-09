@@ -1,0 +1,136 @@
+package org.rapla.storage.dbrm;
+
+import org.rapla.components.util.Assert;
+import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.entities.Entity;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+public class AppointmentMap implements EntityReferencer
+{
+    private Set<ReservationImpl> reservations;
+    private Map<String, Set<String>> allocatableIdToAppointmentIds;
+    private transient EntityResolver resolver;
+
+    public AppointmentMap()
+    {
+
+    }
+
+    @Override public void setResolver(EntityResolver resolver)
+    {
+        this.resolver = resolver;
+        for ( ReservationImpl reservation:reservations)
+        {
+            reservation.setResolver( resolver);
+        }
+    }
+
+    @Override public Iterable<ReferenceInfo> getReferenceInfo()
+    {
+
+        return new Iterable<ReferenceInfo>()
+        {
+            @Override public Iterator<ReferenceInfo> iterator()
+            {
+                final Iterator<ReservationImpl> iterator = reservations.iterator();
+                return new Iterator<ReferenceInfo>()
+                {
+                    @Override public boolean hasNext()
+                    {
+                        return iterator.hasNext();
+                    }
+
+                    @Override public ReferenceInfo next()
+                    {
+                        return iterator.next().getReference();
+                    }
+                };
+            }
+        };
+    }
+
+    public AppointmentMap(Map<Allocatable, Collection<Appointment>> map)
+    {
+        this.allocatableIdToAppointmentIds = new LinkedHashMap<>();
+        this.reservations = new LinkedHashSet<>();
+        for (Map.Entry<Allocatable, Collection<Appointment>> entry : map.entrySet())
+        {
+            final String allocatableId = entry.getKey().getId();
+            Set<String> ids = allocatableIdToAppointmentIds.get(allocatableId);
+            if (ids == null)
+            {
+                ids = new LinkedHashSet<>();
+                allocatableIdToAppointmentIds.put(allocatableId, ids);
+            }
+            final Collection<Appointment> value = entry.getValue();
+            for (Appointment app : value)
+            {
+                reservations.add((ReservationImpl) app.getReservation());
+                ids.add(app.getId());
+            }
+        }
+    }
+
+    public Map<Allocatable, Collection<Appointment>> getResult(ClassificationFilter[] filters)
+    {
+        Map<String, Appointment> appointmentIdToAppointment = new LinkedHashMap<>();
+        for (ReservationImpl reservation : reservations)
+        {
+            if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
+            {
+                continue;
+            }
+            final Appointment[] appointments = reservation.getAppointments();
+            for (Appointment app : appointments)
+            {
+                appointmentIdToAppointment.put(app.getId(), app);
+            }
+        }
+        final LinkedHashMap<Allocatable, Collection<Appointment>> result = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : allocatableIdToAppointmentIds.entrySet())
+        {
+            final String key = entry.getKey();
+            final Set<String> value = entry.getValue();
+            final Allocatable allocatable = resolver.tryResolve(new ReferenceInfo<Allocatable>(key, Allocatable.class));
+            if (allocatable != null)
+            {
+                Collection<Appointment> appointments = result.get(allocatable);
+                if (appointments == null)
+                {
+                    appointments = new LinkedHashSet<>();
+                    result.put(allocatable, appointments);
+                }
+                for (String appointmentId : value)
+                {
+                    Appointment app = appointmentIdToAppointment.get(appointmentId);
+                    Assert.notNull(app);
+                    appointments.add(app);
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override public String toString()
+    {
+        return "AppointmentMap{" +
+                "reservations=" + reservations +
+                ", allocatableIdToAppointmentIds=" + allocatableIdToAppointmentIds +
+                '}';
+    }
+}

@@ -11,6 +11,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
@@ -59,7 +60,8 @@ import java.util.Map;
         ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         Map<String, String> annotationQuery = null;
         User owner = null;
-        Collection<Reservation> reservations = operator.getReservations(owner, allocatables, start, end, filters, annotationQuery).get();
+        Map<Allocatable, Collection<Appointment>> appMap = operator.queryAppointments(owner, allocatables, start, end, filters, annotationQuery).get();
+        final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
         List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         PermissionController permissionController = facade.getPermissionController();
         for (Reservation r : reservations)

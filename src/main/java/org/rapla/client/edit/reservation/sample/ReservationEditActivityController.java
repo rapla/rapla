@@ -43,14 +43,13 @@ public class ReservationEditActivityController  implements ActivityPresenter
         {
             final StorageOperator operator = facade.getOperator();
             final ReferenceInfo<Reservation> info = new ReferenceInfo(activity.getInfo(), Reservation.class);
-            final List<ReferenceInfo> referenceInfos =  (List)Collections.singletonList(info);
-            final Map<ReferenceInfo, Entity> entities = operator.getFromId(referenceInfos, false);
-            final Collection<Entity> values = entities.values();
-            for (Entity entity : values)
+            final List<ReferenceInfo<Reservation>> referenceInfos =  (List)Collections.singletonList(info);
+            final Map<ReferenceInfo<Reservation>, Reservation> entities = operator.getFromId(referenceInfos, false);
+            final Collection<Reservation> values = entities.values();
+            for (Reservation reservation : values)
             {
-                if (entity != null && entity instanceof Reservation)
+                if (reservation != null )
                 {
-                    final Reservation reservation = (Reservation) entity;
                     final ReservationPresenter alreadyOpendPresenter = opendPresenter.get(reservation.getId());
                     if(alreadyOpendPresenter == null || !alreadyOpendPresenter.isVisible())
                     {

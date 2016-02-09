@@ -39,8 +39,10 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
@@ -51,7 +53,6 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PermissionController;
-import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
@@ -160,24 +161,27 @@ public class LocalCacheTest  {
 		            Map<String, String> annotationQuery = null;
 		            {
 		                final Period period = periods[2];
-		                Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(),filters,annotationQuery).get();
-                        Assert.assertEquals(0, reservations.size());
+		                Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(null, null, period.getStart(), period.getEnd(), filters,
+                                annotationQuery).get();
+                        Assert.assertEquals(0, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		            {
 		                final Period period = periods[1];
-	                    Collection<Reservation> reservations = storage.getReservations(null,null,period.getStart(),period.getEnd(), filters,annotationQuery).get();
-                        Assert.assertEquals(2, reservations.size());
+	                    Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(null, null, period.getStart(), period.getEnd(), filters,
+                                annotationQuery).get();
+                        Assert.assertEquals(2, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		            {
     		            User user = cache.getUser("homer");
-    		            Collection<Reservation> reservations = storage.getReservations(user,null,null,null, filters,annotationQuery).get();
-                        Assert.assertEquals(3, reservations.size());
+    		            Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(user, null, null, null, filters, annotationQuery).get();
+                        Assert.assertEquals(3, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		            {
 		                User user = cache.getUser("homer");
 		                final Period period = periods[1];
-                        Collection<Reservation> reservations = storage.getReservations(user,null,period.getStart(),period.getEnd(),filters, annotationQuery).get();
-                        Assert.assertEquals(2, reservations.size());
+                        Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(user, null, period.getStart(), period.getEnd(), filters,
+                                annotationQuery).get();
+                        Assert.assertEquals(2, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		        }
 			    catch (Exception ex)
@@ -229,8 +233,8 @@ public class LocalCacheTest  {
 		Collection<Allocatable> allocatables = null;
 		Map<String, String> annotationQuery = null;
 		ClassificationFilter[] filters = null;
-		Collection<Reservation> reservations = storage.getReservations(user, allocatables, startDate, endDate, filters,annotationQuery).get();
-        Assert.assertEquals(1, reservations.size());
+		Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(user, allocatables, startDate, endDate, filters, annotationQuery).get();
+        Assert.assertEquals(1, CalendarModelImpl.getAllAppointments(reservations).size());
     }
 }
 

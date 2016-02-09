@@ -19,7 +19,6 @@ import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -532,11 +531,38 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
 			}
 		}
-		return getReservationsAsync(operator,user,allocatables, start, end, reservationFilters, templateId );
+		final FutureResult<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = getAppointmentsAsync(operator, user, Arrays.asList(allocatables), start, end,
+				reservationFilters, templateId);
+		return new FutureResult<Collection<Reservation>>()
+		{
+			@Override public Collection<Reservation> get() throws Exception
+			{
+				final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = appointmentsAsync.get();
+				return CalendarModelImpl.getAllReservations(allocatableCollectionMap);
+			}
+
+			@Override public void get(final AsyncCallback<Collection<Reservation>> callback)
+			{
+				appointmentsAsync.get(new AsyncCallback<Map<Allocatable, Collection<Appointment>>>()
+				{
+					@Override public void onFailure(Throwable caught)
+					{
+						callback.onFailure(caught);
+					}
+
+					@Override public void onSuccess(Map<Allocatable, Collection<Appointment>> result)
+					{
+						final Collection<Reservation> allReservations = CalendarModelImpl.getAllReservations(result);
+						callback.onSuccess(allReservations);
+					}
+				});
+			}
+		};
 	}
 
-	public static FutureResult<Collection<Reservation>> getReservationsAsync(StorageOperator operator,User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId) {
-        final List<Allocatable> allocList;
+	public static FutureResult<Map<Allocatable,Collection<Appointment>>> getAppointmentsAsync(StorageOperator operator, User user,
+			Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId) {
+        final Collection<Allocatable> allocList;
         Map<String,String> annotationQuery;
 		if ( templateId != null)
 		{
@@ -550,19 +576,19 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		    annotationQuery = null;
     		if (allocatables != null)
     		{
-    			if ( allocatables.length == 0 )
+    			if ( allocatables.size() == 0 )
     			{
-    				List<Reservation> emptyList = Collections.emptyList();
-                    return new ResultImpl<Collection<Reservation>>(emptyList);
+					Map<Allocatable,Collection<Appointment>> emptyMap = Collections.emptyMap();
+                    return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(emptyMap);
     			}
-    			allocList = Arrays.asList( allocatables);
+    			allocList = allocatables;
     		}
     		else
     		{
     			allocList = Collections.emptyList();
     		}
 		}
-		FutureResult<Collection<Reservation>> query = operator.getReservations(user,allocList, start, end, reservationFilters,annotationQuery);
+		FutureResult<Map<Allocatable,Collection<Appointment>>> query = operator.queryAppointments(user, allocList, start, end, reservationFilters, annotationQuery);
 		return query;
 	}
 
@@ -641,7 +667,9 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
 		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
         try {
-            Collection<Reservation> result = operator.getReservations(user,allocList, start, end,null, annotationQuery).get();
+			final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = operator.queryAppointments(user, allocList, start, end, null,
+					annotationQuery).get();
+			Collection<Reservation> result = (Collection<Reservation>) allocatableCollectionMap;
             return result;
         } catch (RaplaException e) {
             throw e;
@@ -877,8 +905,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				}
 			}
 		}
-		final Collection<Allocatable> allocatablesWithDependent = operator.createWithDependent(allocatables);
-        return operator.getFirstAllocatableBindings(allocatablesWithDependent, appointments, ignoreList);
+        return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
 	}
 	
 	

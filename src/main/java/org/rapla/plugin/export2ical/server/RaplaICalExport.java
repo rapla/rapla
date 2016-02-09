@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 
 @DefaultImplementation(of = ICalExport.class, context = InjectionContext.server)
 public class RaplaICalExport implements ICalExport
@@ -49,9 +50,9 @@ public class RaplaICalExport implements ICalExport
         this.iCalConverter = iCalConverter;
     }
 
-    public void export(User user,String[] appointmentIds, OutputStream out ) throws RaplaException, IOException
+    public void export(User user,Set<String> appointmentIds, OutputStream out ) throws RaplaException, IOException
     {
-        if ( appointmentIds.length == 0)
+        if ( appointmentIds.size() == 0)
         {
             return;
         }
@@ -86,7 +87,7 @@ public class RaplaICalExport implements ICalExport
     }
     
     @Override
-	public String export( String[] appointmentIds) throws RaplaException
+	public String export( Set<String> appointmentIds) throws RaplaException
     {
         if (!session.isAuthentified())
         {

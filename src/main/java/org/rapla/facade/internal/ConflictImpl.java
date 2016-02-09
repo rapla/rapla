@@ -711,16 +711,13 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         this.appointment2Editable = appointment2Editable;
     }
 
-    public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts, List<Reservation> reservations)
+    public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts, Collection<Appointment> appointments)
     {
         Map<Appointment, Set<Appointment>> result = new HashMap<Appointment, Set<Appointment>>();
         Map<ReferenceInfo<Appointment>, Appointment> map = new HashMap<ReferenceInfo<Appointment>, Appointment>();
-        for (Reservation reservation : reservations)
+        for (Appointment app : appointments)
         {
-            for (Appointment app : reservation.getAppointments())
-            {
-                map.put(app.getReference(), app);
-            }
+            map.put(app.getReference(), app);
         }
         for (Conflict conflict : selectedConflicts)
         {

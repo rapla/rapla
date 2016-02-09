@@ -31,7 +31,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -803,34 +802,63 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return getReservations( getStartDate(), getEndDate() );
     }
 
+    @Override public Map<Allocatable, Collection<Appointment>> queryAppointments(Date startDate, Date endDate)
+    {
+        Collection<Allocatable> allocatables = getSelectedAllocatablesSorted();
+        return getReservations( allocatables, startDate, endDate);
+    }
+
     @Override
     public Reservation[] getReservations(Date startDate, Date endDate) throws RaplaException 
     {
-        return getReservationsAsList( startDate, endDate ).toArray( Reservation.RESERVATION_ARRAY);
+        Collection<Appointment> appointments;
+        Collection<Conflict> conflicts = getSelectedConflicts();
+        if ( conflicts.size() > 0)
+        {
+            appointments = getAppointments(conflicts);
+        }
+        else {
+            final Map<Allocatable, Collection<Appointment>> appointments1 = queryAppointments(startDate, endDate);
+            appointments = getAllAppointments(appointments1);
+        }
+        Collection<Reservation> asList = getAllReservations(appointments);
+        return restrictReservations(asList).toArray( Reservation.RESERVATION_ARRAY);
+    }
+
+    public static Collection<Reservation> getAllReservations(Collection<Appointment> appointments)
+    {
+        Collection<Reservation> asList = new LinkedHashSet<Reservation>();
+        for ( Appointment appointment:appointments)
+        {
+            asList.add( appointment.getReservation());
+        }
+        return asList;
+    }
+
+    public static Collection<Reservation> getAllReservations(Map<Allocatable, Collection<Appointment>> appointmentMap)
+    {
+        final Collection<Appointment> allAppointments = getAllAppointments(appointmentMap);
+        return getAllReservations(allAppointments);
+    }
+
+    public static Collection<Appointment> getAllAppointments(Map<Allocatable, Collection<Appointment>> appointmentMap)
+    {
+        Collection<Appointment> allAppointments = new LinkedHashSet<Appointment>();
+        for ( Collection<Appointment> appointments:appointmentMap.values())
+        {
+            allAppointments.addAll(appointments);
+        }
+         return allAppointments;
     }
 
     String templateId = null;
 
-    private List<Reservation> getReservationsAsList(Date start, Date end) throws RaplaException 
-    {
-        Allocatable[] allocatables = getSelectedAllocatables();
-        if ( isNoAllocatableSelected())
-        {
-            allocatables = null;
-        }
-        Collection<Conflict> conflicts = getSelectedConflicts();
-        if ( conflicts.size() > 0)
-        {
-            return getReservations(conflicts);
-        }
-        Collection<Reservation> asList = getReservations(allocatables, start, end);
-        return restrictReservations(asList);
-    }
+
     private String cacheValidString;
-    private Collection<Reservation> cachedReservations;
+    private Map<Allocatable,Collection<Appointment>> cachedReservations;
     private boolean cachingEnabled = false;
-    private Collection<Reservation> getReservations(Allocatable[] allocatables,Date start, Date end) throws RaplaException {
-        String cacheKey = createCacheKey( allocatables, start, end);
+    private Map<Allocatable,Collection<Appointment>> getReservations(Collection<Allocatable> allocatables,Date start, Date end) throws RaplaException {
+        String cacheKey = createCacheKey(allocatables, start, end);
         if ( cachingEnabled)
         {
             if ( cacheValidString != null && cacheValidString.equals( cacheKey) && cachedReservations != null)
@@ -840,9 +868,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
 
         ClassificationFilter[] reservationFilters = null;
-        final FutureResult<Collection<Reservation>> reservationsAsync = FacadeImpl.getReservationsAsync(operator, user, allocatables, start, end,
-                reservationFilters, templateId);
-        final Collection<Reservation> reservationsForAllocatable;
+        final FutureResult<Map<Allocatable,Collection<Appointment>>> reservationsAsync = FacadeImpl.getAppointmentsAsync(operator, user, allocatables, start,
+                end, reservationFilters, templateId);
+        final Map<Allocatable,Collection<Appointment>> reservationsForAllocatable;
         try
         {
             reservationsForAllocatable = reservationsAsync.get();
@@ -865,7 +893,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         cachedReservations = null;
     }
 
-    private String createCacheKey(Allocatable[] allocatables, Date start,
+    private String createCacheKey(Collection<Allocatable> allocatables, Date start,
             Date end) {
         StringBuilder buf = new StringBuilder();
         if ( allocatables != null)
@@ -985,8 +1013,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
         Collections.sort(result, new NamedComparator<Allocatable>( locale ));
-        List<Allocatable> filled = operator.createWithDependent(result);
-        return filled;
+        //List<Allocatable> filled = operator.queryDependent(result);
+        return result;
     }
 
     protected Collection<Allocatable> getSelectedAllocatablesAsList()
@@ -1237,18 +1265,34 @@ public class CalendarModelImpl implements CalendarSelectionModel
 //      }
 //  }
 
-    private List<Reservation> getReservations(Collection<Conflict> conflicts) throws RaplaException
+    private List<Appointment> getAppointments(Collection<Conflict> conflicts) throws RaplaException
     {
-        Collection<ReferenceInfo> ids = new ArrayList<ReferenceInfo>();
+        Collection<ReferenceInfo<Reservation>> ids = new LinkedHashSet<ReferenceInfo<Reservation>>();
+        Collection<ReferenceInfo<Appointment>> appointmentIds = new LinkedHashSet<ReferenceInfo<Appointment>>();
         for ( Conflict conflict:conflicts)
         {
             ids.add(conflict.getReservation1());
             ids.add(conflict.getReservation2());
+            appointmentIds.add( conflict.getAppointment1());
+            appointmentIds.add( conflict.getAppointment2());
         }
-        Collection<Entity> values = operator.getFromId( ids, true).values();
+        Collection<Reservation> values = operator.getFromId( ids, true).values();
         @SuppressWarnings("unchecked")
         ArrayList<Reservation> converted = new ArrayList(values);
-        return converted;
+        List<Appointment> appointments = new ArrayList<Appointment>();
+        for ( Reservation reservation: converted)
+        {
+            for ( Appointment app:reservation.getAppointments())
+            {
+                final ReferenceInfo<Appointment> reference = app.getReference();
+                if ( appointmentIds.contains( reference))
+                {
+                    appointments.add( app);
+                }
+            }
+
+        }
+        return appointments;
     }
 
 
@@ -1262,7 +1306,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             selectedAllocatables = null;
         }
         Collection<Conflict> selectedConflicts = getSelectedConflicts();
-        List<Reservation> reservations = getReservations(selectedConflicts);
+        List<Appointment> reservations = getAppointments(selectedConflicts);
         Map<Appointment,Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts,reservations);
         for ( Reservation event:getReservations())
         {
@@ -1408,9 +1452,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         Date startDate = interval.getStart();
         Date endDate = interval.getEnd();
-        List<Reservation> reservations = getReservationsAsList(startDate, endDate);
-        Collection<Allocatable> allocatables =getSelectedAllocatablesAsList();
-        List<Appointment> result = AppointmentImpl.getAppointments(reservations, allocatables);
+        Map<Allocatable,Collection<Appointment>> bindings = queryAppointments(startDate, endDate);
+        Set<Appointment> result = new LinkedHashSet<Appointment>();
+        for (Collection<Appointment> appointments: bindings.values())
+        {
+            result.addAll( appointments);
+        }
         return result;
     }
 

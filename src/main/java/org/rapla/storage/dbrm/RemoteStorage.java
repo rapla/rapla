@@ -44,7 +44,8 @@ public interface RemoteStorage  {
     
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
-    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
+//    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
+	FutureResult<AppointmentMap> queryAppointments(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
 
     FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos );
 

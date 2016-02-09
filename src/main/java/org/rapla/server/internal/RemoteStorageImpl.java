@@ -42,13 +42,13 @@ import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -174,7 +174,9 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    public FutureResult<List<ReservationImpl>> getReservations(String[] allocatableIds, Date start, Date end, Map<String, String> annotationQuery)
+
+    @Override
+    public FutureResult<AppointmentMap> queryAppointments(String[] allocatableIds, Date start, Date end, Map<String, String> annotationQuery)
     {
         getLogger().debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
         try
@@ -183,7 +185,6 @@ public class RemoteStorageImpl implements RemoteStorage
             User sessionUser = getSessionUser();
             User user = null;
             // Reservations and appointments
-            ArrayList<ReservationImpl> list = new ArrayList<ReservationImpl>();
             List<Allocatable> allocatables = new ArrayList<Allocatable>();
             if (allocatableIds != null)
             {
@@ -195,29 +196,21 @@ public class RemoteStorageImpl implements RemoteStorage
                 }
             }
             ClassificationFilter[] classificationFilters = null;
-            FutureResult<Collection<Reservation>> reservationsQuery = operator
-                    .getReservations(user, allocatables, start, end, classificationFilters, annotationQuery);
-            Collection<Reservation> reservations = reservationsQuery.get();
-            for (Reservation res : reservations)
-            {
-                if (isAllocatablesVisible(sessionUser, res))
-                {
-                    ReservationImpl safeRes = checkAndMakeReservationsAnonymous(sessionUser, res);
-                    list.add(safeRes);
-                }
-
-            }
-            getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.size());
-            return new ResultImpl<List<ReservationImpl>>(list);
+            FutureResult<Map<Allocatable, Collection<Appointment>>> reservationsQuery = operator
+                    .queryAppointments(user, allocatables, start, end, classificationFilters, annotationQuery);
+            Map<Allocatable, Collection<Appointment>> reservations = reservationsQuery.get();
+            AppointmentMap list = new AppointmentMap(reservations);
+            getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
+            return new ResultImpl<AppointmentMap>(list);
         }
         catch (RaplaException ex)
         {
-            return new ResultImpl<List<ReservationImpl>>(ex);
+            return new ResultImpl<AppointmentMap>(ex);
         }
         catch (Exception ex)
         {
             getLogger().error(ex.getMessage(), ex);
-            return new ResultImpl<List<ReservationImpl>>(ex);
+            return new ResultImpl<AppointmentMap>(ex);
         }
     }
 

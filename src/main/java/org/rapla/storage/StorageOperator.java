@@ -67,7 +67,7 @@ public interface StorageOperator extends EntityResolver {
     Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
 
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
-    Map<ReferenceInfo,Entity> getFromId(Collection<ReferenceInfo> idSet, boolean throwEntityNotFound) throws RaplaException;
+    <T extends Entity> Map<ReferenceInfo<T>,T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) throws RaplaException;
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
@@ -89,7 +89,8 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    FutureResult<Collection<Reservation>> getReservations(User user,Collection<Allocatable> allocatables, Date start,Date end, ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
+    FutureResult<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
+            ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
 
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 
@@ -129,6 +130,6 @@ public interface StorageOperator extends EntityResolver {
 	//Collection<String> getTemplateNames() throws RaplaException;
 
     FunctionFactory getFunctionFactory(String functionName);
-    List<Allocatable> createWithDependent(Collection<Allocatable> allocatables);
+ //   List<Allocatable> queryDependent(Collection<Allocatable> allocatables);
     
 }
