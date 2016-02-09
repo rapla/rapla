@@ -16,6 +16,20 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.RaplaColors;
@@ -35,7 +49,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -43,7 +56,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.Conflict;
@@ -57,21 +69,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 public abstract class RaplaBuilder 
     implements
@@ -665,7 +662,7 @@ public abstract class RaplaBuilder
 
     /** This context contains the shared information for one particular RaplaBlock.*/
     public static class RaplaBlockContext {
-        ArrayList<Allocatable> selectedMatchingAllocatables = new ArrayList<Allocatable>(3);
+        Set<Allocatable> selectedMatchingAllocatables = new LinkedHashSet<Allocatable>(3);
         ArrayList<Allocatable> matchingAllocatables = new ArrayList<Allocatable>(3);
         AppointmentBlock appointmentBlock;
         boolean movable;
@@ -696,17 +693,15 @@ public abstract class RaplaBuilder
 
         private void addAllocatables(RaplaBuilder builder, Allocatable[] allocatables,Allocatable selectedAllocatable) {
         	Appointment appointment =appointmentBlock.getAppointment();
-        	Reservation reservation = appointment.getReservation();
-            for (int i=0; i<allocatables.length; i++)   {
-                if ( !reservation.hasAllocated( allocatables[i], appointment ) ) {
-                    continue;
-                }
-                matchingAllocatables.add(allocatables[i]);
-                if ( builder.selectedAllocatables.contains(allocatables[i])) {
-                    if ( selectedAllocatable == null ||  selectedAllocatable.equals( allocatables[i]) ) {
-                        selectedMatchingAllocatables.add(allocatables[i]);
+            for(Allocatable alloc : builder.bindings.keySet())
+            {
+                final Collection<Appointment> appointments = builder.bindings.get(alloc);
+                if(appointments.contains(appointment))
+                {
+                    matchingAllocatables.add(alloc);
+                    if ( selectedAllocatable == null ||  selectedAllocatable.equals( alloc) ) {
+                        selectedMatchingAllocatables.add(alloc);
                     }
-
                 }
             }
         }
@@ -725,7 +720,7 @@ public abstract class RaplaBuilder
         }
 
         public List<Allocatable> getSelectedAllocatables() {
-            return selectedMatchingAllocatables;
+            return new ArrayList<>(selectedMatchingAllocatables);
         }
 
         public List<Allocatable> getAllocatables() {
