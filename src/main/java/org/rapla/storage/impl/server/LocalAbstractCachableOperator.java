@@ -3929,13 +3929,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         fillDependent(parent, dependentAllocatables, false, depth + 1);
                     }
 
-                    final Collection<Allocatable> collection = reversedPackage.get(allocatable);
-                    if (collection != null)
+                }
+                final Collection<Allocatable> collection = reversedPackage.get(allocatable);
+                if (collection != null)
+                {
+                    for (Allocatable alloc : collection)
                     {
-                        for (Allocatable alloc : collection)
-                        {
-                            dependentAllocatables.add(alloc.getReference());
-                        }
+                        dependentAllocatables.add(alloc.getReference());
                     }
                 }
             }
