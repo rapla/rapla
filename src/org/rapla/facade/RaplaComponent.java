@@ -87,7 +87,7 @@ public class RaplaComponent
     {
         return getClientFacade().getOperator();
     }
-    
+//    
     protected void setLogger(Logger logger) 
     {
     	this.logger = logger;

@@ -14,6 +14,8 @@ package org.rapla.components.util;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -188,5 +190,20 @@ public abstract class Tools
             }
         }
         return lineEntries;
+    }
+
+    /** @returns null if no url */
+    public static URL getUrl(String value) 
+    {
+        try
+        {
+            int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
+            URL url = new URL( value.substring(0,httpEnd));
+            return url;
+        }
+        catch (MalformedURLException ex)
+        {
+            return null;
+        }
     }
 }

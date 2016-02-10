@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.gui.internal.view;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
+import org.rapla.components.util.Tools;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
@@ -100,24 +100,24 @@ public abstract class HTMLInfo<T> extends RaplaComponent {
             String value = att.value;
 			if (value != null) 
 			{
-				try{
-                	int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
-                	URL url = new URL( value.substring(0,httpEnd));
+            	URL url = Tools.getUrl(value);
+            	if ( url != null)
+            	{
                 	buf.append("<a href=\"");
                 	buf.append(url.toExternalForm());
                 	buf.append("\">");
-                	if (encodeValues)
-                		encode(value,buf);
-                	else
-                		buf.append(value);
-                	buf.append("</a>");
-				} 
-                catch (MalformedURLException ex)
+            	}
+                if (encodeValues)
                 {
-                	if (encodeValues)
-                		encode(value,buf);
-                	else
-                		buf.append(value);
+               		encode(value,buf);
+                }
+                else
+                {
+                	buf.append(value);
+                }
+                if ( url != null)
+                {
+                    buf.append("</a>");
                 }
             }
             buf.append("</td>");

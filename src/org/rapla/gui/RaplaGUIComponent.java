@@ -23,9 +23,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.net.URI;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.Action;
@@ -394,7 +397,7 @@ public class RaplaGUIComponent extends RaplaComponent
 			        Action action = component.getActionMap().get(DefaultEditorKit.copyAction);
 					if ( action != null)
 					{
-							action.actionPerformed(e);
+						action.actionPerformed(e);
 					}
 			    }
 			}
@@ -487,19 +490,45 @@ public class RaplaGUIComponent extends RaplaComponent
 	            final Transferable transferable = service.getContents( null);
 	            Object transferData;
 	            try {
-	                transferData = transferable.getTransferData(DataFlavor.stringFlavor);
-	                if ( transferData != null)
-	                {
-	                	if ( component instanceof JTextComponent)
-	                	{
-	                	   	((JTextComponent)component).replaceSelection( transferData.toString());
-	                	}
-	                  	if ( component instanceof JTable)
-	                	{
-	                  		// Paste currently not supported
-	                	}
+	                if ( transferable.isDataFlavorSupported(DataFlavor.stringFlavor))
+	                {	                        
+    	                transferData = transferable.getTransferData(DataFlavor.stringFlavor);
+    	                if ( transferData != null)
+    	                {
+    	                	if ( component instanceof JTextComponent)
+    	                	{
+    	                	   	((JTextComponent)component).replaceSelection( transferData.toString());
+    	                	}
+    	                  	if ( component instanceof JTable)
+    	                	{
+    	                  		// Paste currently not supported
+    	                	}
+    	                }
 	                }
+	                else if ( transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+	                {
+	                    transferData = transferable.getTransferData(DataFlavor.javaFileListFlavor);
+	                    if ( transferData != null)
+	                    {
+	                        if ( component instanceof JTextComponent)
+	                        {
+	                            List<File> fileList = (List<File>) transferData;
+	                            if ( fileList.size() > 0)
+	                            {
+	                                File file = fileList.get(0);
+	                                final URI uri = file.getAbsoluteFile().toURI();
+	                                ((JTextComponent)component).replaceSelection( uri.toString());
+	                            }
+	                        }
+	                        if ( component instanceof JTable)
+	                        {
+	                            // Paste currently not supported
+	                        }
+	                    }   
+	                }
+	                
 	            } catch (Exception ex) {
+	                getLogger().warn(ex.getMessage(),ex);
 	            }
 	           
 	        } 
