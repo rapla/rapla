@@ -424,10 +424,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
         final Lock writeLock = writeLock();
         try
         {
-            Date since = evt.getLastValidated();
             preprocessEventStorage(evt);
             updateHistory(evt);
             Date until = getCurrentTimestamp();
+            // this since is for the server and used to check if an entity is new created in this write transaction so set it to the current timestamp
+            // the since for the client will be used later when requesting the update event
+            Date since = until;//evt.getLastValidated();
             // call of update must be first to update the cache.
             // then saveData() saves all the data in the cache
             final Collection<ReferenceInfo> removeIds = evt.getRemoveIds();
