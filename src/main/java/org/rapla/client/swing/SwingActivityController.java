@@ -27,10 +27,13 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
+import org.rapla.plugin.merge.client.MergeController;
+import org.rapla.plugin.merge.client.swing.MergeDialog.MergeDialogFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.Component;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -43,16 +46,19 @@ public class SwingActivityController extends RaplaComponent implements StartActi
     
     public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
     public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
+    public static final String MERGE_ALLOCATABLES = "merge";
     
     private final EditController editController;
     private final ClientFacade facade;
     private final CalendarSelectionModel model;
+    private final MergeController mergeController;
 
     @Inject
-    public SwingActivityController(final EventBus eventBus, final EditController editController, final ClientFacade facade, final CalendarSelectionModel model, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public SwingActivityController(final EventBus eventBus, final EditController editController, MergeController mergeController, final ClientFacade facade, final CalendarSelectionModel model, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
         this.editController = editController;
+        this.mergeController = mergeController;
         this.facade = facade;
         this.model = model;
         eventBus.addHandler(StartActivityEvent.TYPE, this);
@@ -121,6 +127,24 @@ public class SwingActivityController extends RaplaComponent implements StartActi
                 String title = null;
                 EditController.EditCallback<List<Reservation>> callback = null;
                 editController.edit(list, title, popupContext, callback);
+                break;
+            }
+            case MERGE_ALLOCATABLES:
+            {
+                final String info = event.getInfo();
+                if(info == null || info.isEmpty())
+                {
+                    getLogger().warn("no info sent for merge "+info);
+                }
+                final String[] split = info.split(",");
+                Collection<Allocatable> entities = new ArrayList<>();
+                for (String id : split)
+                {   
+                    final Allocatable resolve = facade.getRaplaFacade().resolve(new ReferenceInfo<Allocatable>(id, Allocatable.class));
+                    entities.add(resolve);
+                }
+                mergeController.startMerge(entities);
+                break;
             }
             default:
             {

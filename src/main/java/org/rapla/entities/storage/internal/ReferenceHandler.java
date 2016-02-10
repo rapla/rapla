@@ -358,6 +358,23 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 //        ReferenceHandler clone;
 //    }
 
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        final Collection<List<String>> values = links.values();
+        for (List<String> list : values)
+        {
+            if(list.contains(origId.getId()))
+            {
+                final int indexOf = list.indexOf(origId.getId());
+                list.remove(origId.getId());
+                if(!list.contains(newId.getId()))
+                {
+                    list.add(indexOf, newId.getId());
+                }
+            }
+        }
+    }
 
 	public String toString()
 	{

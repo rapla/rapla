@@ -12,6 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -86,23 +104,6 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.xml.RaplaXMLContextException;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -1804,6 +1805,12 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	public  <T extends Entity> T resolve( ReferenceInfo<T> info) throws RaplaException
 	{
 		return getOperator().resolve(info);
+	}
+	
+	@Override
+	public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+	{
+	    getOperator().doMerge(selectedObject, allocatableIds, user);
 	}
 
 }

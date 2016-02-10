@@ -1,5 +1,19 @@
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -13,6 +27,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -45,18 +60,6 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @DefaultImplementation(of =RemoteStorage.class,context = InjectionContext.server)
 public class RemoteStorageImpl implements RemoteStorage
@@ -748,6 +751,30 @@ public class RemoteStorageImpl implements RemoteStorage
             }
         }
         return ignoreConflictsWith;
+    }
+
+    @Override
+    public FutureResult<VoidResult> doMerge(AllocatableImpl allocatable, String[] allocatableIds)
+    {
+        try
+        {
+            checkAuthentified();
+            final User sessionUser = getSessionUser();
+            security.checkWritePermissions(sessionUser, allocatable);
+            final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
+            for (final String allocId : allocatableIds)
+            {
+                final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
+                allocReferences.add(refInfo);
+                // TODO check write permissions
+            }
+            operator.doMerge(allocatable, allocReferences, sessionUser);
+            return new ResultImpl<VoidResult>(VoidResult.INSTANCE);
+        }
+        catch(Exception e)
+        {
+            return new ResultImpl<VoidResult>(e);
+        }
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

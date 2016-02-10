@@ -646,4 +646,16 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         }
         return false;
     }
+    
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        final Iterable<EntityReferencer> entityReferencers = getEntityReferencers();
+        final Iterator<EntityReferencer> iterator = entityReferencers.iterator();
+        while(iterator.hasNext())
+        {
+            final EntityReferencer next = iterator.next();
+            next.replace(origId, newId);
+        }
+    }
 }

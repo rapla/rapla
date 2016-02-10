@@ -16,6 +16,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.ReadOnlyException;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
@@ -38,7 +39,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  create a classification. Once created it is not possible to change the
@@ -553,4 +556,29 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         throw new CannotExistWithoutTypeException();
     }
 
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        final Set<Entry<String, List<String>>> entrySet = data.entrySet();
+        for (Entry<String, List<String>> entry : entrySet)
+        {
+            final String attributeKey = entry.getKey();
+            final Attribute attribute = getAttribute(attributeKey);
+            if (attribute.getRefType() == Allocatable.class)
+            {
+                final List<String> list = entry.getValue();
+                final String origIdString = origId.getId();
+                if (list.contains(origIdString))
+                {
+                    list.remove(origIdString);
+                    final String newIdString = newId.getId();
+                    if (!list.contains(newIdString))
+                    {
+                        list.add(newIdString);
+                    }
+
+                }
+            }
+        }
+    }
 }

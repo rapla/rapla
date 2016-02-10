@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** A collection of all module-interfaces
 */
@@ -270,6 +271,17 @@ public interface RaplaFacade
 
     void storeAndRemove( Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException;
 
+    /**
+     * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then 
+     * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the
+     * allocatables with the given allocatableIds are deleted.
+     * 
+     * @param selectedObject
+     *              the winning allocatable, which will replace all references of the allocatableIds
+     * @param allocatableIds
+     *              the ids for the allocatables to merge into the selectedObject
+     */
+    void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException;
 
     /**
      *  Refreshes the data that is in the cache (or on the client)

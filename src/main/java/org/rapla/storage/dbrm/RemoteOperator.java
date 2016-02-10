@@ -13,6 +13,25 @@
 
 package org.rapla.storage.dbrm;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Vector;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -68,26 +87,6 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.dbrm.RemoteStorage.BindingMap;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.Vector;
-import java.util.concurrent.locks.Lock;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -1472,6 +1471,30 @@ import java.util.concurrent.locks.Lock;
                 }
             }
             return result;
+        }
+        catch (RaplaException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new RaplaException(ex);
+        }
+    }
+    
+    @Override
+    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+    {
+        checkConnected();
+        RemoteStorage serv = getRemoteStorage();
+        try
+        {
+            List<String> allocIds = new ArrayList<>(allocatableIds.size());
+            for (ReferenceInfo<Allocatable> allocId : allocatableIds)
+            {
+                allocIds.add(allocId.getId());
+            }
+            serv.doMerge((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()]));
         }
         catch (RaplaException ex)
         {

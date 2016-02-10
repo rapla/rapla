@@ -24,6 +24,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 public final class ClassificationFilterRuleImpl extends ReferenceHandler
@@ -387,5 +389,26 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     	}
     	return buf.toString();
     }
+	
+	@Override
+	public void replace(ReferenceInfo origId, ReferenceInfo newId)
+	{
+	    super.replace(origId, newId);
+        if (attributeId != null && getAttribute().getRefType() == Allocatable.class)
+        {
+            final ArrayList<String> arrayList = new ArrayList<String>(Arrays.asList(ruleValues));
+            final String origIdString = origId.getId();
+            if (arrayList.contains(origIdString))
+            {
+                final int indexOf = arrayList.indexOf(origIdString);
+                arrayList.remove(indexOf);
+                if (!arrayList.contains(newId.getId()))
+                {
+                    arrayList.add(indexOf, newId.getId());
+                }
+                ruleValues = arrayList.toArray(new String[arrayList.size()]);
+            }
+        }
+	}
 }
 

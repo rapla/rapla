@@ -3,6 +3,7 @@ package org.rapla.storage.dbrm;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Entity;
+import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -132,5 +133,11 @@ public class AppointmentMap implements EntityReferencer
                 "reservations=" + reservations +
                 ", allocatableIdToAppointmentIds=" + allocatableIdToAppointmentIds +
                 '}';
+    }
+    
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        throw new ReadOnlyException(this);
     }
 }

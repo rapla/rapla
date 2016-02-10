@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
@@ -752,6 +753,24 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
         }
         return buf.toString();
+    }
+    
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        super.replace(origId, newId);
+        if(restrictions.containsKey(origId.getId()))
+        {
+            final List<String> restrictionsOfRemoved = restrictions.remove(origId.getId());
+            final ArrayList<String> allRestrinctions = new ArrayList<String>();
+            allRestrinctions.addAll(restrictionsOfRemoved);
+            if(restrictions.containsKey(newId.getId()))
+            {
+                final List<String> restrictionsOfNew = restrictions.get(newId.getId());
+                allRestrinctions.addAll(restrictionsOfNew);
+            }
+            restrictions.put(newId.getId(), allRestrinctions);
+        }
     }
 
 

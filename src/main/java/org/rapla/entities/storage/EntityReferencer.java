@@ -22,6 +22,8 @@ public interface EntityReferencer
     void setResolver( EntityResolver resolver);
     /**Return all References of the object*/
     Iterable<ReferenceInfo> getReferenceInfo();
+    
+    void replace(ReferenceInfo origId, ReferenceInfo newId);
 }
 
 

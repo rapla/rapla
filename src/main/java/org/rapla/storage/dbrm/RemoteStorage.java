@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.jws.WebParam;
+
+import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
@@ -20,11 +27,6 @@ import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.UpdateEvent;
-
-import javax.jws.WebParam;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 @RemoteJsonMethod
 public interface RemoteStorage  {
@@ -72,6 +74,8 @@ public interface RemoteStorage  {
 
 	//void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
     
+    FutureResult<VoidResult> doMerge(@WebParam(name="allocatable") AllocatableImpl allocatable, @WebParam(name="allocatableIds")String[] allocatableIds);
+    
     class BindingMap
     {
     	Map<String,List<String>> bindings;
@@ -86,5 +90,5 @@ public interface RemoteStorage  {
 			return bindings;
 		}
     }
-    
+
 }

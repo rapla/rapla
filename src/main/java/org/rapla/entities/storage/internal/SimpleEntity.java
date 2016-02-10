@@ -394,6 +394,13 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return 0;
         
     }
+    
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        checkWritable();
+        super.replace(origId, newId);
+    }
 
 }
 

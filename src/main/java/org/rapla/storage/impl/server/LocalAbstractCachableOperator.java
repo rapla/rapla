@@ -3956,5 +3956,53 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         return result;
     }
+    
+    @Override
+    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+    {
+        final Lock writeLock = writeLock();
+        try
+        {
+            // FIXME check write permissions
+            Set<Allocatable> allocatables = new LinkedHashSet<>();
+            for (ReferenceInfo<Allocatable> allocatableId : allocatableIds)
+            {
+                final Allocatable resolve = resolve(allocatableId);
+                allocatables.add(resolve);
+            }
+            Collection<Entity> storeObjects = new LinkedHashSet<>();
+            if(!selectedObject.isReadOnly())
+            {
+                storeObjects.add(selectedObject);
+            }
+            {// now change the references
+                for (Allocatable allocatable : allocatables)
+                {
+                    final List<Entity> referencingEntities = getReferencingEntities(allocatable, new EntityStore(this));
+                    for (Entity entity : referencingEntities)
+                    {
+                        final Entity editObject = editObject(entity, user);
+                        ((EntityReferencer)editObject).replace(allocatable.getReference(), selectedObject.getReference());
+                        storeObjects.add(editObject);
+                    }
+                }
+            }
+            storeAndRemove(storeObjects, (Set)allocatables, user);
+        }
+        catch(RaplaException ra)
+        {
+            getLogger().error("Error doing a merge for "+selectedObject+" and allocatables " + allocatableIds);
+            throw ra;
+        }
+        catch(Exception e)
+        {
+            getLogger().error("Error doing a merge for "+selectedObject+" and allocatables " + allocatableIds);
+            throw new RaplaException(e);
+        }
+        finally
+        {
+            unlock(writeLock);
+        }
+    }
 
 }

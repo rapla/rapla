@@ -25,8 +25,8 @@ package org.rapla.storage;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -131,5 +131,6 @@ public interface StorageOperator extends EntityResolver {
 
     FunctionFactory getFunctionFactory(String functionName);
  //   List<Allocatable> queryDependent(Collection<Allocatable> allocatables);
+    void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException;
     
 }

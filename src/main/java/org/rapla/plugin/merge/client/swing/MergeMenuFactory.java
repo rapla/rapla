@@ -86,24 +86,21 @@ public class MergeMenuFactory implements ObjectMenuFactory
             {
                 try 
                 {
-//                    StringBuilder ids = new StringBuilder();
-//                    boolean first = true;
-//                    for (Object object : selectedObjects)
-//                    {
-//                        if(first)
-//                        {
-//                            first  =false;
-//                        }
-//                        else
-//                        {
-//                            ids.append(",");
-//                        }
-//                        ids.append(((Entity)object).getId());
-//                    }
-//                    final MergeDialog mergeDialog = mergeDialogFactory.create(editController);
-//                    EditCallback callback = null;
-//                    PopupContext popupContext = menuContext.getPopupContext();
-//                    mergeDialog.start(selectedObjects, title, popupContext, false, callback);
+                  StringBuilder ids = new StringBuilder();
+                  boolean first = true;
+                  for (Object object : selectedObjects)
+                  {
+                      if(first)
+                      {
+                          first  =false;
+                      }
+                      else
+                      {
+                          ids.append(",");
+                      }
+                      ids.append(((Entity)object).getId());
+                  }
+                    eventBus.fireEvent(new StartActivityEvent(SwingActivityController.MERGE_ALLOCATABLES, ids.toString()));
                 }
                 catch (RaplaException ex )
                 {

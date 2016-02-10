@@ -12,6 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
+import java.util.Date;
+import java.util.Locale;
+import java.util.Set;
+
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -31,18 +35,12 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.PreferencePatch;
 
-import java.util.Date;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
-
 public class PreferencesImpl extends SimpleEntity implements Preferences, ModifiableTimestamp, DynamicTypeDependant
 {
     private Date lastChanged;
     private Date createDate;
 
     RaplaMapImpl map = new RaplaMapImpl();
-    Set<String> removedKeys = new LinkedHashSet<String>();
 
     @Override public Class<Preferences> getTypeClass()
     {
@@ -378,6 +376,13 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
             pluginConfig = new RaplaConfiguration("plugin");
         }
         return pluginConfig;
+    }
+    
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        super.replace(origId, newId);
+        map.replace(origId, newId);
     }
 
 }
