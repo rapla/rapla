@@ -1623,7 +1623,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // add all child categories to store
             if ( entity instanceof Category)
             {
-            	Set<Category> children = getAllCategories( (Category)entity);
+            	Set<Category> children = getAllCategories( (Category)entity, 0);
             	store.addAll(children);
             }
         }
@@ -1893,6 +1893,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Collection<User> users = cache.getUsers();
         addReferers(users, entity, result);
         addReferers(cache.getDynamicTypes(), entity, result);
+        final Set<Category> allCategories = getAllCategories(cache.getSuperCategory(), 0);
+        addReferers(allCategories, entity, result);
       
         List<Preferences> preferenceList = new ArrayList<Preferences>();
         for ( User user:users)
@@ -2303,8 +2305,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 				Category old = tryResolve(entity.getId(), Category.class);
 				if ( old != null)
 				{
-					Set<Category> oldSet = getAllCategories( old);
-					Set<Category> newSet = getAllCategories( newCat);
+					Set<Category> oldSet = getAllCategories( old, 0);
+					Set<Category> newSet = getAllCategories( newCat, 0);
 					oldSet.removeAll( newSet);
 					deletedCategories.addAll( oldSet );
 				}
@@ -2313,12 +2315,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 		return deletedCategories;
 	}
 
-	private Set<Category> getAllCategories(Category old) {
+	private Set<Category> getAllCategories(Category category, int depth) {
+	    if ( depth > 20)
+	    {
+	        throw new IllegalStateException("Category cycle detected in " + category);
+	    }
 		HashSet<Category> result = new HashSet<Category>();
-		result.add( old);
-		for (Category child : old.getCategories())
+		result.add( category);
+		for (Category child : category.getCategories())
 		{
-			result.addAll( getAllCategories(child));
+			result.addAll( getAllCategories(child, depth + 1));
 		}
 		return result;
 	}
