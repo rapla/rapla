@@ -417,7 +417,7 @@ public abstract class RaplaBuilder
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
 
         //long time = System.currentTimeMillis();
-        Collection<Appointment> appointments = new LinkedHashSet<Appointment>();
+        Collection<Appointment> appointments = CalendarModelImpl.getAllAppointments(bindings);
         // FIXME
         if ( nonFilteredEventsVisible)
         {
@@ -425,10 +425,6 @@ public abstract class RaplaBuilder
         }
         else
         {
-        }
-        for ( Allocatable allocatable:bindings.keySet())
-        {
-            appointments.addAll( bindings.get( allocatable));
         }
         //= AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
@@ -693,12 +689,18 @@ public abstract class RaplaBuilder
 
         private void addAllocatables(RaplaBuilder builder, Allocatable[] allocatables,Allocatable selectedAllocatable) {
         	Appointment appointment =appointmentBlock.getAppointment();
+        	for (Allocatable allocatable : allocatables)
+            {
+        	    if(appointment.getReservation().hasAllocated(allocatable, appointment))
+        	    {
+        	        matchingAllocatables.add(allocatable);
+        	    }
+            }
             for(Allocatable alloc : builder.bindings.keySet())
             {
                 final Collection<Appointment> appointments = builder.bindings.get(alloc);
                 if(appointments.contains(appointment))
                 {
-                    matchingAllocatables.add(alloc);
                     if ( selectedAllocatable == null ||  selectedAllocatable.equals( alloc) ) {
                         selectedMatchingAllocatables.add(alloc);
                     }
