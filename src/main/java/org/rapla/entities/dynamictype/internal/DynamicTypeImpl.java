@@ -116,18 +116,18 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         if ( resolver instanceof StorageOperator)
         {
             operator = (StorageOperator) resolver;
+            for ( ParsedText annotation: annotations.values())
+            {
+                try {
+                    annotation.init(parseContext);
+                } catch (IllegalAnnotationException e) {
+                }
+            }
         }
         for (AttributeImpl child:attributes)
         {
         	child.setParent( this);
         }
-    	for ( ParsedText annotation: annotations.values())
-    	{
-    		try {
-				annotation.init(parseContext);
-			} catch (IllegalAnnotationException e) {
-			}
-    	}
     	for (PermissionImpl p:permissions)
     	{
     	    p.setResolver( resolver);
