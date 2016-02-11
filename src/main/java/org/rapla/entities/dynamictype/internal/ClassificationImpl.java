@@ -416,6 +416,20 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         l.add(stringValue);
     }
 
+    public Collection<String> getValuesUnresolvedStrings(Attribute attribute) {
+        if ( attribute == null ) {
+            throw new NullPointerException("Attribute can't be null");
+        }
+        String attributeKey = attribute.getKey();
+        // first lookupDeprecated in attribute map
+        List<String> list = data.get(attributeKey);
+        if ( list == null || list.size() == 0)
+        {
+            return Collections.emptyList();
+        }
+        return list;
+    }
+    
     public Collection<Object> getValues(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
@@ -481,7 +495,22 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         }
         return result;
     }
-
+    
+    public String getValueUnresolvedString(Attribute attribute) {
+        if ( attribute == null ) {
+            throw new NullPointerException("Attribute can't be null");
+        }
+        String attributeKey = attribute.getKey();
+        // first lookupDeprecated in attribute map
+        List<String> o = data.get(attributeKey);
+        if ( o == null  || o.size() == 0)
+        {
+            return null;
+        }
+        String stringRep = o.get(0);
+        return stringRep;
+    }
+    
     public Object getValue(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");

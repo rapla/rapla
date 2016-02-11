@@ -298,6 +298,12 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         }
     }
     
+    @Override
+    public void replace(ReferenceInfo origId, ReferenceInfo newId)
+    {
+        super.replace(origId, newId);
+        classification.replace(origId, newId);
+    }
 
 }
 

@@ -74,6 +74,8 @@ public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
                 allocatableIds.add(allocatable.getReference());
             }
             mergeController.doMerge(selectedAllocatable, allocatableIds);
+            dlg.close();
+            getClientFacade().getRaplaFacade().refresh();
         }
     }
 

@@ -759,7 +759,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public void replace(ReferenceInfo origId, ReferenceInfo newId)
     {
         super.replace(origId, newId);
-        if(restrictions.containsKey(origId.getId()))
+        if(restrictions != null && restrictions.containsKey(origId.getId()))
         {
             final List<String> restrictionsOfRemoved = restrictions.remove(origId.getId());
             final ArrayList<String> allRestrinctions = new ArrayList<String>();
