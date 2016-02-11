@@ -120,6 +120,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
             File storageFile = new File( storageURL);
             final String newPath = storageFile.getPath() + ".new";
             final String backupPath = storageFile.getPath() + ".bak";
+            File parentFile = storageFile.getParentFile();
+            if (!parentFile.exists())
+            {
+                parentFile.mkdirs();
+            }
             final File newFile = new File(newPath);
             try (OutputStream outNew = new FileOutputStream(newFile))
             {
@@ -127,11 +132,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 writer.write(w);
                 w.flush();
                 w.close();
-                File parentFile = storageFile.getParentFile();
-                if (!parentFile.exists())
-                {
-                    parentFile.mkdirs();
-                }
                 moveFile(storageFile, backupPath);
                 moveFile(newFile, storageFile.getPath());
             }
