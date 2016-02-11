@@ -18,8 +18,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -27,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.DependencyException;
@@ -37,6 +41,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
@@ -47,6 +53,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
@@ -54,6 +61,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.test.util.RaplaTestCase;
@@ -527,8 +535,220 @@ public class ClientFacadeTest  {
         System.out.println("          " + c.getAllocatable().getName(locale)) ;
         System.out.println("          " + c.getAppointment1() + " overlapps " + c.getAppointment2());
     }
-
-
+    
+    @Test
+    public void testMerge()
+    {
+        // set up model
+        final User user = clientFacade.getUser();
+        final Allocatable allocatableWinsMerge;
+        final Allocatable allocatableWillBeMerge;
+        final DynamicType dynamicType;
+        {
+            dynamicType = facade.newDynamicType("testDynamicTypeForMergeTest");
+            final Attribute newAttribute = facade.newAttribute(AttributeType.STRING);
+            newAttribute.setKey("name");
+            dynamicType.addAttribute(newAttribute);
+            dynamicType.getName().setName("en", "testDynamicTypeForMergeTest");
+            facade.store(dynamicType);
+        }
+        {
+            allocatableWinsMerge = facade.newAllocatable(dynamicType.newClassification(), user);
+            allocatableWinsMerge.getClassification().setValue("name", "AllocatbaleWinsMerge");
+            facade.store(allocatableWinsMerge);
+        }
+        {
+            allocatableWillBeMerge = facade.newAllocatable(dynamicType.newClassification(), user);
+            allocatableWillBeMerge.getClassification().setValue("name", "AllocatableWillBeMerge");
+            facade.store(allocatableWillBeMerge);
+        }
+        final ReferenceInfo<Reservation> reservationReference;
+        {// create reservation with two appointments holding each on of the allocatable, and one holding both
+            final Reservation reservation = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
+            reservationReference = reservation.getReference();
+            reservation.addAllocatable(allocatableWillBeMerge);
+            reservation.addAllocatable(allocatableWinsMerge);
+            {// first appointment holding allocatableWinsMerge
+                final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
+                final Date startAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(10, 00, 00)));
+                final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(12, 00, 00)));
+                final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
+                reservation.addAppointment(newAppointment);
+                reservation.setRestriction(newAppointment, new Allocatable[]{allocatableWinsMerge});
+            }
+            {// second appointment holding allocatableWillBeMerge
+                final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
+                final Date startAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(13, 00, 00)));
+                final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(14, 00, 00)));
+                final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
+                reservation.addAppointment(newAppointment);
+                reservation.setRestriction(newAppointment, new Allocatable[]{allocatableWillBeMerge});
+            }
+            {// third appointment no restriction
+                final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
+                final Date startAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(13, 00, 00)));
+                final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(14, 00, 00)));
+                final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
+                reservation.addAppointment(newAppointment);
+            }
+            facade.store(reservation);
+            {
+                final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
+                Allocatable[] allocatablesToLookFor = new Allocatable[]{allocatableWinsMerge};
+                final Date tomorrow = DateTools.addDay(today);
+                final Reservation[] reservations = facade.getReservationsForAllocatable(allocatablesToLookFor, today, tomorrow, null);
+                Assert.assertEquals(1, reservations.length);
+            }
+        }
+        final ReferenceInfo<Allocatable> groupAllocatableReference;
+        final ReferenceInfo<Allocatable> groupAllocatableReferenceWithWinningAllocatable;
+        {// test package referencing deleted allocatable
+            final DynamicType mergeGroupDynamicType = facade.newDynamicType("mergeGroup");
+            mergeGroupDynamicType.getName().setName("en", "mergeGroup");
+            final Attribute packageAttribute = facade.newAttribute(AttributeType.ALLOCATABLE);
+            packageAttribute.setKey("packageAttribute");
+            packageAttribute.setConstraint(ConstraintIds.KEY_PACKAGE, Boolean.TRUE.toString());
+            mergeGroupDynamicType.addAttribute(packageAttribute);
+            facade.store(mergeGroupDynamicType);
+            final Allocatable groupAllocatable = facade.newAllocatable(mergeGroupDynamicType.newClassification(), user);
+            groupAllocatableReference = groupAllocatable.getReference();
+            groupAllocatable.getClassification().setValues(packageAttribute, Collections.singleton(allocatableWillBeMerge));
+            facade.store(groupAllocatable);
+            final Allocatable secondMergeGroup = facade.newAllocatable(mergeGroupDynamicType.newClassification(), user);
+            final ArrayList<Allocatable> values = new ArrayList<Allocatable>();
+            values.add(allocatableWinsMerge);
+            values.add(allocatableWillBeMerge);
+            secondMergeGroup.getClassification().setValues(packageAttribute, values);
+            groupAllocatableReferenceWithWinningAllocatable = secondMergeGroup.getReference();
+            facade.store(secondMergeGroup);
+        }
+        final ReferenceInfo<Allocatable> belongsToAllocatableReference;
+        {// test belongsTo
+            final DynamicType belongsToDynamicType = facade.newDynamicType("mergeBelongsTo");
+            belongsToDynamicType.getName().setName("en", "mergeBelongsTo");
+            final Attribute belongsToAttribute = facade.newAttribute(AttributeType.ALLOCATABLE);
+            belongsToAttribute.setKey("belongsTo");
+            belongsToAttribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, Boolean.TRUE.toString());
+            belongsToDynamicType.addAttribute(belongsToAttribute);
+            facade.store(belongsToDynamicType);
+            final Allocatable belongsToAllocatable = facade.newAllocatable(belongsToDynamicType.newClassification(), user);
+            belongsToAllocatableReference = belongsToAllocatable.getReference();
+            belongsToAllocatable.getClassification().setValue(belongsToAttribute, allocatableWillBeMerge);
+            facade.store(belongsToAllocatable);
+        }
+        {// CalendarModelConfiguration
+            final CalendarModelConfigurationImpl configurationWithBothAllocatables;
+            {
+                final CalendarModelImpl calendarModelImpl = new CalendarModelImpl(facade, clientFacade, new RaplaLocaleImpl(new DefaultBundleManager()));
+                Collection<Allocatable> markedAllocatables = new ArrayList<>();
+                markedAllocatables.add(allocatableWillBeMerge);
+                markedAllocatables.add(allocatableWinsMerge);
+                calendarModelImpl.setSelectedObjects(markedAllocatables);
+                configurationWithBothAllocatables = calendarModelImpl.createConfiguration();
+                Assert.assertEquals(2, configurationWithBothAllocatables.getSelected().size());
+            }
+            final CalendarModelConfigurationImpl configurationWithLoosesAllocatable;
+            {
+                final CalendarModelImpl calendarModelImpl = new CalendarModelImpl(facade, clientFacade, new RaplaLocaleImpl(new DefaultBundleManager()));
+                Collection<Allocatable> markedAllocatables = new ArrayList<>();
+                markedAllocatables.add(allocatableWillBeMerge);
+                calendarModelImpl.setSelectedObjects(markedAllocatables);
+                configurationWithLoosesAllocatable = calendarModelImpl.createConfiguration();
+                Assert.assertEquals(1, configurationWithBothAllocatables.getSelected().size());
+            }
+            final Preferences preferences = facade.edit(facade.getPreferences(user, true));
+            Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
+            Map<String,CalendarModelConfiguration> newMap;
+            if ( exportMap == null)
+                newMap = new TreeMap<String,CalendarModelConfiguration>();
+            else
+                newMap = new TreeMap<String,CalendarModelConfiguration>( exportMap);
+            newMap.put("testForMerge", configurationWithBothAllocatables);
+            newMap.put("testForMergeWithoutWins", configurationWithLoosesAllocatable);
+            RaplaMapImpl map = new RaplaMapImpl(newMap);
+            map.setResolver( facade.getOperator() );
+            preferences.putEntry(CalendarModelConfiguration.EXPORT_ENTRY, map);
+            facade.store(preferences);
+        }
+        // merge two allocatables
+        {
+            Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<>();
+            allocatableIds.add(allocatableWillBeMerge.getReference());
+            facade.doMerge(allocatableWinsMerge, allocatableIds, user);
+        }
+        // Test result
+        {
+            final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
+            Reservation myTestReservation = null;
+            Allocatable[] allocatablesToLookFor = new Allocatable[]{allocatableWinsMerge};
+            final Reservation[] reservations = facade.getReservationsForAllocatable(allocatablesToLookFor, today, DateTools.addDay(today), null);
+            for (Reservation reservation : reservations)
+            {
+                if(reservation.getReference().equals(reservationReference))
+                {
+                    myTestReservation = reservation;
+                    break;
+                }
+            }
+            Assert.assertNotNull("looked for today reservations which should have included " + reservationReference, myTestReservation);
+            final Allocatable[] allocatables = myTestReservation.getAllocatables();
+            Assert.assertEquals(1, allocatables.length);
+            Assert.assertEquals(allocatableWinsMerge, allocatables[0]);
+            final Appointment[] appointments = myTestReservation.getAppointments();
+            Assert.assertEquals(3, appointments.length);
+            Assert.assertEquals(1, myTestReservation.getRestrictedAllocatables(appointments[0]).length);
+            Assert.assertEquals(allocatableWinsMerge, myTestReservation.getRestrictedAllocatables(appointments[0])[0]);
+            Assert.assertEquals(1, myTestReservation.getRestrictedAllocatables(appointments[1]).length);
+            Assert.assertEquals(allocatableWinsMerge, myTestReservation.getRestrictedAllocatables(appointments[1])[0]);
+            Assert.assertEquals(0, myTestReservation.getRestrictedAllocatables(appointments[2]).length);
+            final Appointment[] restriction = myTestReservation.getRestriction(allocatableWinsMerge);
+            Assert.assertEquals(2, restriction.length);
+        }
+        {// test package
+            {
+                final Allocatable alloc = facade.getOperator().resolve(groupAllocatableReference);
+                final Classification classification = alloc.getClassification();
+                final Attribute[] attributes = classification.getAttributes();
+                Assert.assertEquals(1, attributes.length);
+                final Collection<Object> values = classification.getValues(attributes[0]);
+                Assert.assertEquals(1, values.size());
+                Assert.assertEquals(allocatableWinsMerge, values.iterator().next());
+            }
+            {
+                final Allocatable alloc = facade.getOperator().resolve(groupAllocatableReferenceWithWinningAllocatable);
+                final Classification classification = alloc.getClassification();
+                final Attribute[] attributes = classification.getAttributes();
+                Assert.assertEquals(1, attributes.length);
+                final Collection<Object> values = classification.getValues(attributes[0]);
+                Assert.assertEquals(1, values.size());
+                Assert.assertEquals(allocatableWinsMerge, values.iterator().next());
+            }            
+        }
+        {// belongsTo
+            final Allocatable belongsToAllocatable = facade.getOperator().resolve(belongsToAllocatableReference);
+            final Classification classification = belongsToAllocatable.getClassification();
+            final Attribute[] attributes = classification.getAttributes();
+            Assert.assertEquals(1, attributes.length);
+            final Object value = classification.getValue(attributes[0]);
+            Assert.assertEquals(allocatableWinsMerge, value);
+        }
+        {// CalendarModelConfiguration
+            final RaplaMap<CalendarModelConfiguration> entry = facade.getPreferences(user).getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
+            {
+                final CalendarModelConfiguration calendarModelConfiguration = entry.get("testForMerge");
+                final Collection<Entity> selected = calendarModelConfiguration.getSelected();
+                Assert.assertEquals(1, selected.size());
+                Assert.assertEquals(allocatableWinsMerge, selected.iterator().next());
+            }
+            {
+                final CalendarModelConfiguration calendarModelConfiguration = entry.get("testForMergeWithoutWins");
+                final Collection<Entity> selected = calendarModelConfiguration.getSelected();
+                Assert.assertEquals(1, selected.size());
+                Assert.assertEquals(allocatableWinsMerge, selected.iterator().next());
+            }
+            
+        }
+    }
 
 }
 
