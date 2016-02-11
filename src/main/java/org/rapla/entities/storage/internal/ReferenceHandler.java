@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.rapla.entities.Entity;
@@ -361,17 +362,20 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     @Override
     public void replace(ReferenceInfo origId, ReferenceInfo newId)
     {
-        final Collection<List<String>> values = links.values();
-        for (List<String> list : values)
+        final Collection<Entry<String, List<String>>> entries = links.entrySet();
+        for (Entry<String, List<String>> entry : entries)
         {
+            final List<String> list = entry.getValue();
             if(list.contains(origId.getId()))
             {
-                final int indexOf = list.indexOf(origId.getId());
-                list.remove(origId.getId());
-                if(!list.contains(newId.getId()))
+                final ArrayList<String> copy = new ArrayList<>(list);
+                final int indexOf = copy.indexOf(origId.getId());
+                copy.remove(origId.getId());
+                if(!copy.contains(newId.getId()))
                 {
-                    list.add(indexOf, newId.getId());
+                    copy.add(indexOf, newId.getId());
                 }
+                links.put(entry.getKey(), copy);
             }
         }
     }

@@ -3762,8 +3762,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /*
      * Dependencies for belongsTo and package
      */
-    private final Map<Allocatable, Collection<Allocatable>> reversedBelongsToMap = new HashMap<Allocatable, Collection<Allocatable>>();
-    private final Map<Allocatable, Collection<Allocatable>> reversedPackage = new HashMap<Allocatable, Collection<Allocatable>>();
+    private final Map<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>> reversedBelongsToMap = new HashMap<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>>();
+    private final Map<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>> reversedPackage = new HashMap<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>>();
 
     private void add(Entity entity)
     {
@@ -3776,13 +3776,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
             {
                 final Allocatable belongsToValue = (Allocatable) classification.getValue(belongsToAttribute);
-                Collection<Allocatable> collection = reversedBelongsToMap.get(belongsToValue);
+                Collection<ReferenceInfo<Allocatable>> collection = reversedBelongsToMap.get(belongsToValue);
                 if (collection == null)
                 {
-                    collection = new HashSet<Allocatable>();
-                    reversedBelongsToMap.put(belongsToValue, collection);
+                    collection = new HashSet<ReferenceInfo<Allocatable>>();
+                    reversedBelongsToMap.put(belongsToValue.getReference(), collection);
                 }
-                collection.add(alloc);
+                collection.add(alloc.getReference());
             }
             final Attribute packagesToAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
             if (packagesToAttribute != null && classification.getValues(packagesToAttribute) != null)
@@ -3791,13 +3791,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 for (Object object : values)
                 {
                     Allocatable target = (Allocatable) object;
-                    Collection<Allocatable> collection = reversedPackage.get(target);
+                    Collection<ReferenceInfo<Allocatable>> collection = reversedPackage.get(target.getReference());
                     if (collection == null)
                     {
-                        collection = new HashSet<Allocatable>();
-                        reversedPackage.put(target, collection);
+                        collection = new HashSet<ReferenceInfo<Allocatable>>();
+                        reversedPackage.put(target.getReference(), collection);
                     }
-                    collection.add(alloc);
+                    collection.add(alloc.getReference());
                 }
             }
         }
@@ -3811,24 +3811,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final Classification classification = alloc.getClassification();
             final DynamicType type = classification.getType();
             final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
-            if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
+            if (belongsToAttribute != null && ((ClassificationImpl)classification).getValueUnresolvedString(belongsToAttribute) != null)
             {
-                Allocatable belongsTo = (Allocatable) classification.getValue(belongsToAttribute);
-                final Collection<Allocatable> collection = reversedBelongsToMap.get(belongsTo);
+                String belongsToId = ((ClassificationImpl)classification).getValueUnresolvedString(belongsToAttribute);
+                ReferenceInfo<Allocatable> belongsTo = new ReferenceInfo<>(belongsToId, Allocatable.class);
+                final Collection<ReferenceInfo<Allocatable>> collection = reversedBelongsToMap.get(belongsTo);
                 Assert.notNull(collection);
-                final boolean removed = collection.remove(alloc);
+                final boolean removed = collection.remove(alloc.getReference());
                 Assert.isTrue(removed);
             }
             final Attribute packageAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
-            if (packageAttribute != null && classification.getValues(packageAttribute) != null)
+            if (packageAttribute != null && ((ClassificationImpl)classification).getValuesUnresolvedStrings(packageAttribute) != null)
             {
-                final Collection<Object> values = classification.getValues(packageAttribute);
-                for (Object object : values)
+                final Collection<String> values = ((ClassificationImpl)classification).getValuesUnresolvedStrings(packageAttribute);
+                for (String objectId : values)
                 {
-                    Allocatable packageAlloc = (Allocatable) object;
-                    final Collection<Allocatable> collection = reversedPackage.get(packageAlloc);
+                    ReferenceInfo<Allocatable> packageAlloc = new ReferenceInfo<Allocatable>(objectId, Allocatable.class);
+                    final Collection<ReferenceInfo<Allocatable>> collection = reversedPackage.get(packageAlloc);
                     Assert.notNull(collection);
-                    final boolean removed = collection.remove(alloc);
+                    final boolean removed = collection.remove(alloc.getReference());
                     Assert.isTrue(removed);
                 }
             }
@@ -3843,7 +3844,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    protected final void updateIndizesForDependencies(UpdateResult updateResult)
+    private final void updateIndizesForDependencies(UpdateResult updateResult)
     {
         final Iterable<UpdateOperation> operations = updateResult.getOperations();
         for (UpdateOperation<Entity> operation : operations)
@@ -3872,28 +3873,30 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    protected void fillDependent(final Allocatable allocatable, final Set<ReferenceInfo<Allocatable>> dependentAllocatables)
+    private void fillDependent(final Allocatable allocatable, final Set<ReferenceInfo<Allocatable>> dependentAllocatables)
     {
-        fillDependent(allocatable, dependentAllocatables, true, 0);
-        fillDependent(allocatable, dependentAllocatables, false, 0);
+        final ReferenceInfo<Allocatable> reference = allocatable != null ? allocatable.getReference() : null;
+        fillDependent(reference, dependentAllocatables, true, 0);
+        fillDependent(reference, dependentAllocatables, false, 0);
     }
 
-    private void fillDependent(final Allocatable allocatable, final Set<ReferenceInfo<Allocatable>> dependentAllocatables, boolean downwards, final int depth)
+    private void fillDependent(final ReferenceInfo<Allocatable> allocatableReference, final Set<ReferenceInfo<Allocatable>> dependentAllocatables, boolean downwards, final int depth)
     {
         if (depth > 20)
         {
             throw new IllegalStateException("Cycle in dependencies detected");
         }
-        if (allocatable != null)
+        if (allocatableReference != null)
         {
+            final Allocatable allocatable = resolve(allocatableReference);
             if (downwards)
             {
-                final Collection<Allocatable> collection = reversedBelongsToMap.get(allocatable);
+                final Collection<ReferenceInfo<Allocatable>> collection = reversedBelongsToMap.get(allocatableReference);
                 if (collection != null)
                 {
-                    for (Allocatable alloc : collection)
+                    for (ReferenceInfo<Allocatable> alloc : collection)
                     {
-                        if (dependentAllocatables.add(alloc.getReference()))
+                        if (dependentAllocatables.add(alloc))
                         {
                             fillDependent(alloc, dependentAllocatables, true, depth + 1);
                         }
@@ -3909,34 +3912,31 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         for (Object target : values)
                         {
-                            Allocatable alloc = (Allocatable) target;
-                            if (dependentAllocatables.add(alloc.getReference()))
-                            {
-                                fillDependent(alloc, dependentAllocatables, true, depth + 1);
-                                fillDependent(alloc, dependentAllocatables, false, depth + 1);
-                            }
+                            ReferenceInfo<Allocatable> alloc = ((Allocatable)target).getReference();
+                            fillDependent(alloc, dependentAllocatables, true, depth + 1);
+                            fillDependent(alloc, dependentAllocatables, false, depth + 1);
                         }
                     }
                 }
             }
             {
-                if (dependentAllocatables.add(allocatable.getReference()))
+                if (dependentAllocatables.add(allocatableReference))
                 {
                     final Classification classification = allocatable.getClassification();
                     final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
                     if (belongsToAttribute != null)
                     {
-                        final Allocatable parent = (Allocatable) classification.getValue(belongsToAttribute);
+                        final ReferenceInfo<Allocatable> parent = ((Allocatable) classification.getValue(belongsToAttribute)).getReference();
                         fillDependent(parent, dependentAllocatables, false, depth + 1);
                     }
 
-                }
-                final Collection<Allocatable> collection = reversedPackage.get(allocatable);
-                if (collection != null)
-                {
-                    for (Allocatable alloc : collection)
+                    final Collection<ReferenceInfo<Allocatable>> collection = reversedPackage.get(allocatableReference);
+                    if (collection != null)
                     {
-                        dependentAllocatables.add(alloc.getReference());
+                        for (ReferenceInfo<Allocatable> alloc : collection)
+                        {
+                            dependentAllocatables.add(alloc);
+                        }
                     }
                 }
             }
@@ -3983,7 +3983,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     for (Entity entity : referencingEntities)
                     {
                         final Entity editObject = editObject(entity, user);
-                        ((EntityReferencer)editObject).replace(allocatable.getReference(), selectedObject.getReference());
+                        final ReferenceInfo<Allocatable> oldRef = allocatable.getReference();
+                        final ReferenceInfo<Allocatable> newRef = selectedObject.getReference();
+                        ((EntityReferencer)editObject).replace(oldRef, newRef);
                         storeObjects.add(editObject);
                     }
                 }
@@ -3992,12 +3994,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         catch(RaplaException ra)
         {
-            getLogger().error("Error doing a merge for "+selectedObject+" and allocatables " + allocatableIds);
+            getLogger().error("Error doing a merge for " + selectedObject + " and allocatables " + allocatableIds + ": " + ra.getLocalizedMessage());
             throw ra;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            getLogger().error("Error doing a merge for "+selectedObject+" and allocatables " + allocatableIds);
+            getLogger().error("Error doing a merge for " + selectedObject + " and allocatables " + allocatableIds + ": " + e.getMessage());
             throw new RaplaException(e);
         }
         finally

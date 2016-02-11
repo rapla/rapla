@@ -532,7 +532,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
 			}
 		}
-		final FutureResult<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = getAppointmentsAsync(operator, user, Arrays.asList(allocatables), start, end,
+		final Collection<Allocatable> allocatablesCollection = allocatables != null ? Arrays.asList(allocatables) : null;
+        final FutureResult<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = getAppointmentsAsync(operator, user, allocatablesCollection, start, end,
 				reservationFilters, templateId);
 		return new FutureResult<Collection<Reservation>>()
 		{

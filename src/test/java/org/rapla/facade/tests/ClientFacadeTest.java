@@ -18,7 +18,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -50,9 +52,11 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -597,6 +601,7 @@ public class ClientFacadeTest  {
         final ReferenceInfo<Allocatable> groupAllocatableReferenceWithWinningAllocatable;
         {// test package referencing deleted allocatable
             final DynamicType mergeGroupDynamicType = facade.newDynamicType("mergeGroup");
+            mergeGroupDynamicType.setKey("mergeGroup");
             mergeGroupDynamicType.getName().setName("en", "mergeGroup");
             final Attribute packageAttribute = facade.newAttribute(AttributeType.ALLOCATABLE);
             packageAttribute.setKey("packageAttribute");
@@ -649,6 +654,17 @@ public class ClientFacadeTest  {
                 configurationWithLoosesAllocatable = calendarModelImpl.createConfiguration();
                 Assert.assertEquals(1, configurationWithLoosesAllocatable.getSelected().size());
             }
+            final CalendarModelConfigurationImpl configurationClassificationFilterWithLoosesAllocatable;
+            {// ClassificationFilter
+                final CalendarModelImpl calendarModelImpl = new CalendarModelImpl(facade, clientFacade, new RaplaLocaleImpl(new DefaultBundleManager()));
+                configurationClassificationFilterWithLoosesAllocatable = calendarModelImpl.createConfiguration();
+                List<ClassificationFilterImpl> classificationFilters = new ArrayList<>();
+                final DynamicType dynamicTypeGroup = facade.getDynamicType("mergeGroup");
+                final ClassificationFilter newClassificationFilter = dynamicTypeGroup.newClassificationFilter();
+                newClassificationFilter.addEqualsRule("packageAttribute", allocatableWillBeMerge);
+                classificationFilters.add((ClassificationFilterImpl) newClassificationFilter);
+                configurationClassificationFilterWithLoosesAllocatable.setClassificationFilter(classificationFilters);
+            }
             final Preferences preferences = facade.edit(facade.getPreferences(user, true));
             Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
             Map<String,CalendarModelConfiguration> newMap;
@@ -658,10 +674,29 @@ public class ClientFacadeTest  {
                 newMap = new TreeMap<String,CalendarModelConfiguration>( exportMap);
             newMap.put("testForMerge", configurationWithBothAllocatables);
             newMap.put("testForMergeWithoutWins", configurationWithLoosesAllocatable);
+            newMap.put("testForFilter", configurationClassificationFilterWithLoosesAllocatable);
             RaplaMapImpl map = new RaplaMapImpl(newMap);
             map.setResolver( facade.getOperator() );
             preferences.putEntry(CalendarModelConfiguration.EXPORT_ENTRY, map);
             facade.store(preferences);
+        }
+        final ReferenceInfo<Allocatable> allocatableReferencingNormally;
+        {// Classification normally referencing 
+            final DynamicType newDynamicType = facade.newDynamicType("dynamicTypeReferencingAllocatableLooses");
+            newDynamicType.getName().setName("en", "dynamicTypeReferencingAllocatableLooses");
+            final Attribute refAttribute = facade.newAttribute(AttributeType.ALLOCATABLE);
+            refAttribute.setKey("refAllocatable");
+            refAttribute.setConstraint(ConstraintIds.KEY_DYNAMIC_TYPE, allocatableWillBeMerge.getClassification().getType());
+            refAttribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, Boolean.TRUE.toString());
+            newDynamicType.addAttribute(refAttribute);
+            facade.store(newDynamicType);
+            final Allocatable newAllocatable = facade.newAllocatable(newDynamicType.newClassification(), user);
+            allocatableReferencingNormally = newAllocatable.getReference();
+            final Classification classification = newAllocatable.getClassification();
+            final Attribute[] attributes = classification.getAttributes();
+            Assert.assertEquals(1, attributes.length);
+            classification.setValues(refAttribute, Collections.singleton(allocatableWillBeMerge));
+            facade.store(newAllocatable);
         }
         // merge two allocatables
         {
@@ -739,7 +774,27 @@ public class ClientFacadeTest  {
                 Assert.assertEquals(1, selected.size());
                 Assert.assertEquals(allocatableWinsMerge, selected.iterator().next());
             }
-            
+            {//ClassificationFilter
+                final CalendarModelConfiguration calendarModelConfiguration = entry.get("testForFilter");
+                final ClassificationFilter[] filter = calendarModelConfiguration.getFilter();
+                Assert.assertEquals(1, filter.length);
+                final Iterator<? extends ClassificationFilterRule> ruleIterator = filter[0].ruleIterator();
+                Assert.assertTrue(ruleIterator.hasNext());
+                final ClassificationFilterRule next = ruleIterator.next();
+                final Object[] values = next.getValues();
+                Assert.assertEquals(1, values.length);
+                Assert.assertEquals(allocatableWinsMerge, values[0]);
+                Assert.assertFalse(ruleIterator.hasNext());
+            }
+        }
+        {// Classification normally referenced
+            final Allocatable resolve = facade.getOperator().resolve(allocatableReferencingNormally);
+            final Classification classification = resolve.getClassification();
+            final Attribute[] attributes = classification.getAttributes();
+            Assert.assertEquals(1, attributes.length);
+            final Collection<Object> values = classification.getValues(attributes[0]);
+            Assert.assertEquals(1, values.size());
+            Assert.assertEquals(allocatableWinsMerge, values.iterator().next());
         }
     }
 

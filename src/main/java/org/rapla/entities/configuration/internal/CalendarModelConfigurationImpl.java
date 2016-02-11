@@ -282,5 +282,28 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
         clone.optionMap = Collections.unmodifiableMap( newMap);
         return clone;
     }
+    
+    @Override
+        public void replace(ReferenceInfo origId, ReferenceInfo newId)
+        {
+            super.replace(origId, newId);
+            if(selected != null && selected.contains(origId.getId()))
+            {
+                final ArrayList<String> copy = new ArrayList<>(selected);
+                final int indexOf = copy.indexOf(origId.getId());
+                copy.remove(indexOf);
+                if(copy.contains(newId.getId()))
+                {
+                    final ArrayList<String> typeCopy = new ArrayList<>(typeList);
+                    typeCopy.remove(indexOf);
+                    this.typeList = Collections.unmodifiableList(typeCopy);
+                }
+                else
+                {
+                    copy.add(indexOf, newId.getId());
+                }
+                this.selected = Collections.unmodifiableList(copy);
+            }
+        }
 
 }
