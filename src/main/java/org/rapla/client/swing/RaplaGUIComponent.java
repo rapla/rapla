@@ -49,9 +49,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.net.URI;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 /**
     Base class for most components in the gui package. Eases
@@ -285,7 +288,7 @@ public class RaplaGUIComponent extends RaplaComponent
     public static KeyStroke COPY_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_C,ActionEvent.CTRL_MASK,false);
     public static KeyStroke CUT_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_X,ActionEvent.CTRL_MASK,false);
     public static KeyStroke PASTE_STROKE = KeyStroke.getKeyStroke(KeyEvent.VK_V,ActionEvent.CTRL_MASK,false);
-  
+
 	protected static void copy(final JComponent component, ActionEvent e, final IOInterface service, final RaplaLocale raplaLocale) {
 		final Transferable transferable;
 		if ( component instanceof JTextComponent)
@@ -309,8 +312,8 @@ public class RaplaGUIComponent extends RaplaComponent
 			{
 			    if (service != null) {
 			        service.setContents(transferable, null);
-			    } 
-			    else 
+			    }
+			    else
 			    {
 			        Action action = component.getActionMap().get(DefaultEditorKit.copyAction);
 					if ( action != null)
@@ -326,6 +329,8 @@ public class RaplaGUIComponent extends RaplaComponent
 
 		}
 	}
+
+
 	
 	static ThreadLocal<Transferable> clipboard =  new ThreadLocal<Transferable>();
 
@@ -397,30 +402,56 @@ public class RaplaGUIComponent extends RaplaComponent
 	 private static String escape(Object cell) { 
          return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " "); 
 	 }
-	 /** Code End	 */ 
+	 /** Code End	 */
 
-	
+
 	protected static void paste(final JComponent component, ActionEvent e, final IOInterface service, Logger logger) {
 		try
 		{
 	        if (service != null) {
-	            final Transferable transferable = service.getContents( null);
-	            Object transferData;
-	            try {
-	                transferData = transferable.getTransferData(DataFlavor.stringFlavor);
-	                if ( transferData != null)
-	                {
-	                	if ( component instanceof JTextComponent)
-	                	{
-	                	   	((JTextComponent)component).replaceSelection( transferData.toString());
-	                	}
-	                  	if ( component instanceof JTable)
-	                	{
-	                  		// Paste currently not supported
-	                	}
-	                }
-	            } catch (Exception ex) {
-	            }
+				final Transferable transferable = service.getContents( null);
+				Object transferData;
+				try {
+					if ( transferable.isDataFlavorSupported(DataFlavor.stringFlavor))
+					{
+						transferData = transferable.getTransferData(DataFlavor.stringFlavor);
+						if ( transferData != null)
+						{
+							if ( component instanceof JTextComponent)
+							{
+								((JTextComponent)component).replaceSelection( transferData.toString());
+							}
+							if ( component instanceof JTable)
+							{
+								// Paste currently not supported
+							}
+						}
+					}
+					else if ( transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+					{
+						transferData = transferable.getTransferData(DataFlavor.javaFileListFlavor);
+						if ( transferData != null)
+						{
+							if ( component instanceof JTextComponent)
+							{
+								List<File> fileList = (List<File>) transferData;
+								if ( fileList.size() > 0)
+								{
+									File file = fileList.get(0);
+									final URI uri = file.getAbsoluteFile().toURI();
+									((JTextComponent)component).replaceSelection( uri.toString());
+								}
+							}
+							if ( component instanceof JTable)
+							{
+								// Paste currently not supported
+							}
+						}
+					}
+
+				} catch (Exception ex) {
+					logger.warn(ex.getMessage(),ex);
+				}
 	           
 	        } 
 	        else

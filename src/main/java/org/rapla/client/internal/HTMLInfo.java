@@ -13,6 +13,7 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.components.util.Tools;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
@@ -31,46 +32,55 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
-public abstract class HTMLInfo<T>  extends RaplaComponent {
-    
-    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger) {
-        super( facade, i18n, raplaLocale, logger);
-//        this.i18n = i18n;
-//        this.raplaLocale = raplaLacale;
+public abstract class HTMLInfo<T> extends RaplaComponent
+{
+
+    public HTMLInfo(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger)
+    {
+        super(facade, i18n, raplaLocale, logger);
+        //        this.i18n = i18n;
+        //        this.raplaLocale = raplaLacale;
     }
 
     /** performs xml-encoding of a string the output goes to the buffer*/
-    static public void encode(String text,StringBuffer buf) {
-        buf.append( encode ( text ));
+    static public void encode(String text, StringBuffer buf)
+    {
+        buf.append(encode(text));
     }
-    
-    
 
-    static public String encode(String string) {
-        String text = XMLWriter.encode( string );
-        if ( text.indexOf('\n') > 0 ) {
+    static public String encode(String string)
+    {
+        String text = XMLWriter.encode(string);
+        if (text.indexOf('\n') > 0)
+        {
             StringBuffer buf = new StringBuffer();
             int size = text.length();
-            for ( int i= 0; i<size; i++) {
+            for (int i = 0; i < size; i++)
+            {
                 char c = text.charAt(i);
-                if ( c == '\n' ) {
-                   buf.append("<br>");
-                } else {
-                   buf.append( c );
+                if (c == '\n')
+                {
+                    buf.append("<br>");
+                }
+                else
+                {
+                    buf.append(c);
                 } // end of switch ()
             } // end of for ()
             text = buf.toString();
         }
         return text;
     }
-    protected void insertModificationRow( Timestamp timestamp, StringBuffer buf ) {
+
+    protected void insertModificationRow(Timestamp timestamp, StringBuffer buf)
+    {
         final Date createTime = timestamp.getCreateDate();
         final Date lastChangeTime = timestamp.getLastChanged();
-        if ( lastChangeTime != null)
+        if (lastChangeTime != null)
         {
             buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");
             RaplaLocale raplaLocale = getRaplaLocale();
-            if ( createTime != null)
+            if (createTime != null)
             {
                 buf.append(getI18n().getString("created_at"));
                 buf.append(" ");
@@ -84,48 +94,51 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
             buf.append("\n");
         }
     }
-    
-    static public void addColor(String color,StringBuffer buf) {
+
+    static public void addColor(String color, StringBuffer buf)
+    {
         buf.append(" color=\"");
         buf.append(color);
         buf.append('\"');
     }
-    
-    static public void createTable(Collection<Row> attributes,StringBuffer buf,boolean encodeValues) {
+
+    static public void createTable(Collection<Row> attributes, StringBuffer buf, boolean encodeValues)
+    {
         buf.append("<table class=\"infotable\" cellpadding=\"1\">");
         Iterator<Row> it = attributes.iterator();
-        while (it.hasNext()) {
-            Row att =   it.next();
+        while (it.hasNext())
+        {
+            Row att = it.next();
             buf.append("<tr>\n");
             buf.append("<td class=\"label\" valign=\"top\" style=\"white-space:nowrap\">");
-            encode(att.field,buf);
-            if ( att.field.length() > 0)
+            encode(att.field, buf);
+            if (att.field.length() > 0)
             {
-            	buf.append(":");
+                buf.append(":");
             }
             buf.append("</td>\n");
             buf.append("<td class=\"value\" valign=\"top\">");
             String value = att.value;
-			if (value != null) 
-			{
-				try{
-                	int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
-                	URL url = new URL( value.substring(0,httpEnd));
-                	buf.append("<a href=\"");
-                	buf.append(url.toExternalForm());
-                	buf.append("\">");
-                	if (encodeValues)
-                		encode(value,buf);
-                	else
-                		buf.append(value);
-                	buf.append("</a>");
-				} 
-                catch (MalformedURLException ex)
+            if (value != null)
+            {
+                URL url = Tools.getUrl(value);
+                if (url != null)
                 {
-                	if (encodeValues)
-                		encode(value,buf);
-                	else
-                		buf.append(value);
+                    buf.append("<a href=\"");
+                    buf.append(url.toExternalForm());
+                    buf.append("\">");
+                }
+                if (encodeValues)
+                {
+                    encode(value, buf);
+                }
+                else
+                {
+                    buf.append(value);
+                }
+                if (url != null)
+                {
+                    buf.append("</a>");
                 }
             }
             buf.append("</td>");
@@ -134,92 +147,106 @@ public abstract class HTMLInfo<T>  extends RaplaComponent {
         buf.append("</table>");
     }
 
-    static public String createTable(Collection<Row> attributes, boolean encodeValues) {
+    static public String createTable(Collection<Row> attributes, boolean encodeValues)
+    {
         StringBuffer buf = new StringBuffer();
         createTable(attributes, buf, encodeValues);
         return buf.toString();
     }
 
-    static public void createTable(Collection<Row> attributes,StringBuffer buf) {
-        createTable(attributes,buf,true);
+    static public void createTable(Collection<Row> attributes, StringBuffer buf)
+    {
+        createTable(attributes, buf, true);
     }
 
-
-    static public String createTable(Collection<Row> attributes) {
+    static public String createTable(Collection<Row> attributes)
+    {
         StringBuffer buf = new StringBuffer();
-        createTable(attributes,buf);
+        createTable(attributes, buf);
         return buf.toString();
     }
 
-    
-    static public void highlight(String text,StringBuffer buf) {
+    static public void highlight(String text, StringBuffer buf)
+    {
         buf.append("<FONT color=\"red\">");
-        encode(text,buf);
+        encode(text, buf);
         buf.append("</FONT>");
     }
 
-    static public String highlight(String text) {
+    static public String highlight(String text)
+    {
         StringBuffer buf = new StringBuffer();
-        highlight(text,buf);
+        highlight(text, buf);
         return buf.toString();
     }
 
-    static public void strong(String text,StringBuffer buf) {
+    static public void strong(String text, StringBuffer buf)
+    {
         buf.append("<strong>");
-        encode(text,buf);
+        encode(text, buf);
         buf.append("</strong>");
     }
 
-    static public String strong(String text) {
+    static public String strong(String text)
+    {
         StringBuffer buf = new StringBuffer();
-        strong(text,buf);
+        strong(text, buf);
         return buf.toString();
     }
-    
-    abstract public String createHTMLAndFillLinks(T object,LinkController controller, User user) throws RaplaException ;
-    
-    
-    public String getTitle(T object) {
+
+    abstract public String createHTMLAndFillLinks(T object, LinkController controller, User user) throws RaplaException;
+
+    public String getTitle(T object)
+    {
         StringBuffer buf = new StringBuffer();
         buf.append(getI18n().getString("view"));
-        if ( object instanceof RaplaObject)
+        if (object instanceof RaplaObject)
         {
             String localName = RaplaType.getLocalName((RaplaObject) object);
             try
             {
                 String name = getI18n().getString(localName);
-                buf.append( " ");
-                buf.append( name);
+                buf.append(" ");
+                buf.append(name);
             }
             catch (Exception ex)
             {
                 // in case rapla type translation not found do nothing
             }
         }
-        if ( object instanceof Named)
+        if (object instanceof Named)
         {
             buf.append(" ");
-            buf.append( ((Named) object).getName( getI18n().getLocale()));
+            buf.append(((Named) object).getName(getI18n().getLocale()));
         }
         return buf.toString();
     }
-    public String getTooltip(T object, User user) {
+
+    public String getTooltip(T object, User user)
+    {
         if (object instanceof Named)
             return ((Named) object).getName(getI18n().getLocale());
         return null;
     }
 
-    static public class Row {
+    static public class Row
+    {
         String field;
         String value;
-        Row(String field,String value) {
+
+        Row(String field, String value)
+        {
             this.field = field;
             this.value = value;
         }
-        public String getField() {
+
+        public String getField()
+        {
             return field;
         }
-        public String getValue() {
+
+        public String getValue()
+        {
             return value;
         }
     }

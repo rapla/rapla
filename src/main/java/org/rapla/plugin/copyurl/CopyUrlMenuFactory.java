@@ -1,23 +1,16 @@
 package org.rapla.plugin.copyurl;
 
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.net.URL;
-import java.security.AccessControlException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.TreeSet;
-
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.ErrorDialog;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Entity;
-import org.rapla.entities.Named;
-import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -26,19 +19,37 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.framework.RaplaContext;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.gui.MenuContext;
-import org.rapla.gui.ObjectMenuFactory;
-import org.rapla.gui.RaplaGUIComponent;
-import org.rapla.gui.toolkit.RaplaMenuItem;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.net.URL;
+import java.security.AccessControlException;
+import java.util.Collection;
+import java.util.HashSet;
+
+@Singleton
+@Extension(provides = ObjectMenuFactory.class, id="copyurl")
 public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuFactory
 {
 
-    public CopyUrlMenuFactory(RaplaContext context)
+    private final IOInterface ioInterface;
+    private final Provider<ErrorDialog> errorDialogProvider;
+
+    public CopyUrlMenuFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface,
+            Provider<ErrorDialog> errorDialogProvider)
     {
-        super(context);
+        super(facade, i18n, raplaLocale, logger);
+        this.ioInterface = ioInterface;
+        this.errorDialogProvider = errorDialogProvider;
     }
 
     public RaplaMenuItem[] create(final MenuContext menuContext, final RaplaObject focusedObject)
@@ -69,17 +80,18 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
             }
             else if (obj instanceof Entity)
             {
-                RaplaType raplaType = ((RaplaObject) obj).getRaplaType();
-                if (raplaType == Appointment.TYPE)
+
+                Class<? extends Entity> raplaType = ((RaplaObject) obj).getTypeClass();
+                if (raplaType == Appointment.class)
                 {
                     Appointment appointment = (Appointment) obj;
                     ownable = appointment.getReservation();
                 }
-                else if (raplaType == Reservation.TYPE)
+                else if (raplaType == Reservation.class)
                 {
                     ownable = (Reservation) obj;
                 }
-                else if (raplaType == Allocatable.TYPE)
+                else if (raplaType == Allocatable.class)
                 {
                     ownable = (Allocatable) obj;
                 }
@@ -136,7 +148,13 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
                 }
                 catch (RaplaException ex)
                 {
-                    showException(ex, menuContext.getComponent());
+                    ErrorDialog dialog;
+                    try {
+                        dialog = errorDialogProvider.get();
+                        final SwingPopupContext popupContext = (SwingPopupContext) menuContext.getPopupContext();
+                        dialog.showExceptionDialog(ex, popupContext.getParent());
+                    } catch (RaplaException ex1) {
+                    }
                 }
             }
 
@@ -145,10 +163,9 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
                 Transferable transferable = new StringSelection(link);
                 try
                 {
-                    final IOInterface service = getIOService();
-                    if (service != null)
+                    if (ioInterface != null)
                     {
-                        service.setContents(transferable, null);
+                        ioInterface.setContents(transferable, null);
                     }
                 }
                 catch (AccessControlException ex)
@@ -162,4 +179,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
         return new RaplaMenuItem[] { setOwnerItem };
     }
 
+    public void showException(Exception ex) {
+
+    }
 }
