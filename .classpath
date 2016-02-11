@@ -163,10 +163,5 @@
 			<accessrule kind="discouraged" pattern="**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="src" path="target/generated-sources/annotations">
-		<attributes>
-			<attribute name="optional" value="true"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="output" path="eclipse-build"/>
 </classpath>
