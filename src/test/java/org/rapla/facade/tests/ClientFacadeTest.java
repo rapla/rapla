@@ -654,7 +654,7 @@ public class ClientFacadeTest  {
                 markedAllocatables.add(allocatableWillBeMerge);
                 calendarModelImpl.setSelectedObjects(markedAllocatables);
                 configurationWithLoosesAllocatable = calendarModelImpl.createConfiguration();
-                Assert.assertEquals(1, configurationWithBothAllocatables.getSelected().size());
+                Assert.assertEquals(1, configurationWithLoosesAllocatable.getSelected().size());
             }
             final Preferences preferences = facade.edit(facade.getPreferences(user, true));
             Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
