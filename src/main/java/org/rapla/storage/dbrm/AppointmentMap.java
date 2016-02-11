@@ -60,6 +60,12 @@ public class AppointmentMap implements EntityReferencer
                     {
                         return iterator.next().getReference();
                     }
+                    
+                    @Override
+                    public void remove()
+                    {
+                        iterator.remove();
+                    }
                 };
             }
         };
