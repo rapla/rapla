@@ -30,6 +30,8 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.LayoutManager;
 import java.awt.event.ActionEvent;
@@ -44,7 +46,7 @@ import java.util.Set;
 /**
  *
  */
-@Extension(provides = PluginOptionPanel.class, id = TableViewPlugin.PLUGIN_ID) public class TableviewOption implements PluginOptionPanel
+@Extension(provides = PluginOptionPanel.class, id = TableViewPlugin.PLUGIN_ID) public class TableviewOption implements PluginOptionPanel, ChangeListener
 {
     private final JPanel list = new JPanel();
     private final List<TableColumnConfig> tablerows = new ArrayList<TableColumnConfig>();
@@ -146,14 +148,72 @@ import java.util.Set;
         return main;
     }
 
+    private boolean updateting = false;
     protected void initRows()
     {
-        rows.clear();
-        for (TableColumnConfig slot : tablerows)
+        try
         {
-            TableRow row = new TableRow(slot, multiLanguageFieldFactory);
-            rows.add(row);
+            updateting = true;
+            for (TableRow row : rows)
+            {
+                row.nameField.removeChangeListener(this);
+            }
+            rows.clear();
+            for (TableColumnConfig slot : tablerows)
+            {
+                TableRow row = new TableRow(slot, multiLanguageFieldFactory);
+                rows.add(row);
+                row.nameField.addChangeListener(this);
+            }
         }
+        finally
+        {
+            updateting = false;
+        }
+    }
+
+    protected void update()
+    {
+        try
+        {
+            updateting = true;
+
+
+            list.removeAll();
+            TableLayout tableLayout = new TableLayout();
+            list.setLayout(tableLayout);
+            tableLayout.insertColumn(0, TableLayout.PREFERRED);
+            tableLayout.insertColumn(1, 10);
+            tableLayout.insertColumn(2, TableLayout.FILL);
+            list.setLayout(tableLayout);
+
+            tableLayout.insertRow(0, TableLayout.PREFERRED);
+            list.add(new JLabel("Row Name"), "0,0");
+            list.add(new JLabel("Value Type"), "2,0");
+            int i = 0;
+            for (TableRow row : rows)
+            {
+                tableLayout.insertRow(++i, TableLayout.MINIMUM);
+                list.add(row.nameField.getComponent(), "0," + i);
+                list.add(row.typeField, "2," + i);
+            }
+            list.validate();
+            list.repaint();
+            main.validate();
+            main.repaint();
+            updateTableMap();
+        }
+        finally
+        {
+            updateting = false;
+        }
+    }
+
+    private void updateTableMap()
+    {
+        tablerows.clear();
+        tablerows.addAll(mapToRows());
+        typeSelection.removeAllItems();
         for (Entry<String, ViewDefinition> entry : tableConfig.getViewMap().entrySet())
         {
             final String key = entry.getKey();
@@ -161,31 +221,6 @@ import java.util.Set;
             final String name = value.getName(raplaLocale.getLocale());
             typeSelection.addItem(new TypeSelection(key, name));
         }
-
-        tablerows.clear();
-        tablerows.addAll(mapToRows());
-        list.removeAll();
-        TableLayout tableLayout = new TableLayout();
-        list.setLayout(tableLayout);
-        tableLayout.insertColumn(0, TableLayout.PREFERRED);
-        tableLayout.insertColumn(1, 10);
-        tableLayout.insertColumn(2, TableLayout.FILL);
-        list.setLayout(tableLayout);
-
-        tableLayout.insertRow(0, TableLayout.PREFERRED);
-        list.add(new JLabel("Row Name"), "0,0");
-        list.add(new JLabel("Value Type"), "2,0");
-        int i = 0;
-        for (TableRow row : rows)
-        {
-            tableLayout.insertRow(++i, TableLayout.MINIMUM);
-            list.add(row.nameField.getComponent(), "0," + i);
-            list.add(row.typeField, "2," + i);
-        }
-        list.validate();
-        list.repaint();
-        main.validate();
-        main.repaint();
         sorting.init(((TypeSelection) typeSelection.getSelectedItem()).key);
     }
 
@@ -246,6 +281,7 @@ import java.util.Set;
         }
 
     }
+
 
     private static class SortingRow extends JLabel
     {
@@ -440,5 +476,14 @@ import java.util.Set;
 
         }
 
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e)
+    {
+        if ( !updateting)
+        {
+            updateTableMap();
+        }
     }
 }
