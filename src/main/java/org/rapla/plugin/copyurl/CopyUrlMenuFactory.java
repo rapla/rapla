@@ -25,6 +25,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
+import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.awt.datatransfer.StringSelection;
@@ -44,6 +45,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
     private final IOInterface ioInterface;
     private final Provider<ErrorDialog> errorDialogProvider;
 
+    @Inject
     public CopyUrlMenuFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface,
             Provider<ErrorDialog> errorDialogProvider)
     {
