@@ -368,13 +368,6 @@ public class ClientFacadeTest  {
         Assert.assertTrue(set.containsAll(new HashSet<Conflict>(Arrays.asList(conflicts))));
     }
 
-    @Test
-    public void testLogin() throws Exception {
-        clientFacade.logout();
-        Assert.assertEquals(false, clientFacade.login("non_existant_user", "".toCharArray()));
-        Assert.assertEquals(false, clientFacade.login("non_existant_user", "fake".toCharArray()));
-    }
-
 
     @Test
     public void testClone() throws Exception {

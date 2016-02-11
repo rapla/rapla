@@ -124,6 +124,12 @@ public class ServerTest
         server.stop();
     }
 
+    @Test
+    public void testLogin() throws Exception {
+        clientFacade1.logout();
+        Assert.assertEquals(false, clientFacade1.login("non_existant_user", "".toCharArray()));
+        Assert.assertEquals(false, clientFacade1.login("non_existant_user", "fake".toCharArray()));
+    }
 
     @Test
     public void testLoad() throws Exception

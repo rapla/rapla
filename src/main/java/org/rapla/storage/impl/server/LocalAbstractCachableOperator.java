@@ -2560,6 +2560,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Collection<User> users = cache.getUsers();
         addReferers(users, entity, result);
         addReferers(cache.getDynamicTypes(), entity, result);
+        addReferers(CategoryImpl.getRecursive(cache.getSuperCategory()), entity, result);
 
         List<Preferences> preferenceList = new ArrayList<Preferences>();
         for (User user : users)
