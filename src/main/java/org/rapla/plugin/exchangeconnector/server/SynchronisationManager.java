@@ -79,7 +79,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     private final I18nBundle i18n;
     private final Logger logger;
     private final RaplaKeyStorage keyStorage;
-    CachableStorageOperator operator;
+    private final CachableStorageOperator operator;
     private final TimeZoneConverter converter;
     private final String exchangeUrl;
     private final String exchangeTimezoneId;
@@ -160,10 +160,9 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
         public void execute()
         {
-            final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
             try
             {                
-                cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                operator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();
@@ -187,7 +186,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 firstExecution = false;
                 SynchronisationManager.this.execute(includedTasks);
-                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, null);
+                operator.releaseLock(EXCHANGE_LOCK_ID, null);
             }
             catch (Exception ex)
             {
