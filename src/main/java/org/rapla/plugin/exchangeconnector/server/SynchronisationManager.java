@@ -38,6 +38,7 @@ import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
@@ -78,7 +79,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     private final I18nBundle i18n;
     private final Logger logger;
     private final RaplaKeyStorage keyStorage;
-    CachableStorageOperator operator;
+    private final CachableStorageOperator operator;
     private final TimeZoneConverter converter;
     private final String exchangeUrl;
     private final String exchangeTimezoneId;
@@ -130,7 +131,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 Date updatedUntil = null;
                 try
                 {
-                    lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                     synchronize(updateResult);
                     // set it as last, so update must have been successful
@@ -159,10 +160,9 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
         public void execute()
         {
-            final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
             try
             {                
-                cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                operator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();
@@ -186,7 +186,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 firstExecution = false;
                 SynchronisationManager.this.execute(includedTasks);
-                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, null);
+                operator.releaseLock(EXCHANGE_LOCK_ID, null);
             }
             catch (Exception ex)
             {

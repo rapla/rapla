@@ -33,6 +33,7 @@ import javax.inject.Named;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.xml.RaplaContentHandler;
 import org.rapla.components.util.xml.RaplaErrorHandler;
@@ -563,6 +564,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private static class SystemLock
     {
         private Date lastRequested;
+        private Date validUntil;
         private boolean active;
     }
     private final Map<String, SystemLock> locks = new HashMap<String, SystemLock>();
@@ -570,22 +572,45 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     public Date requestLock(String id, Long validMilliseconds) throws RaplaException
     {
+        final Date currentTimestamp = getCurrentTimestamp();
         SystemLock systemLock = locks.get(id);
         if(systemLock == null)
         {
             systemLock = new SystemLock();
             locks.put(id, systemLock);
         }
-        if(systemLock.active){
-            throw new RaplaException("Lock already in use");
+        if (systemLock.active)
+        {
+            if (systemLock.validUntil != null && currentTimestamp.before(systemLock.validUntil))
+            {
+                throw new RaplaException("Lock already in use");
+            }
         }
-        systemLock.lastRequested = new Date();
+        final Date lastRequested = systemLock.lastRequested != null ? systemLock.lastRequested : getHistoryValidStart();
+        final long offset;
+        if(validMilliseconds != null)
+        {
+            offset = validMilliseconds;
+        }
+        else
+        {
+            if ("GLOBAL_LOCK".equals(id))
+            {
+                offset = DateTools.MILLISECONDS_PER_MINUTE * 5;
+            }
+            else
+            {
+                offset = DateTools.MILLISECONDS_PER_MINUTE / 4;
+            }
+        }
+        Date startRequest = systemLock.lastRequested != null ? systemLock.lastRequested : currentTimestamp;
+        systemLock.validUntil = new Date(startRequest.getTime() + offset);
         systemLock.active = true;
-        return systemLock.lastRequested;
+        return lastRequested;
     }
     
     @Override
-    public void releaseLock(String id, Date updatedUntil)
+    public synchronized void releaseLock(String id, Date updatedUntil)
     {
         final SystemLock systemLock = locks.get(id);
         if(systemLock != null)

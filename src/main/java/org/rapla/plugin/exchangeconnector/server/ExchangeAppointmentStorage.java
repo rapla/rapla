@@ -65,7 +65,7 @@ public class ExchangeAppointmentStorage
     protected ReadWriteLock lock = new ReentrantReadWriteLock();
     final private Logger logger;
     final private RaplaFacade facade;
-    final CachableStorageOperator operator;
+    private final CachableStorageOperator operator;
 
 
     /**

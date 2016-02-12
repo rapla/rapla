@@ -12,6 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -43,19 +57,6 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 /** Sends Notification Mails on allocation change.*/
 
 @Extension(provides = ServerExtension.class, id =NotificationPlugin.PLUGIN_ID)
@@ -63,26 +64,28 @@ public class NotificationService
     implements
     ServerExtension
 {
-    private static final String NOTIFICATION_LOCK_ID = "MAIL";
+    static final String NOTIFICATION_LOCK_ID = "NOTIFICATION";
     private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
-    Provider<MailToUserImpl> mailToUserInterface;
+    private final Provider<MailToUserImpl> mailToUserInterface;
     protected CommandScheduler mailQueue;
     private final AppointmentFormater appointmentFormater;
     private final NotificationResources notificationI18n;
     private final RaplaResources raplaI18n;
     private final CachableStorageOperator operator;
 
-    Logger logger;
+    private final Logger logger;
+    private final NotificationStorage notificationStorage;
 
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n,
-            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger)
+            AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger, NotificationStorage notificationStorage)
                     throws RaplaException
     {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;
+        this.notificationStorage = notificationStorage;
         this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
@@ -90,41 +93,67 @@ public class NotificationService
         //raplaFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
+        
     }
 
     @Override public void start()
     {
         getLogger().info("NotificationServer Plugin started");
         getLogger().info("scheduling command for NotificationSercice");
-            mailQueue.schedule(new Command()
+        mailQueue.schedule(new Command()
+        {
+
+            @Override
+            public void execute() throws Exception
             {
-                
-                @Override
-                public void execute() throws Exception
+                Date lastUpdated = null;
+                Date updatedUntil = null;
+                try
                 {
-                    Date lastUpdated = null;
-                    Date updatedUntil = null;
-                    try
+                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+                    final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
+                    changed(updateResult);
+                    // set it as last, so update must have been successful
+                    updatedUntil = updateResult.getUntil();
+                }
+                catch (Throwable t)
+                {
+                    NotificationService.this.logger.warn("Could not send mail: " + t.getMessage());
+                }
+                finally
+                {
+                    if (lastUpdated != null)
                     {
-                        lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
-                        final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
-                        changed(updateResult);
-                        // set it as last, so update must have been successful
-                        updatedUntil = updateResult.getUntil();
-                    }
-                    catch(Throwable t)
-                    {
-                        NotificationService.this.logger.warn("Could not send mail: "+t.getMessage());
-                    }
-                    finally
-                    {
-                        if(lastUpdated != null)
-                        {
-                            operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
-                        }
+                        operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
                     }
                 }
-            }, 0, 30000l);
+            }
+        }, 0, 30000l);
+        mailQueue.schedule(new Command()
+        {
+            @Override
+            public void execute() throws Exception
+            {
+                Date lastUpdated = null;
+                try
+                {
+                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+                    final Collection<AllocationMail> mailsToSend = notificationStorage.getMailsToSend();
+                    sendMails(mailsToSend);
+                }
+                catch (Throwable t)
+                {
+                    NotificationService.this.logger.warn("Could not send mail: " + t.getMessage());
+                }
+                finally
+                {
+                    if (lastUpdated != null)
+                    {
+                        operator.releaseLock(NOTIFICATION_LOCK_ID, null);
+                    }
+                }
+            }
+        }, 45000l, DateTools.MILLISECONDS_PER_MINUTE * 15 + 531l);
     }
 
     protected  Logger getLogger()
@@ -169,11 +198,31 @@ public class NotificationService
                 }
             }
             if(!mailList.isEmpty()) {
-            	MailCommand mailCommand = new MailCommand(mailList);
-            	mailQueue.schedule(mailCommand,0);
+                notificationStorage.store(mailList);
+                sendMails(mailList);
             }
         } catch (RaplaException ex) {
             getLogger().error("Can't trigger notification service." + ex.getMessage(),ex);
+        }
+    }
+    
+    private void sendMails(Collection<AllocationMail> mails)
+    {
+        Iterator<AllocationMail> it = mails.iterator();
+        while (it.hasNext()) {
+            AllocationMail mail = it.next();
+            if (getLogger().isDebugEnabled())
+                getLogger().debug("Sending mail " + mail.toString());
+            getLogger().info("AllocationChange. Sending mail to " + mail.recipient);
+            try {
+
+                mailToUserInterface.get().sendMail(mail.recipient, mail.subject, mail.body );
+                notificationStorage.markSent(mail);
+                getLogger().info("AllocationChange. Mail sent.");
+            } catch (RaplaException ex) {
+                getLogger().error("Could not send mail to " + mail.recipient + " Cause: " + ex.getMessage(), ex);
+                notificationStorage.increateAndStoreRetryCount(mail);
+            }
         }
     }
 
@@ -450,31 +499,5 @@ public class NotificationService
                 + body;
         }
     }
-
-    final class MailCommand implements Command {
-        List<AllocationMail> mailList;
-        public MailCommand(List<AllocationMail> mailList) {
-            this.mailList = mailList;
-        }
-
-        public void execute() {
-            Iterator<AllocationMail> it = mailList.iterator();
-            while (it.hasNext()) {
-                AllocationMail mail = it.next();
-                if (getLogger().isDebugEnabled())
-                    getLogger().debug("Sending mail " + mail.toString());
-                getLogger().info("AllocationChange. Sending mail to " + mail.recipient);
-                try {
-
-                    mailToUserInterface.get().sendMail(mail.recipient, mail.subject, mail.body );
-                    getLogger().info("AllocationChange. Mail sent.");
-                } catch (RaplaException ex) {
-                    getLogger().error("Could not send mail to " + mail.recipient + " Cause: " + ex.getMessage(), ex);
-                }
-            }
-        }
-
-    }
-
 
 }
