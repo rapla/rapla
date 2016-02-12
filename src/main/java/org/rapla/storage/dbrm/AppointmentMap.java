@@ -6,6 +6,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.storage.EntityReferencer;
@@ -77,7 +78,9 @@ public class AppointmentMap implements EntityReferencer
         this.reservations = new LinkedHashSet<>();
         for (Map.Entry<Allocatable, Collection<Appointment>> entry : map.entrySet())
         {
-            final String allocatableId = entry.getKey().getId();
+            final Allocatable key = entry.getKey();
+            Assert.notNull( key);
+            final String allocatableId = key.getId();
             Set<String> ids = allocatableIdToAppointmentIds.get(allocatableId);
             if (ids == null)
             {
@@ -98,10 +101,6 @@ public class AppointmentMap implements EntityReferencer
         Map<String, Appointment> appointmentIdToAppointment = new LinkedHashMap<>();
         for (ReservationImpl reservation : reservations)
         {
-            if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
-            {
-                continue;
-            }
             final Appointment[] appointments = reservation.getAppointments();
             for (Appointment app : appointments)
             {
@@ -126,11 +125,17 @@ public class AppointmentMap implements EntityReferencer
                 {
                     Appointment app = appointmentIdToAppointment.get(appointmentId);
                     Assert.notNull(app);
+                    Reservation reservation = app.getReservation();
+                    Assert.notNull( reservation);
+                    if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
+                    {
+                        continue;
+                    }
                     appointments.add(app);
                 }
             }
-        }
-        return result;
+        }return result;
+
     }
 
     @Override public String toString()

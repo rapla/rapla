@@ -28,24 +28,19 @@
          <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c2642cdd-6144-4e66-bf54-b3ff76c76f04" key="my-group">
             <doc:name lang="en">my-group</doc:name>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c1de624a-5be1-488a-a43f-93a772d8fc48" key="registerer">
-            <doc:name lang="de">Ressourcen eintragen</doc:name>
-            <doc:name lang="en">register resources</doc:name>
-            <doc:name lang="fr">Enregistrer des ressources</doc:name>
+         <rapla:category key="powerplant">
+            <doc:name lang="en">powerplant</doc:name>
+            <rapla:category key="powerplant-admins">
+               <doc:name lang="en">powerplant admins</doc:name>
+               <doc:annotations>
+                  <rapla:annotation key="can_admin_parent">true</rapla:annotation>
+               </doc:annotations>
+            </rapla:category>
+            <rapla:category key="powerplant-staff">
+               <doc:name lang="en">powerplant staff</doc:name>
+            </rapla:category>
          </rapla:category>
-         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c727abe5-ea4f-41b2-9240-c9a4a6900c9b" key="modify-preferences">
-            <doc:name lang="de">Einstellungen bearbeiten</doc:name>
-            <doc:name lang="en">modify preferences</doc:name>
-            <doc:name lang="fr">Modifier la préférence</doc:name>
-         </rapla:category>
-         <rapla:category created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z" id="c309ea1f-7b5c-400a-8546-ae7e692b32d7" key="read-events-from-others">
-            <doc:name lang="de">Die Veranstaltungen anderer sehen</doc:name>
-            <doc:name lang="en">read-events-from-others</doc:name>
-         </rapla:category>
-         <rapla:category created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z" id="c5a6ade9-9546-44f7-8643-1684608746f0" key="create-events">
-            <doc:name lang="de">Veranstaltungen anlegen</doc:name>
-            <doc:name lang="en">create-events</doc:name>
-         </rapla:category>
+
       </rapla:category>
    </rapla:categories>
 
@@ -140,8 +135,8 @@
                <relax:data type="string"/>
             </relax:element>
             <rapla:permission access="read_type"/>
-            <rapla:permission group="category[key='read-events-from-others']" access="read"/>
-            <rapla:permission group="category[key='create-events']" access="create"/>
+            <rapla:permission access="read"/>
+            <rapla:permission access="create"/>
          </relax:element>
       </relax:define>
 
@@ -208,6 +203,8 @@
          <rapla:group key="category[key='my-group']"/>
          <rapla:group key="category[key='read-events-from-others']"/>
          <rapla:group key="category[key='create-events']"/>
+         <rapla:group key="category[key='powerplant']"/>
+         <rapla:group key="category[key='powerplant']/category[key='powerplant-admin'"/>
       </rapla:user>
    </rapla:users>
 

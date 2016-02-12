@@ -8,6 +8,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.Category;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
@@ -152,6 +154,20 @@ public class SecurityManagerTest  {
 		    Thread.sleep(100);
 		}
 
+	}
+
+	public void testUserAdminGroup()
+	{
+		clientFacade1.login("monty", "bursn".toCharArray());
+		final RaplaFacade raplaFacade = clientFacade1.getRaplaFacade();
+		final User user = raplaFacade.newUser();
+		user.setUsername("waylon");
+		user.setEmail("smithers@rapla.dummy.rapla");
+		Category powerplant = raplaFacade.getUserGroupsCategory().getCategory("powerplant");
+		Category powerplantStaff = powerplant.getCategory("powerplant-staff");
+		user.addGroup(powerplant);
+		user.addGroup(powerplantStaff);
+		raplaFacade.store( user);
 	}
 	
 }

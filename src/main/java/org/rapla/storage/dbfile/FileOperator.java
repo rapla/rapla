@@ -281,6 +281,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         try
         {
+            removeInconsistentReservations(  entityStore );
             Collection<Entity> list = new ArrayList<>(entityStore.getList());
             for (Iterator<Entity> iterator = list.iterator(); iterator.hasNext();)
             {
@@ -611,7 +612,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private final Map<String, SystemLock> locks = new HashMap<String, SystemLock>();
 
     @Override
-    public synchronized Date getLock(String id, Long validMilliseconds) throws RaplaException
+    public Date requestLock(String id, Long validMilliseconds) throws RaplaException
     {
         final Date currentTimestamp = getCurrentTimestamp();
         SystemLock systemLock = locks.get(id);

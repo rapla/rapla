@@ -59,7 +59,7 @@ public interface CachableStorageOperator extends StorageOperator {
      * @return the time taken from the underlying system (database or file) when the lock was last requested
      * @throws RaplaException if the lock can not be received
      */
-    Date getLock(String id, Long validMilliseconds) throws RaplaException;
+    Date requestLock(String id, Long validMilliseconds) throws RaplaException;
     void releaseLock(String id, Date updatedUntil);
 
     Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange);

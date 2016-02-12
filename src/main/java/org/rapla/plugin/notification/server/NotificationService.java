@@ -110,7 +110,7 @@ public class NotificationService
                 Date updatedUntil = null;
                 try
                 {
-                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+                    lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
                     final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
                     changed(updateResult);
                     // set it as last, so update must have been successful
@@ -137,7 +137,7 @@ public class NotificationService
                 Date lastUpdated = null;
                 try
                 {
-                    lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+                    lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
                     final Collection<AllocationMail> mailsToSend = notificationStorage.getMailsToSend();
                     sendMails(mailsToSend);
                 }
