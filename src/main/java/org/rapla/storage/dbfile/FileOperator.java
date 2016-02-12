@@ -20,10 +20,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -147,7 +151,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     }
 
-
+    private final Map<String, Collection<ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
 
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
@@ -196,6 +200,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             getLogger().info("Connecting: " + getURL());
             cache.clearAll();
+            importExportEntities.clear();
             addInternalTypes(cache);
             loadData(cache);
             changeStatus(InitStatus.Loaded);
@@ -224,6 +229,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     final public void disconnect() throws RaplaException
     {
         super.disconnect();
+        importExportEntities.clear();
     }
 
     @Override
@@ -242,7 +248,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
             getLogger().debug("Reading data from file:" + getURL());
 
         // TODO implement history storage
-        // FIXME implement importexport storage
         Date lastUpdated = getCurrentTimestamp();
         setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
@@ -277,7 +282,17 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             removeInconsistentReservations(  entityStore );
-            Collection<Entity> list = entityStore.getList();
+            Collection<Entity> list = new ArrayList<>(entityStore.getList());
+            for (Iterator<Entity> iterator = list.iterator(); iterator.hasNext();)
+            {
+                Entity entity = iterator.next();
+                if(entity instanceof ImportExportEntity)
+                {
+                    iterator.remove();
+                    final ImportExportEntity cast = (ImportExportEntity) entity;
+                    insertInLocalCache(cast);
+                }
+            }
             cache.putAll(list);
             Preferences preferences = cache.getPreferencesForUserId(null);
             if (preferences != null)
@@ -436,7 +451,17 @@ final public class FileOperator extends LocalAbstractCachableOperator
             // then saveData() saves all the data in the cache
             final Collection<ReferenceInfo> removeIds = evt.getRemoveIds();
             final List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
-            final Collection<Entity> storeObjects = evt.getStoreObjects();
+            final Collection<Entity> storeObjects = new ArrayList<>(evt.getStoreObjects());
+            for (Iterator<Entity> iterator = storeObjects.iterator(); iterator.hasNext();)
+            {
+                Entity entity = iterator.next();
+                if(entity instanceof ImportExportEntity)
+                {
+                    iterator.remove();
+                    ImportExportEntity cast = (ImportExportEntity) entity;
+                    insertInLocalCache(cast);
+                }
+            }
             refresh(since, until, storeObjects, preferencePatches, removeIds);
             saveData(cache, null, includeIds);
         }
@@ -444,6 +469,18 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             unlock(writeLock);
         }
+    }
+
+    private void insertInLocalCache(ImportExportEntity cast)
+    {
+        final String id = cast.getExternalSystem() + "-" + cast.getDirection();
+        Collection<ImportExportEntity> collection = importExportEntities.get(id);
+        if(collection == null)
+        {
+            collection = new LinkedHashSet<>();
+            importExportEntities.put(id, collection);
+        }
+        collection.add(cast);
     }
 
     private void updateHistory(UpdateEvent evt) throws RaplaException {
@@ -546,7 +583,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds)
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
-        RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache);
+        final ArrayList<ImportExportEntity> importExportEntityList = new ArrayList<>();
+        for (Collection<ImportExportEntity> importExportEntitiyCollection : importExportEntities.values())
+        {
+            importExportEntityList.addAll(importExportEntitiyCollection);
+        }
+        RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, importExportEntityList);
         writer.setEncoding("utf-8");
         if (version != null)
         {
@@ -626,7 +668,19 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection)
     {
-        // FIXME implement me
+        final Lock lock = readLock();
+        try
+        {
+            final Collection<ImportExportEntity> collection = importExportEntities.get(systemId + "-" + importExportDirection);
+            if(collection != null)
+            {
+                return collection;
+            }
+        }
+        finally
+        {
+            unlock(lock);
+        }
         return Collections.emptyList();
     }
 

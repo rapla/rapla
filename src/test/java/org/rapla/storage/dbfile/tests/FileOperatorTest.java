@@ -12,16 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile.tests;
 
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.dbfile.FileOperator;
-import org.rapla.storage.tests.AbstractOperatorTest;
-import org.rapla.test.util.RaplaTestCase;
-import org.xml.sax.InputSource;
-
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,7 +24,24 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
 import java.util.concurrent.Future;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.rapla.entities.storage.ImportExportDirections;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.dbfile.FileOperator;
+import org.rapla.storage.tests.AbstractOperatorTest;
+import org.rapla.test.util.RaplaTestCase;
+import org.xml.sax.InputSource;
 
 @RunWith(JUnit4.class)
 public class FileOperatorTest extends AbstractOperatorTest {
@@ -100,6 +107,62 @@ public class FileOperatorTest extends AbstractOperatorTest {
     @Override protected RaplaFacade getFacade()
     {
         return facade;
+    }
+    
+    @Test
+    public void testImportExportEntity()
+    {
+        final ImportExportEntityImpl importExportEntity = new ImportExportEntityImpl();
+        final String context = "context";
+        final int direction = ImportExportDirections.EXPORT;
+        final String externalSystem = "ExtSys";
+        final String data = "data";
+        final String id = "testid";
+        final String raplaId = "raplaId";
+        importExportEntity.setContext(context);
+        importExportEntity.setData(data);
+        importExportEntity.setDirection(direction);
+        importExportEntity.setExternalSystem(externalSystem);
+        importExportEntity.setId(id);
+        importExportEntity.setRaplaId(raplaId);
+        facade.store(importExportEntity);
+        final CachableStorageOperator operator = getOperator();
+        {
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            Assert.assertEquals(1, importExportEntities.size());
+            final ImportExportEntity next = importExportEntities.iterator().next();
+            Assert.assertEquals(data, next.getData());
+            Assert.assertEquals(context, next.getContext());
+            Assert.assertEquals(direction, next.getDirection());
+            Assert.assertEquals(externalSystem, next.getExternalSystem());
+            Assert.assertEquals(id, next.getId());
+            Assert.assertEquals(raplaId, next.getRaplaId());
+        }
+        operator.disconnect();
+        operator.connect();
+        {
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            Assert.assertEquals(1, importExportEntities.size());
+            final ImportExportEntity next = importExportEntities.iterator().next();
+            Assert.assertEquals(data, next.getData());
+            Assert.assertEquals(context, next.getContext());
+            Assert.assertEquals(direction, next.getDirection());
+            Assert.assertEquals(externalSystem, next.getExternalSystem());
+            Assert.assertEquals(id, next.getId());
+            Assert.assertEquals(raplaId, next.getRaplaId());
+        }
+        facade.remove(importExportEntity);
+        {
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            Assert.assertEquals(0, importExportEntities.size());
+        }
+        operator.disconnect();
+        operator.connect();
+        facade.remove(importExportEntity);
+        {
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            Assert.assertEquals(0, importExportEntities.size());
+        }
     }
 }
 

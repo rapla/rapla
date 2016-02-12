@@ -11,6 +11,14 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -22,18 +30,11 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class RaplaMainWriter extends RaplaXMLWriter
@@ -42,10 +43,12 @@ public class RaplaMainWriter extends RaplaXMLWriter
 	String encoding = "utf-8";
     protected LocalCache cache;
     private String version = OUTPUT_FILE_VERSION;
+    private final Collection<ImportExportEntity> importExportEntities;
 
-    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache) throws RaplaException {
+    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache, Collection<ImportExportEntity> importExportEntities) throws RaplaException {
         super(context);
         this.cache = cache;
+        this.importExportEntities = importExportEntities;
         Assert.notNull(cache);
     }    
 
@@ -90,6 +93,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
             printDisabledConflicts(conflicts);
             println();
         }
+        printImportExport();
         closeElement("rapla:data");
     }
     
@@ -183,6 +187,16 @@ public class RaplaMainWriter extends RaplaXMLWriter
 
     }
         
+    void printImportExport() throws IOException, RaplaException {
+        final String elementName = "rapla:importExport";
+        openElement(elementName);
+        ImportExportWriter reservationWriter = (ImportExportWriter)getWriterFor(ImportExportEntity.class);
+        for (ImportExportEntity importExportEntity: importExportEntities) {
+            reservationWriter.printImportExportEntity( importExportEntity );
+        }
+        closeElement(elementName);
+    }
+    
     void printReservations() throws IOException, RaplaException {
         openElement("rapla:reservations");
     	ReservationWriter reservationWriter = (ReservationWriter)getWriterFor(Reservation.class);
