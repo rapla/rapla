@@ -1346,8 +1346,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return user;
 	}
 
-
-
 	public CalendarSelectionModel newCalendarModel(User user) throws RaplaException{
 	    User workingUser = getWorkingUser();
         if ( workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
@@ -1756,13 +1754,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			if ( toStore instanceof Category)
 			{
 				// add non resolvable categories
-				for (Category cat:((CategoryImpl) toStore).getTransientCategoryList())
-				{
-					if (tryResolve(cat.getReference())== null)
-					{
-						storeList.add( cat );
-					}
-				}
+				addTransientCategories(storeList, (CategoryImpl) toStore,0);
 			}
             storeList.add( toStore);
         }
@@ -1773,6 +1765,22 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
     
         if (getLogger().isDebugEnabled())
             getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
+	}
+
+	public void addTransientCategories(ArrayList<Entity> storeList, CategoryImpl toStore, int depth)
+	{
+		if ( depth >20)
+		{
+			throw new IllegalStateException("Category cycle detected " + toStore);
+		}
+		for (Category cat: toStore.getTransientCategoryList())
+        {
+            if (tryResolve(cat.getReference())== null)
+            {
+                storeList.add( cat );
+				addTransientCategories(storeList, (CategoryImpl) cat, depth +1);
+            }
+        }
 	}
 
 	public CommandHistory getCommandHistory() 
