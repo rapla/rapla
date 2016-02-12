@@ -72,7 +72,6 @@
             </relax:element>
             <rapla:permission access="read_type"/>
             <rapla:permission access="allocate_conflicts"/>
-            <rapla:permission group="category[key='registerer']" access="create"/>
          </relax:element>
       </relax:define>
 
@@ -101,7 +100,6 @@
             </relax:element>
             <rapla:permission access="read_type"/>
             <rapla:permission access="allocate_conflicts"/>
-            <rapla:permission group="category[key='registerer']" access="create"/>
          </relax:element>
       </relax:define>
 

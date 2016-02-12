@@ -1,5 +1,6 @@
 package org.rapla.server;
 
+import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Before;
@@ -156,18 +157,42 @@ public class SecurityManagerTest  {
 
 	}
 
+	@Test
 	public void testUserAdminGroup()
 	{
-		clientFacade1.login("monty", "bursn".toCharArray());
+		clientFacade1.login("monty", "burns".toCharArray());
 		final RaplaFacade raplaFacade = clientFacade1.getRaplaFacade();
-		final User user = raplaFacade.newUser();
-		user.setUsername("waylon");
-		user.setEmail("smithers@rapla.dummy.rapla");
-		Category powerplant = raplaFacade.getUserGroupsCategory().getCategory("powerplant");
+		final Category userGroupsCategory = raplaFacade.getUserGroupsCategory();
+		Category powerplant = userGroupsCategory.getCategory("powerplant");
 		Category powerplantStaff = powerplant.getCategory("powerplant-staff");
-		user.addGroup(powerplant);
-		user.addGroup(powerplantStaff);
-		raplaFacade.store( user);
+		final User newUser;
+		{
+			newUser = raplaFacade.newUser();
+			newUser.setUsername("waylon");
+			newUser.setEmail("smithers@rapla.dummy.rapla");
+			newUser.addGroup(powerplant);
+			newUser.addGroup(powerplantStaff);
+			raplaFacade.store(newUser);
+		}
+		final User[] users = facade1.getUsers();
+		TestCase.assertEquals( 2, users);
+		{
+			final User editUser = raplaFacade.edit(newUser);
+			editUser.removeGroup(powerplantStaff);
+			raplaFacade.store(editUser);
+		}
+		{
+			final User editUser = raplaFacade.edit(newUser);
+			editUser.addGroup(userGroupsCategory.getCategory("my-group"));
+			try
+			{
+				raplaFacade.store(editUser);
+				TestCase.fail("Security Exception should be thrown");
+			} catch (SecurityException ex)
+			{
+			}
+		}
+
 	}
 	
 }
