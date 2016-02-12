@@ -1,5 +1,10 @@
 package org.rapla.storage.xml;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.RaplaObject;
@@ -16,6 +21,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
+import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -23,10 +29,6 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
-
-import javax.inject.Provider;
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class IOContext
@@ -67,6 +69,7 @@ public class IOContext
         readerMap.put( RaplaConfiguration.class, new RaplaConfigurationReader(context));
         readerMap.put( RaplaMap.class, new RaplaMapReader(context));
         readerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsReader(context) );
+        readerMap.put( ImportExportEntity.class, new ImportExportReader(context) );
     }
 
      protected void addWriters(Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap,RaplaXMLContext context) throws RaplaException {
@@ -80,6 +83,7 @@ public class IOContext
         writerMap.put( RaplaMap.class, new RaplaMapWriter(context) );
         writerMap.put( Preferences.class, new PreferenceWriter(context) );
         writerMap.put( CalendarModelConfiguration.class, new RaplaCalendarSettingsWriter(context) );
+        writerMap.put( ImportExportEntity.class, new ImportExportWriter(context) );
     }
 
     public RaplaDefaultXMLContext createInputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, EntityStore store, IdCreator idTable, Category superCategory) throws RaplaException {
