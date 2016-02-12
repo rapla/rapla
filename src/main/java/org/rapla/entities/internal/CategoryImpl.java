@@ -12,16 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -32,6 +22,16 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 final public class CategoryImpl extends SimpleEntity implements Category, ModifiableTimestamp
 {
@@ -209,7 +209,25 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public Collection<Category> getTransientCategoryList()
     {
-        return (Collection)getNonpersistantEntities();
+        final Collection<Entity> nonpersistantEntities = (Collection) getNonpersistantEntities();
+        final Collection<Category> result = new ArrayList<Category>();
+        for ( Entity entity:nonpersistantEntities)
+        {
+            if (!(entity instanceof Category))
+            {
+                continue;
+            }
+            Category cat = (Category) entity;
+            if ( cat.getReference().equals(getParentRef()))
+            {
+                continue;
+            }
+            else
+            {
+                result.add( cat);
+            }
+        }
+        return result;
     }
     public boolean hasCategory(Category category) {
         return isRefering("childs", category.getId());
