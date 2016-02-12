@@ -13,32 +13,8 @@
 
 package org.rapla.storage.impl.server;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
@@ -66,6 +42,7 @@ import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -112,6 +89,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -129,6 +107,32 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -410,7 +414,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         HashSet<Reservation> reservationSet = new HashSet<Reservation>();
         if (allocatables == null || allocatables.size() == 0)
         {
-            allocatables = Collections.singleton(null);
+            allocatables = getAllocatables( null);
         }
         try
         {
@@ -2962,6 +2966,39 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    protected Collection<ReferenceInfo<Reservation>> removeInconsistentReservations(EntityStore store)
+    {
+        List<Reservation> reservations = new ArrayList<Reservation>();
+        List<ReferenceInfo<Reservation>> reservationRefs = new ArrayList<ReferenceInfo<Reservation>>();
+        Collection<Entity> list = store.getList();
+        for (Entity entity: list)
+        {
+            if (!( entity instanceof  Reservation))
+            {
+                continue;
+            }
+            Reservation reservation =(Reservation) entity;
+            if ( reservation.getSortedAppointments().size() == 0 || reservation.getAllocatables().length == 0)
+            {
+                reservations.add(reservation);
+                reservationRefs.add(reservation.getReference());
+            }
+        }
+        for (ReferenceInfo<Reservation> ref:reservationRefs)
+        {
+            store.remove(ref);
+        }
+
+        if ( reservations.size() != 0)
+        {
+            Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
+            final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
+            Gson gson = gsonBuilder.create();
+            getLogger().error("The following events will be removed because they have no resources or appointments: \n" + gson.toJson( reservations));
+        }
+        return reservationRefs;
+    }
+
     protected void checkReservation(Reservation reservation) throws RaplaException
     {
         Locale locale = i18n.getLocale();
@@ -2969,6 +3006,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (reservation.getAppointments().length == 0)
         {
             throw new RaplaException(i18n.getString("error.no_appointment") + " " + name + " [" + reservation.getId() + "]");
+        }
+        if (reservation.getAllocatables().length == 0)
+        {
+            throw new RaplaException(i18n.getString("warning.no_allocatables_selected") + " " + name + " [" + reservation.getId() + "]");
         }
     }
 

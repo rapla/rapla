@@ -32,7 +32,6 @@ import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -40,7 +39,6 @@ import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
@@ -108,7 +106,7 @@ public class NotificationService
                     Date updatedUntil = null;
                     try
                     {
-                        lastUpdated = operator.getLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+                        lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
                         final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
                         changed(updateResult);
                         // set it as last, so update must have been successful

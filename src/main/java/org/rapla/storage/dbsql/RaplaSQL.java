@@ -432,7 +432,7 @@ class RaplaSQL {
         }
     }
 
-    public void getLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException
+    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException
     {
         try
         {

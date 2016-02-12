@@ -140,28 +140,32 @@ public class ServerTest
     @Test
     public void testChangeReservation() throws Exception
     {
-        Reservation r1 = getRaplaFacade1().newReservation();
+        final RaplaFacade raplaFacade1 = getRaplaFacade1();
+        Reservation r1 = raplaFacade1.newReservation();
         String typeKey = r1.getClassification().getType().getKey();
         r1.getClassification().setValue("name", "test-reservation");
-        r1.addAppointment(getRaplaFacade1().newAppointment(getRaplaFacade1().today(), new Date()));
-        getRaplaFacade1().store(r1);
+        r1.addAppointment(raplaFacade1.newAppointment(raplaFacade1.today(), new Date()));
+        r1.addAllocatable( raplaFacade1.getAllocatables()[0]);
+        raplaFacade1.store(r1);
         // Wait for the update
-        getRaplaFacade2().refresh();
+        final RaplaFacade raplaFacade2 = getRaplaFacade2();
+        raplaFacade2.refresh();
 
-        Reservation r2 = findReservation(getRaplaFacade2(), typeKey, "test-reservation");
+        Reservation r2 = findReservation(raplaFacade2, typeKey, "test-reservation");
+        Assert.assertNotNull( r2);
         Assert.assertEquals(1, r2.getAppointments().length);
-        Assert.assertEquals(0, r2.getAllocatables().length);
+        Assert.assertEquals(1, r2.getAllocatables().length);
 
         // Modify Reservation in first facade
-        Reservation r1clone = getRaplaFacade1().edit(r2);
-        r1clone.addAllocatable(getRaplaFacade1().getAllocatables()[0]);
-        getRaplaFacade1().store(r1clone);
+        Reservation r1clone = raplaFacade1.edit(r2);
+        r1clone.addAllocatable(raplaFacade1.getAllocatables()[2]);
+        raplaFacade1.store(r1clone);
         // Wait for the update
-        getRaplaFacade2().refresh();
+        raplaFacade2.refresh();
 
         // test for modify in second facade
-        Reservation persistant = getRaplaFacade2().getPersistant(r2);
-        Assert.assertEquals(1, persistant.getAllocatables().length);
+        Reservation persistant = raplaFacade2.getPersistant(r2);
+        Assert.assertEquals(2, persistant.getAllocatables().length);
         clientFacade2.logout();
     }
 
@@ -381,24 +385,25 @@ public class ServerTest
     {
         // select from event where name contains 'planting' or name contains
         // 'test';
-        DynamicType dynamicType = getRaplaFacade1().getDynamicType("room");
+        final RaplaFacade raplaFacade1 = getRaplaFacade1();
+        DynamicType dynamicType = raplaFacade1.getDynamicType("room");
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
-        Category channel6 = getRaplaFacade1().getSuperCategory().getCategory("department").getCategory("channel-6");
-        Category testdepartment = getRaplaFacade1().getSuperCategory().getCategory("department").getCategory("testdepartment");
+        Category channel6 = raplaFacade1.getSuperCategory().getCategory("department").getCategory("channel-6");
+        Category testdepartment = raplaFacade1.getSuperCategory().getCategory("department").getCategory("testdepartment");
         classificationFilter.setRule(0, dynamicType.getAttribute("belongsto"), new Object[][] { { "is", channel6 }, { "is", testdepartment } });
         boolean thrown = false;
         ClassificationFilter[] filter = new ClassificationFilter[] { classificationFilter };
         User user1 = clientFacade1.getUser();
-        CalendarSelectionModel calendar = getRaplaFacade1().newCalendarModel(user1);
+        CalendarSelectionModel calendar = raplaFacade1.newCalendarModel(user1);
         calendar.setViewId(WeekviewPlugin.WEEK_VIEW);
         calendar.setAllocatableFilter(filter);
         calendar.setSelectedObjects(Collections.emptyList());
-        calendar.setSelectedDate(getRaplaFacade1().today());
+        calendar.setSelectedDate(raplaFacade1.today());
         CalendarModelConfiguration conf = ((CalendarModelImpl) calendar).createConfiguration();
-        Preferences prefs = getRaplaFacade1().edit(getRaplaFacade1().getPreferences(clientFacade1.getUser()));
+        Preferences prefs = raplaFacade1.edit(raplaFacade1.getPreferences(clientFacade1.getUser()));
         TypedComponentRole<CalendarModelConfiguration> TEST_CONF = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.TestEntry");
         prefs.putEntry(TEST_CONF, conf);
-        getRaplaFacade1().store(prefs);
+        raplaFacade1.store(prefs);
 
         RaplaFacade facade = getServerFacade();
         User user = facade.getUser("homer");
@@ -415,9 +420,9 @@ public class ServerTest
 
         try
         {
-            Category parent = getRaplaFacade1().edit(testdepartment.getParent());
+            Category parent = raplaFacade1.edit(testdepartment.getParent());
             parent.removeCategory(testdepartment.clone());
-            getRaplaFacade1().store(parent);
+            raplaFacade1.store(parent);
         }
         catch (DependencyException ex)
         {
@@ -430,24 +435,26 @@ public class ServerTest
     @Test
     public void testCalendarStore() throws Exception
     {
-        Date futureDate = new Date(getRaplaFacade1().today().getTime() + DateTools.MILLISECONDS_PER_WEEK * 10);
-        Reservation r = getRaplaFacade1().newReservation();
-        r.addAppointment(getRaplaFacade1().newAppointment(futureDate, futureDate));
+        final RaplaFacade raplaFacade1 = getRaplaFacade1();
+        Date futureDate = new Date(raplaFacade1.today().getTime() + DateTools.MILLISECONDS_PER_WEEK * 10);
+        Reservation r = raplaFacade1.newReservation();
+        r.addAppointment(raplaFacade1.newAppointment(futureDate, futureDate));
         r.getClassification().setValue("name", "Test");
+        r.addAllocatable(raplaFacade1.getAllocatables()[0]);
 
-        getRaplaFacade1().store(r);
+        raplaFacade1.store(r);
 
-        CalendarSelectionModel calendar = getRaplaFacade1().newCalendarModel(clientFacade1.getUser());
+        CalendarSelectionModel calendar = raplaFacade1.newCalendarModel(clientFacade1.getUser());
         calendar.setViewId(WeekviewPlugin.WEEK_VIEW);
         calendar.setSelectedObjects(Collections.singletonList(r));
-        calendar.setSelectedDate(getRaplaFacade1().today());
+        calendar.setSelectedDate(raplaFacade1.today());
         calendar.setTitle("test");
         CalendarModelConfiguration conf = ((CalendarModelImpl) calendar).createConfiguration();
         {
-            Preferences prefs = getRaplaFacade1().edit(getRaplaFacade1().getPreferences());
+            Preferences prefs = raplaFacade1.edit(raplaFacade1.getPreferences());
             TypedComponentRole<CalendarModelConfiguration> TEST_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.test");
             prefs.putEntry(TEST_ENTRY, conf);
-            getRaplaFacade1().store(prefs);
+            raplaFacade1.store(prefs);
         }
     }
 
@@ -487,25 +494,27 @@ public class ServerTest
     @Test
     public void testChangeGroup() throws Exception
     {
-        final PermissionController permissionController = DefaultPermissionControllerSupport.getController(getRaplaFacade1().getOperator());
-        User user = getRaplaFacade1().edit(getRaplaFacade1().getUser("monty"));
+        final RaplaFacade raplaFacade1 = getRaplaFacade1();
+        final PermissionController permissionController = DefaultPermissionControllerSupport.getController(raplaFacade1.getOperator());
+        User user = raplaFacade1.edit(raplaFacade1.getUser("monty"));
         Category[] groups = user.getGroupList().toArray(new Category[] {});
         Assert.assertTrue("No groups found!", groups.length > 0);
-        Category myGroup = getRaplaFacade1().getUserGroupsCategory().getCategory("my-group");
+        Category myGroup = raplaFacade1.getUserGroupsCategory().getCategory("my-group");
         Assert.assertTrue(Arrays.asList(groups).contains(myGroup));
         user.removeGroup(myGroup);
-        Allocatable testResource = getRaplaFacade2().edit(getRaplaFacade2().getAllocatables()[0]);
-        Assert.assertTrue(permissionController.canAllocate(testResource, getRaplaFacade2().getUser("monty"), null, null, null));
+        final RaplaFacade raplaFacade2 = getRaplaFacade2();
+        Allocatable testResource = raplaFacade2.edit(raplaFacade2.getAllocatables()[0]);
+        Assert.assertTrue(permissionController.canAllocate(testResource, raplaFacade2.getUser("monty"), null, null, null));
         testResource.removePermission(testResource.getPermissionList().iterator().next());
         Permission newPermission = testResource.newPermission();
-        newPermission.setGroup(getRaplaFacade1().getUserGroupsCategory().getCategory("my-group"));
+        newPermission.setGroup(raplaFacade1.getUserGroupsCategory().getCategory("my-group"));
         newPermission.setAccessLevel(Permission.READ);
         testResource.addPermission(newPermission);
-        Assert.assertFalse(permissionController.canAllocate(testResource, getRaplaFacade2().getUser("monty"), null, null, null));
-        Assert.assertTrue(permissionController.canRead(testResource, getRaplaFacade2().getUser("monty")));
-        getRaplaFacade1().store(user);
-        getRaplaFacade2().refresh();
-        Assert.assertFalse(permissionController.canAllocate(testResource, getRaplaFacade2().getUser("monty"), null, null, null));
+        Assert.assertFalse(permissionController.canAllocate(testResource, raplaFacade2.getUser("monty"), null, null, null));
+        Assert.assertTrue(permissionController.canRead(testResource, raplaFacade2.getUser("monty")));
+        raplaFacade1.store(user);
+        raplaFacade2.refresh();
+        Assert.assertFalse(permissionController.canAllocate(testResource, raplaFacade2.getUser("monty"), null, null, null));
     }
 
     public RaplaFacade getRaplaFacade1()
@@ -516,52 +525,55 @@ public class ServerTest
     @Test
     public void testRemoveAppointment() throws Exception
     {
-        Allocatable[] allocatables = getRaplaFacade1().getAllocatables();
+        final RaplaFacade raplaFacade1 = getRaplaFacade1();
+        Allocatable[] allocatables = raplaFacade1.getAllocatables();
         Date start = getRaplaLocale().toRaplaDate(2005, 11, 10);
         Date end = getRaplaLocale().toRaplaDate(2005, 11, 15);
-        Reservation r = getRaplaFacade1().newReservation();
+        Reservation r = raplaFacade1.newReservation();
         r.getClassification().setValue("name", "newReservation");
-        r.addAppointment(getRaplaFacade1().newAppointment(start, end));
+        r.addAppointment(raplaFacade1.newAppointment(start, end));
         r.addAllocatable(allocatables[0]);
         ClassificationFilter f = r.getClassification().getType().newClassificationFilter();
         f.addEqualsRule("name", "newReservation");
-        getRaplaFacade1().store(r);
-        r = getRaplaFacade1().getPersistant(r);
-        getRaplaFacade1().remove(r);
-        Reservation[] allRes = getRaplaFacade1().getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f });
+        raplaFacade1.store(r);
+        r = raplaFacade1.getPersistant(r);
+        raplaFacade1.remove(r);
+        Reservation[] allRes = raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f });
         Assert.assertEquals(0, allRes.length);
     }
 
     @Test
     public void testRestrictionsBug7() throws Exception
     {
-        Reservation r = getRaplaFacade1().newReservation();
+        final RaplaFacade raplaFacade1 = getRaplaFacade1();
+        Reservation r = raplaFacade1.newReservation();
         r.getClassification().setValue("name", "newReservation");
         Appointment app1;
+        final RaplaLocale raplaLocale = getRaplaLocale();
         {
-            Date start = getRaplaLocale().toRaplaDate(2005, 11, 10);
-            Date end = getRaplaLocale().toRaplaDate(2005, 10, 15);
-            app1 = getRaplaFacade1().newAppointment(start, end);
+            Date start = raplaLocale.toRaplaDate(2005, 11, 10);
+            Date end = raplaLocale.toRaplaDate(2005, 10, 15);
+            app1 = raplaFacade1.newAppointment(start, end);
             r.addAppointment(app1);
         }
         Appointment app2;
         {
-            Date start = getRaplaLocale().toRaplaDate(2008, 11, 10);
-            Date end = getRaplaLocale().toRaplaDate(2008, 11, 15);
-            app2 = getRaplaFacade1().newAppointment(start, end);
+            Date start = raplaLocale.toRaplaDate(2008, 11, 10);
+            Date end = raplaLocale.toRaplaDate(2008, 11, 15);
+            app2 = raplaFacade1.newAppointment(start, end);
             r.addAppointment(app2);
         }
-        Allocatable allocatable = getRaplaFacade1().getAllocatables()[0];
+        Allocatable allocatable = raplaFacade1.getAllocatables()[0];
         r.addAllocatable(allocatable);
         r.setRestriction(allocatable, new Appointment[] { app1, app2 });
-        getRaplaFacade1().store(r);
+        raplaFacade1.store(r);
         clientFacade1.logout();
         clientFacade1.login("homer", "duffs".toCharArray());
         ClassificationFilter f = r.getClassification().getType().newClassificationFilter();
         f.addEqualsRule("name", "newReservation");
-        Reservation[] allRes = getRaplaFacade1().getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f });
+        Reservation[] allRes = raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f });
         Reservation test = allRes[0];
-        allocatable = getRaplaFacade1().getAllocatables()[0];
+        allocatable = raplaFacade1.getAllocatables()[0];
         Appointment[] restrictions = test.getRestriction(allocatable);
         Assert.assertEquals("Restrictions needs to be saved!", 2, restrictions.length);
 

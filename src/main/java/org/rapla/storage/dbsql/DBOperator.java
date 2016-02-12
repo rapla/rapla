@@ -19,6 +19,7 @@ import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -716,7 +717,7 @@ import java.util.concurrent.locks.Lock;
                 }
             }
 
-            raplaSQLOutput.getLocks(connection, connectionTimestamp, lockIds, null);
+            raplaSQLOutput.requestLocks(connection, connectionTimestamp, lockIds, null);
             for (ReferenceInfo id : removeObjects)
             {
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
@@ -948,6 +949,8 @@ import java.util.concurrent.locks.Lock;
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this, superCategory);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
+        final Collection<ReferenceInfo<Reservation>> reservationsToRemove = removeInconsistentReservations(entityStore);
+
         Collection<Entity> list = entityStore.getList();
         final HistoryEntry latest = history.getLatest(Category.SUPER_CATEGORY_REF);
         if ( latest != null)
@@ -962,7 +965,7 @@ import java.util.concurrent.locks.Lock;
         Collection<Entity> migratedTemplates = migrateTemplates();
         cache.putAll(migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
-        Collection<ReferenceInfo> removeObjects = Collections.emptyList();
+        Collection<ReferenceInfo> removeObjects = (Collection)reservationsToRemove;
         dbStore(migratedTemplates, preferencePatches, removeObjects, connection, null);
         // It is important to do the read only later because some resolve might involve write to referenced objects
         for (Entity entity : list)
@@ -1016,7 +1019,7 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    @Override public Date getLock(String id, Long validMilliseconds) throws RaplaException
+    @Override public Date requestLock(String id, Long validMilliseconds) throws RaplaException
     {
         // no commit needed as getLocks will do a commit
         try (Connection con = createConnection())
@@ -1024,7 +1027,7 @@ import java.util.concurrent.locks.Lock;
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
             final Date databaseTimestamp = raplaSQL.getDatabaseTimestamp(con);
-            raplaSQL.getLocks(con, databaseTimestamp, Collections.singletonList(id), validMilliseconds);
+            raplaSQL.requestLocks(con, databaseTimestamp, Collections.singletonList(id), validMilliseconds);
             final Date lastRequested = raplaSQL.getLastRequested(con, id);
             return lastRequested;
         }

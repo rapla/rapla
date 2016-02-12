@@ -13,12 +13,15 @@
 
 package org.rapla.storage.xml;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
@@ -30,6 +33,7 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 
 import java.util.Date;
 
@@ -43,7 +47,6 @@ public class ReservationReader extends RaplaXMLReader {
 	private String annotationKey;
 	private Annotatable currentAnnotatable;
 	private PermissionReader permissionHandler;
-
     public ReservationReader( RaplaXMLContext context) throws RaplaException  {
         super( context);
         dynAttHandler = new DynAttReader( context);
@@ -206,10 +209,7 @@ public class ReservationReader extends RaplaXMLReader {
                 String groupCanReadEventsFromOthers = Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS;
                 addNewPermissionWithGroup(reservation, Permission.READ, groupCanReadEventsFromOthers);
             }
-            if ( reservation.getAppointmentList().size() == 0)
-            {
-                
-            }
+
             add(reservation);
         }
         

@@ -38,7 +38,6 @@ import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
@@ -131,7 +130,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 Date updatedUntil = null;
                 try
                 {
-                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                    lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                     synchronize(updateResult);
                     // set it as last, so update must have been successful
@@ -163,7 +162,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
             try
             {                
-                cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();

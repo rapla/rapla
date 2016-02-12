@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -77,6 +78,29 @@ public class EntityStore implements EntityResolver {
         }
         */
         entities.put(id,entity);
+    }
+
+    public void remove(ReferenceInfo ref)
+    {
+        String id = ref.getId();
+        entities.remove(id);
+        if ( ref.getType() == DynamicType.class)
+        {
+            String key;
+            final Iterator<Map.Entry<String, DynamicType>> iterator = dynamicTypes.entrySet().iterator();
+            while ( iterator.hasNext())
+            {
+                Map.Entry<String,DynamicType> entry = iterator.next();
+                if ( entry.getValue().getReference().equals(ref))
+                {
+                    iterator.remove();
+                }
+            }
+        }
+        if ( ref.getType() == User.class)
+        {
+            passwordList.remove( ref);
+        }
     }
 
 
