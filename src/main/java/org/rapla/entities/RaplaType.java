@@ -64,7 +64,7 @@ public class RaplaType<T>  {
         new RaplaType<Period>(Period.class, "period");
         new RaplaType<Attribute>(Attribute.class, "attribute");
         new RaplaType<DynamicType>(DynamicType.class, "dynamictype");
-        new RaplaType<ImportExportEntity>(ImportExportEntity.class, "IMPORT_EXPORT");
+        new RaplaType<ImportExportEntity>(ImportExportEntity.class, "importexport");
     }
 
 

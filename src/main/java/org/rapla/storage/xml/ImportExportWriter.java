@@ -26,25 +26,27 @@ public class ImportExportWriter extends RaplaXMLWriter {
     }
 
     public void printImportExportEntity(ImportExportEntity importExportEntity) throws IOException,RaplaException {
-        final String tagName = "rapla:importExport";
+        final String tagName = "rapla:importexport";
         openTag(tagName);
         printId(importExportEntity);
-        att("raplaId", importExportEntity.getRaplaId());
+        att("raplaid", importExportEntity.getRaplaId());
         att("direction", importExportEntity.getDirection()+"");
-        att("externalSystem", importExportEntity.getExternalSystem());
+        att("externalsystem", importExportEntity.getExternalSystem());
         closeTag();
         {
             final String elementName = "data";
-            openElement(elementName);
+            openElementOnLine(elementName);
             printEncode(importExportEntity.getData());
-            closeElement(elementName);
+            closeElementOnLine(elementName);
+            println();
         }
         if(importExportEntity.getContext() != null)
         {
             final String elementName = "context";
-            openElement(elementName);
+            openElementOnLine(elementName);
             printEncode(importExportEntity.getContext());
-            closeElement(elementName);
+            closeElementOnLine(elementName);
+            println();
         }
         closeElement(tagName);
     }

@@ -60,7 +60,7 @@ public class RaplaMainReader extends RaplaXMLReader
         localnameTable.put( "period", readerMap.get( Period.class ) );
         localnameTable.put( "reservation", readerMap.get( Reservation.class ) );
         localnameTable.put( "conflict", readerMap.get( Conflict.class ) );
-        localnameTable.put( "importExport", readerMap.get( ImportExportEntity.class ) );
+        localnameTable.put( "importexports", readerMap.get( ImportExportEntity.class ) );
         addChildHandler( readerMap.values() );
     }
 

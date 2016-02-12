@@ -122,7 +122,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         		continue;
         	}
             openTag("relax:ref");
-            att("name",type.getKey());
+            att("name", type.getKey());
             closeElementTag();
         }
         closeElement("relax:choice");
@@ -177,7 +177,7 @@ public class RaplaMainWriter extends RaplaXMLWriter
         // Print all Persons
 		for ( String id : map.keySet())
 		{
-	        List<Allocatable> list = map.get( id);
+	        List<Allocatable> list = map.get(id);
 			for (Allocatable allocatable:list) {
 	            allocatableWriter.printAllocatable(allocatable);
 	        }
@@ -188,11 +188,11 @@ public class RaplaMainWriter extends RaplaXMLWriter
     }
         
     void printImportExport() throws IOException, RaplaException {
-        final String elementName = "rapla:importExport";
+        final String elementName = "rapla:importexports";
         openElement(elementName);
-        ImportExportWriter reservationWriter = (ImportExportWriter)getWriterFor(ImportExportEntity.class);
+        ImportExportWriter writer = (ImportExportWriter)getWriterFor(ImportExportEntity.class);
         for (ImportExportEntity importExportEntity: importExportEntities) {
-            reservationWriter.printImportExportEntity( importExportEntity );
+            writer.printImportExportEntity(importExportEntity);
         }
         closeElement(elementName);
     }

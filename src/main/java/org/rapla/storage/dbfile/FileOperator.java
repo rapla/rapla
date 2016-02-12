@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -151,7 +152,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     }
 
-    private final Map<String, Collection<ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
+    private final Map<ImportExportMapKey, Collection<ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
 
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
@@ -236,7 +237,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     protected void refreshWithoutLock()
     {
         //getLogger().warn("Incremental refreshs are not supported");
-        setLastRefreshed( getCurrentTimestamp());
+        setLastRefreshed(getCurrentTimestamp());
         // TODO check if file timestamp has changed and either abort server with warning or refresh all data
     }
 
@@ -290,7 +291,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 {
                     iterator.remove();
                     final ImportExportEntity cast = (ImportExportEntity) entity;
-                    insertInLocalCache(cast);
+                    insertIntoImportExportCache(cast);
                 }
             }
             cache.putAll(list);
@@ -459,9 +460,20 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 {
                     iterator.remove();
                     ImportExportEntity cast = (ImportExportEntity) entity;
-                    insertInLocalCache(cast);
+                    insertIntoImportExportCache(cast);
                 }
             }
+            Set<ReferenceInfo<ImportExportEntity>> removedImports = new HashSet<ReferenceInfo<ImportExportEntity>>();
+            for (Iterator<ReferenceInfo> iterator = removeIds.iterator(); iterator.hasNext();)
+            {
+                ReferenceInfo referenceInfo = iterator.next();
+                if(referenceInfo.getType() == ImportExportEntity.class)
+                {
+                    iterator.remove();
+                    removedImports.add( referenceInfo);
+                }
+            }
+            removeFromImportExportCache(removedImports);
             refresh(since, until, storeObjects, preferencePatches, removeIds);
             saveData(cache, null, includeIds);
         }
@@ -471,16 +483,69 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
-    private void insertInLocalCache(ImportExportEntity cast)
+
+
+    static class ImportExportMapKey
     {
-        final String id = cast.getExternalSystem() + "-" + cast.getDirection();
-        Collection<ImportExportEntity> collection = importExportEntities.get(id);
+        private final String system;
+        private final int direction;
+
+        ImportExportMapKey(String system, int direction)
+        {
+            this.system = system;
+            this.direction = direction;
+        }
+
+        @Override public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ImportExportMapKey that = (ImportExportMapKey) o;
+
+            if (direction != that.direction)
+                return false;
+            return !(system != null ? !system.equals(that.system) : that.system != null);
+
+        }
+
+        @Override public int hashCode()
+        {
+            int result = system != null ? system.hashCode() : 0;
+            result = 31 * result + direction;
+            return result;
+        }
+    }
+
+    private void insertIntoImportExportCache(ImportExportEntity cast)
+    {
+        final ImportExportMapKey systemAndDirection = new ImportExportMapKey(cast.getExternalSystem(),cast.getDirection());
+        Collection<ImportExportEntity> collection = importExportEntities.get(systemAndDirection);
         if(collection == null)
         {
-            collection = new LinkedHashSet<>();
-            importExportEntities.put(id, collection);
+            collection = new LinkedHashSet<ImportExportEntity>();
+            importExportEntities.put(systemAndDirection, collection);
         }
         collection.add(cast);
+    }
+
+    private void removeFromImportExportCache(Set<ReferenceInfo<ImportExportEntity>> removedImports)
+    {
+        for(Collection<ImportExportEntity> list:importExportEntities.values())
+        {
+            Iterator<ImportExportEntity> iterator = list.iterator();
+            while ( iterator.hasNext())
+            {
+                ImportExportEntity entry = iterator.next();
+                final ReferenceInfo<ImportExportEntity> reference = entry.getReference();
+                if ( removedImports.contains(reference))
+                {
+                    iterator.remove();
+                }
+            }
+        }
     }
 
     private void updateHistory(UpdateEvent evt) throws RaplaException {
@@ -671,7 +736,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         final Lock lock = readLock();
         try
         {
-            final Collection<ImportExportEntity> collection = importExportEntities.get(systemId + "-" + importExportDirection);
+            final Collection<ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));
             if(collection != null)
             {
                 return collection;

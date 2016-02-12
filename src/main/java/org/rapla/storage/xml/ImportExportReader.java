@@ -20,37 +20,27 @@ import org.rapla.framework.RaplaException;
 
 public class ImportExportReader extends RaplaXMLReader
 {
-    private static class AttReader extends DelegationHandler
-    {
-        public AttReader(RaplaXMLContext context)
-        {
-        }
-    }
 
-    private AttReader dynAttHandler;
     private ImportExportEntityImpl importExport;
-
     public ImportExportReader(RaplaXMLContext context) throws RaplaException
     {
         super(context);
-        dynAttHandler = new AttReader(context);
-        addChildHandler(dynAttHandler);
     }
 
     @Override
     public void processElement(String namespaceURI, String localName, RaplaSAXAttributes atts) throws RaplaSAXParseException
     {
-        if (localName.equals("importExport"))
+        if (localName.equals("importexport"))
         {
             importExport = new ImportExportEntityImpl();
-            final String id = atts.getValue("id");
+            final String id = getString(atts, "id");
             importExport.setId(id);
-            final String raplaId = atts.getValue("raplaId");
+            final String raplaId = getString(atts, "raplaid", null);
             importExport.setRaplaId(raplaId);
-            final String externalSystem = atts.getValue("externalSystem");
+            final String externalSystem = getString(atts, "externalsystem");
             importExport.setExternalSystem(externalSystem);
-            final String directionString = atts.getValue("direction");
-            final int direction = Integer.parseInt(directionString);
+            final String directionString = getString(atts, "direction");
+            final int direction = parseLong(directionString).intValue();
             importExport.setDirection(direction);
         }
         else if (localName.equals("data"))
