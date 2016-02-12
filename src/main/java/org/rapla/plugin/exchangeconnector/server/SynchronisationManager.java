@@ -131,7 +131,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 Date updatedUntil = null;
                 try
                 {
-                    lastUpdated = cachableStorageOperator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                    lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                     final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                     synchronize(updateResult);
                     // set it as last, so update must have been successful
@@ -162,7 +162,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         {
             try
             {                
-                operator.getLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                operator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();

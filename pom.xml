@@ -172,6 +172,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- you can configure the properties in a profile in a settings.xml for maven. By default ossrh profile will be used -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jarsigner-plugin</artifactId>
