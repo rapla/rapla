@@ -68,15 +68,11 @@
 
   <!-- Normaly you don't have to modify the settings below -->
 
-  <New class="org.eclipse.jetty.plus.jndi.Resource">
-  	<Arg>raplaservices</Arg>
-  	<Arg>
-	  	<New class="java.util.HashMap">
-	  	<!-- uncomment one of the following lines if you want to disable a service on one host -->
-<!-- 	  		<Put name="exchange">false</Put> -->
-<!-- 	  		<Put name="notification">false</Put> -->
-	  	</New>
-  	</Arg>
+  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+      <Arg></Arg>
+      <Arg>raplaservices</Arg>
+      <Arg type="java.lang.String">org.rapla.dhbw.interface=false,org.rapla.plugin.notification=false,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
+      <Arg type="boolean">true</Arg>
   </New>
 
 <!-- You can manualy select a  storage option here.  If not specified , a database will be used if configured above or the file if no database is configured.-->
