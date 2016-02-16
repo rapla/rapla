@@ -3965,7 +3965,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     final Classification classification = allocatable.getClassification();
                     final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
-                    if (belongsToAttribute != null)
+                    if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
                     {
                         final ReferenceInfo<Allocatable> parent = ((Allocatable) classification.getValue(belongsToAttribute)).getReference();
                         fillDependent(parent, dependentAllocatables, false, depth + 1);
