@@ -51,7 +51,17 @@ public class PermissionController
         return ownerId != null && ownerId.isSame(user.getReference());
     }
 
+    public static Collection<Category> getGroupsToAdmin(User user)
+    {
+        return getGroupsToAdmin( user, true);
+    }
+
     public static Collection<Category> getAdminGroups(User user)
+    {
+        return getGroupsToAdmin( user, false);
+    }
+
+    private static Collection<Category> getGroupsToAdmin(User user, boolean addParent)
     {
         final Collection<Category> result = new ArrayList<Category>();
         final Collection<Category> groupList = user.getGroupList();
@@ -60,7 +70,15 @@ public class PermissionController
             final String annotation = group.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT);
             if ( annotation != null && annotation.equals("true"))
             {
-                final Category adminGroup = group.getParent();
+                final Category adminGroup;
+                if (addParent)
+                {
+                    adminGroup = group.getParent();
+                }
+                else
+                {
+                    adminGroup = group;
+                }
                 Assert.notNull(adminGroup);
                 result.add( adminGroup );
             }

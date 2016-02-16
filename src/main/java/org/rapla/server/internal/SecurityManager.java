@@ -244,7 +244,7 @@ import org.rapla.storage.StorageOperator;
 
     private boolean canAdminGroups(Collection<Category> groups, User user)
     {
-        final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+        final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
         int found = 0;
         for (Category group : groups)
         {

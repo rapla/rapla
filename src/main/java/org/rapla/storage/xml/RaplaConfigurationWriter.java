@@ -87,7 +87,7 @@ public class RaplaConfigurationWriter extends RaplaXMLWriter {
             else
             {
                 closeTagOnLine();
-                print(value);
+                print(encode(value));
                 closeElementOnLine(qName);
                 println();
             }

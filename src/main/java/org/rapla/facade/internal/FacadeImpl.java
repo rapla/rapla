@@ -1348,7 +1348,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		{
 			if ( !workingUser.isAdmin())
 			{
-				final Collection<Category> adminGroups = PermissionController.getAdminGroups(workingUser);
+				final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(workingUser);
 				if ( adminGroups.size() == 0)
 				{
 					throw new RaplaSecurityException("User " + workingUser +" can't create a new User " );

@@ -56,7 +56,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
             {
                 return false;
             }
-            final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+            final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
             if ( adminGroups.size() > 0)
             {
                 boolean belongsTo = false;
@@ -82,7 +82,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
         }
         if ( type == Category.class)
         {
-            final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+            final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
             Category group = (Category) entity;
             for ( Category adminGroup: adminGroups)
             {

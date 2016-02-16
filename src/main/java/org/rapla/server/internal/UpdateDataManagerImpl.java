@@ -415,7 +415,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             }
             if ( obj instanceof User)
             {
-                final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+                final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
                 if ( adminGroups.size() > 0)
                 {
                     clientStore = permissionController.canAdmin( (User) obj, user);
