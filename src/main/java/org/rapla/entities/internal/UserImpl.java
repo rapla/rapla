@@ -227,6 +227,11 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         return groupsIncludingParents.contains( group.getId());
     }
 
+    public boolean isMemberOf(Category group)
+    {
+        return isRefering("groups", group.getId());
+    }
+
     public User clone() {
         UserImpl clone = new UserImpl();
         super.deepClone(clone);

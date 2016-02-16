@@ -1434,7 +1434,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 getLogger().warn("Can't remove entry for id " + id);
             }
         }
-        if (current instanceof EntityPermissionContainer)
+        if ( type == User.class && current != null)
+        {
+            final Collection<String> groupIdList = ((UserImpl) current).getGroupIdList();
+            entry.addGroupIds( groupIdList);
+        }
+        else if (current instanceof EntityPermissionContainer)
         {
             entry.addPermissions((EntityPermissionContainer) current, Permission.READ_NO_ALLOCATION);
         }

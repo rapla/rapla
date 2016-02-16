@@ -1343,6 +1343,23 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				user.addGroup(group);
 			}
 		}
+		final User workingUser = getWorkingUser();
+		if ( workingUser != null)
+		{
+			if ( !workingUser.isAdmin())
+			{
+				final Collection<Category> adminGroups = PermissionController.getAdminGroups(workingUser);
+				if ( adminGroups.size() == 0)
+				{
+					throw new RaplaSecurityException("User " + workingUser +" can't create a new User " );
+				}
+				else {
+					// add first admin group to user
+					final Category firstAdminGroup = adminGroups.iterator().next();
+					user.addGroup( firstAdminGroup);
+				}
+			}
+		}
 		return user;
 	}
 

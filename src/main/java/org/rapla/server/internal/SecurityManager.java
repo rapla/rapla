@@ -14,6 +14,7 @@ package org.rapla.server.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +23,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
-import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
@@ -46,8 +46,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
 /** checks if the client can store or delete an entity */
-@Singleton
-public class SecurityManager 
+@Singleton public class SecurityManager
 {
     final RaplaResources i18n;
     final AppointmentFormater appointmentFormater;
@@ -56,8 +55,7 @@ public class SecurityManager
     final RaplaFacade facade;
     private final PermissionController permissionController;
 
-    @Inject
-    public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, RaplaFacade facade)
+    @Inject public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, RaplaFacade facade)
     {
         this.logger = logger;
         this.i18n = i18n;
@@ -67,14 +65,17 @@ public class SecurityManager
         permissionController = facade.getPermissionController();
     }
 
-    void checkDeletePermissions(User user,Entity entity) throws RaplaSecurityException {
-        checkModifyPermissions(user,entity,true);
-    }
-    void checkWritePermissions(User user,Entity entity) throws RaplaSecurityException
+    void checkDeletePermissions(User user, Entity entity) throws RaplaSecurityException
     {
-        checkModifyPermissions(user,entity,false);
+        checkModifyPermissions(user, entity, true);
     }
-    private void checkModifyPermissions(User user,Entity entity, boolean admin) throws RaplaSecurityException
+
+    void checkWritePermissions(User user, Entity entity) throws RaplaSecurityException
+    {
+        checkModifyPermissions(user, entity, false);
+    }
+
+    private void checkModifyPermissions(User user, Entity entity, boolean admin) throws RaplaSecurityException
     {
         if (user.isAdmin())
             return;
@@ -84,38 +85,41 @@ public class SecurityManager
             throw new RaplaSecurityException("No id set");
 
         boolean permitted = false;
-        @SuppressWarnings("unchecked")
-        Class<Entity> typeClass = entity.getTypeClass();
-        Entity original = facade.tryResolve( entity.getReference());
+        @SuppressWarnings("unchecked") Class<Entity> typeClass = entity.getTypeClass();
+        Entity original = facade.tryResolve(entity.getReference());
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
 
         boolean ownable = entity instanceof Ownable;
-		if (ownable || entity instanceof Appointment) {
+        if (ownable || entity instanceof Appointment)
+        {
             ReferenceInfo<User> entityOwnerReference;
-            if ( ownable)
+            if (ownable)
             {
-            	entityOwnerReference = ((Ownable) entity).getOwnerRef();
+                entityOwnerReference = ((Ownable) entity).getOwnerRef();
             }
             else
             {
-            	entityOwnerReference = ((Appointment) entity).getOwnerRef();
+                entityOwnerReference = ((Appointment) entity).getOwnerRef();
             }
-            if (original == null) {
+            if (original == null)
+            {
                 permitted = entityOwnerReference != null && user.getReference().equals(entityOwnerReference);
                 if (getLogger().isDebugEnabled())
                 {
                     getLogger().debug("Permissions for new object " + entity + "\nUser check: " + user + " = " + operator.tryResolve(entityOwnerReference));
                 }
-            } else {
-            	ReferenceInfo<User> originalOwnerReference;
-                if ( ownable)
+            }
+            else
+            {
+                ReferenceInfo<User> originalOwnerReference;
+                if (ownable)
                 {
-                	originalOwnerReference = ((Ownable) original).getOwnerRef();
+                    originalOwnerReference = ((Ownable) original).getOwnerRef();
                 }
                 else
                 {
-                	originalOwnerReference = ((Appointment) original).getOwnerRef();
+                    originalOwnerReference = ((Appointment) original).getOwnerRef();
                 }
 
                 if (getLogger().isDebugEnabled())
@@ -124,21 +128,25 @@ public class SecurityManager
                     final User originalOwner = operator.tryResolve(originalOwnerReference);
                     getLogger().debug("Permissions for existing object " + entity + "\nUser check: " + user + " = " + entityOwner + " = " + originalOwner);
                 }
-                permitted = (originalOwnerReference != null) && originalOwnerReference.equals(user.getReference()) && originalOwnerReference.equals(entityOwnerReference);
-                if ( !permitted && !admin) {
-                	canExchange = canExchange( user, entity, original );
-                	permitted = canExchange;
+                permitted = (originalOwnerReference != null) && originalOwnerReference.equals(user.getReference()) && originalOwnerReference
+                        .equals(entityOwnerReference);
+                if (!permitted && !admin)
+                {
+                    canExchange = canExchange(user, entity, original);
+                    permitted = canExchange;
                 }
             }
-        } 
-        if ( permitted && entity instanceof Classifiable ){
-            if ( original == null ) {
-                permitted = permissionController.canCreate((Classifiable)entity, user);
-            } 
         }
-        if ( !permitted && original != null && original instanceof PermissionContainer)
+        if (permitted && entity instanceof Classifiable)
         {
-            if ( admin)
+            if (original == null)
+            {
+                permitted = permissionController.canCreate((Classifiable) entity, user);
+            }
+        }
+        if (!permitted && original != null && original instanceof PermissionContainer)
+        {
+            if (admin)
             {
                 permitted = permissionController.canAdmin(original, user);
             }
@@ -146,18 +154,18 @@ public class SecurityManager
             {
                 permitted = permissionController.canModify(original, user);
             }
-            
+
         }
         if (!permitted && entity instanceof Appointment)
         {
-            final Reservation reservation = ((Appointment)entity).getReservation();
+            final Reservation reservation = ((Appointment) entity).getReservation();
             Reservation originalReservation = operator.tryResolve(reservation.getReference());
-            if ( originalReservation != null)
+            if (originalReservation != null)
             {
-            	permitted = permissionController.canModify(originalReservation, user);
+                permitted = permissionController.canModify(originalReservation, user);
             }
         }
-        
+
         if (!permitted && entity instanceof Conflict)
         {
             Conflict conflict = (Conflict) entity;
@@ -166,12 +174,31 @@ public class SecurityManager
                 permitted = true;
             }
         }
-
-        if (!permitted && entity instanceof Annotatable)
+        if (!permitted && entity instanceof Category)
         {
-            permitted = permissionController.canWriteTemplate(( Annotatable)entity, user );
+            Category category = (Category) entity;
+            if (permissionController.canModify(category, user))
+            {
+                permitted = true;
+            }
         }
-        
+        if (!permitted && entity instanceof User)
+        {
+            if (permissionController.canModify(entity, user) && (original == null || permissionController.canModify(original, user)))
+            {
+                Collection<Category> newUserGroups = new ArrayList<Category>(((User) entity).getGroupList());
+                Collection<Category> removedUserGroups = new ArrayList<Category>();
+                if (original != null)
+                {
+                    final Collection<Category> originalList = ((User) original).getGroupList();
+                    removedUserGroups.addAll(originalList);
+                    removedUserGroups.removeAll(newUserGroups);
+                    newUserGroups.removeAll(originalList);
+                }
+                permitted = canAdminGroups(newUserGroups, user) && canAdminGroups(removedUserGroups, user);
+            }
+        }
+
         if (!permitted)
         {
             String errorText;
@@ -184,70 +211,94 @@ public class SecurityManager
                 errorText = i18n.format("error.modify_not_allowed", user.toString(), entity.toString());
             }
             throw new RaplaSecurityException(errorText);
-            
+
         }
 
         // Check if the user can change the reservation
-        if ( Reservation.class ==entity.getTypeClass() )
+        if (Reservation.class == entity.getTypeClass())
         {
-            Reservation reservation = (Reservation) entity ;
-            Reservation originalReservation = (Reservation)original;
+            Reservation reservation = (Reservation) entity;
+            Reservation originalReservation = (Reservation) original;
             Allocatable[] all = reservation.getAllocatables();
-            if ( originalReservation != null && canExchange ) {
-                List<Allocatable> newAllocatabes = new ArrayList<Allocatable>( Arrays.asList(reservation.getAllocatables() ) );
-                newAllocatabes.removeAll( Arrays.asList( originalReservation.getAllocatables()));
-                all = newAllocatabes.toArray( Allocatable.ALLOCATABLE_ARRAY);
+            if (originalReservation != null && canExchange)
+            {
+                List<Allocatable> newAllocatabes = new ArrayList<Allocatable>(Arrays.asList(reservation.getAllocatables()));
+                newAllocatabes.removeAll(Arrays.asList(originalReservation.getAllocatables()));
+                all = newAllocatabes.toArray(Allocatable.ALLOCATABLE_ARRAY);
             }
-            if ( originalReservation == null)
+            if (originalReservation == null)
             {
                 boolean canCreate = permissionController.canCreate(reservation, user);
                 //Category group = getUserGroupsCategory().getCategory( Permission.GROUP_CAN_CREATE_EVENTS);
-            	if (!canCreate)
-            	{
-            		throw new RaplaSecurityException(i18n.format("error.create_not_allowed", new Object []{ user.toString(),entity.toString()}));
-            	} 
+                if (!canCreate)
+                {
+                    throw new RaplaSecurityException(i18n.format("error.create_not_allowed", new Object[] { user.toString(), entity.toString() }));
+                }
             }
-            checkPermissions( user, reservation, originalReservation , all);
+            checkPermissions(user, reservation, originalReservation, all);
         }
-        
+
         // FIXME check if permissions are changed and user has admin priviliges 
 
     }
 
-    private Logger getLogger() 
+    private boolean canAdminGroups(Collection<Category> groups, User user)
+    {
+        final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+        int found = 0;
+        for (Category group : groups)
+        {
+            for (Category adminGroup : adminGroups)
+            {
+                if (group.equals(adminGroup) || adminGroup.isAncestorOf(group))
+                {
+                    found++;
+                    break;
+                }
+            }
+        }
+        return found == groups.size();
+    }
+
+    private Logger getLogger()
     {
         return logger;
     }
 
-//    protected boolean isRegisterer(User user) throws RaplaSecurityException {
-//        try {
-//            Category registererGroup = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
-//            return user.belongsTo(registererGroup);
-//        } catch (RaplaException ex) {
-//            throw new RaplaSecurityException(ex );
-//        }
-//    }
+    //    protected boolean isRegisterer(User user) throws RaplaSecurityException {
+    //        try {
+    //            Category registererGroup = getUserGroupsCategory().getCategory(Permission.GROUP_REGISTERER_KEY);
+    //            return user.belongsTo(registererGroup);
+    //        } catch (RaplaException ex) {
+    //            throw new RaplaSecurityException(ex );
+    //        }
+    //    }
 
-    public Category getUserGroupsCategory() throws RaplaSecurityException {
+    public Category getUserGroupsCategory() throws RaplaSecurityException
+    {
         Category userGroups = operator.getSuperCategory().getCategory(Permission.GROUP_CATEGORY_KEY);
-        if ( userGroups == null) {
+        if (userGroups == null)
+        {
             throw new RaplaSecurityException("No category '" + Permission.GROUP_CATEGORY_KEY + "' available");
         }
         return userGroups;
     }
 
-
     /** checks if the user just exchanges one allocatable or removes one. The user needs admin-access on the
      * removed allocatable and the newly inserted allocatable */
-    private boolean canExchange(User user,Entity entity,Entity original) {
+    private boolean canExchange(User user, Entity entity, Entity original)
+    {
         final Class<? extends Entity> typeClass = entity.getTypeClass();
-        if ( Appointment.class == typeClass) {
-            return ((Appointment) entity).matches( (Appointment) original );
-        } if ( Reservation.class == typeClass) {
+        if (Appointment.class == typeClass)
+        {
+            return ((Appointment) entity).matches((Appointment) original);
+        }
+        if (Reservation.class == typeClass)
+        {
             Reservation newReservation = (Reservation) entity;
             Reservation oldReservation = (Reservation) original;
             // We only need to check the length because we compare the appointments above.
-            if ( newReservation.getAppointments().length != oldReservation.getAppointments().length )
+            if (newReservation.getAppointments().length != oldReservation.getAppointments().length)
             {
                 return false;
             }
@@ -257,17 +308,18 @@ public class SecurityManager
             List<Allocatable> inserted = new ArrayList<Allocatable>(newAllocatables);
             List<Allocatable> removed = new ArrayList<Allocatable>(oldAllocatables);
             List<Allocatable> overlap = new ArrayList<Allocatable>(oldAllocatables);
-            inserted.removeAll( oldAllocatables );
-            removed.removeAll( newAllocatables );
-            overlap.retainAll( inserted );
-            if ( inserted.size() == 0 && removed.size() == 0)
+            inserted.removeAll(oldAllocatables);
+            removed.removeAll(newAllocatables);
+            overlap.retainAll(inserted);
+            if (inserted.size() == 0 && removed.size() == 0)
             {
-            	return false;
+                return false;
             }
             //  he must have admin rights on all inserted resources
             Iterator<Allocatable> it = inserted.iterator();
-            while (it.hasNext()) {
-                if (!canAllocateForOthers(it.next(),user))
+            while (it.hasNext())
+            {
+                if (!canAllocateForOthers(it.next(), user))
                 {
                     return false;
                 }
@@ -275,8 +327,9 @@ public class SecurityManager
 
             //   and  he must have admin rights on all the removed resources
             it = removed.iterator();
-            while (it.hasNext()) {
-                if (!canAllocateForOthers(it.next(),user))
+            while (it.hasNext())
+            {
+                if (!canAllocateForOthers(it.next(), user))
                 {
                     return false;
                 }
@@ -284,21 +337,28 @@ public class SecurityManager
 
             // He can't change appointments, only exchange allocatables he has admin-priviliges  for
             it = overlap.iterator();
-            while (it.hasNext()) {
+            while (it.hasNext())
+            {
                 Allocatable all = it.next();
-                Appointment[] r1 = newReservation.getRestriction( all );
-                Appointment[] r2 = oldReservation.getRestriction( all );
+                Appointment[] r1 = newReservation.getRestriction(all);
+                Appointment[] r2 = oldReservation.getRestriction(all);
                 boolean changed = false;
-                if ( r1.length != r2.length ) {
+                if (r1.length != r2.length)
+                {
                     changed = true;
-                } else {
-                    for ( int i=0; i< r1.length; i++ ) {
-                        if ( !r1[i].matches(r2[i]) ) {
+                }
+                else
+                {
+                    for (int i = 0; i < r1.length; i++)
+                    {
+                        if (!r1[i].matches(r2[i]))
+                        {
                             changed = true;
                         }
                     }
                 }
-                if ( changed && !canAllocateForOthers( all, user )) {
+                if (changed && !canAllocateForOthers(all, user))
+                {
                     return false;
                 }
             }
@@ -308,7 +368,8 @@ public class SecurityManager
     }
 
     /** for Thierry, we can make this configurable in the next version */
-    private boolean canAllocateForOthers(Allocatable allocatable, User user) {
+    private boolean canAllocateForOthers(Allocatable allocatable, User user)
+    {
         // only admins, current behaviour
         return permissionController.canModify(allocatable, user);
         // everyone who can allocate the resource anytime
@@ -317,63 +378,76 @@ public class SecurityManager
         //return true;
     }
 
-    private void checkConflictsAllowed(User user, Allocatable allocatable, Conflict[] conflictsBefore, Conflict[] conflictsAfter) throws RaplaSecurityException {
+    private void checkConflictsAllowed(User user, Allocatable allocatable, Conflict[] conflictsBefore, Conflict[] conflictsAfter) throws RaplaSecurityException
+    {
         int nConflictsBefore = 0;
         int nConflictsAfter = 0;
-        if ( permissionController.canCreateConflicts( allocatable, user ) ) {
+        if (permissionController.canCreateConflicts(allocatable, user))
+        {
             return;
         }
-        if ( conflictsBefore != null ) {
-            for ( int i = 0; i < conflictsBefore.length; i++ ) {
-                if ( conflictsBefore[i].getAllocatable().equals ( allocatable ) ) {
-                    nConflictsBefore ++;
+        if (conflictsBefore != null)
+        {
+            for (int i = 0; i < conflictsBefore.length; i++)
+            {
+                if (conflictsBefore[i].getAllocatable().equals(allocatable))
+                {
+                    nConflictsBefore++;
                 }
             }
         }
 
-        for ( int i = 0; i < conflictsAfter.length; i++ ) {
-            if ( conflictsAfter[i].getAllocatable().equals ( allocatable ) ) {
-                nConflictsAfter ++;
+        for (int i = 0; i < conflictsAfter.length; i++)
+        {
+            if (conflictsAfter[i].getAllocatable().equals(allocatable))
+            {
+                nConflictsAfter++;
             }
         }
-        if ( nConflictsAfter > nConflictsBefore ) {
-            String all = allocatable.getName( i18n.getLocale() );
-            throw new RaplaSecurityException( i18n.format("warning.no_conflict_permission", all ) );
+        if (nConflictsAfter > nConflictsBefore)
+        {
+            String all = allocatable.getName(i18n.getLocale());
+            throw new RaplaSecurityException(i18n.format("warning.no_conflict_permission", all));
         }
     }
 
-    private void checkPermissions( User user, Reservation r, Reservation original, Allocatable[] allocatables ) throws RaplaSecurityException {
-    	Conflict[] conflictsBefore = null;
+    private void checkPermissions(User user, Reservation r, Reservation original, Allocatable[] allocatables) throws RaplaSecurityException
+    {
+        Conflict[] conflictsBefore = null;
         Conflict[] conflictsAfter = null;
-        try {
-            conflictsAfter = facade.getConflicts(  r );
-            if ( original != null ) {
-                conflictsBefore = facade.getConflicts(  original );
+        try
+        {
+            conflictsAfter = facade.getConflicts(r);
+            if (original != null)
+            {
+                conflictsBefore = facade.getConflicts(original);
             }
-        } catch ( RaplaException ex ) {
-            throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex );
+        }
+        catch (RaplaException ex)
+        {
+            throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
         }
 
         Appointment[] appointments = r.getAppointments();
         // ceck if the user has the permisson to add allocations in the given time
-        for (int i = 0; i < allocatables.length; i++ ) {
+        for (int i = 0; i < allocatables.length; i++)
+        {
             Allocatable allocatable = allocatables[i];
-            checkConflictsAllowed( user, allocatable, conflictsBefore, conflictsAfter );
-            for (int j = 0; j < appointments.length; j++ ) {
+            checkConflictsAllowed(user, allocatable, conflictsBefore, conflictsAfter);
+            for (int j = 0; j < appointments.length; j++)
+            {
                 Appointment appointment = appointments[j];
                 Date today = operator.today();
-				if ( r.hasAllocated( allocatable, appointment ) &&
-                     !permissionController.hasPermissionToAllocate( user, appointment, allocatable, original,today ) ) {
-                    String all = allocatable.getName( i18n.getLocale() );
-                    String app = appointmentFormater.getSummary( appointment );
-                    String error = i18n.format("warning.no_reserve_permission"
-                                               ,all
-                                               ,app);
-                    throw new RaplaSecurityException( error );
+                if (r.hasAllocated(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
+                {
+                    String all = allocatable.getName(i18n.getLocale());
+                    String app = appointmentFormater.getSummary(appointment);
+                    String error = i18n.format("warning.no_reserve_permission", all, app);
+                    throw new RaplaSecurityException(error);
                 }
             }
         }
-        if (original == null )
+        if (original == null)
             return;
 
         Date today = operator.today();
@@ -382,57 +456,59 @@ public class SecurityManager
         // 2. check if they were allowed to change in the specified time
         appointments = original.getAppointments();
         allocatables = original.getAllocatables();
-        for (int i = 0; i < allocatables.length; i++ ) {
+        for (int i = 0; i < allocatables.length; i++)
+        {
             Allocatable allocatable = allocatables[i];
-            for (int j = 0; j < appointments.length; j++ ) {
+            for (int j = 0; j < appointments.length; j++)
+            {
                 Appointment appointment = appointments[j];
-                if ( original.hasAllocated( allocatable, appointment )
-                     && !r.hasAllocated( allocatable, appointment ) ) {
+                if (original.hasAllocated(allocatable, appointment) && !r.hasAllocated(allocatable, appointment))
+                {
                     Date start = appointment.getStart();
                     Date end = appointment.getMaxEnd();
-                    if ( !permissionController.canAllocate( allocatable, user, start, end, today ) ) {
-                        String all = allocatable.getName( i18n.getLocale() );
-                        String app = appointmentFormater.getSummary( appointment );
-                        String error = i18n.format("warning.no_reserve_permission"
-                                                   ,all
-                                                   ,app);
-                        throw new RaplaSecurityException( error );
+                    if (!permissionController.canAllocate(allocatable, user, start, end, today))
+                    {
+                        String all = allocatable.getName(i18n.getLocale());
+                        String app = appointmentFormater.getSummary(appointment);
+                        String error = i18n.format("warning.no_reserve_permission", all, app);
+                        throw new RaplaSecurityException(error);
                     }
                 }
             }
         }
     }
-    
-    public void checkRead(User user,Entity entity) throws RaplaException {
-		Class<? extends Entity> raplaType = entity.getTypeClass();
-		if ( raplaType == Allocatable.class)
-		{
-		    Allocatable allocatable = (Allocatable) entity;
-			if ( !permissionController.canReadOnlyInformation( allocatable, user))
-			{
-				throw new RaplaSecurityException(i18n.format("error.read_not_allowed",user, allocatable.getName( null)));
-			}
-		}
-		if ( raplaType == Preferences.class)
-		{
-		    Ownable ownable = (Preferences) entity;
-		    ReferenceInfo<User> ownerReference = ownable.getOwnerRef();
-		    if (  user != null && !user.isAdmin() && (ownerReference == null || !user.getReference().equals(ownerReference)))
-			{
-				throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
-			}
-		}
-		
-	}
 
-    public void checkWritePermissions(User user, PreferencePatch patch) throws RaplaSecurityException 
+    public void checkRead(User user, Entity entity) throws RaplaException
+    {
+        Class<? extends Entity> raplaType = entity.getTypeClass();
+        if (raplaType == Allocatable.class)
+        {
+            Allocatable allocatable = (Allocatable) entity;
+            if (!permissionController.canReadOnlyInformation(allocatable, user))
+            {
+                throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, allocatable.getName(null)));
+            }
+        }
+        if (raplaType == Preferences.class)
+        {
+            Ownable ownable = (Preferences) entity;
+            ReferenceInfo<User> ownerReference = ownable.getOwnerRef();
+            if (user != null && !user.isAdmin() && (ownerReference == null || !user.getReference().equals(ownerReference)))
+            {
+                throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, entity));
+            }
+        }
+
+    }
+
+    public void checkWritePermissions(User user, PreferencePatch patch) throws RaplaSecurityException
     {
         ReferenceInfo<User> ownerRef = patch.getUserRef();
-        if (  user != null && !user.isAdmin() && (ownerRef == null || !user.getReference().equals( ownerRef)))
+        if (user != null && !user.isAdmin() && (ownerRef == null || !user.getReference().equals(ownerRef)))
         {
             throw new RaplaSecurityException("User " + user + " can't modify preferences " + ownerRef);
         }
-        
+
     }
-    
+
 }

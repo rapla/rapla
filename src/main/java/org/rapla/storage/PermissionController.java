@@ -1,8 +1,10 @@
 package org.rapla.storage;
 
+import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
+import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.User;
@@ -26,6 +28,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
@@ -48,17 +51,34 @@ public class PermissionController
         return ownerId != null && ownerId.isSame(user.getReference());
     }
 
+    public static Collection<Category> getAdminGroups(User user)
+    {
+        final Collection<Category> result = new ArrayList<Category>();
+        final Collection<Category> groupList = user.getGroupList();
+        for ( Category group:groupList)
+        {
+            final String annotation = group.getAnnotation(CategoryAnnotations.CAN_ADMIN_PARENT);
+            if ( annotation != null && annotation.equals("true"))
+            {
+                final Category adminGroup = group.getParent();
+                Assert.notNull(adminGroup);
+                result.add( adminGroup );
+            }
+        }
+        return result;
+    }
+
     /**
      * Access method
      */
-    public boolean hasAccess(PermissionContainer container, User user, Permission.AccessLevel accessLevel)
+    private boolean hasAccess(Entity entity, User user, Permission.AccessLevel accessLevel)
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
         {
             final Date start = null;
             final Date end = null;
             final Date today = null;
-            if (!permissionExtension.hasAccess(container, user, accessLevel, start, end, today,false))
+            if (!permissionExtension.hasAccess(entity, user, accessLevel, start, end, today,false))
             {
                 return false;
             }
@@ -66,28 +86,79 @@ public class PermissionController
         return true;
     }
 
-    private boolean canModifyPrivate(PermissionContainer container, User user)
+    private boolean hasAccess(Entity entity, User user, final AccessLevel permission, final Date start, final Date end, final Date today,
+            final boolean checkOnlyToday)
     {
-        if (container instanceof DynamicType)
+        for (PermissionExtension permissionExtension : permissionExtensions)
         {
-            return user.isAdmin();
+            if (!permissionExtension.hasAccess(entity, user, permission, start, end, today, checkOnlyToday))
+            {
+                return false;
+            }
         }
-        return hasAccess(container, user, Permission.EDIT);
+        return true;
     }
+
 
     public boolean canDelete(Entity<?> object, User user)
     {
         return canAdmin( object, user);
     }
 
-    public boolean canAdmin(Entity<?> object, User user)
+    public boolean canModify(Entity<?> object, User user)
     {
-        if (!canModify(object, user))
+        if (object == null )
+        {
+            return false;
+        }
+        if (user == null)
         {
             return false;
         }
         if (user.isAdmin())
             return true;
+        if (object instanceof Ownable)
+        {
+            Ownable ownable = (Ownable) object;
+            if ( isOwner( ownable, user))
+            {
+                return true;
+            }
+            // fallback for old entities that dont an owner
+            //            if (ownerId == null && object instanceof Classifiable)
+            //            {
+            //                if (canCreate((Classifiable) object, user))
+            //                {
+            //                    return true;
+            //                }
+            //            }
+        }
+        Class<? extends Entity> type = object.getTypeClass();
+        if ( type == Conflict.class)
+        {
+            return canModifyConflict((Conflict) object, user);
+        }
+
+        if (hasAccess(object, user, Permission.EDIT))
+        {
+            return true;
+        }
+        if (canWriteTemplate( object, user))
+        {
+            return true;
+        }
+        return false;
+    }
+
+
+    public boolean canAdmin(Entity<?> object, User user)
+    {
+        if (user.isAdmin())
+            return true;
+        if (!canModify(object, user))
+        {
+            return false;
+        }
         if (object instanceof Ownable)
         {
             Ownable ownable = (Ownable) object;
@@ -104,16 +175,23 @@ public class PermissionController
                 }
             }
         }
-        if (object instanceof PermissionContainer)
+        if (canWriteTemplate( object, user))
         {
-            PermissionContainer permissionContainer = (PermissionContainer) object;
-            if (permissionContainer instanceof DynamicType)
-            {
-                return user.isAdmin();
-            }
-            return hasAccess(permissionContainer, user, Permission.ADMIN);
+            return true;
         }
-        return object instanceof Annotatable && canWriteTemplate((Annotatable) object, user);
+
+        if (object instanceof DynamicType)
+        {
+            return user.isAdmin();
+        }
+
+        if (object instanceof Entity)
+        {
+
+            return hasAccess(object, user, Permission.ADMIN);
+        }
+
+        return false;
     }
 
 
@@ -121,13 +199,13 @@ public class PermissionController
      * Will check all its permission extensions and if one of the extensions do not allow
      * to read the container <code>false</code> is returned.
      */
-    private boolean canReadPrivate(PermissionContainer container, User user)
+    private boolean canReadPrivate(Entity container, User user)
     {
         if ( user.isAdmin())
         {
             return true;
         }
-        if (isOwner(container, user))
+        if (container instanceof Ownable && isOwner((Ownable)container, user))
         {
             return true;
         }
@@ -140,7 +218,7 @@ public class PermissionController
         }
         if (container instanceof DynamicType)
         {
-            Collection<Permission> permissionList = container.getPermissionList();
+            Collection<Permission> permissionList = ((DynamicType)container).getPermissionList();
             boolean result = matchesAccessLevel(permissionList, user, Permission.READ_TYPE, Permission.CREATE, Permission.ADMIN);
             return result;
         }
@@ -323,19 +401,6 @@ public class PermissionController
         return true;
     }
 
-    private boolean hasAccess(PermissionContainer permissions, User user, final AccessLevel permission, final Date start, final Date end, final Date today,
-            final boolean checkOnlyToday)
-    {
-        for (PermissionExtension permissionExtension : permissionExtensions)
-        {
-            if (!permissionExtension.hasAccess(permissions, user, permission, start, end, today, checkOnlyToday))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     private boolean affectsUser(User user, Permission p, Collection<String> groups)
     {
         int userEffect = PermissionContainer.Util.getUserEffect(user, p, groups);
@@ -495,61 +560,23 @@ public class PermissionController
         return canModify;
     }
 
-    public boolean canModify(Entity<?> object, User user)
-    {
-        if (object == null )
-        {
-            return false;
-        }
-        if (user == null)
-        {
-            return false;
-        }
-        if (user.isAdmin())
-            return true;
-        if (object instanceof Ownable)
-        {
-            Ownable ownable = (Ownable) object;
-            if ( isOwner( ownable, user))
-            {
-                return true;
-            }
-            // fallback for old entities that dont an owner
-//            if (ownerId == null && object instanceof Classifiable)
-//            {
-//                if (canCreate((Classifiable) object, user))
-//                {
-//                    return true;
-//                }
-//            }
-        }
-        if ( object instanceof Conflict)
-        {
-            return canModifyConflict((Conflict) object, user);
-        }
-        if (object instanceof PermissionContainer)
-        {
-            PermissionContainer permissionContainer = (PermissionContainer) object;
-            if (canModifyPrivate(permissionContainer, user))
-            {
-                return true;
-            }
-        }
-        return object instanceof Annotatable && canWriteTemplate((Annotatable) object, user);
-    }
-
-    public boolean canWriteTemplate(Annotatable entity, User user)
+    private boolean canWriteTemplate(Entity entity, User user)
     {
         EntityResolver resolver = this.operator;
-        String templateId = entity.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
-        if (templateId != null)
+        Class<? extends Entity> type  = ((Entity) entity).getTypeClass();
+        if (type == Allocatable.class ||  type == Reservation.class)
         {
-            Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
-            if (template != null)
+            Annotatable annotatable = (Annotatable) entity;
+            String templateId = annotatable.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+            if (templateId != null)
             {
-                if (canModify(template, user))
+                Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
+                if (template != null)
                 {
-                    return true;
+                    if (canModify(template, user))
+                    {
+                        return true;
+                    }
                 }
             }
         }
