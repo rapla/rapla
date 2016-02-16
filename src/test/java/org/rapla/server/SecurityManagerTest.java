@@ -169,9 +169,11 @@ public class SecurityManagerTest  {
 		final Category newNonAdminableUserGroup = raplaFacade.newCategory();
 		{
 			newNonAdminableUserGroup.getName().setName("en", "new catgory");
-			final Category edit = raplaFacade.edit(userGroupsCategory);
+			final Category edit = serverService.getFacade().edit(userGroupsCategory);
 			edit.addCategory( newNonAdminableUserGroup );
+			serverService.getFacade().store(edit);
 		}
+		raplaFacade.refresh();
 		final User newUser;
 		{
 			newUser = raplaFacade.newUser();
@@ -181,8 +183,8 @@ public class SecurityManagerTest  {
 			newUser.addGroup(powerplantStaff);
 			raplaFacade.store(newUser);
 		}
-		final User[] users = facade1.getUsers();
-		TestCase.assertEquals(2, users);
+		final User[] users = raplaFacade.getUsers();
+		TestCase.assertEquals(2, users.length);
 		Category newCategory;
 		{
 			final Category editablePowerplant = raplaFacade.edit(powerplant);
@@ -204,7 +206,7 @@ public class SecurityManagerTest  {
 				raplaFacade.store(editUser);
 				TestCase.fail("Security Exception should be thrown");
 			}
-			catch (SecurityException ex)
+			catch (RaplaSecurityException ex)
 			{
 			}
 		}
@@ -216,7 +218,7 @@ public class SecurityManagerTest  {
 				raplaFacade.store(editUser);
 				TestCase.fail("Security Exception should be thrown");
 			}
-			catch (SecurityException ex)
+			catch (RaplaSecurityException ex)
 			{
 			}
 		}
@@ -230,10 +232,10 @@ public class SecurityManagerTest  {
 		}
 		try
 		{
-			raplaFacade.remove(powerplant);
+			raplaFacade.remove(newNonAdminableUserGroup);
 			TestCase.fail("Security Exception should be thrown. Category should not be removeable");
 		}
-		catch (Exception ex)
+		catch (RaplaSecurityException ex)
 		{
 		}
 

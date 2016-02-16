@@ -413,6 +413,14 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                     clientStore = false;
                 }
             }
+            if ( obj instanceof User)
+            {
+                final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+                if ( adminGroups.size() > 0)
+                {
+                    clientStore = permissionController.canAdmin( (User) obj, user);
+                }
+            }
         }
         if (clientStore)
         {

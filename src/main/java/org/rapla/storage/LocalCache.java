@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
+import org.eclipse.jetty.server.Authentication;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -319,7 +320,25 @@ public class LocalCache implements EntityResolver
         result.addAll(getDynamicTypes());
         for ( User user:getUsers())
         {
-            if ( forUser == null || forUser.isAdmin() || forUser.getId().equals( user.getId()) )
+            boolean add =forUser == null || forUser.isAdmin() || forUser.getId().equals( user.getId());
+            if ( ! add )
+            {
+                final Collection<Category> adminGroups = PermissionController.getAdminGroups(forUser);
+                if ( adminGroups.size() > 0)
+                {
+                    for ( Category adminGroup: adminGroups)
+                    {
+                        if (((UserImpl)user).isMemberOf( adminGroup))
+                        {
+                            add = true;
+                            break;
+                        }
+
+                    }
+                }
+
+            }
+            if (  add)
             {
                 result.add(user);
             }

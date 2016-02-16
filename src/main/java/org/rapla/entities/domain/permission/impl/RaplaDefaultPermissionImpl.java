@@ -1,6 +1,7 @@
 package org.rapla.entities.domain.permission.impl;
 
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Permission.AccessLevel;
@@ -9,6 +10,7 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
@@ -26,14 +28,76 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     {
     }
 
-
     @Override
-    public boolean hasAccess(PermissionContainer container, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today,
+    public boolean hasAccess(Entity entity, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today,
             boolean checkOnlyToday)
     {
         if (user == null || user.isAdmin())
             return true;
 
+        Class<? extends  Entity> type = entity.getTypeClass();
+        if ( type == DynamicType.class)
+        {
+            return user.isAdmin();
+        }
+        if ( type == User.class)
+        {
+            // only admins can set admin flags or edit admins
+            if (((User) entity).isAdmin() )
+            {
+                return false;
+            }
+            if ( user == null)
+            {
+                return true;
+            }
+            User userToEdit = (User) entity;
+            if ( userToEdit.isAdmin())
+            {
+                return false;
+            }
+            final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+            if ( adminGroups.size() > 0)
+            {
+                boolean belongsTo = false;
+                for (Category group : adminGroups)
+                {
+                    if (userToEdit.belongsTo(group))
+                    {
+                        belongsTo = true;
+                        break;
+                    }
+                }
+                if ( belongsTo )
+                {
+                    final Collection<Category> groupList = userToEdit.getGroupList();
+                    // user can't edit other local admin users
+                    if ( groupList.size() > 0 && (userToEdit.equals( user)))
+                    {
+                        return false;
+                    }
+                    return belongsTo;
+                }
+            }
+        }
+        if ( type == Category.class)
+        {
+            final Collection<Category> adminGroups = PermissionController.getAdminGroups(user);
+            Category group = (Category) entity;
+            for ( Category adminGroup: adminGroups)
+            {
+                if ( adminGroup.equals(group) || adminGroup.isAncestorOf( group))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if ( !(entity instanceof PermissionContainer ))
+        {
+            return true;
+        }
+        PermissionContainer container = (PermissionContainer) entity;
         if (PermissionController.isOwner(container, user))
         {
             return true;

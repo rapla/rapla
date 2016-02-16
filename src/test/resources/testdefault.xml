@@ -181,8 +181,6 @@
    <rapla:users>
       <!-- Users of the system -->
       <rapla:user id="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2014-08-15T15:37:58.0125Z" last-changed="2014-08-15T15:37:58.0125Z" username="homer" password="duffs" name="" email="homer@rapla.dummy.rapla" isAdmin="true">
-         <rapla:group key="category[key='read-events-from-others']"/>
-         <rapla:group key="category[key='create-events']"/>
          <rapla:preferences>
             <rapla:entry key="org.rapla.plugin.notification.allocationlisteners">
                <rapla:map>
@@ -197,12 +195,9 @@
          </rapla:preferences>
       </rapla:user>
       <rapla:user id="15e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2014-08-15T15:37:58.0125Z" last-changed="2014-08-15T15:37:58.0125Z" username="monty" password="burns" name="" email="monty@rapla.dummy.rapla" isAdmin="false">
-         <rapla:group key="category[key='modify-preferences']"/>
          <rapla:group key="category[key='my-group']"/>
-         <rapla:group key="category[key='read-events-from-others']"/>
-         <rapla:group key="category[key='create-events']"/>
          <rapla:group key="category[key='powerplant']"/>
-         <rapla:group key="category[key='powerplant']/category[key='powerplant-admin'"/>
+         <rapla:group key="category[key='powerplant']/category[key='powerplant-admins']"/>
       </rapla:user>
    </rapla:users>
 
