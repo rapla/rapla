@@ -10,6 +10,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -165,21 +166,47 @@ public class SecurityManagerTest  {
 		final Category userGroupsCategory = raplaFacade.getUserGroupsCategory();
 		Category powerplant = userGroupsCategory.getCategory("powerplant");
 		Category powerplantStaff = powerplant.getCategory("powerplant-staff");
+		final Category newNonAdminableUserGroup = raplaFacade.newCategory();
+		{
+			newNonAdminableUserGroup.getName().setName("en", "new catgory");
+			final Category edit = raplaFacade.edit(userGroupsCategory);
+			edit.addCategory( newNonAdminableUserGroup );
+		}
 		final User newUser;
 		{
 			newUser = raplaFacade.newUser();
+			TestCase.assertTrue( newUser.getGroupList().contains( powerplant));
 			newUser.setUsername("waylon");
 			newUser.setEmail("smithers@rapla.dummy.rapla");
-			newUser.addGroup(powerplant);
 			newUser.addGroup(powerplantStaff);
 			raplaFacade.store(newUser);
 		}
 		final User[] users = facade1.getUsers();
-		TestCase.assertEquals( 2, users);
+		TestCase.assertEquals(2, users);
+		Category newCategory;
+		{
+			final Category editablePowerplant = raplaFacade.edit(powerplant);
+			newCategory = raplaFacade.newCategory();
+			newCategory.getName().setName("en", "new catgory");
+			editablePowerplant.addCategory(newCategory);
+			raplaFacade.store(editablePowerplant);
+		}
 		{
 			final User editUser = raplaFacade.edit(newUser);
 			editUser.removeGroup(powerplantStaff);
 			raplaFacade.store(editUser);
+		}
+		{
+			final User editUser = raplaFacade.edit(newUser);
+			editUser.addGroup(newNonAdminableUserGroup);
+			try
+			{
+				raplaFacade.store(editUser);
+				TestCase.fail("Security Exception should be thrown");
+			}
+			catch (SecurityException ex)
+			{
+			}
 		}
 		{
 			final User editUser = raplaFacade.edit(newUser);
@@ -188,10 +215,28 @@ public class SecurityManagerTest  {
 			{
 				raplaFacade.store(editUser);
 				TestCase.fail("Security Exception should be thrown");
-			} catch (SecurityException ex)
+			}
+			catch (SecurityException ex)
 			{
 			}
 		}
+		{
+			final User editUser = raplaFacade.edit(newUser);
+			raplaFacade.removeObjects(new Entity[] { editUser });
+		}
+
+		{
+			raplaFacade.remove(raplaFacade.edit(newCategory));
+		}
+		try
+		{
+			raplaFacade.remove(powerplant);
+			TestCase.fail("Security Exception should be thrown. Category should not be removeable");
+		}
+		catch (Exception ex)
+		{
+		}
+
 
 	}
 	
