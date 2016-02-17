@@ -1,5 +1,14 @@
 package org.rapla.plugin.merge.client.swing;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Collection;
+import java.util.Iterator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.ImageIcon;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.event.StartActivityEvent;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -10,20 +19,14 @@ import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
+import org.rapla.storage.PermissionController;
 
 import com.google.web.bindery.event.shared.EventBus;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.ImageIcon;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="merge")
@@ -35,12 +38,16 @@ public class MergeMenuFactory implements ObjectMenuFactory
     private final EventBus eventBus;
 //    private final MergeDialogFactory mergeDialogFactory;
 //    private final EditController editController;
+    private final PermissionController permissionController;
+    private final User user;
 
     @Inject
-    public MergeMenuFactory(RaplaResources raplaResources, RaplaImages raplaImages, DialogUiFactory dialogUiFactory, EventBus eventBus)
+    public MergeMenuFactory(RaplaResources raplaResources, RaplaImages raplaImages, ClientFacade facade, DialogUiFactory dialogUiFactory, EventBus eventBus)
     {
         this.raplaResources = raplaResources;
         this.raplaImages = raplaImages;
+        user = facade.getUser();
+        permissionController = facade.getRaplaFacade().getPermissionController();
         this.dialogUiFactory = dialogUiFactory;
         this.eventBus = eventBus;
     }
@@ -55,6 +62,10 @@ public class MergeMenuFactory implements ObjectMenuFactory
         }
         Iterator<?> it = selectedObjects.iterator();
         Object last = it.next();
+        if(!(last instanceof Allocatable) || !permissionController.canAdmin((Allocatable)last, user))
+        {
+            return new RaplaMenuItem[0];
+        }
         while (it.hasNext())
         {
             final Object next = it.next();
@@ -64,7 +75,8 @@ public class MergeMenuFactory implements ObjectMenuFactory
             }
             if (next instanceof Allocatable)
             {
-                if (!((Allocatable) next).getClassification().getType().equals(((Allocatable) last).getClassification().getType()))
+                if (!((Allocatable) next).getClassification().getType().equals(((Allocatable) last).getClassification().getType())
+                        || !permissionController.canAdmin((Allocatable) next, user))
                 {
                     return new RaplaMenuItem[0];
                 }
