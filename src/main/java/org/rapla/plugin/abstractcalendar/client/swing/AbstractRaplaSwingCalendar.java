@@ -162,7 +162,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     abstract protected AbstractSwingCalendar createView(boolean showScrollPane) throws RaplaException;
     abstract protected void configureView() throws RaplaException;
-    abstract public int getIncrementSize();
+    abstract public DateTools.IncrementSize getIncrementSize();
 
     /**
      * @throws RaplaException  
@@ -298,10 +298,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     	Date targetDate;
 
         {
-        	Calendar cal = getRaplaLocale().createCalendar();
-        	cal.setTime( selectedDate);
-        	cal.add(getIncrementSize(), pages-1);
-        	targetDate = cal.getTime();
+        	targetDate = DateTools.add( selectedDate, getIncrementSize(), pages - 1);
         }
 
         if ( page <= 0 )
@@ -359,10 +356,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		    	{
 		    		if ( targetDate != null && currentPrintDate.before( targetDate))
 		    		{
-		    			Calendar cal = getRaplaLocale().createCalendar();
-		            	cal.setTime( currentPrintDate);
-		            	cal.add(getIncrementSize(), 1);
-		    			currentPrintDate = cal.getTime();
+                        currentPrintDate = DateTools.add( currentPrintDate, getIncrementSize(),  1);
 		    			pageStartMap.put(currentPrintDate,page);
 		    			continue;
 		    		}
@@ -373,10 +367,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		    	}
 		    	if ( translatey <0 && targetDate!= null)
 		    	{
-		    		Calendar cal = getRaplaLocale().createCalendar();
-	            	cal.setTime( currentPrintDate);
-	            	cal.add(getIncrementSize(), -1);
-	    			currentPrintDate = cal.getTime();
+                    currentPrintDate = DateTools.add( currentPrintDate, getIncrementSize(),  - 1);
 		    		continue;
 		    	}
 		    	if ( targetDate != null && currentPrintDate.after( targetDate))
@@ -411,23 +402,14 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     public String getCalendarUnit()
     {
-    	int incrementSize = getIncrementSize();
-    	if ( incrementSize == Calendar.DAY_OF_YEAR)
-    	{
-    		return getString("days");
-    	}
-    	else if ( incrementSize == Calendar.WEEK_OF_YEAR)
-    	{
-    		return getString("weeks");
-    	}
-    	else if ( incrementSize == Calendar.MONTH)
-    	{
-    		return getString("months");
-    	}
-    	else
-    	{
-    		return "";
-    	}
+    	DateTools.IncrementSize incrementSize = getIncrementSize();
+        switch ( incrementSize)
+        {
+            case DAY_OF_YEAR:return getString("days");
+            case WEEK_OF_YEAR:return getString("weeks");
+            case MONTH:return getString("months");
+            default: return "";
+        }
     }
     
     public int getUnits() {

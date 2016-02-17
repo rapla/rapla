@@ -20,6 +20,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.ClientFacade;
@@ -199,13 +200,9 @@ public class TimeslotOption extends DefaultPluginOption
     		DefaultConfiguration conf = new DefaultConfiguration("timeslot");
     		conf.setAttribute("name", slot.getName());
     		int minuteOfDay = slot.getMinuteOfDay();
-    	   	Calendar cal = getRaplaLocale().createCalendar();
-    		cal.set(Calendar.HOUR_OF_DAY, minuteOfDay / 60);
-    		cal.set(Calendar.MINUTE, minuteOfDay % 60);
-    		cal.set(Calendar.SECOND, 0);
-    		cal.set(Calendar.MILLISECOND, 0);
     		SerializableDateTimeFormat format = getRaplaLocale().getSerializableFormat();
-			String time = format.formatTime(cal.getTime());
+			final long l = DateTools.toTime(minuteOfDay / 60, minuteOfDay % 60, 0);
+			String time = format.formatTime(new Date(l));
 			conf.setAttribute("time", time);
     		newConfig.addChild( conf);
     	}
@@ -227,11 +224,9 @@ public class TimeslotOption extends DefaultPluginOption
     		String name = row.textfield.getText();
     		RaplaTime raplatime = row.raplatime;
 			Date time = raplatime.getTime();
-    	   	Calendar cal = getRaplaLocale().createCalendar();
-    		if ( time != null )
+    	   	if ( time != null )
     		{
-    			cal.setTime( time);
-    			int minuteOfDay = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE);
+				int minuteOfDay = DateTools.getMinuteOfDay(time.getTime());
     			timeslots.add( new Timeslot( name, minuteOfDay));
     		}
     	}

@@ -13,20 +13,26 @@
 
 package org.rapla.plugin.abstractcalendar.server;
 
+import org.rapla.client.gwt.Rapla;
+import org.rapla.components.util.DateTools;
+import org.rapla.framework.RaplaLocale;
+
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 public class HTMLDateComponents {
-    static public String getDateSelection(String prefix,Calendar calendarview, Locale locale) {
+    static public String getDateSelection(String prefix,Date calendarview, RaplaLocale raplaLocale) {
         StringBuffer buf = new StringBuffer();
-        int day = calendarview.get(Calendar.DATE);
-        int month = calendarview.get(Calendar.MONTH) +1;
-        int year = calendarview.get(Calendar.YEAR);
+        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(calendarview.getTime());
+        int day = dateWithoutTimezone.day;
+        int month = dateWithoutTimezone.month;
+        int year = dateWithoutTimezone.year;
         int minYear = 2003;
         int maxYear = 2020;
         
         buf.append( getDaySelection(prefix + "day",day));
-        buf.append( getMonthSelection(prefix + "month",month, locale));
+        buf.append( getMonthSelection(prefix + "month",month, raplaLocale));
         buf.append( getYearSelection(prefix + "year", year,minYear, maxYear));
         return buf.toString();
     }
@@ -50,16 +56,13 @@ public class HTMLDateComponents {
                 return buf.toString();
         }
         
-        static public String getMonthSelection(String name, int selectedValue, Locale locale) {
+        static public String getMonthSelection(String name, int selectedValue, RaplaLocale locale) {
             StringBuffer buf = new StringBuffer();
             buf.append("<select name=\""); 
             buf.append( name ); 
             buf.append("\">\n");
-            Calendar calendar = Calendar.getInstance( locale );
-            java.text.SimpleDateFormat format = 
-                new java.text.SimpleDateFormat("MMMMM", locale);
-            calendar.set(Calendar.MONTH,Calendar.JANUARY);
-            for (int i=1;i<=12;i++) { 
+            Date date = new Date(DateTools.toDate(2000,1,1));
+            for (int i=1;i<=12;i++) {
                 buf.append("<option ");
                 buf.append("value=\"");
                 buf.append(i);
@@ -68,8 +71,9 @@ public class HTMLDateComponents {
                     buf.append("selected");
                 }   
                 buf.append(">");
-                buf.append(format.format(calendar.getTime()));
-                calendar.add(Calendar.MONTH,1);
+                final String str = locale.formatMonth(date);
+                buf.append(str);
+                date = DateTools.addMonth( date);
                 buf.append("</option>");
                 buf.append("\n");
             }

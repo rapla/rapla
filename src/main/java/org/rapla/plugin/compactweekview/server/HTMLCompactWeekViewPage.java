@@ -17,6 +17,7 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLCompactWeekView;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -110,8 +111,8 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
         return builder;
     }
 
-    protected int getIncrementSize() {
-        return Calendar.WEEK_OF_YEAR;
+    protected DateTools.IncrementSize getIncrementSize() {
+        return DateTools.IncrementSize.WEEK_OF_YEAR;
     }
 
 }

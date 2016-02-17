@@ -57,13 +57,6 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         this.importExportTimeZone = importExportTimeZone;
     }
 
-    /* (non-Javadoc)
-     * @see org.rapla.common.IRaplaLocale#createCalendar()
-     */
-    public Calendar createCalendar() {
-        return Calendar.getInstance(getTimeZone(), getLocale());
-    }
-
     public TimeZone getTimeZone() {
         return DateTools.getTimeZone();
     }

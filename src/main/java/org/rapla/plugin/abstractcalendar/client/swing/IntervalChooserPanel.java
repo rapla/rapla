@@ -77,7 +77,7 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         nextEndButton.setSize(30, 20);
     }
 
-    int incrementSize = Calendar.WEEK_OF_YEAR;
+    DateTools.IncrementSize incrementSize = DateTools.IncrementSize.WEEK_OF_YEAR;
     // BJO00000042
 
     boolean listenersEnabled = true;
@@ -172,10 +172,7 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
     }
     // BJO00000042
 
-    /** possible values are Calendar.DATE, Calendar.WEEK_OF_YEAR, Calendar.MONTH and Calendar.YEAR.
-     Default is Calendar.WEEK_OF_YEAR.
-     */
-    public void setIncrementSize(int incrementSize)
+    public void setIncrementSize(DateTools.IncrementSize incrementSize)
     {
         this.incrementSize = incrementSize;
     }
@@ -230,47 +227,29 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
             if (!listenersEnabled)
                 return;
             // BJO 00000042
-            Date date;
-            Calendar calendar = getRaplaLocale().createCalendar();
             if (e.getSource() == prevStartButton)
             {
-                calendar.setTime(startDateSelection.getDate());
-                calendar.add(incrementSize, -1);
-                date = calendar.getTime();
-                startDateSelection.setDate(date);
+                startDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, -1));
             }
             else if (e.getSource() == nextStartButton)
             {
-                calendar.setTime(startDateSelection.getDate());
-                calendar.add(incrementSize, 1);
-                date = calendar.getTime();
-                startDateSelection.setDate(date);
+                startDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, 1));
             }
             else if (e.getSource() == prevEndButton)
             {
-                calendar.setTime(endDateSelection.getDate());
-                calendar.add(incrementSize, -1);
-                date = calendar.getTime();
-                endDateSelection.setDate(date);
+                endDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, -1));
             }
             else if (e.getSource() == nextEndButton)
             {
-                calendar.setTime(endDateSelection.getDate());
-                calendar.add(incrementSize, 1);
-                date = calendar.getTime();
-                endDateSelection.setDate(date);
+                endDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, 1));
             }
             else if (e.getSource() == startTodayButton)
             {
-                calendar.setTime(new Date());
-                date = calendar.getTime();
-                startDateSelection.setDate(date);
+                startDateSelection.setDate(getFacade().today());
             }
             else if (e.getSource() == endTodayButton)
             {
-                calendar.setTime(new Date());
-                date = calendar.getTime();
-                endDateSelection.setDate(date);
+                endDateSelection.setDate(getFacade().today());
             }
             else if (e.getSource() == periodChooser)
             {

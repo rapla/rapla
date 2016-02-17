@@ -45,8 +45,6 @@ if you look into RaplaLocale you find
 
 <ul>
 <li>{@link RaplaLocale#getTimeZone}</li>
-<li>{@link RaplaLocale#getSystemTimeZone}</li>
-<li>{@link RaplaLocale#getImportExportTimeZone}</li>
 </ul>
  */
 public interface RaplaLocale
@@ -54,10 +52,6 @@ public interface RaplaLocale
 	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<String>("org.rapla.language");
     
     Collection<String> getAvailableLanguages();
-
-    /** creates a calendar initialized with the Rapla timezone ( that is always GMT+0 for Rapla  )  and the selected locale*/
-    @Deprecated
-    Calendar createCalendar();
 
     String formatTime( Date date );
     

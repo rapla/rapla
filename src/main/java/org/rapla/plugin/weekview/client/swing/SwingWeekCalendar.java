@@ -187,8 +187,9 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
         ((SwingWeekView)view).scrollToStart();
     }
 
-    public int getIncrementSize() {
-        return Calendar.WEEK_OF_YEAR;
+    @Override
+    public DateTools.IncrementSize getIncrementSize() {
+        return DateTools.IncrementSize.WEEK_OF_YEAR;
     }
 
 }

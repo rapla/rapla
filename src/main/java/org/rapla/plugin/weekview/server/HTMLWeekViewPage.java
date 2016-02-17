@@ -16,6 +16,7 @@ import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
@@ -30,7 +31,6 @@ import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 import javax.inject.Inject;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -93,8 +93,8 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
         return builder;
     }
 
-    public int getIncrementSize() {
-        return Calendar.WEEK_OF_YEAR;
+    public DateTools.IncrementSize getIncrementSize() {
+        return DateTools.IncrementSize.WEEK_OF_YEAR;
     }
 
 }

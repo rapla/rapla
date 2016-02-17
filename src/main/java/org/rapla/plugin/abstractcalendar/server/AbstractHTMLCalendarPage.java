@@ -15,6 +15,7 @@ package org.rapla.plugin.abstractcalendar.server;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.Tools;
@@ -89,16 +90,14 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     }
 
     abstract protected AbstractHTMLView createCalendarView();
-    abstract protected int getIncrementSize();
+    abstract protected DateTools.IncrementSize getIncrementSize();
 
     public String getCalendarHTML() {
         return calendarviewHTML;
     }
 
     public String getDateChooserHTML( Date date) {
-        Calendar calendar = raplaLocale.createCalendar();
-        calendar.setTime( date );
-        return HTMLDateComponents.getDateSelection("", calendar, raplaLocale.getLocale());
+        return HTMLDateComponents.getDateSelection("", date, raplaLocale);
     }
 
     public Date getStartDate() {
@@ -114,28 +113,25 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     }
 
     public int getDay( Date date) {
-        Calendar calendarview = raplaLocale.createCalendar();
-        calendarview.setTime( date);
-        return calendarview.get(Calendar.DATE);
+        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(date.getTime());
+        return dateWithoutTimezone.day;
     }
 
     public int getMonth( Date date) {
-        Calendar calendarview = raplaLocale.createCalendar();
-        calendarview.setTime( date);
-        return calendarview.get( Calendar.MONTH) + 1;
+        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(date.getTime());
+        return dateWithoutTimezone.month;
     }
 
     public int getYear( Date date) {
-        Calendar calendarview = raplaLocale.createCalendar();
-        calendarview.setTime( date);
-        return calendarview.get( Calendar.YEAR);
+        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(date.getTime());
+        return dateWithoutTimezone.year;
     }
     
     abstract protected void configureView() throws RaplaException;
 
-    protected int getIncrementAmount(int incrementSize) 
+    protected int getIncrementAmount(DateTools.IncrementSize incrementSize)
     {
-        if (incrementSize == Calendar.WEEK_OF_YEAR)
+        if (incrementSize == DateTools.IncrementSize.WEEK_OF_YEAR)
         {
             int daysInWeekview = getCalendarOptions().getDaysInWeekview();
             return Math.max(1,daysInWeekview / 7 );
@@ -150,11 +146,10 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
         java.io.PrintWriter out = response.getWriter();
 
-        Calendar calendarview = raplaLocale.createCalendar();
-        calendarview.setTime( model.getSelectedDate() );
+        Date calendarview = model.getSelectedDate();
         if ( request.getParameter("today") != null ) {
             Date today = facade.today();
-			calendarview.setTime( today );
+			calendarview =  today;
         } else if ( request.getParameter("day") != null ) {
             String dateString = Tools.createXssSafeString(request.getParameter("year") + "-"
                                + request.getParameter("month") + "-"
@@ -162,19 +157,24 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
             
             try {
                 SerializableDateTimeFormat format = raplaLocale.getSerializableFormat();
-                calendarview.setTime( format.parseDate( dateString, false ) );
+                calendarview =  format.parseDate( dateString, false );
             } catch (ParseDateException ex) {
                 out.close();
                 throw new ServletException( ex);
             }
-            int incrementSize = getIncrementSize();
+            DateTools.IncrementSize incrementSize = getIncrementSize();
+
             if ( request.getParameter("next") != null)
-                calendarview.add( incrementSize, getIncrementAmount(incrementSize));
+            {
+                calendarview = DateTools.add(calendarview,incrementSize, getIncrementAmount(incrementSize));
+            }
             if ( request.getParameter("prev") != null)
-                calendarview.add( incrementSize, -getIncrementAmount(incrementSize));
+            {
+                calendarview = DateTools.add(calendarview,incrementSize, -getIncrementAmount(incrementSize));
+            }
         }
 
-        Date currentDate = calendarview.getTime();
+        Date currentDate = calendarview;
         model.setSelectedDate( currentDate );
         view = createCalendarView();
         try {
@@ -204,7 +204,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
      * @throws ServletException  
      * @throws UnsupportedEncodingException 
      */
-    protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Calendar currentDate) throws ServletException, UnsupportedEncodingException {
+    protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Date currentDate) throws ServletException, UnsupportedEncodingException {
         boolean navigationVisible = isNavigationVisible( request );
 
         calendarviewHTML = view.getHtml();
@@ -260,7 +260,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 				// add the "previous" button including the css class="super button"
 				out.println("<span class=\"button\"><input type=\"submit\" name=\"prev\" value=\"&lt;&lt;\"/></span> ");
 				out.println("<span class=\"spacer\">&nbsp;</span> ");
-				out.println(getDateChooserHTML(currentDate.getTime()));
+				out.println(getDateChooserHTML(currentDate));
 				// add the "goto" button including the css class="super button"
 				out.println("<span class=\"button\"><input type=\"submit\" name=\"goto\" value=\"" + getI18n().getString("goto_date") + "\"/></span>");
 				out.println("<span class=\"spacer\">&nbsp;</span>");

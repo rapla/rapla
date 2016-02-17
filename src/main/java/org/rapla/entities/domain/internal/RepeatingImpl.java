@@ -29,7 +29,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
     
-    private boolean readOnly = false;
+    transient private boolean readOnly = false;
 
     private int interval = 1;
     private boolean isFixedNumber;

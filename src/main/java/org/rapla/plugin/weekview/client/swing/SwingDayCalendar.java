@@ -24,6 +24,7 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
@@ -55,9 +56,10 @@ public class SwingDayCalendar extends SwingWeekCalendar
         return 1;
     }
 
-    public int getIncrementSize()
+    @Override
+    public DateTools.IncrementSize getIncrementSize()
     {
-        return Calendar.DAY_OF_YEAR;
+        return DateTools.IncrementSize.DAY_OF_YEAR;
     }
 
 }

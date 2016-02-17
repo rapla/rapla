@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AppointmentMap implements EntityReferencer
+public class AppointmentMap
 {
     private Set<ReservationImpl> reservations;
     private Map<String, Set<String>> allocatableIdToAppointmentIds;
@@ -33,43 +33,14 @@ public class AppointmentMap implements EntityReferencer
 
     }
 
-    @Override public void setResolver(EntityResolver resolver)
+    public void init(EntityResolver resolver)
     {
         this.resolver = resolver;
         for ( ReservationImpl reservation:reservations)
         {
             reservation.setResolver( resolver);
+            reservation.setReadOnly();
         }
-    }
-
-    @Override public Iterable<ReferenceInfo> getReferenceInfo()
-    {
-
-        return new Iterable<ReferenceInfo>()
-        {
-            @Override public Iterator<ReferenceInfo> iterator()
-            {
-                final Iterator<ReservationImpl> iterator = reservations.iterator();
-                return new Iterator<ReferenceInfo>()
-                {
-                    @Override public boolean hasNext()
-                    {
-                        return iterator.hasNext();
-                    }
-
-                    @Override public ReferenceInfo next()
-                    {
-                        return iterator.next().getReference();
-                    }
-                    
-                    @Override
-                    public void remove()
-                    {
-                        iterator.remove();
-                    }
-                };
-            }
-        };
     }
 
     public AppointmentMap(Map<Allocatable, Collection<Appointment>> map)
@@ -146,9 +117,4 @@ public class AppointmentMap implements EntityReferencer
                 '}';
     }
     
-    @Override
-    public void replace(ReferenceInfo origId, ReferenceInfo newId)
-    {
-        throw new ReadOnlyException(this);
-    }
 }

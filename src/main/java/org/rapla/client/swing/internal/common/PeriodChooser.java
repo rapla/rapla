@@ -25,8 +25,8 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JList;
 import java.awt.Component;
-import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 public class PeriodChooser extends JComboBox implements Disposable
  {
@@ -95,19 +95,19 @@ public class PeriodChooser extends JComboBox implements Disposable
         }
     }
     
-    public static int weekOf(Period period, Date date) {
+    public int weekOf(Period period, Date date) {
     	Date start = period.getStart();
-        Calendar cal = Calendar.getInstance(DateTools.getTimeZone());
         if (!period.contains(date) || start == null)
             return -1;
         long duration = date.getTime() - start.getTime();
         long weeks = duration / (DateTools.MILLISECONDS_PER_WEEK);
         // setTimeInMillis has protected access in JDK 1.3.1
-        cal.setTime(new Date(date.getTime() - weeks * DateTools.MILLISECONDS_PER_WEEK));
-        int week_of_year = cal.get(Calendar.WEEK_OF_YEAR);
-        cal.setTime(start);
+        final Date date1 = new Date(date.getTime() - weeks * DateTools.MILLISECONDS_PER_WEEK);
+        Locale locale = i18n.getLocale();
+        int week_of_year = DateTools.getWeekInYear( date1, locale);
+        int week_of_year_start = DateTools.getWeekInYear( start, locale);
         return ((int)weeks) + 1
-            + (((week_of_year) != cal.get(Calendar.WEEK_OF_YEAR))? 1 :0);
+            + (((week_of_year) != week_of_year_start)? 1 :0);
     }
 
 

@@ -25,6 +25,7 @@ import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
@@ -60,7 +61,7 @@ public class DateChooserPanel extends RaplaGUIComponent
     RaplaCalendar dateSelection;
     PeriodChooser periodChooser;
     JButton nextButton = new RaplaArrowButton('>', 20);
-    int incrementSize = Calendar.WEEK_OF_YEAR;
+    DateTools.IncrementSize incrementSize = DateTools.IncrementSize.WEEK_OF_YEAR;
     CalendarModel model;
     Listener listener = new Listener();
     JPanel periodPanel;
@@ -146,7 +147,7 @@ public class DateChooserPanel extends RaplaGUIComponent
     /** possible values are Calendar.DATE, Calendar.WEEK_OF_YEAR, Calendar.MONTH and Calendar.YEAR.
         Default is Calendar.WEEK_OF_YEAR.
      */
-    public void setIncrementSize(int incrementSize) {
+    public void setIncrementSize(DateTools.IncrementSize incrementSize) {
         this.incrementSize = incrementSize;
     }
 
@@ -186,9 +187,9 @@ public class DateChooserPanel extends RaplaGUIComponent
         return panel;
     }
     
-    protected int getIncrementAmount(int incrementSize) 
+    protected int getIncrementAmount(DateTools.IncrementSize incrementSize)
     {
-        if (incrementSize == Calendar.WEEK_OF_YEAR)
+        if (incrementSize == DateTools.IncrementSize.WEEK_OF_YEAR)
         {
             int daysInWeekview = getCalendarOptions().getDaysInWeekview();
             return Math.max(1,daysInWeekview / 7 );
@@ -204,21 +205,18 @@ public class DateChooserPanel extends RaplaGUIComponent
 
             Date date;
 
-            Calendar calendar = getRaplaLocale().createCalendar();
             Date date2 = dateSelection.getDate();
-			calendar.setTime(date2);
-
             if (evt.getSource() == prevButton) {
-                calendar.add(incrementSize,-getIncrementAmount(incrementSize ));
+                date2= DateTools.add(date2,incrementSize,-getIncrementAmount(incrementSize ));
             }
             //eingefuegt: rku
             if (evt.getSource() == todayButton) {
                 Date today = getQuery().today();
-				calendar.setTime(today);
+				date2 = today;
             }
  
             if (evt.getSource() == nextButton) {
-                calendar.add(incrementSize,getIncrementAmount(incrementSize ));
+                date2= DateTools.add(date2,incrementSize,getIncrementAmount(incrementSize ));
             }
             if (evt.getSource() == periodChooser) {
                 final Date periodDate = periodChooser.getDate();
@@ -234,7 +232,7 @@ public class DateChooserPanel extends RaplaGUIComponent
                 model.setStartDate( start );
                 model.setEndDate( end );
             } else {
-                date = calendar.getTime();
+                date = date2;
             }
             updateDates( date );
             fireDateChange( date);

@@ -1084,7 +1084,8 @@ import org.rapla.storage.impl.EntityStore;
         Lock lock = readLock();
         try
         {
-            appointmentMap.setResolver( this);
+            final RemoteOperator resolver = this;
+            appointmentMap.init(resolver);
             return  appointmentMap.getResult(filters);
         }
         catch (RaplaException ex)

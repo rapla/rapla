@@ -74,7 +74,6 @@ public class Export2iCalConverter
     private final String global_export_attendees_participation_status;
 
     net.fortuna.ical4j.model.TimeZone timeZone;
-    private java.util.Calendar calendar;
     private String exportAttendeesAttribute;
     final TimeZoneConverter timezoneConverter;
     boolean hasLocationType;
@@ -92,8 +91,6 @@ public class Export2iCalConverter
         this.logger = logger;
         this.i18n = i18n;
         TimeZone zone = timezoneConverter.getImportExportTimeZone();
-
-        calendar = raplaLocale.createCalendar();
         DynamicType[] dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         for (DynamicType type : dynamicTypes)
         {
@@ -403,23 +400,20 @@ public class Export2iCalConverter
         {
             // WEEKLY -> settings : every nTh Weekday
             recur.setInterval(repeating.getInterval());
-
-            calendar.setTime(appointment.getStart());
-            recur.getDayList().add(WeekDay.getWeekDay(calendar));
+            final int weekday = DateTools.getWeekday(appointment.getStart());
+            recur.getDayList().add(WeekDay.getDay(weekday));
         }
         else if (repeating.isMonthly())
         {
             // MONTHLY -> settings : every nTh Weekday
             recur.setInterval(repeating.getInterval());
-            calendar.setTime(appointment.getStart());
-            int weekofmonth = Math.round(calendar.get(java.util.Calendar.DAY_OF_MONTH) / DateTools.DAYS_PER_WEEK) + 1;
-            recur.getDayList().add(new WeekDay(WeekDay.getWeekDay(calendar), weekofmonth));
+            final int weekday = DateTools.getWeekday(appointment.getStart());
+            int weekofmonth = Math.round(DateTools.getDayOfMonth( appointment.getStart()) / DateTools.DAYS_PER_WEEK) + 1;
+            recur.getDayList().add(new WeekDay(WeekDay.getDay(weekday), weekofmonth));
         }
         else if (repeating.isYearly())
         {
-            // YEARLY -> settings : every nTh day mTh Monthname
-            calendar.setTime(appointment.getStart());
-            calendar.get(java.util.Calendar.DAY_OF_YEAR);
+            recur.getYearDayList().add( DateTools.getDayInYear( appointment.getStart()));
         }
         else
         {
@@ -448,16 +442,8 @@ public class Export2iCalConverter
             //DateList dl = new DateList(Value.DATE);
             Date date = itExceptions.next();
             //dl.add(new net.fortuna.ical4j.model.Date( date));
-            java.util.Calendar cal = raplaLocale.createCalendar();
-            cal.setTime(date);
-            int year = cal.get(java.util.Calendar.YEAR);
-            int day_of_year = cal.get(java.util.Calendar.DAY_OF_YEAR);
-            cal.setTime(appointment.getStart());
-            cal.set(java.util.Calendar.YEAR, year);
-            cal.set(java.util.Calendar.DAY_OF_YEAR, day_of_year);
             int offset = (int) (tz.getOffset(DateTools.cutDate(date).getTime()) / DateTools.MILLISECONDS_PER_HOUR);
-            cal.add(java.util.Calendar.HOUR, -offset);
-            Date dateToSave = cal.getTime();
+            Date dateToSave = new Date(DateTools.cutDate( date).getTime() -offset * DateTools.MILLISECONDS_PER_HOUR);
             net.fortuna.ical4j.model.DateTime dateTime = new net.fortuna.ical4j.model.DateTime();
             dateTime.setTime(dateToSave.getTime());
             exDate.getDates().add(dateTime);
@@ -648,11 +634,9 @@ public class Export2iCalConverter
     {
 
         Date endDate = appointment.getEnd();
-        java.util.Calendar calendar = java.util.Calendar.getInstance();
-
         if (isAllDayEvent)
         {
-            DtEnd end = getDtEndFromAllDayEvent(endDate, calendar);
+            DtEnd end = getDtEndFromAllDayEvent(endDate);
             properties.add(end);
         }
         else
@@ -681,18 +665,10 @@ public class Export2iCalConverter
         return new DtEnd(date);
     }
 
-    private DtEnd getDtEndFromAllDayEvent(Date endDate, java.util.Calendar calendar)
+    private DtEnd getDtEndFromAllDayEvent(Date endDate)
     {
-
-        calendar.clear();
-        calendar.setTime(endDate);
-        int year = calendar.get(java.util.Calendar.YEAR);
-        calendar.add(java.util.Calendar.DATE, 1);
-        int month = calendar.get(java.util.Calendar.MONTH);
-        int date = calendar.get(java.util.Calendar.DAY_OF_MONTH);
-        calendar.clear();
-        calendar.set(year, month, date);
-        DtEnd end = new DtEnd(new net.fortuna.ical4j.model.Date(calendar.getTime()));
+        Date date = DateTools.addDay(DateTools.cutDate( endDate));
+        DtEnd end = new DtEnd(new net.fortuna.ical4j.model.Date(date));
         return end;
     }
 
@@ -709,7 +685,7 @@ public class Export2iCalConverter
 
         if (isAllDayEvent)
         {
-            DtStart start = getDtStartFromAllDayEvent(startDate, calendar);
+            DtStart start = getDtStartFromAllDayEvent(startDate);
             properties.add(start);
         }
         else
@@ -738,17 +714,9 @@ public class Export2iCalConverter
         return new DtStart(date);
     }
 
-    private DtStart getDtStartFromAllDayEvent(Date startDate, java.util.Calendar calendar)
+    private DtStart getDtStartFromAllDayEvent(Date startDate)
     {
-
-        calendar.clear();
-        calendar.setTime(startDate);
-        int year = calendar.get(java.util.Calendar.YEAR);
-        int month = calendar.get(java.util.Calendar.MONTH);
-        int date = calendar.get(java.util.Calendar.DAY_OF_MONTH);
-        calendar.clear();
-        calendar.set(year, month, date);
-        DtStart start = new DtStart(new net.fortuna.ical4j.model.Date(calendar.getTime()));
+        DtStart start = new DtStart(new net.fortuna.ical4j.model.Date(DateTools.cutDate(startDate.getTime())));
         return start;
     }
 

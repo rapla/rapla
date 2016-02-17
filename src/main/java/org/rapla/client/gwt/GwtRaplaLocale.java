@@ -10,7 +10,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -24,10 +23,6 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
 	@Inject
 	public GwtRaplaLocale(BundleManager bundleManager) {
 		super(bundleManager);
-	}
-
-	public Calendar createCalendar() {
-		throw new UnsupportedOperationException("Not supported in gwt. Please call on server");
 	}
 
 	public String formatTime(Date date) {

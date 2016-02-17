@@ -16,6 +16,7 @@ import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLMonthView;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
@@ -56,8 +57,8 @@ public class HTMLMonthViewPage extends AbstractHTMLCalendarPage
         return builder;
     }
 
-    protected int getIncrementSize() {
-        return Calendar.MONTH;
+    protected DateTools.IncrementSize getIncrementSize() {
+        return DateTools.IncrementSize.MONTH;
     }
 
 	@Override

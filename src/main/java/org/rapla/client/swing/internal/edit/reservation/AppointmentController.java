@@ -871,16 +871,13 @@ public class AppointmentController extends RaplaGUIComponent
 							endDate.setDate(slotDate);
 					}
 				} else if (evt.getSource() == weekdayChooser) {
-					Calendar calendar = getRaplaLocale().createCalendar();
-					calendar.setTime(startDate.getDate());
-					calendar.set(Calendar.DAY_OF_WEEK, weekdayChooser.getSelectedWeekday());
-					startDate.setDate(calendar.getTime());
+					int weekday = weekdayChooser.getSelectedWeekday();
+					final Date date = DateTools.setWeekday(startDate.getDate(), weekday);
+					startDate.setDate(date);
 				} else if (evt.getSource() == monthChooser) {
-					Calendar calendar = getRaplaLocale().createCalendar();
-					calendar.setTime(startDate.getDate());
-					calendar.set(Calendar.MONTH, monthChooser.getSelectedMonth());
-					calendar.set(Calendar.DAY_OF_MONTH, dayInMonth.getNumber().intValue());
-					startDate.setDate(calendar.getTime());
+					int year = DateTools.getYear( startDate.getDate());
+					final long l = DateTools.toDate(year, monthChooser.getSelectedMonth(), dayInMonth.getNumber().intValue());
+					startDate.setDate(new Date(l));
 				} else if (evt.getSource() == dayChooser) {
 					if (dayChooser.getSelectedIndex() == SAME_DAY) {
 						if (getEnd().before(getStart())) {
@@ -889,16 +886,15 @@ public class AppointmentController extends RaplaGUIComponent
 						}
 					}
 				} else if (evt.getSource() == startDatePeriod && startDatePeriod.getPeriod() != null) {
-					Calendar calendar = getRaplaLocale().createCalendar();
-					calendar.setTime(startDatePeriod.getPeriod().getStart());
+					Date date = startDatePeriod.getPeriod().getStart();
 					if (repeating.isWeekly() || repeating.isMonthly()) {
-						calendar.set(Calendar.DAY_OF_WEEK, weekdayChooser.getSelectedWeekday());
-						if (calendar.getTime().before( startDatePeriod.getPeriod().getStart())) {
-							calendar.add(Calendar.DAY_OF_WEEK, 7);
+						date = DateTools.setWeekday( date, weekdayChooser.getSelectedWeekday());
+						if (date.before( startDatePeriod.getPeriod().getStart())) {
+							date = DateTools.addWeeks( date, 1);
 						}
 					}
 					getLogger().debug("startdate adjusted to period");
-					startDate.setDate(calendar.getTime());
+					startDate.setDate(date);
 					endDatePeriod.setSelectedPeriod(startDatePeriod.getPeriod());
 				} else if (evt.getSource() == endDatePeriod	&& endDatePeriod.getDate() != null) {
 					endDate.setDate(DateTools.subDay(endDatePeriod.getDate()));
@@ -920,19 +916,17 @@ public class AppointmentController extends RaplaGUIComponent
 				if (evt.getSource() == weekdayInMonth && repeating.isMonthly()) {
 					Number weekdayOfMonthValue = weekdayInMonth.getNumber();
 					if (weekdayOfMonthValue != null && repeating.isMonthly()) {
-						Calendar cal = getRaplaLocale().createCalendar();
-						cal.setTime(appointment.getStart());
-						cal.set(Calendar.DAY_OF_WEEK_IN_MONTH,	weekdayOfMonthValue.intValue());
-						startDate.setDate(cal.getTime());
+						final int weekday = weekdayOfMonthValue.intValue();
+						final Date date = DateTools.setWeekday(appointment.getStart(), weekday);
+						startDate.setDate(date);
 					}
 				}
 				if (evt.getSource() == dayInMonth && repeating.isYearly()) {
 					Number dayOfMonthValue = dayInMonth.getNumber();
 					if (dayOfMonthValue != null && repeating.isYearly()) {
-						Calendar cal = getRaplaLocale().createCalendar();
-						cal.setTime(appointment.getStart());
-						cal.set(Calendar.DAY_OF_MONTH,	dayOfMonthValue.intValue());
-						startDate.setDate(cal.getTime());
+						final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(appointment.getStart().getTime());
+						final long l = DateTools.toTime(dateWithoutTimezone.year, dateWithoutTimezone.month, dayOfMonthValue.intValue());
+						startDate.setDate(new Date(l));
 					}
 				}
 
@@ -1092,26 +1086,20 @@ public class AppointmentController extends RaplaGUIComponent
 					dayLabel.setVisible(false);
 					weekdayChooser.setVisible(true);
 					monthChooser.setVisible(false);
-					Calendar calendar = getRaplaLocale().createCalendar();
-					calendar.setTime(start);
-					weekdayChooser.selectWeekday(calendar.get(Calendar.DAY_OF_WEEK));
+					weekdayChooser.selectWeekday(DateTools.getWeekday(start));
 				}
 
 				if (repeating.isYearly()) {
 					dayLabel.setVisible(false);
 					weekdayChooser.setVisible(false);
 					monthChooser.setVisible(true);
-					Calendar cal = getRaplaLocale().createCalendar();
-					cal.setTime(start);
-					monthChooser.selectMonth(cal.get(Calendar.MONTH));
-					int numb = cal.get(Calendar.DAY_OF_MONTH);
+					monthChooser.selectMonth(DateTools.getMonth( start));
+					int numb = DateTools.getDayOfMonth( start );
 					dayInMonth.setNumber(new Integer(numb));
 				}
 
 				if (repeating.isMonthly()) {
-					Calendar cal = getRaplaLocale().createCalendar();
-					cal.setTime(start);
-					int numb = cal.get(Calendar.DAY_OF_WEEK_IN_MONTH);
+					int numb = DateTools.getDayOfWeekInMonth( start );
 					weekdayInMonth.setNumber(new Integer(numb));
 				}
 

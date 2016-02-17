@@ -183,18 +183,13 @@ public class Export2iCalServlet
 
 			//calModel.getReservations(startDate, endDate)
 
-            final java.util.Calendar calendar = raplaLocale.createCalendar();
 
 			// set start Date
-            calendar.setTime(now);
-			calendar.add(java.util.Calendar.DAY_OF_YEAR, -daysBefore);
-			calModel.setStartDate(calendar.getTime());
+			calModel.setStartDate(DateTools.add(now, DateTools.IncrementSize.DAY_OF_YEAR,-daysBefore));
 
 			// set end Date
-			calendar.setTime(now);
-			calendar.add(java.util.Calendar.DAY_OF_YEAR, daysAfter);
-			calModel.setEndDate(calendar.getTime());
-			
+			calModel.setEndDate(DateTools.add(now, DateTools.IncrementSize.DAY_OF_YEAR,daysAfter));
+
 			//debug sysout
 			//System.out.println("startdate - before  "+ calModel.getStartDate() + " - " + daysBefore);
 			//System.out.println("enddate - after "+ calModel.getStartDate() + " - " + daysAfter);
@@ -253,11 +248,9 @@ public class Export2iCalServlet
 		{
 			return firstPluginStartDate;
 		}
-		java.util.Calendar calendar = raplaLocale.createCalendar();
 		long nowInMillis = DateTools.cutDate(new Date()).getTime();
 		long daysSinceStart = (nowInMillis - firstPluginStartDate.getTime()) / DateTools.MILLISECONDS_PER_DAY;
-		calendar.setTimeInMillis(nowInMillis - (daysSinceStart % lastModifiedIntervall) * DateTools.MILLISECONDS_PER_DAY);
-		return calendar.getTime();
+		return new Date(nowInMillis - (daysSinceStart % lastModifiedIntervall) * DateTools.MILLISECONDS_PER_DAY);
 	}
 
 	/**

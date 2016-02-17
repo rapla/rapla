@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -22,7 +23,25 @@ import java.util.TimeZone;
  */
 public abstract class DateTools
 {
+    public static Date setWeekday(Date date, int selectedWeekday)
+    {
+        final int weekday = DateTools.getWeekday(date);
+        int diff = selectedWeekday -weekday;
+        final Date result = DateTools.addDays(date, diff);
+        return result;
+    }
 
+    public enum IncrementSize
+    {
+        MONTH(2),
+        DAY_OF_YEAR(6),
+        WEEK_OF_YEAR(3);
+        IncrementSize(int numValue)
+        {
+            this.numValue = numValue;
+        }
+        final int numValue;
+    }
     public static final int DAYS_PER_WEEK= 7;
     public static final long MILLISECONDS_PER_MINUTE = 1000 * 60;
     public static final long MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * 60;
@@ -510,6 +529,16 @@ public abstract class DateTools
         return parts[1];
     }
 
+    public static Date add(Date date, DateTools.IncrementSize incrementSize, int incrementAmount)
+    {
+        switch ( incrementSize)
+        {
+            case DAY_OF_YEAR:return addDays( date, incrementAmount);
+            case MONTH:return addMonths( date, incrementAmount);
+            case WEEK_OF_YEAR:return addWeeks( date, incrementAmount);
+            default:throw new IllegalArgumentException("unssuported incrementsize");
+        }
+    }
 
     public static class DateWithoutTimezone
    {
@@ -619,6 +648,7 @@ public abstract class DateTools
 		}
 		return max;
    }
+
 
 
    public static Date getFirstWeekday(Date date, int firstWeekday)

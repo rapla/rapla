@@ -224,8 +224,4 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         return calendarOptions.getDaysInWeekview();
     }
 
-    public int getIncrementSize()
-    {
-        return Calendar.WEEK_OF_YEAR;
-    }
 }

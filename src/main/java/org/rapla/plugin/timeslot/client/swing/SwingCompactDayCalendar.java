@@ -219,17 +219,9 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 		        {
 		        	endTime = calendarOptions.getWorktimeEndMinutes() + (calendarOptions.isWorktimeOvernight() ? 24*60:0);
 		        }
-		        
-		        Calendar cal = getRaplaLocale().createCalendar();
-		        cal.setTime ( start );
-		        cal.set( Calendar.HOUR_OF_DAY, startTime/60);
-		        cal.set( Calendar.MINUTE, startTime%60);
-		        
-		        start = cal.getTime();
-		        cal.set( Calendar.HOUR_OF_DAY, endTime/60);
-		        cal.set( Calendar.MINUTE, endTime%60);
-			      
-		        end = cal.getTime();
+
+				start = DateTools.toDateTime( start,new Date(DateTools.toTime( startTime/60, startTime%60, 0)));
+				end = DateTools.toDateTime( start,new Date(DateTools.toTime( endTime/60, endTime%60, 0)));
 		        TimeInterval intervall = new TimeInterval(start,end);
 				return intervall;
 			}
@@ -255,10 +247,9 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 					 int rowIndex = index/columns;
                      Timeslot timeslot = timeslots.get(rowIndex);
                      int time = timeslot.getMinuteOfDay();
-                     Calendar cal = getRaplaLocale().createCalendar();                          
                      int lastMinuteOfDay;
-                     cal.setTime ( block.getStart() );
-                     lastMinuteOfDay = cal.get( Calendar.HOUR_OF_DAY)  * 60 +       cal.get( Calendar.MINUTE);
+					 final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
+					 lastMinuteOfDay = timeWithoutTimezone.hour  * 60 +  timeWithoutTimezone.minute;
                      boolean sameTimeSlot = true;
                      if ( lastMinuteOfDay < time)
                      {
@@ -273,16 +264,12 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                         }
                      }
                      
-                     cal.setTime ( newStart );
                      if ( sameTimeSlot)
                      {
                          time = lastMinuteOfDay;
                      }
-                     
-                     cal.set( Calendar.HOUR_OF_DAY, time /60);
-                     cal.set( Calendar.MINUTE, time %60);
-                        
-                     newStart = cal.getTime();
+					 final long l = DateTools.toTime(time / 60, time % 60, 0);
+					 newStart = DateTools.toDateTime( newStart, new Date(l));
 					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
 					 {
 						 AppointmentBlock appointmentBlock= raplaBlock.getAppointmentBlock();
@@ -383,9 +370,9 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 //        }
     }
 
-    public int getIncrementSize()
+    public DateTools.IncrementSize getIncrementSize()
     {
-    	return Calendar.DATE;
+    	return DateTools.IncrementSize.DAY_OF_YEAR;
     }
 
 

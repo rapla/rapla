@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.Configuration;
@@ -23,7 +24,6 @@ import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Calendar;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -119,7 +119,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
 		        }
 		    } // end of while ()
         }
-        int firstDayOfWeekDefault = Calendar.getInstance().getFirstDayOfWeek();
+        int firstDayOfWeekDefault = DateTools.MONDAY;
 		firstDayOfWeek = config.getChild(FIRST_DAY_OF_WEEK).getValueAsInteger(firstDayOfWeekDefault);
 		
 		daysInWeekview = config.getChild(DAYS_IN_WEEKVIEW).getValueAsInteger( 7 );
@@ -151,6 +151,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
         return config;
     }
 
+    @Deprecated
     public int getWorktimeStart() {
         return mintimeMinutes / 60;
     }
@@ -159,6 +160,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
         return rowsPerHour;
     }
 
+    @Deprecated
     public int getWorktimeEnd() {
         return maxtimeMinutes / 60;
     }

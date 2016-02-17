@@ -69,7 +69,6 @@ public class TimeslotProvider {
 		ArrayList<Timeslot> timeslots = null;
 		if ( config != null)
 		{
-			Calendar cal = locale.createCalendar();
 			SerializableDateTimeFormat format = locale.getSerializableFormat();
 			Configuration[] children = config.getChildren("timeslot");
 			if ( children.length  > 0)
@@ -85,11 +84,12 @@ public class TimeslotProvider {
 					{
 						time =  i + ":00:00";
 					}
-					cal.setTime(format.parseTime( time));
-					int hour = cal.get(Calendar.HOUR_OF_DAY);
+					final Date date = format.parseTime(time);
+					final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(date.getTime());
+					int hour = timeWithoutTimezone.hour;
 					if ( i != 0)
 					{
-						minuteOfDay= hour * 60 + cal.get(Calendar.MINUTE);
+						minuteOfDay= hour * 60 + timeWithoutTimezone.minute;
 					}
 					else
 					{
@@ -97,7 +97,7 @@ public class TimeslotProvider {
 					}
 					if ( name == null)
 					{
-						name = format.formatTime( cal.getTime());
+						name = format.formatTime( date);
 					}
 					Timeslot slot = new Timeslot( name, minuteOfDay);
 					timeslots.add( slot);
@@ -110,12 +110,11 @@ public class TimeslotProvider {
 
 	public static ArrayList<Timeslot> getDefaultTimeslots(RaplaLocale raplaLocale) {
 		ArrayList<Timeslot> timeslots = new ArrayList<Timeslot>();
-		Calendar cal = raplaLocale.createCalendar();
-		cal.setTime(DateTools.cutDate( new Date()));
+		Date date = DateTools.cutDate(new Date());
 		for (int i = 0; i <=23; i++ ) {
     		 int minuteOfDay = i * 60;
-    		 cal.set(Calendar.HOUR_OF_DAY, i);
-    		 String name =raplaLocale.formatTime( cal.getTime());
+			 date = new Date( date.getTime() + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
+    		 String name =raplaLocale.formatTime( date);
     		 //String name = minuteOfDay / 60 + ":" + minuteOfDay%60;
     		 Timeslot slot = new Timeslot(name, minuteOfDay);
     		 timeslots.add(slot);

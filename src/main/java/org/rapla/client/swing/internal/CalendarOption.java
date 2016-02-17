@@ -23,6 +23,7 @@ import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendarview.WeekdayMapper;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarOptions;
@@ -46,7 +47,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 @ExtensionRepeatable({
@@ -210,15 +211,10 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         
         rowsPerHourField.setNumber( new Long(options.getRowsPerHour()));
         
-        Calendar calendar = getRaplaLocale().createCalendar();
         int workTime = options.getWorktimeStartMinutes();
-        calendar.set( Calendar.HOUR_OF_DAY, workTime / 60);
-        calendar.set( Calendar.MINUTE, workTime % 60);
-        worktimeStart.setTime( calendar.getTime() );
+        worktimeStart.setTime(  new Date(DateTools.toTime(workTime / 60, workTime % 60, 0)));
         workTime = options.getWorktimeEndMinutes();
-        calendar.set( Calendar.HOUR_OF_DAY, workTime / 60);
-        calendar.set( Calendar.MINUTE, workTime % 60);
-        worktimeEnd.setTime( calendar.getTime() );
+        worktimeEnd.setTime(  new Date(DateTools.toTime(workTime / 60, workTime % 60, 0)));
         
         for ( int i=0;i<box.length;i++) {
             int weekday = mapper.dayForIndex( i);
@@ -255,14 +251,13 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
             colorBlocks.setValue(  colorValue );
         }
         calendarOptions.addChild( colorBlocks );
-        
-        Calendar calendar = getRaplaLocale().createCalendar();
-        calendar.setTime( worktimeStart.getTime());
-        int worktimeStartHour = calendar.get(Calendar.HOUR_OF_DAY) ;
-        int worktimeStartMinute = calendar.get(Calendar.MINUTE);
-        calendar.setTime( worktimeEnd.getTime());
-        int worktimeEndHour = calendar.get(Calendar.HOUR_OF_DAY) ;
-        int worktimeEndMinute = calendar.get(Calendar.MINUTE);
+        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(worktimeStart.getTime().getTime());
+        int worktimeStartHour = startTime.hour;
+        int worktimeStartMinute = startTime.minute;
+
+        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(worktimeEnd.getTime().getTime());
+        int worktimeEndHour = endTime.hour;
+        int worktimeEndMinute = endTime.minute;
         if ( worktimeStartMinute > 0 || worktimeEndMinute > 0)
         {
         	worktime.setValue(  worktimeStartHour + ":" + worktimeStartMinute + "-" + worktimeEndHour + ":" + worktimeEndMinute );
@@ -307,11 +302,10 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
 	}
 
 	public void dateChanged(DateChangeEvent evt) {
-        Calendar calendar = getRaplaLocale().createCalendar();
-        calendar.setTime( worktimeStart.getTime());
-        int worktimeS = calendar.get(Calendar.HOUR_OF_DAY)*60  + calendar.get(Calendar.MINUTE);
-        calendar.setTime( worktimeEnd.getTime());
-        int worktimeE = calendar.get(Calendar.HOUR_OF_DAY)*60  + calendar.get(Calendar.MINUTE);
+        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(worktimeEnd.getTime().getTime());
+        int worktimeS = startTime.hour*60  + startTime.minute;
+        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(worktimeEnd.getTime().getTime());
+        int worktimeE = endTime.hour * 60 + endTime.minute;
         worktimeE = (worktimeE == 0)?24*60:worktimeE;
         boolean overnight = worktimeS >= worktimeE|| worktimeE == 24*60;
 		worktimeEndError.setVisible( overnight);

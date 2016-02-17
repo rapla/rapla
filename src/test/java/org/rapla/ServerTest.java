@@ -642,12 +642,13 @@ public class ServerTest
         Appointment appointment =  mutableReseravation.getAppointments()[0];
 
         RaplaLocale loc = getRaplaLocale();
-        Calendar cal = loc.createCalendar();
-        cal.set(Calendar.DAY_OF_WEEK,Calendar.MONDAY);
+        final Date today = raplaFacade2.today();
+        final int weekday = DateTools.getWeekday(today);
+        Date date = DateTools.addDays( today,(weekday - DateTools.MONDAY - 1) %7 + 1);
         Date startTime = loc.toTime( 17,0,0);
-        Date startTime1 = loc.toDate(cal.getTime(), startTime);
+        Date startTime1 = loc.toDate(date, startTime);
         Date endTime = loc.toTime( 19,0,0);
-        Date endTime1 = loc.toDate(cal.getTime(), endTime);
+        Date endTime1 = loc.toDate(date, endTime);
         appointment.move(startTime1,endTime1);
 
         raplaFacade2.store( mutableReseravation );

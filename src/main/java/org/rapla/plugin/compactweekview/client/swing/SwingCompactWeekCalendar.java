@@ -122,12 +122,8 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
             @Override
             public void selectionChanged(Date start, Date end) {
                 if ( end.getTime()- start.getTime() == DateTools.MILLISECONDS_PER_DAY ) {
-                    Calendar cal = getRaplaLocale().createCalendar();
-                    cal.setTime ( start );
                     int worktimeStartMinutes = getCalendarOptions().getWorktimeStartMinutes();
-                    cal.set( Calendar.HOUR_OF_DAY, worktimeStartMinutes / 60);
-					cal.set( Calendar.MINUTE, worktimeStartMinutes%60);
-                    start = cal.getTime();
+                    start = DateTools.toDateTime(start,new Date(DateTools.toTime(worktimeStartMinutes/60, worktimeStartMinutes%60, 0)));
                     end = new Date ( start.getTime() + 30 * DateTools.MILLISECONDS_PER_MINUTE );
                 }
             	super.selectionChanged(start, end);
@@ -237,9 +233,9 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 //        }
     }
 
-    public int getIncrementSize()
+    public DateTools.IncrementSize getIncrementSize()
     {
-        return Calendar.WEEK_OF_YEAR;
+        return DateTools.IncrementSize.WEEK_OF_YEAR;
     }
 
   

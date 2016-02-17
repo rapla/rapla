@@ -154,9 +154,10 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
         view.setToDate(model.getSelectedDate());
     }
 
-    public int getIncrementSize()
+    @Override
+    public DateTools.IncrementSize getIncrementSize()
     {
-        return Calendar.MONTH;
+        return DateTools.IncrementSize.MONTH;
     }
 
 

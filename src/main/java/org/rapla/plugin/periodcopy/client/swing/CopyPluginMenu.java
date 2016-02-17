@@ -219,17 +219,13 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 
 	private Date getNewStartWeekly(Date oldStart, Date destStart) {
 		Date newStart;
-		Calendar calendar = getRaplaLocale().createCalendar();
-		calendar.setTime( oldStart);
-		int weekday = calendar.get(Calendar.DAY_OF_WEEK);
-		calendar = getRaplaLocale().createCalendar();
-		calendar.setTime(destStart);
-		calendar.set( Calendar.DAY_OF_WEEK, weekday);
-		if ( calendar.getTime().before( destStart)) 
+		int weekday = DateTools.getWeekday( oldStart);
+		Date date = DateTools.setWeekday(destStart, weekday);
+		if ( date.before( destStart))
 		{
-		    calendar.add( Calendar.DATE, 7);
+			date = DateTools.addWeeks( date, 1);
 		}
-		Date firstOccOfWeekday  = calendar.getTime();
+		Date firstOccOfWeekday  = date;
 		newStart = getRaplaLocale().toDate(  firstOccOfWeekday, oldStart );
 		return newStart;
 	}
