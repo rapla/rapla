@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
+import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -84,7 +85,7 @@ import org.rapla.storage.UpdateResult.Remove;
 public abstract class AbstractCachableOperator implements StorageOperator {
 
 	final protected RaplaLocale raplaLocale;
-	
+
 	final protected LocalCache cache;
 	final protected RaplaResources i18n;
 	final protected Logger logger;
@@ -692,6 +693,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			//		parent.replace( category);
 			//	}
 			//}
+
 			cache.put(entity);
 			updatedEntities.add(entity);
 		}
@@ -794,5 +796,6 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		final FunctionFactory functionFactory = functionFactoryMap.get(functionName);
 		return functionFactory;
 	}
+
 
 }

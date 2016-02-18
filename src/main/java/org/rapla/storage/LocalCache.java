@@ -13,6 +13,7 @@
 package org.rapla.storage;
 
 import org.rapla.components.util.Assert;
+import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -24,6 +25,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
@@ -42,6 +45,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,12 +58,13 @@ public class LocalCache implements EntityResolver
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
     Set<String> disabledConflictApp1 = new HashSet<String>();
     Set<String> disabledConflictApp2 = new HashSet<String>();
-    Map<String,Date> conflictLastChanged = new HashMap<String,Date>();
+    Map<String, Date> conflictLastChanged = new HashMap<String, Date>();
 
     Map<String, DynamicTypeImpl> dynamicTypes;
     Map<String, UserImpl> users;
     Map<String, AllocatableImpl> resources;
     Map<String, ReservationImpl> reservations;
+    Map<ReferenceInfo<Allocatable>, GraphNode> graph = new LinkedHashMap<ReferenceInfo<Allocatable>, GraphNode>();
 
     private String clientUserId;
     private final PermissionController permissionController;
@@ -101,12 +106,11 @@ public class LocalCache implements EntityResolver
         return removeWithId(entity.getReference());
     }
 
-
     /** WARNING child entities will not be removed if you use this method */
     public boolean removeWithId(ReferenceInfo info)
     {
         String entityId = info.getId();
-        Class<? extends Entity> typeClass  =info.getType();
+        Class<? extends Entity> typeClass = info.getType();
         boolean bResult = true;
         bResult = entities.remove(entityId) != null;
         Map<String, ? extends Entity> entitySet = getMap(typeClass);
@@ -120,6 +124,10 @@ public class LocalCache implements EntityResolver
         {
             disabledConflictApp1.remove(entityId);
             disabledConflictApp2.remove(entityId);
+        }
+        if (typeClass == Allocatable.class)
+        {
+            removeDependencies(info);
         }
         return bResult;
     }
@@ -177,6 +185,10 @@ public class LocalCache implements EntityResolver
             }
         }
 
+        if (entity.getTypeClass() == Allocatable.class)
+        {
+            updateDependencies( entity );
+        }
         // first remove the old children from the map
         Entity oldEntity = entities.get(entity);
         if (oldEntity != null && oldEntity instanceof ParentEntity)
@@ -214,10 +226,10 @@ public class LocalCache implements EntityResolver
                 disabledConflictApp2.add(entityId);
             }
             final Date lastChanged = conflict.getLastChanged();
-            conflictLastChanged.put( entityId, lastChanged);
-            if ( conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
+            conflictLastChanged.put(entityId, lastChanged);
+            if (conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
             {
-                conflictLastChanged.remove( entityId);
+                conflictLastChanged.remove(entityId);
             }
         }
         else
@@ -272,6 +284,7 @@ public class LocalCache implements EntityResolver
         disabledConflictApp1.clear();
         disabledConflictApp2.clear();
         conflictLastChanged.clear();
+        graph.clear();
     }
 
     public CategoryImpl getSuperCategory()
@@ -317,17 +330,17 @@ public class LocalCache implements EntityResolver
         final CategoryImpl superCategory = getSuperCategory();
         result.addAll(CategoryImpl.getRecursive(superCategory));
         result.addAll(getDynamicTypes());
-        for ( User user:getUsers())
+        for (User user : getUsers())
         {
-            boolean add =forUser == null || forUser.isAdmin() || forUser.getId().equals( user.getId());
-            if ( ! add )
+            boolean add = forUser == null || forUser.isAdmin() || forUser.getId().equals(user.getId());
+            if (!add)
             {
                 final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(forUser);
-                if ( adminGroups.size() > 0)
+                if (adminGroups.size() > 0)
                 {
-                    for ( Category adminGroup: adminGroups)
+                    for (Category adminGroup : adminGroups)
                     {
-                        if (((UserImpl)user).isMemberOf( adminGroup))
+                        if (((UserImpl) user).isMemberOf(adminGroup))
                         {
                             add = true;
                             break;
@@ -335,9 +348,8 @@ public class LocalCache implements EntityResolver
 
                     }
                 }
-
             }
-            if (  add)
+            if (add)
             {
                 result.add(user);
             }
@@ -371,17 +383,15 @@ public class LocalCache implements EntityResolver
         return result;
     }
 
-    @Override
-    public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
+    @Override public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
     {
-        final Class<T> type = (Class<T>)referenceInfo.getType();
-        return tryResolve( referenceInfo.getId(), type);
+        final Class<T> type = (Class<T>) referenceInfo.getType();
+        return tryResolve(referenceInfo.getId(), type);
     }
 
-    @Override
-    public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
+    @Override public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
     {
-        final Class<T> type = (Class<T>)referenceInfo.getType();
+        final Class<T> type = (Class<T>) referenceInfo.getType();
         return resolve(referenceInfo.getId(), type);
     }
 
@@ -446,11 +456,11 @@ public class LocalCache implements EntityResolver
         Date origLastChanged = conflict.getLastChanged();
 
         Date lastChanged = origLastChanged;
-        if ( lastChanged == null || (lastChangedInCache != null && lastChangedInCache.after( lastChanged)) )
+        if (lastChanged == null || (lastChangedInCache != null && lastChangedInCache.after(lastChanged)))
         {
             lastChanged = lastChangedInCache;
         }
-        if ( lastChanged == null)
+        if (lastChanged == null)
         {
             lastChanged = new Date();
         }
@@ -461,8 +471,8 @@ public class LocalCache implements EntityResolver
 
             final ReferenceInfo<Reservation> reservation1Id = conflict.getReservation1();
             final ReferenceInfo<Reservation> reservation2Id = conflict.getReservation2();
-            Reservation reservation1 = tryResolve( reservation1Id);
-            Reservation reservation2 = tryResolve( reservation2Id);
+            Reservation reservation1 = tryResolve(reservation1Id);
+            Reservation reservation2 = tryResolve(reservation2Id);
             final boolean appointment1Editable = reservation1 != null && permissionController.canModify(reservation1, user);
             conflict.setAppointment1Editable(appointment1Editable);
             final boolean appointment2Editable = reservation2 != null && permissionController.canModify(reservation2, user);
@@ -493,22 +503,175 @@ public class LocalCache implements EntityResolver
         return (Collection) dynamicTypes.values();
     }
 
-
     public Collection<Conflict> getDisabledConflicts()
     {
         List<Conflict> disabled = new ArrayList<Conflict>();
         for (String conflictId : getConflictIds())
         {
-            Date lastChanged = conflictLastChanged.get( conflictId);
-            if ( lastChanged == null)
+            Date lastChanged = conflictLastChanged.get(conflictId);
+            if (lastChanged == null)
             {
                 lastChanged = new Date();
             }
-            Conflict conflict = new ConflictImpl( conflictId, lastChanged, lastChanged);
-            Conflict conflictClone = fillConflictDisableInformation( null, conflict);
+            Conflict conflict = new ConflictImpl(conflictId, lastChanged, lastChanged);
+            Conflict conflictClone = fillConflictDisableInformation(null, conflict);
             disabled.add(conflictClone);
         }
         return disabled;
     }
+
+    static class GraphNode
+    {
+        private final ReferenceInfo<Allocatable> alloc;
+
+        public GraphNode(ReferenceInfo<Allocatable> alloc)
+        {
+            this.alloc = alloc;
+        }
+
+        public void removeConnection(GraphNode node)
+        {
+            connections.remove(node);
+        }
+
+        public void addConnection(GraphNode node, ConnectionType type)
+        {
+            connections.put(node, type);
+        }
+
+        enum ConnectionType
+        {
+            BelongsTo,
+            Parent,
+            Packages,
+            IsInPackage
+        }
+
+        Map<GraphNode, ConnectionType> connections = new LinkedHashMap<GraphNode, ConnectionType>();
+
+        Collection<GraphNode> getConnectionNodes()
+        {
+            return connections.keySet();
+        }
+
+        @Override public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append( alloc.getId() );
+            builder.append( " ");
+            for (Map.Entry<GraphNode,ConnectionType> entry:connections.entrySet())
+            {
+                builder.append( entry.getValue() + " " + entry.getKey().alloc.getId());
+            }
+            return builder.toString();
+        }
+    }
+
+    private void updateDependencies(Entity entity)
+    {
+        if (entity instanceof Allocatable)
+        {
+            Allocatable alloc = (Allocatable) entity;
+            ReferenceInfo<Allocatable> ref = alloc.getReference();
+            removeDependencies(ref);
+            final Classification classification = alloc.getClassification();
+            final DynamicType type = classification.getType();
+            final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
+            if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
+            {
+                final Allocatable belongsToValue = (Allocatable) classification.getValue(belongsToAttribute);
+                if (belongsToValue != null)
+                {
+                    final GraphNode node = getOrCreate(ref);
+                    ReferenceInfo<Allocatable> belongsToRef = belongsToValue.getReference();
+                    final GraphNode node2 = getOrCreate(belongsToRef);
+                    node.addConnection(node2, GraphNode.ConnectionType.BelongsTo);
+                    node2.addConnection(node, GraphNode.ConnectionType.Parent);
+                }
+            }
+            final Attribute packagesToAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
+            if (packagesToAttribute != null && classification.getValues(packagesToAttribute) != null)
+            {
+                final Collection<Object> values = classification.getValues(packagesToAttribute);
+                for (Object object : values)
+                {
+                    Allocatable target = (Allocatable) object;
+                    if (target != null)
+                    {
+                        final GraphNode node = getOrCreate(ref);
+                        ReferenceInfo<Allocatable> packages = target.getReference();
+                        final GraphNode node2 = getOrCreate(packages);
+                        node.addConnection(node2, GraphNode.ConnectionType.Packages);
+                        node2.addConnection(node, GraphNode.ConnectionType.IsInPackage);
+                    }
+                }
+            }
+        }
+    }
+
+    private GraphNode getOrCreate(ReferenceInfo<Allocatable> allocatable)
+    {
+        GraphNode graphNode = graph.get(allocatable);
+        if (graphNode == null)
+        {
+            graphNode = new GraphNode(allocatable);
+            graph.put(allocatable, graphNode);
+        }
+        return graphNode;
+    }
+
+    private void removeDependencies(ReferenceInfo<Allocatable> referenceInfo)
+    {
+        GraphNode oldNode = graph.get(referenceInfo);
+        if (oldNode != null)
+        {
+            graph.remove(referenceInfo);
+            final Collection<GraphNode> connectionNodes = oldNode.getConnectionNodes();
+            for (GraphNode connection : connectionNodes)
+            {
+                connection.removeConnection(oldNode);
+            }
+        }
+    }
+
+    public Set<ReferenceInfo<Allocatable>> getDependent(final ReferenceInfo<Allocatable> allocatableRef)
+    {
+        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
+        if (allocatableRef != null)
+        {
+            GraphNode node = graph.get(allocatableRef);
+            if (node != null)
+            {
+                fillDependent(node, allocatableIds, 0, true);
+            }
+        }
+        return allocatableIds;
+    }
+
+    private void fillDependent(GraphNode node, final Set<ReferenceInfo<Allocatable>> dependentAllocatables, final int depth, boolean goDown)
+    {
+        if (depth > 20)
+        {
+            throw new IllegalStateException("Cycle in dependencies detected");
+        }
+        if (!dependentAllocatables.add( node.alloc))
+        {
+            return;
+        }
+        for (Map.Entry<GraphNode, GraphNode.ConnectionType> entry : node.connections.entrySet())
+        {
+            GraphNode.ConnectionType type = entry.getValue();
+            GraphNode connectionNode = entry.getKey();
+            if (goDown && (type == GraphNode.ConnectionType.Packages || type == GraphNode.ConnectionType.Parent))
+            {
+                fillDependent(connectionNode, dependentAllocatables, depth + 1, true);
+            }
+            if (type == GraphNode.ConnectionType.IsInPackage || type == GraphNode.ConnectionType.BelongsTo)
+            {
+                fillDependent(connectionNode, dependentAllocatables, depth + 1, false);
+            }
+        }
+    }
+
 
 }

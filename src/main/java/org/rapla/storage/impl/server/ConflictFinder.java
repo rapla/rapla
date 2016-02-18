@@ -595,16 +595,7 @@ class ConflictFinder {
 			}
 		}
 		
-		for ( ReferenceInfo<Allocatable> alloc: removedAllocatables)
-		{
-		    Map<ReferenceInfo<Conflict>,Conflict> sortedSet = conflictMap.get( alloc);
-		    if ( sortedSet != null && !sortedSet.isEmpty())
-		    {
-		        logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
-		    }
-		    conflictMap.remove( alloc);
-		}
-		
+
     	Set<Conflict> added = new HashSet<Conflict>();
     	// this will recalculate the conflicts for that resource and the chan;ged appointments
     	for ( Map.Entry<ReferenceInfo<Allocatable>, AllocationChange> entry:toUpdate.entrySet())
@@ -714,8 +705,18 @@ class ConflictFinder {
 	    		}
     		}
     	}
-    	
-    	// we update the conflict with the new appointment references
+        for ( ReferenceInfo<Allocatable> alloc: removedAllocatables)
+        {
+            Map<ReferenceInfo<Conflict>,Conflict> sortedSet = conflictMap.get( alloc);
+            if ( sortedSet != null && !sortedSet.isEmpty())
+            {
+                logger.error("Removing non empty conflict map for resource " +  alloc + " Appointments:" + sortedSet);
+            }
+            conflictMap.remove( alloc);
+        }
+
+
+        // we update the conflict with the new appointment references
     	ArrayList<Conflict> updateList = new ArrayList<Conflict>( toUpdateConflicts.keySet());
     	for ( Conflict oldConflict:updateList)
     	{

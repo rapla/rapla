@@ -25,6 +25,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -426,7 +427,15 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         Conflict conflict = this;
         StringBuffer buf = new StringBuffer();
         buf.append("Conflict for ");
-        buf.append(conflict.getAllocatable());
+        try
+        {
+            final Allocatable allocatable = conflict.getAllocatable();
+            buf.append(allocatable);
+        }
+        catch ( UnresolvableReferenceExcpetion ex)
+        {
+            buf.append( conflict.getAllocatableId());
+        }
         buf.append(" ");
         buf.append(conflict.getAppointment1());
         buf.append(" ");

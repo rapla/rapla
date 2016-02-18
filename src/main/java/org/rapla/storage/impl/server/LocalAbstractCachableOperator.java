@@ -114,7 +114,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -138,7 +137,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 {
     InitStatus connectStatus = InitStatus.Disconnected;
     AppointmentMapClass appointmentBindings;
-
     protected enum InitStatus
     {
         Disconnected,
@@ -932,57 +930,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         checkNoDependencies(evt, store);
         checkVersions(storeObjects);
     }
-
-    class TimestampComparator implements Comparator<LastChangedTimestamp>
-    {
-        public int compare(LastChangedTimestamp o1, LastChangedTimestamp o2)
-        {
-            if (o1 == o2)
-            {
-                return 0;
-            }
-            Date d1 = o1.getLastChanged();
-            Date d2 = o2.getLastChanged();
-            // if d1 is null and d2 is not then d1 is before d2
-            if (d1 == null && d2 != null)
-            {
-                return -1;
-            }
-            // if d2 is null and d1 is not then d2 is before d1
-            if (d1 != null && d2 == null)
-            {
-                return 1;
-            }
-            if (d1 != null && d2 != null)
-            {
-                int result = d1.compareTo(d2);
-                if (result != 0)
-                {
-                    return result;
-                }
-            }
-            String id1 = (o1 instanceof Entity) ? ((Entity) o1).getId() : o1.toString();
-            String id2 = (o2 instanceof Entity) ? ((Entity) o2).getId() : o2.toString();
-            if (id1 == null)
-            {
-                if (id2 == null)
-                {
-                    throw new IllegalStateException("Can't compare two entities without ids");
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-            else if (id2 == null)
-            {
-                return 1;
-            }
-            return id1.compareTo(id2);
-        }
-
-    }
-
     protected void initIndizes()
     {
         deleteUpdateSet = new DualTreeBidiMap<String, DeleteUpdateEntry>();
@@ -1047,7 +994,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
-        initIndizesForDependencies(cache.getAllocatables());
         scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 3;
         scheduleConnectedTasks(new Command()
@@ -1273,7 +1219,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Set<ReferenceInfo<Conflict>> conflictsToDelete = getConflictsToDelete(conflictChanges);
         removeConflictsFromDatabase(conflictsToDelete);
         removeConflictsFromCache(conflictsToDelete);
-        updateIndizesForDependencies(result);
         return calculatedConflictChanges;
 
         //      Collection<Change> changes = result.getOperations( UpdateResult.Change.class);
@@ -1756,28 +1701,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void updateBindings(Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate, Reservation reservation, Appointment app, boolean remove)
     {
 
-        Set<Allocatable> allocatablesToProcess = new HashSet<Allocatable>();
+        Set<ReferenceInfo<Allocatable>> allocatablesToProcess = new HashSet<ReferenceInfo<Allocatable>>();
         allocatablesToProcess.add(null);
         final ReferenceInfo<Appointment> appRef = app.getReference();
         if (reservation != null)
         {
-            if (remove)
-            {
-                final Collection<ReferenceInfo<Allocatable>> ids = ((ReservationImpl) reservation).getAllocatableIdsFor(app);
-                for (ReferenceInfo<Allocatable> id : ids)
-                {
-                    final Allocatable allocatable = tryResolve(id);
-                    if (allocatable != null)
-                    {
-                        allocatablesToProcess.add(allocatable);
-                    }
-                }
-            }
-            else
-            {
-                Allocatable[] allocatablesFor = reservation.getAllocatablesFor(app);
-                allocatablesToProcess.addAll(Arrays.asList(allocatablesFor));
-            }
+            final Collection<ReferenceInfo<Allocatable>> allocatableIdsFor = ((ReservationImpl) reservation).getAllocatableIdsFor(app);
+            allocatablesToProcess.addAll(allocatableIdsFor);
             // This double check is very imperformant and will be removed in the future, if it doesnt show in test runs
             //			if ( remove)
             //			{
@@ -1808,16 +1738,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             getLogger().error("Appointment without reservation found " + app + " ignoring.");
         }
 
-        for (Allocatable allocatable : allocatablesToProcess)
+        for (ReferenceInfo<Allocatable> allocatableRef : allocatablesToProcess)
         {
             AllocationChange updateSet;
-            if (allocatable != null)
+            if (allocatableRef != null)
             {
-                updateSet = toUpdate.get(allocatable);
+                updateSet = toUpdate.get(allocatableRef);
                 if (updateSet == null)
                 {
                     updateSet = new AllocationChange();
-                    toUpdate.put(allocatable.getReference(), updateSet);
+                    toUpdate.put(allocatableRef, updateSet);
                 }
             }
             else
@@ -1826,7 +1756,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             if (remove)
             {
-                appointmentBindings.removeAppointmentBinding(app, allocatable);
+                appointmentBindings.removeAppointmentBinding(app, allocatableRef);
                 if (updateSet != null)
                 {
                     updateSet.toRemove.add(app);
@@ -1834,7 +1764,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             else
             {
-                appointmentBindings.addAppointmentBinding(app, allocatable);
+                appointmentBindings.addAppointmentBinding(app, allocatableRef);
                 if (updateSet != null)
                 {
                     updateSet.toChange.add(app);
@@ -1848,8 +1778,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /** returs all appointments for the allocatable and all groupMembers and belongsTo*/
     protected SortedSet<Appointment> getAppointments(Allocatable allocatable)
     {
-        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
-        fillDependent(allocatable, allocatableIds);
+        final ReferenceInfo<Allocatable> reference = allocatable != null ? allocatable.getReference() : null;
+        Set<ReferenceInfo<Allocatable>> allocatableIds = cache.getDependent(reference);
         if (allocatableIds.size() == 0)
         {
             SortedSet<Appointment> s = appointmentBindings.getAppointments(null);
@@ -1891,13 +1821,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 for (Appointment app : ((ReservationImpl) r).getAppointmentList())
                 {
-                    Reservation reservation = app.getReservation();
-                    Allocatable[] allocatables = reservation.getAllocatablesFor(app);
+                    ReservationImpl reservation = (ReservationImpl)app.getReservation();
+                    Collection<ReferenceInfo<Allocatable>> allocatables = reservation.getAllocatableIdsFor(app);
                     {
-                        final Allocatable alloc = null;
+                        final ReferenceInfo<Allocatable> alloc = null;
                         addAppointmentBinding(app, alloc);
                     }
-                    for (Allocatable alloc : allocatables)
+                    for (ReferenceInfo<Allocatable> alloc : allocatables)
                     {
                         addAppointmentBinding(app, alloc);
                     }
@@ -1905,9 +1835,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
 
-        private void removeAppointmentBinding(Appointment app, Allocatable alloc)
+        private void removeAppointmentBinding(Appointment app, ReferenceInfo<Allocatable> allocationId)
         {
-            ReferenceInfo<Allocatable> allocationId = alloc != null ? alloc.getReference() : null;
             Collection<Appointment> appointmentSet = appointmentMap.get(allocationId);
             if (appointmentSet == null)
             {
@@ -1946,9 +1875,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
 
-        private void addAppointmentBinding(Appointment appRef, Allocatable alloc)
+        private void addAppointmentBinding(Appointment appRef, ReferenceInfo<Allocatable> allocationId)
         {
-            ReferenceInfo<Allocatable> allocationId = alloc != null ? alloc.getReference() : null;
             SortedSet<Appointment> set = appointmentMap.get(allocationId);
             if (set == null)
             {
@@ -3532,17 +3460,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, "resource", groupsCategory, store);
         setName(resourceType.getName(), "resource");
-        add(store, resourceType);
+        addDependencies(store, resourceType);
         Assert.isTrue(
                 DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE.equals(resourceType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE)));
 
         DynamicTypeImpl personType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, "person", groupsCategory, store);
         setName(personType.getName(), "person");
-        add(store, personType);
+        addDependencies(store, personType);
 
         DynamicTypeImpl eventType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, "event", groupsCategory, store);
         setName(eventType.getName(), "event");
-        add(store, eventType);
+        addDependencies(store, eventType);
 
         UserImpl admin = new UserImpl(now, now);
         admin.setUsername("admin");
@@ -3577,7 +3505,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
-    private void add(EntityStore list, DynamicTypeImpl type)
+    private void addDependencies(EntityStore list, DynamicTypeImpl type)
     {
         list.put(type);
         for (Attribute att : type.getAttributes())
@@ -3808,202 +3736,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /*
      * Dependencies for belongsTo and package
      */
-    private final Map<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>> reversedBelongsToMap = new HashMap<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>>();
-    private final Map<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>> reversedPackage = new HashMap<ReferenceInfo<Allocatable>, Collection<ReferenceInfo<Allocatable>>>();
 
-    private void add(Entity entity)
-    {
-        if (entity instanceof Allocatable)
-        {
-            Allocatable alloc = (Allocatable) entity;
-            final Classification classification = alloc.getClassification();
-            final DynamicType type = classification.getType();
-            final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
-            if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
-            {
-                final Allocatable belongsToValue = (Allocatable) classification.getValue(belongsToAttribute);
-                Collection<ReferenceInfo<Allocatable>> collection = reversedBelongsToMap.get(belongsToValue);
-                if (collection == null)
-                {
-                    collection = new HashSet<ReferenceInfo<Allocatable>>();
-                    reversedBelongsToMap.put(belongsToValue.getReference(), collection);
-                }
-                collection.add(alloc.getReference());
-            }
-            final Attribute packagesToAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
-            if (packagesToAttribute != null && classification.getValues(packagesToAttribute) != null)
-            {
-                final Collection<Object> values = classification.getValues(packagesToAttribute);
-                for (Object object : values)
-                {
-                    Allocatable target = (Allocatable) object;
-                    Collection<ReferenceInfo<Allocatable>> collection = reversedPackage.get(target.getReference());
-                    if (collection == null)
-                    {
-                        collection = new HashSet<ReferenceInfo<Allocatable>>();
-                        reversedPackage.put(target.getReference(), collection);
-                    }
-                    collection.add(alloc.getReference());
-                }
-            }
-        }
-    }
 
-    private void remove(Entity entity)
-    {
-        if (entity instanceof Allocatable)
-        {
-            final Allocatable alloc = (Allocatable) entity;
-            final Classification classification = alloc.getClassification();
-            final DynamicType type = classification.getType();
-            final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
-            if (belongsToAttribute != null && ((ClassificationImpl)classification).getValueUnresolvedString(belongsToAttribute) != null)
-            {
-                String belongsToId = ((ClassificationImpl)classification).getValueUnresolvedString(belongsToAttribute);
-                ReferenceInfo<Allocatable> belongsTo = new ReferenceInfo<>(belongsToId, Allocatable.class);
-                final Collection<ReferenceInfo<Allocatable>> collection = reversedBelongsToMap.get(belongsTo);
-                Assert.notNull(collection);
-                final boolean removed = collection.remove(alloc.getReference());
-                Assert.isTrue(removed);
-            }
-            final Attribute packageAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
-            if (packageAttribute != null && ((ClassificationImpl)classification).getValuesUnresolvedStrings(packageAttribute) != null)
-            {
-                final Collection<String> values = ((ClassificationImpl)classification).getValuesUnresolvedStrings(packageAttribute);
-                for (String objectId : values)
-                {
-                    ReferenceInfo<Allocatable> packageAlloc = new ReferenceInfo<Allocatable>(objectId, Allocatable.class);
-                    final Collection<ReferenceInfo<Allocatable>> collection = reversedPackage.get(packageAlloc);
-                    Assert.notNull(collection);
-                    final boolean removed = collection.remove(alloc.getReference());
-                    Assert.isTrue(removed);
-                }
-            }
-        }
-    }
-
-    protected final void initIndizesForDependencies(Collection<? extends Entity> entities)
-    {
-        for (Entity entity : entities)
-        {
-            add(entity);
-        }
-    }
-
-    private final void updateIndizesForDependencies(UpdateResult updateResult)
-    {
-        final Iterable<UpdateOperation> operations = updateResult.getOperations();
-        for (UpdateOperation<Entity> operation : operations)
-        {
-            if (operation instanceof Add)
-            {
-                final Entity lastKnown = updateResult.getLastKnown(operation.getReference());
-                add(lastKnown);
-            }
-            else if (operation instanceof Change)
-            {
-                final Entity lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(operation.getReference());
-                remove(lastEntryBeforeUpdate);
-                final Entity lastKnown = updateResult.getLastKnown(operation.getReference());
-                add(lastKnown);
-            }
-            else if (operation instanceof Remove)
-            {
-                final Entity lastEntryBeforeUpdate = updateResult.getLastEntryBeforeUpdate(operation.getReference());
-                remove(lastEntryBeforeUpdate);
-            }
-            else
-            {
-                logger.warn("unknown operation " + operation);
-            }
-        }
-    }
-
-    private void fillDependent(final Allocatable allocatable, final Set<ReferenceInfo<Allocatable>> dependentAllocatables)
-    {
-        final ReferenceInfo<Allocatable> reference = allocatable != null ? allocatable.getReference() : null;
-        fillDependent(reference, dependentAllocatables, true, 0);
-        fillDependent(reference, dependentAllocatables, false, 0);
-    }
-
-    private void fillDependent(final ReferenceInfo<Allocatable> allocatableReference, final Set<ReferenceInfo<Allocatable>> dependentAllocatables, boolean downwards, final int depth)
-    {
-        if (depth > 20)
-        {
-            throw new IllegalStateException("Cycle in dependencies detected");
-        }
-        if (allocatableReference != null)
-        {
-            final Allocatable allocatable = resolve(allocatableReference);
-            if (downwards)
-            {
-                final Collection<ReferenceInfo<Allocatable>> collection = reversedBelongsToMap.get(allocatableReference);
-                if (collection != null)
-                {
-                    for (ReferenceInfo<Allocatable> alloc : collection)
-                    {
-                        if (dependentAllocatables.add(alloc))
-                        {
-                            fillDependent(alloc, dependentAllocatables, true, depth + 1);
-                        }
-                    }
-                }
-                final Classification classification = allocatable.getClassification();
-                final DynamicType type = classification.getType();
-                final Attribute packagesAttribute = ((DynamicTypeImpl)type).getPackagesAttribute();
-                if (packagesAttribute != null)
-                {
-                    final Collection<Object> values = classification.getValues(packagesAttribute);
-                    if(values != null)
-                    {
-                        for (Object target : values)
-                        {
-                            ReferenceInfo<Allocatable> alloc = ((Allocatable)target).getReference();
-                            fillDependent(alloc, dependentAllocatables, true, depth + 1);
-                            fillDependent(alloc, dependentAllocatables, false, depth + 1);
-                        }
-                    }
-                }
-            }
-            {
-                if (dependentAllocatables.add(allocatableReference))
-                {
-                    final Classification classification = allocatable.getClassification();
-                    final Attribute belongsToAttribute = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
-                    if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
-                    {
-                        final ReferenceInfo<Allocatable> parent = ((Allocatable) classification.getValue(belongsToAttribute)).getReference();
-                        fillDependent(parent, dependentAllocatables, false, depth + 1);
-                    }
-
-                    final Collection<ReferenceInfo<Allocatable>> collection = reversedPackage.get(allocatableReference);
-                    if (collection != null)
-                    {
-                        for (ReferenceInfo<Allocatable> alloc : collection)
-                        {
-                            dependentAllocatables.add(alloc);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    public List<Allocatable> queryDependent(Collection<Allocatable> allocatables)
-    {
-        Set<ReferenceInfo<Allocatable>> ids = new LinkedHashSet<>();
-        for (Allocatable allocatable : allocatables)
-        {
-            fillDependent(allocatable, ids);
-        }
-        final ArrayList<Allocatable> result = new ArrayList<Allocatable>();
-        for (ReferenceInfo<Allocatable> id : ids)
-        {
-            result.add(resolve(id));
-        }
-        return result;
-    }
-    
     @Override
     public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
