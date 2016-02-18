@@ -12,8 +12,10 @@
 /rapla.ks
 /rapla.pkcs7
 /RAPLA-INSTALLATION.txt
+/jetty.home_IS_UNDEFINED
 /certificate/
 /target/
+/parent/rapla-parent.iml
 /.settings/
 /.idea/
 /.factorypath

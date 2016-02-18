@@ -1779,7 +1779,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected SortedSet<Appointment> getAppointments(Allocatable allocatable)
     {
         final ReferenceInfo<Allocatable> reference = allocatable != null ? allocatable.getReference() : null;
-        Set<ReferenceInfo<Allocatable>> allocatableIds = cache.getDependent(reference);
+        Set<ReferenceInfo<Allocatable>> allocatableIds = cache.getDependentRef(reference);
         if (allocatableIds.size() == 0)
         {
             SortedSet<Appointment> s = appointmentBindings.getAppointments(null);

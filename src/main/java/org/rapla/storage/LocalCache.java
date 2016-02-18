@@ -187,7 +187,7 @@ public class LocalCache implements EntityResolver
 
         if (entity.getTypeClass() == Allocatable.class)
         {
-            updateDependencies( entity );
+            updateDependencies(entity);
         }
         // first remove the old children from the map
         Entity oldEntity = entities.get(entity);
@@ -557,11 +557,11 @@ public class LocalCache implements EntityResolver
         @Override public String toString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.append( alloc.getId() );
-            builder.append( " ");
-            for (Map.Entry<GraphNode,ConnectionType> entry:connections.entrySet())
+            builder.append(alloc.getId());
+            builder.append(" ");
+            for (Map.Entry<GraphNode, ConnectionType> entry : connections.entrySet())
             {
-                builder.append( entry.getValue() + " " + entry.getKey().alloc.getId());
+                builder.append(entry.getValue() + " " + entry.getKey().alloc.getId());
             }
             return builder.toString();
         }
@@ -634,11 +634,26 @@ public class LocalCache implements EntityResolver
         }
     }
 
-    public Set<ReferenceInfo<Allocatable>> getDependent(final ReferenceInfo<Allocatable> allocatableRef)
+    public Set<ReferenceInfo<Allocatable>> getDependentRef(ReferenceInfo<Allocatable> allocatableRef)
     {
         Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
         if (allocatableRef != null)
         {
+            GraphNode node = graph.get(allocatableRef);
+            if (node != null)
+            {
+                fillDependent(node, allocatableIds, 0, true);
+            }
+        }
+        return allocatableIds;
+    }
+
+    public Set<ReferenceInfo<Allocatable>> getDependent(final Collection<Allocatable> allocatables)
+    {
+        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
+        for (Allocatable allocatable : allocatables)
+        {
+            ReferenceInfo<Allocatable> allocatableRef = allocatable.getReference();
             GraphNode node = graph.get(allocatableRef);
             if (node != null)
             {
@@ -654,7 +669,7 @@ public class LocalCache implements EntityResolver
         {
             throw new IllegalStateException("Cycle in dependencies detected");
         }
-        if (!dependentAllocatables.add( node.alloc))
+        if (!dependentAllocatables.add(node.alloc))
         {
             return;
         }
@@ -672,6 +687,5 @@ public class LocalCache implements EntityResolver
             }
         }
     }
-
 
 }

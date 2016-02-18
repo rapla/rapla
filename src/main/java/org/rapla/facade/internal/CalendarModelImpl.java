@@ -174,9 +174,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 hashSet.add(resolvedOwner);
             }
         }
-        Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
-        hashSet.retainAll( selectedObjectsAndChildren);
-        boolean matchesEventObjects =  hashSet.size() != 0 || selectedObjectsAndChildren.size() == 0;
+        Collection<Allocatable> allAllocatables = getAllAllocatables();
+        hashSet.retainAll( allAllocatables);
+        boolean matchesEventObjects =  hashSet.size() != 0 || allAllocatables.size() == 0;
         if ( !matchesEventObjects)
         {
             return false;
@@ -665,6 +665,19 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
     }
 
+    public Collection<Allocatable> getAllAllocatables()
+    {
+        Collection<Allocatable> allocatables= new ArrayList<Allocatable>();
+        for (RaplaObject obj:getSelectedObjectsAndChildren())
+        {
+            if (obj instanceof Allocatable) {
+                allocatables.add ((Allocatable) obj);
+            }
+        }
+        final Collection<Allocatable> result = operator.getDependent(allocatables);
+        return result;
+    }
+
     @Override
     public Collection<RaplaObject> getSelectedObjectsAndChildren() throws RaplaException
     {
@@ -679,7 +692,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
         }
 
-        HashSet<RaplaObject> result = new HashSet<RaplaObject>();
+        HashSet<RaplaObject> result = new LinkedHashSet<RaplaObject>();
         result.addAll( selectedObjects );
         
         boolean allAllocatablesSelected = selectedObjects.contains( CalendarModelImpl.ALLOCATABLES_ROOT);
@@ -704,6 +717,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 }
             }
         }
+
 
         return result;
     }

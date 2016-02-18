@@ -189,9 +189,9 @@ public class CalendarModelCache
             for (ReferenceInfo<User> userId : calendarModels.keySet())
             {
                 List<CalendarModelImpl> list = calendarModels.get(userId);
-                for (CalendarModelImpl conf : list)
+                for (CalendarModelImpl model : list)
                 {
-                    if (conf.getSelectedObjectsAndChildren().contains(allocatable))
+                    if (model.getAllAllocatables().contains(allocatable))
                     {
                         result.add(userId);
                         break;

@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.gwt.logging.client.DefaultLevel;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.FilterIterable;
@@ -194,6 +195,21 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 			evt.putRemove(entity);
 		}
 		dispatch(evt);
+	}
+
+	public Collection<Allocatable> getDependent(Collection<Allocatable> allocatables)
+	{
+		final Set<ReferenceInfo<Allocatable>> dependentIds = cache.getDependent(allocatables);
+		final Set<Allocatable> result = new LinkedHashSet<Allocatable>();
+		for ( ReferenceInfo<Allocatable> dependentId:dependentIds)
+		{
+			Allocatable allocatable = tryResolve( dependentId);
+			if ( allocatable != null)
+			{
+				result.add(allocatable);
+			}
+		}
+		return result;
 	}
 	
 	/**
