@@ -244,7 +244,13 @@ import java.util.TreeMap;
         }
 
         boolean allocatableNodeContext = allocatableType || focusedObject instanceof Allocatable || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT;
-        if (permissionController.isRegisterer(type, user) || isAdmin())
+        User workingUser = getUser();
+
+        final boolean isAdmin = workingUser.isAdmin();
+        final boolean localGroupAdmin = !isAdmin && PermissionController.getAdminGroups(workingUser).size() > 0;
+        boolean canAdminUsers = isAdmin || localGroupAdmin;
+
+        if (permissionController.isRegisterer(type, user) || isAdmin)
         {
             if (allocatableNodeContext)
             {
@@ -252,44 +258,49 @@ import java.util.TreeMap;
                 addAllocatableMenuNew(menu, popupContext, focusedObject);
             }
         }
-        if (isAdmin())
+        boolean reservationNodeContext = reservationType || (focusedObject != null && focusedObject.equals(getString("reservation_type")));
+        boolean userNodeContext = focusedObject instanceof User || (focusedObject != null && focusedObject.equals(getString("users")));
+        boolean periodNodeContext = focusedObject instanceof Period || (focusedObject != null && focusedObject.equals(getString("periods")));
+        boolean categoryNodeContext = focusedObject instanceof Category || (focusedObject != null && focusedObject.equals(getString("categories")));
+        if (userNodeContext || allocatableNodeContext || reservationNodeContext || periodNodeContext || categoryNodeContext)
         {
-            boolean reservationNodeContext = reservationType || (focusedObject != null && focusedObject.equals(getString("reservation_type")));
-            boolean userNodeContext = focusedObject instanceof User || (focusedObject != null && focusedObject.equals(getString("users")));
-            boolean periodNodeContext = focusedObject instanceof Period || (focusedObject != null && focusedObject.equals(getString("periods")));
-            boolean categoryNodeContext = focusedObject instanceof Category || (focusedObject != null && focusedObject.equals(getString("categories")));
-            if (userNodeContext || allocatableNodeContext || reservationNodeContext || periodNodeContext || categoryNodeContext)
+            if (allocatableNodeContext || addNewReservationMenu)
             {
-                if (allocatableNodeContext || addNewReservationMenu)
-                {
-                    menu.addSeparator();
-                }
+                menu.addSeparator();
             }
+        }
+        if (canAdminUsers)
+        {
             if (userNodeContext)
             {
                 addUserMenuNew(menu, popupContext);
             }
-
+        }
+        if (isAdmin)
+        {
             if (allocatableNodeContext)
             {
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, popupContext);
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, popupContext);
-
             }
             if (periodNodeContext)
             {
                 addPeriodMenuNew(menu, popupContext);
             }
+        }
+        if (canAdminUsers)
+        {
             if (categoryNodeContext)
             {
                 addCategoryMenuNew(menu, popupContext, focusedObject);
             }
+        }
+        if (isAdmin)
+        {
             if (reservationNodeContext)
             {
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, popupContext);
             }
-            /*
-             */
         }
         return menu;
     }

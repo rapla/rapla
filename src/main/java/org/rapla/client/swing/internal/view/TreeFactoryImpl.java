@@ -86,6 +86,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
 @Singleton
@@ -629,10 +630,13 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         //    Add the persons
         TypeNode resourceRoot = createResourcesModel(filter);
         root.add(resourceRoot);
-       
-        if (isAdmin()) 
+        User[] userList = getQuery().getUsers();
+        final User workingUser = getUser();
+        final boolean isAdmin = workingUser.isAdmin();
+        boolean canAdminUsers = PermissionController.canAdminUsers(workingUser);
+        if (canAdminUsers)
         {
-            // If admin
+            // If isAdmin
             // Eventtypes
             // Add the event types
             // Users
@@ -641,27 +645,40 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             // Add the periods
 
             DefaultMutableTreeNode userRoot = new TypeNode(User.class, getString("users"));
-            User[] userList = getQuery().getUsers();
-            SortedSet<User> sorted = new TreeSet<User>( User.USER_COMPARATOR);
-            sorted.addAll( Arrays.asList( userList));
-            for (final User user: sorted) {
+
+            SortedSet<User> sorted = new TreeSet<User>(User.USER_COMPARATOR);
+            sorted.addAll(Arrays.asList(userList));
+            for (final User user : sorted)
+            {
                 DefaultMutableTreeNode node = new DefaultMutableTreeNode();
-                node.setUserObject( user);
+                node.setUserObject(user);
                 userRoot.add(node);
             }
             root.add(userRoot);
-
+        }
+        if (isAdmin)
+        {
             TypeNode reservationsRoot = createReservationsModel();
             root.add(reservationsRoot);
-            
-            NamedNode categoryRoot = createRootNode( Collections.singleton(getQuery().getSuperCategory()),true);
+        }
+
+        if ( isAdmin)
+        {
+            NamedNode categoryRoot = createRootNode(Collections.singleton(getQuery().getSuperCategory()), true);
             root.add(categoryRoot);
 
             // set category root name
             MultiLanguageName multiLanguageName = getQuery().getSuperCategory().getName();
             // TODO try to replace hack
-			multiLanguageName.setNameWithoutReadCheck(getI18n().getLang(), getString("categories"));
-            
+            multiLanguageName.setNameWithoutReadCheck(getI18n().getLang(), getString("categories"));
+        }
+        else if ( canAdminUsers )
+        {
+            NamedNode categoryRoot = createRootNode(Collections.singleton(getQuery().getUserGroupsCategory()), true);
+            root.add(categoryRoot);
+        }
+        if (isAdmin)
+        {
             // Add the periods    
             DefaultMutableTreeNode periodRoot = new TypeNode(Period.class, getString("periods"));
             DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);

@@ -24,6 +24,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 
 public class UserAction extends RaplaAction {
     Object object;
@@ -72,10 +73,11 @@ public class UserAction extends RaplaAction {
         User user = null;
         try {
             user = getUser();
+            final boolean admin = PermissionController.canAdminUsers( user );
             if (type == NEW) {
-                setEnabled(isAdmin());
+                setEnabled(admin);
             } else if (type == SWITCH_TO_USER) {
-                setEnabled(service.canSwitchBack() || (object != null && isAdmin() && !user.equals(object)));
+                setEnabled(service.canSwitchBack() || (object != null && admin && !user.equals(object)));
             }
         } catch (RaplaException ex) {
             setEnabled(false);

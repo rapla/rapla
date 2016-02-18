@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -142,13 +143,13 @@ public class UpdateEvent
     {
         if (listMap == null)
         {
-            listMap = new HashMap<Class, Collection<Entity>>();
-            put(Reservation.class, reservations);
-            put(Allocatable.class, resources);
-            put(Preferences.class, preferences);
+            listMap = new LinkedHashMap<Class, Collection<Entity>>();
             put(Category.class, categories);
-            put(User.class, users);
             put(DynamicType.class, types);
+            put(Allocatable.class, resources);
+            put(User.class, users);
+            put(Preferences.class, preferences);
+            put(Reservation.class, reservations);
             put(Conflict.class, conflicts);
         }
         return listMap;

@@ -673,4 +673,10 @@ public class PermissionController
         return hasAccess(object, attribute, user, Permission.AccessLevel.READ);
     }
 
+    public static boolean canAdminUsers(User workingUser)
+    {
+        final boolean isAdmin = workingUser.isAdmin();
+        final boolean localGroupAdmin = isAdmin || PermissionController.getAdminGroups(workingUser).size() > 0;
+        return localGroupAdmin;
+    }
 }

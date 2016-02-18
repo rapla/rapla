@@ -28,6 +28,7 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
@@ -544,7 +545,19 @@ public class LocalCache implements EntityResolver
             BelongsTo,
             Parent,
             Packages,
-            IsInPackage
+            IsInPackage;
+
+            public ConnectionType getOposite()
+            {
+                switch ( this)
+                {
+                    case BelongsTo: return Parent;
+                    case Parent: return BelongsTo;
+                    case Packages: return IsInPackage;
+                    case IsInPackage: return Packages;
+                }
+                throw new IllegalStateException("ConnectionType not found in case");
+            }
         }
 
         Map<GraphNode, ConnectionType> connections = new LinkedHashMap<GraphNode, ConnectionType>();
@@ -574,36 +587,31 @@ public class LocalCache implements EntityResolver
             Allocatable alloc = (Allocatable) entity;
             ReferenceInfo<Allocatable> ref = alloc.getReference();
             removeDependencies(ref);
-            final Classification classification = alloc.getClassification();
-            final DynamicType type = classification.getType();
-            final Attribute belongsToAttribute = ((DynamicTypeImpl) type).getBelongsToAttribute();
-            if (belongsToAttribute != null && classification.getValue(belongsToAttribute) != null)
+            final ClassificationImpl classification = (ClassificationImpl)alloc.getClassification();
+            final DynamicTypeImpl type = (DynamicTypeImpl)classification.getType();
+            addConnection(ref, classification, type.getBelongsToAttribute(), GraphNode.ConnectionType.BelongsTo);
+            addConnection(ref, classification, type.getPackagesAttribute(), GraphNode.ConnectionType.Packages);
+        }
+    }
+
+    private void addConnection(ReferenceInfo<Allocatable> ref, ClassificationImpl classification, Attribute attribute, GraphNode.ConnectionType sourceType)
+    {
+        if ( attribute == null)
+        {
+            return;
+        }
+        if (attribute != null && classification.getValue(attribute) != null)
+        {
+            final Collection<String> valuesUnresolvedStrings = classification.getValuesUnresolvedStrings(attribute);
+            for (String id : valuesUnresolvedStrings)
             {
-                final Allocatable belongsToValue = (Allocatable) classification.getValue(belongsToAttribute);
-                if (belongsToValue != null)
+                if ( id != null)
                 {
+                    ReferenceInfo<Allocatable> targetReference = new ReferenceInfo<Allocatable>(id,Allocatable.class);
                     final GraphNode node = getOrCreate(ref);
-                    ReferenceInfo<Allocatable> belongsToRef = belongsToValue.getReference();
-                    final GraphNode node2 = getOrCreate(belongsToRef);
-                    node.addConnection(node2, GraphNode.ConnectionType.BelongsTo);
-                    node2.addConnection(node, GraphNode.ConnectionType.Parent);
-                }
-            }
-            final Attribute packagesToAttribute = ((DynamicTypeImpl) type).getPackagesAttribute();
-            if (packagesToAttribute != null && classification.getValues(packagesToAttribute) != null)
-            {
-                final Collection<Object> values = classification.getValues(packagesToAttribute);
-                for (Object object : values)
-                {
-                    Allocatable target = (Allocatable) object;
-                    if (target != null)
-                    {
-                        final GraphNode node = getOrCreate(ref);
-                        ReferenceInfo<Allocatable> packages = target.getReference();
-                        final GraphNode node2 = getOrCreate(packages);
-                        node.addConnection(node2, GraphNode.ConnectionType.Packages);
-                        node2.addConnection(node, GraphNode.ConnectionType.IsInPackage);
-                    }
+                    final GraphNode node2 = getOrCreate(targetReference);
+                    node.addConnection(node2, sourceType);
+                    node2.addConnection(node, sourceType.getOposite());
                 }
             }
         }
@@ -639,11 +647,7 @@ public class LocalCache implements EntityResolver
         Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
         if (allocatableRef != null)
         {
-            GraphNode node = graph.get(allocatableRef);
-            if (node != null)
-            {
-                fillDependent(node, allocatableIds, 0, true);
-            }
+            fillDependent(allocatableIds, allocatableRef);
         }
         return allocatableIds;
     }
@@ -654,13 +658,22 @@ public class LocalCache implements EntityResolver
         for (Allocatable allocatable : allocatables)
         {
             ReferenceInfo<Allocatable> allocatableRef = allocatable.getReference();
-            GraphNode node = graph.get(allocatableRef);
-            if (node != null)
-            {
-                fillDependent(node, allocatableIds, 0, true);
-            }
+            fillDependent(allocatableIds, allocatableRef);
         }
         return allocatableIds;
+    }
+
+    private void fillDependent(Set<ReferenceInfo<Allocatable>> allocatableIds, ReferenceInfo<Allocatable> allocatableRef)
+    {
+        GraphNode node = graph.get(allocatableRef);
+        if (node != null)
+        {
+            fillDependent(node, allocatableIds, 0, true);
+        }
+        else
+        {
+            allocatableIds.add( allocatableRef);
+        }
     }
 
     private void fillDependent(GraphNode node, final Set<ReferenceInfo<Allocatable>> dependentAllocatables, final int depth, boolean goDown)

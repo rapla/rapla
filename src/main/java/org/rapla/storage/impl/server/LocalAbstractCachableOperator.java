@@ -1388,6 +1388,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             entry.addPermissions((EntityPermissionContainer) current, Permission.READ_NO_ALLOCATION);
         }
+        else if ( type  == Category.class)
+        {
+            entry.affectAll = true;
+        }
         else if (type == Conflict.class)
         {
             if (entry.isDelete)
