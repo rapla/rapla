@@ -69,7 +69,7 @@ public class RaplaJNLPPageGenerator  {
               buf.append("\n<jar href=\""+webstartRoot + "/");
               buf.append(file);
               buf.append("\"");
-              if (file.indexOf("raplaclient.jar")>=0) {
+              if (file.indexOf("/rapla-client.jar") >= 0) {
                  buf.append(" main=\"true\"");
               }
               buf.append("/>");

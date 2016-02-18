@@ -44,9 +44,7 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -87,9 +85,7 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
-import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
@@ -103,7 +99,6 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.xml.RaplaXMLContextException;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -148,50 +143,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	{
 		return i18n;
 	}
-
-	static public void convertToNewPluginConfig(RaplaFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
-            throws RaplaXMLContextException
-    {
-        try
-        {
-            PreferencesImpl clone = (PreferencesImpl) facade.edit(facade.getSystemPreferences());
-            RaplaConfiguration entry = clone.getEntry(RaplaComponent.PLUGIN_CONFIG, null);
-            if (entry == null)
-            {
-                return;
-            }
-            RaplaConfiguration newPluginConfigEntry = entry.clone();
-            DefaultConfiguration pluginConfig = (DefaultConfiguration) newPluginConfigEntry.find("class", className);
-            // we split the config entry in the plugin config and the new config entry;
-            if (pluginConfig != null)
-            {
-                logger.info("Converting plugin conf " + className + " to preference entry " + newConfKey);
-                newPluginConfigEntry.removeChild(pluginConfig);
-                boolean enabled = pluginConfig.getAttributeAsBoolean("enabled", false);
-                RaplaConfiguration newPluginConfig = new RaplaConfiguration(pluginConfig.getName());
-                newPluginConfig.setAttribute("enabled", enabled);
-                newPluginConfig.setAttribute("class", className);
-                newPluginConfigEntry.addChild(newPluginConfig);
-
-                RaplaConfiguration newConfigEntry = new RaplaConfiguration(pluginConfig);
-
-                newConfigEntry.setAttribute("enabled", null);
-                newConfigEntry.setAttribute("class", null);
-
-                clone.putEntry(newConfKey, newConfigEntry);
-                clone.putEntry(RaplaComponent.PLUGIN_CONFIG, newPluginConfigEntry);
-                facade.store(clone);
-            }
-        }
-        catch (RaplaException ex)
-        {
-            if (ex instanceof RaplaXMLContextException)
-            {
-                throw ex;
-            }
-            throw new RaplaXMLContextException(ex.getMessage(), ex);
-        }
-    }
 
 	@Override public RaplaFacade getRaplaFacade()
 	{

@@ -118,6 +118,11 @@
                                 <exclude>se/**</exclude>
                                 <exclude>**/${rapla.module}</exclude>
                             </excludes>
+                            <archive>
+                            	<manifestEntries>
+                            		<Permissions>all-permissions</Permissions>
+                            	</manifestEntries>
+                            </archive>
                             <classifier>client</classifier>
                         </configuration>
                     </execution>
