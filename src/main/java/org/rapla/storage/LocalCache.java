@@ -13,7 +13,6 @@
 package org.rapla.storage;
 
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -26,7 +25,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.ClassificationImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -128,7 +126,13 @@ public class LocalCache implements EntityResolver
         }
         if (typeClass == Allocatable.class)
         {
-            removeDependencies(info);
+            GraphNode oldNode = graph.get(info);
+            if (oldNode != null)
+            {
+                graph.remove(info);
+                boolean onlyOutgoing = false;
+                oldNode.removeConnections(onlyOutgoing);
+            }
         }
         return bResult;
     }
@@ -540,32 +544,45 @@ public class LocalCache implements EntityResolver
             connections.put(node, type);
         }
 
+        public void removeConnections(boolean onlyOutgoing)
+        {
+            for (Map.Entry<GraphNode, ConnectionType> entry : connections.entrySet())
+            {
+                GraphNode connection = entry.getKey();
+                ConnectionType connectionType = entry.getValue();
+                if ( !onlyOutgoing || connectionType.isOutgoing())
+                {
+                    connection.removeConnection(this);
+                }
+            }
+        }
+
         enum ConnectionType
         {
             BelongsTo,
-            Parent,
+            BelongsToTarget,
             Packages,
-            IsInPackage;
+            PackagesTarget;
 
-            public ConnectionType getOposite()
+            public ConnectionType getOpposite()
             {
                 switch ( this)
                 {
-                    case BelongsTo: return Parent;
-                    case Parent: return BelongsTo;
-                    case Packages: return IsInPackage;
-                    case IsInPackage: return Packages;
+                    case BelongsTo: return BelongsToTarget;
+                    case BelongsToTarget: return BelongsTo;
+                    case Packages: return PackagesTarget;
+                    case PackagesTarget: return Packages;
                 }
                 throw new IllegalStateException("ConnectionType not found in case");
+            }
+
+            public boolean isOutgoing()
+            {
+                return this == Packages || this == BelongsTo;
             }
         }
 
         Map<GraphNode, ConnectionType> connections = new LinkedHashMap<GraphNode, ConnectionType>();
-
-        Collection<GraphNode> getConnectionNodes()
-        {
-            return connections.keySet();
-        }
 
         @Override public String toString()
         {
@@ -586,9 +603,14 @@ public class LocalCache implements EntityResolver
         {
             Allocatable alloc = (Allocatable) entity;
             ReferenceInfo<Allocatable> ref = alloc.getReference();
-            removeDependencies(ref);
+            GraphNode oldNode = graph.get(ref);
+            if (oldNode != null)
+            {
+                boolean onlyOutgoing = true;
+                oldNode.removeConnections(onlyOutgoing);
+            }
             final ClassificationImpl classification = (ClassificationImpl)alloc.getClassification();
-            final DynamicTypeImpl type = (DynamicTypeImpl)classification.getType();
+            final DynamicTypeImpl type = classification.getType();
             addConnection(ref, classification, type.getBelongsToAttribute(), GraphNode.ConnectionType.BelongsTo);
             addConnection(ref, classification, type.getPackagesAttribute(), GraphNode.ConnectionType.Packages);
         }
@@ -609,9 +631,9 @@ public class LocalCache implements EntityResolver
                 {
                     ReferenceInfo<Allocatable> targetReference = new ReferenceInfo<Allocatable>(id,Allocatable.class);
                     final GraphNode node = getOrCreate(ref);
-                    final GraphNode node2 = getOrCreate(targetReference);
-                    node.addConnection(node2, sourceType);
-                    node2.addConnection(node, sourceType.getOposite());
+                    final GraphNode targetNode = getOrCreate(targetReference);
+                    node.addConnection(targetNode, sourceType);
+                    targetNode.addConnection(node, sourceType.getOpposite());
                 }
             }
         }
@@ -628,19 +650,6 @@ public class LocalCache implements EntityResolver
         return graphNode;
     }
 
-    private void removeDependencies(ReferenceInfo<Allocatable> referenceInfo)
-    {
-        GraphNode oldNode = graph.get(referenceInfo);
-        if (oldNode != null)
-        {
-            graph.remove(referenceInfo);
-            final Collection<GraphNode> connectionNodes = oldNode.getConnectionNodes();
-            for (GraphNode connection : connectionNodes)
-            {
-                connection.removeConnection(oldNode);
-            }
-        }
-    }
 
     public Set<ReferenceInfo<Allocatable>> getDependentRef(ReferenceInfo<Allocatable> allocatableRef)
     {
@@ -690,11 +699,11 @@ public class LocalCache implements EntityResolver
         {
             GraphNode.ConnectionType type = entry.getValue();
             GraphNode connectionNode = entry.getKey();
-            if (goDown && (type == GraphNode.ConnectionType.Packages || type == GraphNode.ConnectionType.Parent))
+            if (goDown && (type == GraphNode.ConnectionType.Packages || type == GraphNode.ConnectionType.BelongsToTarget))
             {
                 fillDependent(connectionNode, dependentAllocatables, depth + 1, true);
             }
-            if (type == GraphNode.ConnectionType.IsInPackage || type == GraphNode.ConnectionType.BelongsTo)
+            if (type == GraphNode.ConnectionType.PackagesTarget || type == GraphNode.ConnectionType.BelongsTo)
             {
                 fillDependent(connectionNode, dependentAllocatables, depth + 1, false);
             }
