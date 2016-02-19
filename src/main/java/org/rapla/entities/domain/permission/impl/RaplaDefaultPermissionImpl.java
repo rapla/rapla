@@ -56,28 +56,9 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
             {
                 return false;
             }
-            final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
-            if ( adminGroups.size() > 0)
+            if (PermissionController.canAdminUser( user, userToEdit))
             {
-                boolean belongsTo = false;
-                for (Category group : adminGroups)
-                {
-                    if (userToEdit.belongsTo(group))
-                    {
-                        belongsTo = true;
-                        break;
-                    }
-                }
-                if ( belongsTo )
-                {
-                    final Collection<Category> groupList = userToEdit.getGroupList();
-                    // user can't edit other local admin users
-                    if ( groupList.size() > 0 && (userToEdit.equals( user)))
-                    {
-                        return false;
-                    }
-                    return belongsTo;
-                }
+                return true;
             }
         }
         if ( type == Category.class)

@@ -1,19 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -60,6 +46,19 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @DefaultImplementation(of =RemoteStorage.class,context = InjectionContext.server)
 public class RemoteStorageImpl implements RemoteStorage
@@ -330,8 +329,8 @@ public class RemoteStorageImpl implements RemoteStorage
         {
             checkAuthentified();
             User sessionUser = getSessionUser();
-
-            if (!sessionUser.isAdmin())
+            User user = operator.getUser(username);
+            if (!PermissionController.canAdminUser(sessionUser, user))
             {
                 if ( authenticationStore != null && authenticationStore.size() > 0 )
                 {
@@ -339,7 +338,6 @@ public class RemoteStorageImpl implements RemoteStorage
                 }
                 operator.authenticate(username, new String(oldPassword));
             }
-            User user = operator.getUser(username);
             operator.changePassword(user, oldPassword.toCharArray(), newPassword.toCharArray());
             return ResultImpl.VOID;
         }

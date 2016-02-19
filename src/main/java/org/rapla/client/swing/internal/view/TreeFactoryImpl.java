@@ -1139,7 +1139,21 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 value = typeNode.getTitle();
             } else {
                 Object nodeInfo = getUserObject(value);
-                if (nodeInfo instanceof Category && ((Category)nodeInfo).getParent() == null) {
+                final boolean topCategoryNode;
+                if (nodeInfo instanceof Category)
+                {
+                    final Category category = (Category) nodeInfo;
+                    final Category parent = category.getParent();
+                    final Category userGroupsCategory = getFacade().getUserGroupsCategory();
+                    User user = getClientFacade().getUser();
+                    topCategoryNode = parent == null || (  userGroupsCategory != null  && userGroupsCategory.equals( category) && !user.isAdmin() && PermissionController.getAdminGroups(user).size() > 0);
+                }
+                else
+                {
+                    topCategoryNode = false;
+                }
+
+                if (topCategoryNode) {
                     setClosedIcon(bigFolderCategories);
                     setOpenIcon(bigFolderCategories);
                     setFont(bigFont);

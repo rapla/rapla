@@ -12,6 +12,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 
@@ -89,9 +90,10 @@ public class RaplaAuthentificationService
         }
         if (connectAs != null && connectAs.length() > 0)
         {
-            if (!operator.getUser(username).isAdmin())
+            final User user1 = operator.getUser(username);
+            if (!PermissionController.canAdminUser(user1, user))
             {
-                throw new SecurityException("Non admin user is requesting change user permission!");
+                throw new RaplaSecurityException("Non admin user is requesting switchToUser permission!");
             }
         }
         return user;

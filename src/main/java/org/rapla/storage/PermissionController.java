@@ -30,6 +30,7 @@ import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Set;
 
@@ -84,6 +85,24 @@ public class PermissionController
             }
         }
         return result;
+    }
+
+    public static boolean canAdminGroups(Collection<Category> groups, User user)
+    {
+        final Collection<Category> adminGroups = getGroupsToAdmin(user);
+        int found = 0;
+        for (Category group : groups)
+        {
+            for (Category adminGroup : adminGroups)
+            {
+                if (group.equals(adminGroup) || adminGroup.isAncestorOf(group))
+                {
+                    found++;
+                    break;
+                }
+            }
+        }
+        return found == groups.size();
     }
 
     /**
@@ -678,5 +697,45 @@ public class PermissionController
         final boolean isAdmin = workingUser.isAdmin();
         final boolean localGroupAdmin = isAdmin || PermissionController.getAdminGroups(workingUser).size() > 0;
         return localGroupAdmin;
+    }
+
+    public static boolean canAdminUser(User adminUser, User userToAdmin)
+    {
+        final boolean isAdmin = adminUser.isAdmin();
+        if (isAdmin)
+        {
+            return true;
+        }
+        if ( PermissionController.getAdminGroups(adminUser).isEmpty())
+        {
+            return false;
+        }
+        if (userToAdmin.isAdmin())
+        {
+            return false;
+        }
+        final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(adminUser);
+
+        if ( adminGroups.size() > 0)
+        {
+            boolean belongsTo = false;
+            for (Category group : adminGroups)
+            {
+                if (userToAdmin.belongsTo(group))
+                {
+                    belongsTo = true;
+                    break;
+                }
+            }
+            if ( belongsTo )
+            {
+                return true;
+            }
+        }
+        return false;
+        // belongsto Could be replaced with a real membership
+        //final Collection<Category> groupList = userToAdmin.getGroupList();
+        //boolean disjoint =Collections.disjoint( groupList, adminGroups);
+        //return !disjoint;
     }
 }

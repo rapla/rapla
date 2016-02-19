@@ -195,7 +195,7 @@ import org.rapla.storage.StorageOperator;
                     removedUserGroups.removeAll(newUserGroups);
                     newUserGroups.removeAll(originalList);
                 }
-                permitted = canAdminGroups(newUserGroups, user) && canAdminGroups(removedUserGroups, user);
+                permitted = PermissionController.canAdminGroups(newUserGroups, user) && PermissionController.canAdminGroups(removedUserGroups, user);
             }
         }
 
@@ -240,24 +240,6 @@ import org.rapla.storage.StorageOperator;
 
         // FIXME check if permissions are changed and user has admin priviliges 
 
-    }
-
-    private boolean canAdminGroups(Collection<Category> groups, User user)
-    {
-        final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
-        int found = 0;
-        for (Category group : groups)
-        {
-            for (Category adminGroup : adminGroups)
-            {
-                if (group.equals(adminGroup) || adminGroup.isAncestorOf(group))
-                {
-                    found++;
-                    break;
-                }
-            }
-        }
-        return found == groups.size();
     }
 
     private Logger getLogger()

@@ -25,6 +25,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 
 import java.awt.Component;
 
@@ -44,17 +45,23 @@ public class PasswordChangeAction extends RaplaAction {
         putValue(NAME, getI18n().format("change.format",getString("password")));
     }
 
-
     public void changeObject(Object object) {
         this.object = object;
         update();
     }
 
     private void update() {
-        User user = null;
         try {
-            user = getUser();
-                setEnabled(object != null && (isAdmin() || user.equals(object)));
+            if ( object != null && object instanceof  User)
+            {
+                User selectedUser = (User) object;
+                User user = getUser();
+                setEnabled(PermissionController.canAdminUser(user, selectedUser) || user.equals(selectedUser));
+            }
+            else
+            {
+                setEnabled( false);
+            }
         } catch (RaplaException ex) {
             setEnabled(false);
             return;
@@ -66,7 +73,10 @@ public class PasswordChangeAction extends RaplaAction {
         try {
             if (object == null)
                 return;
-            changePassword((User) object, !getUser().isAdmin());
+            User selectedUser = (User) object;
+            User user = getUser();
+            boolean showOldPassword = !PermissionController.canAdminUser(user, selectedUser);
+            changePassword(user, showOldPassword);
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex, popupContext);
         }
