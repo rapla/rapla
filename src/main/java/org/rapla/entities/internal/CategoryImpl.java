@@ -25,13 +25,16 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 final public class CategoryImpl extends SimpleEntity implements Category, ModifiableTimestamp
 {
@@ -169,7 +172,19 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public Collection<Category> getCategoryList()
     {
-        return getList("childs", Category.class);
+        final Collection<Category> childs = getList("childs", Category.class);
+        final Collection<Category> nonpersistantEntities = getTransientCategoryList();
+        if (nonpersistantEntities.isEmpty())
+        {
+            return childs;
+        }
+        else
+        {
+            Set<Category> set = new LinkedHashSet<Category>();
+            set.addAll( childs);
+            set.addAll(nonpersistantEntities );
+            return set;
+        }
     }
 
     public Collection<String> getChildIds()
@@ -210,6 +225,10 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     public Collection<Category> getTransientCategoryList()
     {
         final Collection<Entity> nonpersistantEntities = (Collection) getNonpersistantEntities();
+        if ( nonpersistantEntities.isEmpty())
+        {
+            return Collections.emptySet();
+        }
         final Collection<Category> result = new ArrayList<Category>();
         for ( Entity entity:nonpersistantEntities)
         {
