@@ -5,10 +5,13 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.server.RequestScoped;
+import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.dbrm.LoginTokens;
 
 import javax.inject.Inject;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 @RequestScoped
@@ -40,6 +43,22 @@ public class RemoteSessionImpl implements RemoteSession {
         else
         {
             token = request.getParameter("access_token");
+            if (token == null)
+            {
+                final Cookie[] cookies = request.getCookies();
+                if(cookies != null)
+                {
+                    for (Cookie cookie : cookies)
+                    {
+                        if(RaplaAuthRestPage.LOGIN_COOKIE.equals(cookie.getName()))
+                        {
+                            final String value = cookie.getValue();
+                            token = LoginTokens.fromString(value).getAccessToken();
+                            break;
+                        }
+                    }
+                }
+            }
         }
         User user = null;
         if (token == null)

@@ -1,20 +1,7 @@
 package org.rapla.rest.server;
 
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Tools;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
-import org.rapla.server.internal.RaplaAuthentificationService;
-import org.rapla.server.internal.TokenHandler;
-import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.dbrm.LoginCredentials;
-import org.rapla.storage.dbrm.LoginTokens;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.inject.Inject;
 import javax.servlet.http.Cookie;
@@ -26,13 +13,27 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.io.PrintWriter;
+
+import org.rapla.RaplaResources;
+import org.rapla.components.util.Tools;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.logger.Logger;
+import org.rapla.server.internal.RaplaAuthentificationService;
+import org.rapla.server.internal.TokenHandler;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.dbrm.LoginCredentials;
+import org.rapla.storage.dbrm.LoginTokens;
 
 @Path("auth")
 public class RaplaAuthRestPage
 {
 
+    public static final String LOGIN_COOKIE = "raplaLoginToken";
     private final RaplaAuthentificationService authentificationService;
     private final I18nBundle i18n;
     private final RaplaFacade facade;
@@ -109,7 +110,7 @@ public class RaplaAuthRestPage
             {
                 final LoginTokens token = create(new LoginCredentials(user, password, connectAs));
                 final String accessToken = token.getAccessToken();
-                final Cookie cookie = new Cookie("raplaLoginToken", token.toString());
+                final Cookie cookie = new Cookie(LOGIN_COOKIE, token.toString());
                 response.addCookie(cookie);
                 response.sendRedirect(targetUrl != null ? targetUrl : "rapla.html");
                 final PrintWriter writer = response.getWriter();
@@ -175,7 +176,7 @@ public class RaplaAuthRestPage
         out.println("           <div class=\"loginOuterPanel\">");
         out.println("               <div class=\"loginInputPanel\">");
         final String userNameValue = userName != null ? userName : "";
-        out.println("                   <input name=\"userName\" type=\"text\" value=\"" + userNameValue + "\">");
+        out.println("                   <input name=\"username\" type=\"text\" value=\"" + userNameValue + "\">");
         out.println("                   <input name=\"password\"type=\"password\" >");
         out.println("               </div>");
         out.println("               <div class=\"loginCommandPanel\">");
