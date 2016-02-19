@@ -622,18 +622,21 @@ public class LocalCache implements EntityResolver
         {
             return;
         }
-        if (attribute != null && classification.getValue(attribute) != null)
+        if (attribute != null )
         {
             final Collection<String> valuesUnresolvedStrings = classification.getValuesUnresolvedStrings(attribute);
-            for (String id : valuesUnresolvedStrings)
+            if ( valuesUnresolvedStrings != null)
             {
-                if ( id != null)
+                for (String id : valuesUnresolvedStrings)
                 {
-                    ReferenceInfo<Allocatable> targetReference = new ReferenceInfo<Allocatable>(id,Allocatable.class);
-                    final GraphNode node = getOrCreate(ref);
-                    final GraphNode targetNode = getOrCreate(targetReference);
-                    node.addConnection(targetNode, sourceType);
-                    targetNode.addConnection(node, sourceType.getOpposite());
+                    if (id != null)
+                    {
+                        ReferenceInfo<Allocatable> targetReference = new ReferenceInfo<Allocatable>(id, Allocatable.class);
+                        final GraphNode node = getOrCreate(ref);
+                        final GraphNode targetNode = getOrCreate(targetReference);
+                        node.addConnection(targetNode, sourceType);
+                        targetNode.addConnection(node, sourceType.getOpposite());
+                    }
                 }
             }
         }
