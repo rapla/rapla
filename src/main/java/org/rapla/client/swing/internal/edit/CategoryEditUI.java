@@ -168,6 +168,7 @@ public class CategoryEditUI extends RaplaGUIComponent
                     moveCategory( 1);
                 } else if (evt.getActionCommand().equals("edit")) {
                     Category category = (Category) treeEdit.getSelectedValue();
+                    category = getOrCreateEditableVersion( category);
                     detailPanel.mapFrom( category );
                 }
             } catch (RaplaException ex) {
@@ -343,8 +344,14 @@ public class CategoryEditUI extends RaplaGUIComponent
     }
 
     public void mapToObjects() throws RaplaException {
-        validate( this.rootCategory );
         confirmEdits();
+        Category cat = rootCategory;
+        String id=cat.getId();
+        if(editableCategories.containsKey(id))
+        {
+            cat = editableCategories.get(id);
+        }
+        validate( cat );
     }
 
     public List<Category> getObjects() {
@@ -396,7 +403,13 @@ public class CategoryEditUI extends RaplaGUIComponent
         checkKey( category.getKey() );
         Category[] categories = category.getCategories();
         for ( int i=0; i< categories.length;i++) {
-            validate( categories[i] );
+            final Category category1 = categories[i];
+            Category category2 = editableCategories.get(category1.getId());
+            if ( category2 == null)
+            {
+                category2 = category1;
+            }
+            validate(category2);
         }
     }
 
