@@ -949,7 +949,7 @@ import java.util.concurrent.locks.Lock;
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this, superCategory);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
-        final Collection<ReferenceInfo<Reservation>> reservationsToRemove = removeInconsistentReservations(entityStore);
+        final Collection<ReferenceInfo> entitiesToRemove = removeInconsistentReservations(entityStore);
 
         Collection<Entity> list = entityStore.getList();
         final HistoryEntry latest = history.getLatest(Category.SUPER_CATEGORY_REF);
@@ -965,7 +965,7 @@ import java.util.concurrent.locks.Lock;
         Collection<Entity> migratedTemplates = migrateTemplates();
         cache.putAll(migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
-        Collection<ReferenceInfo> removeObjects = (Collection)reservationsToRemove;
+        Collection<ReferenceInfo> removeObjects = (Collection)entitiesToRemove;
         dbStore(migratedTemplates, preferencePatches, removeObjects, connection, null);
         // It is important to do the read only later because some resolve might involve write to referenced objects
         for (Entity entity : list)

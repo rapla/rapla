@@ -17,6 +17,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
+import org.eclipse.jetty.deploy.App;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
@@ -2919,10 +2920,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    protected Collection<ReferenceInfo<Reservation>> removeInconsistentReservations(EntityStore store)
+    protected Collection<ReferenceInfo> removeInconsistentReservations(EntityStore store)
     {
         List<Reservation> reservations = new ArrayList<Reservation>();
-        List<ReferenceInfo<Reservation>> reservationRefs = new ArrayList<ReferenceInfo<Reservation>>();
+        List<ReferenceInfo> reservationRefs = new ArrayList<ReferenceInfo>();
         Collection<Entity> list = store.getList();
         for (Entity entity: list)
         {
@@ -2931,9 +2932,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 continue;
             }
             Reservation reservation =(Reservation) entity;
-            if ( reservation.getSortedAppointments().size() == 0 || reservation.getAllocatables().length == 0)
+            if ( reservation.getSortedAppointments().size() == 0 || (reservation.getAllocatables().length == 0 && !RaplaComponent.isTemplate( reservation)))
             {
                 reservations.add(reservation);
+                for (Appointment app:reservation.getAppointments())
+                {
+                    reservationRefs.add( app.getReference());
+                }
                 reservationRefs.add(reservation.getReference());
             }
         }
