@@ -31,8 +31,10 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
@@ -60,6 +62,8 @@ import java.util.TreeSet;
 @Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID)
 public class TemplateWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener, ModificationListener
 {
+	public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
+	private final Boolean enabled;
 	Collection<Allocatable> templateNames;
     private final CalendarSelectionModel model;
     private final RaplaImages raplaImages;
@@ -67,15 +71,17 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
     private final PermissionController permissionController;
     private final EventBus eventBus;
 	@Inject
-    public TemplateWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,  EventBus eventBus) throws RaplaException{
-        super(facade, i18n, raplaLocale, logger);
+    public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,  EventBus eventBus) throws RaplaException{
+        super(clientFacade, i18n, raplaLocale, logger);
         this.model = model;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getRaplaFacade().getPermissionController();
+		final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+		this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
+		enabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
     }
 
     public String getId() {
@@ -90,7 +96,12 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
         }
     }
 
-    private Collection<Allocatable> updateTemplateNames() throws RaplaException {
+	@Override public boolean isEnabled()
+	{
+		return false;
+	}
+
+	private Collection<Allocatable> updateTemplateNames() throws RaplaException {
        
         List<Allocatable> templates = new ArrayList<Allocatable>();
         User user = getUser();

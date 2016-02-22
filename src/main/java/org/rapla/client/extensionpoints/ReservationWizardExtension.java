@@ -11,4 +11,5 @@ import org.rapla.inject.InjectionContext;
 @ExtensionPoint(context = InjectionContext.swing,id="org.rapla.client.swing.gui.ReservationWizardExtension")
 public interface ReservationWizardExtension extends IdentifiableMenuEntry
 {
+    boolean isEnabled();
 }

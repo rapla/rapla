@@ -14,6 +14,7 @@
 package org.rapla.plugin.defaultwizard.client.swing;
 
 import com.google.web.bindery.event.shared.EventBus;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.StartActivityEvent;
@@ -35,6 +36,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
@@ -56,23 +58,32 @@ import java.util.Map;
 @Extension(provides = ReservationWizardExtension.class, id= "defaultWizard")
 public class DefaultWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener
 {
+    public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.defaultwizard.enabled");
 	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
 	private final PermissionController permissionController;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final EventBus eventBus;
+    boolean enabled;
 
     @Inject
-	public DefaultWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
-        super(facade, i18n, raplaLocale, logger);
-        this.permissionController = facade.getRaplaFacade().getPermissionController();
+	public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
+        super(clientFacade, i18n, raplaLocale, logger);
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        this.permissionController = raplaFacade.getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        enabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
     }
-    
+
+    @Override public boolean isEnabled()
+    {
+        return enabled;
+    }
+
     public String getId() {
 		return "000_defaultWizard";
 	}

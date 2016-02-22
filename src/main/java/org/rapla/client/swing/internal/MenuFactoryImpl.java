@@ -165,9 +165,12 @@ import java.util.TreeMap;
         if (canAllocateSelected)
         {
             Map<String, IdentifiableMenuEntry> sortedMap = new TreeMap<String, IdentifiableMenuEntry>();
-            for (IdentifiableMenuEntry entry : reservationWizards)
+            for (ReservationWizardExtension entry : reservationWizards)
             {
-                sortedMap.put(entry.getId(), entry);
+                if ( entry.isEnabled())
+                {
+                    sortedMap.put(entry.getId(), entry);
+                }
             }
             for (IdentifiableMenuEntry wizard : sortedMap.values())
             {
