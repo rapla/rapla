@@ -98,7 +98,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 
 	@Override public boolean isEnabled()
 	{
-		return false;
+		return enabled;
 	}
 
 	private Collection<Allocatable> updateTemplateNames() throws RaplaException {
