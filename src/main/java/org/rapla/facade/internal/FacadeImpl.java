@@ -90,6 +90,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
+import org.rapla.jsonrpc.client.gwt.internal.impl.FutureResultImpl;
 import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
@@ -515,21 +516,13 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	public static FutureResult<Map<Allocatable,Collection<Appointment>>> getAppointmentsAsync(StorageOperator operator, User user,
 			Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId) {
-        final Collection<Allocatable> allocList;
-        Map<String,String> annotationQuery;
-		if ( templateId != null)
+        Collection<Allocatable> allocList;
+        Map<String,String> annotationQuery = null;
+
 		{
-		    user = null;
-		    allocList = null;
-			annotationQuery = new LinkedHashMap<String,String>();
-			annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
-		}
-		else
-		{
-		    annotationQuery = null;
     		if (allocatables != null)
     		{
-    			if ( allocatables.size() == 0 )
+    			if ( allocatables.size() == 0  && templateId == null)
     			{
 					Map<Allocatable,Collection<Appointment>> emptyMap = Collections.emptyMap();
                     return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(emptyMap);
@@ -540,6 +533,23 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
     		{
     			allocList = Collections.emptyList();
     		}
+		}
+
+		if ( templateId != null)
+		{
+			user = null;
+			final Allocatable template = operator.tryResolve(templateId, Allocatable.class);
+			if ( template == null)
+			{
+				return new ResultImpl<>(new RaplaException("Can't load template with id " + templateId));
+			}
+			else
+			{
+				allocList = new ArrayList<>(allocList);
+				allocList.add( template);
+			}
+			//annotationQuery = new LinkedHashMap<String,String>();
+			//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
 		}
 		FutureResult<Map<Allocatable,Collection<Appointment>>> query = operator.queryAppointments(user, allocList, start, end, reservationFilters, annotationQuery);
 		return query;
@@ -614,15 +624,18 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	public Collection<Reservation> getTemplateReservations(Allocatable template) throws RaplaException
 	{
 		User user = null;
-		Collection<Allocatable> allocList = null;
+		Collection<Allocatable> allocList = new ArrayList<Allocatable>();
+		allocList.add(template);
 		Date start = null;
 		Date end = null;
-		Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
-		annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
+		Map<String,String> annotationQuery = null;
+		//Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
+		//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
         try {
+
 			final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = operator.queryAppointments(user, allocList, start, end, null,
 					annotationQuery).get();
-			Collection<Reservation> result = (Collection<Reservation>) allocatableCollectionMap;
+			final Collection<Reservation> result = CalendarModelImpl.getAllReservations(allocatableCollectionMap);
             return result;
         } catch (RaplaException e) {
             throw e;
@@ -1391,9 +1404,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	public void checkReservation(Reservation reservation) throws RaplaException {
-		if (reservation.getAppointments().length == 0) {
-			throw new RaplaException(i18n.getString("error.no_appointment"));
-		}
+		ReservationImpl.checkReservation(i18n, reservation, operator);
 	}
 
 	public <T extends Entity> T edit(T obj) throws RaplaException {

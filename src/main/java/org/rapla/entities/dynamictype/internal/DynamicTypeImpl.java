@@ -12,6 +12,7 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
@@ -640,7 +641,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         return null;
     }
 
-    public static void validate(DynamicType dynamicType,I18nBundle i18n) throws RaplaException {
+    public static void validate(DynamicType dynamicType,RaplaResources i18n) throws RaplaException {
         Assert.notNull(dynamicType);
         if ( dynamicType.getName(i18n.getLocale()).length() == 0)
             throw new RaplaException(i18n.getString("error.no_name"));
@@ -703,7 +704,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
     }
 
-    private static void checkKey(I18nBundle i18n,String key) throws RaplaException {
+    public static void checkKey(RaplaResources i18n,String key) throws RaplaException {
         if (key.length() ==0)
             throw new RaplaException(i18n.getString("error.no_key"));
         if (!Tools.isKey(key) || key.length()>50) 

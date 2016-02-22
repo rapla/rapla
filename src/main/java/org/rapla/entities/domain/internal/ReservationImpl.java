@@ -28,9 +28,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
+import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
@@ -39,6 +41,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -55,7 +58,7 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
-
+import org.rapla.framework.RaplaException;
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
@@ -80,6 +83,30 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         this.lastChanged = lastChanged;
         if (lastChanged == null)
             this.lastChanged = this.createDate;
+    }
+
+    public static void checkReservation(RaplaResources i18n,Reservation reservation, EntityResolver resolver) throws RaplaException
+    {
+        Locale locale = i18n.getLocale();
+        String name = reservation.getName(locale);
+        if (reservation.getAppointments().length == 0)
+        {
+            throw new RaplaException(i18n.getString("error.no_appointment") + " " + name + " [" + reservation.getId() + "]");
+        }
+        final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+        Allocatable template;
+        if ( annotation != null)
+        {
+            template = resolver.tryResolve( annotation, Allocatable.class );
+        }
+        else
+        {
+            template = null;
+        }
+        if (reservation.getAllocatables().length == 0 && template == null)
+        {
+            throw new RaplaException(i18n.getString("warning.no_allocatables_selected") + " " + name + " [" + reservation.getId() + "]");
+        }
     }
 
     public void setResolver( EntityResolver resolver)  {

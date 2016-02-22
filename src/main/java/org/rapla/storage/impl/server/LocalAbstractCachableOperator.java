@@ -417,6 +417,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         try
         {
             Map<Allocatable,Collection<Appointment>> result = new LinkedHashMap<Allocatable,Collection<Appointment>>();
+            boolean isResourceTemplate = allocatables.size() == 1 &&(allocatables.iterator().next().getClassification().getType().getKey().equals( RAPLA_TEMPLATE));
             for (Allocatable allocatable : allocatables)
             {
                 Lock readLock = readLock();
@@ -436,11 +437,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     if (!match(reservation, annotationQuery))
                     {
                         continue;
-                    } // Ignore Templates if not explicitly requested
-                    // FIXME this special case should be refactored, so one can get all reservations in one method
-                    else if (RaplaComponent.isTemplate(reservation) && (annotationQuery == null || !annotationQuery
-                            .containsKey(RaplaObjectAnnotations.KEY_TEMPLATE)))
+                    }
+                    // Ignore Templates if not explicitly requested
+                    else if (RaplaComponent.isTemplate(reservation) && !isResourceTemplate)
                     {
+                        // FIXME this special case should be refactored, so one can get all reservations in one method
+
                         continue;
                     }
                     if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
@@ -1707,11 +1709,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         Set<ReferenceInfo<Allocatable>> allocatablesToProcess = new HashSet<ReferenceInfo<Allocatable>>();
         allocatablesToProcess.add(null);
-        final ReferenceInfo<Appointment> appRef = app.getReference();
         if (reservation != null)
         {
             final Collection<ReferenceInfo<Allocatable>> allocatableIdsFor = ((ReservationImpl) reservation).getAllocatableIdsFor(app);
             allocatablesToProcess.addAll(allocatableIdsFor);
+            final String templateId = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+            if ( templateId != null)
+            {
+                allocatablesToProcess.add(new ReferenceInfo<Allocatable>(templateId,Allocatable.class));
+            }
             // This double check is very imperformant and will be removed in the future, if it doesnt show in test runs
             //			if ( remove)
             //			{
@@ -1835,6 +1841,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         addAppointmentBinding(app, alloc);
                     }
+                    final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+                    if ( annotation != null)
+                    {
+                        ReferenceInfo<Allocatable> alloc = new ReferenceInfo(annotation, Allocatable.class);
+                        addAppointmentBinding(app, alloc);
+                    }
                 }
             }
         }
@@ -1907,13 +1919,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     for (Appointment app : appointmentSet)
                     {
                         Reservation reservation = app.getReservation();
+                        final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+                        Allocatable template = annotation != null ? cache.tryResolve( annotation,Allocatable.class) : null;
                         if (reservation == null)
                         {
                             logger.error("Appointment without a reservation stored in cache " + app);
                             appointmentSet.remove(app);
                             continue;
                         }
-                        else if (!reservation.hasAllocated(allocatable, app))
+                        else if (!reservation.hasAllocated(allocatable, app) && (template == null || !template.equals( allocatable)))
                         {
                             logger.error(
                                     "Allocation is not stored correctly for " + reservation + " " + app + " " + allocatable + " removing binding for " + app);
@@ -2734,16 +2748,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
+
     protected void checkConsitency(Entity entity, EntityResolver store) throws RaplaException
     {
         Class<? extends Entity> raplaType = entity.getTypeClass();
         final RaplaResources i18n = getI18n();
         if (Category.class == raplaType)
         {
+            Category category = (Category) entity;
+            DynamicTypeImpl.checkKey(i18n, category.getKey());
             if (entity.getReference().equals(Category.SUPER_CATEGORY_REF))
             {
                 // Check if the user group is missing
-                Category userGroups = ((Category) entity).getCategory(Permission.GROUP_CATEGORY_KEY);
+                Category userGroups = category.getCategory(Permission.GROUP_CATEGORY_KEY);
                 if (userGroups == null)
                 {
                     throw new RaplaException("The category with the key '" + Permission.GROUP_CATEGORY_KEY + "' is missing.");
@@ -2752,7 +2769,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             else
             {
                 // check if the category to be stored has a parent
-                Category category = (Category) entity;
                 Category parent = category.getParent();
                 if (parent == null)
                 {
@@ -2784,7 +2800,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         else if (Reservation.class == raplaType)
         {
             Reservation reservation = (Reservation) entity;
-            checkReservation(reservation);
+            ReservationImpl.checkReservation(i18n,reservation, store);
         }
         else if (DynamicType.class == raplaType)
         {
@@ -2934,20 +2950,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             getLogger().error("The following events will be removed because they have no resources or appointments: \n" + gson.toJson( reservations));
         }
         return reservationRefs;
-    }
-
-    protected void checkReservation(Reservation reservation) throws RaplaException
-    {
-        Locale locale = i18n.getLocale();
-        String name = reservation.getName(locale);
-        if (reservation.getAppointments().length == 0)
-        {
-            throw new RaplaException(i18n.getString("error.no_appointment") + " " + name + " [" + reservation.getId() + "]");
-        }
-        if (reservation.getAllocatables().length == 0)
-        {
-            throw new RaplaException(i18n.getString("warning.no_allocatables_selected") + " " + name + " [" + reservation.getId() + "]");
-        }
     }
 
     protected void checkNoDependencies(final UpdateEvent evt, final EntityStore store) throws RaplaException

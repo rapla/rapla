@@ -75,6 +75,37 @@ public abstract class Tools
         return true;
     }
 
+    public static String makeValidKey(String key)
+    {
+
+        StringBuilder validKey = new StringBuilder();
+        if ( key.isEmpty())
+        {
+            return "_";
+        }
+
+        for (int i=0;i<key.length();i++)
+        {
+            char c = key.charAt( i);
+            if (!validLetter( c))
+            {
+                validKey.append("_");
+            }
+            //if it start with a number
+            else if ( i== 0 && !validStart( c) )
+            {
+                validKey.append("_");
+                validKey.append(c);
+            }
+            else
+            {
+                validKey.append(c);
+            }
+        }
+        return validKey.toString();
+
+    }
+
     /** same as substring(0,width-1) except that it will not
         not throw an <code>ArrayIndexOutOfBoundsException</code> if string.length()&lt;width.
      */

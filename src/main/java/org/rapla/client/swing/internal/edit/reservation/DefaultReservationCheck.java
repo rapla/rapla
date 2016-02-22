@@ -20,9 +20,12 @@ import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -85,7 +88,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                     warningPanel.add( warningLabel);
                 }
 
-                if (!model.isMatchingSelectionAndFilter(reservation, null))
+                if (!model.isMatchingSelectionAndFilter(reservation, null) && getClientFacade().getTemplate() == null)
                 {
                     JLabel warningLabel = new JLabel();
                     warningLabel.setForeground(java.awt.Color.red);
@@ -111,8 +114,18 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                          );
                     warningPanel.add( warningLabel);
                 }
-                
-                if (reservation.getAllocatables().length == 0)
+
+                final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+                Allocatable template;
+                if ( annotation != null)
+                {
+                    template = getFacade().tryResolve( new ReferenceInfo<Allocatable>(annotation, Allocatable.class ));
+                }
+                else
+                {
+                    template = null;
+                }
+                if (reservation.getAllocatables().length == 0 && template == null)
                 {
                     JLabel warningLabel = new JLabel();
                     warningLabel.setForeground(java.awt.Color.red);

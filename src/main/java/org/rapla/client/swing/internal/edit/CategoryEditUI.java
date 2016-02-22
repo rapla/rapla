@@ -12,16 +12,32 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.swing.EditComponent;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
+import org.rapla.client.swing.internal.edit.fields.TextField;
+import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl.NamedNode;
+import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.components.calendar.RaplaArrowButton;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Category;
+import org.rapla.entities.CategoryAnnotations;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
+import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 import javax.swing.Box;
@@ -39,33 +55,16 @@ import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.TextField;
-import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl.NamedNode;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.Tools;
-import org.rapla.entities.Category;
-import org.rapla.entities.CategoryAnnotations;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.Category")
 public class CategoryEditUI extends RaplaGUIComponent
@@ -400,7 +399,7 @@ public class CategoryEditUI extends RaplaGUIComponent
 
 
     private void validate(Category category) throws RaplaException {
-        checkKey( category.getKey() );
+        DynamicTypeImpl.checkKey( getI18n(),category.getKey() );
         Category[] categories = category.getCategories();
         for ( int i=0; i< categories.length;i++) {
             final Category category1 = categories[i];
@@ -413,18 +412,6 @@ public class CategoryEditUI extends RaplaGUIComponent
         }
     }
 
-    private void checkKey(String key) throws RaplaException {
-        if (key.length() ==0)
-            throw new RaplaException(getString("error.no_key"));
-        if (!Tools.isKey(key) || key.length()>50)
-        {
-        	Object[] param = new Object[3];
-        	param[0] = key;
-        	param[1] = "'-', '_'";
-        	param[2] = "'_'";
-            throw new RaplaException(getI18n().format("error.invalid_key", param));
-    	}
-    }
     public void setEditKeys(boolean editKeys) {
         detailPanel.setEditKeys(editKeys);
         this.editKeys = editKeys;
