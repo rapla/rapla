@@ -58,14 +58,13 @@ import java.util.Map;
 @Extension(provides = ReservationWizardExtension.class, id= "defaultWizard")
 public class DefaultWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener
 {
-    public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.defaultwizard.enabled");
+    final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.defaultwizard.enabled");
 	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
 	private final PermissionController permissionController;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final EventBus eventBus;
-    boolean enabled;
 
     @Inject
 	public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
@@ -76,12 +75,11 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         this.eventBus = eventBus;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        enabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
     }
 
     @Override public boolean isEnabled()
     {
-        return enabled;
+        return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
     }
 
     public String getId() {

@@ -62,8 +62,7 @@ import java.util.TreeSet;
 @Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID)
 public class TemplateWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener, ModificationListener
 {
-	public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
-	private final Boolean enabled;
+	final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
 	Collection<Allocatable> templateNames;
     private final CalendarSelectionModel model;
     private final RaplaImages raplaImages;
@@ -81,7 +80,6 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
         this.eventBus = eventBus;
         getUpdateModule().addModificationListener( this);
         templateNames = updateTemplateNames();
-		enabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
     }
 
     public String getId() {
@@ -98,7 +96,7 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
 
 	@Override public boolean isEnabled()
 	{
-		return enabled;
+		return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
 	}
 
 	private Collection<Allocatable> updateTemplateNames() throws RaplaException {
