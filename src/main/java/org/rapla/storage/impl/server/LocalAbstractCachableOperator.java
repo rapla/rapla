@@ -634,7 +634,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         User editObject = editObject(user, null);
         List<Entity> editList = new ArrayList<Entity>(1);
         editList.add(editObject);
-        Collection<Entity> removeList = Collections.emptyList();
+        Collection<ReferenceInfo> removeList = Collections.emptyList();
         // synchronization will be done in the dispatch method
         storeAndRemove(editList, removeList, user);
     }
@@ -677,7 +677,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             arrayList.add(editableUser);
             arrayList.add(editablePerson);
             Collection<Entity> storeObjects = arrayList;
-            Collection<Entity> removeObjects = Collections.emptySet();
+            Collection<ReferenceInfo> removeObjects = Collections.emptySet();
             // synchronization will be done in the dispatch method
             storeAndRemove(storeObjects, removeObjects, null);
         }
@@ -689,7 +689,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Allocatable personReference = editableUser.getPerson();
         ArrayList<Entity> arrayList = new ArrayList<Entity>();
         Collection<Entity> storeObjects = arrayList;
-        Collection<Entity> removeObjects = Collections.emptySet();
+        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
         storeObjects.add(editableUser);
         if (personReference == null)
         {
@@ -3155,7 +3155,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         ArrayList<Entity> arrayList = new ArrayList<Entity>();
         arrayList.add(refUser);
         Collection<Entity> storeObjects = arrayList;
-        Collection<Entity> removeObjects = Collections.emptySet();
+        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
         storeAndRemove(storeObjects, removeObjects, null);
     }
 

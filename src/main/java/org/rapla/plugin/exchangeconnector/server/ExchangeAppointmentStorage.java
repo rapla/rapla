@@ -264,7 +264,7 @@ public class ExchangeAppointmentStorage
         }
 
         Collection<Entity> storeObjects = new HashSet<Entity>();
-        Collection<Entity> removeObjects = new HashSet<Entity>();
+        Collection<ReferenceInfo> removeObjects = new HashSet<ReferenceInfo>();
         for (SynchronizationTask task : toRemove)
         {
             // remove task from memory 
@@ -292,7 +292,7 @@ public class ExchangeAppointmentStorage
                 ImportExportEntity persistant = importExportEntities.get(persistantId);
                 if (persistant != null)
                 {
-                    removeObjects.add(persistant);
+                    removeObjects.add(persistant.getReference());
                 }
             }
 

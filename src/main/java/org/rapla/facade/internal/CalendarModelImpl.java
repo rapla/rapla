@@ -1155,7 +1155,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             map.setResolver( operator );
             clone.putEntry(EXPORT_ENTRY, map);
         }
-        final Collection<Entity> toRemove = Collections.emptyList();
+        final Collection<ReferenceInfo> toRemove = Collections.emptyList();
         final Collection<Preferences> singleton = Collections.singleton(clone);
         final Collection toStore = singleton;
         operator.storeAndRemove(toStore, toRemove, user);

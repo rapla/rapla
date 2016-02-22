@@ -166,7 +166,7 @@ public class RaplaAuthentificationService
                 logger.info("Udating rapla user '" + username + "' from external source.");
                 List<Entity> storeList = new ArrayList<Entity>(1);
                 storeList.add(user);
-                List<Entity> removeList = Collections.emptyList();
+                List<ReferenceInfo> removeList = Collections.emptyList();
 
                 operator.storeAndRemove(storeList, removeList, null);
             }

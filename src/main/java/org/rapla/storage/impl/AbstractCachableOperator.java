@@ -168,7 +168,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return (Entity) refEntity;
 	}
 
-	public void storeAndRemove(final Collection<Entity> storeObjects,	final Collection<Entity>removeObjects, final User user) throws RaplaException {
+	public void storeAndRemove(final Collection<Entity> storeObjects,	final Collection<ReferenceInfo> removeObjects, final User user) throws RaplaException {
 		checkConnected();
 
 		UpdateEvent evt = new UpdateEvent();
@@ -186,13 +186,13 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	              evt.putStore(obj);
 		    }
 		}
-		for (Entity entity : removeObjects) {
-			Class<? extends Entity> type = entity.getTypeClass();
+		for (ReferenceInfo<Allocatable> entity : removeObjects) {
+			Class<? extends Entity> type = entity.getType();
 			if (Appointment.class ==type || Attribute.class ==  type) {
 				String name = getName( entity);
 				throw new RaplaException(getI18n().format("error.remove_object",name));
 			} 
-			evt.putRemove(entity);
+			evt.putRemoveId(entity);
 		}
 		dispatch(evt);
 	}

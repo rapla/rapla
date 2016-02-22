@@ -1728,7 +1728,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         }
 
         ArrayList<Entity>storeList = new ArrayList<Entity>();
-        ArrayList<Entity>removeList = new ArrayList<Entity>();
+        ArrayList<ReferenceInfo>removeList = new ArrayList<ReferenceInfo>();
         for (Entity toStore : storedObjects) {
 			if ( toStore instanceof Category)
 			{
@@ -1738,7 +1738,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
             storeList.add( toStore);
         }
         for (Entity<?> toRemove : removedObjects) {
-            removeList.add( toRemove);
+            removeList.add( toRemove.getReference());
         }
         operator.storeAndRemove(storeList, removeList, user);
     
