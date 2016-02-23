@@ -300,6 +300,11 @@ public class PermissionController
     public boolean hasPermissionToAllocate(User user, Allocatable a)
     {
         Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
+        final ReferenceInfo<User> ownerRef = a.getOwnerRef();
+        if ( user != null && ownerRef != null && user.getReference().equals(ownerRef))
+        {
+            return true;
+        }
         for (Permission p : a.getPermissionList())
         {
             if (!affectsUser(user, p, groups))
