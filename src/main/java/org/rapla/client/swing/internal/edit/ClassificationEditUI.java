@@ -250,10 +250,9 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         {
             if (permissionController.canRead(object, attribute, user))
             {
-                canRead = true;
-                if (permissionController.canWrite(object, attribute, user))
+                if (!permissionController.canWrite(object, attribute, user))
                 {
-                    canWrite = true;
+                    canWrite = false;
                 }
             }
             else
