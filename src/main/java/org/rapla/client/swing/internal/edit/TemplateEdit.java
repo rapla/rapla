@@ -21,6 +21,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
@@ -32,8 +33,10 @@ import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
+import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
 import java.awt.Component;
@@ -47,9 +50,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class TemplateEdit extends RaplaGUIComponent 
 {
@@ -63,7 +68,7 @@ public class TemplateEdit extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     
-    private TemplateEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
+    private TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
@@ -118,6 +123,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
             }
         };
+        final ReferenceInfo<User> userReference = getUser().getReference();
         templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback);
         templateList.setNameProvider( new NameProvider<Allocatable>()
                 {
@@ -129,8 +135,39 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
                 );
         templateList.getList().setSelectionMode( ListSelectionModel.SINGLE_SELECTION);
+        templateList.getList().setCellRenderer(new DefaultListCellRenderer()
+        {
+            @Override public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+            {
+                if (value instanceof  Allocatable)
+                {
+                    final Allocatable value1 = (Allocatable) value;
+                    final ReferenceInfo<User> ownerRef = value1.getOwnerRef();
+                    value = value1.getName(getRaplaLocale().getLocale());
+                    if ( ownerRef!= null && !ownerRef.equals(userReference))
+                    {
+                        String username = getUsername( ownerRef);
+                        value = username + ": " + value ;
+                    }
+                }
+                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            }
+        });
         templateList.setMoveButtonVisible( false );
         templateList.getComponent().setPreferredSize( new Dimension(1000, 500));
+    }
+
+    Map<ReferenceInfo<User>,String> usernameMap = new HashMap<ReferenceInfo<User>,String>();
+    private String getUsername(ReferenceInfo<User> user)
+    {
+        String username = usernameMap.get(user);
+        if ( username == null)
+        {
+            username = getFacade().getOperator().getUsername(user);
+            usernameMap.put( user, username);
+        }
+        return username;
+
     }
 
     public String getNewTemplateName() throws RaplaException {
@@ -196,7 +233,6 @@ public class TemplateEdit extends RaplaGUIComponent
             
             Collection<Allocatable> originals = getQuery().getTemplates();
             List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
-            final RaplaFacade raplaFacade = getFacade();
             for ( Allocatable template:originals)
             {
                 if ( permissionController.canModify( template, getUser()))
