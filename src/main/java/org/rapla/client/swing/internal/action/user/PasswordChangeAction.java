@@ -76,7 +76,7 @@ public class PasswordChangeAction extends RaplaAction {
             User selectedUser = (User) object;
             User user = getUser();
             boolean showOldPassword = !PermissionController.canAdminUser(user, selectedUser);
-            changePassword(user, showOldPassword);
+            changePassword(selectedUser, showOldPassword);
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex, popupContext);
         }

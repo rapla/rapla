@@ -32,6 +32,7 @@ import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditController;
+import org.rapla.client.swing.EditController.EditCallback;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
@@ -129,9 +130,11 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
     {
         private static final long serialVersionUID = 1L;
         private final ReservationController reservationController;
+        private final EditCallback<List<T>> callback;
 
         public SaveAction(EditController.EditCallback<List<T>> callback, ReservationController reservationController)
         {
+            this.callback = callback;
             this.reservationController = reservationController;
         }
 
@@ -189,14 +192,17 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
 
                 getPrivateEditDialog().removeEditDialog(EditDialog.this);
                 dlg.close();
+                callback.onSuccess(saveObjects);
             }
             catch (IllegalAnnotationException ex)
             {
                 dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component)dlg, null));
+                callback.onFailure(ex);
             }
             catch (RaplaException ex)
             {
                 dialogUiFactory.showException(ex, new SwingPopupContext((Component)dlg, null));
+                callback.onFailure(ex);
             }
         }
     }
