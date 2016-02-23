@@ -1587,6 +1587,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			if ( user != null)
 			{
 				r.setOwner( user );
+				((ReservationImpl)r).setLastChangedBy( user);
+				((ReservationImpl)r).setLastChanged( null);
 			}
 			if ( templateId != null )
 			{
