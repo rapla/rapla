@@ -488,7 +488,7 @@ class LockStorage extends AbstractTableStorage
 {
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "' AND ACTIVE = 1";
-    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE VALID_UNTIL < CURRENT_TIMESTAMP";
+    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE VALID_UNTIL < CURRENT_TIMESTAMP and ACTIVE = 1";
     private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP, VALID_UNTIL = ? WHERE LOCKID = ? AND ACTIVE <> 1";
     private final String deactivateWithLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = ? WHERE LOCKID = ?";
     private final String deactivateWithoutLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE LOCKID = ?";
