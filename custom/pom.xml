@@ -139,6 +139,30 @@
                         </executions>
                     </plugin>
                     <plugin>
+                    	<groupId>org.apache.maven.plugins</groupId>
+                    	<artifactId>maven-resources-plugin</artifactId>
+                    	<version>2.6</version>
+                    	<executions>
+                    		<execution>
+	                    		<phase>compile</phase>
+	                    		<goals>
+	                    			<goal>copy-resources</goal>
+	                    		</goals>
+		                    	<configuration>
+									<overwrite>true</overwrite>
+									<outputDirectory>${project.build.directory}/originwar/WEB-INF</outputDirectory>
+									<resources>
+										<resource>
+											<directory>${project.basedir}/src/main/webapp/WEB-INF</directory>
+											<targetPath>${project.build.directory}/originwar/WEB-INF</targetPath>
+											<filtering>false</filtering>
+										</resource>
+									</resources>
+		                    	</configuration>
+                    		</execution>
+                    	</executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
                         <version>2.6</version>
