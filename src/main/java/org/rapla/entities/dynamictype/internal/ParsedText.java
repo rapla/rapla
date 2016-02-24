@@ -657,11 +657,6 @@ public class ParsedText implements Serializable
             return parent.isIdentical(id2);
         }
 
-        public boolean isPersistant()
-        {
-            return parent.isPersistant();
-        }
-
         public String getAnnotation(String key, String defaultValue)
         {
             return parent.getAnnotation(key, defaultValue);

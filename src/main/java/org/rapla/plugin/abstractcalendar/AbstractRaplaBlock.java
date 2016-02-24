@@ -48,6 +48,7 @@ public abstract class AbstractRaplaBlock implements Block
     }
 
     public String getName(Named named) {
+
         return named.getName(m_raplaLocale.getLocale());
     }
     

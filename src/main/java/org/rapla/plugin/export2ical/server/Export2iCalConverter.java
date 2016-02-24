@@ -236,7 +236,8 @@ public class Export2iCalConverter
     {
         if (facade.getPermissionController().canRead(alloc, user))
         {
-            return alloc.getName(raplaLocale.getLocale());
+            final String name = NameFormatUtil.getExportName(alloc,raplaLocale.getLocale());
+            return name;
         }
         else
         {
@@ -317,11 +318,15 @@ public class Export2iCalConverter
             {
                 try
                 {
-                    Attendee attendee = new Attendee(new URI(email));
-                    attendee.getParameters().add(Role.REQ_PARTICIPANT);
-                    attendee.getParameters().add(new Cn(getResourceName(person, user)));
-                    attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
-                    properties.add(attendee);
+                    final String resourceName = getResourceName(person, user);
+                    if ( !isEmpty(resourceName))
+                    {
+                        Attendee attendee = new Attendee(new URI(email));
+                        attendee.getParameters().add(Role.REQ_PARTICIPANT);
+                        attendee.getParameters().add(new Cn(resourceName));
+                        attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
+                        properties.add(attendee);
+                    }
                 }
                 catch (URISyntaxException e)
                 {
@@ -329,6 +334,11 @@ public class Export2iCalConverter
                 }
             }
         }
+    }
+
+    private boolean isEmpty(String allocatableName)
+    {
+        return allocatableName == null || allocatableName.trim().isEmpty();
     }
 
     /**
@@ -542,11 +552,17 @@ public class Export2iCalConverter
             {
                 continue;
             }
+            final String resourceName = getResourceName(alloc, user);
+            if ( isEmpty(resourceName))
+            {
+                continue;
+            }
+
             if (buffer.length() > 0)
             {
                 buffer.append(", ");
             }
-            buffer.append(getResourceName(alloc,user));
+            buffer.append(resourceName);
         }
 
         properties.add(new Location(buffer.toString()));

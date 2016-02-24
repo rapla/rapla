@@ -1,5 +1,7 @@
 package org.rapla.entities.domain;
 
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 
 import java.util.Locale;
@@ -36,18 +38,18 @@ public class NameFormatUtil
         return eventDescription;
     }
 
-    public static String getExportName(Reservation reservation, Locale locale)
+    public static String getExportName(Classifiable classifiable, Locale locale)
     {
-        String eventDescription;
-        if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
+        Classification classification = classifiable.getClassification();
+        if ( classification.getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
         {
-            eventDescription = reservation.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT);
+            String name = classification.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT);
+            return name;
         }
         else
         {
-            return getName(reservation, locale);
+            return getName(classifiable, locale);
         }
-        return eventDescription;
     }
 
     public static String getName(AppointmentBlock appointmentBlock, Locale locale)
@@ -64,10 +66,10 @@ public class NameFormatUtil
         return reservation.format( locale, annotiationName, appointment);
     }
 
-    public static String getName(Reservation reservation, Locale locale)
+    public static String getName(Classifiable reservation, Locale locale)
     {
         String annotiationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
-        return reservation.format( locale, annotiationName);
+        return reservation.getClassification().format( locale, annotiationName);
     }
 
     

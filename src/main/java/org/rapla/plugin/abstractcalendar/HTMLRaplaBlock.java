@@ -13,6 +13,7 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import com.google.gwt.logging.client.DefaultLevel;
 import org.rapla.components.calendarview.html.HTMLBlock;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
@@ -98,11 +99,16 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
                   {
                   	if ( getContext().isVisible( resource) && !resource.isPerson())
                   	{
-                  		if ( buffer.length() > 0)
+                        final String allocatableName = getAllocatableName(resource);
+                        if ( isEmpty( allocatableName))
+                        {
+                            continue;
+                        }
+                        if ( buffer.length() > 0)
                   		{
                   			buffer.append(", ");
                   		}
-                  		buffer.append(XMLWriter.encode( getName(resource)));
+                        buffer.append(XMLWriter.encode(allocatableName));
                   	}
                   }
                   if (  !getBuildContext().isResourceVisible() && buffer.length() > 0)
@@ -163,9 +169,14 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
             {
             	if ( !getContext().isVisible( person) || !person.isPerson())
               	  continue;
-            	buf.append("<br>");
+                final String allocatableName = getAllocatableName(person);
+                if ( isEmpty( allocatableName))
+                {
+                    continue;
+                }
+                buf.append("<br>");
                 buf.append("<span class=\"person\">");
-                buf.append(XMLWriter.encode(getName(person)));
+                buf.append(XMLWriter.encode(allocatableName));
                 buf.append("</span>");
             }
         }
@@ -181,8 +192,12 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
 	               {
 	            	   if ( !getContext().isVisible( person) || !person.isPerson())
 	                 	  continue;
-	                 
-	            	   if ( !first)
+                       final String allocatableName = getAllocatableName(person);
+                       if ( isEmpty( allocatableName))
+                       {
+                           continue;
+                       }
+                       if ( !first)
 	                   {
 	                	   buf.append(", ");
 	                   }
@@ -190,7 +205,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
 	            	   {
 	            		   first  = false;
 	            	   }
-	                   buf.append( XMLWriter.encode(getName( person )));
+                       buf.append( XMLWriter.encode(allocatableName));
 	               }
 	               buf.append("</span>");
         	   }
@@ -200,18 +215,34 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
             for (int i=0; i<resources.length;i ++) {
                 if (!getContext().isVisible(resources[i]))
                     continue;
+                final String allocatableName = getAllocatableName(resources[i]);
+                if ( isEmpty( allocatableName))
+                {
+                    continue;
+                }
                 buf.append("<br>");
                 buf.append("<span class=\"resource\">");
-                buf.append(XMLWriter.encode(getName(resources[i])));
+                buf.append(XMLWriter.encode(allocatableName));
                 buf.append("</span>");
             }
         }
         return buf.toString();
     }
-    
+
+    private boolean isEmpty(String allocatableName)
+    {
+        return allocatableName == null || allocatableName.trim().isEmpty();
+    }
+
     @Override
     public RaplaBlockContext getContext()
     {
         return super.getContext();
+    }
+
+    protected String getAllocatableName(Allocatable allocatable)
+    {
+        final String exportName = NameFormatUtil.getExportName(allocatable, m_raplaLocale.getLocale());
+        return exportName;
     }
 }

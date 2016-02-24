@@ -24,18 +24,6 @@ public interface Entity<T extends Entity> extends RaplaObject<T> {
 	
     boolean isIdentical(Entity id2);
 
-    /** @deprecated as of rapla 1.8 there can be multiple persistant versions of an object. You can still use isReadOnly to test if the object is editable 
-     * returns if the instance of the entity is persisant and the cache or just a local copy.
-     * Persistant objects are usably not editable and are updated in a multiuser system.
-     * Persistant instances with the same id should therefore have the same content and
-     * <code>persistant1.isIdentical(persistant2)</code> implies <code>persistant1 == persistant2</code>.
-     * A non persistant instance has never the same reference as the persistant entity with the same id.
-     * <code>persistant1.isIdentical(nonPersitant1)</code> implies <code>persistant1 != nonPersistant2</code>.
-     * As
-     */
-    @Deprecated
-    boolean isPersistant();
-
     boolean isReadOnly();
 
     ReferenceInfo<T> getReference();

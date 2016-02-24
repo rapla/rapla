@@ -351,7 +351,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         RaplaFacade facade = getClientFacade().getRaplaFacade();
         if ( !defaultLanguageChoosen)
         {
-            Preferences prefs = facade.edit(facade.getPreferences());
+            Preferences prefs = facade.edit(facade.getSystemPreferences());
             String currentLanguage = raplaLocale.getLocale().getLanguage();
             prefs.putEntry( RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
             try
@@ -365,7 +365,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         }
         else
         {
-            String language = facade.getPreferences().getEntryAsString( RaplaLocale.LANGUAGE_ENTRY, null);
+            String language = facade.getSystemPreferences().getEntryAsString( RaplaLocale.LANGUAGE_ENTRY, null);
             if ( language != null)
             {
                 DefaultBundleManager localeSelector =  (DefaultBundleManager)bundleManager;
