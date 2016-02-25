@@ -54,6 +54,7 @@ public class UserOption extends RaplaGUIComponent
 	JLabel emailLabel = new JLabel();
 	JLabel nameLabel = new JLabel();
 	JLabel usernameLabel = new JLabel();
+	RaplaButton changePasswordButton;
 	
 	LanguageChooser languageChooser; 		
 	
@@ -69,7 +70,7 @@ public class UserOption extends RaplaGUIComponent
     	languageChooser= new LanguageChooser( getLogger(), getContext());
 	    RaplaButton changeNameButton = new RaplaButton();
 	    RaplaButton changeEmailButton = new RaplaButton();
-	    RaplaButton changePasswordButton = new RaplaButton();
+	    changePasswordButton = new RaplaButton();
     	    
 
         superPanel.setLayout(tableLayout);
@@ -107,6 +108,7 @@ public class UserOption extends RaplaGUIComponent
     	create();
     	String language = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY,null);
     	languageChooser.setSelectedLanguage( language);
+    	changePasswordButton.setEnabled( getClientFacade().canChangePassword());
     }
 
     
