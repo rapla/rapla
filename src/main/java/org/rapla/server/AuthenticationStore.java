@@ -22,9 +22,7 @@ import org.rapla.inject.InjectionContext;
 public interface AuthenticationStore {
     /** returns, if the user can be authenticated. */
     boolean authenticate(String username, String password) throws RaplaException;
-    /** returns the name of the store */
-    String getName();
-    /** Initializes a user entity with the values provided by the authentication store. 
+    /** Initializes a user entity with the values provided by the authentication store.
      * @return <code>true</code> if the new user-object attributes (such as email, name, or groups) differ from the values stored before the method was executed, <code>false</code> otherwise. */
     boolean initUser( User user, String username, String password, Category groupRootCategory) throws RaplaException;
 }
