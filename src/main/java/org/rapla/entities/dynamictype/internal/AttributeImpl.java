@@ -754,6 +754,11 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             {
                 return null;
             }
+            final Category categoryForId = categoryFinder.getCategoryForId(new ReferenceInfo(path, Category.class));
+            if ( categoryForId != null)
+            {
+                return categoryForId.getReference();
+            }
             final ReferenceInfo<Category> parentCategory = ((AttributeImpl) attribute).getRefConstraintId(ConstraintIds.KEY_ROOT_CATEGORY);
             final ReferenceInfo<Category> idForCategory = categoryFinder.getIdForCategory(parentCategory, text);
             return idForCategory;

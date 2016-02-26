@@ -87,6 +87,20 @@ public class KeyAndPathResolver
         return categories.get( path);
     }
 
+    public Category getCategoryForId(ReferenceInfo referenceInfo)
+    {
+        final String s = categoryPath.get(referenceInfo.getId());
+        if ( s == null)
+        {
+            return  null;
+        }
+        else
+        {
+            final Category category = categories.get(s);
+            return category;
+        }
+    }
+
     public ReferenceInfo getIdForDynamicType(String keyref)
     {
         final DynamicType dynamicType = store.getDynamicType(keyref);
