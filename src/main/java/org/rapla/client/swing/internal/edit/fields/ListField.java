@@ -55,7 +55,15 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		super(facade, i18n, raplaLocale, logger);
 		this.includeNothingSelected = includeNothingSelected;
 		setFieldName(fieldName);
-		panel = new JPanel();
+		panel = new JPanel()
+        {
+		    @Override
+		    public void setEnabled(boolean enabled)
+		    {
+		        super.setEnabled(enabled);
+		        field.setEnabled(enabled);
+		    }
+        };
 		panel.setOpaque(false);
 		field = new RaplaListComboBox(raplaLocale);
 		field.addActionListener(this);
