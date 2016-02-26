@@ -192,17 +192,26 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
 
                 getPrivateEditDialog().removeEditDialog(EditDialog.this);
                 dlg.close();
-                callback.onSuccess(saveObjects);
+                if ( callback != null)
+                {
+                    callback.onSuccess(saveObjects);
+                }
             }
             catch (IllegalAnnotationException ex)
             {
                 dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component)dlg, null));
-                callback.onFailure(ex);
+                if ( callback != null)
+                {
+                    callback.onFailure(ex);
+                }
             }
             catch (RaplaException ex)
             {
                 dialogUiFactory.showException(ex, new SwingPopupContext((Component)dlg, null));
-                callback.onFailure(ex);
+                if ( callback != null)
+                {
+                    callback.onFailure(ex);
+                }
             }
         }
     }
