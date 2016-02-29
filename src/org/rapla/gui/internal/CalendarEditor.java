@@ -60,6 +60,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     final private SavedCalendarView savedViews;
     final private ConflictSelection conflictsView;
     final public MultiCalendarView calendarContainer;
+    final JButton maxTree;
+    final JButton minTree;
     
     final JToolBar minimized;
     final JToolBar templatePanel;
@@ -138,18 +140,18 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         c.weightx = 0;
         c.weighty = 0;
         c.anchor = GridBagConstraints.EAST;
-        final JButton max  = new JButton();
+        maxTree  = new JButton();
         final JButton tree  = new JButton();
         tree.setEnabled( false );
         minimized = new JToolBar(JToolBar.VERTICAL);
         minimized.setFloatable( false);
-        minimized.add( max);
+        minimized.add( maxTree);
         minimized.add( tree);
         
         
-        max.setIcon( UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
+        maxTree.setIcon( UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
         tree.setIcon( getIcon("icon.tree"));
-        JButton min = new RaplaButton(RaplaButton.SMALL);
+        minTree = new RaplaButton(RaplaButton.SMALL);
         ActionListener minmaxAction = new ActionListener() {
 			
 			public void actionPerformed(ActionEvent e) {
@@ -159,8 +161,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 				((SaveableToggleAction)component.getAction()).toggleCheckbox( component);
 			}
 		};
-		min.addActionListener( minmaxAction);
-		max.addActionListener( minmaxAction);
+		minTree.addActionListener( minmaxAction);
+		maxTree.addActionListener( minmaxAction);
         tree.addActionListener( minmaxAction);
         
         templatePanel = new JToolBar(JToolBar.VERTICAL);
@@ -178,7 +180,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 		});
         
 		Icon icon = UIManager.getDefaults().getIcon("InternalFrame.minimizeIcon");
-        min.setIcon( icon) ;
+        minTree.setIcon( icon) ;
         //left.add(min, c);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
@@ -193,8 +195,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         JToolBar mintb =new JToolBar();
         mintb.setFloatable( false);
        // mintb.add( min);
-        min.setAlignmentY( JButton.TOP);
-        jp.add( min, BorderLayout.EAST);
+        minTree.setAlignmentY( JButton.TOP);
+        jp.add( minTree, BorderLayout.EAST);
         left.add(jp, c);
         c.fill = GridBagConstraints.BOTH;
         c.gridy = 2;
@@ -262,6 +264,9 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 
     private void updateViews() throws RaplaException {
     	
+        boolean modifyPreferencesAllowed =isModifyPreferencesAllowed();
+        maxTree.setEnabled( modifyPreferencesAllowed);
+        minTree.setEnabled( modifyPreferencesAllowed);
     	boolean showConflicts = getClientFacade().getPreferences().getEntryAsBoolean( SHOW_CONFLICTS_CONFIG_ENTRY, true);
         boolean showSelection = getClientFacade().getPreferences().getEntryAsBoolean( SHOW_SELECTION_CONFIG_ENTRY, true);
       

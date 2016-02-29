@@ -218,6 +218,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     		SaveableToggleAction action = new SaveableToggleAction( context, CalendarEditor.SHOW_SELECTION_MENU_ENTRY,CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY);
         	RaplaMenuItem menu = action.createMenuItem();
             viewMenu.insertBeforeId( menu, "view_save" );
+            action.setEnabled( modifyPreferencesAllowed);
         }
 
         if ( isAdmin() ) {
