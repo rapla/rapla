@@ -1,7 +1,7 @@
 This is the INSTALLING-GUIDE for the Rapla-BINARY-DISTRIBUTION
 
 You will find more information on our documentation pages on
-http://code.google.com/p/rapla/
+http://rapla.org/
 
 if you have downloaded the SOURCE-DISTRIBUTION you have to
 !!! BUILD A BINARY-DISTRIBUTION first !!!
@@ -39,7 +39,7 @@ call rapla.bat (win NT/2000)
 
 For more information visit the documentation pages on
 
-http://code.google.com/p/rapla/
+http://rapla.org/
 
 
 Acknowledgment

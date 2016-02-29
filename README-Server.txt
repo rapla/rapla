@@ -1,7 +1,7 @@
 This README is for running Rapla as server. You will find more information on our
 documentation pages on 
 
-http://code.google.com/p/rapla/
+http://rapla.org
 
 
 The Rapla server:
@@ -67,7 +67,7 @@ Troubleshooting:
          <New class="org.eclipse.jetty.server.nio.SelectChannelConnector">
             <Set name="port"><SystemProperty name="jetty.port" default="8051"/></Set>
 
-2. look in the troubleshooting faq under http://code.google.com/p/rapla/
+2. look in the troubleshooting faq under https://github.com/rapla/rapla/wiki/FAQ
 
 3. Post a question to rapla-developers@lists.sourceforge.net
 

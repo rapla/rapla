@@ -1,9 +1,9 @@
 This README is for building rapla from source. You will find more information and the rapla sources on 
 
-http://code.google.com/p/rapla/
+http://rapla.org
 
-We recommend reading the faqs and the development documents under https://code.google.com/p/rapla/wiki/ for more information.
-especially the http://code.google.com/p/rapla/wiki/BuildGuide
+We recommend reading the faqs and the development documents under https://github.com/rapla/rapla/wiki for more information.
+especially the https://github.com/rapla/rapla/wiki/BuildGuide
 
 We use the ant tool for our build process. Ant is the java-equivalent to make
 Look at jakarta.apache.org/ant for more information. If you don't want 
