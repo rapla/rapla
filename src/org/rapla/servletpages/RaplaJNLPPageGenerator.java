@@ -20,11 +20,15 @@ import javax.servlet.http.HttpServletResponse;
 import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 
 public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageGenerator{
+    
+    final public static TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<Boolean>("org.rapla.jnlp.createshortcut");
     
     public RaplaJNLPPageGenerator( RaplaContext context )
     {
@@ -120,9 +124,12 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 		response.setHeader("Cache-Control", "no-cache");
 		final String defaultTitle = getI18n().getString("rapla.title");
         String menuName;
+        boolean createShortcut =true;
         try
         {
-            final String unencodedString = getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            final Preferences systemPreferences = getQuery().getSystemPreferences();
+            final String unencodedString = systemPreferences.getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
+            createShortcut = systemPreferences.getEntryAsBoolean(CREATE_SHORTCUT,true);
             menuName= escapeXml(unencodedString);
         }
         catch (RaplaException e) {
@@ -147,10 +154,13 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 
         out.println(" <icon kind=\"splash\" href=\""+webstartRoot+ "/webclient/logo.png\"/> ");
 		out.println(" <update check=\"always\" policy=\"always\"/>");
-        out.println(" <shortcut online=\"true\">");
-        out.println("       <desktop/>");
-        out.println("       <menu submenu=\"" + menuName +  "\"/>");
-        out.println(" </shortcut>");
+		if ( createShortcut)
+		{
+            out.println(" <shortcut online=\"true\">");
+            out.println("       <desktop/>");
+            out.println("       <menu submenu=\"" + menuName +  "\"/>");
+            out.println(" </shortcut>");
+		}
 		out.println("</information>");
 		boolean allpermissionsAllowed = IOUtil.isSigned();
         final String parameter = request.getParameter("sandbox");
