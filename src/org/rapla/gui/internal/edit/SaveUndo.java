@@ -73,6 +73,10 @@ public class SaveUndo<T extends Entity> extends RaplaComponent implements Comman
         }
         else
         {
+            if ( !isNew)
+            {
+                newEntitiesPersistant = getClientFacade().getPersistant( newEntities);
+            }
             firstTimeCall = false;
         }
 	    for ( T entity: newEntities)
