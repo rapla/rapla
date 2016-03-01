@@ -55,6 +55,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.SortedClassifiableComparator;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
@@ -141,40 +142,40 @@ public abstract class RaplaBuilder
     public void setFromModel(CalendarModel model, Date startDate, Date endDate) throws RaplaException {
     	Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
 
-    	conflictingAppointments = null;
     	conflictsSelected.clear();
         conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
         Collection<Allocatable> allocatables ;
         if ( !conflictsSelected.isEmpty() )
         {
             allocatables = Util.getAllocatables( conflictsSelected );
-	    }
-        else
-        {
-
-//            long time = System.currentTimeMillis();
-            allocatables = model.getSelectedAllocatablesSorted();
-//            getLogger().info("Kram took " + (System.currentTimeMillis() - time) + " ms ");
-
-        }
-     
-        if ( startDate != null && !allocatables.isEmpty()) {
-            // FIXME
-//            Reservation[] events = model.getReservations( startDate, endDate);
-//            List<Reservation> reservationsForAllocatables = Arrays.asList(events);
-//			allReservationsForAllocatables.addAll( reservationsForAllocatables);
-        }
-        bindings = model.queryAppointments(startDate, endDate);
-        if ( !conflictsSelected.isEmpty() )
-        {
+            bindings = model.queryAppointments(startDate, endDate);
             Collection<Appointment> all = new LinkedHashSet<Appointment>();
             for ( Collection<Appointment> appointments: bindings.values())
             {
                 all.addAll( appointments);
             }
-        	conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
+            conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
         }
         else
+        {
+            bindings = model.queryAppointments(startDate, endDate);
+            Collection<Appointment> all = new LinkedHashSet<Appointment>();
+            allocatables = new ArrayList<Allocatable>(bindings.keySet());
+            Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
+            for ( Collection<Appointment> appointments: bindings.values())
+            {
+                all.addAll( appointments);
+            }
+            conflictingAppointments = null;
+
+//            long time = System.currentTimeMillis();
+
+//            getLogger().info("Kram took " + (System.currentTimeMillis() - time) + " ms ");
+
+        }
+     
+
+        if ( conflictsSelected.isEmpty() )
         {
             // FIXME check if needed
 //        	if ( allocatables.isEmpty() || startDate == null)
@@ -487,7 +488,8 @@ public abstract class RaplaBuilder
 
     private RaplaBlockContext[] getBlocksForAppointment(AppointmentBlock block, BuildContext buildContext) {
     	Appointment appointment = block.getAppointment();
-    	boolean isBlockSelected = selectedReservations.contains( appointment.getReservation());
+        final Reservation reservation = appointment.getReservation();
+        boolean isBlockSelected = selectedReservations.contains(reservation);
         boolean isConflictsSelected = isConflictsSelected();
 		if ( !isBlockSelected && (!nonFilteredEventsVisible && !isConflictsSelected))
         {

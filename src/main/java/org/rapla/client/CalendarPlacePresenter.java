@@ -214,7 +214,7 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
         {
             Allocatable[] allocatables = facade.getAllocatables();
             Allocatable[] entries = allocatables;
-            Collection<Allocatable> selectedAllocatables = Arrays.asList(model.getSelectedAllocatables());
+            Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
             view.updateResources(entries, selectedAllocatables);
         }
         catch (RaplaException e)

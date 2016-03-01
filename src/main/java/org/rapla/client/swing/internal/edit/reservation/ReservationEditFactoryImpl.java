@@ -7,6 +7,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.ReservationToolbarExtension;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
@@ -20,7 +21,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,14 +42,14 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
     private final ReservationInfoEditFactory reservationInfoEditFactory;
     private final AppointmentListEditFactory appointmentListEditFactory;
     private final AllocatableSelectionFactory allocatableSelectionFactory;
-    private final PermissionController permissionController;
     private final FrameControllerList frameControllerList;
+    private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
 
     @Inject
     public ReservationEditFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentStatusFactory> list,
              ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages,
             DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory, AppointmentListEditFactory appointmentListEditFactory,
-            AllocatableSelectionFactory allocatableSelectionFactory,  FrameControllerList frameControllerList)
+            AllocatableSelectionFactory allocatableSelectionFactory,  FrameControllerList frameControllerList,Set<ReservationToolbarExtension> reservationToolbarExtensions)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -63,14 +63,14 @@ public class ReservationEditFactoryImpl implements ReservationEditFactory
         this.reservationInfoEditFactory = reservationInfoEditFactory;
         this.appointmentListEditFactory = appointmentListEditFactory;
         this.allocatableSelectionFactory = allocatableSelectionFactory;
-        this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.frameControllerList = frameControllerList;
+        this.reservationToolbarExtensions = reservationToolbarExtensions;
     }
 
     public ReservationEdit create(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
     {
         ReservationEditImpl edit = new ReservationEditImpl(facade, i18n, raplaLocale, logger, list, reservationController, infoFactory, raplaImages,
-                dialogUiFactory, reservationInfoEditFactory, appointmentListEditFactory, allocatableSelectionFactory, frameControllerList);
+                dialogUiFactory, reservationInfoEditFactory, appointmentListEditFactory, allocatableSelectionFactory, frameControllerList, reservationToolbarExtensions);
         edit.editReservation(reservation, appointmentBlock);
         return edit;
     }

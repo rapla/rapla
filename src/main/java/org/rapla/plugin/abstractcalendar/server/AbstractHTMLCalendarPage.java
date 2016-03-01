@@ -23,6 +23,7 @@ import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.dynamictype.SortedClassifiableComparator;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaComponent;
@@ -44,6 +45,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -223,7 +225,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id")==null)
 		{
             try {
-                Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
+                Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
                 printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables);
             } catch (RaplaException e) {
                 throw new ServletException(e);
@@ -315,13 +317,13 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return linkPrefix + cssName;
     }
 
-    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Allocatable[] selectedAllocatables) throws UnsupportedEncodingException {
+    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Collection<Allocatable> selectedAllocatables) throws UnsupportedEncodingException {
     	out.println("<table>");
     	String base = request.getRequestURL().toString();
     	String queryPath = request.getQueryString();
     	queryPath = queryPath.replaceAll("&selected_allocatables[^&]*","");
-    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(Arrays.asList(selectedAllocatables));
-    	Collections.sort( sortedAllocatables, new NamedComparator<Allocatable>(locale) );
+    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(selectedAllocatables);
+    	Collections.sort( sortedAllocatables, new SortedClassifiableComparator(locale) );
     	for (Allocatable alloc:sortedAllocatables)
     	{
     		out.print("<tr>");

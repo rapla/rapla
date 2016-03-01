@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -61,7 +62,7 @@ abstract public class TableViewPage<T, C> implements HTMLViewPage
 	    if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id")==null)
         {
             try {
-                Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
+                Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
                 AbstractHTMLCalendarPage.printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables);
             } catch (RaplaException e) {
                 throw new ServletException(e);

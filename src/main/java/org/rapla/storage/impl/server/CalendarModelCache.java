@@ -12,6 +12,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
@@ -38,11 +39,13 @@ public class CalendarModelCache
     private final Map<ReferenceInfo<User>, List<CalendarModelImpl>> calendarModels = new HashMap<ReferenceInfo<User>, List<CalendarModelImpl>>();
     final CachableStorageOperator operator;
     final RaplaResources i18n;
+    final Logger logger;
 
-    public CalendarModelCache(CachableStorageOperator operator, RaplaResources i18n)
+    public CalendarModelCache(CachableStorageOperator operator, RaplaResources i18n, Logger logger)
     {
         this.operator = operator;
         this.i18n = i18n;
+        this.logger = logger;
     }
 
     private void removeCalendarModelFor(ReferenceInfo<User> userId)
@@ -121,7 +124,7 @@ public class CalendarModelCache
                 final CalendarModelImpl calendarModelImpl;
                 {
                     final Locale locale = i18n.getLocale();
-                    calendarModelImpl = new CalendarModelImpl(locale, user, operator);
+                    calendarModelImpl = new CalendarModelImpl(locale, user, operator,logger);
                     Map<String, String> alternativOptions = null;
                     calendarModelImpl.setConfiguration(config, alternativOptions);
                     calendarModelList.add(calendarModelImpl);

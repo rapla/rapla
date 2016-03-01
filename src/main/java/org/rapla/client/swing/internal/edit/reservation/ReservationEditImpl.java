@@ -22,6 +22,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.ReservationToolbarExtension;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
@@ -152,15 +153,17 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
+    private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
 
     @Inject
     public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
-             FrameControllerList frameControllerList) throws RaplaException
+             FrameControllerList frameControllerList, Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.reservationToolbarExtensions = reservationToolbarExtensions;
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
@@ -237,7 +240,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         
         toolBar.add(back);
         toolBar.add(vor);
-                
+
+        for (ReservationToolbarExtension extension: reservationToolbarExtensions)
+        {
+            for (Component comp:extension.createExtensionButtons(this))
+            {
+                toolBar.add( comp);
+            }
+        }
         closeButton.addActionListener(listener);
         appointmentEdit.addAppointmentListener(allocatableEdit);
         appointmentEdit.addAppointmentListener(listener);
@@ -290,7 +300,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         back.setIcon(raplaImages.getIconFromKey("icon.undo"));
     }
 
-	protected void setAccelerator(JButton button, Action yourAction,
+    protected void setAccelerator(JButton button, Action yourAction,
 			KeyStroke keyStroke) {
 		InputMap keyMap = new ComponentInputMap(button);
 		keyMap.put(keyStroke, "action");
@@ -481,6 +491,11 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
        	{
        		statusFactories.add(entry);
        	}
+
+        for (ReservationToolbarExtension extension: reservationToolbarExtensions)
+        {
+            extension.setReservation(newReservation,mutableAppointment);
+        }
        	
         JPanel status =appointmentEdit.getListEdit().getStatusBar(); 
         status.removeAll();
@@ -673,12 +688,12 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
     }
 
-    protected ChangeListener[] getReservationInfpListeners() {
+    protected ChangeListener[] getReservationInfoListeners() {
         return changeListenerList.toArray(new ChangeListener[]{});
     }
 
     protected void fireReservationChanged(ChangeEvent evt) {
-        for (ChangeListener listener: getReservationInfpListeners())
+        for (ChangeListener listener: getReservationInfoListeners())
         {
             listener.stateChanged( evt);
         }

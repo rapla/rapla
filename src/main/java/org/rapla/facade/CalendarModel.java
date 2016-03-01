@@ -42,17 +42,14 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
     Collection<RaplaObject> getSelectedObjects();
 
+
     /** Calendar View Plugins can use the calendar options to store their requiered optional parameters for a calendar view */
     String getOption(String name);
     
-    Collection<RaplaObject> getSelectedObjectsAndChildren() throws RaplaException;
 
     List<Allocatable> getSelectedAllocatablesSorted();
 
-    /** Convenience method to extract the allocatables from the selectedObjects and their children
-     * @see #getSelectedObjectsAndChildren */
-    Allocatable[] getSelectedAllocatables() throws RaplaException;
-
+    Collection<Allocatable> getSelectedAllocatablesAsList();
 
     //Map<Allocatable,Collection<Reservation>> queryReservations( Date startDate, Date endDate ) throws RaplaException;
 

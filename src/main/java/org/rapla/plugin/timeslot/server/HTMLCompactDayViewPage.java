@@ -37,6 +37,7 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -75,8 +76,8 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
         	protected int getColumnCount() 
         	{
 	       		 try {
-	       			 Allocatable[] selectedAllocatables =model.getSelectedAllocatables();
-	       			 return selectedAllocatables.length;
+	       			 Collection<Allocatable> selectedAllocatables =model.getSelectedAllocatablesAsList();
+	       			 return selectedAllocatables.size();
 	       		 } catch (RaplaException e) {
 	       			 return 0;
 	       		 }

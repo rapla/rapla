@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -35,4 +36,6 @@ public interface ReservationEdit
     void updateReservation(Reservation persistant) throws RaplaException;
 
     void deleteReservation() throws RaplaException;
+
+    CommandHistory getCommandHistory();
 }

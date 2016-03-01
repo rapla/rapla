@@ -35,6 +35,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.SortedClassifiableComparator;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParseContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
@@ -50,6 +51,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
@@ -87,6 +89,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
     private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical"+ ".selected";
     private static final String HTML_EXPORT_ENABLED = EXPORT_ENTRY + ".selected";
+    private final Logger logger;
     Date startDate;
     Date endDate;
     Date selectedDate;
@@ -110,7 +113,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Inject
     public CalendarModelImpl(RaplaFacade facade, ClientFacade clientFacade,RaplaLocale locale)
     {
-        this(locale.getLocale(), clientFacade.getUser(), facade.getOperator());
+        this(locale.getLocale(), clientFacade.getUser(), facade.getOperator(), ((FacadeImpl)facade).getLogger());
         load( null);
     }
 
@@ -119,7 +122,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return operator.getPreferences( null, true);
     }
 
-    public CalendarModelImpl(Locale locale, User user, StorageOperator operator) throws RaplaException {
+    public CalendarModelImpl(Locale locale, User user, StorageOperator operator, Logger logger) throws RaplaException {
+        this.logger = logger.getChildLogger("calendarmodel");
         this.locale = locale;
         this.operator = operator;
         Date today = this.operator.today();
@@ -526,7 +530,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                     @Override
                     public Object eval(EvalContext context) {
                         try {
-                            return Arrays.asList(getSelectedAllocatables());
+                            return getSelectedAllocatablesSorted();
                         } catch (RaplaException e) {
                             return Collections.emptyList();
                         }
@@ -678,8 +682,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return result;
     }
 
-    @Override
-    public Collection<RaplaObject> getSelectedObjectsAndChildren() throws RaplaException
+    protected Collection<RaplaObject> getSelectedObjectsAndChildren() throws RaplaException
     {
         Assert.notNull(selectedObjects);
 
@@ -729,7 +732,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             markedAllocatables = new  LinkedHashSet<Allocatable>(markedAllocatables);
             try {
-                markedAllocatables.retainAll( Arrays.asList(getSelectedAllocatables()));
+                markedAllocatables.retainAll( getSelectedAllocatablesAsList());
             } catch (RaplaException e) {
                 markedAllocatables = Collections.emptyList();
             }
@@ -799,7 +802,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         CalendarModelImpl clone;
         try
         {
-            clone = new CalendarModelImpl(locale, user, operator);
+            clone = new CalendarModelImpl(locale, user, operator, logger);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
             clone.setConfiguration( config, alternativOptions);
@@ -818,8 +821,22 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override public Map<Allocatable, Collection<Appointment>> queryAppointments(Date startDate, Date endDate)
     {
-        Collection<Allocatable> allocatables = getSelectedAllocatablesSorted();
-        return getReservations( allocatables, startDate, endDate);
+        long start = 0;
+        long selectedAllocatableTimes=0;
+        final boolean debugEnabled = logger.isDebugEnabled();
+        if (debugEnabled)
+            start = System.currentTimeMillis();
+
+        Collection<Allocatable> allocatables = getSelectedAllocatablesAsList();
+
+        if (debugEnabled)
+            selectedAllocatableTimes = System.currentTimeMillis() - start;
+        final Map<Allocatable, Collection<Appointment>> reservations = getReservations(allocatables, startDate, endDate);
+        if ( debugEnabled)
+        {
+            logger.debug("queryAppointments for " + allocatables.size() +" resources took " + (System.currentTimeMillis() - start) + " ms (selected allocatables " + selectedAllocatableTimes +" ms). Found appointments for  " + reservations.size() + " resources.");
+        }
+        return reservations;
     }
 
     @Override
@@ -1015,24 +1032,34 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return true;
     }
 
-    @Override
-    public Allocatable[] getSelectedAllocatables() throws RaplaException {
-        List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
-        Collections.sort(result, new NamedComparator<Allocatable>( locale ));
-        return result.toArray(Allocatable.ALLOCATABLE_ARRAY);
-   }
 
     @Override
     public List<Allocatable> getSelectedAllocatablesSorted()
     {
         List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
-        Collections.sort(result, new NamedComparator<Allocatable>( locale ));
+        long start = 0;
+        final boolean debugEnabled = logger.isDebugEnabled();
+        if (debugEnabled)
+            start = System.currentTimeMillis();
+        Collections.sort(result, new SortedClassifiableComparator(locale));
+        if ( debugEnabled)
+        {
+            logger.debug("sort allocatables took " + (System.currentTimeMillis() - start) + " ms for " + result.size() + " objects.");
+        }
+
         //List<Allocatable> filled = operator.queryDependent(result);
         return result;
     }
 
-    protected Collection<Allocatable> getSelectedAllocatablesAsList()
+    public Collection<Allocatable> getSelectedAllocatablesAsList()
             throws RaplaException {
+
+        long start = 0;
+        final boolean debugEnabled = logger.isDebugEnabled();
+        if (debugEnabled)
+            start = System.currentTimeMillis();
+
+
 
         Collection<Allocatable> result = new HashSet<Allocatable>();
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
@@ -1058,6 +1085,11 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 result.add( alloc );
             }
         }
+        if ( debugEnabled)
+        {
+            logger.debug("getSelectedAllocatables took " + (System.currentTimeMillis() - start) + " ms for " + result.size() + " objects.");
+        }
+
         return result;
     }
 
@@ -1314,7 +1346,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public List<AppointmentBlock> getBlocks() throws RaplaException 
     {
         List<AppointmentBlock> appointments = new ArrayList<AppointmentBlock>();
-        Set<Allocatable> selectedAllocatables = new HashSet<Allocatable>(Arrays.asList(getSelectedAllocatables()));
+        Set<Allocatable> selectedAllocatables = new HashSet<Allocatable>(getSelectedAllocatablesAsList());
         if ( isNoAllocatableSelected())
         {
             selectedAllocatables = null;

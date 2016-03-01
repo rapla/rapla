@@ -23,9 +23,11 @@ import com.google.gson.JsonPrimitive;
 
 public class RaplaRpcAndRestProcessor
 {
+    public static final String READBODY = "readbody";
     //final ServerServiceContainer serverContainer;
     final Map<String, WebserviceCreator> webserviceMap;
     Logger logger;
+    Logger readBodyLogger;
 
     public RaplaRpcAndRestProcessor(Logger logger, WebserviceCreatorMap webservices)
     {
@@ -35,6 +37,7 @@ public class RaplaRpcAndRestProcessor
         {
 
         }
+        readBodyLogger = logger.getChildLogger(READBODY);
     }
 
     Map<Class, JsonServlet> servletMap = new HashMap<Class, JsonServlet>();
@@ -107,6 +110,7 @@ public class RaplaRpcAndRestProcessor
     {
         Logger logger = null;
 
+
         public RaplaJsonServlet(Logger logger, Class class1) throws Exception
         {
             super(class1);
@@ -129,11 +133,17 @@ public class RaplaRpcAndRestProcessor
 
         @Override protected void debug(String childLoggerName, String out)
         {
-            Logger childLogger = logger.getChildLogger(childLoggerName);
+            Logger childLogger = childLoggerName.equals(READBODY) ? readBodyLogger :logger.getChildLogger(childLoggerName);
             if (childLogger.isDebugEnabled())
             {
                 childLogger.debug(out);
             }
+        }
+
+        protected boolean isDebugEnabled(String childLoggerName)
+        {
+            Logger childLogger = childLoggerName.equals(READBODY) ? readBodyLogger :logger.getChildLogger(childLoggerName);
+            return (childLogger.isDebugEnabled());
         }
 
         @Override protected void error(String message, Throwable ex)
