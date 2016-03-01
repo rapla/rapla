@@ -13,6 +13,36 @@
 
 package org.rapla.client.swing.internal;
 
+import java.awt.BorderLayout;
+import java.awt.Point;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.DropMode;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.TransferHandler;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreePath;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditController;
@@ -35,6 +65,7 @@ import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -49,27 +80,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
-import java.awt.BorderLayout;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
-public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget {
+public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
+{
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
     TableLayout tableLayout;
@@ -78,7 +90,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     protected final CalendarSelectionModel model;
     MultiCalendarView view;
     Listener listener = new Listener();
-  
+
     protected FilterEditButton filterEdit;
     private final TreeFactory treeFactory;
     private final MenuFactory menuFactory;
@@ -87,7 +99,12 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaMenuBarContainer menuBar;
-	private ResourceSelection(RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages,  DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaException {
+
+    private ResourceSelection(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController,
+            InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory)
+                    throws RaplaException
+    {
         super(facade, i18n, raplaLocale, logger);
 
         this.menuBar = menuBar;
@@ -106,13 +123,13 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
         content.add(treeSelection);
         // content.setPreferredSize(new Dimension(260,400));
         content.setBorder(BorderFactory.createRaisedBevelBorder());
-        
+
         content.add(buttonsPanel, BorderLayout.NORTH);
-        
-        buttonsPanel.setLayout( new BorderLayout());
-        filterEdit = filterEditButtonFactory.create(model,true,listener);
+
+        buttonsPanel.setLayout(new BorderLayout());
+        filterEdit = filterEditButtonFactory.create(model, true, listener);
         buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
-        
+
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
         treeSelection.setMultiSelect(true);
         treeSelection.getTree().setSelectionModel(((TreeFactoryImpl) getTreeFactory()).createComplexTreeSelectionModel());
@@ -129,36 +146,42 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
         updateMenu();
     }
-	
-    protected HashSet<?> setSelectedObjects(){
+
+    protected HashSet<?> setSelectedObjects()
+    {
         HashSet<Object> elements = new HashSet<Object>(treeSelection.getSelectedElements());
         getModel().setSelectedObjects(elements);
         return elements;
     }
-    
-    public RaplaArrowButton getFilterButton() {
+
+    public RaplaArrowButton getFilterButton()
+    {
         return filterEdit.getButton();
     }
-	
-	public RaplaTree getTreeSelection() {
+
+    public RaplaTree getTreeSelection()
+    {
         return treeSelection;
     }
 
-    protected CalendarSelectionModel getModel() {
+    protected CalendarSelectionModel getModel()
+    {
         return model;
     }
 
-    public void dataChanged(ModificationEvent evt) throws RaplaException {
-    	if ( evt != null && evt.isModified())
-    	{
-    		 updateTree();
-    		 updateMenu();
-    	}
-    	// No longer needed here as directly done in RaplaClientServiceImpl
-    	// ((CalendarModelImpl) model).dataChanged( evt);
+    public void dataChanged(ModificationEvent evt) throws RaplaException
+    {
+        if (evt != null && evt.isModified())
+        {
+            updateTree();
+            updateMenu();
+        }
+        // No longer needed here as directly done in RaplaClientServiceImpl
+        // ((CalendarModelImpl) model).dataChanged( evt);
     }
 
-    final protected TreeFactory getTreeFactory() {
+    final protected TreeFactory getTreeFactory()
+    {
         return treeFactory;
     }
 
@@ -169,49 +192,135 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
      * 
      * @see org.rapla.client.swing.gui.internal.view.ITreeFactory#createClassifiableModel(org.rapla.entities.dynamictype.Classifiable[], org.rapla.entities.dynamictype.DynamicType[])
      */
-    protected void updateTree()  {
+    protected void updateTree()
+    {
 
         treeSelection.getTree().setRootVisible(false);
-        treeSelection.getTree().setShowsRootHandles(true);
+        final JTree tree = treeSelection.getTree();
+        tree.setShowsRootHandles(true);
+        tree.setDragEnabled(true);
+        tree.setDropMode(DropMode.USE_SELECTION);
+        tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
+        {
+            @Override
+            public void drop(DropTargetDropEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                TreePath sourcePath = selectionPath.getParentPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                Point dropLocation = dtde.getLocation();
+                TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                if (isDropAllowed(sourcePath, targetPath, selectedNode))
+                {
+                    DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
+                    final Category categoryToMove = (Category) selectedNode.getUserObject();
+                    final Category targetCategory = (Category) targetParentNode.getUserObject();
+                    Collection<Category> categoriesToStore = new ArrayList<>();
+                    final Category categoryToMoveEdit = getFacade().edit(categoryToMove);
+                    final Category targetParentCategoryEdit = getFacade().edit(targetCategory.getParent());
+                    if(!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
+                    {
+                        // remove from old parent
+                        final Category moveCategoryParent = getFacade().edit(categoryToMove.getParent());
+                        moveCategoryParent.removeCategory(categoryToMoveEdit);
+                        categoriesToStore.add(moveCategoryParent);
+                    }
+                    final Collection<Category> categories = getFacade().edit(Arrays.asList(targetParentCategoryEdit.getCategories()));
+                    for (Category category : categories)
+                    {
+                        targetParentCategoryEdit.removeCategory(category);
+                    }
+                    for (Category category : categories)
+                    {
+                        if(category.equals(targetCategory))
+                        {
+                            targetParentCategoryEdit.addCategory(categoryToMoveEdit);
+                        }
+                        else if (category.equals(categoryToMoveEdit))
+                        {
+                            continue;
+                        }
+                        targetParentCategoryEdit.addCategory(category);
+                    }
+                    categoriesToStore.add(targetParentCategoryEdit);
+                    categoriesToStore.add(categoryToMoveEdit);
+                    try
+                    {
+                        getFacade().storeObjects(categoriesToStore.toArray(Entity.ENTITY_ARRAY));
+                        dtde.dropComplete(true);
+                        updateTree();
+                    }
+                    catch(Exception e)
+                    {
+                        dialogUiFactory.showError(e, new SwingPopupContext(getMainComponent(), null));
+                        dtde.dropComplete(false);
+                        updateTree();
+                    }
+                }
+                else
+                {
+                    dtde.rejectDrop();
+                    dtde.dropComplete(false);
+                }
+            }
+
+            private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
+            {
+                if(selectedNode.getUserObject() instanceof Category && ((DefaultMutableTreeNode)targetPath.getLastPathComponent()).getUserObject() instanceof Category)
+                {
+                    return true;
+                }
+                return false;
+            }
+
+        }));
         DefaultTreeModel treeModel = generateTree();
         try
         {
             treeListenersEnabled = false;
             treeSelection.exchangeTreeModel(treeModel);
             updateSelection();
-        } catch ( Exception ex)
+        }
+        catch (Exception ex)
         {
-            getLogger().error(ex.getMessage(),ex);
-        } finally {
+            getLogger().error(ex.getMessage(), ex);
+        }
+        finally
+        {
             treeListenersEnabled = true;
         }
 
     }
 
-    protected DefaultTreeModel generateTree() throws RaplaException {
+    protected DefaultTreeModel generateTree() throws RaplaException
+    {
         ClassificationFilter[] filter = getModel().getAllocatableFilter();
         final TreeFactoryImpl treeFactoryImpl = (TreeFactoryImpl) getTreeFactory();
         DefaultTreeModel treeModel = treeFactoryImpl.createModel(filter);
         return treeModel;
     }
 
-    protected void updateSelection() {
+    protected void updateSelection()
+    {
         Collection<Object> selectedObjects = new ArrayList<Object>(getModel().getSelectedObjects());
         treeSelection.select(selectedObjects);
     }
 
-    public JComponent getComponent() {
+    public JComponent getComponent()
+    {
         return content;
     }
 
-    
-    protected MenuContext createMenuContext(Point p, Object obj) {
-        MenuContext menuContext = new MenuContext( obj, new SwingPopupContext(getComponent(), p));
+    protected MenuContext createMenuContext(Point p, Object obj)
+    {
+        MenuContext menuContext = new MenuContext(obj, new SwingPopupContext(getComponent(), p));
         return menuContext;
     }
-    
-    protected void showTreePopup(PopupEvent evt) {
-        try {
+
+    protected void showTreePopup(PopupEvent evt)
+    {
+        try
+        {
 
             Point p = evt.getPoint();
             Object obj = evt.getSelectedObject();
@@ -219,7 +328,6 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
             MenuContext menuContext = createMenuContext(p, obj);
             menuContext.setSelectedObjects(list);
-            
 
             RaplaPopupMenu menu = new RaplaPopupMenu();
 
@@ -229,32 +337,35 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             ((MenuFactoryImpl) getMenuFactory()).addNew(newMenu, menuContext, null, addNewReservationMenu);
 
             getMenuFactory().addObjectMenu(menu, menuContext, "EDIT_BEGIN");
-            newMenu.setEnabled( newMenu.getMenuComponentCount() > 0);
+            newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
             menu.insertAfterId(newMenu, "EDIT_BEGIN");
 
             JComponent component = (JComponent) evt.getSource();
 
             menu.show(component, p.x, p.y);
-        } catch (RaplaException ex) {
+        }
+        catch (RaplaException ex)
+        {
             dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
-    
-    class Listener implements PopupListener, ChangeListener, ActionListener, FocusListener {
 
-        public void showPopup(PopupEvent evt) {
+    class Listener implements PopupListener, ChangeListener, ActionListener, FocusListener
+    {
+
+        public void showPopup(PopupEvent evt)
+        {
             showTreePopup(evt);
         }
-     
-        public void actionPerformed(ActionEvent evt) {
+
+        public void actionPerformed(ActionEvent evt)
+        {
             Object focusedObject = evt.getSource();
-            if ( focusedObject == null || !(focusedObject instanceof RaplaObject))
-            	return;
+            if (focusedObject == null || !(focusedObject instanceof RaplaObject))
+                return;
             // System.out.println(focusedObject.toString());
             Class type = ((RaplaObject) focusedObject).getTypeClass();
-            if (    type == User.class
-                 || type == Allocatable.class
-               )
+            if (type == User.class || type == Allocatable.class)
             {
                 Entity entity = (Entity) focusedObject;
 
@@ -269,61 +380,70 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
             }
         }
 
-        public void stateChanged(ChangeEvent evt) {
-            if (!treeListenersEnabled) {
+        public void stateChanged(ChangeEvent evt)
+        {
+            if (!treeListenersEnabled)
+            {
                 return;
             }
-            try {
-            	Object source = evt.getSource();
-				ClassifiableFilterEdit filterUI = filterEdit.getFilterUI();
-				if ( filterUI != null && source == filterUI)
-            	{
-            		final ClassificationFilter[] filters = filterUI.getFilters();
-            		model.setAllocatableFilter( filters);
-            		updateTree();
-            		applyFilter();
-            	}
-            	else if ( source == treeSelection)
+            try
+            {
+                Object source = evt.getSource();
+                ClassifiableFilterEdit filterUI = filterEdit.getFilterUI();
+                if (filterUI != null && source == filterUI)
                 {
-            		updateChange();
-            	}
-            } catch (Exception ex) {
+                    final ClassificationFilter[] filters = filterUI.getFilters();
+                    model.setAllocatableFilter(filters);
+                    updateTree();
+                    applyFilter();
+                }
+                else if (source == treeSelection)
+                {
+                    updateChange();
+                }
+            }
+            catch (Exception ex)
+            {
                 dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
             }
         }
-        
-       
-		public void focusGained(FocusEvent e) {
-			try {
-				if (!getUserModule().isSessionActive())
-				{
-					return;
-				}
-				updateMenu();
-			} catch (Exception ex) {
-			    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+
+        public void focusGained(FocusEvent e)
+        {
+            try
+            {
+                if (!getUserModule().isSessionActive())
+                {
+                    return;
+                }
+                updateMenu();
             }
-		}
+            catch (Exception ex)
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+            }
+        }
 
-		public void focusLost(FocusEvent e) {
-		}
-
+        public void focusLost(FocusEvent e)
+        {
+        }
 
     }
 
-    public void updateChange() throws RaplaException {
+    public void updateChange() throws RaplaException
+    {
         setSelectedObjects();
         updateMenu();
         applyFilter();
     }
-    
-    public void applyFilter() throws RaplaException {
+
+    public void applyFilter() throws RaplaException
+    {
         view.getSelectedCalendar().update();
     }
 
-   
-    
-    public void updateMenu() throws RaplaException {
+    public void updateMenu() throws RaplaException
+    {
         RaplaMenu editMenu = menuBar.getEditMenu();
         RaplaMenu newMenu = menuBar.getNewMenu();
 
@@ -332,24 +452,26 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
         List<?> list = treeSelection.getSelectedElements();
         Object focusedObject = null;
-        if (list.size() == 1) {
+        if (list.size() == 1)
+        {
             focusedObject = treeSelection.getSelectedElement();
         }
 
-        MenuContext menuContext = createMenuContext( null,  focusedObject);
+        MenuContext menuContext = createMenuContext(null, focusedObject);
         menuContext.setSelectedObjects(list);
-        if ( treeSelection.getTree().hasFocus())
+        if (treeSelection.getTree().hasFocus())
         {
-        	getMenuFactory().addObjectMenu(editMenu, menuContext, "EDIT_BEGIN");
+            getMenuFactory().addObjectMenu(editMenu, menuContext, "EDIT_BEGIN");
         }
         ((MenuFactoryImpl) getMenuFactory()).addNew(newMenu, menuContext, null, true);
-        newMenu.setEnabled(newMenu.getMenuComponentCount() > 0 );
+        newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
     }
 
-    public MenuFactory getMenuFactory() {
+    public MenuFactory getMenuFactory()
+    {
         return menuFactory;
     }
-    
+
     @Singleton
     public static class ResourceSelectionFactory
     {
@@ -369,9 +491,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
         @Inject
         public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
-                TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory,
-                RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
-                FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
+                TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages,
+                DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
         {
             this.facade = facade;
             this.i18n = i18n;
@@ -390,8 +511,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget 
 
         public ResourceSelection create(MultiCalendarView view)
         {
-            return new ResourceSelection(menuBar,facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory, raplaImages
-                    , dialogUiFactory, filterEditButtonFactory);
+            return new ResourceSelection(menuBar, facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory,
+                    raplaImages, dialogUiFactory, filterEditButtonFactory);
         }
     }
 
