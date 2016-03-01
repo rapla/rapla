@@ -303,6 +303,7 @@ public class CategoryEditUI extends RaplaGUIComponent
         {
             category = category.clone();
             editableCategories.put(id, category);
+            updateModel();
         }
         return category;
     }
