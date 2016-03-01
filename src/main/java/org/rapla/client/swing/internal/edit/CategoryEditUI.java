@@ -12,423 +12,120 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl.NamedNode;
-import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JTree;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-@Extension(provides = EditComponent.class, id="org.rapla.entities.Category")
-public class CategoryEditUI extends RaplaGUIComponent
-    implements
-    EditComponent<Category, JComponent>
+@Extension(provides = EditComponent.class, id = "org.rapla.entities.Category")
+public class CategoryEditUI extends RaplaGUIComponent implements EditComponent<Category, JComponent>
 {
     JPanel panel = new JPanel();
 
-    JPanel toolbar = new JPanel();
-    RaplaButton newButton = new RaplaButton();
-    RaplaButton newSubButton = new RaplaButton();
-    RaplaButton removeButton = new RaplaButton();
-    RaplaArrowButton moveUpButton = new RaplaArrowButton('^', 25);
-    RaplaArrowButton moveDownButton = new RaplaArrowButton('v', 25);
-
-    Category rootCategory;
+    private Category category;
     CategoryDetail detailPanel;
-    RaplaTreeEdit treeEdit;
-    TreeModel model;
     boolean editKeys = true;
-    Listener listener = new Listener();
-    TreeCellRenderer iconRenderer;
-
-    private final TreeFactory treeFactory;
-
-    private final DialogUiFactoryInterface dialogUiFactory;
-    
-    private final Map<String, Category> editableCategories = new LinkedHashMap<String,Category>();
 
     @Inject
-    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)  {
+    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+            DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
+    {
         super(facade, i18n, raplaLocale, logger);
-        this.treeFactory = treeFactory;
-        this.dialogUiFactory = dialogUiFactory;
         detailPanel = new CategoryDetail(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, multiLanguageFieldFactory, textFieldFactory);
-        panel.setPreferredSize( new Dimension( 690,350 ) );
-        treeEdit = new RaplaTreeEdit( getI18n(),detailPanel.getComponent(), listener );
-        treeEdit.setListDimension( new Dimension( 250,100 ) );
-        toolbar.setLayout( new BoxLayout(toolbar, BoxLayout.X_AXIS));
-        toolbar.add(newButton);
-        toolbar.add(newSubButton);
-        toolbar.add( Box.createHorizontalStrut( 5 ));
-        toolbar.add(removeButton);
-        toolbar.add( Box.createHorizontalStrut( 5 ));
-        toolbar.add(moveUpButton);
-        toolbar.add(moveDownButton);
-        panel.setLayout( new BorderLayout() );
-        panel.add( toolbar, BorderLayout.NORTH );
-        panel.add( treeEdit.getComponent(), BorderLayout.CENTER );
-
-        newButton.addActionListener(listener);
-        newSubButton.addActionListener(listener);
-        removeButton.addActionListener(listener);
-        moveUpButton.addActionListener( listener );
-        moveDownButton.addActionListener( listener );
-        iconRenderer = treeFactory.createRenderer();
-        treeEdit.getTree().setCellRenderer(  new TreeCellRenderer() {
-            public Component getTreeCellRendererComponent(JTree tree
-                    ,Object value
-                    ,boolean sel
-                    ,boolean expanded
-                    ,boolean leaf
-                    ,int row
-                    ,boolean hasFocus
-            ) {
-                if ( value instanceof NamedNode) {
-                    
-                	Category c = (Category) ((NamedNode)value).getUserObject();
-                    value = c.getName(getRaplaLocale().getLocale());
-                    if (editKeys) {
-                        value = "{" + c.getKey() + "} " + value;
-                    }
-                }
-                return iconRenderer.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus );
-            }
-        });
-        newButton.setText( getString("new_category") );
-        newButton.setIcon( raplaImages.getIconFromKey("icon.new"));
-        newSubButton.setText( getString("new_sub-category") );
-        newSubButton.setIcon( raplaImages.getIconFromKey("icon.new") );
-        removeButton.setText( getString("delete") );
-        removeButton.setIcon( raplaImages.getIconFromKey("icon.delete") );
-
-        detailPanel.addChangeListener( listener );
-        detailPanel.setEditKeys( editKeys );
+        panel.setPreferredSize(new Dimension(690, 350));
+        panel.setLayout(new BorderLayout());
+        detailPanel.setEditKeys(editKeys);
+        panel.add(detailPanel.getComponent(), BorderLayout.CENTER);
     }
 
-    class Listener implements ActionListener,ChangeListener {
-        public void actionPerformed(ActionEvent evt) {
-            try {
-                if ( evt.getSource() == newButton ) {
-                    createCategory( false );
-                } else if ( evt.getSource() == newSubButton ) {
-                    createCategory( true );
-                } else if ( evt.getSource() == removeButton ) {
-                    removeCategory();
-                } else if ( evt.getSource() == moveUpButton ) {
-                    moveCategory( -1);
-                } else if ( evt.getSource() == moveDownButton ) {
-                    moveCategory( 1);
-                } else if (evt.getActionCommand().equals("edit")) {
-                    Category category = (Category) treeEdit.getSelectedValue();
-                    category = getOrCreateEditableVersion( category);
-                    detailPanel.mapFrom( category );
-                }
-            } catch (RaplaException ex) {
-                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-            }
-        }
-        public void stateChanged(ChangeEvent e) {
-            try {
-                confirmEdits();
-            } catch (RaplaException ex) {
-                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-            }
-        }
-    }
-
-    public JComponent getComponent() {
+    public JComponent getComponent()
+    {
         return panel;
     }
 
-    public int getSelectedIndex() {
-        return treeEdit.getSelectedIndex();
-    }
-
-    public void setObjects(List<Category> o) throws RaplaException {
-        this.rootCategory = o.get(0);
-        editableCategories.clear();
-        updateModel();
-    }
-    
-	public void processCreateNew() throws RaplaException {
-        createCategory( false);
-	}
-
-
-    private void createCategory(boolean bCreateSubCategory) throws RaplaException {
+    public void mapToObjects() throws RaplaException
+    {
         confirmEdits();
-        Category newCategory;
-        NamedNode parentNode;
-        TreePath path = treeEdit.getTree().getSelectionPath();
-        if (path == null) {
-            parentNode = (NamedNode)model.getRoot();
-        } else {
-        	NamedNode selectedNode = (NamedNode) path.getLastPathComponent();
-            if (selectedNode.getParent() == null || bCreateSubCategory)
-                parentNode = selectedNode;
-            else
-                parentNode = (NamedNode)selectedNode.getParent();
-        }
-        newCategory = createNewNodeAt( parentNode );
-        updateModel();
-        NamedNode newNode = (NamedNode)((NamedNode)model.getRoot()).findNodeFor( newCategory );
-        TreePath selectionPath = new TreePath( newNode.getPath() );
-        treeEdit.getTree().setSelectionPath( selectionPath );
-        detailPanel.name.selectAll();
-        detailPanel.name.requestFocus();
+        validate(category);
     }
 
-
-    private String createNewKey(Category[] subCategories) {
-        int max = 1;
-        for (int i=0;i<subCategories.length;i++) {
-            String key = subCategories[i].getKey();
-            if (key.length()>1
-                && key.charAt(0) =='c'
-                && Character.isDigit(key.charAt(1))
-                )
-                {
-                    try {
-                        int value = Integer.valueOf(key.substring(1)).intValue();
-                        if (value >= max)
-                            max = value + 1;
-                    } catch (NumberFormatException ex) {
-                    }
-                }
-        }
-        return "c" + (max);
-    }
-
-    // creates a new Category
-    private Category createNewNodeAt(NamedNode parentNode) throws RaplaException {
-        Category newCategory = getFacade().newCategory();
-        editableCategories.put(newCategory.getId(), newCategory);
-        Category parent = getOrCreateEditableVersion((Category) parentNode.getUserObject());
-        newCategory.setKey(createNewKey(parent.getCategories()));
-        newCategory.getName().setName(getI18n().getLang(), getString("new_category") );
-        parent.addCategory(newCategory);
-        getLogger().debug(" new category " + newCategory + " added to " + parent);
-        return newCategory;
-    }
-
-    private void removeCategory() 
+    public List<Category> getObjects()
     {
-        TreePath[] paths = treeEdit.getTree().getSelectionPaths();
-        if ( paths == null )
-            return;
-        NamedNode[] categoryNodes = new NamedNode[paths.length];
-        for (int i=0;i<paths.length;i++) {
-            categoryNodes[i] = (NamedNode) paths[i].getLastPathComponent();
-        }
-        removeNodes(categoryNodes);
-        updateModel();
+        return Collections.singletonList(category);
     }
 
-    private void moveCategory( int direction ) 
+    public void confirmEdits() throws RaplaException
     {
-        TreePath[] paths = treeEdit.getTree().getSelectionPaths();
-        if ( paths == null || paths.length == 0)
-            return;
-        NamedNode categoryNode = (NamedNode)paths[0].getLastPathComponent();
-        if ( categoryNode == null)
-        {
-            return;
-        }
-        Category selectedCategory = (Category)categoryNode.getUserObject();
-        Category parent = selectedCategory.getParent();
-        parent = getOrCreateEditableVersion(parent);
-        if ( parent == null || selectedCategory.equals( rootCategory))
-            return;
-
-        ((CategoryImpl)parent).moveCategory(selectedCategory, direction);
-        updateModel();
-
+        detailPanel.mapTo(category);
     }
 
-    private Category getOrCreateEditableVersion(Category category)
+    private void validate(Category category) throws RaplaException
     {
-        final String id = category.getId();
-        if(editableCategories.containsKey(id))
-        {
-            category = editableCategories.get(id);
-        }
-        else
-        {
-            category = category.clone();
-            editableCategories.put(id, category);
-            updateModel();
-        }
-        return category;
-    }
-
-    public void removeNodes(NamedNode[] nodes) {
-        ArrayList<NamedNode> childList = new ArrayList<NamedNode>();
-        TreeNode[] path = null;
-        NamedNode parentNode = null;
-        for (int i=0;i<nodes.length;i++) {
-            if (parentNode == null) {
-                path= nodes[i].getPath();
-                parentNode = (NamedNode)nodes[i].getParent();
-            }
-            // dont't delete the root-node
-            if (parentNode == null)
-                continue;
-            int index = parentNode.getIndexOfUserObject(nodes[i].getUserObject());
-            if (index >= 0) {
-                childList.add(nodes[i]);
-            }
-        }
-        if (path != null) {
-            int size = childList.size();
-            NamedNode[] childs = new NamedNode[size];
-            for (int i=0;i<size;i++) {
-                childs[i] = childList.get(i);
-            }
-            for (int i=0;i<size;i++) {
-                Category subCategory = (Category)childs[i].getUserObject();
-                Category parent = subCategory.getParent();
-                parent = getOrCreateEditableVersion(parent);
-                editableCategories.remove(subCategory.getId());
-                Category removeableCategory = subCategory.clone();
-                parent.removeCategory(removeableCategory);
-                getLogger().debug("category removed " + subCategory);
-            }
-        }
-    }
-
-    public void mapToObjects() throws RaplaException {
-        confirmEdits();
-        Category cat = rootCategory;
-        String id=cat.getId();
-        if(editableCategories.containsKey(id))
-        {
-            cat = editableCategories.get(id);
-        }
-        validate( cat );
-    }
-
-    public List<Category> getObjects() {
-        final ArrayList<Category> result = new ArrayList<Category>(editableCategories.values());
-        return result;
-    }
-    
-    private void fillCategoriesArray(Category cat, List<Category> list)
-    {
-        final String id = cat.getId();
-        if(editableCategories.containsKey(id))
-        {
-            cat = editableCategories.get(id);
-        }
-        list.add(cat);
-        final Category[] categories = cat.getCategories();
-        if(categories != null)
-        {
-            for (Category category : categories)
-            {
-                if(category.getParent().equals(cat))
-                {
-                    fillCategoriesArray(category, list);
-                }
-            }
-        }
-    }
-
-    private void updateModel()  {
-        final ArrayList<Category> arrayList = new ArrayList<Category>();
-        fillCategoriesArray(rootCategory, arrayList);
-        model = treeFactory.createModel( arrayList, false);
-        RaplaTree.exchangeTreeModel( model , treeEdit.getTree() );
-    }
-
-    public void confirmEdits() throws RaplaException {
-        if ( getSelectedIndex() < 0 )
-            return;
-        Category category = (Category) treeEdit.getSelectedValue();
-        category = getOrCreateEditableVersion(category);
-        detailPanel.mapTo ( category );
-        TreePath path = treeEdit.getTree().getSelectionPath();
-        if (path != null)
-            ((DefaultTreeModel) model).nodeChanged((TreeNode)path.getLastPathComponent() );
-    }
-
-
-    private void validate(Category category) throws RaplaException {
-        DynamicTypeImpl.checkKey( getI18n(),category.getKey() );
+        DynamicTypeImpl.checkKey(getI18n(), category.getKey());
         Category[] categories = category.getCategories();
-        for ( int i=0; i< categories.length;i++) {
+        for (int i = 0; i < categories.length; i++)
+        {
             final Category category1 = categories[i];
-            Category category2 = editableCategories.get(category1.getId());
-            if ( category2 == null)
-            {
-                category2 = category1;
-            }
-            validate(category2);
+            validate(category1);
         }
     }
 
-    public void setEditKeys(boolean editKeys) {
+    public void setEditKeys(boolean editKeys)
+    {
         detailPanel.setEditKeys(editKeys);
         this.editKeys = editKeys;
     }
 
+    @Override
+    public void setObjects(List<Category> o) throws RaplaException
+    {
+        Assert.isTrue(o.size() == 1, "Only one category can be edited once");
+        this.category = o.get(0);
+        detailPanel.mapFrom(category);
+    }
 
 }
 
-class CategoryDetail extends RaplaGUIComponent
-    implements
-    ChangeListener
+class CategoryDetail extends RaplaGUIComponent implements ChangeListener
 {
-	
-	JPanel mainPanel = new JPanel();
-	Category currentCategory;
-	
+
+    JPanel mainPanel = new JPanel();
+    Category currentCategory;
+
     JPanel panel = new JPanel();
     JLabel nameLabel = new JLabel();
     JLabel keyLabel = new JLabel();
@@ -438,145 +135,157 @@ class CategoryDetail extends RaplaGUIComponent
     TextField key;
     TextField colorTextField;
     JPanel colorPanel = new JPanel();
-    
-	RaplaArrowButton addButton = new RaplaArrowButton('>', 25);
-	RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
-    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
+    RaplaArrowButton addButton = new RaplaArrowButton('>', 25);
+    RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
+
+    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+            DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         name = multiLanguageFieldFactory.create();
         key = textFieldFactory.create();
         colorTextField = textFieldFactory.create();
-        colorTextField.setColorPanel( true );
-        
+        colorTextField.setColorPanel(true);
+
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout( new double[][]
-            {{5, pre, 5, fill },  // Columns
-             {5, pre ,5, pre, 5, pre, 5}} // Rows
-                                          ));
+        panel.setLayout(
+                new TableLayout(new double[][] { { 5, pre, 5, fill }, // Columns
+                { 5, pre, 5, pre, 5, pre, 5 } } // Rows
+        ));
         panel.add("1,1,l,f", nameLabel);
-        panel.add("3,1,f,f", name.getComponent() );
+        panel.add("3,1,f,f", name.getComponent());
         panel.add("1,3,l,f", keyLabel);
-        panel.add("3,3,f,f", key.getComponent() );
+        panel.add("3,3,f,f", key.getComponent());
         panel.add("1,5,l,f", colorLabel);
         panel.add("3,5,f,f", colorPanel);
-        colorPanel.setLayout( new BorderLayout());
-        colorPanel.add( colorTextField.getComponent(), BorderLayout.CENTER );
-      
+        colorPanel.setLayout(new BorderLayout());
+        colorPanel.add(colorTextField.getComponent(), BorderLayout.CENTER);
 
         nameLabel.setText(getString("name") + ":");
         keyLabel.setText(getString("key") + ":");
-        colorLabel.setText( getString("color") + ":");
-        name.addChangeListener ( this );
-        key.addChangeListener ( this );
-        colorTextField.addChangeListener( this );
-
+        colorLabel.setText(getString("color") + ":");
+        name.addChangeListener(this);
+        key.addChangeListener(this);
+        colorTextField.addChangeListener(this);
 
         // Add everything to the MainPanel
         mainPanel.setLayout(new BorderLayout());
         mainPanel.add(panel, BorderLayout.NORTH);
 
     }
-    
-    class CategoryListCellRenderer extends DefaultListCellRenderer {
-		private static final long serialVersionUID = 1L;
-		private boolean filterStyle;
 
-		public CategoryListCellRenderer(boolean filterStyle) {
-			this.filterStyle = filterStyle;
-		}
+    class CategoryListCellRenderer extends DefaultListCellRenderer
+    {
+        private static final long serialVersionUID = 1L;
+        private boolean filterStyle;
 
-		public CategoryListCellRenderer() {
-			this(false);
-		}
+        public CategoryListCellRenderer(boolean filterStyle)
+        {
+            this.filterStyle = filterStyle;
+        }
 
-		public Component getListCellRendererComponent(JList list, Object value,
-				int index, boolean isSelected, boolean cellHasFocus) {
-			super.getListCellRendererComponent(list, value, index, isSelected,
-					cellHasFocus);
+        public CategoryListCellRenderer()
+        {
+            this(false);
+        }
 
-			if (filterStyle == true)
-				setFont((getFont().deriveFont(Font.PLAIN)));
+        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+        {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
-			if (value != null && value instanceof Category) {
-				setText(((Category) value).getName(getLocale()));
-			}
-			return this;
-		}
-	}
+            if (filterStyle == true)
+                setFont((getFont().deriveFont(Font.PLAIN)));
 
-    public void requestFocus() {
+            if (value != null && value instanceof Category)
+            {
+                setText(((Category) value).getName(getLocale()));
+            }
+            return this;
+        }
+    }
+
+    public void requestFocus()
+    {
         name.requestFocus();
     }
 
-    public void setEditKeys(boolean editKeys) {
-        keyLabel.setVisible( editKeys );
-        key.getComponent().setVisible( editKeys );
-        colorLabel.setVisible( editKeys );
-        colorTextField.getComponent().setVisible( editKeys );
+    public void setEditKeys(boolean editKeys)
+    {
+        keyLabel.setVisible(editKeys);
+        key.getComponent().setVisible(editKeys);
+        colorLabel.setVisible(editKeys);
+        colorTextField.getComponent().setVisible(editKeys);
     }
 
-    public JComponent getComponent() {
+    public JComponent getComponent()
+    {
         return mainPanel;
     }
 
-    public void mapFrom(Category category) {
-        name.setValue( (MultiLanguageName) category.getName().clone());
-        key.setValue( category.getKey());
-        String color = category.getAnnotation( CategoryAnnotations.KEY_NAME_COLOR);
-        if ( color != null)
+    public void mapFrom(Category category)
+    {
+        name.setValue((MultiLanguageName) category.getName().clone());
+        key.setValue(category.getKey());
+        String color = category.getAnnotation(CategoryAnnotations.KEY_NAME_COLOR);
+        if (color != null)
         {
-        	colorTextField.setValue( color );
+            colorTextField.setValue(color);
         }
         else
         {
-        	colorTextField.setValue( null );
+            colorTextField.setValue(null);
         }
-		currentCategory = category;
+        currentCategory = category;
     }
 
-    
-    public void mapTo(Category category) throws RaplaException {
-        category.getName().setTo( name.getValue());
-        category.setKey( key.getValue());
+    public void mapTo(Category category) throws RaplaException
+    {
+        category.getName().setTo(name.getValue());
+        category.setKey(key.getValue());
         String colorValue = colorTextField.getValue().toString().trim();
-        if ( colorValue.length() > 0) {
-            category.setAnnotation(CategoryAnnotations.KEY_NAME_COLOR, colorValue );
-        } else {
-            category.setAnnotation(CategoryAnnotations.KEY_NAME_COLOR, null );
+        if (colorValue.length() > 0)
+        {
+            category.setAnnotation(CategoryAnnotations.KEY_NAME_COLOR, colorValue);
+        }
+        else
+        {
+            category.setAnnotation(CategoryAnnotations.KEY_NAME_COLOR, null);
         }
     }
 
-    public void stateChanged(ChangeEvent e) {
+    public void stateChanged(ChangeEvent e)
+    {
         fireContentChanged();
     }
-    
-    
+
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
 
-    public void addChangeListener(ChangeListener listener) {
+    public void addChangeListener(ChangeListener listener)
+    {
         listenerList.add(listener);
     }
 
-    public void removeChangeListener(ChangeListener listener) {
+    public void removeChangeListener(ChangeListener listener)
+    {
         listenerList.remove(listener);
     }
 
-    public ChangeListener[] getChangeListeners() {
-        return listenerList.toArray(new ChangeListener[]{});
+    public ChangeListener[] getChangeListeners()
+    {
+        return listenerList.toArray(new ChangeListener[] {});
     }
 
-    protected void fireContentChanged() {
+    protected void fireContentChanged()
+    {
         if (listenerList.size() == 0)
             return;
         ChangeEvent evt = new ChangeEvent(this);
         ChangeListener[] listeners = getChangeListeners();
-        for (int i = 0;i<listeners.length; i++) {
+        for (int i = 0; i < listeners.length; i++)
+        {
             listeners[i].stateChanged(evt);
         }
     }
 }
-
-

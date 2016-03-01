@@ -82,14 +82,6 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
             getPrivateEditDialog().addEditDialog(this);
             // to avoid java compiler error
             EditComponent test = ui;
-            if (test instanceof CategoryEditUI)
-            {
-                if (isNew)
-                {
-                    ((CategoryEditUI) test).processCreateNew();
-                }
-            }
-
         }
     }
     

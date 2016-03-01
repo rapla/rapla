@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -38,12 +44,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -275,10 +275,41 @@ public class RaplaObjectAction extends RaplaAction {
       
     }
 
+    private String createNewKey(Category[] subCategories) {
+        int max = 1;
+        for (int i=0;i<subCategories.length;i++) {
+            String key = subCategories[i].getKey();
+            if (key.length()>1
+                && key.charAt(0) =='c'
+                && Character.isDigit(key.charAt(1))
+                )
+                {
+                    try {
+                        int value = Integer.valueOf(key.substring(1)).intValue();
+                        if (value >= max)
+                            max = value + 1;
+                    } catch (NumberFormatException ex) {
+                    }
+                }
+        }
+        return "c" + (max);
+    }
+
+    // creates a new Category
+    private Category createNewNodeAt(Category parent) throws RaplaException {
+        Category newCategory = getFacade().newCategory();
+        newCategory.setKey(createNewKey(parent.getCategories()));
+        newCategory.getName().setName(getI18n().getLang(), getString("new_category") );
+        getFacade().edit(parent).addCategory(newCategory);
+        getLogger().debug(" new category " + newCategory + " added to " + parent);
+        return newCategory;
+    }
+
 	protected  void newEntity() throws RaplaException {
     	if ( Category.class == raplaType ) {
         	Category category = (Category)object;
-			editController.editNew(category, popupContext );
+        	final Category newCategory = createNewNodeAt(category);
+			editController.editNew(newCategory, popupContext );
         } else {
 			Entity<? extends Entity> obj = newEntity(raplaType);
 	        editController.edit(obj, popupContext);
