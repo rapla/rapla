@@ -1333,7 +1333,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	    {
 	        throw new RaplaException("Can't create a calendar model for a different user.");
 	    }
-	    return new CalendarModelImpl( locale, user, operator);
+	    return new CalendarModelImpl( locale, user, operator, logger);
     }
 
 	private String createDynamicTypeKey(String classificationType)

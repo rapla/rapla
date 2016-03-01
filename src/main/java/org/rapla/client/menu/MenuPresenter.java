@@ -334,15 +334,11 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         }
     }
 
-    public List<Allocatable> getSortedAllocatables()
+    public Collection<Allocatable> getSelectedAllocatables()
     {
         try
         {
-            Allocatable[] selectedAllocatables;
-            selectedAllocatables = model.getSelectedAllocatables();
-            List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(Arrays.asList(selectedAllocatables));
-            Collections.sort(sortedAllocatables, new NamedComparator<Allocatable>(getLocale()));
-            return sortedAllocatables;
+            return model.getSelectedAllocatablesAsList();
         }
         catch (RaplaException e)
         {
@@ -354,10 +350,10 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
     /** override this method if you want to implement a custom allocatable marker */
     protected Collection<Allocatable> getMarkedAllocatables()
     {
-        List<Allocatable> selectedAllocatables = getSortedAllocatables();
+        Collection<Allocatable> selectedAllocatables = getSelectedAllocatables();
         if (selectedAllocatables.size() == 1)
         {
-            return Collections.singletonList(selectedAllocatables.get(0));
+            return Collections.singletonList(selectedAllocatables.iterator().next());
         }
         return Collections.emptyList();
     }

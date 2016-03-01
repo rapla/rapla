@@ -12,12 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
+import org.rapla.entities.Named;
 
 /** This Interfaces is implemented by all Rapla-Objects that can
  *  have classification information: Reservation, Resource, Person.
  *  @see Classification
  */
-public interface Classifiable {
+public interface Classifiable extends Named
+{
     Classification getClassification();
     void setClassification(Classification classification);
     
@@ -37,7 +39,6 @@ public interface Classifiable {
             }
             return isRaplaType;
         }
-        
     }
     
 }

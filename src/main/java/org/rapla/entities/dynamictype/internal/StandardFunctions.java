@@ -1320,16 +1320,15 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof CalendarModel)
             {
                 CalendarModel model = ((CalendarModel) object);
-                Allocatable[] selectedAllocatables;
+                List<Allocatable> asList;
                 try
                 {
-                    selectedAllocatables = model.getSelectedAllocatables();
+                    asList = model.getSelectedAllocatablesSorted();
                 }
                 catch (RaplaException e)
                 {
                     return null;
                 }
-                List<Allocatable> asList = Arrays.asList(selectedAllocatables);
                 return asList;
             }
             else if (object instanceof Reservation)

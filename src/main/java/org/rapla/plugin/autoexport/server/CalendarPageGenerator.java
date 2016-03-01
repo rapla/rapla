@@ -45,6 +45,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -271,7 +272,7 @@ public class CalendarPageGenerator
             String allocatableId = request.getParameter("allocatable_id");
             if (allocatableId != null)
             {
-                Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
+                Collection<Allocatable> selectedAllocatables =model.getSelectedAllocatablesAsList();
                 Allocatable foundAlloc = null;
                 for (Allocatable alloc : selectedAllocatables)
                 {

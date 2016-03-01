@@ -66,6 +66,7 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.dynamictype.SortedClassifiableComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
@@ -173,79 +174,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         Comparator<Classifiable> comp = new SortedClassifiableComparator(getLocale());
         return createClassifiableModel( classifiables, comp, useCategorizations);
     }
-    
-    class SortedClassifiableComparator implements Comparator<Classifiable>
-    {
-        Locale locale;
-        NamedComparator comp;
-        public SortedClassifiableComparator(Locale locale) {
-            this.locale = locale;
-            comp = new NamedComparator(locale);
-        }
 
-        @Override
-        public int compare(Classifiable o1, Classifiable o2) 
-        {
-            Classification classification1 = o1.getClassification();
-            Classification classification2 = o2.getClassification();
-            if ( classification1 == classification2)
-            {
-                return 0;
-            }
-            DynamicType type1= classification1.getType();
-            DynamicType type2= classification2.getType();
-            if ( type1.equals( type2) )
-            {
-                for (Attribute attribute:type1.getAttributeIterable())
-                {
-                    String sorting = attribute.getAnnotation( AttributeAnnotations.KEY_SORTING);
-                    if ( sorting != null)
-                    {
-                        int order = 0;
-                        if ( sorting.equals(AttributeAnnotations.VALUE_SORTING_ASCENDING))
-                        {
-                            order = 1;
-                        }
-                        if ( sorting.equals(AttributeAnnotations.VALUE_SORTING_DESCENDING))
-                        {
-                            order = -1;
-                        }
-                        if ( order != 0)
-                        {
-                            Object value1 = classification1.getValue( attribute);
-                            Object value2 = classification2.getValue( attribute);
-                            if ( value1 != null )
-                            {
-                                if ( value2 == null)
-                                {
-                                    return order;
-                                }
-                                if ( value1 instanceof Comparable && value2 instanceof Comparable)
-                                {
-                                    Comparable comparable = (Comparable) value1;
-                                    @SuppressWarnings("unchecked")
-                                    int result = order * comparable.compareTo( value2);
-                                    if ( result != 0)
-                                    {
-                                        return result;
-                                    }
-                                } 
-                                // TODO if field is allocatable link, then we need to sort with this comparator 
-                                // what todo with links to allocatables that could cause infinite recursion
-                            }
-                            else if ( value2 != null)
-                            {
-                                return -order;
-                            }
-                        }
-                    }
-                }
-            }
-            return comp.compare(classification1, classification2);
-        }
-        
-    }
-    
     private TreeModel createClassifiableModel(Classifiable[] classifiables, Comparator<Classifiable> comp,boolean useCategorizations) {
         Set<DynamicType> typeSet = new LinkedHashSet<DynamicType>();
     	for (Classifiable classifiable: classifiables)

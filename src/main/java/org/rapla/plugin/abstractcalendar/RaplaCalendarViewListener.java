@@ -23,7 +23,6 @@ import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -41,8 +40,6 @@ import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import java.awt.Component;
 import java.awt.Point;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -255,10 +252,21 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     {
         try
         {
-            Allocatable[] selectedAllocatables;
-            selectedAllocatables = model.getSelectedAllocatables();
-            List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(Arrays.asList(selectedAllocatables));
-            Collections.sort(sortedAllocatables, new NamedComparator<Allocatable>(getLocale()));
+            List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
+            return sortedAllocatables;
+        }
+        catch (RaplaException e)
+        {
+            getLogger().error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public Collection<Allocatable> getSelectedAllocatables()
+    {
+        try
+        {
+            Collection<Allocatable> sortedAllocatables = model.getSelectedAllocatablesAsList();
             return sortedAllocatables;
         }
         catch (RaplaException e)
@@ -271,10 +279,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     /** override this method if you want to implement a custom allocatable marker */
     protected Collection<Allocatable> getMarkedAllocatables()
     {
-        List<Allocatable> selectedAllocatables = getSortedAllocatables();
+        Collection<Allocatable> selectedAllocatables = getSelectedAllocatables();
         if (selectedAllocatables.size() == 1)
         {
-            return Collections.singletonList(selectedAllocatables.get(0));
+            return Collections.singletonList(selectedAllocatables.iterator().next());
         }
         return Collections.emptyList();
     }

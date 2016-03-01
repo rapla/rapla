@@ -261,9 +261,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     public List<Allocatable> getSortedAllocatables() throws RaplaException
     {
-        Allocatable[] selectedAllocatables = model.getSelectedAllocatables();
-    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>( Arrays.asList( selectedAllocatables));
-        Collections.sort(sortedAllocatables, new NamedComparator<Allocatable>( getLocale() ));
+    	List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
         return sortedAllocatables;
     }
     

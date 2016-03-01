@@ -171,7 +171,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
         if (markedAllocatables == null || markedAllocatables.size() == 0)
         {
-            Collection<Allocatable> allocatables = Arrays.asList(model.getSelectedAllocatables());
+            Collection<Allocatable> allocatables = model.getSelectedAllocatablesAsList();
             if (allocatables.size() == 1)
             {
                 addAlloctables(newReservations, allocatables);

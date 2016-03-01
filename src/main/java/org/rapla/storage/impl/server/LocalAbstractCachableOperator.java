@@ -192,7 +192,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
         appointmentBindings = new AppointmentMapClass(logger);
-        calendarModelCache = new CalendarModelCache(this, i18n);
+        calendarModelCache = new CalendarModelCache(this, i18n, logger);
     }
 
     public CommandScheduler getScheduler()

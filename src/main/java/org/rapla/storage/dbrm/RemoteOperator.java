@@ -114,7 +114,7 @@ import org.rapla.storage.impl.EntityStore;
             Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
             RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, locale, functionFactoryMap, permissionExtensions);
+        super(logger.getChildLogger("remote"), i18n, locale, functionFactoryMap, permissionExtensions);
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.remoteStorage = remoteStorage;
         commandQueue = scheduler;

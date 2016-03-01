@@ -97,8 +97,8 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
             @Override
             protected int getColumnCount() {
             	try {
-        		  Allocatable[] selectedAllocatables =model.getSelectedAllocatables();
-        		  return selectedAllocatables.length;
+					Collection<Allocatable> selectedAllocatables =model.getSelectedAllocatablesAsList();
+					return selectedAllocatables.size();
           	  	} catch (RaplaException e) {
           	  		return 0;
           	  	}
