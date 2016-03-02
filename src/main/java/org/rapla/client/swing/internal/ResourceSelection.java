@@ -15,8 +15,10 @@ package org.rapla.client.swing.internal;
 
 import java.awt.BorderLayout;
 import java.awt.Point;
+import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -32,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DropMode;
+import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
@@ -99,7 +102,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaMenuBarContainer menuBar;
-
+    
     private ResourceSelection(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController,
             InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory)
@@ -202,6 +205,18 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
         tree.setDropMode(DropMode.USE_SELECTION);
         tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
         {
+            
+            @Override
+            public void dragEnter(DropTargetDragEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                if(!(selectedNode.getUserObject() instanceof Category))
+                {
+                    dtde.rejectDrag();
+                }
+            }
+            
             @Override
             public void drop(DropTargetDropEvent dtde)
             {
