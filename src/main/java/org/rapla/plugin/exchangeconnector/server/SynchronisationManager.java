@@ -835,7 +835,7 @@ public class SynchronisationManager implements ServerExtension
                 if (exchangeConfigExtension.isResponsibleFor(user))
                 {
                     final String exchangeUrl = exchangeConfigExtension.getExchangeUrl(user);
-                    if (exchangeUrl != null)
+                    if (exchangeUrl != null && !exchangeUrl.isEmpty())
                     {
                         exchangeConnectionUrls.add(exchangeUrl);
                     }
