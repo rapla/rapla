@@ -159,9 +159,9 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
         return parentPanel;
     }
 
-    protected void addChildren(DefaultConfiguration newConfig) {
+    protected void addChildren(DefaultConfiguration newConfig, DefaultConfiguration clientConfig) {
 
-    	set(newConfig, ExchangeConnectorConfig.ENABLED_BY_ADMIN, activate.isSelected());
+    	set(clientConfig, ExchangeConnectorConfig.ENABLED_BY_ADMIN, activate.isSelected());
 		set(newConfig, ExchangeConnectorConfig.EXCHANGE_WS_FQDN, exchangeWebServiceFQDNTextField.getText());
 		set(newConfig, ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY, categoryForRaplaAppointmentsOnExchangeTextField.getText());
 		set(newConfig, ExchangeConnectorConfig.SYNCING_PERIOD_PAST, syncIntervalPast.getNumber().intValue());
@@ -179,11 +179,12 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
     
     @Override
     public void commit() throws RaplaException {
-        writePluginConfig(false);
         TypedComponentRole<RaplaConfiguration> configEntry = ExchangeConnectorConfig.EXCHANGESERVER_CONFIG;
         RaplaConfiguration newConfig = new RaplaConfiguration("config" );
-        addChildren( newConfig );
+        final RaplaConfiguration clientConfig = new RaplaConfiguration("clientConfig");
+        addChildren( newConfig, clientConfig );
         preferences.putEntry( configEntry,newConfig);
+        preferences.putEntry(ExchangeConnectorConfig.EXCHANGE_CLIENT_CONFIG, clientConfig);
     }
 
 
@@ -209,7 +210,7 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
     }
 
 
-    protected void readConfig(Configuration config) {
+    protected void readConfig(Configuration serverConfig) {
         List<String> timezones;
         try
         {
@@ -247,8 +248,8 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
 //            this.cbRoomTypes.setModel(new DefaultComboBoxModel(roomTypes));
 //        } catch (RaplaException e) {
 //        }
-      
-        ConfigReader reader = new ConfigReader(config);
+        final RaplaConfiguration clientConfig = preferences.getEntry(ExchangeConnectorConfig.EXCHANGE_CLIENT_CONFIG, new RaplaConfiguration());
+        ConfigReader reader = new ConfigReader(serverConfig, clientConfig);
         //enableSynchronisationBox.setSelected(ExchangeConnectorPlugin.ENABLED_BY_ADMIN);
         activate.setSelected(reader.isEnabled());
         exchangeWebServiceFQDNTextField.setText(reader.getExchangeServerURL());

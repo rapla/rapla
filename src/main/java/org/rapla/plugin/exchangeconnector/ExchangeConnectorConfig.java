@@ -12,6 +12,7 @@ import java.util.Map;
 
 public interface ExchangeConnectorConfig 
 {
+    TypedComponentRole<RaplaConfiguration> EXCHANGE_CLIENT_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.config");
     TypedComponentRole<RaplaConfiguration> EXCHANGESERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.server.Config");
     
 	TypedComponentRole<String> EXCHANGE_WS_FQDN = new TypedComponentRole<String>("ews_fqdn");
@@ -79,17 +80,17 @@ String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
 		    @Inject
 	    	public ConfigReader(RaplaFacade facade) throws RaplaException
 	    	{
-		        this(facade.getSystemPreferences().getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()));
+		        this(facade.getSystemPreferences().getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()), facade.getSystemPreferences().getEntry(EXCHANGE_CLIENT_CONFIG, new RaplaConfiguration()));
 	    	}
 		    
-		    public ConfigReader(Configuration config)
+		    public ConfigReader(Configuration serverConfig, Configuration clientConfig)
 		    {
-	            load(config,EXCHANGE_WS_FQDN,DEFAULT_EXCHANGE_WS_FQDN);
-		        loadInt(config,SYNCING_PERIOD_PAST,DEFAULT_SYNCING_PERIOD_PAST);
+	            load(serverConfig,EXCHANGE_WS_FQDN,DEFAULT_EXCHANGE_WS_FQDN);
+		        loadInt(serverConfig,SYNCING_PERIOD_PAST,DEFAULT_SYNCING_PERIOD_PAST);
 		        //loadInt(config,SYNCING_PERIOD_FUTURE,DEFAULT_SYNCING_PERIOD_FUTURE);
-		        load(config,EXCHANGE_APPOINTMENT_CATEGORY,DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY);
-		        load(config,EXCHANGE_TIMEZONE,DEFAULT_EXCHANGE_TIMEZONE);
-		        loadBoolean(config,ENABLED_BY_ADMIN, DEFAULT_ENABLED_BY_ADMIN);
+		        load(serverConfig,EXCHANGE_APPOINTMENT_CATEGORY,DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY);
+		        load(serverConfig,EXCHANGE_TIMEZONE,DEFAULT_EXCHANGE_TIMEZONE);
+		        loadBoolean(clientConfig,ENABLED_BY_ADMIN, DEFAULT_ENABLED_BY_ADMIN);
 		        //loadInt(config,PULL_FREQUENCY_KEY,DEFAULT_PULL_FREQUENCY);
 		        //load(config,IMPORT_EVENT_TYPE_KEY,DEFAULT_IMPORT_EVENT_TYPE);
 		        //load(config,RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL,DEFAULT_RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL);
