@@ -1,6 +1,26 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -32,40 +52,23 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 import org.rapla.plugin.exchangeconnector.SyncError;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 import org.rapla.plugin.exchangeconnector.SynchronizeResult;
+import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
-import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
-
-@Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=ServerExtension.class)
-@Singleton public class SynchronisationManager implements ServerExtension
+@Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = ServerExtension.class)
+@Singleton
+public class SynchronisationManager implements ServerExtension
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
@@ -87,15 +90,19 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     private final int syncPeriodPast;
     CommandScheduler scheduler;
-    @Inject public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
+    private final Set<ExchangeConfigExtensionPoint> configExtensions;
+
+    @Inject
+    public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
             TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
-            CommandScheduler scheduler, ConfigReader config) throws RaplaException
+            CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions) throws RaplaException
     {
         super();
         this.scheduler = scheduler;
         this.converter = converter;
         this.logger = logger;
         this.facade = facade;
+        this.configExtensions = configExtensions;
         this.operator = (CachableStorageOperator) facade.getOperator();
         this.i18n = new CompoundI18n(i18nRapla, i18nExchange);
         this.appointmentFormater = appointmentFormater;
@@ -152,8 +159,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         }, delay, 20000);
     }
 
-
-
     class RetryCommand implements Command
     {
         boolean firstExecution = true;
@@ -161,7 +166,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         public void execute()
         {
             try
-            {                
+            {
                 operator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
@@ -190,8 +195,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
             catch (Exception ex)
             {
-                logger.warn("Could not synchronize with exchange: "+ex.getMessage());
-                if(logger.isDebugEnabled())
+                logger.warn("Could not synchronize with exchange: " + ex.getMessage());
+                if (logger.isDebugEnabled())
                 {
                     final StringWriter sw = new StringWriter();
                     ex.printStackTrace(new PrintWriter(sw));
@@ -203,7 +208,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public void retry(User user) throws RaplaException
     {
-        final Preferences userPreferences= facade.edit(facade.getPreferences(user));
+        final Preferences userPreferences = facade.edit(facade.getPreferences(user));
         userPreferences.putEntry(RETRY_USER, true);
     }
 
@@ -268,7 +273,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         return result;
     }
 
-
     private void synchronize(UpdateResult evt) throws RaplaException
     {
         appointmentStorage.refresh();
@@ -302,7 +306,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 }
                 else //if ( operation instanceof UpdateResult.Change)
                 {
-                    Reservation oldReservation =  evt.getLastEntryBeforeUpdate(op.getReference());
+                    Reservation oldReservation = evt.getLastEntryBeforeUpdate(op.getReference());
                     Reservation newReservation = evt.getLastKnown(op.getReference());
                     Map<String, Appointment> oldAppointments = Appointment.AppointmentUtil.idMap(oldReservation.getAppointments());
                     Map<String, Appointment> newAppointments = Appointment.AppointmentUtil.idMap(newReservation.getAppointments());
@@ -352,7 +356,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                 {
                     preferences = evt.getLastKnown(op.getReference());
                     boolean savePreferences = false;
-                    if(preferences.getEntryAsBoolean(RETRY_USER, false))
+                    if (preferences.getEntryAsBoolean(RETRY_USER, false))
                     {
                         final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                         Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(ownerId);
@@ -363,16 +367,16 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                         tasks.addAll(tasks);
                         savePreferences = true;
                     }
-                    if(preferences.getEntryAsBoolean(RESYNC_USER, false))
+                    if (preferences.getEntryAsBoolean(RESYNC_USER, false))
                     {
                         final User user = operator.tryResolve(preferences.getOwnerRef());
-                        if(user != null)
+                        if (user != null)
                         {
                             removeAllAppointmentsFromExchangeAndAppointmentStore(user);
                         }
                         savePreferences = true;
                     }
-                    if(savePreferences)
+                    if (savePreferences)
                     {
                         final Preferences resolve = operator.resolve(preferences.getReference());
                         final Preferences editPreferences = facade.edit(resolve);
@@ -442,13 +446,11 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             appointmentStorage.storeAndRemove(tasks, toRemove);
             execute(tasks);
         }
-        if(!preferencesToStore.isEmpty())
+        if (!preferencesToStore.isEmpty())
         {
             facade.storeObjects(preferencesToStore.toArray(new Entity[preferencesToStore.size()]));
         }
     }
-
-
 
     // is called when the calendarModel is changed (e.g. store of preferences), not when the reservation changes
     private Collection<SynchronizationTask> updateTasksForUser(User user)
@@ -491,8 +493,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
             // existing appointmentId in tasks not found in current calendar export
             // only add delete tasks once for each appointment
-            if ((status != SynchronizationTask.SyncStatus.deleted && status != SynchronizationTask.SyncStatus.toDelete) && !appointmentsFound
-                    .contains(appointmentId))
+            if ((status != SynchronizationTask.SyncStatus.deleted && status != SynchronizationTask.SyncStatus.toDelete)
+                    && !appointmentsFound.contains(appointmentId))
             {
                 task.setStatus(SyncStatus.toDelete);
                 result.add(task);
@@ -501,10 +503,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
         return result;
     }
-
-
-
-
 
     private SynchronizeResult execute(Collection<SynchronizationTask> tasks) throws RaplaException
     {
@@ -565,15 +563,19 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         }
         final String username = secrets.login;
         final String password = secrets.secret;
-        Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
+        final Collection<String> exchangeUrls = extractExchangeUrls(user);
         Collection<SyncError> result = new LinkedHashSet<SyncError>();
-        for (String errorMessage : appointments)
+        for (String exchangeUrl : exchangeUrls)
         {
-            // appointment remove failed
-            if (errorMessage != null && !errorMessage.isEmpty())
+            Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
+            for (String errorMessage : appointments)
             {
-                SyncError error = new SyncError(errorMessage, errorMessage);
-                result.add(error);
+                // appointment remove failed
+                if (errorMessage != null && !errorMessage.isEmpty())
+                {
+                    SyncError error = new SyncError(errorMessage, errorMessage);
+                    result.add(error);
+                }
             }
         }
         ReferenceInfo<User> userId = user.getReference();
@@ -616,11 +618,11 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             {
                 continue;
             }
-            final AppointmentSynchronizer worker;
+            final Collection<AppointmentSynchronizer> workers;
             try
             {
-                worker = createAppoinmentSynchronizer(skipNotification, task, appointment, user);
-                if (worker == null)
+                workers = createAppoinmentSynchronizer(skipNotification, task, appointment, user);
+                if (workers == null)
                 {
                     logger.info("User no longer connected to Exchange ");
                     toRemove.add(task);
@@ -636,7 +638,10 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
             try
             {
-                worker.execute();
+                for (AppointmentSynchronizer worker : workers)
+                {
+                    worker.execute();
+                }
             }
             catch (Exception e)
             {
@@ -698,13 +703,14 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         return result;
     }
 
-    private AppointmentSynchronizer createAppoinmentSynchronizer(boolean skipNotification, SynchronizationTask task, final Appointment appointment,
+    private Collection<AppointmentSynchronizer> createAppoinmentSynchronizer(boolean skipNotification, SynchronizationTask task, final Appointment appointment,
             final User user) throws RaplaException
     {
-        final AppointmentSynchronizer worker;
+        final Collection<AppointmentSynchronizer> workers;
         final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         if (secrets != null)
         {
+            workers = new ArrayList<>();
             final String username = secrets.login;
             final String password = secrets.secret;
             final boolean notificationMail;
@@ -720,14 +726,20 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
             final Logger logger = this.logger.getChildLogger("exchange");
             final Locale locale = i18n.getLocale();
-            worker = new AppointmentSynchronizer(logger, converter, exchangeUrl, exchangeTimezoneId, exchangeAppointmentCategory, user, username, password,
-                    notificationMail, task, appointment, locale);
+            final Collection<String> exchangeUrls = extractExchangeUrls(user);
+            for (String exchangeUrl : exchangeUrls)
+            {
+                final AppointmentSynchronizer worker = new AppointmentSynchronizer(logger, converter, exchangeUrl, exchangeTimezoneId, exchangeAppointmentCategory, user, username, password,
+                        notificationMail, task, appointment, locale);
+                workers.add(worker);
+                
+            }
         }
         else
         {
-            worker = null;
+            workers = null;
         }
-        return worker;
+        return workers;
     }
 
     private TimeInterval getSyncRange()
@@ -796,14 +808,16 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         facade.store(preferences);
     }
 
-
-
-    public void testConnection(String exchangeUsername, String exchangePassword) throws RaplaException
+    public void testConnection(String exchangeUsername, String exchangePassword, User user) throws RaplaException
     {
         try
         {
-            final EWSConnector connector = new EWSConnector(exchangeUrl, exchangeUsername, exchangePassword, null);
-            connector.test();
+            final Collection<String> exchangeUrls = extractExchangeUrls(user);
+            for (String exchangeUrl : exchangeUrls)
+            {
+                final EWSConnector connector = new EWSConnector(exchangeUrl, exchangeUsername, exchangePassword, null);
+                connector.test();
+            }
         }
         catch (Exception e)
         {
@@ -811,4 +825,27 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         }
     }
 
+    private Collection<String> extractExchangeUrls(User user)
+    {
+        final Collection<String> exchangeConnectionUrls = new ArrayList<>();
+        if (configExtensions != null)
+        {
+            for (ExchangeConfigExtensionPoint exchangeConfigExtension : configExtensions)
+            {
+                if (exchangeConfigExtension.isResponsibleFor(user))
+                {
+                    final String exchangeUrl = exchangeConfigExtension.getExchangeUrl(user);
+                    if (exchangeUrl != null)
+                    {
+                        exchangeConnectionUrls.add(exchangeUrl);
+                    }
+                }
+            }
+        }
+        if(exchangeConnectionUrls.isEmpty())
+        {
+            exchangeConnectionUrls.add(exchangeUrl);
+        }
+        return exchangeConnectionUrls;
+    }
 }
