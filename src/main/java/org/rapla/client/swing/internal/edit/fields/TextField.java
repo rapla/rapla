@@ -12,12 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.fields;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -30,17 +35,13 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class TextField extends AbstractEditField implements ActionListener, FocusListener, KeyListener, MultiEditField, SetGetField<String>
 {
@@ -86,6 +87,7 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         addCopyPaste(field, i18n, raplaLocale, ioInterface, logger);
         field.addFocusListener(this);
         field.addKeyListener(this);
+        field.setDisabledTextColor(Color.black);
         setValue("");
     }
 

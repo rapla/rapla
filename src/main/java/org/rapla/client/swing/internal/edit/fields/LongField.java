@@ -27,6 +27,7 @@ import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.FocusEvent;
@@ -60,6 +61,26 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 		        super.setEnabled(enabled);
 		        field.setEnabled(enabled);
 		    }
+		    
+		    @Override
+		    public void setBackground(Color bg)
+		    {
+		        super.setBackground(bg);
+		        if(field != null)
+		        {
+		            field.setBackground(bg);
+		        }
+		    }
+		    
+		    @Override
+		    public void setForeground(Color fg)
+		    {
+		        super.setForeground(fg);
+		        if(field != null)
+	            {
+		            field.setForeground(fg);
+	            }
+		    }
 		};
 		panel.setLayout(new BorderLayout());
 		panel.setOpaque(false);
@@ -72,7 +93,7 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 
 		field.addFocusListener(this);
 	}
-
+	
 	public Long getValue()  {
 		if (field.getNumber() != null)
 			return new Long(field.getNumber().longValue());

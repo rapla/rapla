@@ -12,18 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.fields;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaListComboBox;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.ListCellRenderer;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -33,6 +23,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.RaplaListComboBox;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class ListField<T> extends AbstractEditField implements ActionListener,FocusListener, MultiEditField, SetGetField<T>, SetGetCollectionField<T> {
 	JPanel panel;
@@ -49,7 +51,7 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 	    this(facade, i18n, raplaLocale, logger, false);
 		setVector(v);
 	}
-
+	
 	public ListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,  boolean includeNothingSelected)
 	{
 		super(facade, i18n, raplaLocale, logger);
@@ -62,6 +64,24 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		    {
 		        super.setEnabled(enabled);
 		        field.setEnabled(enabled);
+		    }
+		    
+		    @Override
+		    public void setForeground(Color fg)
+		    {
+		        super.setForeground(fg);
+		        if(field != null)
+		        {
+		            field.setForeground(fg);
+		        }
+		    }
+		    
+		    @Override
+		    public void setBackground(Color bg)
+		    {
+		        super.setBackground(bg);
+		        if(field!=null)
+		            field.setBackground(bg);
 		    }
         };
 		panel.setOpaque(false);

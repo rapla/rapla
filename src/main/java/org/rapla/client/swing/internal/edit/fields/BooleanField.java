@@ -25,6 +25,8 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -60,6 +62,26 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
                 super.setEnabled(enabled);
                 field1.setEnabled(enabled);
                 field2.setEnabled(enabled);
+            }
+            
+            @Override
+            public void setForeground(Color fg)
+            {
+                super.setForeground(fg);
+                if(field1!=null)
+                    field1.setForeground(fg);
+                if(field2!=null)
+                    field2.setForeground(fg);
+            }
+            
+            @Override
+            public void setBackground(Color bg)
+            {
+                super.setBackground(bg);
+                if(field1!=null)
+                    field1.setBackground(bg);
+                if(field2!=null)
+                    field2.setBackground(bg);
             }
         };
         field1.setOpaque( false );

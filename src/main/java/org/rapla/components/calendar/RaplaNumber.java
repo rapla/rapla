@@ -12,18 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendar;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.EventListenerList;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 /** The RaplaNumber is an adapter for NumberField.
  * <strong>Warning!</strong> Currently only Longs are supported.
  * @see NumberField
@@ -50,6 +52,7 @@ public final class RaplaNumber extends JPanel{
     public RaplaNumber(Number value,Number minimum,Number maximum,boolean isNullPermitted) {
         m_numberField = new NumberField(minimum,maximum,DEFAULT_STEP_SIZE.intValue(),10);
         m_numberField.setNumber(value);
+        m_numberField.setDisabledTextColor(Color.black);
         m_numberField.setNullPermitted(isNullPermitted);
         if (minimum != null && minimum.longValue()>0)
             m_emptyValue = minimum;
@@ -73,6 +76,22 @@ public final class RaplaNumber extends JPanel{
 
         m_upButton.setFocusable( false);
         m_downButton.setFocusable( false);
+    }
+    
+    @Override
+    public void setBackground(Color bg)
+    {
+        super.setBackground(bg);
+        if(m_numberField != null)
+        m_numberField.setBackground(bg);
+    }
+    
+    @Override
+    public void setForeground(Color fg)
+    {
+        super.setForeground(fg);
+        if(m_numberField != null)
+        m_numberField.setForeground(fg);
     }
 
     public void setFont(Font font) {
