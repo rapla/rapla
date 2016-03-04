@@ -14,8 +14,11 @@
 package org.rapla.client.swing.internal;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.datatransfer.Transferable;
+import java.awt.Rectangle;
+import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDragEvent;
@@ -34,7 +37,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DropMode;
-import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
@@ -102,7 +104,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaMenuBarContainer menuBar;
-    
+
     private ResourceSelection(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController,
             InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory)
@@ -202,21 +204,65 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
         final JTree tree = treeSelection.getTree();
         tree.setShowsRootHandles(true);
         tree.setDragEnabled(true);
-        tree.setDropMode(DropMode.USE_SELECTION);
+        tree.setDropMode(DropMode.ON);
         tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
         {
-            
+            private final Rectangle _raCueLine = new Rectangle();
+            private final Color _colorCueLine = Color.blue;
+            private TreePath lastPath = null;
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                TreePath sourcePath = selectionPath.getParentPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                Graphics2D g2 = (Graphics2D) tree.getGraphics();
+                final Point dropLocation = dtde.getLocation();
+                TreePath path = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                if(isDropAllowed(sourcePath, path, selectedNode))
+                {
+                    if (lastPath == null || !lastPath.equals(path))
+                    {
+                        if(lastPath != null)
+                        {
+                            drawLine(g2, lastPath, Color.white);
+                        }
+                        lastPath = path;
+                        drawLine(g2, path, _colorCueLine);
+                    }
+                }
+                else
+                {
+                    if(lastPath != null)
+                    {
+                        drawLine(g2, lastPath, Color.white);
+                    }
+                    lastPath = null;
+                }
+            }
+
+            private void drawLine(Graphics2D g2, TreePath path, Color color)
+            {
+                Rectangle raPath = tree.getPathBounds(path);
+                _raCueLine.setRect(0, raPath.y, tree.getWidth(), 2);
+                g2.setColor(color);
+                g2.fill(_raCueLine);
+            }
+
             @Override
             public void dragEnter(DropTargetDragEvent dtde)
             {
                 TreePath selectionPath = tree.getSelectionPath();
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                if(!(selectedNode.getUserObject() instanceof Category))
+                if (!(selectedNode.getUserObject() instanceof Category))
                 {
                     dtde.rejectDrag();
+                    return;
                 }
+                dtde.acceptDrag(DnDConstants.ACTION_MOVE);
             }
-            
+
             @Override
             public void drop(DropTargetDropEvent dtde)
             {
@@ -233,7 +279,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
                     Collection<Category> categoriesToStore = new ArrayList<>();
                     final Category categoryToMoveEdit = getFacade().edit(categoryToMove);
                     final Category targetParentCategoryEdit = getFacade().edit(targetCategory.getParent());
-                    if(!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
+                    if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
                     {
                         // remove from old parent
                         final Category moveCategoryParent = getFacade().edit(categoryToMove.getParent());
@@ -247,7 +293,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
                     }
                     for (Category category : categories)
                     {
-                        if(category.equals(targetCategory))
+                        if (category.equals(targetCategory))
                         {
                             targetParentCategoryEdit.addCategory(categoryToMoveEdit);
                         }
@@ -265,7 +311,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
                         dtde.dropComplete(true);
                         updateTree();
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         dialogUiFactory.showError(e, new SwingPopupContext(getMainComponent(), null));
                         dtde.dropComplete(false);
@@ -281,8 +327,14 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
 
             private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
             {
-                if(selectedNode.getUserObject() instanceof Category && ((DefaultMutableTreeNode)targetPath.getLastPathComponent()).getUserObject() instanceof Category)
+                if (selectedNode.getUserObject() instanceof Category
+                        && ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject() instanceof Category)
                 {
+                    Category targetCategory = (Category) ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject();
+                    if(targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId()))
+                    {
+                        return false;
+                    }
                     return true;
                 }
                 return false;
