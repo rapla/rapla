@@ -797,6 +797,50 @@ public class ClientFacadeTest  {
             Assert.assertEquals(allocatableWinsMerge, values.iterator().next());
         }
     }
+    
+    @Test
+    public void testGroupConflicts()
+    {
+        Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+        User user = clientFacade.getUser();
+        Date startDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(10, 00, 00)));
+        Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
+        {// Store new Reservation with resource
+            final Reservation newReservation = facade.newReservation(classification, user);
+            final Allocatable montyAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
+            newReservation.addAllocatable(montyAllocatable);
+            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+        }
+        // create reservation with group allocatable
+        final Reservation newReservation = facade.newReservation(classification, user);
+        final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
+        newReservation.addAllocatable(dozGroupAllocatable);
+        newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+        final Conflict[] conflicts = facade.getConflicts(newReservation);
+        Assert.assertEquals(1, conflicts.length);
+    }
+    
+    @Test
+    public void testBelongsToConflicts()
+    {
+        Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+        User user = clientFacade.getUser();
+        Date startDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(10, 00, 00)));
+        Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
+        {// Store new Reservation with resource
+            final Reservation newReservation = facade.newReservation(classification, user);
+            final Allocatable roomA66Allocatable = facade.getOperator().tryResolve("c24ce517-4697-4e52-9917-ec000c84563c", Allocatable.class);
+            newReservation.addAllocatable(roomA66Allocatable);
+            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+        }
+        // create reservation with group allocatable
+        final Reservation newReservation = facade.newReservation(classification, user);
+        final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
+        newReservation.addAllocatable(partRoomAllocatable);
+        newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+        final Conflict[] conflicts = facade.getConflicts(newReservation);
+        Assert.assertEquals(1, conflicts.length);
+    }
 
 }
 
