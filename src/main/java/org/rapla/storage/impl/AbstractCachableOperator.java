@@ -29,10 +29,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.gwt.logging.client.DefaultLevel;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -46,7 +44,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -67,11 +64,7 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.UpdateResult.Add;
-import org.rapla.storage.UpdateResult.Change;
-import org.rapla.storage.UpdateResult.Remove;
 
 /**
  * An abstract implementation of the StorageOperator-Interface. It operates on a
@@ -168,7 +161,8 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return (Entity) refEntity;
 	}
 
-	public void storeAndRemove(final Collection<Entity> storeObjects,	final Collection<ReferenceInfo> removeObjects, final User user) throws RaplaException {
+	@SuppressWarnings("rawtypes")
+    public void storeAndRemove(final Collection<? extends Entity<?>> storeObjects, final Collection<? extends ReferenceInfo<?>> removeObjects, final User user) throws RaplaException {
 		checkConnected();
 
 		UpdateEvent evt = new UpdateEvent();
@@ -186,7 +180,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	              evt.putStore(obj);
 		    }
 		}
-		for (ReferenceInfo<Allocatable> entity : removeObjects) {
+		for (ReferenceInfo<?> entity : removeObjects) {
 			Class<? extends Entity> type = entity.getType();
 			if (Appointment.class ==type || Attribute.class ==  type) {
 				String name = getName( entity);

@@ -73,7 +73,7 @@ public interface StorageOperator extends EntityResolver {
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/
-    void storeAndRemove(Collection<Entity> storeObjects,Collection<ReferenceInfo> removeObjects,User user) throws RaplaException;
+    void storeAndRemove(Collection<? extends Entity<?>> storeObjects,Collection<? extends ReferenceInfo<?>> removeObjects,User user) throws RaplaException;
 
     <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException;
 

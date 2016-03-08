@@ -13,11 +13,33 @@
 
 package org.rapla.storage.impl.server;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
-import org.eclipse.jetty.deploy.App;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Cancelable;
@@ -109,30 +131,8 @@ import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -618,7 +618,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
     {
         getLogger().info("Change password for User " + user.getUsername());
-        ReferenceInfo userId = user.getReference();
+        ReferenceInfo<User> userId = user.getReference();
         String password = new String(newPassword);
         if (encryption != null)
             password = encrypt(encryption, password);
@@ -632,9 +632,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             unlock(writeLock);
         }
         User editObject = editObject(user, null);
-        List<Entity> editList = new ArrayList<Entity>(1);
+        List<Entity<?>> editList = new ArrayList<Entity<?>>(1);
         editList.add(editObject);
-        Collection<ReferenceInfo> removeList = Collections.emptyList();
+        Collection<ReferenceInfo<?>> removeList = Collections.emptyList();
         // synchronization will be done in the dispatch method
         storeAndRemove(editList, removeList, user);
     }
@@ -673,13 +673,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     classification.setValue(attribute, surname);
                 }
             }
-            ArrayList<Entity> arrayList = new ArrayList<Entity>();
+            ArrayList<Entity<?>> arrayList = new ArrayList<Entity<?>>();
             arrayList.add(editableUser);
             arrayList.add(editablePerson);
-            Collection<Entity> storeObjects = arrayList;
-            Collection<ReferenceInfo> removeObjects = Collections.emptySet();
+            Collection<ReferenceInfo<?>> removeObjects = Collections.emptySet();
             // synchronization will be done in the dispatch method
-            storeAndRemove(storeObjects, removeObjects, null);
+            storeAndRemove(arrayList, removeObjects, null);
         }
     }
 
@@ -687,9 +686,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         User editableUser = user.isReadOnly() ? editObject(user, user) : user;
         Allocatable personReference = editableUser.getPerson();
-        ArrayList<Entity> arrayList = new ArrayList<Entity>();
-        Collection<Entity> storeObjects = arrayList;
-        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
+        ArrayList<Entity<?>> storeObjects = new ArrayList<Entity<?>>();
+        Collection<ReferenceInfo<?>> removeObjects = Collections.emptySet();
         storeObjects.add(editableUser);
         if (personReference == null)
         {
@@ -3152,10 +3150,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void storeUser(User refUser) throws RaplaException
     {
-        ArrayList<Entity> arrayList = new ArrayList<Entity>();
-        arrayList.add(refUser);
-        Collection<Entity> storeObjects = arrayList;
-        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
+        ArrayList<Entity<?>> storeObjects = new ArrayList<Entity<?>>();
+        storeObjects.add(refUser);
+        Collection<ReferenceInfo<?>> removeObjects = Collections.emptySet();
         storeAndRemove(storeObjects, removeObjects, null);
     }
 
@@ -3762,7 +3759,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final Allocatable resolve = resolve(allocatableId);
                 allocatables.add(resolve);
             }
-            Collection<Entity> storeObjects = new LinkedHashSet<>();
+            final Collection<Entity<?>> storeObjects = new LinkedHashSet<>();
             if(!selectedObject.isReadOnly())
             {
                 storeObjects.add(selectedObject);
@@ -3781,7 +3778,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                 }
             }
-            storeAndRemove(storeObjects, (Set)allocatables, user);
+            storeAndRemove(storeObjects, allocatableIds, user);
         }
         catch(RaplaException ra)
         {

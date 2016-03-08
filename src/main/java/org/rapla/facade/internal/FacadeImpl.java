@@ -90,7 +90,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.client.gwt.internal.impl.FutureResultImpl;
 import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
@@ -1729,8 +1728,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
             }
         }
 
-        ArrayList<Entity>storeList = new ArrayList<Entity>();
-        ArrayList<ReferenceInfo>removeList = new ArrayList<ReferenceInfo>();
+        ArrayList<Entity<?>>storeList = new ArrayList<>();
+        ArrayList<ReferenceInfo<?>>removeList = new ArrayList<>();
         for (Entity toStore : storedObjects) {
 			if ( toStore instanceof Category)
 			{
@@ -1748,7 +1747,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
             getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
 	}
 
-	public void addTransientCategories(ArrayList<Entity> storeList, CategoryImpl toStore, int depth)
+	public void addTransientCategories(ArrayList<Entity<?>> storeList, CategoryImpl toStore, int depth)
 	{
 		if ( depth >20)
 		{
