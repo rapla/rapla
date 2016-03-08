@@ -1,5 +1,24 @@
 package org.rapla.client.swing.internal.edit;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -39,24 +58,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
-
-import javax.inject.Inject;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 public class AttributeDefaultConstraints extends AbstractEditField
     implements ActionListener
@@ -253,12 +254,20 @@ public class AttributeDefaultConstraints extends AbstractEditField
         }
         tabSelect.setModel( model );
 
-        model = new DefaultComboBoxModel();
-        for ( String select:multiSelectOptions ) {
+        setMultiSelectModel();
+	}
+
+    private void setMultiSelectModel()
+    {
+        AttributeType type = types[classSelect.getSelectedIndex()];
+        final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
+        DefaultComboBoxModel model = new DefaultComboBoxModel();
+        for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
+        {
             model.addElement(getString(select));
         }
-        multiSelect.setModel( model );
-	}
+        multiSelect.setModel(model);
+    }
 
     public JComponent getComponent() {
         return panel;
@@ -314,15 +323,8 @@ public class AttributeDefaultConstraints extends AbstractEditField
             }
 
             {
-                AttributeType type = types[classSelect.getSelectedIndex()];
-                final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
                 final Object selectedItem = multiSelect.getSelectedItem();
-                DefaultComboBoxModel model = new DefaultComboBoxModel();
-                for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
-                {
-                    model.addElement(getString(select));
-                }
-                multiSelect.setModel(model);
+                setMultiSelectModel();
                 if ( selectedItem != null)
                 {
                     multiSelect.setSelectedItem(selectedItem);
@@ -488,6 +490,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         if (mapping)
             return;
         if ( evt.getSource() == classSelect) {
+            setMultiSelectModel();
         	clearValues();
             AttributeType newType = types[classSelect.getSelectedIndex()];
             if (newType.equals(AttributeType.CATEGORY)) {
