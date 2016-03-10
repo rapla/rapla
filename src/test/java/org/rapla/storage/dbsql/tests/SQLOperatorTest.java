@@ -201,16 +201,16 @@ public class SQLOperatorTest extends AbstractOperatorTest
             groups.addCategory(category2);
             facade.store(groups);
             Category[] categories = facade.getUserGroupsCategory().getCategories();
-            Assert.assertEquals("users1", categories[5].getKey());
-            Assert.assertEquals("users2", categories[6].getKey());
+            Assert.assertEquals("users1", categories[6].getKey());
+            Assert.assertEquals("users2", categories[7].getKey());
             operator.disconnect();
             operator.connect();
             facade.refresh();
         }
         {
             Category[] categories = facade.getUserGroupsCategory().getCategories();
-            Assert.assertEquals("users1", categories[5].getKey());
-            Assert.assertEquals("users2", categories[6].getKey());
+            Assert.assertEquals("users1", categories[6].getKey());
+            Assert.assertEquals("users2", categories[7].getKey());
         }
 
     }
