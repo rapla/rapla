@@ -941,7 +941,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     	final UpdateResult updates = operator.getUpdateResult(startAll);
     	Assert.assertTrue(updates.getIds(UpdateResult.Add.class).isEmpty());
     	Assert.assertEquals("Only super category expected to be changed.",1, updates.getIds(UpdateResult.Change.class).size());
-    	Assert.assertEquals(1,updates.getIds(UpdateResult.Remove.class).size());
+    	Assert.assertEquals(4,updates.getIds(UpdateResult.Remove.class).size());
     
     }
 }
