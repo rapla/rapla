@@ -3627,8 +3627,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void convertTemplates()
     {
-        for (Reservation reservations : cache.getReservations())
-            ;
+//        for (Reservation reservations : cache.getReservations())
+//            ;
 
     }
 
