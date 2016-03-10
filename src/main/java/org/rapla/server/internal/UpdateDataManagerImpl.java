@@ -48,6 +48,8 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 
+import com.google.gwt.safehtml.rebind.SafeHtmlTemplatesGenerator;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collection;
@@ -133,6 +135,12 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
         safeResultEvent.setLastValidated(updateResult.getUntil());
+        if(updateResult.getSince() == null)
+        {
+            safeResultEvent.setInvalidateInterval(null);
+            safeResultEvent.setNeedResourcesRefresh(true);
+            return safeResultEvent;
+        }
         boolean resourceRefresh = lastSynced.before( historyValidStart);
         boolean conflictRefresh = lastSynced.before( conflictValidStart);
         for (Remove op : updateResult.getOperations(Remove.class))

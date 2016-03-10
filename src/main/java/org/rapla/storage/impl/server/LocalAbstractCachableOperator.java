@@ -3635,7 +3635,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public UpdateResult getUpdateResult(Date since, User user)
     {
         checkConnected();
-        // FIXME check if history supports since
+        final Date historyValidStart = getHistoryValidStart();
+        if(since.before(historyValidStart))
+        {
+            return new UpdateResult(null, historyValidStart, null, null);
+        }
         Date until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
         Map<ReferenceInfo, Entity> oldEntities = new LinkedHashMap<ReferenceInfo, Entity>();
