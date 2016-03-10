@@ -38,6 +38,24 @@
                <doc:name lang="en">powerplant staff</doc:name>
             </rapla:category>
          </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c1de624a-5be1-488a-a43f-93a772d8fc48" key="registerer">
+            <doc:name lang="de">Ressourcen eintragen</doc:name>
+            <doc:name lang="en">register resources</doc:name>
+            <doc:name lang="fr">Enregistrer des ressources</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c727abe5-ea4f-41b2-9240-c9a4a6900c9b" key="modify-preferences">
+            <doc:name lang="de">Einstellungen bearbeiten</doc:name>
+            <doc:name lang="en">modify preferences</doc:name>
+            <doc:name lang="fr">Modifier la préférence</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z" id="c309ea1f-7b5c-400a-8546-ae7e692b32d7" key="read-events-from-others">
+            <doc:name lang="de">Die Veranstaltungen anderer sehen</doc:name>
+            <doc:name lang="en">read-events-from-others</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z" id="c5a6ade9-9546-44f7-8643-1684608746f0" key="create-events">
+            <doc:name lang="de">Veranstaltungen anlegen</doc:name>
+            <doc:name lang="en">create-events</doc:name>
+         </rapla:category>
       </rapla:category>
    </rapla:categories>
 
