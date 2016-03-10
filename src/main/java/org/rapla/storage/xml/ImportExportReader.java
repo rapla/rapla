@@ -67,7 +67,7 @@ public class ImportExportReader extends RaplaXMLReader
             final String context = readContent();
             importExport.setContext(context);
         }
-        else if(localName.equals("importExport"))
+        else if(localName.equals("importexport"))
         {
             add(importExport);
             importExport = null;
