@@ -28,19 +28,16 @@
          <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c2642cdd-6144-4e66-bf54-b3ff76c76f04" key="my-group">
             <doc:name lang="en">my-group</doc:name>
          </rapla:category>
-         <rapla:category key="powerplant">
+         <rapla:category created-at="2016-03-08T10:53:18.0291Z" last-changed="2016-03-08T10:53:18.0291Z" id="c59628c4-6b7c-42fa-87f6-b766e7aa6cc4" key="powerplant">
             <doc:name lang="en">powerplant</doc:name>
-            <rapla:category key="powerplant-admins">
+            <rapla:category created-at="2016-03-08T10:53:18.0291Z" last-changed="2016-03-08T10:53:18.0291Z" id="c353c5de-e3c7-409a-bd44-02f88e10d3f4" key="powerplant-admins">
                <doc:name lang="en">powerplant admins</doc:name>
-               <doc:annotations>
-                  <rapla:annotation key="can_admin_parent">true</rapla:annotation>
-               </doc:annotations>
+               <rapla:annotation key="can_admin_parent">true</rapla:annotation>
             </rapla:category>
-            <rapla:category key="powerplant-staff">
+            <rapla:category created-at="2016-03-08T10:53:18.0291Z" last-changed="2016-03-08T10:53:18.0291Z" id="c2959392-3285-4776-b418-a3d3c514af34" key="powerplant-staff">
                <doc:name lang="en">powerplant staff</doc:name>
             </rapla:category>
          </rapla:category>
-
       </rapla:category>
    </rapla:categories>
 
@@ -53,23 +50,29 @@
                <rapla:annotation key="nameformat">{name}</rapla:annotation>
                <rapla:annotation key="classification-type">resource</rapla:annotation>
             </doc:annotations>
-            <relax:element name="name">
-               <doc:name lang="de">Name</doc:name>
-               <doc:name lang="en">name</doc:name>
-               <relax:data type="string"/>
-            </relax:element>
-            <relax:element name="seats">
-               <doc:name lang="de">Anzahl der Plätze</doc:name>
-               <doc:name lang="en">number of seats</doc:name>
-               <relax:data type="int"/>
-            </relax:element>
-            <relax:element name="belongsto">
-               <doc:name lang="de">gehört zu</doc:name>
-               <doc:name lang="en">belongs to</doc:name>
-               <relax:data type="rapla:category"/>
-               <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
-               <rapla:constraint name="multi-select">false</rapla:constraint>
-            </relax:element>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="seats">
+                  <doc:name lang="de">Anzahl der Plätze</doc:name>
+                  <doc:name lang="en">number of seats</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
             <rapla:permission access="read_type"/>
             <rapla:permission access="allocate_conflicts"/>
          </relax:element>
@@ -83,21 +86,27 @@
                <rapla:annotation key="nameformat">{surname} {forename}</rapla:annotation>
                <rapla:annotation key="classification-type">person</rapla:annotation>
             </doc:annotations>
-            <relax:element name="title">
-               <doc:name lang="de">Titel</doc:name>
-               <doc:name lang="en">title</doc:name>
-               <relax:data type="string"/>
-            </relax:element>
-            <relax:element name="surname">
-               <doc:name lang="de">Nachname</doc:name>
-               <doc:name lang="en">surname</doc:name>
-               <relax:data type="string"/>
-            </relax:element>
-            <relax:element name="forename">
-               <doc:name lang="de">Vorname</doc:name>
-               <doc:name lang="en">forename</doc:name>
-               <relax:data type="string"/>
-            </relax:element>
+            <relax:optional>
+               <relax:element name="title">
+                  <doc:name lang="de">Titel</doc:name>
+                  <doc:name lang="en">title</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name>
+                  <doc:name lang="en">surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="forename">
+                  <doc:name lang="de">Vorname</doc:name>
+                  <doc:name lang="en">forename</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
             <rapla:permission access="read_type"/>
             <rapla:permission access="allocate_conflicts"/>
          </relax:element>
@@ -111,30 +120,97 @@
                <rapla:annotation key="nameformat">{name}</rapla:annotation>
                <rapla:annotation key="classification-type">reservation</rapla:annotation>
             </doc:annotations>
-            <relax:element name="name">
-               <doc:name lang="de">Name</doc:name>
-               <doc:name lang="en">name</doc:name>
-               <relax:data type="string"/>
-            </relax:element>
-            <relax:element name="belongsto">
-               <doc:name lang="de">gehört zu</doc:name>
-               <doc:name lang="en">belongs to</doc:name>
-               <relax:data type="rapla:category"/>
-               <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
-               <rapla:constraint name="multi-select">false</rapla:constraint>
-            </relax:element>
-            <relax:element name="description">
-               <doc:name lang="de">Beschreibung</doc:name>
-               <doc:name lang="en">description</doc:name>
-               <doc:annotations>
-                  <rapla:annotation key="expected-rows">5</rapla:annotation>
-                  <rapla:annotation key="edit-view">additional-view</rapla:annotation>
-               </doc:annotations>
-               <relax:data type="string"/>
-            </relax:element>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="description">
+                  <doc:name lang="de">Beschreibung</doc:name>
+                  <doc:name lang="en">description</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="expected-rows">5</rapla:annotation>
+                     <rapla:annotation key="edit-view">additional-view</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
             <rapla:permission access="read_type"/>
             <rapla:permission access="read"/>
             <rapla:permission access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="resource1">
+         <relax:element name="dynatt:resource1" id="d2889899-fc5b-47bc-aa25-cb84a2415c4b" created-at="2016-03-08T11:18:45.0661Z" last-changed="2016-03-08T11:18:45.0661Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+            <doc:name lang="de">Teilraum</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="a1">
+                  <doc:name lang="de">Ist Teil von</doc:name>
+                  <relax:data type="rapla:allocatable"/>
+                  <rapla:constraint name="dynamic-type">room</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+                  <rapla:constraint name="belongsTo">true</rapla:constraint>
+                  <rapla:constraint name="package">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="resource2">
+         <relax:element name="dynatt:resource2" id="d010d3a1-e864-4767-a220-8d0f236adad0" created-at="2016-03-08T11:20:03.0190Z" last-changed="2016-03-08T11:20:03.0190Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+            <doc:name lang="de">Dozentengruppe</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+                  <rapla:default></rapla:default>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="a1">
+                  <doc:name lang="de">Teile</doc:name>
+                  <relax:data type="rapla:allocatable"/>
+                  <rapla:constraint name="dynamic-type">lecturer</rapla:constraint>
+                  <rapla:constraint name="multi-select">true</rapla:constraint>
+                  <rapla:constraint name="belongsTo">false</rapla:constraint>
+                  <rapla:constraint name="package">true</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
          </relax:element>
       </relax:define>
 
@@ -143,6 +219,8 @@
             <relax:ref name="room"/>
             <relax:ref name="lecturer"/>
             <relax:ref name="event"/>
+            <relax:ref name="resource1"/>
+            <relax:ref name="resource2"/>
          </relax:choice>
       </relax:start>
    </relax:grammar>
@@ -258,6 +336,20 @@
          </dynatt:lecturer>
          <rapla:permission access="allocate_conflicts"/>
       </rapla:person>
+      <rapla:resource id="rdd6b473-7c77-4344-a73d-1f27008341cb" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-03-08T11:19:05.0371Z" last-changed="2016-03-08T11:19:05.0371Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:resource1>
+            <dynatt:name>Room A66.1</dynatt:name>
+            <dynatt:a1>c24ce517-4697-4e52-9917-ec000c84563c</dynatt:a1>
+         </dynatt:resource1>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r9b69d90-46a0-41bb-94fa-82079b424c03" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-03-08T11:20:18.0620Z" last-changed="2016-03-08T11:20:18.0620Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+         <dynatt:resource2>
+            <dynatt:name>DozGruppe</dynatt:name>
+            <dynatt:a1>f92e9a11-c342-4413-a924-81eee17ccf92</dynatt:a1>
+         </dynatt:resource2>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
 
    </rapla:resources>
 
@@ -276,7 +368,7 @@ and all the rest</dynatt:description>
             <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
          </rapla:appointment>
          <rapla:allocate idref="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
-         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission access="read"/>
       </rapla:reservation>
       <rapla:reservation id="02c84e71-5d80-458a-97ad-86822780dc09" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.0000Z" last-changed="2003-11-21T00:00:00.0000Z">
          <dynatt:event>
@@ -289,7 +381,7 @@ and all the rest</dynatt:description>
          <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
          <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
          <rapla:allocate idref="f92e9a11-c342-4413-a924-81eee17ccf92"/>
-         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission access="read"/>
       </rapla:reservation>
       <rapla:reservation id="b44f10ee-a5c1-403f-b26f-fca25f9d0846" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.0000Z" last-changed="2003-11-21T00:00:00.0000Z">
          <dynatt:event>
@@ -305,8 +397,10 @@ and all the rest</dynatt:description>
          </rapla:appointment>
          <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
          <rapla:allocate idref="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
-         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission access="read"/>
       </rapla:reservation>
    </rapla:reservations>
 
+   <rapla:importexports>
+   </rapla:importexports>
 </rapla:data>

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -22,9 +23,16 @@ import org.junit.runners.JUnit4;
 import org.rapla.RaplaResources;
 import org.rapla.ServletTestBase;
 import org.rapla.client.internal.DeleteUndo;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.RaplaFacade;
@@ -216,5 +224,53 @@ public class TestRemoteStorageImpl
         }
     }
 
+    
+    @Test
+    public void testGroupConflicts()
+    {
+        final RaplaFacade facade = clientFacade.getRaplaFacade();
+        Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+        User user = clientFacade.getUser();
+        Date startDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(10, 00, 00)));
+        Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
+        {// Store new Reservation with resource
+            final Reservation newReservation = facade.newReservation(classification, user);
+            final Allocatable montyAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);//facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
+            newReservation.addAllocatable(montyAllocatable);
+            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            facade.store(newReservation);
+        }
+        // create reservation with group allocatable
+        final Reservation newReservation = facade.newReservation(classification, user);
+        final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
+        newReservation.addAllocatable(dozGroupAllocatable);
+        newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+        final Conflict[] conflicts = facade.getConflicts(newReservation);
+        Assert.assertEquals(1, conflicts.length);
+    }
+    
+    @Test
+    public void testBelongsToConflicts()
+    {
+        final RaplaFacade facade = clientFacade.getRaplaFacade();
+        Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
+        User user = clientFacade.getUser();
+        Date startDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(10, 00, 00)));
+        Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
+        {// Store new Reservation with resource
+            final Reservation newReservation = facade.newReservation(classification, user);
+            final Allocatable roomA66Allocatable = facade.getOperator().tryResolve("c24ce517-4697-4e52-9917-ec000c84563c", Allocatable.class);
+            newReservation.addAllocatable(roomA66Allocatable);
+            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            facade.store(newReservation);
+        }
+        // create reservation with group allocatable
+        final Reservation newReservation = facade.newReservation(classification, user);
+        final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
+        newReservation.addAllocatable(partRoomAllocatable);
+        newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+        final Conflict[] conflicts = facade.getConflicts(newReservation);
+        Assert.assertEquals(1, conflicts.length);
+    }
 
 }

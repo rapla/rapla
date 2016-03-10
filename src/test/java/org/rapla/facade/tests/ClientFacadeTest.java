@@ -807,13 +807,14 @@ public class ClientFacadeTest  {
         Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
         {// Store new Reservation with resource
             final Reservation newReservation = facade.newReservation(classification, user);
-            final Allocatable montyAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
+            final Allocatable montyAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);//facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
             newReservation.addAllocatable(montyAllocatable);
             newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            facade.store(newReservation);
         }
         // create reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
-        final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
+        final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
         final Conflict[] conflicts = facade.getConflicts(newReservation);
@@ -832,6 +833,7 @@ public class ClientFacadeTest  {
             final Allocatable roomA66Allocatable = facade.getOperator().tryResolve("c24ce517-4697-4e52-9917-ec000c84563c", Allocatable.class);
             newReservation.addAllocatable(roomA66Allocatable);
             newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            facade.store(newReservation);
         }
         // create reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
