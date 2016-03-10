@@ -16,10 +16,12 @@ package org.rapla.storage.dbrm;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1411,14 +1413,26 @@ import org.rapla.storage.impl.EntityStore;
         Map<Allocatable, Map<Appointment, Collection<Appointment>>> result = new HashMap<Allocatable, Map<Appointment, Collection<Appointment>>>();
         for (Allocatable alloc : allocatables)
         {
+            final Set<ReferenceInfo<Allocatable>> dependent = cache.getDependent(Collections.singleton(alloc));
+            final Set<Allocatable> dependentAllocatables = new LinkedHashSet<>();
+            for (ReferenceInfo<Allocatable> referenceInfo : dependent)
+            {
+                dependentAllocatables.add(cache.resolve(referenceInfo));
+            }
             Map<Appointment, Collection<Appointment>> appointmentBinding = new HashMap<Appointment, Collection<Appointment>>();
             for (Appointment appointment : appointments)
             {
-                SortedSet<Appointment> appointmentSet = getAppointments(alloc, allAppointments);
-                boolean onlyFirstConflictingAppointment = false;
-                Set<Appointment> conflictingAppointments = AppointmentImpl
-                        .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
-                appointmentBinding.put(appointment, conflictingAppointments);
+                final boolean onlyFirstConflictingAppointment = false;
+                Set<Appointment> allConflictingAppointments = new LinkedHashSet<>();
+                for (Allocatable dependentAlloc : dependentAllocatables)
+                {
+                    SortedSet<Appointment> appointmentSet = getAppointments(dependentAlloc, allAppointments);
+                    Set<Appointment> conflictingAppointments = AppointmentImpl
+                            .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
+                    allConflictingAppointments.addAll(conflictingAppointments);
+                    
+                }
+                appointmentBinding.put(appointment, allConflictingAppointments);
             }
             result.put(alloc, appointmentBinding);
         }
