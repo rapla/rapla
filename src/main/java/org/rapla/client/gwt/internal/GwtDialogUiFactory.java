@@ -63,7 +63,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         @Override
         public void setIcon(String iconKey)
         {
-            // FIXME
+            // FIXME GWT
         }
 
         @Override
@@ -144,7 +144,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         @Override
         public void setIcon(String iconKey)
         {
-            // FIXME
+            // FIXME GWT
         }
 
         @Override

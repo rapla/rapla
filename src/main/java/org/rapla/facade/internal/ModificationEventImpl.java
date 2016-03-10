@@ -89,7 +89,6 @@ public class ModificationEventImpl implements ModificationEvent
 //            throw new IllegalStateException( "OperationClass can't be null" );
 //        Collection<? extends UpdateOperation> it= getOperations( operationClass);
 //        for (UpdateOperation next:it ) {
-//            // FIXME
 //            String currentId =next.getCurrentId();
 //            final Entity current = getLastKnown(currentId);
 //            set.add( current);

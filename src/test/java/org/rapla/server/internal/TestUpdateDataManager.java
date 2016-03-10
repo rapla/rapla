@@ -1,5 +1,12 @@
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Assert;
 import org.junit.Before;
@@ -9,6 +16,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -23,16 +31,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
-import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager
@@ -301,19 +300,4 @@ public class TestUpdateDataManager
         Assert.assertEquals(0, updateEventWithRemove.getStoreObjects().size());
         Assert.assertEquals(1, updateEventWithRemove.getRemoveIds().size());
     }
-
-    @Test
-    public void testConflictUpdate()
-    {
-        // FIXME add a test for conflicts (create, change and delete)
-        Assert.fail("Not implemented yet");
-    }
-
-    @Test
-    public void testAllocationChange()
-    {
-        // FIXME add a test for conflicts (create, change and delete)
-        Assert.fail("Not implemented yet");
-    }
-
 }
