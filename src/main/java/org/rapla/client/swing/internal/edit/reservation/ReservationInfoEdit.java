@@ -161,6 +161,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 		typeSelector =  jComboBox;
         typeSelector.setEnabled( creatableTypes.size() > 1);
         typeSelector.setSelectedItem(dynamicType);
+        typeSelector.setEnabled(!canNotWriteOneAttribute());
         setRenderer();
 
 
@@ -200,6 +201,21 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         content.validate();
         
         
+    }
+
+    private boolean canNotWriteOneAttribute()
+    {
+        final PermissionController permissionController = getClientFacade().getRaplaFacade().getPermissionController();
+        final User user = getUser();
+        final Attribute[] attributes = this.classification.getAttributes();
+        for (Attribute attribute : attributes)
+        {
+            if(!permissionController.canWrite(classification, attribute, user))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void updatePermissionFieldVisiblity() {
