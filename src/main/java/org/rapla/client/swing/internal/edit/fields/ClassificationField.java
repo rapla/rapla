@@ -26,17 +26,21 @@ import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
 import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -202,7 +206,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		}
 		typeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
 		typeSelector.addActionListener(this);
-
+		typeSelector.setEnabled(!canNotWriteOneAttribute(list));
 		
 		content.setLayout(new BorderLayout());
 		JPanel header = new JPanel();
@@ -231,6 +235,27 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		scrollPane.getVerticalScrollBar().setUnitIncrement( 10);
 		content.add(scrollPane, BorderLayout.CENTER);
 	}
+
+    private boolean canNotWriteOneAttribute(final List<T> list)
+    {
+        final ClientFacade clientFacade = getClientFacade();
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        final PermissionController permissionController = raplaFacade.getPermissionController();
+        final User user = clientFacade.getUser();
+        for (T t : list)
+        {
+            final Classification classification = t.getClassification();
+            final Attribute[] attributes = classification.getAttributes();
+            for (Attribute attribute : attributes)
+            {
+                if(!permissionController.canWrite(classification, attribute, user))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     private void updateTabSelectionText()
     {
