@@ -56,6 +56,7 @@ import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensio
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
+import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.TimeZoneConverter;
@@ -91,11 +92,12 @@ public class SynchronisationManager implements ServerExtension
     private final int syncPeriodPast;
     CommandScheduler scheduler;
     private final Set<ExchangeConfigExtensionPoint> configExtensions;
+    private final MailToUserImpl mailToUserInterface;
 
     @Inject
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
             TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
-            CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions) throws RaplaException
+            CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface) throws RaplaException
     {
         super();
         this.scheduler = scheduler;
@@ -103,6 +105,7 @@ public class SynchronisationManager implements ServerExtension
         this.logger = logger;
         this.facade = facade;
         this.configExtensions = configExtensions;
+        this.mailToUserInterface = mailToUserInterface;
         this.operator = (CachableStorageOperator) facade.getOperator();
         this.i18n = new CompoundI18n(i18nRapla, i18nExchange);
         this.appointmentFormater = appointmentFormater;
@@ -210,6 +213,7 @@ public class SynchronisationManager implements ServerExtension
     {
         final Preferences userPreferences = facade.edit(facade.getPreferences(user));
         userPreferences.putEntry(RETRY_USER, true);
+        facade.store(userPreferences);
     }
 
     public SynchronizationStatus getSynchronizationStatus(User user) throws RaplaException
@@ -278,6 +282,7 @@ public class SynchronisationManager implements ServerExtension
         appointmentStorage.refresh();
         List<Preferences> preferencesToStore = new ArrayList<Preferences>();
         Collection<SynchronizationTask> tasks = new ArrayList<SynchronizationTask>();
+        Collection<User> resynchronizeUsers = new ArrayList<>();
         //lock
         for (UpdateOperation operation : evt.getOperations())
         {
@@ -364,7 +369,12 @@ public class SynchronisationManager implements ServerExtension
                         {
                             task.resetRetries();
                         }
-                        tasks.addAll(tasks);
+                        tasks.addAll(existingTasks);
+                        final User resolvedUser = operator.tryResolve(preferences.getOwnerRef());
+                        if(resolvedUser != null)
+                        {
+                            resynchronizeUsers.add(resolvedUser);
+                        }
                         savePreferences = true;
                     }
                     if (preferences.getEntryAsBoolean(RESYNC_USER, false))
@@ -373,6 +383,11 @@ public class SynchronisationManager implements ServerExtension
                         if (user != null)
                         {
                             removeAllAppointmentsFromExchangeAndAppointmentStore(user);
+                        }
+                        final User resolvedUser = operator.tryResolve(preferences.getOwnerRef());
+                        if(resolvedUser != null)
+                        {
+                            resynchronizeUsers.add(resolvedUser);
                         }
                         savePreferences = true;
                     }
@@ -445,6 +460,33 @@ public class SynchronisationManager implements ServerExtension
             Collection<SynchronizationTask> toRemove = Collections.emptyList();
             appointmentStorage.storeAndRemove(tasks, toRemove);
             execute(tasks);
+            if(!resynchronizeUsers.isEmpty())
+            {
+                for (User user : resynchronizeUsers)
+                {
+                    final Collection<SynchronizationTask> userTasks = appointmentStorage.getTasksForUser(user.getReference());
+                    final StringBuilder sb = new StringBuilder();
+                    for (SynchronizationTask synchronizationTask : userTasks)
+                    {
+                        final String lastError = synchronizationTask.getLastError();
+                        if(lastError != null)
+                        {
+                            if(sb.length() == 0)
+                            {
+                                sb.append("Errors occured:\n");
+                            }
+                            sb.append(lastError);
+                            sb.append("\n");
+                        }
+                    }
+                    if(sb.length() == 0)
+                    {
+                        sb.append("No errors occured, all sychronized");
+                    }
+                    mailToUserInterface.sendMail(user.getUsername(), "Exchange synchronization result", sb.toString());
+                }
+            }
+            
         }
         if (!preferencesToStore.isEmpty())
         {
