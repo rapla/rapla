@@ -74,8 +74,9 @@ public class SynchronisationManager implements ServerExtension
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
-    private final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.retryUser");
-    private final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.resyncUser");
+    private static final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.retryUser");
+    private static final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.resyncUser");
+    private static final TypedComponentRole<Boolean> PASSWORD_MAIL_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.passwordMailSent");
     // existing tasks in memory
     private final ExchangeAppointmentStorage appointmentStorage;
     private final AppointmentFormater appointmentFormater;
@@ -483,7 +484,16 @@ public class SynchronisationManager implements ServerExtension
                     {
                         sb.append("No errors occured, all sychronized");
                     }
-                    mailToUserInterface.sendMail(user.getUsername(), "Exchange synchronization result", sb.toString());
+                    try
+                    {
+                        mailToUserInterface.sendMail(user.getUsername(), "Rapla Exchange synchronization", sb.toString());
+                    }
+                    catch(Throwable em)
+                    {
+                        logger.error(
+                                "Error sending mail to user " + user.getUsername() + " [" + sb.toString() + "] for synchronizsation result: " + em.getMessage(),
+                                em);
+                    }
                 }
             }
             
@@ -684,6 +694,13 @@ public class SynchronisationManager implements ServerExtension
                 {
                     worker.execute();
                 }
+                final Preferences userPreferences = facade.getPreferences(user);
+                if(userPreferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false))
+                {
+                    final Preferences userPreferencesEdit = facade.edit(userPreferences);
+                    userPreferencesEdit.putEntry(PASSWORD_MAIL_USER, false);
+                    facade.store(userPreferencesEdit);
+                }
             }
             catch (Exception e)
             {
@@ -699,6 +716,22 @@ public class SynchronisationManager implements ServerExtension
                     if (httpErrorCode == 401)
                     {
                         message = "Exchangezugriff verweigert. Ist das eingetragenen Exchange Passwort noch aktuell?";
+                        final Preferences preferences = facade.getPreferences(user);
+                        final Boolean mailSent = preferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false);
+                        if(!mailSent)
+                        {
+                            final Preferences editPreferences = facade.edit(preferences);
+                            editPreferences.putEntry(PASSWORD_MAIL_USER, true);
+                            facade.store(editPreferences);
+                            try
+                            {
+                                mailToUserInterface.sendMail(user.getUsername(), "Rapla Exchangezugriff", message);
+                            }
+                            catch(Throwable me)
+                            {
+                                logger.error("Error sending password mail to user " + user.getUsername() + ": " + me.getMessage(), me);
+                            }
+                        }
                     }
                 }
                 if (cause instanceof IOException)
