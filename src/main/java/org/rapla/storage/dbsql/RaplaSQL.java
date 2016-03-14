@@ -1528,7 +1528,6 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     AppointmentExceptionStorage appointmentExceptionStorage;
     AllocationStorage allocationStorage;
-    private String foreignId;
 
     public AppointmentStorage(RaplaXMLContext context) throws RaplaException
     {
@@ -1545,30 +1544,27 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 
     void deleteAppointments(Collection<String> reservationIds)
             throws SQLException, RaplaException {
+        // look for all appointment ids, as the sub storages must be deleted with appointment id
+        final Set<String> ids = new HashSet<String>();
+        final String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
+        for (String eventId:reservationIds)
+        {
+            ResultSet rset = null;
+            try (final PreparedStatement stmt = con.prepareStatement(sql)){
+                setString(stmt,1,  eventId);
+                rset = stmt.executeQuery();
+                while (rset.next ()) {
+                    String appointmentId = readId(rset, 1, Appointment.class).getId();
+                    ids.add( appointmentId);
+                }
+            } finally {
+                if (rset != null)
+                    rset.close();
+            }
+        }
+        // and delete them
         deleteIds(reservationIds);
-//        Set<String> ids = new HashSet<String>();
-//        String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
-//        for (String eventId:reservationIds)
-//        {
-//            PreparedStatement stmt = null;
-//            ResultSet rset = null;
-//            try {
-//                stmt = con.prepareStatement(sql);
-//                setString(stmt,1,  eventId);
-//                rset = stmt.executeQuery();
-//                while (rset.next ()) {
-//                    String appointmentId = readId(rset, 1, Appointment.class);
-//                    ids.add( appointmentId);
-//                }
-//            } finally {
-//                if (rset != null)
-//                    rset.close();
-//                if (stmt!=null)
-//                    stmt.close();
-//            }
-//        }
-//        // and delete them
-//        deleteIds(ids);
+        deleteFromSubStores(ids);
     }
 
     @Override
