@@ -38,6 +38,7 @@ public class RaplaJNLPPageGenerator
 {
 
     private static final TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<Boolean>("org.rapla.jnlp.createshortcut");
+    private static final TypedComponentRole<Integer> CLIENT_VM_MIN_SIZE = new TypedComponentRole<Integer>("org.rapla.jnlp.xms");
     private final RaplaFacade facade;
     private final RaplaResources i18n;
     private final String moduleId;
@@ -149,11 +150,13 @@ public class RaplaJNLPPageGenerator
         final String defaultTitle = i18n.getString("rapla.title");
         String menuName;
         boolean createShortcut = true;
+        Integer vmXmsSize = null;
         try
         {
             final Preferences systemPreferences = facade.getSystemPreferences();
             menuName = systemPreferences.getEntryAsString(ContainerImpl.TITLE, defaultTitle);
             createShortcut = systemPreferences.getEntryAsBoolean(CREATE_SHORTCUT, true);
+            vmXmsSize = systemPreferences.getEntryAsInteger(CLIENT_VM_MIN_SIZE, -1);
         }
         catch (RaplaException e)
         {
@@ -188,7 +191,14 @@ public class RaplaJNLPPageGenerator
         out.println("  <all-permissions/>");
         out.println("</security>");
         out.println("<resources>");
-        out.println("  <j2se version=\"1.4+\"/>");
+        if (vmXmsSize != null && vmXmsSize > 0)
+        {
+            out.println("  <j2se version=\"1.4+\" java-vm-args=\"-Xms" + CLIENT_VM_MIN_SIZE + "m\"/>");
+        }
+        else
+        {
+            out.println("  <j2se version=\"1.4+\"/>");
+        }
 
         String passedUsername = request.getParameter("username");
         if (passedUsername != null)
