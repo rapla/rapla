@@ -53,7 +53,7 @@ public class ICalImportTest {
         converter.setImportExportTimeZone(timezone);
 
         RemoteSession session = new RemoteSessionImpl(logger, user);
-        RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
+        RaplaICalImport importer = new RaplaICalImport(converter, session, facade, logger, null);
         boolean isUrl = true;
         String content = "https://www.google.com/calendar/ical/76kijffqdch1nkemshokjlf6r4%40group.calendar.google.com/private-e8c8772e35043055c7d9c16f366fdfbf/basic.ics";
         Allocatable newResource = facade.newResource();
@@ -71,7 +71,7 @@ public class ICalImportTest {
         TimeZoneConverterImpl converter = new TimeZoneConverterImpl();
         converter.setImportExportTimeZone(timezone);
         RemoteSession session = new RemoteSessionImpl(logger, user);
-        RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger);
+        RaplaICalImport importer = new RaplaICalImport(converter,session,facade,logger, null);
         boolean isUrl = false;
         String packageName = getClass().getPackage().getName().replaceAll("\\.", "/");
         final String name = "/" + packageName + "/test.ics";

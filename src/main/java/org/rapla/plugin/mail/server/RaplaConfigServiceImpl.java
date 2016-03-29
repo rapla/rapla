@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -27,38 +33,38 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-
-@DefaultImplementation(of = MailConfigService.class, context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=MailConfigService.class)
 public class RaplaConfigServiceImpl implements MailConfigService
 {
-    final private RaplaKeyStorage keyStore;
-    final private  RemoteSession remoteSession;
-    final private  boolean externalConfigEnabled;
-    final private RaplaFacade facade;
-    final private MailInterface mailInterface;
+    @Inject
+    RaplaKeyStorage keyStore;
+    @Inject
+    RemoteSession remoteSession;
+    @Inject 
+    @Named(ServerService.ENV_RAPLAMAIL_ID) 
+    Provider<Object> externalMailSession;
+    
+    @Inject
+    RaplaFacade facade;
+    @Inject
+    MailInterface mailInterface;
+    private final HttpServletRequest request;
 
 
     @Inject
-    public RaplaConfigServiceImpl(RemoteSession remoteSession, RaplaKeyStorage keyStore, MailInterface mailInterface,RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession)
+    public RaplaConfigServiceImpl(@Context HttpServletRequest request )
     {
-        this.remoteSession = remoteSession;
-        this.keyStore = keyStore;
-        this.facade = facade;
-        this.mailInterface = mailInterface;
-        externalConfigEnabled = externalMailSession.get() != null;
+        this.request = request;
     }
 
     @Override public boolean isExternalConfigEnabled()
     {
-        return externalConfigEnabled;
+        return externalMailSession.get() != null;
     }
 
     @SuppressWarnings("deprecation") @Override public DefaultConfiguration getConfig() throws RaplaException
     {
-        User user = remoteSession.getUser();
+        User user = remoteSession.getUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -75,7 +81,7 @@ public class RaplaConfigServiceImpl implements MailConfigService
     @Override public void testMail(DefaultConfiguration config, String defaultSender) throws RaplaException
     {
 
-        User user = remoteSession.getUser();
+        User user = remoteSession.getUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -88,7 +94,7 @@ public class RaplaConfigServiceImpl implements MailConfigService
         if (test instanceof MailapiClient)
         {
             // ignore config if
-            if (externalConfigEnabled)
+            if (isExternalConfigEnabled())
             {
                 test.sendMail(defaultSender, recipient, subject, mailBody);
             }

@@ -57,7 +57,7 @@ public class DaggerClientCreator
         {
             @Override public String getEntryPoint(String interfaceName, String relativePath)
             {
-                String url = downloadURL.toExternalForm()  + "rapla/" +((relativePath != null) ? relativePath: interfaceName);
+                String url = downloadURL.toExternalForm()  + "rest/" +((relativePath != null) ? relativePath: interfaceName);
                 return url;
             }
         });

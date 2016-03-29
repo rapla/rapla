@@ -1,17 +1,27 @@
 package org.rapla.storage;
 
-import org.rapla.components.i18n.LocalePackage;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
-
-import javax.jws.WebParam;
 import java.util.Map;
 import java.util.Set;
 
-@RemoteJsonMethod
-public interface RemoteLocaleService 
-{
-	FutureResult<LocalePackage> locale(@WebParam(name = "id") String id, @WebParam(name = "locale") String locale);
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 
-	FutureResult<Map<String, Set<String>>> countries(Set<String> languages);
+import org.rapla.components.i18n.LocalePackage;
+import org.rapla.jsonrpc.common.FutureResult;
+
+@Path("locale")
+public interface RemoteLocaleService
+{
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Path("{id}")
+    FutureResult<LocalePackage> locale(@PathParam("id") String id, @QueryParam("locale") String locale);
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON })
+    FutureResult<Map<String, Set<String>>> countries(@QueryParam("languages") Set<String> languages);
 }

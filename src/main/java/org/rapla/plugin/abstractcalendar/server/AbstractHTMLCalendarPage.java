@@ -214,7 +214,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		out.println("<html>");
 		out.println("<head>");
 		out.println("  <title>" + getTitle() + "</title>");
-        final String formAction = getUrl(request,"rapla");
+        final String formAction = getUrl(request,"rest/calendar");
 
         out.println("  " + getCssLine(request, "calendar.css"));
         out.println("  " + getCssLine(request, "default.css"));

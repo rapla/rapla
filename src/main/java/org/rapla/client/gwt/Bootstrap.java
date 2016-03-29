@@ -72,7 +72,7 @@ public class Bootstrap
                 logger.error(e.getMessage(), e);
                 if (e instanceof RaplaSecurityException)
                 {
-                    Window.Location.replace("../rapla?page=auth");
+                    Window.Location.replace("../rest/auth");
                 }
             }
         });

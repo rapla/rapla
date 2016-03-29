@@ -1,5 +1,18 @@
 package org.rapla.plugin.urlencryption.server;
 
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
@@ -11,25 +24,13 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.server.RaplaKeyStorage;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyException;
-import java.security.NoSuchAlgorithmException;
-
 /**
  * This class provides functionality to encrypt URL parameters to secure the resource export.
  * The class runs on the server and implements the Interface UrlEncryption which provides
  * encryption service to all clients and some minor utilities.
  *
  * @author Jonas Kohlbrenner
- */
+*/
 @DefaultImplementation(of=UrlEncryption.class,context = InjectionContext.server)
 @Singleton
 public class UrlEncryptionService implements UrlEncryption {
@@ -44,7 +45,12 @@ public class UrlEncryptionService implements UrlEncryption {
     private Cipher decryptionCipher;
 
     private Base64 base64;
-    private final Logger logger;
+    @Inject
+    RaplaFacade facade;
+    @Inject
+    Logger logger;
+    @Inject
+    RaplaKeyStorage keyStore;
 
     /**
      * Initializes the Url encryption plugin.
@@ -54,8 +60,12 @@ public class UrlEncryptionService implements UrlEncryption {
      * @throws RaplaException
      */
     @Inject
-    public UrlEncryptionService(RaplaFacade facade,RaplaKeyStorage keyStore, Logger logger) throws RaplaException {//, InvalidKeyException {
-        this.logger = logger;
+    public UrlEncryptionService() throws RaplaException {//, InvalidKeyException {
+    }
+
+
+    private void initForRequest()
+    {
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
 
@@ -131,6 +141,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @return String The encrypted result or null in case of an exception
      */
     public synchronized String encrypt(String plain) {
+        initForRequest();
         try {
             return this.base64.encodeToString(this.encryptionCipher.doFinal(plain.getBytes()));
         } catch (IllegalBlockSizeException e) {
@@ -149,6 +160,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @throws Exception If the String could't be decrypted.
      */
     public synchronized String decrypt(String encrypted) throws Exception {
+        initForRequest();
         try {
             return new String(this.decryptionCipher.doFinal(this.base64.decode(encrypted.getBytes())));
         } catch (Exception e) {

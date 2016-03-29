@@ -1,5 +1,24 @@
 package org.rapla.rest.server;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -18,38 +37,30 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-@Path("events") public class RaplaEventsRestPage
+@Path("events")
+public class RaplaEventsRestPage
 {
-    private final User user;
+    @Inject
     RaplaFacade facade;
-    StorageOperator operator;
+    @Inject
+    RemoteSession session;
+    private final HttpServletRequest request;
 
-    @Inject public RaplaEventsRestPage(RaplaFacade facade, RemoteSession session) throws RaplaException
+    @Inject
+    public RaplaEventsRestPage(@Context HttpServletRequest request) throws RaplaException
     {
-        this.facade = facade;
-        this.operator = facade.getOperator();
-        user = session.getUser();
+        this.request = request;
     }
 
     private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
-    @GET public List<ReservationImpl> list(@QueryParam("start") Date start, @QueryParam("end") Date end, @QueryParam("resources") List<String> resources,
-            @QueryParam("eventTypes") List<String> eventTypes, @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
+    @GET
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    public List<ReservationImpl> list(@QueryParam("start") Date start, @QueryParam("end") Date end, @QueryParam("resources") List<String> resources,
+            @QueryParam("eventTypes") List<String> eventTypes, Map<String, String> simpleFilter) throws Exception
     {
+        final User user = session.getUser(request);
+        final StorageOperator operator = facade.getOperator();
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id : resources)
         {
@@ -74,8 +85,13 @@ import java.util.Map;
         return result;
     }
 
-    @GET @Path("{id}") public ReservationImpl get(@PathParam("id") String id) throws RaplaException
+    @GET
+    @Path("{id}")
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    public ReservationImpl get(@PathParam("id") String id) throws RaplaException
     {
+        final User user = session.getUser(request);
+        final StorageOperator operator = facade.getOperator();
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
         PermissionController permissionController = facade.getPermissionController();
         if (!permissionController.canRead(event, user))
@@ -85,8 +101,12 @@ import java.util.Map;
         return event;
     }
 
-    @PUT public ReservationImpl update(ReservationImpl event) throws RaplaException
+    @PUT
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    public ReservationImpl update(ReservationImpl event) throws RaplaException
     {
+        final User user = session.getUser(request);
+        final StorageOperator operator = facade.getOperator();
         PermissionController permissionController = facade.getPermissionController();
         if (!permissionController.canModify(event, user))
         {
@@ -98,8 +118,12 @@ import java.util.Map;
         return result;
     }
 
-    @POST public ReservationImpl create(ReservationImpl event) throws RaplaException
+    @POST
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    public ReservationImpl create(ReservationImpl event) throws RaplaException
     {
+        final User user = session.getUser(request);
+        final StorageOperator operator = facade.getOperator();
         event.setResolver(operator);
         if (!facade.getPermissionController().canCreate(event.getClassification().getType(), user))
         {

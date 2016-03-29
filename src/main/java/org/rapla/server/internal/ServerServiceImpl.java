@@ -12,8 +12,23 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -30,7 +45,6 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.server.WebserviceCreatorMap;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
@@ -40,21 +54,9 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import dagger.MembersInjector;
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
 @DefaultImplementation(of = ServerServiceContainer.class, context = InjectionContext.server, export = true) public class ServerServiceImpl
         implements ServerServiceContainer
@@ -64,11 +66,12 @@ import java.util.TreeSet;
     final Logger logger;
 
     private boolean passwordCheckDisabled;
-    private final RaplaRpcAndRestProcessor apiPage;
+//    private final RaplaRpcAndRestProcessor apiPage;
     private final RaplaLocale raplaLocale;
     private final CommandScheduler scheduler;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
+    private Map<String, MembersInjector> membersInjector;
 
     public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
     {
@@ -77,7 +80,7 @@ import java.util.TreeSet;
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            Provider<WebserviceCreatorMap> webservices, CommandScheduler scheduler, ServerContainerContext serverContainerContext)
+            CommandScheduler scheduler, ServerContainerContext serverContainerContext, Map<String, MembersInjector> membersInjector)
     {
         this.scheduler = scheduler;
         this.logger = logger;
@@ -90,8 +93,9 @@ import java.util.TreeSet;
         //        }
         this.operator = operator;
         this.facade = facade;
+        this.membersInjector = membersInjector;
         ((FacadeImpl) facade).setOperator(operator);
-        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
+//        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
         //        if ( username != null  )
         //            operator.connect( new ConnectInfo(username, password.toCharArray()));
         //        else
@@ -182,6 +186,11 @@ import java.util.TreeSet;
                 extension.start();
             }
         }
+    }
+    
+    public Map<String, MembersInjector> getMembersInjector()
+    {
+        return membersInjector;
     }
 
     public RaplaLocale getRaplaLocale()
@@ -284,41 +293,42 @@ import java.util.TreeSet;
         }
         final ServletContext servletContext = request.getServletContext();
 
-        final RaplaRpcAndRestProcessor.Path b = apiPage.find(pagename, appendix);
-        if (b != null)
-        {
-            apiPage.generate(servletContext, request, response, b);
-        }
-        else
-        {
+//        final RaplaRpcAndRestProcessor.Path b = apiPage.find(pagename, appendix);
+//        if (b != null)
+//        {
+//            apiPage.generate(servletContext, request, response, b);
+//        }
+//        else
+//        {
             print404Response(response, pagename);
-        }
+//        }
 
     }
 
     public <T> T getMockService(final Class<T> test, final String accessToken)
     {
-        InvocationHandler invocationHandler = new InvocationHandler()
-        {
-            @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
-            {
-                if (method.getName().equals("getParameter"))
-                {
-                    String key = (String) args[0];
-                    if (key.equals("access_token"))
-                    {
-                        return accessToken;
-                    }
-                }
-                return null;
-            }
-        };
-        HttpServletRequest request = (HttpServletRequest) Proxy
-                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletRequest.class }, invocationHandler);
-        HttpServletResponse response = (HttpServletResponse) Proxy
-                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletResponse.class }, invocationHandler);
-        final T o = (T) apiPage.webserviceMap.get(test.getCanonicalName()).create(request, response);
-        return o;
+        return null;
+//        InvocationHandler invocationHandler = new InvocationHandler()
+//        {
+//            @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+//            {
+//                if (method.getName().equals("getParameter"))
+//                {
+//                    String key = (String) args[0];
+//                    if (key.equals("access_token"))
+//                    {
+//                        return accessToken;
+//                    }
+//                }
+//                return null;
+//            }
+//        };
+//        HttpServletRequest request = (HttpServletRequest) Proxy
+//                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletRequest.class }, invocationHandler);
+//        HttpServletResponse response = (HttpServletResponse) Proxy
+//                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletResponse.class }, invocationHandler);
+//        final T o = (T) apiPage.webserviceMap.get(test.getCanonicalName()).create(request, response);
+//        return o;
     }
 
     private void print404Response(HttpServletResponse response, String page) throws IOException

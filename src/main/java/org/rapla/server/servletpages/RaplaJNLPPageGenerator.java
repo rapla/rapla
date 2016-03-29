@@ -19,7 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Context;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -32,22 +32,22 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
 
-@Path("raplaclient.jnlp")
+@Path("raplaclient")
 @Singleton
 public class RaplaJNLPPageGenerator
 {
 
     private static final TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<Boolean>("org.rapla.jnlp.createshortcut");
     private static final TypedComponentRole<Integer> CLIENT_VM_MIN_SIZE = new TypedComponentRole<Integer>("org.rapla.jnlp.xms");
-    private final RaplaFacade facade;
-    private final RaplaResources i18n;
+    @Inject
+    RaplaFacade facade;
+    @Inject
+    RaplaResources i18n;
     private final String moduleId;
 
     @Inject
-    public RaplaJNLPPageGenerator(RaplaFacade facade, RaplaResources i18n)
+    public RaplaJNLPPageGenerator()
     {
-        this.facade = facade;
-        this.i18n = i18n;
         moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
     }
 
@@ -137,8 +137,8 @@ public class RaplaJNLPPageGenerator
     }
 
     @GET
-    @Produces(MediaType.TEXT_HTML)
-    public void generatePage(HttpServletRequest request, HttpServletResponse response) throws IOException
+    @Produces()
+    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException
     {
         java.io.PrintWriter out = response.getWriter();
         String webstartRoot = ".";
@@ -164,7 +164,7 @@ public class RaplaJNLPPageGenerator
         }
         response.setContentType("application/x-java-jnlp-file;charset=utf-8");
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        out.println("<jnlp spec=\"1.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rapla/raplaclient.jnlp\" >");
+        out.println("<jnlp spec=\"1.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rest/raplaclient\" >");
         out.println("<information>");
         out.println(" <title>" + menuName + "</title>");
         out.println(" <vendor>Rapla team</vendor>");

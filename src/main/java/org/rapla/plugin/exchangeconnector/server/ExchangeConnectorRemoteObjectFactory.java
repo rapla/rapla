@@ -1,5 +1,9 @@
 package org.rapla.plugin.exchangeconnector.server;
 
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -11,22 +15,23 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.RemoteSession;
 
-import javax.inject.Inject;
-
-@DefaultImplementation(context = InjectionContext.server, of = ExchangeConnectorRemote.class)
+@DefaultImplementation(context=InjectionContext.server, of=ExchangeConnectorRemote.class)
 public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRemote
 {
-	final SynchronisationManager manager;
+	
+    @Inject
+    SynchronisationManager manager;
+    @Inject
 	RaplaKeyStorage keyStorage;
-	private final User user;
-    private Logger logger;	
+	@Inject
+    Logger logger;
+	@Inject
+	RemoteSession session;
+    private final HttpServletRequest request;	
 	
 	@Inject
-	public ExchangeConnectorRemoteObjectFactory(Logger logger, RaplaKeyStorage keyStorage, SynchronisationManager manager, final RemoteSession remoteSession) {
-        this.logger = logger;
-		this.keyStorage = keyStorage;
-		this.manager = manager;
-        user  = remoteSession.getUser();
+	public ExchangeConnectorRemoteObjectFactory(@Context HttpServletRequest request) {
+        this.request = request;
 	}
 	
 	protected Logger getLogger()
@@ -37,12 +42,14 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public SynchronizationStatus getSynchronizationStatus() throws RaplaException
     {
+        final User user = session.getUser(request);
         return manager.getSynchronizationStatus( user);
     }
 
     @Override
     public void synchronize() throws RaplaException
     {
+        final User user = session.getUser(request);
         // Synchronize this user after registering
         getLogger().debug("Invoked change sync for user " + user.getUsername());
         manager.synchronizeUser(user);
@@ -51,6 +58,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public void changeUser(String exchangeUsername, String exchangePassword) throws RaplaException
     {
+        final User user = session.getUser(request);
         String raplaUsername = user.getUsername();
         getLogger().debug("Invoked add exchange user for rapla " + raplaUsername + " with exchange user " + exchangeUsername);
         manager.testConnection( exchangeUsername, exchangePassword, user);
@@ -61,6 +69,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public void removeUser() throws RaplaException
     {
+        final User user = session.getUser(request);
         getLogger().info("Removing exchange connection for user " + user);
         keyStorage.removeLoginInfo(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         manager.removeTasksAndExports(user);
@@ -69,6 +78,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public void retry() throws RaplaException
     {
+        final User user = session.getUser(request);
         LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         if ( secrets != null)
         {

@@ -19,12 +19,15 @@ import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.jws.WebParam;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,15 +39,19 @@ public class RaplaResourcesRestPage  {
 
 	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-	private final User user;
-	private final RaplaFacade facade;
-	private final StorageOperator operator;
 
 	@Inject
-	public RaplaResourcesRestPage(RaplaFacade facade, RemoteSession session) throws RaplaException {
-		this.facade = facade;
-		this.operator = facade.getOperator();
-		this.user = session.getUser();
+	RaplaFacade facade;
+	@Inject
+	StorageOperator operator;
+	@Inject
+	RemoteSession session;
+
+    private final HttpServletRequest request;
+
+	@Inject
+	public RaplaResourcesRestPage(@Context HttpServletRequest request) throws RaplaException {
+        this.request = request;
 	}
 
 	public static ClassificationFilter[] getClassificationFilter(RaplaFacade facade,Map<String, String> simpleFilter, Collection<String> selectedClassificationTypes,
@@ -104,6 +111,7 @@ public class RaplaResourcesRestPage  {
 	@GET
 	public List<AllocatableImpl> list( @QueryParam("resourceTypes") List<String> resourceTypes,
 			@WebParam(name = "attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
+	    final User user = session.getUser(request);
 		ClassificationFilter[] filters = getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
 		List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
@@ -119,6 +127,7 @@ public class RaplaResourcesRestPage  {
 	@GET
 	@Path("{id}")
 	public AllocatableImpl get( @PathParam("id") String id) throws RaplaException {
+        final User user = session.getUser(request);
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
 		PermissionController permissionController = facade.getPermissionController();
 		if (!permissionController.canRead(resource, user)) {
@@ -129,6 +138,7 @@ public class RaplaResourcesRestPage  {
 
 	@PUT
 	public AllocatableImpl update( AllocatableImpl resource) throws RaplaException {
+        final User user = session.getUser(request);
 		PermissionController permissionController = facade.getPermissionController();
 		if (!permissionController.canModify(resource, user)) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
@@ -141,6 +151,7 @@ public class RaplaResourcesRestPage  {
 
 	@POST
 	public AllocatableImpl create(AllocatableImpl resource) throws RaplaException {
+        final User user = session.getUser(request);
 		resource.setResolver(operator);
 		Classification classification = resource.getClassification();
 		DynamicType type = classification.getType();

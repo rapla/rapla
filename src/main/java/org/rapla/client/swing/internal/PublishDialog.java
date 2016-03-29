@@ -76,14 +76,14 @@ public class PublishDialog extends RaplaGUIComponent
         {
             URL codeBase = environment.getDownloadURL();
 
-            String pageParameters = "page="+generator+"&user=" + getUser().getUsername();
+            String pageParameters = generator+"&user=" + getUser().getUsername();
             if ( filename != null)
             {
             	pageParameters = pageParameters + "&file=" + URLEncoder.encode( filename, "UTF-8" );
             }
             final String urlExtension = pageParameters;
 
-            return new URL( codeBase,"rapla?" + urlExtension).toExternalForm();
+            return new URL( codeBase,"rest/" + urlExtension).toExternalForm();
         } 
         catch (Exception ex)
         {

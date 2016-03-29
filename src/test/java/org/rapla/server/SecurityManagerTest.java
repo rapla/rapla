@@ -2,6 +2,7 @@ package org.rapla.server;
 
 import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +55,7 @@ public class SecurityManagerTest  {
 		locale = Locale.getDefault();
 	}
 
+	@After
 	public void tearDown() throws Exception
 	{
 		server.stop();
@@ -169,6 +171,7 @@ public class SecurityManagerTest  {
 		final Category newNonAdminableUserGroup = raplaFacade.newCategory();
 		{
 			newNonAdminableUserGroup.getName().setName("en", "new catgory");
+            newNonAdminableUserGroup.setKey("newNonAdminableUserGroup");
 			final Category edit = serverService.getFacade().edit(userGroupsCategory);
 			edit.addCategory( newNonAdminableUserGroup );
 			serverService.getFacade().store(edit);

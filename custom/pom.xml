@@ -144,6 +144,7 @@
                     	<version>2.6</version>
                     	<executions>
                     		<execution>
+	                    		<id>originwar</id>
 	                    		<phase>compile</phase>
 	                    		<goals>
 	                    			<goal>copy-resources</goal>
@@ -155,6 +156,24 @@
 										<resource>
 											<directory>${project.basedir}/src/main/webapp/WEB-INF</directory>
 											<targetPath>${project.build.directory}/originwar/WEB-INF</targetPath>
+											<filtering>false</filtering>
+										</resource>
+									</resources>
+		                    	</configuration>
+                    		</execution>
+                    		<execution>
+	                    		<id>generatedResources</id>
+	                    		<phase>compile</phase>
+	                    		<goals>
+	                    			<goal>copy-resources</goal>
+	                    		</goals>
+		                    	<configuration>
+									<overwrite>true</overwrite>
+									<outputDirectory>${project.build.directory}/classes/META-INF</outputDirectory>
+									<resources>
+										<resource>
+											<directory>${project.build.directory}/generated-sources/annotations/META-INF</directory>
+											<targetPath>${project.build.directory}/classes/META-INF</targetPath>
 											<filtering>false</filtering>
 										</resource>
 									</resources>

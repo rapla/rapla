@@ -1,5 +1,9 @@
 package org.rapla.plugin.export2ical.server;
 
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -13,22 +17,22 @@ import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-
-@DefaultImplementation(of =ICalConfigService.class,context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=ICalConfigService.class)
 public class ICalConfigServiceImpl implements ICalConfigService {
-    final RaplaFacade facade;
+    @Inject
+    RaplaFacade facade;
+    @Inject
     RemoteSession remoteSession;
+    private final HttpServletRequest request;
 
     @Inject
-    public ICalConfigServiceImpl(RaplaFacade facade, RemoteSession remoteSession)
+    public ICalConfigServiceImpl(@Context HttpServletRequest request)
     {
-        this.facade = facade;
-        this.remoteSession = remoteSession;
+        this.request = request;
     }
 
     public DefaultConfiguration getConfig() throws RaplaException {
-        User user = remoteSession.getUser();
+        User user = remoteSession.getUser(request);
         if ( !user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -43,7 +47,7 @@ public class ICalConfigServiceImpl implements ICalConfigService {
     }
 
     public DefaultConfiguration getUserDefaultConfig() throws RaplaException {
-        if ( !remoteSession.isAuthentified())
+        if ( !remoteSession.isAuthentified(request))
         {
             throw new RaplaSecurityException("user not authentified");
         }

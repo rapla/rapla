@@ -126,7 +126,7 @@ public class URLEncyrptionPublicExtensionFactory  implements PublishExtensionFac
 	        try 
 	        {
 	            // In case of enabled and activated URL encryption:
-	            String pageParameters = "page="+generator+"&user=" + facade.getUser().getUsername();
+	            String pageParameters = generator+"?user=" + facade.getUser().getUsername();
 	            if ( filename != null)
 	            {
 	            	pageParameters = pageParameters + "&file=" + URLEncoder.encode( filename, "UTF-8" );
@@ -143,7 +143,7 @@ public class URLEncyrptionPublicExtensionFactory  implements PublishExtensionFac
 	            {
 	                urlExtension = pageParameters;
 	            }
-	            return new URL( codeBase,"rapla?" + urlExtension).toExternalForm();
+	            return new URL( codeBase,"rest/" + urlExtension).toExternalForm();
 	        } 
 	        catch (RaplaException ex)
 	        {

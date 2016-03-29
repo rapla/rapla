@@ -12,6 +12,26 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
@@ -23,28 +43,6 @@ import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 
 public class MainServlet extends HttpServlet
 {
@@ -148,9 +146,13 @@ public class MainServlet extends HttpServlet
     synchronized public void init() throws ServletException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
+        serverStarter = init(logger, getServletContext());
+    }
+    public static ServerStarter init(Logger logger, ServletContext context) throws ServletException
+    {
         logger.info("Init RaplaServlet");
         String startupMode;
-        RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters());
+        RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters(context));
         String startupUser = jndi.lookupEnvString("rapla_startup_user", false);
         ServerContainerContext backendContext = createBackendContext(logger, jndi);
         if (jndi.hasContext())
@@ -170,12 +172,13 @@ public class MainServlet extends HttpServlet
             // this is the default purpose of the servlet to start rapla server as http servlet
             if (startupMode.equals("server"))
             {
-                serverStarter = new ServerStarter(logger, backendContext);
+                ServerStarter serverStarter = new ServerStarter(logger, backendContext);
                 serverStarter.startServer();
+                return serverStarter;
             }
             else if (startupMode.equals("standalone"))
             {
-                String realPath = getServletConfig().getServletContext().getRealPath("/WEB-INF");
+                String realPath = context.getRealPath("/WEB-INF");
                 URL downloadUrl = new File(realPath).toURI().toURL();
                 StandaloneStarter guiStarter = new StandaloneStarter(logger, backendContext, downloadUrl, startupUser);
                 guiStarter.startStandalone();
@@ -187,7 +190,7 @@ public class MainServlet extends HttpServlet
                 @SuppressWarnings("unchecked") Collection<String> instanceCounterLookup = (Collection<String>) jndi.lookup("rapla_instance_counter", false);
                 instanceCounter = instanceCounterLookup;
                 selectedContextPath = jndi.lookupEnvString("rapla_startup_context", false);
-                String contextPath = getServletContext().getContextPath();
+                String contextPath = context.getContextPath();
                 if (!contextPath.startsWith("/"))
                 {
                     contextPath = "/" + contextPath;
@@ -196,7 +199,7 @@ public class MainServlet extends HttpServlet
                 if (selectedContextPath != null)
                 {
                     if (!contextPath.equals(selectedContextPath))
-                        return;
+                        return null;
                 }
                 else if (instanceCounter != null)
                 {
@@ -206,7 +209,7 @@ public class MainServlet extends HttpServlet
                         String msg = ("Ignoring webapp [" + contextPath + "]. Multiple context found in jetty container " + instanceCounter
                                 + " You can specify one via -Dorg.rapla.context=REPLACE_WITH_CONTEXT");
                         logger.error(msg);
-                        return;
+                        return null;
                     }
                 }
 
@@ -273,6 +276,7 @@ public class MainServlet extends HttpServlet
                 }
             }
         }
+        return null;
     }
 
     public void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -360,9 +364,8 @@ public class MainServlet extends HttpServlet
     //		return clientVersion.equals(serverVersion) || clientVersion.equals("@doc.version@")   ;
     //	}
     //
-    private Map<String, String> getInitParameters()
+    public static Map<String, String> getInitParameters(ServletContext context)
     {
-        ServletContext context = getServletContext();
         Map<String, String> initParameters = new HashMap<String, String>();
         Enumeration<String> initParameterNames = context.getInitParameterNames();
         while (initParameterNames.hasMoreElements())
@@ -374,7 +377,7 @@ public class MainServlet extends HttpServlet
         return initParameters;
     }
 
-    private static class RaplaJNDIContext
+    public static class RaplaJNDIContext
     {
         Logger logger;
         Context env;

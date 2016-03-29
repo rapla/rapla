@@ -12,9 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.export2ical.server;
 
-import net.fortuna.ical4j.data.CalendarOutputter;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.ValidationException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
@@ -27,30 +35,29 @@ import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Set;
+import net.fortuna.ical4j.data.CalendarOutputter;
+import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.ValidationException;
 
-@DefaultImplementation(of = ICalExport.class, context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=ICalExport.class)
 public class RaplaICalExport implements ICalExport
 {
+    
+    @Inject
     RaplaFacade facade;
+    @Inject
     RemoteSession session;
+    @Inject
     Export2iCalConverter iCalConverter;
+    private final HttpServletRequest request;
 
     @Inject
-    public RaplaICalExport(  RaplaFacade facade, RemoteSession session, Export2iCalConverter iCalConverter)
+    public RaplaICalExport( @Context HttpServletRequest request)
     {
-        this.facade = facade;
-        this.session = session;
-        this.iCalConverter = iCalConverter;
+        this.request = request;
     }
 
-    public void export(User user,Set<String> appointmentIds, OutputStream out ) throws RaplaException, IOException
+    private void export(User user,Set<String> appointmentIds, OutputStream out ) throws RaplaException, IOException
     {
         if ( appointmentIds.size() == 0)
         {
@@ -89,11 +96,11 @@ public class RaplaICalExport implements ICalExport
     @Override
 	public String export( Set<String> appointmentIds) throws RaplaException
     {
-        if (!session.isAuthentified())
+        if (!session.isAuthentified(request))
         {
             throw new RaplaSecurityException("Not authentified");
         }
-        User user = session.getUser();
+        User user = session.getUser(request);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
     	try {
 			export(user,appointmentIds, out);

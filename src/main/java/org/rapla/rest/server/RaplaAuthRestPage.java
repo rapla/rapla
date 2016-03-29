@@ -16,7 +16,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
@@ -34,25 +33,25 @@ public class RaplaAuthRestPage
 {
 
     public static final String LOGIN_COOKIE = "raplaLoginToken";
-    private final RaplaAuthentificationService authentificationService;
-    private final I18nBundle i18n;
-    private final RaplaFacade facade;
-    private final Logger logger;
-    private final TokenHandler tokenHandler;
+    @Inject
+    RaplaAuthentificationService authentificationService;
+    @Inject
+    RaplaResources i18n;
+    @Inject
+    RaplaFacade facade;
+    @Inject
+    Logger logger;
+    @Inject
+    TokenHandler tokenHandler;
 
     @Inject
-    public RaplaAuthRestPage(RaplaFacade facade, RaplaAuthentificationService authentificationService, RaplaResources i18n, Logger logger, TokenHandler tokenHandler) throws RaplaException
+    public RaplaAuthRestPage() throws RaplaException
     {
-        this.facade = facade;
-        this.authentificationService = authentificationService;
-        this.i18n = i18n;
-        this.logger = logger;
-        this.tokenHandler = tokenHandler;
     }
 
     @POST
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    public LoginTokens create(@QueryParam("credentials") LoginCredentials credentials) throws Exception
+    public LoginTokens create(LoginCredentials credentials) throws Exception
     {
         User user = null;
         try
@@ -75,7 +74,7 @@ public class RaplaAuthRestPage
     }
 
     @POST
-    public String createPlain(@QueryParam("credentials") LoginCredentials credentials) throws Exception
+    public String createPlain(LoginCredentials credentials) throws Exception
     {
         User user = null;
         try
@@ -99,7 +98,7 @@ public class RaplaAuthRestPage
 
     @POST
     @Produces(MediaType.TEXT_HTML)
-    public void create_(@QueryParam("url") String url, @QueryParam("username") String user, @QueryParam("password") String password,
+    public void create_(@QueryParam("url") String url, @QueryParam("username") String user, String password,
             @QueryParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
         final String targetUrl = Tools.createXssSafeString(url);

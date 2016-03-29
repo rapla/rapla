@@ -12,6 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.jndi.server;
 
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -26,24 +30,28 @@ import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-
-@DefaultImplementation(of = JNDIConfig.class, context = InjectionContext.server) public class RaplaJNDITestOnLocalhost implements JNDIConfig
+@DefaultImplementation(context=InjectionContext.server, of=JNDIConfig.class)
+public class RaplaJNDITestOnLocalhost implements JNDIConfig
 {
-    private final RaplaFacade facade;
-    private final Logger logger;
-    private final RemoteSession remoteSession;
     @Inject
-    public RaplaJNDITestOnLocalhost(final RemoteSession remoteSession,Logger logger, RaplaFacade facade)
+    RaplaFacade facade;
+    @Inject
+    Logger logger;
+    @Inject
+    RemoteSession remoteSession;
+    private final HttpServletRequest request;
+    @Inject
+    public RaplaJNDITestOnLocalhost(@Context HttpServletRequest request)
     {
-        this.remoteSession = remoteSession;
-        this.logger = logger;
-        this.facade = facade;
+        this.request = request;
     }
 
-    @Override public void test(DefaultConfiguration config, String username, String password) throws RaplaException
+    @Override public void test(MailTestRequest job) throws RaplaException
     {
-        User user = remoteSession.getUser();
+        DefaultConfiguration config = job.getConfig();
+        String username = job.getUsername();
+        String password = job.getPassword();
+        User user = remoteSession.getUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -79,7 +87,7 @@ import javax.inject.Inject;
     @SuppressWarnings("deprecation") @Override public DefaultConfiguration getConfig() throws RaplaException
     {
 
-        User user = remoteSession.getUser();
+        User user = remoteSession.getUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");

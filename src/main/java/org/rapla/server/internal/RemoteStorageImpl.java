@@ -1,5 +1,21 @@
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -47,44 +63,32 @@ import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-@DefaultImplementation(of =RemoteStorage.class,context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=RemoteStorage.class)
 public class RemoteStorageImpl implements RemoteStorage
 {
-    private final RemoteSession session;
-    private final CachableStorageOperator operator;
-    private final SecurityManager security;
-    private final ShutdownService shutdownService;
+    @Inject
+    RemoteSession session;
+    @Inject
+    CachableStorageOperator operator;
+    @Inject
+    SecurityManager security;
+    @Inject
+    ShutdownService shutdownService;
 
-    private final Set<AuthenticationStore> authenticationStore;
+    @Inject
+    Set<AuthenticationStore> authenticationStore;
 
-    private final RaplaResources i18n;
-    private final Provider<MailInterface> mailInterface;
-    private final UpdateDataManager updateDataManager;
+    @Inject
+    RaplaResources i18n;
+    @Inject
+    Provider<MailInterface> mailInterface;
+    @Inject
+    UpdateDataManager updateDataManager;
+    private final HttpServletRequest request;
 
-    @Inject public RemoteStorageImpl(RemoteSession session, CachableStorageOperator operator, SecurityManager security, ShutdownService shutdownService,
-            Set<AuthenticationStore> authenticationStore, RaplaResources i18n, Provider<MailInterface> mailInterface, UpdateDataManager updateDataManager)
+    @Inject public RemoteStorageImpl(@Context HttpServletRequest request)
     {
-        this.session = session;
-        this.updateDataManager = updateDataManager;
-        this.operator = operator;
-        this.security = security;
-        this.authenticationStore = authenticationStore;
-        this.shutdownService = shutdownService;
-        this.mailInterface = mailInterface;
-        this.i18n = i18n;
+        this.request = request;
     }
 
     public FutureResult<UpdateEvent> getResources()
@@ -178,8 +182,12 @@ public class RemoteStorageImpl implements RemoteStorage
 
 
     @Override
-    public FutureResult<AppointmentMap> queryAppointments(String[] allocatableIds, Date start, Date end, Map<String, String> annotationQuery)
+    public FutureResult<AppointmentMap> queryAppointments(QueryAppointments job)
     {
+        String[] allocatableIds = job.getResources();
+        Date start = job.getStart();
+        Date end = job.getEnd();
+        Map<String, String> annotationQuery = job.getAnnotations();
         getLogger().debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
         try
         {
@@ -323,8 +331,11 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    public FutureResult<VoidResult> changePassword(String username, String oldPassword, String newPassword)
+    public FutureResult<VoidResult> changePassword(PasswordPost job)
     {
+        String username = job.getUsername();
+        String oldPassword = job.getOldPassword();
+        String newPassword = job.getNewPassword();
         try
         {
             checkAuthentified();
@@ -502,7 +513,7 @@ public class RemoteStorageImpl implements RemoteStorage
 
     private void checkAuthentified() throws RaplaSecurityException
     {
-        if (!session.isAuthentified())
+        if (!session.isAuthentified(request))
         {
 
             throw new RaplaSecurityException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED);
@@ -511,7 +522,7 @@ public class RemoteStorageImpl implements RemoteStorage
 
     private User getSessionUser() throws RaplaException
     {
-        return session.getUser();
+        return session.getUser(request);
     }
 
     private void dispatch_(UpdateEvent evt) throws RaplaException
@@ -612,9 +623,15 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    @Override public FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment, String[] reservationIds,
-            Integer worktimestartMinutes, Integer worktimeendMinutes, Integer[] excludedDays, Integer rowsPerHour)
+    @Override public FutureResult<Date> getNextAllocatableDate(NextAllocatableDateRequest job)
     {
+        String[] allocatableIds = job.getAllocatableIds();
+        AppointmentImpl appointment = job.getAppointment();
+        String[] reservationIds = job.getReservationIds();
+        Integer worktimestartMinutes = job.getWorktimeStartMinutes();
+        Integer worktimeendMinutes = job.getWorktimeEndMinutes();
+        Integer[] excludedDays = job.getExcludedDays();
+        Integer rowsPerHour = job.getRowsPerHour();
         try
         {
             checkAuthentified();
@@ -631,9 +648,11 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    @Override public FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments,
-            String[] reservationIds)
+    @Override public FutureResult<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job)
     {
+        String[] allocatableIds = job.getAllocatableIds();
+        List<AppointmentImpl> appointments = job.getAppointments();
+        String[] reservationIds = job.getReservationIds();
         try
         {
             checkAuthentified();
@@ -681,9 +700,11 @@ public class RemoteStorageImpl implements RemoteStorage
         return result;
     }
 
-    public FutureResult<List<ReservationImpl>> getAllAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments,
-            String[] reservationIds)
+    public FutureResult<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job)
     {
+        String[] allocatableIds = job.getAllocatableIds();
+        List<AppointmentImpl> appointments = job.getAppointments();
+        String[] reservationIds = job.getReservationIds();
         try
         {
             checkAuthentified();
@@ -752,8 +773,10 @@ public class RemoteStorageImpl implements RemoteStorage
     }
 
     @Override
-    public FutureResult<VoidResult> doMerge(AllocatableImpl allocatable, String[] allocatableIds)
+    public FutureResult<VoidResult> doMerge(MergeRequest job)
     {
+        AllocatableImpl allocatable = job.getAllocatable();
+        String[] allocatableIds = job.getAllocatableIds();
         try
         {
             checkAuthentified();

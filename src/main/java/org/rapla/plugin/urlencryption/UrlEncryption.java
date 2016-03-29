@@ -1,7 +1,8 @@
 package org.rapla.plugin.urlencryption;
 
+import javax.ws.rs.Path;
+
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
 
 /**
  * This Interface is used to provide the encryption functionality to the RAPLA Clients.
@@ -9,7 +10,7 @@ import org.rapla.jsonrpc.common.RemoteJsonMethod;
  * @author Jonas Kohlbrenner
  * 
  */
-@RemoteJsonMethod
+@Path("urlencryption")
 public interface UrlEncryption 
 {
 	

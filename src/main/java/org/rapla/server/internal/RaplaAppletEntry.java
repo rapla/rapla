@@ -15,6 +15,6 @@ public class RaplaAppletEntry extends DefaultHTMLMenuEntry implements HtmlMainMe
     @Inject
     public RaplaAppletEntry(RaplaResources i18n)
     {
-        super( i18n.getString("start_rapla_with_applet"), "rapla?page=raplaapplet");
+        super( i18n.getString("start_rapla_with_applet"), "rest/raplaapplet");
     }
 }

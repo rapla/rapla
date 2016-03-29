@@ -23,6 +23,8 @@ import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -73,27 +75,28 @@ public class RestAPITest  {
         HTTPConnector connector = new HTTPConnector();
         String body = null;
         String authenticationToken = null;
+        Map<String, String> additionalHeaders = new HashMap<>();
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/server");
-            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html");
+            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
             TestCase.assertTrue( result.contains("Server running"));
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/calendar");
-            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html");
+            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
             TestCase.assertTrue( result.toLowerCase().contains("<title>rapla"));
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth");
-            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html");
+            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
 
             TestCase.assertNotNull(result);
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth?username=homer&password=duffs");
-            final String result = connector.sendCallWithString("POST", baseUrl, body, authenticationToken, "application/json");
+            final String result = connector.sendCallWithString("POST", baseUrl, body, authenticationToken, "application/json", additionalHeaders);
             TestCase.assertNotNull(result);
         }
 

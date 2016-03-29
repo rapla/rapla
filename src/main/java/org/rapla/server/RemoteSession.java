@@ -12,22 +12,23 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.rapla.entities.User;
 import org.rapla.framework.logger.Logger;
-import org.rapla.inject.server.RequestScoped;
 import org.rapla.storage.RaplaSecurityException;
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/
 
-@RequestScoped
 public interface RemoteSession
 {
 
     Logger getLogger();
-    User getUser() throws RaplaSecurityException;
 
-    boolean isAuthentified();
+    User getUser(HttpServletRequest request) throws RaplaSecurityException;
+
+    boolean isAuthentified(HttpServletRequest request);
 
     void logout();
 }

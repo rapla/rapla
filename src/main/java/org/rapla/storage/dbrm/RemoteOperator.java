@@ -86,7 +86,12 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+import org.rapla.storage.dbrm.RemoteStorage.AllocatableBindingsRequest;
 import org.rapla.storage.dbrm.RemoteStorage.BindingMap;
+import org.rapla.storage.dbrm.RemoteStorage.MergeRequest;
+import org.rapla.storage.dbrm.RemoteStorage.NextAllocatableDateRequest;
+import org.rapla.storage.dbrm.RemoteStorage.PasswordPost;
+import org.rapla.storage.dbrm.RemoteStorage.QueryAppointments;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 
@@ -850,7 +855,7 @@ import org.rapla.storage.impl.EntityStore;
         {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.changePassword(username, new String(oldPassword), new String(newPassword)).get();
+            remoteMethod.changePassword(new PasswordPost(username, new String(oldPassword), new String(newPassword))).get();
             refresh();
         }
         catch (RaplaSecurityException ex)
@@ -1029,7 +1034,7 @@ import org.rapla.storage.impl.EntityStore;
         }
 
         String[] allocatableId = getIdList(allocatables);
-        final FutureResult<AppointmentMap> serverQuery = serv.queryAppointments(allocatableId, start, end, annotationQuery);
+        final FutureResult<AppointmentMap> serverQuery = serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery));
         return new FutureResult<Map<Allocatable, Collection<Appointment>>>()
         {
 
@@ -1296,14 +1301,14 @@ import org.rapla.storage.impl.EntityStore;
             @Override public Map<Allocatable, Collection<Appointment>> get() throws Exception
             {
                 checkConnected();
-                BindingMap bindingMap = serv.getFirstAllocatableBindings(allocatableIds, appointmentList, reservationIds).get();
+                BindingMap bindingMap = serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)).get();
                 Map<String, List<String>> resultMap = bindingMap.get();
                 return convert(resultMap);
             }
 
             @Override public void get(final AsyncCallback<Map<Allocatable, Collection<Appointment>>> callback)
             {
-                serv.getFirstAllocatableBindings(allocatableIds, appointmentList, reservationIds).get(new AsyncCallback<BindingMap>()
+                serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)).get(new AsyncCallback<BindingMap>()
                                                                                                       {
 
                                                                                                           @Override public void onFailure(Throwable caught)
@@ -1362,13 +1367,13 @@ import org.rapla.storage.impl.EntityStore;
 
             @Override public Map<Allocatable, Map<Appointment, Collection<Appointment>>> get() throws Exception
             {
-                List<ReservationImpl> serverResult = serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get();
+                List<ReservationImpl> serverResult = serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)).get();
                 return getMap(allocatables, appointments, ignoreList, serverResult);
             }
 
             @Override public void get(final AsyncCallback<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> callback)
             {
-                serv.getAllAllocatableBindings(allocatableIds, appointmentArray, reservationIds).get(new AsyncCallback<List<ReservationImpl>>()
+                serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)).get(new AsyncCallback<List<ReservationImpl>>()
                                                                                                      {
 
                                                                                                          @Override public void onFailure(Throwable caught)
@@ -1446,8 +1451,8 @@ import org.rapla.storage.impl.EntityStore;
         String[] allocatableIds = getIdList(allocatables);
         String[] reservationIds = getIdList(ignoreList);
         FutureResult<Date> nextAllocatableDate = serv
-                .getNextAllocatableDate(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays,
-                        rowsPerHour);
+                .getNextAllocatableDate(new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays,
+                        rowsPerHour));
         return nextAllocatableDate;
     }
 
@@ -1509,7 +1514,7 @@ import org.rapla.storage.impl.EntityStore;
             {
                 allocIds.add(allocId.getId());
             }
-            serv.doMerge((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()]));
+            serv.doMerge(new MergeRequest((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()])));
         }
         catch (RaplaException ex)
         {

@@ -1,5 +1,13 @@
 package org.rapla.plugin.archiver.server;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
@@ -17,37 +25,30 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-@DefaultImplementation(of=ArchiverService.class,context= InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=ArchiverService.class)
 public class ArchiverServiceImpl  implements ArchiverService
 {
-    private final RemoteSession session;
-    private final RaplaFacade raplaFacade;
-    private final ImportExportManager importExportManager;
-    private final Logger    logger;
+    @Inject
+    RemoteSession session;
+    @Inject
+    RaplaFacade raplaFacade;
+    @Inject
+    ImportExportManager importExportManager;
+    @Inject
+    Logger logger;
+    private final HttpServletRequest request;
 
     @Inject
-	public ArchiverServiceImpl(
-            RaplaFacade facade,
-            ImportExportManager importExportManager,
-            Logger logger,
-            RemoteSession session
-            ) {
-        this.session = session;
-        this.raplaFacade = facade;
-        this.importExportManager = importExportManager;
-        this.logger = logger;
-	}
+    public ArchiverServiceImpl(@Context HttpServletRequest request)
+    {
+        this.request = request;
+    }
 	
 	/** can be overriden to check if user has admin rights when triggered as RemoteService
 	 * @throws RaplaException */
 	protected void checkAccess() throws RaplaException
 	{
-        User user = session.getUser();
+        User user = session.getUser(request);
         if ( user != null && !user.isAdmin())
         {
             throw new RaplaSecurityException("ArchiverService can only be triggered by admin users");

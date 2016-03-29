@@ -1,22 +1,25 @@
 package org.rapla.plugin.ical.server;
 
-import net.fortuna.ical4j.data.CalendarBuilder;
-import net.fortuna.ical4j.data.ParserException;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.Component;
-import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.Dur;
-import net.fortuna.ical4j.model.NumberList;
-import net.fortuna.ical4j.model.Period;
-import net.fortuna.ical4j.model.PeriodList;
-import net.fortuna.ical4j.model.Property;
-import net.fortuna.ical4j.model.PropertyList;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.WeekDayList;
-import net.fortuna.ical4j.model.property.DateProperty;
-import net.fortuna.ical4j.model.property.RRule;
-import net.fortuna.ical4j.util.CompatibilityHints;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -40,44 +43,57 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
-import javax.inject.Inject;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
+import net.fortuna.ical4j.data.CalendarBuilder;
+import net.fortuna.ical4j.data.ParserException;
+import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.Component;
+import net.fortuna.ical4j.model.ComponentList;
+import net.fortuna.ical4j.model.DateTime;
+import net.fortuna.ical4j.model.Dur;
+import net.fortuna.ical4j.model.NumberList;
+import net.fortuna.ical4j.model.Period;
+import net.fortuna.ical4j.model.PeriodList;
+import net.fortuna.ical4j.model.Property;
+import net.fortuna.ical4j.model.PropertyList;
+import net.fortuna.ical4j.model.Recur;
+import net.fortuna.ical4j.model.WeekDayList;
+import net.fortuna.ical4j.model.property.DateProperty;
+import net.fortuna.ical4j.model.property.RRule;
+import net.fortuna.ical4j.util.CompatibilityHints;
 
-@DefaultImplementation(of=ICalImport.class,context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=ICalImport.class)
 public class RaplaICalImport implements ICalImport {
-	private TimeZone timeZone;
-	private TimeZoneConverter timeZoneConverter;
+	@Inject
+	TimeZoneConverter timeZoneConverter;
+	@Inject
 	RemoteSession session;
+	@Inject
 	RaplaFacade facade;
+	@Inject
 	Logger logger;
+    private final HttpServletRequest request;
 
 	@Inject
-	public RaplaICalImport( TimeZoneConverter converter, RemoteSession session,RaplaFacade facade, Logger logger) {
-		this.timeZoneConverter = converter;
-		this.session = session;
-		this.facade = facade;
-		this.logger = logger;
-		this.timeZone = converter.getImportExportTimeZone();
+	public RaplaICalImport(@Context HttpServletRequest request ) {
+        this.request = request;
 	}
+	public RaplaICalImport(TimeZoneConverter timeZoneConverter, RemoteSession session, RaplaFacade facade, Logger logger, HttpServletRequest request)
+    {
+        this.timeZoneConverter = timeZoneConverter;
+        this.session = session;
+        this.facade = facade;
+        this.logger = logger;
+        this.request = request;
+    }
 
-
-
-	public FutureResult<Integer[]> importICal(String content, boolean isURL, String[] allocatableIds, String eventTypeKey, String eventTypeNameAttributeKey)
+	@Override
+    public FutureResult<Integer[]> importICal(Import job)
 	{
+        String content = job.getContent();
+        boolean isURL = job.isURL();
+        String[] allocatableIds = job.getAllocatableIds();
+        String eventTypeKey = job.getEventTypeKey();
+        String eventTypeNameAttributeKey = job.getEventTypeNameAttributeKey();
 		try
 		{
 			List<Allocatable> allocatables = new ArrayList<Allocatable>();
@@ -89,7 +105,7 @@ public class RaplaICalImport implements ICalImport {
 					allocatables.add ( allocatable);
 				}
 			}
-			User user = session.getUser();
+			User user = session.getUser(request);
 			Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
 			return new ResultImpl<Integer[]>(count);
 		} catch (RaplaException ex)
@@ -135,7 +151,8 @@ public class RaplaICalImport implements ICalImport {
 	 * @throws RaplaException
 	 */
 	public Integer[] importCalendar(String content, boolean isURL, List<Allocatable> resources, User user, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
-	    
+        final TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
+
 	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_NOTES_COMPATIBILITY, true);
 	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_OUTLOOK_COMPATIBILITY, true);
 	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_PARSING, true);
@@ -249,7 +266,7 @@ public class RaplaICalImport implements ICalImport {
 		            }
 		            else
 		            {
-		            	Date begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
+                        Date begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
 			            Date end = new Date(begin.getTime() + duration_millis);
 			            appointment = newAppointment(user,begin, end);
 		            }
@@ -417,6 +434,7 @@ public class RaplaICalImport implements ICalImport {
 
 	/** if the recurances can be matched to one or more appointments return the appointment list else return null*/
 	private List<Appointment> calcRepeating(List<Recur> recurList, Appointment start) throws RaplaException {
+        final TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
         final List<Appointment> appointments = new ArrayList<Appointment>();
         for (Recur recur : recurList) {
         	// FIXME need to implement UTC mapping

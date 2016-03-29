@@ -48,6 +48,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class UpdateEvent
 {
     transient Map listMap;// = new HashMap<Class, List<Entity>>();
@@ -73,6 +79,8 @@ public class UpdateEvent
     private String lastValidated;
     private int timezoneOffset;
 
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.FIELD)
     public static class SerializableReferenceInfo
     {
         String id;

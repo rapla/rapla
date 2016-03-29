@@ -230,7 +230,7 @@ public class ServerTest
         getRaplaFacade1().store(typeEdit2);
         {
             Allocatable allocatable = getRaplaFacade1().getAllocatables()[0];
-            Assert.assertEquals(getRaplaFacade1().getAllocatables().length, 5);
+            Assert.assertEquals(getRaplaFacade1().getAllocatables().length, 7);
             Assert.assertEquals(3, allocatable.getClassification().getAttributes().length);
         }
         User user = getRaplaFacade1().newUser();
@@ -257,13 +257,13 @@ public class ServerTest
         Allocatable allocatableClone = getRaplaFacade1().edit(allocatable);
         Assert.assertEquals(3, allocatable.getClassification().getAttributes().length);
         getRaplaFacade1().storeObjects(new Entity[] { allocatableClone, typeEdit3 });
-        Assert.assertEquals(5, getRaplaFacade1().getAllocatables().length);
+        Assert.assertEquals(7, getRaplaFacade1().getAllocatables().length);
         final Attribute[] attributes = allocatable.getClassification().getAttributes();
         Assert.assertEquals(2, attributes.length);
 
         // we check if the store affectes the second client.
         getRaplaFacade2().refresh();
-        Assert.assertEquals(5, getRaplaFacade2().getAllocatables().length);
+        Assert.assertEquals(7, getRaplaFacade2().getAllocatables().length);
 
         ClassificationFilter filter = getRaplaFacade2().getDynamicType("room").newClassificationFilter();
         filter.addIsRule("name", "erwin");
@@ -644,7 +644,7 @@ public class ServerTest
         RaplaLocale loc = getRaplaLocale();
         final Date today = raplaFacade2.today();
         final int weekday = DateTools.getWeekday(today);
-        Date date = DateTools.addDays( today,(weekday - DateTools.MONDAY - 1) %7 + 1);
+        Date date = DateTools.addDays( today,(DateTools.MONDAY - weekday - 1 + 7) %7 + 1);
         Date startTime = loc.toTime( 17,0,0);
         Date startTime1 = loc.toDate(date, startTime);
         Date endTime = loc.toTime( 19,0,0);

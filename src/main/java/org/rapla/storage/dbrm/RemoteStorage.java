@@ -16,7 +16,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.jws.WebParam;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -24,71 +33,332 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.UpdateEvent;
 
-@RemoteJsonMethod
-public interface RemoteStorage  {
-	String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
-    
+@Path("storage")
+public interface RemoteStorage
+{
+    String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
+
     FutureResult<String> canChangePassword();
 
-	FutureResult<VoidResult> changePassword(String username,String oldPassword,String newPassword);
-	
-	FutureResult<VoidResult> changeName(String username, String newTitle,String newSurename,String newLastname);
-	
-	FutureResult<VoidResult> changeEmail(String username,String newEmail);
-	
-	FutureResult<VoidResult> confirmEmail(String username,String newEmail);
-    
+    @POST
+    @Path("change/password")
+    FutureResult<VoidResult> changePassword(PasswordPost job);
+
+    public static class PasswordPost
+    {
+        private String username;
+        private String oldPassword;
+        private String newPassword;
+
+        public PasswordPost()
+        {
+        }
+
+        public PasswordPost(String username, String oldPassword, String newPassword)
+        {
+            super();
+            this.username = username;
+            this.oldPassword = oldPassword;
+            this.newPassword = newPassword;
+        }
+
+        public String getUsername()
+        {
+            return username;
+        }
+
+        public String getOldPassword()
+        {
+            return oldPassword;
+        }
+
+        public String getNewPassword()
+        {
+            return newPassword;
+        }
+    }
+
+    @POST
+    @Path("change/name")
+    FutureResult<VoidResult> changeName(@QueryParam("username") String username, @QueryParam("title")String newTitle, @QueryParam("surename")String newSurename, String newLastname);
+
+    @POST
+    @Path("change/email")
+    FutureResult<VoidResult> changeEmail(@QueryParam("username") String username, String newEmail);
+
+    @POST
+    @Path("confirm/email")
+    FutureResult<VoidResult> confirmEmail(@QueryParam("username") String username, String newEmail);
+
+    @GET
+    @Path("resources")
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     FutureResult<UpdateEvent> getResources() throws RaplaException;
-    
+
     /** delegates the corresponding method in the StorageOperator. 
      * @param annotationQuery */
-//    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
-	FutureResult<AppointmentMap> queryAppointments(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
+    //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
+    @POST
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<AppointmentMap> queryAppointments(QueryAppointments job);
 
-    FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos );
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class QueryAppointments
+    {
+        private String[] resources;
+        private Date start;
+        private Date end;
+        private Map<String, String> annotations;
 
-    FutureResult<UpdateEvent> refresh(String lastSyncedTime);
+        public QueryAppointments(String[] resources, Date start, Date end, Map<String, String> annotations)
+        {
+            super();
+            this.resources = resources;
+            this.start = start;
+            this.end = end;
+            this.annotations = annotations;
+        }
+
+        public QueryAppointments()
+        {
+        }
+
+        public String[] getResources()
+        {
+            return resources;
+        }
+
+        public Date getStart()
+        {
+            return start;
+        }
+
+        public Date getEnd()
+        {
+            return end;
+        }
+
+        public Map<String, String> getAnnotations()
+        {
+            return annotations;
+        }
+    }
     
-	FutureResult<VoidResult> restartServer();
+    @POST
+    @Path("entity/recursive")
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos);
 
-	FutureResult<UpdateEvent> dispatch(UpdateEvent event);
+    @GET
+    @Path("refresh")
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<UpdateEvent> refresh(@QueryParam("lastSynched")String lastSyncedTime);
+
+    @POST
+    @Path("restart")
+    FutureResult<VoidResult> restartServer();
+
+    @POST
+    @Path("dispatch")
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<UpdateEvent> dispatch(UpdateEvent event);
+
+    //	@ResultType(value=String.class,container=List.class)
+    //	FutureResult<List<String>> getTemplateNames();
+
+    @GET
+    @Path("identifier")
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<List<String>> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count);
+
+    @GET
+    @Path("conflicts")
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<List<ConflictImpl>> getConflicts();
+
+    @POST
+    @Path("allocatable/bindings/first")
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
+
+    public static class AllocatableBindingsRequest
+    {
+        private String[] allocatableIds;
+        private List<AppointmentImpl> appointments;
+        private String[] reservationIds;
+
+        public AllocatableBindingsRequest()
+        {
+        }
+
+        public AllocatableBindingsRequest(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds)
+        {
+            super();
+            this.allocatableIds = allocatableIds;
+            this.appointments = appointments;
+            this.reservationIds = reservationIds;
+        }
+
+        public String[] getAllocatableIds()
+        {
+            return allocatableIds;
+        }
+
+        public List<AppointmentImpl> getAppointments()
+        {
+            return appointments;
+        }
+
+        public String[] getReservationIds()
+        {
+            return reservationIds;
+        }
+    }
     
-//	@ResultType(value=String.class,container=List.class)
-//	FutureResult<List<String>> getTemplateNames();
+    @POST
+    @Path("allocatable/bindings/all")
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job);
+
+    @POST
+    @Path("allocatable/date/next")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    FutureResult<Date> getNextAllocatableDate(NextAllocatableDateRequest job);
+
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class NextAllocatableDateRequest
+    {
+        private String[] allocatableIds;
+        private AppointmentImpl appointment;
+        private String[] reservationIds;
+        private Integer worktimeStartMinutes;
+        private Integer worktimeEndMinutes;
+        private Integer[] excludedDays;
+        Integer rowsPerHour;
+
+        public NextAllocatableDateRequest()
+        {
+            // TODO Auto-generated constructor stub
+        }
+
+        public NextAllocatableDateRequest(String[] allocatableIds, AppointmentImpl appointment, String[] reservationIds, Integer worktimeStartMinutes,
+                Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour)
+        {
+            super();
+            this.allocatableIds = allocatableIds;
+            this.appointment = appointment;
+            this.reservationIds = reservationIds;
+            this.worktimeStartMinutes = worktimeStartMinutes;
+            this.worktimeEndMinutes = worktimeEndMinutes;
+            this.excludedDays = excludedDays;
+            this.rowsPerHour = rowsPerHour;
+        }
+
+        public String[] getAllocatableIds()
+        {
+            return allocatableIds;
+        }
+
+        public AppointmentImpl getAppointment()
+        {
+            return appointment;
+        }
+
+        public String[] getReservationIds()
+        {
+            return reservationIds;
+        }
+
+        public Integer getWorktimeStartMinutes()
+        {
+            return worktimeStartMinutes;
+        }
+
+        public Integer getWorktimeEndMinutes()
+        {
+            return worktimeEndMinutes;
+        }
+
+        public Integer[] getExcludedDays()
+        {
+            return excludedDays;
+        }
+
+        public Integer getRowsPerHour()
+        {
+            return rowsPerHour;
+        }
+    }
     
-	FutureResult<List<String>> createIdentifier(String raplaType, int count);
+    @GET
+    @Path("user")
+    @Produces({MediaType.APPLICATION_JSON})
+    FutureResult<String> getUsername(@QueryParam("userId") String userId);
 
-	FutureResult<List<ConflictImpl>> getConflicts();
-	
-	FutureResult<BindingMap> getFirstAllocatableBindings(String[] allocatableIds, List<AppointmentImpl> appointments, String[] reservationIds);
-	
-	FutureResult<List<ReservationImpl>> getAllAllocatableBindings(String[] allocatables, List<AppointmentImpl> appointments, String[] reservationIds);
+    //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
 
-    FutureResult<Date> getNextAllocatableDate(String[] allocatableIds, AppointmentImpl appointment,String[] reservationIds, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
-
-	FutureResult<String> getUsername(String userId);
-
-	//void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
+    @POST
+    @Path("merge")
+    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<VoidResult> doMerge(MergeRequest job);
     
-    FutureResult<VoidResult> doMerge(@WebParam(name="allocatable") AllocatableImpl allocatable, @WebParam(name="allocatableIds")String[] allocatableIds);
-    
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class MergeRequest
+    {
+        private AllocatableImpl allocatable;
+        private String[] allocatableIds;
+
+        public MergeRequest()
+        {
+        }
+
+        public MergeRequest(AllocatableImpl allocatable, String[] allocatableIds)
+        {
+            super();
+            this.allocatable = allocatable;
+            this.allocatableIds = allocatableIds;
+        }
+
+        public AllocatableImpl getAllocatable()
+        {
+            return allocatable;
+        }
+
+        public String[] getAllocatableIds()
+        {
+            return allocatableIds;
+        }
+    }
+
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.FIELD)
     class BindingMap
     {
-    	Map<String,List<String>> bindings;
-    	BindingMap() {
-		}
-    	public BindingMap(Map<String,List<String>> bindings)
-    	{
-    		this.bindings = bindings;
-    	}
-    	
-    	public Map<String,List<String>> get() {
-			return bindings;
-		}
+        Map<String, List<String>> bindings;
+
+        BindingMap()
+        {
+        }
+
+        public BindingMap(Map<String, List<String>> bindings)
+        {
+            this.bindings = bindings;
+        }
+
+        public Map<String, List<String>> get()
+        {
+            return bindings;
+        }
     }
 
 }

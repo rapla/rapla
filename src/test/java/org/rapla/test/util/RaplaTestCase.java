@@ -212,7 +212,7 @@ public abstract class RaplaTestCase
         {
             @Override public String getEntryPoint(String interfaceName, String relativePath)
             {
-                String url = serverURL + "rapla/" + ((relativePath != null) ? relativePath : interfaceName);
+                String url = serverURL + "rest/" + ((relativePath != null) ? relativePath : interfaceName);
                 return url;
             }
         });

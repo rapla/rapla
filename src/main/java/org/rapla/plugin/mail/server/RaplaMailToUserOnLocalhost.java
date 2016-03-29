@@ -12,6 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -19,27 +23,26 @@ import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-
-@DefaultImplementation(of = MailToUserInterface.class, context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=MailToUserInterface.class)
 public class RaplaMailToUserOnLocalhost implements MailToUserInterface
 {
-
-    final MailToUserImpl mail;
-    final RemoteSession session;
-    @Inject public RaplaMailToUserOnLocalhost(final MailToUserImpl mail, final RemoteSession session)
+    @Inject
+    MailToUserImpl mail;
+    @Inject
+    RemoteSession session;
+    private final HttpServletRequest request;
+    @Inject public RaplaMailToUserOnLocalhost(@Context HttpServletRequest request)
             throws RaplaSecurityException
     {
-        this.mail = mail;
-        this.session = session;
-        if (!session.isAuthentified())
-        {
-            throw new RaplaSecurityException("User needs to be authentified to use the service");
-        }
+        this.request = request;
     }
 
     @Override public void sendMail(String username, String subject, String body) throws RaplaException
     {
+        if (!session.isAuthentified(request))
+        {
+            throw new RaplaSecurityException("User needs to be authentified to use the service");
+        }
         mail.sendMail(username,subject, body);
     }
 }

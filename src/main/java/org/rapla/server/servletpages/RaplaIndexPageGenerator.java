@@ -3,13 +3,11 @@
  */
 package org.rapla.server.servletpages;
 
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Tools;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
-import org.rapla.server.extensionpoints.HtmlMainMenu;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -19,37 +17,46 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+
+import org.rapla.RaplaResources;
+import org.rapla.components.util.Tools;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.server.extensionpoints.HtmlMainMenu;
 
 @Path("index")
 @Singleton
 public class RaplaIndexPageGenerator
 {
 	Set<RaplaMenuGenerator> entries;
+	@Inject
 	RaplaResources i18n;
 	
+	@Inject
 	RaplaFacade facade;
 	@Inject
-    public RaplaIndexPageGenerator( RaplaResources i18n, RaplaFacade facade, Set<HtmlMainMenu> entries)
+    public RaplaIndexPageGenerator( )
     {
-        this.i18n = i18n;
-        this.facade = facade;
+    }
+	
+	@Inject
+	void setEntries(Set<HtmlMainMenu> entries)
+    {
         this.entries = new LinkedHashSet<RaplaMenuGenerator>(entries);
     }
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public void generatePage(HttpServletRequest request, HttpServletResponse response )
+    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response )
             throws IOException, ServletException
     {
-        if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/"))
+        if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rest/index/"))
         {
-            response.sendRedirect("../rapla");
+            response.sendRedirect("../index");
         }
 		response.setContentType("text/html; charset=ISO-8859-1");
 		java.io.PrintWriter out = response.getWriter();

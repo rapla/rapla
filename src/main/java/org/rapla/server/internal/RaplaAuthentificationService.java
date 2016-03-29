@@ -9,6 +9,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.servlet.http.HttpServletRequest;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
@@ -29,23 +30,23 @@ import org.rapla.storage.dbrm.LoginCredentials;
 @Singleton
 public class RaplaAuthentificationService
 {
-    final RaplaResources i18n;
-    final TokenHandler tokenHandler;
-    final Set<AuthenticationStore> authenticationStores;
-    final CachableStorageOperator operator;
-    final Logger logger;
+    @Inject
+    RaplaResources i18n;
+    @Inject
+    TokenHandler tokenHandler;
+    @Inject
+    Set<AuthenticationStore> authenticationStores;
+    @Inject
+    CachableStorageOperator operator;
+    @Inject
+    Logger logger;
 
-    @Inject public RaplaAuthentificationService( TokenHandler tokenHandler, RaplaResources i18n,
-            Set<AuthenticationStore> authenticationStores,CachableStorageOperator operator, Logger logger)
-    {
-        this.tokenHandler = tokenHandler;
-        this.i18n = i18n;
-        this.authenticationStores = authenticationStores;
-        this.operator = operator;
-        this.logger = logger;
-    }
     private static boolean passwordCheckDisabled = false;
 
+    @Inject
+    public RaplaAuthentificationService()
+    {
+    }
 
     public Logger getLogger()
     {
@@ -57,13 +58,13 @@ public class RaplaAuthentificationService
         RaplaAuthentificationService.passwordCheckDisabled = passwordCheckDisabled;
     }
 
-    protected User getValidUser(final RemoteSession session) throws RaplaSecurityException
+    protected User getValidUser(final RemoteSession session, HttpServletRequest request) throws RaplaSecurityException
     {
-        if (!session.isAuthentified())
+        if (!session.isAuthentified(request))
         {
             throw new RaplaSecurityException(i18n.getString("error.login"));
         }
-        User user = session.getUser();
+        User user = session.getUser(request);
         return user;
     }
 

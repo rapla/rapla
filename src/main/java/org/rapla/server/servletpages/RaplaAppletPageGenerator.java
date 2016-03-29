@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -51,7 +52,7 @@ public class RaplaAppletPageGenerator
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public void generatePage(HttpServletRequest request, HttpServletResponse response ) throws IOException {
+    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response ) throws IOException {
         ServletContext context = request.getServletContext();
     	String linkPrefix = request.getPathTranslated() != null ? "../": "";
 		response.setContentType("text/html; charset=ISO-8859-1");

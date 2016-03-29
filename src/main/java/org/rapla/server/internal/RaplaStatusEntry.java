@@ -15,6 +15,6 @@ public class RaplaStatusEntry extends DefaultHTMLMenuEntry implements HtmlMainMe
     @Inject
     public RaplaStatusEntry(RaplaResources i18n)
     {
-        super(i18n.getString("server_status"), "rapla/server");
+        super(i18n.getString("server_status"), "rest/server");
     }
 }

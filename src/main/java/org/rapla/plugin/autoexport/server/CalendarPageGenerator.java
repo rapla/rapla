@@ -12,6 +12,32 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.autoexport.server;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
@@ -32,36 +58,12 @@ import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 /******* USAGE: ************
  * ReadOnly calendarview view.
  * You will need the autoexport plugin to create a calendarview-view.
  *
  * Call:
- * rapla?page=calendar&user=<username>&file=<export_name>
+ * rest/calendar?user=<username>&file=<export_name>
  *
  * Optional Parameters:
  *
@@ -75,22 +77,22 @@ import java.util.TreeSet;
 @Singleton
 public class CalendarPageGenerator
 {
-    final private Map<String, Provider<HTMLViewPage>> factoryMap;
+    @Inject 
+    Map<String, Provider<HTMLViewPage>> factoryMap;
+    @Inject 
     RaplaFacade facade;
+    @Inject 
     Logger logger;
+    @Inject 
     RaplaLocale raplaLocale;
-    final private RaplaResources i18n;
-    final private AutoExportResources autoexportI18n;
+    @Inject 
+    RaplaResources i18n;
+    @Inject 
+    AutoExportResources autoexportI18n;
 
-    @Inject public CalendarPageGenerator(Map<String, Provider<HTMLViewPage>> extensionMap, RaplaFacade facade, Logger logger, RaplaLocale raplaLocale,
-            RaplaResources i18n, AutoExportResources autoexportI18n)
+    @Inject 
+    public CalendarPageGenerator()
     {
-        this.facade = facade;
-        this.logger = logger;
-        this.raplaLocale = raplaLocale;
-        this.factoryMap = extensionMap;
-        this.i18n = i18n;
-        this.autoexportI18n = autoexportI18n;
     }
 
     private String getTitle(String key, CalendarModelConfiguration conf)
@@ -196,7 +198,7 @@ public class CalendarPageGenerator
 
                     String filename = URLEncoder.encode(key, "UTF-8");
                     out.print("<li>");
-                    String test = AbstractHTMLCalendarPage.getUrl( request, "rapla/calendar");
+                    String test = AbstractHTMLCalendarPage.getUrl( request, "rest/calendar");
                     out.print("<a href=\""+test+"?user=" + user.getUsername() + "&file=" + filename + "&details=*" + "&folder=true" + "\">");
                     out.print(title);
                     out.print("</a>");
@@ -223,7 +225,7 @@ public class CalendarPageGenerator
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public void generatePage(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
     {
         try
         {

@@ -12,26 +12,42 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+
 import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.RemoteJsonMethod;
 import org.rapla.jsonrpc.common.VoidResult;
 
-import javax.jws.WebParam;
-
-@RemoteJsonMethod
+@Path("authentification")
 public interface RemoteAuthentificationService
 {
-    FutureResult<LoginTokens> login(@WebParam(name="username") String username,@WebParam(name="password") String password,@WebParam(name="connectAs") String connectAs);
+    @POST
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<LoginTokens> login(@QueryParam("username") String username,String password,@QueryParam("connectAs") String connectAs);
 	
 	/** same as login but passes the login info into a LoginCredentials Object*/
-    FutureResult<LoginTokens> auth(@WebParam(name="credentials") LoginCredentials credentials);
+    @POST
+    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
+    FutureResult<LoginTokens> auth(LoginCredentials credentials);
 	
+    @GET
+    @Path("destroy")
 	FutureResult<VoidResult> logout();
 	
+    @GET
+    @Path("refreshToken")
     FutureResult<String> getRefreshToken();
 	
+    @GET
+    @Path("regenerateRefreshToken")
     FutureResult<String> regenerateRefreshToken();
 
-    FutureResult<LoginTokens> refresh(@WebParam(name="refreshToken") String refreshToken);
+    @GET
+    @Path("loginToken")
+    FutureResult<LoginTokens> refresh(@QueryParam("refreshToken") String refreshToken);
 
 }

@@ -1,6 +1,9 @@
 package org.rapla.server.internal;
 
-import org.rapla.RaplaResources;
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -9,27 +12,22 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.jsonrpc.common.VoidResult;
-import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
-import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
-import javax.inject.Inject;
-import java.util.Set;
-
-@DefaultImplementation(of = RemoteAuthentificationService.class, context = InjectionContext.server)
+@DefaultImplementation(context=InjectionContext.server, of=RemoteAuthentificationService.class)
 public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationService implements RemoteAuthentificationService
 {
-    private final RemoteSession session;
+    @Inject
+    RemoteSession session;
+    private final HttpServletRequest request;
 
     @Inject
-    public RemoteAuthentificationServiceImpl(TokenHandler tokenHandler, RaplaResources i18n, Set<AuthenticationStore> authenticationStores,
-            CachableStorageOperator operator, RemoteSession session)
+    public RemoteAuthentificationServiceImpl(@Context HttpServletRequest request )
     {
-        super(tokenHandler, i18n, authenticationStores, operator, session.getLogger());
-        this.session = session;
+        this.request = request;
     }
 
     public Logger getLogger()
@@ -43,9 +41,9 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
         {
             if (session != null)
             {
-                if (session.isAuthentified())
+                if (session.isAuthentified(request))
                 {
-                    User user = session.getUser();
+                    User user = session.getUser(request);
                     if (user != null)
                     {
                         getLogger().getChildLogger("login").info("Request Logout " + user.getUsername());
@@ -85,7 +83,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
     {
         try
         {
-            User user = getValidUser(session);
+            User user = getValidUser(session, request);
             String refreshToken = tokenHandler.getRefreshToken(user);
             return new ResultImpl<String>(refreshToken);
         }
@@ -99,7 +97,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
     {
         try
         {
-            User user = getValidUser(session);
+            User user = getValidUser(session, request);
             String refreshToken = tokenHandler.regenerateRefreshToken(user);
             return new ResultImpl<String>(refreshToken);
         }

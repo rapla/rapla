@@ -1,5 +1,40 @@
 package org.rapla.plugin.ical.client.swing;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.border.BevelBorder;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -23,42 +58,9 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.ical.ICalImport;
+import org.rapla.plugin.ical.ICalImport.Import;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
 import org.rapla.plugin.ical.ImportFromICalResources;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.ComboBoxModel;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * 
@@ -299,7 +301,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         return;
                     String eventTypeAttributeNameKey = ((Attribute) selectedItem).getKey();
 
-                    Integer[] status  = importService.importICal(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey).get();
+                    Integer[] status  = importService.importICal(new Import(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey)).get();
                     int eventsInICal = status[0];
             		int eventsImported = status[1];
             		int eventsPresent = status[2];

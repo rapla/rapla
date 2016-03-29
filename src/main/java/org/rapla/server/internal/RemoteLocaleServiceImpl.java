@@ -1,5 +1,13 @@
 package org.rapla.server.internal;
 
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
@@ -17,43 +25,39 @@ import org.rapla.server.RemoteSession;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-@DefaultImplementation(of = RemoteLocaleService.class, context = InjectionContext.server)
+@DefaultImplementation(context = InjectionContext.server, of = RemoteLocaleService.class)
 public class RemoteLocaleServiceImpl implements RemoteLocaleService
 {
-    private final DefaultBundleManager bundleManager;
-    private final RaplaLocale raplaLocale;
-    private  RemoteSession session;
-    private final Logger logger;
-    private final StorageOperator operator;
-    private final ResourceBundleList resourceBundleList;
-
+    @Inject
+    BundleManager bundleManager;
+    @Inject
+    RaplaLocale raplaLocale;
+    @Inject
+    RemoteSession session;
+    @Inject
+    Logger logger;
+    @Inject
+    StorageOperator operator;
+    @Inject
+    ResourceBundleList resourceBundleList;
+    private final HttpServletRequest request;
 
     @Inject
-    public RemoteLocaleServiceImpl(BundleManager bundleManager, RaplaLocale raplaLocale, Logger logger, StorageOperator operator,ResourceBundleList resourceBundleList, RemoteSession session)
+    public RemoteLocaleServiceImpl(@Context HttpServletRequest request)
     {
-        this.resourceBundleList = resourceBundleList;
-        this.bundleManager = (DefaultBundleManager) bundleManager;
-        this.raplaLocale = raplaLocale;
-        this.operator = operator;
-        this.session = session;
-        this.logger = logger;
+        this.request = request;
     }
 
-
-    @Override public FutureResult<LocalePackage> locale(String id, String localeString)
+    @Override
+    public FutureResult<LocalePackage> locale(String id, String localeString)
     {
         try
         {
             if (localeString == null)
             {
-                if (session.isAuthentified())
+                if (session.isAuthentified(request))
                 {
-                    final User validUser = session.getUser();
+                    final User validUser = session.getUser(request);
                     final Preferences preferences = operator.getPreferences(validUser, true);
                     final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
                     if (entry != null)
@@ -67,11 +71,12 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
                 }
             }
             Locale locale = LocaleTools.getLocale(localeString);
-            final I18nLocaleFormats formats = bundleManager.getFormats(locale);
+            final DefaultBundleManager defBundleManager = (DefaultBundleManager) bundleManager;
+            final I18nLocaleFormats formats = defBundleManager.getFormats(locale);
             Map<String, Map<String, String>> bundles = resourceBundleList.getBundles(locale);
             String language = locale.getLanguage();
             String country = locale.getCountry();
-            Set<String> availableLanguages = bundleManager.getAvailableLanguages();
+            Set<String> availableLanguages = defBundleManager.getAvailableLanguages();
             final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles, availableLanguages);
             return new ResultImpl<LocalePackage>(localePackage);
         }
@@ -82,9 +87,10 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
         }
     }
 
-    @Override public FutureResult<Map<String, Set<String>>> countries(Set<String> languages)
+    @Override
+    public FutureResult<Map<String, Set<String>>> countries(Set<String> languages)
     {
-        Map<String, Set<String>> result = bundleManager.getCountriesForLanguage(languages);
+        Map<String, Set<String>> result = ((DefaultBundleManager) bundleManager).getCountriesForLanguage(languages);
         return new ResultImpl<Map<String, Set<String>>>(result);
     }
 }
