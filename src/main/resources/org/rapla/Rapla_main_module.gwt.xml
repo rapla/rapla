@@ -78,5 +78,5 @@
 	<!--
 	<inherits name='org.rapla.Rapla_generated'/>
 	-->
-    <source path='dagger'/>
+	<inherits name="Dagger"/>
 </module>

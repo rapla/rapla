@@ -22,7 +22,7 @@
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<jetty.version>9.3.7.v20160115</jetty.version>
 		<maven.install.skip>false</maven.install.skip>
-		<dagger.version>2.0.2</dagger.version>
+		<dagger.version>2.2</dagger.version>
 		<gwt.version>2.8.0-beta1</gwt.version>
 		<gwt.plugin.version>2.8.0-beta1</gwt.plugin.version>
 		<gwt.plugin.productionmode>false</gwt.plugin.productionmode>
@@ -192,6 +192,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- 
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>gwt-maven-plugin</artifactId>
@@ -215,6 +216,7 @@
 					<detail>false</detail>
 				</configuration>
 			</plugin>
+			 -->
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -279,6 +281,13 @@
 			<groupId>org.rapla</groupId>
 			<artifactId>restinject</artifactId>
 			<version>${restinject.version}</version>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.dagger</groupId>
+			<artifactId>dagger</artifactId>
+			<version>${dagger.version}</version>
 			<classifier>sources</classifier>
 			<scope>provided</scope>
 		</dependency>
