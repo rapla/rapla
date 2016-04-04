@@ -1,6 +1,8 @@
 package org.rapla.plugin.tableview.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
@@ -90,6 +92,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     private final MenuFactory menuFactory;
 
+    private final EditController editController;
     private final ReservationController reservationController;
 
     private final RaplaImages raplaImages;
@@ -104,14 +107,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 
     public SwingReservationTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions, final boolean editable, boolean printing,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, ReservationController reservationController,
-            final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory,
-            IOInterface ioInterface) throws RaplaException
+            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
+            final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = menuBar;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
+        this.editController = editController;
         this.reservationController = reservationController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -422,10 +425,11 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
                 {
                     return;
                 }
+                final PopupContext popupContext = createPopupContext(getComponent(),null);
                 try {
-                    reservationController.edit( reservation );
+                    editController.edit( reservation,popupContext );
                 } catch (RaplaException ex) {
-                    dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
+                    dialogUiFactory.showException (ex, popupContext);
                 }
             }
         }

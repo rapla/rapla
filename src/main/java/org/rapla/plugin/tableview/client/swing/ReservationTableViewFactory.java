@@ -13,6 +13,7 @@
 package org.rapla.plugin.tableview.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
@@ -56,13 +57,13 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final ClientFacade facade;
     private final IOInterface ioInterface;
     private final RaplaMenuBarContainer menuBar;
+    private final EditController editController;
 
     @Inject
     public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages,
-            IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
-            RaplaMenuBarContainer menuBar)
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser,
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, RaplaMenuBarContainer menuBar, EditController editController)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -78,6 +79,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.menuBar = menuBar;
+        this.editController = editController;
     }
     
     @Override
@@ -91,7 +93,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         return new SwingReservationTableView(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, tableConfigLoader, menuFactory,
-                reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, ioInterface);
+                editController, reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, ioInterface);
     }
 
     public String getViewId()

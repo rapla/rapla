@@ -1,9 +1,10 @@
 package org.rapla.plugin.tableview.client;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
-import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.event.Activity;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
@@ -70,9 +71,9 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     }
 
     @Override
-    public void selectReservation(Reservation selectedObject)
+    public void selectReservation(Reservation selectedObject, PopupContext context)
     {
-        final StartActivityEvent activity = new StartActivityEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId());
+        final Activity activity = new Activity(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context);
         eventBus.fireEvent(activity);
         logger.info("selection changed");
 

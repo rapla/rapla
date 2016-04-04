@@ -98,8 +98,7 @@ public interface RemoteStorage
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     FutureResult<UpdateEvent> getResources() throws RaplaException;
 
-    /** delegates the corresponding method in the StorageOperator. 
-     * @param annotationQuery */
+    /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
     @POST
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})

@@ -38,7 +38,9 @@ import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -50,6 +52,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
+import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -137,7 +140,10 @@ import com.google.gson.GsonBuilder;
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
     InitStatus connectStatus = InitStatus.Disconnected;
+    // some indexMaps
     AppointmentMapClass appointmentBindings;
+    private BidiMap<String, ReferenceInfo> externalIds;
+
     protected enum InitStatus
     {
         Disconnected,
@@ -145,6 +151,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Loaded,
         Connected
     }
+
 
     @Override final public boolean isConnected()
     {
@@ -550,6 +557,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
+
     public <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException
     {
         ReferenceInfo<T>[] ids = new ReferenceInfo[count];
@@ -931,12 +939,47 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         checkNoDependencies(evt, store);
         checkVersions(storeObjects);
     }
+
     protected void initIndizes()
     {
         deleteUpdateSet = new DualTreeBidiMap<String, DeleteUpdateEntry>();
+        externalIds = new DualHashBidiMap<String,ReferenceInfo>();
         // The appointment map
 
-        appointmentBindings.initAppointmentBindings(cache.getReservations());
+        final Collection<Allocatable> alloctables = cache.getAllocatables();
+        for (Allocatable alloc:alloctables)
+        {
+            final String externalId = alloc.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
+
+            if ( externalId != null)
+            {
+                externalIds.put( externalId, alloc.getReference());
+            }
+            else
+            {
+                final Classification classification = alloc.getClassification();
+                Attribute idAtt = classification.getAttribute("DualisId");
+                if ( idAtt != null)
+                {
+                    final Object value = classification.getValue(idAtt);
+                    if ( value != null)
+                    {
+                        externalIds.put( value.toString(), alloc.getReference());
+                    }
+                }
+            }
+        }
+
+        final Collection<Reservation> events = cache.getReservations();
+        for (Reservation event:events)
+        {
+            final String externalId = event.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
+            if ( externalId != null)
+            {
+                externalIds.put( externalId, event.getReference());
+            }
+        }
+        appointmentBindings.initAppointmentBindings(events);
         Date today2 = today();
         AllocationMap allocationMap = new AllocationMap()
         {
@@ -1140,6 +1183,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 //final EntityHistory.HistoryEntry historyEntry = history.addHistoryEntry(newEntity, timestamp, isDelete);
                 final EntityHistory.HistoryEntry historyEntry = history.getLatest(id);
                 addToDeleteUpdate(historyEntry);
+                updateExternalId(op, id);
             }
             else if (raplaType == Preferences.class)
             {
@@ -1237,6 +1281,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //          }
         //      }
 
+    }
+
+    private void updateExternalId(UpdateOperation op, ReferenceInfo id)
+    {
+        final BidiMap<ReferenceInfo, String> referenceInfoStringBidiMap = externalIds.inverseBidiMap();
+        final String oldExternalId = referenceInfoStringBidiMap.get(id);
+        if (op instanceof Remove)
+        {
+            externalIds.remove( id);
+        }
+        else
+        {
+            final Entity entity = tryResolve(id);
+            if ( entity instanceof Annotatable)
+            {
+                final String newExternalId = ((Annotatable)entity).getAnnotation( RaplaObjectAnnotations.KEY_EXTERNALID);
+                if ( oldExternalId != null && ( newExternalId == null || !newExternalId.equals( oldExternalId)))
+                {
+                    externalIds.remove( oldExternalId );
+                }
+                if ( newExternalId != null && (oldExternalId == null || !oldExternalId.equals( newExternalId)))
+                {
+                    externalIds.put( newExternalId, id);
+                }
+            }
+        }
     }
 
     // updates appointmentBinding
@@ -3630,6 +3700,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 //        for (Reservation reservations : cache.getReservations())
 //            ;
 
+    }
+
+    public ReferenceInfo tryResolveExternalId(String externalId)
+    {
+        final ReferenceInfo referenceInfo = externalIds.get(externalId);
+        return referenceInfo;
     }
 
     public UpdateResult getUpdateResult(Date since, User user)

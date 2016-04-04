@@ -37,7 +37,9 @@ public interface CachableStorageOperator extends StorageOperator {
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
     //Collection<Entity> getUpdatedEntities(final User user,Date timestamp) throws RaplaException;
-    //Collection<ReferenceInfo> getDeletedEntities(final User user, final Date timestamp) throws RaplaException;
+    //Collection<ReferenceInfo> getDeletedEntities(finaldf User user, final Date timestamp) throws RaplaException;
+
+    ReferenceInfo tryResolveExternalId(String externalId);
 
     TimeZone getTimeZone();
     //DynamicType getUnresolvedAllocatableType(); 

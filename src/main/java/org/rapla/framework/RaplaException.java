@@ -15,6 +15,7 @@ package org.rapla.framework;
 
 
 /** the base-class for all Rapla specific Exceptions */
+// FIXME change to exception
 public class RaplaException extends RuntimeException {
     private static final long serialVersionUID = 1L;
     

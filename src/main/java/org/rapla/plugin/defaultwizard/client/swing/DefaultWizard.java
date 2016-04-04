@@ -1,4 +1,3 @@
-
 /*--------------------------------------------------------------------------*
  | Copyright (C) 2014 Christopher Kohlhaas                                  |
  |                                                                          |
@@ -14,15 +13,13 @@
 package org.rapla.plugin.defaultwizard.client.swing;
 
 import com.google.web.bindery.event.shared.EventBus;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.PopupContext;
+import org.rapla.client.event.Activity;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
@@ -47,34 +44,32 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
-*/
-@Extension(provides = ReservationWizardExtension.class, id= "defaultWizard")
-public class DefaultWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener
+ */
+@Extension(provides = ReservationWizardExtension.class, id = "defaultWizard") public class DefaultWizard extends RaplaGUIComponent
+        implements ReservationWizardExtension, ActionListener
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.defaultwizard.enabled");
-	Map<Component,DynamicType> typeMap = new HashMap<Component, DynamicType>();
-	private final PermissionController permissionController;
+    Map<Component, DynamicType> typeMap = new HashMap<Component, DynamicType>();
+    private final PermissionController permissionController;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
-    private final DialogUiFactoryInterface dialogUiFactory;
     private final EventBus eventBus;
 
-    @Inject
-	public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EventBus eventBus){
+    @Inject public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+            RaplaImages raplaImages, EventBus eventBus)
+    {
         super(clientFacade, i18n, raplaLocale, logger);
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         this.permissionController = raplaFacade.getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
         this.raplaImages = raplaImages;
-        this.dialogUiFactory = dialogUiFactory;
     }
 
     @Override public boolean isEnabled()
@@ -82,88 +77,87 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
     }
 
-    public String getId() {
-		return "000_defaultWizard";
-	}
+    public String getId()
+    {
+        return "000_defaultWizard";
+    }
 
- 	public MenuElement getMenuElement() {
- 		typeMap.clear();
-		List<DynamicType> eventTypes = new ArrayList<DynamicType>();
+    public MenuElement getMenuElement()
+    {
+        typeMap.clear();
+        List<DynamicType> eventTypes = new ArrayList<DynamicType>();
         final User user = getUser();
-        try {
-			DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-			for ( DynamicType type: types)
-			{
-                if (permissionController.canCreate( type, user))
-			    {
-			        eventTypes.add( type );
-			    }
-			}
-		} catch (RaplaException e) {
-			return null;
-		}
-		boolean canCreateReservation = eventTypes.size() > 0;
-		MenuElement element;
-		String newEventText = getString("new_reservation");
-		final RaplaFacade raplaFacade = getFacade();
-		final RaplaLocale raplaLocale = getRaplaLocale();
-        if ( eventTypes.size() == 1)
-		{
-		    RaplaMenuItem item = new RaplaMenuItem( getId());
-            item.setEnabled( raplaFacade.canAllocate(model, user) && canCreateReservation);
-            DynamicType type = eventTypes.get(0);
-            String name = type.getName( getLocale());
-            if ( newEventText.endsWith( name))
+        try
+        {
+            DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+            for (DynamicType type : types)
             {
-                item.setText(newEventText );
+                if (permissionController.canCreate(type, user))
+                {
+                    eventTypes.add(type);
+                }
+            }
+        }
+        catch (RaplaException e)
+        {
+            return null;
+        }
+        boolean canCreateReservation = eventTypes.size() > 0;
+        MenuElement element;
+        String newEventText = getString("new_reservation");
+        final RaplaFacade raplaFacade = getFacade();
+        final RaplaLocale raplaLocale = getRaplaLocale();
+        if (eventTypes.size() == 1)
+        {
+            RaplaMenuItem item = new RaplaMenuItem(getId());
+            item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
+            DynamicType type = eventTypes.get(0);
+            String name = type.getName(getLocale());
+            if (newEventText.endsWith(name))
+            {
+                item.setText(newEventText);
             }
             else
             {
                 item.setText(newEventText + " " + name);
             }
-            item.setIcon( raplaImages.getIconFromKey("icon.new"));
-			item.addActionListener( this);
-			
-            typeMap.put( item, type);
-			element = item;
-		}
-		else
-		{
-			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( getFacade().canAllocate(model, user) && canCreateReservation);
-			item.setText(newEventText);
-			item.setIcon( raplaImages.getIconFromKey("icon.new"));
-			for ( DynamicType type:eventTypes)
-			{
-				RaplaMenuItem newItem = new RaplaMenuItem(type.getKey());
-				String name = type.getName( getLocale());
-                newItem.setText( name);
-				item.add( newItem);
-				newItem.addActionListener( this);
-				typeMap.put( newItem, type);
-			}
-			element = item;
-		}
-		return element;
-	}
-    
+            item.setIcon(raplaImages.getIconFromKey("icon.new"));
+            item.addActionListener(this);
 
-	public void actionPerformed(ActionEvent e) {
-		try
-		{
-	    	Object source = e.getSource();
-			DynamicType type = typeMap.get(source);
-	    	if ( type == null)
-	    	{
-	    		getLogger().warn("Type not found for " + source + " in map " + typeMap);
-	    		return;
-	    	}
-	    	eventBus.fireEvent(new StartActivityEvent(SwingActivityController.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId()));
-		}
-		catch (RaplaException ex)
-		{
-		    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
-		}
+            typeMap.put(item, type);
+            element = item;
+        }
+        else
+        {
+            RaplaMenu item = new RaplaMenu(getId());
+            item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
+            item.setText(newEventText);
+            item.setIcon(raplaImages.getIconFromKey("icon.new"));
+            for (DynamicType type : eventTypes)
+            {
+                RaplaMenuItem newItem = new RaplaMenuItem(type.getKey());
+                String name = type.getName(getLocale());
+                newItem.setText(name);
+                item.add(newItem);
+                newItem.addActionListener(this);
+                typeMap.put(newItem, type);
+            }
+            element = item;
+        }
+        return element;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        Object source = e.getSource();
+        final PopupContext popupContext = createPopupContext((Component) source, null);
+        DynamicType type = typeMap.get(source);
+        if (type == null)
+        {
+            getLogger().warn("Type not found for " + source + " in map " + typeMap);
+            return;
+        }
+        eventBus.fireEvent(new Activity(SwingActivityController.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext));
     }
 
     public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
@@ -195,7 +189,7 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         }
         return list;
     }
-	
+
     static private void addAlloctables(Collection<Reservation> events, Collection<Allocatable> allocatables)
     {
         for (Reservation event : events)
@@ -207,55 +201,49 @@ public class DefaultWizard extends RaplaGUIComponent implements ReservationWizar
         }
     }
 
-//	/**
-//	 * @param model
-//	 * @param startDate
-//	 * @return
-//	 */
-//	protected Date getEndDate( CalendarModel model,Date startDate) {
-//		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-//		Date endDate = null;
-//    	if ( markedIntervals.size() > 0)
-//    	{
-//    		TimeInterval first = markedIntervals.iterator().next();
-//    		endDate = first.getEnd();
-//    	}
-//    	if ( endDate != null)
-//    	{
-//    		return endDate;
-//    	}
-//		return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
-//	}
-//
-//	protected Date getStartDate(CalendarModel model) {
-//		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-//		Date startDate = null;
-//    	if ( markedIntervals.size() > 0)
-//    	{
-//    		TimeInterval first = markedIntervals.iterator().next();
-//    		startDate = first.getStart();
-//    	}
-//    	if ( startDate != null)
-//    	{
-//    		return startDate;
-//    	}
-//    	
-//		
-//		Date selectedDate = model.getSelectedDate();
-//		if ( selectedDate == null)
-//		{
-//			selectedDate = getQuery().today();
-//		}
-//		Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * getCalendarOptions().getWorktimeStartMinutes());
-//		startDate = getRaplaLocale().toDate(selectedDate,time);
-//		return startDate;
-//	}
-
-	
-    
-	
-
-
+    //	/**
+    //	 * @param model
+    //	 * @param startDate
+    //	 * @return
+    //	 */
+    //	protected Date getEndDate( CalendarModel model,Date startDate) {
+    //		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+    //		Date endDate = null;
+    //    	if ( markedIntervals.size() > 0)
+    //    	{
+    //    		TimeInterval first = markedIntervals.iterator().next();
+    //    		endDate = first.getEnd();
+    //    	}
+    //    	if ( endDate != null)
+    //    	{
+    //    		return endDate;
+    //    	}
+    //		return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+    //	}
+    //
+    //	protected Date getStartDate(CalendarModel model) {
+    //		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+    //		Date startDate = null;
+    //    	if ( markedIntervals.size() > 0)
+    //    	{
+    //    		TimeInterval first = markedIntervals.iterator().next();
+    //    		startDate = first.getStart();
+    //    	}
+    //    	if ( startDate != null)
+    //    	{
+    //    		return startDate;
+    //    	}
+    //
+    //
+    //		Date selectedDate = model.getSelectedDate();
+    //		if ( selectedDate == null)
+    //		{
+    //			selectedDate = getQuery().today();
+    //		}
+    //		Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * getCalendarOptions().getWorktimeStartMinutes());
+    //		startDate = getRaplaLocale().toDate(selectedDate,time);
+    //		return startDate;
+    //	}
 
 }
 

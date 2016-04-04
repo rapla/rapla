@@ -6,7 +6,7 @@ import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.client.EntryPointFactory;
 import org.rapla.jsonrpc.client.gwt.AbstractJsonProxy;
-import org.rapla.jsonrpc.client.gwt.internal.ExceptionDeserializer;
+import org.rapla.jsonrpc.common.ExceptionDeserializer;
 import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
 import java.util.List;
@@ -27,7 +27,7 @@ public class Rapla implements EntryPoint
         AbstractJsonProxy.setExceptionDeserializer(new ExceptionDeserializer()
         {
             @Override
-            public Exception deserialize(String exception, String message, List<String> parameter)
+            public Exception deserializeException(String exception, String message, List<String> parameter)
             {
                 final RaplaExceptionDeserializer raplaExceptionDeserializer = new RaplaExceptionDeserializer();
                 final RaplaException deserializedException = raplaExceptionDeserializer.deserializeException(exception, message, parameter);

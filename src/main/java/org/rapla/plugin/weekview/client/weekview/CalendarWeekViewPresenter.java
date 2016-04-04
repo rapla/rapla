@@ -6,7 +6,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
-import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.event.Activity;
 import org.rapla.client.menu.MenuPresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
@@ -26,7 +26,6 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
 
 import javax.inject.Inject;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -104,7 +103,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         final AppointmentBlock appointmentBlock = block.getAppointmentBlock();
         final Appointment appointment = appointmentBlock.getAppointment();
         final Reservation reservation = appointment.getReservation();
-        eventBus.fireEvent(new StartActivityEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId()));
+        eventBus.fireEvent(new Activity(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context));
     }
 
     @Override

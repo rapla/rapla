@@ -1,4 +1,3 @@
-
 /*--------------------------------------------------------------------------*
  | Copyright (C) 2013 Christopher Kohlhaas                                  |
  |                                                                          |
@@ -15,19 +14,18 @@ package org.rapla.plugin.tempatewizard.client.swing;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.StartActivityEvent;
+import org.rapla.client.PopupContext;
+import org.rapla.client.event.Activity;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -58,58 +56,60 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
-*/
-@Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID)
-public class TemplateWizard extends RaplaGUIComponent implements ReservationWizardExtension, ActionListener, ModificationListener
+ */
+@Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard extends RaplaGUIComponent
+        implements ReservationWizardExtension, ActionListener, ModificationListener
 {
-	final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
-	Collection<Allocatable> templateNames;
-    private final CalendarSelectionModel model;
+    final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
+    Collection<Allocatable> templateNames;
+    private final CalendarModel model;
     private final RaplaImages raplaImages;
-    private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final EventBus eventBus;
-	@Inject
-    public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,  EventBus eventBus) throws RaplaException{
+
+    @Inject public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+            RaplaImages raplaImages, EventBus eventBus) throws RaplaException
+    {
         super(clientFacade, i18n, raplaLocale, logger);
         this.model = model;
         this.raplaImages = raplaImages;
-        this.dialogUiFactory = dialogUiFactory;
-		final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
-		this.permissionController = raplaFacade.getPermissionController();
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
-        getUpdateModule().addModificationListener( this);
+        getUpdateModule().addModificationListener(this);
         templateNames = updateTemplateNames();
     }
 
-    public String getId() {
-		return "020_templateWizard";
-	}
+    public String getId()
+    {
+        return "020_templateWizard";
+    }
 
-    @Override
-    public void dataChanged(ModificationEvent evt) throws RaplaException {
-        if ( evt.getInvalidateInterval() != null)
+    @Override public void dataChanged(ModificationEvent evt) throws RaplaException
+    {
+        if (evt.getInvalidateInterval() != null)
         {
             templateNames = updateTemplateNames();
         }
     }
 
-	@Override public boolean isEnabled()
-	{
-		return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
-	}
+    @Override public boolean isEnabled()
+    {
+        return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+    }
 
-	private Collection<Allocatable> updateTemplateNames() throws RaplaException {
-       
+    private Collection<Allocatable> updateTemplateNames() throws RaplaException
+    {
+
         List<Allocatable> templates = new ArrayList<Allocatable>();
         User user = getUser();
-        for (Allocatable template:getQuery().getTemplates())
+        for (Allocatable template : getQuery().getTemplates())
         {
-            if ( user.isAdmin())
+            if (user.isAdmin())
             {
                 template.getPermissionList();
             }
-            templates.add( template);
+            templates.add(template);
         }
         return templates;
     }
@@ -119,197 +119,208 @@ public class TemplateWizard extends RaplaGUIComponent implements ReservationWiza
         private static final long serialVersionUID = 1L;
         Allocatable template;
 
-        public TemplateMenuItem(String id, Allocatable template) {
+        public TemplateMenuItem(String id, Allocatable template)
+        {
             super(id);
             this.template = template;
         }
 
-        public Allocatable getTemplate() {
+        public Allocatable getTemplate()
+        {
             return template;
         }
     }
 
-    public MenuElement getMenuElement() {
-		//final RaplaFacade clientFacade = getClientFacade();
-		User user = getUser();
+    public MenuElement getMenuElement()
+    {
+        //final RaplaFacade clientFacade = getClientFacade();
+        User user = getUser();
         boolean canCreateReservation = permissionController.canCreateReservation(user);
-		MenuElement element;
-		if (templateNames.size() == 0)
-		{
-			return null;
-		}
-		final RaplaLocale raplaLocale = getRaplaLocale();
-        if ( templateNames.size() == 1)
-		{
-			Allocatable template = templateNames.iterator().next();
-			RaplaMenuItem item = new TemplateMenuItem( getId(), template);
+        MenuElement element;
+        if (templateNames.size() == 0)
+        {
+            return null;
+        }
+        final RaplaLocale raplaLocale = getRaplaLocale();
+        if (templateNames.size() == 1)
+        {
+            Allocatable template = templateNames.iterator().next();
+            RaplaMenuItem item = new TemplateMenuItem(getId(), template);
             item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
-			final String templateName = template.getName(getLocale());
-			item.setText( getI18n().format("new_reservation.format", templateName));
+            final String templateName = template.getName(getLocale());
+            item.setText(getSingleTemplateName(templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            item.addActionListener( this);
-			element = item;
-		}
-		else
-		{
-			RaplaMenu item = new RaplaMenu( getId());
-			item.setEnabled( getFacade().canAllocate(model, user) && canCreateReservation);
-			item.setText(getString("new_reservations_from_template"));
-			item.setIcon( raplaImages.getIconFromKey("icon.new"));
-			@SuppressWarnings("unchecked")
-            Comparator<String> collator = (Comparator<String>) (Comparator)Collator.getInstance(raplaLocale.getLocale());
-			Map<String,Collection<Allocatable>> templateMap = new HashMap<String,Collection<Allocatable>>();
-			
-			Set<String> templateSet = new TreeSet<String>(collator);
-			Locale locale = getLocale();
-			for ( Allocatable template:templateNames)
-			{
-			    String name = template.getName( locale);
-                templateSet.add( name );
-			    Collection<Allocatable> collection = templateMap.get( name);
-			    if ( collection == null)
-			    {
-			        collection = new ArrayList<Allocatable>();
-			        templateMap.put( name, collection);
-			    }
-			    collection.add( template);
-			}
-			
-			SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
-			if ( templateSet.size() >  10)
-			{
-				for ( String string:templateSet)
-				{
-					if (string.length() == 0)
-					{
-						continue;
-					}
-					String firstChar = string.substring( 0,1);
-					Set<String> group = keyGroup.get( firstChar);
-					if ( group == null)
-					{
-						group = new TreeSet<String>(collator);
-						keyGroup.put( firstChar, group);
-					}
-					group.add(string);
-				}
-				
-				SortedMap<String, Set<String>> merged = merge( keyGroup, collator);
-				for ( String subMenuName: merged.keySet())
-				{
-					RaplaMenu subMenu = new RaplaMenu( getId());
-					item.setIcon( raplaImages.getIconFromKey("icon.new"));
-					subMenu.setText( subMenuName);
-					Set<String> set = merged.get( subMenuName);
-					int maxItems = 20;
-					if ( set.size() >= maxItems)
-					{
-						int millisToScroll = 40;
-						MenuScroller.setScrollerFor( subMenu, maxItems , millisToScroll);
-					}
-					addTemplates(subMenu, set, templateMap);
-					item.add( subMenu);
-				}
-			}
-			else
-			{
-				addTemplates( item, templateSet, templateMap);
-			}
-			element = item;
-		}
-		return element;
-	}
+            item.addActionListener(this);
+            element = item;
+        }
+        else
+        {
+            RaplaMenu item = new RaplaMenu(getId());
+            item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
+            item.setText(getMultipleTemplateName());
+            item.setIcon(raplaImages.getIconFromKey("icon.new"));
+            @SuppressWarnings("unchecked") Comparator<String> collator = (Comparator<String>) (Comparator) Collator.getInstance(raplaLocale.getLocale());
+            Map<String, Collection<Allocatable>> templateMap = new HashMap<String, Collection<Allocatable>>();
 
-	public void addTemplates(RaplaMenu item,
-			Set<String> templateSet, Map<String,Collection<Allocatable>> templateMap) {
-	    Locale locale = getLocale();
-        
-		for ( String templateName:templateSet)
-		{
-		    Collection<Allocatable> collection = templateMap.get( templateName);
-		    // there could be multiple templates with the same name
-		    for ( Allocatable template:collection)
-		    {
-    			RaplaMenuItem newItem = new TemplateMenuItem(template.getName( locale), template);
-    			newItem.setText( templateName );
-    			item.add( newItem);
-    			newItem.addActionListener( this);
-		    }
-		}
-	}
-    
-    private SortedMap<String, Set<String>> merge(
-			SortedMap<String, Set<String>> keyGroup, Comparator<String> comparator) 
-	{
-    	SortedMap<String,Set<String>> result = new TreeMap<String, Set<String>>( comparator);
-    	String beginnChar = null;
-    	String currentChar = null;
-    	Set<String> currentSet = null;
-    	for ( String key: keyGroup.keySet() )
-    	{
-    		Set<String> set = keyGroup.get( key);
-    		if ( currentSet == null)
-    		{
-    			currentSet = new TreeSet<String>(comparator);
-    			beginnChar = key;
-    			currentChar = key;
-    		}
-    		if ( !key.equals( currentChar))
-    		{
-    			if ( set.size() + currentSet.size() > 10)
-    			{
-    				String storeKey;
-    				if ( beginnChar != null && !beginnChar.equals(currentChar))
-    				{
-    					storeKey = beginnChar + "-" + currentChar;
-    				}
-    				else
-    				{
-    					storeKey = currentChar;
-    				}
-    				result.put( storeKey, currentSet);
-    				currentSet = new TreeSet<String>(comparator);
-        			beginnChar = key;
-        			currentChar = key;    				
-    			}
-    			else
-    			{
-    				currentChar = key;
-    			}
-    		}
-			currentSet.addAll( set);
-    	}
-		String storeKey;
-		if ( beginnChar != null)
-		{
-			if ( !beginnChar.equals(currentChar))
-			{
-				storeKey = beginnChar + "-" + currentChar;
-			}
-			else
-			{
-				storeKey = currentChar;
-			}
-			result.put( storeKey, currentSet);
-		}
-    	return result;
-	}
+            Set<String> templateSet = new TreeSet<String>(collator);
+            Locale locale = getLocale();
+            for (Allocatable template : templateNames)
+            {
+                String name = template.getName(locale);
+                templateSet.add(name);
+                Collection<Allocatable> collection = templateMap.get(name);
+                if (collection == null)
+                {
+                    collection = new ArrayList<Allocatable>();
+                    templateMap.put(name, collection);
+                }
+                collection.add(template);
+            }
 
-    
-	public void actionPerformed(ActionEvent e) {
-		try
-		{
-		    TemplateMenuItem source = (TemplateMenuItem) e.getSource();
-            Allocatable template = source.getTemplate();
-            final String id = template.getId();
-            eventBus.fireEvent(new StartActivityEvent(SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE, id));
-		}
-		catch (RaplaException ex)
-		{
-		    dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
-		}
+            SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
+            if (templateSet.size() > 10)
+            {
+                for (String string : templateSet)
+                {
+                    if (string.length() == 0)
+                    {
+                        continue;
+                    }
+                    String firstChar = string.substring(0, 1);
+                    Set<String> group = keyGroup.get(firstChar);
+                    if (group == null)
+                    {
+                        group = new TreeSet<String>(collator);
+                        keyGroup.put(firstChar, group);
+                    }
+                    group.add(string);
+                }
+
+                SortedMap<String, Set<String>> merged = merge(keyGroup, collator);
+                for (String subMenuName : merged.keySet())
+                {
+                    RaplaMenu subMenu = new RaplaMenu(getId());
+                    item.setIcon(raplaImages.getIconFromKey("icon.new"));
+                    subMenu.setText(subMenuName);
+                    Set<String> set = merged.get(subMenuName);
+                    int maxItems = 20;
+                    if (set.size() >= maxItems)
+                    {
+                        int millisToScroll = 40;
+                        MenuScroller.setScrollerFor(subMenu, maxItems, millisToScroll);
+                    }
+                    addTemplates(subMenu, set, templateMap);
+                    item.add(subMenu);
+                }
+            }
+            else
+            {
+                addTemplates(item, templateSet, templateMap);
+            }
+            element = item;
+        }
+        return element;
     }
-	
+
+    protected String getMultipleTemplateName()
+    {
+        return getString("new_reservations_from_template");
+    }
+
+    protected String getSingleTemplateName(String templateName)
+    {
+        return getI18n().format("new_reservation.format", templateName);
+    }
+
+    public void addTemplates(RaplaMenu item, Set<String> templateSet, Map<String, Collection<Allocatable>> templateMap)
+    {
+        Locale locale = getLocale();
+
+        for (String templateName : templateSet)
+        {
+            Collection<Allocatable> collection = templateMap.get(templateName);
+            // there could be multiple templates with the same name
+            for (Allocatable template : collection)
+            {
+                RaplaMenuItem newItem = new TemplateMenuItem(template.getName(locale), template);
+                newItem.setText(templateName);
+                item.add(newItem);
+                newItem.addActionListener(this);
+            }
+        }
+    }
+
+    private SortedMap<String, Set<String>> merge(SortedMap<String, Set<String>> keyGroup, Comparator<String> comparator)
+    {
+        SortedMap<String, Set<String>> result = new TreeMap<String, Set<String>>(comparator);
+        String beginnChar = null;
+        String currentChar = null;
+        Set<String> currentSet = null;
+        for (String key : keyGroup.keySet())
+        {
+            Set<String> set = keyGroup.get(key);
+            if (currentSet == null)
+            {
+                currentSet = new TreeSet<String>(comparator);
+                beginnChar = key;
+                currentChar = key;
+            }
+            if (!key.equals(currentChar))
+            {
+                if (set.size() + currentSet.size() > 10)
+                {
+                    String storeKey;
+                    if (beginnChar != null && !beginnChar.equals(currentChar))
+                    {
+                        storeKey = beginnChar + "-" + currentChar;
+                    }
+                    else
+                    {
+                        storeKey = currentChar;
+                    }
+                    result.put(storeKey, currentSet);
+                    currentSet = new TreeSet<String>(comparator);
+                    beginnChar = key;
+                    currentChar = key;
+                }
+                else
+                {
+                    currentChar = key;
+                }
+            }
+            currentSet.addAll(set);
+        }
+        String storeKey;
+        if (beginnChar != null)
+        {
+            if (!beginnChar.equals(currentChar))
+            {
+                storeKey = beginnChar + "-" + currentChar;
+            }
+            else
+            {
+                storeKey = currentChar;
+            }
+            result.put(storeKey, currentSet);
+        }
+        return result;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        TemplateMenuItem source = (TemplateMenuItem) e.getSource();
+        Allocatable template = source.getTemplate();
+        createWithTemplate(source, template);
+
+    }
+
+    protected void createWithTemplate(TemplateMenuItem source, Allocatable template)
+    {
+        final String id = template.getId();
+        PopupContext popupContext = createPopupContext( source.getComponent(), null);
+        eventBus.fireEvent(new Activity(SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext));
+    }
+
 }
 
 

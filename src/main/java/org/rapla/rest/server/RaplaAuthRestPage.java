@@ -53,28 +53,16 @@ public class RaplaAuthRestPage
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     public LoginTokens create(LoginCredentials credentials) throws Exception
     {
-        User user = null;
-        try
-        {
-            user = authentificationService.authenticate(credentials.getUsername(), credentials.getPassword(), credentials.getConnectAs(), logger);
-        }
-        catch(Exception e)
-        {
-            logger.error(e.getMessage());
-            final String loginErrorMessage = i18n.getString("error.login");
-            throw new RaplaSecurityException(loginErrorMessage);
-        }
-        final LoginTokens loginTokens = tokenHandler.generateAccessToken(user);
-        if (loginTokens.isValid())
-        {
-            return loginTokens;
-        }
-        final String loginErrorMessage = i18n.getString("error.login");
-        throw new RaplaSecurityException(loginErrorMessage);
+        return dummy( credentials);
     }
 
     @POST
     public String createPlain(LoginCredentials credentials) throws Exception
+    {
+        return dummy(credentials).getAccessToken();
+    }
+
+    private LoginTokens dummy(LoginCredentials credentials)
     {
         User user = null;
         try
@@ -90,7 +78,7 @@ public class RaplaAuthRestPage
         final LoginTokens loginTokens = tokenHandler.generateAccessToken(user);
         if (loginTokens.isValid())
         {
-            return loginTokens.getAccessToken();
+            return loginTokens;
         }
         final String loginErrorMessage = i18n.getString("error.login");
         throw new RaplaSecurityException(loginErrorMessage);

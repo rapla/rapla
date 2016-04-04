@@ -16,7 +16,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.EditController.EditCallback;
+import org.rapla.client.EditController.EditCallback;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.AbstractDialog;
 import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
