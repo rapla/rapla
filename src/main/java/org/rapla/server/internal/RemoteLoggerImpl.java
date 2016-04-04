@@ -6,32 +6,30 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.ResultImpl;
-import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.rest.RemoteLogger;
 
-@DefaultImplementation(context=InjectionContext.server, of=RemoteLogger.class)
-public class RemoteLoggerImpl implements RemoteLogger {
+@DefaultImplementation(context = InjectionContext.server, of = RemoteLogger.class)
+public class RemoteLoggerImpl implements RemoteLogger
+{
     @Inject
     Logger logger;
-    
+
     @Inject
-    public RemoteLoggerImpl() 
+    public RemoteLoggerImpl()
     {
     }
-    
+
     @Override
-    public FutureResult<VoidResult> info(String id, String message) {
-        if ( id == null)
+    public void info(String id, String message) throws RaplaException
+    {
+        if (id == null)
         {
             String message2 = "Id missing in logging call";
             logger.error(message2);
-            return new ResultImpl<VoidResult>( new RaplaException(message));
+            throw new RaplaException(message);
         }
         Logger childLogger = logger.getChildLogger(id);
         childLogger.info(message);
-        return ResultImpl.VOID;
     }
 
 }

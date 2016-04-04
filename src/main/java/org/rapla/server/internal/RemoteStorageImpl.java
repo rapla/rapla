@@ -45,9 +45,6 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.ResultImpl;
-import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.server.AuthenticationStore;
@@ -63,7 +60,7 @@ import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
-@DefaultImplementation(context=InjectionContext.server, of=RemoteStorage.class)
+@DefaultImplementation(context = InjectionContext.server, of = RemoteStorage.class)
 public class RemoteStorageImpl implements RemoteStorage
 {
     @Inject
@@ -86,142 +83,115 @@ public class RemoteStorageImpl implements RemoteStorage
     UpdateDataManager updateDataManager;
     private final HttpServletRequest request;
 
-    @Inject public RemoteStorageImpl(@Context HttpServletRequest request)
+    @Inject
+    public RemoteStorageImpl(@Context HttpServletRequest request)
     {
         this.request = request;
     }
 
-    public FutureResult<UpdateEvent> getResources()
+    public UpdateEvent getResources() throws RaplaException
     {
-        try
+        checkAuthentified();
+        User user = getSessionUser();
+        getLogger().debug("A RemoteAuthentificationService wants to get all resource-objects.");
+        Date serverTime = operator.getCurrentTimestamp();
+        Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
+        UpdateEvent evt = new UpdateEvent();
+        evt.setUserId(user.getId());
+        for (Entity entity : visibleEntities)
         {
-            checkAuthentified();
-            User user = getSessionUser();
-            getLogger().debug("A RemoteAuthentificationService wants to get all resource-objects.");
-            Date serverTime = operator.getCurrentTimestamp();
-            Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
-            UpdateEvent evt = new UpdateEvent();
-            evt.setUserId(user.getId());
-            for (Entity entity : visibleEntities)
+            if (UpdateDataManagerImpl.isTransferedToClient(entity))
             {
-                if (UpdateDataManagerImpl.isTransferedToClient(entity))
-                {
-                    if (entity instanceof Preferences)
-                    {
-                        Preferences preferences = (Preferences) entity;
-                        ReferenceInfo<User> ownerId = preferences.getOwnerRef();
-                        if (ownerId == null && !user.isAdmin())
-                        {
-                            entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
-                        }
-                    }
-                    evt.putStore(entity);
-                }
-            }
-            evt.setLastValidated(serverTime);
-            return new ResultImpl<UpdateEvent>(evt);
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<UpdateEvent>(ex);
-        }
-    }
-
-    public FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... ids)
-    {
-        try
-        {
-            checkAuthentified();
-            Date repositoryVersion = operator.getCurrentTimestamp();
-            User sessionUser = getSessionUser();
-
-            ArrayList<Entity> completeList = new ArrayList<Entity>();
-            for (UpdateEvent.SerializableReferenceInfo id : ids)
-            {
-                final ReferenceInfo reference = id.getReference();
-                Entity entity = operator.resolve(reference);
-                if (entity instanceof Classifiable)
-                {
-                    if (!DynamicTypeImpl.isTransferedToClient((Classifiable) entity))
-                    {
-                        throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
-                    }
-                }
-                if (entity instanceof DynamicType)
-                {
-                    if (!DynamicTypeImpl.isTransferedToClient((DynamicType) entity))
-                    {
-                        throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
-                    }
-                }
-                if (entity instanceof Reservation)
-                {
-                    entity = checkAndMakeReservationsAnonymous(sessionUser, entity);
-                }
                 if (entity instanceof Preferences)
                 {
-                    entity = UpdateDataManagerImpl.removeServerOnlyPreferences((Preferences) entity);
+                    Preferences preferences = (Preferences) entity;
+                    ReferenceInfo<User> ownerId = preferences.getOwnerRef();
+                    if (ownerId == null && !user.isAdmin())
+                    {
+                        entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
+                    }
                 }
-                security.checkRead(sessionUser, entity);
-                completeList.add(entity);
-                getLogger().debug("Get entity " + entity);
-            }
-            UpdateEvent evt = new UpdateEvent();
-            evt.setLastValidated(repositoryVersion);
-            for (Entity entity : completeList)
-            {
                 evt.putStore(entity);
             }
-            return new ResultImpl<UpdateEvent>(evt);
         }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<UpdateEvent>(ex);
-        }
+        evt.setLastValidated(serverTime);
+        return evt;
     }
 
+    public UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
+    {
+        checkAuthentified();
+        Date repositoryVersion = operator.getCurrentTimestamp();
+        User sessionUser = getSessionUser();
+
+        ArrayList<Entity> completeList = new ArrayList<Entity>();
+        for (UpdateEvent.SerializableReferenceInfo id : ids)
+        {
+            final ReferenceInfo reference = id.getReference();
+            Entity entity = operator.resolve(reference);
+            if (entity instanceof Classifiable)
+            {
+                if (!DynamicTypeImpl.isTransferedToClient((Classifiable) entity))
+                {
+                    throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
+                }
+            }
+            if (entity instanceof DynamicType)
+            {
+                if (!DynamicTypeImpl.isTransferedToClient((DynamicType) entity))
+                {
+                    throw new RaplaSecurityException("Entity for id " + id + " is not transferable to the client");
+                }
+            }
+            if (entity instanceof Reservation)
+            {
+                entity = checkAndMakeReservationsAnonymous(sessionUser, entity);
+            }
+            if (entity instanceof Preferences)
+            {
+                entity = UpdateDataManagerImpl.removeServerOnlyPreferences((Preferences) entity);
+            }
+            security.checkRead(sessionUser, entity);
+            completeList.add(entity);
+            getLogger().debug("Get entity " + entity);
+        }
+        UpdateEvent evt = new UpdateEvent();
+        evt.setLastValidated(repositoryVersion);
+        for (Entity entity : completeList)
+        {
+            evt.putStore(entity);
+        }
+        return evt;
+    }
 
     @Override
-    public FutureResult<AppointmentMap> queryAppointments(QueryAppointments job)
+    public AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException
     {
         String[] allocatableIds = job.getResources();
         Date start = job.getStart();
         Date end = job.getEnd();
         Map<String, String> annotationQuery = job.getAnnotations();
         getLogger().debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
-        try
+        checkAuthentified();
+        User sessionUser = getSessionUser();
+        User user = null;
+        // Reservations and appointments
+        List<Allocatable> allocatables = new ArrayList<Allocatable>();
+        if (allocatableIds != null)
         {
-            checkAuthentified();
-            User sessionUser = getSessionUser();
-            User user = null;
-            // Reservations and appointments
-            List<Allocatable> allocatables = new ArrayList<Allocatable>();
-            if (allocatableIds != null)
+            for (String id : allocatableIds)
             {
-                for (String id : allocatableIds)
-                {
-                    Allocatable allocatable = operator.resolve(id, Allocatable.class);
-                    security.checkRead(sessionUser, allocatable);
-                    allocatables.add(allocatable);
-                }
+                Allocatable allocatable = operator.resolve(id, Allocatable.class);
+                security.checkRead(sessionUser, allocatable);
+                allocatables.add(allocatable);
             }
-            ClassificationFilter[] classificationFilters = null;
-            FutureResult<Map<Allocatable, Collection<Appointment>>> reservationsQuery = operator
-                    .queryAppointments(user, allocatables, start, end, classificationFilters, annotationQuery);
-            Map<Allocatable, Collection<Appointment>> reservations = reservationsQuery.get();
-            AppointmentMap list = new AppointmentMap(reservations);
-            getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
-            return new ResultImpl<AppointmentMap>(list);
         }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<AppointmentMap>(ex);
-        }
-        catch (Exception ex)
-        {
-            getLogger().error(ex.getMessage(), ex);
-            return new ResultImpl<AppointmentMap>(ex);
-        }
+        ClassificationFilter[] classificationFilters = null;
+        Map<Allocatable, Collection<Appointment>> reservations = operator.queryAppointments(user, allocatables, start, end, classificationFilters,
+                annotationQuery);
+        AppointmentMap list = new AppointmentMap(reservations);
+        getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
+        return list;
     }
 
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)
@@ -263,195 +233,130 @@ public class RemoteStorageImpl implements RemoteStorage
         return true;
     }
 
-    public FutureResult<VoidResult> restartServer()
+    public void restartServer() throws RaplaException
     {
-        try
-        {
-            checkAuthentified();
-            if (!getSessionUser().isAdmin())
-                throw new RaplaSecurityException("Only admins can restart the server");
+        checkAuthentified();
+        if (!getSessionUser().isAdmin())
+            throw new RaplaSecurityException("Only admins can restart the server");
 
-            shutdownService.shutdown(true);
-            return ResultImpl.VOID;
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<VoidResult>(ex);
-        }
+        shutdownService.shutdown(true);
     }
 
-    public FutureResult<UpdateEvent> dispatch(UpdateEvent event)
+    public UpdateEvent dispatch(UpdateEvent event) throws RaplaException
     {
-        try
+        checkAuthentified();
+        Date currentTimestamp = operator.getCurrentTimestamp();
+        Date lastSynced = event.getLastValidated();
+        if (lastSynced == null)
         {
-            checkAuthentified();
-            Date currentTimestamp = operator.getCurrentTimestamp();
-            Date lastSynced = event.getLastValidated();
-            if (lastSynced == null)
-            {
-                throw new RaplaException("client sync time is missing");
-            }
-            if (lastSynced.after(currentTimestamp))
-            {
-                long diff = lastSynced.getTime() - currentTimestamp.getTime();
-                getLogger().warn("Timestamp of client " + diff + " ms  after server ");
-                lastSynced = currentTimestamp;
-            }
-            //   LocalCache cache = operator.getCache();
-            //   UpdateEvent event = createUpdateEvent( context,xml, cache );
-            User sessionUser = getSessionUser();
-            getLogger().info("Dispatching change for user " + sessionUser);
-            if (sessionUser != null)
-            {
-                event.setUserId(sessionUser.getId());
-            }
-            dispatch_(event);
-            getLogger().info("Change for user " + sessionUser + " dispatched.");
+            throw new RaplaException("client sync time is missing");
+        }
+        if (lastSynced.after(currentTimestamp))
+        {
+            long diff = lastSynced.getTime() - currentTimestamp.getTime();
+            getLogger().warn("Timestamp of client " + diff + " ms  after server ");
+            lastSynced = currentTimestamp;
+        }
+        //   LocalCache cache = operator.getCache();
+        //   UpdateEvent event = createUpdateEvent( context,xml, cache );
+        User sessionUser = getSessionUser();
+        getLogger().info("Dispatching change for user " + sessionUser);
+        if (sessionUser != null)
+        {
+            event.setUserId(sessionUser.getId());
+        }
+        dispatch_(event);
+        getLogger().info("Change for user " + sessionUser + " dispatched.");
 
-            UpdateEvent result = updateDataManager.createUpdateEvent(sessionUser, lastSynced);
-            return new ResultImpl<UpdateEvent>(result);
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<UpdateEvent>(ex);
-        }
+        UpdateEvent result = updateDataManager.createUpdateEvent(sessionUser, lastSynced);
+        return result;
     }
 
-    public FutureResult<String> canChangePassword()
+    public String canChangePassword() throws RaplaException
     {
-        try
-        {
-            checkAuthentified();
-            Boolean result = operator.canChangePassword();
-            return new ResultImpl<String>(result.toString());
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<String>(ex);
-        }
+        checkAuthentified();
+        Boolean result = operator.canChangePassword();
+        result.toString();
     }
 
-    public FutureResult<VoidResult> changePassword(PasswordPost job)
+    public void changePassword(PasswordPost job) throws RaplaException
     {
         String username = job.getUsername();
         String oldPassword = job.getOldPassword();
         String newPassword = job.getNewPassword();
-        try
+        checkAuthentified();
+        User sessionUser = getSessionUser();
+        User user = operator.getUser(username);
+        if (!PermissionController.canAdminUser(sessionUser, user))
         {
-            checkAuthentified();
-            User sessionUser = getSessionUser();
-            User user = operator.getUser(username);
-            if (!PermissionController.canAdminUser(sessionUser, user))
+            if (authenticationStore != null && authenticationStore.size() > 0)
             {
-                if ( authenticationStore != null && authenticationStore.size() > 0 )
-                {
-                    throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin.");
-                }
-                operator.authenticate(username, new String(oldPassword));
+                throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin.");
             }
-            operator.changePassword(user, oldPassword.toCharArray(), newPassword.toCharArray());
-            return ResultImpl.VOID;
+            operator.authenticate(username, new String(oldPassword));
         }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<VoidResult>(ex);
-        }
-
+        operator.changePassword(user, oldPassword.toCharArray(), newPassword.toCharArray());
     }
 
-    public FutureResult<VoidResult> changeName(String username, String newTitle, String newSurename, String newLastname)
+    public void changeName(String username, String newTitle, String newSurename, String newLastname) throws RaplaException
     {
-        try
+        checkAuthentified();
+        User changingUser = getSessionUser();
+        User user = operator.getUser(username);
+        if (changingUser.isAdmin() || user.equals(changingUser))
         {
-            checkAuthentified();
-            User changingUser = getSessionUser();
-            User user = operator.getUser(username);
-            if (changingUser.isAdmin() || user.equals(changingUser))
-            {
-                operator.changeName(user, newTitle, newSurename, newLastname);
-            }
-            else
-            {
-                throw new RaplaSecurityException("Not allowed to change email from other users");
-            }
-            return ResultImpl.VOID;
+            operator.changeName(user, newTitle, newSurename, newLastname);
         }
-        catch (RaplaException ex)
+        else
         {
-            return new ResultImpl<VoidResult>(ex);
+            throw new RaplaSecurityException("Not allowed to change email from other users");
         }
     }
 
-    public FutureResult<VoidResult> changeEmail(String username, String newEmail)
-
+    public void changeEmail(String username, String newEmail) throws RaplaException
     {
-        try
+        checkAuthentified();
+        User changingUser = getSessionUser();
+        User user = operator.getUser(username);
+        if (changingUser.isAdmin() || user.equals(changingUser))
         {
-            checkAuthentified();
-            User changingUser = getSessionUser();
-            User user = operator.getUser(username);
-            if (changingUser.isAdmin() || user.equals(changingUser))
-            {
-                operator.changeEmail(user, newEmail);
-            }
-            else
-            {
-                throw new RaplaSecurityException("Not allowed to change email from other users");
-            }
-            return ResultImpl.VOID;
+            operator.changeEmail(user, newEmail);
         }
-        catch (RaplaException ex)
+        else
         {
-            return new ResultImpl<VoidResult>(ex);
+            throw new RaplaSecurityException("Not allowed to change email from other users");
         }
     }
 
-    public FutureResult<String> getUsername(String userId)
+    public String getUsername(String userId) throws RaplaException
     {
-        try
-        {
-            checkAuthentified();
-            String username = operator.getUsername(new ReferenceInfo<User>(userId,User.class));
-            return new ResultImpl<String>(username);
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<String>(ex);
-        }
+        checkAuthentified();
+        String username = operator.getUsername(new ReferenceInfo<User>(userId, User.class));
+        return username;
     }
 
-    public FutureResult<VoidResult> confirmEmail(String username, String newEmail)
+    public void confirmEmail(String username, String newEmail) throws RaplaException
     {
-        try
+        checkAuthentified();
+        User changingUser = getSessionUser();
+        User user = operator.getUser(username);
+        if (changingUser.isAdmin() || user.equals(changingUser))
         {
-            checkAuthentified();
-            User changingUser = getSessionUser();
-            User user = operator.getUser(username);
-            if (changingUser.isAdmin() || user.equals(changingUser))
-            {
-                String subject = getString("security_code");
-                Preferences prefs = operator.getPreferences(null, true);
-                String mailbody =
-                        "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n" + getString(
-                                "security_code") + Math.abs(user.getEmail().hashCode()) + "\n\n" + getString("send_code_mail_body_3") + "\n\n"
-                                + "-----------------------------------------------------------------------------------" + "\n\n" + getString(
-                                "send_code_mail_body_4") + prefs.getEntryAsString(ContainerImpl.TITLE, getString("rapla.title")) + " " + getString(
-                                "send_code_mail_body_5");
+            String subject = getString("security_code");
+            Preferences prefs = operator.getPreferences(null, true);
+            String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n"
+                    + getString("security_code") + Math.abs(user.getEmail().hashCode()) + "\n\n" + getString("send_code_mail_body_3") + "\n\n"
+                    + "-----------------------------------------------------------------------------------" + "\n\n" + getString("send_code_mail_body_4")
+                    + prefs.getEntryAsString(ContainerImpl.TITLE, getString("rapla.title")) + " " + getString("send_code_mail_body_5");
 
-                final MailInterface mail = mailInterface.get();
-                final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");
+            final MailInterface mail = mailInterface.get();
+            final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");
 
-                mail.sendMail(defaultSender, newEmail, subject, "" + mailbody);
-            }
-            else
-            {
-                throw new RaplaSecurityException("Not allowed to change email from other users");
-            }
-            return ResultImpl.VOID;
+            mail.sendMail(defaultSender, newEmail, subject, "" + mailbody);
         }
-        catch (RaplaException ex)
+        else
         {
-            return new ResultImpl<VoidResult>(ex);
+            throw new RaplaSecurityException("Not allowed to change email from other users");
         }
     }
 
@@ -465,44 +370,33 @@ public class RemoteStorageImpl implements RemoteStorage
         return i18n;
     }
 
-    public FutureResult<List<String>> createIdentifier(String type, int count)
+    public List<String> createIdentifier(String type, int count) throws RaplaException
     {
-        try
+        checkAuthentified();
+        Class<? extends Entity> typeClass = RaplaType.find(type);
+        //User user =
+        getSessionUser(); //check if authenified
+        ReferenceInfo[] refs = operator.createIdentifier(typeClass, count);
+        List<String> result = new ArrayList<String>();
+        for (ReferenceInfo ref : refs)
         {
-            checkAuthentified();
-            Class<? extends Entity> typeClass = RaplaType.find(type);
-            //User user =
-            getSessionUser(); //check if authenified
-            ReferenceInfo[] refs = operator.createIdentifier(typeClass, count);
-            List<String> result = new ArrayList<String>();
-            for ( ReferenceInfo ref:refs)
-            {
-                result.add( ref.getId());
-            }
-            return new ResultImpl<List<String>>(result);
+            result.add(ref.getId());
         }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<List<String>>(ex);
-        }
+        return result;
     }
 
-    public FutureResult<UpdateEvent> refresh(String lastSyncedTime)
+    public UpdateEvent refresh(String lastSyncedTime) throws RaplaException
     {
+        checkAuthentified();
         try
         {
-            checkAuthentified();
             Date clientRepoVersion = SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime);
             UpdateEvent event = updateDataManager.createUpdateEvent(getSessionUser(), clientRepoVersion);
-            return new ResultImpl<UpdateEvent>(event);
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<UpdateEvent>(ex);
+            return event;
         }
         catch (ParseDateException e)
         {
-            return new ResultImpl<UpdateEvent>(new RaplaException(e.getMessage()));
+            throw new RaplaException("Illegal last synced date " + lastSyncedTime + " caused " + e.getMessage(), e);
         }
     }
 
@@ -600,30 +494,24 @@ public class RemoteStorageImpl implements RemoteStorage
         }
     }
 
-    public FutureResult<List<ConflictImpl>> getConflicts()
+    public List<ConflictImpl> getConflicts() throws RaplaException
     {
-        try
+        checkAuthentified();
+        Set<Entity> completeList = new HashSet<Entity>();
+        User sessionUser = getSessionUser();
+        Collection<Conflict> conflicts = operator.getConflicts(sessionUser);
+        List<ConflictImpl> result = new ArrayList<ConflictImpl>();
+        for (Conflict conflict : conflicts)
         {
-            checkAuthentified();
-            Set<Entity> completeList = new HashSet<Entity>();
-            User sessionUser = getSessionUser();
-            Collection<Conflict> conflicts = operator.getConflicts(sessionUser);
-            List<ConflictImpl> result = new ArrayList<ConflictImpl>();
-            for (Conflict conflict : conflicts)
-            {
-                result.add((ConflictImpl) conflict);
-                Entity conflictRef = conflict;
-                completeList.add(conflictRef);
-            }
-            return new ResultImpl<List<ConflictImpl>>(result);
+            result.add((ConflictImpl) conflict);
+            Entity conflictRef = conflict;
+            completeList.add(conflictRef);
         }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<List<ConflictImpl>>(ex);
-        }
+        return result;
     }
 
-    @Override public FutureResult<Date> getNextAllocatableDate(NextAllocatableDateRequest job)
+    @Override
+    public Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         AppointmentImpl appointment = job.getAppointment();
@@ -632,62 +520,48 @@ public class RemoteStorageImpl implements RemoteStorage
         Integer worktimeendMinutes = job.getWorktimeEndMinutes();
         Integer[] excludedDays = job.getExcludedDays();
         Integer rowsPerHour = job.getRowsPerHour();
-        try
-        {
-            checkAuthentified();
-            List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
-            Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-            Date result = operator
-                    .getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour)
-                    .get();
-            return new ResultImpl<Date>(result);
-        }
-        catch (Exception ex)
-        {
-            return new ResultImpl<Date>(ex);
-        }
+        checkAuthentified();
+        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+        Collection<Reservation> ignoreList = resolveReservations(reservationIds);
+        Date result = operator
+                .getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour).get();
+        return result;
     }
 
-    @Override public FutureResult<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job)
+    @Override
+    public BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
         String[] reservationIds = job.getReservationIds();
-        try
+        checkAuthentified();
+        //Integer[][] result = new Integer[allocatableIds.length][];
+        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+        Collection<Reservation> ignoreList = resolveReservations(reservationIds);
+        List<Appointment> asList = cast(appointments);
+        Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).get();
+        Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
+        for (Allocatable alloc : bindings.keySet())
         {
-            checkAuthentified();
-            //Integer[][] result = new Integer[allocatableIds.length][];
-            List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
-            Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-            List<Appointment> asList = cast(appointments);
-            Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).get();
-            Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
-            for (Allocatable alloc : bindings.keySet())
+            Collection<Appointment> apps = bindings.get(alloc);
+            if (apps == null)
             {
-                Collection<Appointment> apps = bindings.get(alloc);
-                if (apps == null)
+                apps = Collections.emptyList();
+            }
+            ArrayList<String> indexArray = new ArrayList<String>(apps.size());
+            for (Appointment app : apps)
+            {
+                for (Appointment app2 : appointments)
                 {
-                    apps = Collections.emptyList();
-                }
-                ArrayList<String> indexArray = new ArrayList<String>(apps.size());
-                for (Appointment app : apps)
-                {
-                    for (Appointment app2 : appointments)
+                    if (app2.equals(app))
                     {
-                        if (app2.equals(app))
-                        {
-                            indexArray.add(app.getId());
-                        }
+                        indexArray.add(app.getId());
                     }
                 }
-                result.put(alloc.getId(), indexArray);
             }
-            return new ResultImpl<BindingMap>(new BindingMap(result));
+            result.put(alloc.getId(), indexArray);
         }
-        catch (Exception ex)
-        {
-            return new ResultImpl<BindingMap>(ex);
-        }
+        return new BindingMap(result);
     }
 
     private List<Appointment> cast(List<AppointmentImpl> appointments)
@@ -700,45 +574,37 @@ public class RemoteStorageImpl implements RemoteStorage
         return result;
     }
 
-    public FutureResult<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job)
+    public List<ReservationImpl> getAllAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
         String[] reservationIds = job.getReservationIds();
-        try
+        checkAuthentified();
+        Set<ReservationImpl> result = new HashSet<ReservationImpl>();
+        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+        Collection<Reservation> ignoreList = resolveReservations(reservationIds);
+        List<Appointment> asList = cast(appointments);
+        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).get();
+        for (Allocatable alloc : bindings.keySet())
         {
-            checkAuthentified();
-            Set<ReservationImpl> result = new HashSet<ReservationImpl>();
-            List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
-            Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-            List<Appointment> asList = cast(appointments);
-            Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, asList, ignoreList)
-                    .get();
-            for (Allocatable alloc : bindings.keySet())
+            Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
+            for (Appointment app : appointmentBindings.keySet())
             {
-                Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
-                for (Appointment app : appointmentBindings.keySet())
+                Collection<Appointment> bound = appointmentBindings.get(app);
+                if (bound != null)
                 {
-                    Collection<Appointment> bound = appointmentBindings.get(app);
-                    if (bound != null)
+                    for (Appointment appointment : bound)
                     {
-                        for (Appointment appointment : bound)
+                        ReservationImpl reservation = (ReservationImpl) appointment.getReservation();
+                        if (reservation != null)
                         {
-                            ReservationImpl reservation = (ReservationImpl) appointment.getReservation();
-                            if (reservation != null)
-                            {
-                                result.add(reservation);
-                            }
+                            result.add(reservation);
                         }
                     }
                 }
             }
-            return new ResultImpl<List<ReservationImpl>>(new ArrayList<ReservationImpl>(result));
         }
-        catch (Exception ex)
-        {
-            return new ResultImpl<List<ReservationImpl>>(ex);
-        }
+        return new ArrayList<ReservationImpl>(result);
     }
 
     private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, RaplaSecurityException
@@ -773,29 +639,21 @@ public class RemoteStorageImpl implements RemoteStorage
     }
 
     @Override
-    public FutureResult<VoidResult> doMerge(MergeRequest job)
+    public void doMerge(MergeRequest job) throws RaplaException
     {
         AllocatableImpl allocatable = job.getAllocatable();
         String[] allocatableIds = job.getAllocatableIds();
-        try
+        checkAuthentified();
+        final User sessionUser = getSessionUser();
+        security.checkWritePermissions(sessionUser, allocatable);
+        final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
+        for (final String allocId : allocatableIds)
         {
-            checkAuthentified();
-            final User sessionUser = getSessionUser();
-            security.checkWritePermissions(sessionUser, allocatable);
-            final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
-            for (final String allocId : allocatableIds)
-            {
-                final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
-                allocReferences.add(refInfo);
-                // TODO check write permissions
-            }
-            operator.doMerge(allocatable, allocReferences, sessionUser);
-            return new ResultImpl<VoidResult>(VoidResult.INSTANCE);
+            final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
+            allocReferences.add(refInfo);
+            // TODO check write permissions
         }
-        catch(Exception e)
-        {
-            return new ResultImpl<VoidResult>(e);
-        }
+        operator.doMerge(allocatable, allocReferences, sessionUser);
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

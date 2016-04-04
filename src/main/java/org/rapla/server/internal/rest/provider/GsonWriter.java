@@ -16,7 +16,6 @@ import javax.ws.rs.ext.Provider;
 
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 
 import com.google.gson.Gson;
@@ -58,18 +57,6 @@ public class GsonWriter<T> implements MessageBodyWriter<T>
         if (t instanceof Throwable)
         {
             json = serializeException((Throwable) t);
-        }
-        else if (t instanceof FutureResult)
-        {
-            try
-            {
-                Object realResult = ((FutureResult) t).get();
-                json = gson.toJson(realResult);
-            }
-            catch (Exception e)
-            {
-                json = serializeException(e);
-            }
         }
         else
         {

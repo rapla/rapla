@@ -9,8 +9,6 @@ import javax.inject.Inject;
 
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.server.TimeZoneConverter;
 
@@ -31,22 +29,22 @@ public class RaplaICalTimezones implements ICalTimezones
         Collections.sort(availableIDs, String.CASE_INSENSITIVE_ORDER);
     }
 
-    public FutureResult<List<String>> getICalTimezones()
+    public List<String> getICalTimezones()
     {
         List<String> result = new ArrayList<String>();
         for (String id : availableIDs)
         {
             result.add(id);
         }
-        return new ResultImpl<List<String>>(result);
+        return result;
     }
 
     //public static final String TIMEZONE = "timezone";
 
-    public FutureResult<String> getDefaultTimezone()
+    public String getDefaultTimezone()
     {
         String id = converter.getImportExportTimeZone().getID();
-        return new ResultImpl<String>(id);
+        return id;
     }
 
 }
