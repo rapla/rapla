@@ -4,12 +4,13 @@ import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
+import org.rapla.jsonrpc.common.ExceptionDeserializer;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 
 import java.util.List;
 
-public class RaplaExceptionDeserializer {
+public class RaplaExceptionDeserializer implements ExceptionDeserializer {
 	public RaplaException deserializeException(String classname, String message, List<String> params) 
     {
     	String error = "";
