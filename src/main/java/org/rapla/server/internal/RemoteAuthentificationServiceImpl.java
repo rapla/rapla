@@ -9,15 +9,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.ResultImpl;
-import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
-@DefaultImplementation(context=InjectionContext.server, of=RemoteAuthentificationService.class)
+@DefaultImplementation(context = InjectionContext.server, of = RemoteAuthentificationService.class)
 public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationService implements RemoteAuthentificationService
 {
     @Inject
@@ -25,7 +22,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
     private final HttpServletRequest request;
 
     @Inject
-    public RemoteAuthentificationServiceImpl(@Context HttpServletRequest request )
+    public RemoteAuthentificationServiceImpl(@Context HttpServletRequest request)
     {
         this.request = request;
     }
@@ -35,90 +32,59 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
         return session.getLogger();
     }
 
-    @Override public FutureResult<VoidResult> logout()
+    @Override
+    public void logout()
     {
-        try
+        if (session != null)
         {
-            if (session != null)
+            if (session.isAuthentified(request))
             {
-                if (session.isAuthentified(request))
+                User user = session.getUser(request);
+                if (user != null)
                 {
-                    User user = session.getUser(request);
-                    if (user != null)
-                    {
-                        getLogger().getChildLogger("login").info("Request Logout " + user.getUsername());
-                    }
-                    session.logout();
+                    getLogger().getChildLogger("login").info("Request Logout " + user.getUsername());
                 }
+                session.logout();
             }
         }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<VoidResult>(ex);
-        }
-        return ResultImpl.VOID;
     }
 
-    @Override public FutureResult<LoginTokens> login(String username, String password, String connectAs)
+    @Override
+    public LoginTokens login(String username, String password, String connectAs) throws RaplaException
     {
         LoginCredentials loginCredentials = new LoginCredentials(username, password, connectAs);
         return auth(loginCredentials);
     }
 
-    @Override public FutureResult<LoginTokens> auth(LoginCredentials credentials)
+    @Override
+    public LoginTokens auth(LoginCredentials credentials) throws RaplaException
     {
-        try
-        {
-            User user = getUserFromCredentials(credentials);
-            LoginTokens generateAccessToken = tokenHandler.generateAccessToken(user);
-            return new ResultImpl<LoginTokens>(generateAccessToken);
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<LoginTokens>(ex);
-        }
+        User user = getUserFromCredentials(credentials);
+        LoginTokens generateAccessToken = tokenHandler.generateAccessToken(user);
+        return generateAccessToken;
     }
 
-    @Override public FutureResult<String> getRefreshToken()
+    @Override
+    public String getRefreshToken() throws RaplaException
     {
-        try
-        {
-            User user = getValidUser(session, request);
-            String refreshToken = tokenHandler.getRefreshToken(user);
-            return new ResultImpl<String>(refreshToken);
-        }
-        catch (RaplaException ex)
-        {
-            return new ResultImpl<String>(ex);
-        }
+        User user = getValidUser(session, request);
+        String refreshToken = tokenHandler.getRefreshToken(user);
+        return refreshToken;
     }
 
-    @Override public FutureResult<String> regenerateRefreshToken()
+    @Override
+    public String regenerateRefreshToken() throws RaplaException
     {
-        try
-        {
-            User user = getValidUser(session, request);
-            String refreshToken = tokenHandler.regenerateRefreshToken(user);
-            return new ResultImpl<String>(refreshToken);
-        }
-        catch (Exception ex)
-        {
-            return new ResultImpl<String>(ex);
-        }
+        User user = getValidUser(session, request);
+        String refreshToken = tokenHandler.regenerateRefreshToken(user);
+        return refreshToken;
     }
 
-    @Override public FutureResult<LoginTokens> refresh(String refreshToken)
+    @Override
+    public LoginTokens refresh(String refreshToken) throws RaplaException
     {
-        try
-        {
-            LoginTokens refresh = tokenHandler.refresh(refreshToken);
-            return new ResultImpl<LoginTokens>(refresh);
-        }
-        catch (Exception ex)
-        {
-            return new ResultImpl<LoginTokens>(ex);
-        }
+        LoginTokens refresh = tokenHandler.refresh(refreshToken);
+        return refresh;
     }
-
 
 }

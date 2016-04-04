@@ -19,6 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.rapla.framework.RaplaException;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.VoidResult;
 
@@ -26,28 +27,28 @@ import org.rapla.jsonrpc.common.VoidResult;
 public interface RemoteAuthentificationService
 {
     @POST
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<LoginTokens> login(@QueryParam("username") String username,String password,@QueryParam("connectAs") String connectAs);
-	
-	/** same as login but passes the login info into a LoginCredentials Object*/
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    LoginTokens login(@QueryParam("username") String username, String password, @QueryParam("connectAs") String connectAs) throws RaplaException;
+
+    /** same as login but passes the login info into a LoginCredentials Object*/
     @POST
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<LoginTokens> auth(LoginCredentials credentials);
-	
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    LoginTokens auth(LoginCredentials credentials) throws RaplaException;
+
     @GET
     @Path("destroy")
-	FutureResult<VoidResult> logout();
-	
+    void logout() throws RaplaException;
+
     @GET
     @Path("refreshToken")
-    FutureResult<String> getRefreshToken();
-	
+    String getRefreshToken() throws RaplaException;
+
     @GET
     @Path("regenerateRefreshToken")
-    FutureResult<String> regenerateRefreshToken();
+    String regenerateRefreshToken() throws RaplaException;
 
     @GET
     @Path("loginToken")
-    FutureResult<LoginTokens> refresh(@QueryParam("refreshToken") String refreshToken);
+    LoginTokens refresh(@QueryParam("refreshToken") String refreshToken) throws RaplaException;
 
 }

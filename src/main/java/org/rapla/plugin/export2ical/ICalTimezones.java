@@ -7,17 +7,15 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.rapla.jsonrpc.common.FutureResult;
-
 @Path("ical/timezones")
 public interface ICalTimezones 
 {
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<List<String>> getICalTimezones();
+    List<String> getICalTimezones();
 
     @GET
     @Path("default")
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<String> getDefaultTimezone();
+    String getDefaultTimezone();
 }

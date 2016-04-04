@@ -36,8 +36,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
@@ -87,31 +85,25 @@ public class RaplaICalImport implements ICalImport {
     }
 
 	@Override
-    public FutureResult<Integer[]> importICal(Import job)
+    public Integer[] importICal(Import job) throws RaplaException
 	{
         String content = job.getContent();
         boolean isURL = job.isURL();
         String[] allocatableIds = job.getAllocatableIds();
         String eventTypeKey = job.getEventTypeKey();
         String eventTypeNameAttributeKey = job.getEventTypeNameAttributeKey();
-		try
+		List<Allocatable> allocatables = new ArrayList<Allocatable>();
+		if ( allocatableIds.length > 0)
 		{
-			List<Allocatable> allocatables = new ArrayList<Allocatable>();
-			if ( allocatableIds.length > 0)
+			for ( String id:allocatableIds)
 			{
-				for ( String id:allocatableIds)
-				{
-					Allocatable allocatable = getAllocatable(id);
-					allocatables.add ( allocatable);
-				}
+				Allocatable allocatable = getAllocatable(id);
+				allocatables.add ( allocatable);
 			}
-			User user = session.getUser(request);
-			Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-			return new ResultImpl<Integer[]>(count);
-		} catch (RaplaException ex)
-		{
-			return new ResultImpl<Integer[]>(ex);
 		}
+		User user = session.getUser(request);
+		Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
+		return count;
 	}
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{

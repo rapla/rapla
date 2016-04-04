@@ -32,8 +32,6 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.VoidResult;
 import org.rapla.storage.UpdateEvent;
 
 @Path("storage")
@@ -41,11 +39,11 @@ public interface RemoteStorage
 {
     String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
 
-    FutureResult<String> canChangePassword();
+    String canChangePassword() throws RaplaException;
 
     @POST
     @Path("change/password")
-    FutureResult<VoidResult> changePassword(PasswordPost job);
+    void changePassword(PasswordPost job) throws RaplaException;
 
     public static class PasswordPost
     {
@@ -83,26 +81,27 @@ public interface RemoteStorage
 
     @POST
     @Path("change/name")
-    FutureResult<VoidResult> changeName(@QueryParam("username") String username, @QueryParam("title")String newTitle, @QueryParam("surename")String newSurename, String newLastname);
+    void changeName(@QueryParam("username") String username, @QueryParam("title") String newTitle, @QueryParam("surename") String newSurename,
+            String newLastname) throws RaplaException;
 
     @POST
     @Path("change/email")
-    FutureResult<VoidResult> changeEmail(@QueryParam("username") String username, String newEmail);
+    void changeEmail(@QueryParam("username") String username, String newEmail) throws RaplaException;
 
     @POST
     @Path("confirm/email")
-    FutureResult<VoidResult> confirmEmail(@QueryParam("username") String username, String newEmail);
+    void confirmEmail(@QueryParam("username") String username, String newEmail) throws RaplaException;
 
     @GET
     @Path("resources")
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<UpdateEvent> getResources() throws RaplaException;
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    void getResources() throws RaplaException;
 
     /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
     @POST
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<AppointmentMap> queryAppointments(QueryAppointments job);
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    void queryAppointments(QueryAppointments job) throws RaplaException;
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
@@ -146,45 +145,45 @@ public interface RemoteStorage
             return annotations;
         }
     }
-    
+
     @POST
     @Path("entity/recursive")
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<UpdateEvent> getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos);
+    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
 
     @GET
     @Path("refresh")
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<UpdateEvent> refresh(@QueryParam("lastSynched")String lastSyncedTime);
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    UpdateEvent refresh(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
 
     @POST
     @Path("restart")
-    FutureResult<VoidResult> restartServer();
+    void restartServer() throws RaplaException;
 
     @POST
     @Path("dispatch")
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<UpdateEvent> dispatch(UpdateEvent event);
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    UpdateEvent dispatch(UpdateEvent event) throws RaplaException;
 
     //	@ResultType(value=String.class,container=List.class)
     //	FutureResult<List<String>> getTemplateNames();
 
     @GET
     @Path("identifier")
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<List<String>> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count);
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    List<String> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count) throws RaplaException;
 
     @GET
     @Path("conflicts")
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<List<ConflictImpl>> getConflicts();
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    List<ConflictImpl> getConflicts() throws RaplaException;
 
     @POST
     @Path("allocatable/bindings/first")
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
+    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException;
 
     public static class AllocatableBindingsRequest
     {
@@ -219,18 +218,18 @@ public interface RemoteStorage
             return reservationIds;
         }
     }
-    
+
     @POST
     @Path("allocatable/bindings/all")
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job);
+    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    List<ReservationImpl> getAllAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException;
 
     @POST
     @Path("allocatable/date/next")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    FutureResult<Date> getNextAllocatableDate(NextAllocatableDateRequest job);
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException;
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
@@ -297,19 +296,19 @@ public interface RemoteStorage
             return rowsPerHour;
         }
     }
-    
+
     @GET
     @Path("user")
-    @Produces({MediaType.APPLICATION_JSON})
-    FutureResult<String> getUsername(@QueryParam("userId") String userId);
+    @Produces({ MediaType.APPLICATION_JSON })
+    String getUsername(@QueryParam("userId") String userId) throws RaplaException;
 
     //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
 
     @POST
     @Path("merge")
-    @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    FutureResult<VoidResult> doMerge(MergeRequest job);
-    
+    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    void doMerge(MergeRequest job) throws RaplaException;
+
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class MergeRequest

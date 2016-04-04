@@ -11,7 +11,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.framework.RaplaException;
 
 @Path("locale")
 public interface RemoteLocaleService
@@ -19,9 +19,9 @@ public interface RemoteLocaleService
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
     @Path("{id}")
-    FutureResult<LocalePackage> locale(@PathParam("id") String id, @QueryParam("locale") String locale);
+    LocalePackage locale(@PathParam("id") String id, @QueryParam("locale") String locale) throws RaplaException;
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
-    FutureResult<Map<String, Set<String>>> countries(@QueryParam("languages") Set<String> languages);
+    Map<String, Set<String>> countries(@QueryParam("languages") Set<String> languages) throws RaplaException;
 }
