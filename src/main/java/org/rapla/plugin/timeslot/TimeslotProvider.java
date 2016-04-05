@@ -1,5 +1,12 @@
 package org.rapla.plugin.timeslot;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -7,14 +14,8 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 
 @Singleton
 public class TimeslotProvider {
@@ -23,7 +24,7 @@ public class TimeslotProvider {
     private final RaplaLocale raplaLocale;
 
 	@Inject
-	public TimeslotProvider(RaplaLocale raplaLocale, RaplaFacade facade) throws RaplaException // ParseDateException
+	public TimeslotProvider(RaplaLocale raplaLocale, RaplaFacade facade) throws RaplaInitializationException // ParseDateException
 	{
 		this.raplaLocale = raplaLocale;
         try
@@ -31,9 +32,9 @@ public class TimeslotProvider {
 		    final RaplaConfiguration config = facade.getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, null);
 		    update(config);
 		}
-		catch(ParseDateException e)
+		catch(ParseDateException|RaplaException e)
 		{
-		    throw new RaplaException(e.getMessage(), e);
+		    throw new RaplaInitializationException(e.getMessage(), e);
 		}
 //		timeslots.clear();
 //		timeslots.add(new Timeslot("1. Stunde", 7*60 + 45));

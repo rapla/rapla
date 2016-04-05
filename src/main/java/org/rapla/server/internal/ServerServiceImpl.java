@@ -13,9 +13,6 @@
 package org.rapla.server.internal;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +35,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.DefaultScheduler;
@@ -80,81 +78,83 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            CommandScheduler scheduler, ServerContainerContext serverContainerContext, Map<String, MembersInjector> membersInjector)
+            CommandScheduler scheduler, ServerContainerContext serverContainerContext, Map<String, MembersInjector> membersInjector) throws RaplaInitializationException
     {
-        this.scheduler = scheduler;
-        this.logger = logger;
-        this.raplaLocale = raplaLocale;
-        //webMethods.setList( );
-        //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
-        //        if (containerContext.mailSession != null)
-        //        {
-        //            externalMailSession.setValue(containerContext.getMailSession());
-        //        }
-        this.operator = operator;
-        this.facade = facade;
-        this.membersInjector = membersInjector;
-        ((FacadeImpl) facade).setOperator(operator);
-//        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
-        //        if ( username != null  )
-        //            operator.connect( new ConnectInfo(username, password.toCharArray()));
-        //        else
-
-        // Start database or file connection and read data
-        operator.connect();
-        Preferences preferences = operator.getPreferences(null, true);
-        //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
-        //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class);
-        String importExportTimeZone = TimeZone.getDefault().getID();
-        // get old entries
-        RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-        if (entry != null)
-        {
-            Configuration find = entry.find("class", Export2iCalPlugin.PLUGIN_CLASS);
-            if (find != null)
-            {
-                String timeZone = find.getChild("TIMEZONE").getValue(null);
-                if (timeZone != null && !timeZone.equals("Etc/UTC"))
-                {
-                    importExportTimeZone = timeZone;
-                }
-            }
-        }
-        String timezoneId = preferences.getEntryAsString(ContainerImpl.TIMEZONE, importExportTimeZone);
-        //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
         try
         {
-            TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
-            TimeZone timeZone = registry.getTimeZone(timezoneId);
-            if (timeZone == null)
+            this.scheduler = scheduler;
+            this.logger = logger;
+            this.raplaLocale = raplaLocale;
+            //webMethods.setList( );
+            //        SimpleProvider<Object> externalMailSession = new SimpleProvider<Object>();
+            //        if (containerContext.mailSession != null)
+            //        {
+            //            externalMailSession.setValue(containerContext.getMailSession());
+            //        }
+            this.operator = operator;
+            this.facade = facade;
+            this.membersInjector = membersInjector;
+            ((FacadeImpl) facade).setOperator(operator);
+//        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
+            //        if ( username != null  )
+            //            operator.connect( new ConnectInfo(username, password.toCharArray()));
+            //        else
+            
+            // Start database or file connection and read data
+            operator.connect();
+            Preferences preferences = operator.getPreferences(null, true);
+            //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
+            //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class);
+            String importExportTimeZone = TimeZone.getDefault().getID();
+            // get old entries
+            RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+            if (entry != null)
             {
-                // FIXME create VTimezones for GMT+1-12 and GMT-1-12 
-                // if ( timezoneId.startsWith("GMT") )
-                String fallback = "Etc/GMT";
-                logger.error("Timezone " + timezoneId + " not found in ical registry. " + " Using " + fallback);
-                timeZone = registry.getTimeZone(fallback);
-                if (timeZone == null)
+                Configuration find = entry.find("class", Export2iCalPlugin.PLUGIN_CLASS);
+                if (find != null)
                 {
-                    if (timeZone == null)
+                    String timeZone = find.getChild("TIMEZONE").getValue(null);
+                    if (timeZone != null && !timeZone.equals("Etc/UTC"))
                     {
-                        throw new RaplaException(fallback + " timezone not found in ical registry. ical4j maybe corrupted or not loaded correctyl");
+                        importExportTimeZone = timeZone;
                     }
                 }
             }
-            ((RaplaLocaleImpl) raplaLocale).setImportExportTimeZone(timeZone);
-            ((TimeZoneConverterImpl) importExportLocale).setImportExportTimeZone(timeZone);
-            if (operator instanceof LocalAbstractCachableOperator)
+            String timezoneId = preferences.getEntryAsString(ContainerImpl.TIMEZONE, importExportTimeZone);
+            //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
+            try
             {
-                ((LocalAbstractCachableOperator) operator).setTimeZone(timeZone);
+                TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
+                TimeZone timeZone = registry.getTimeZone(timezoneId);
+                if (timeZone == null)
+                {
+                    // FIXME create VTimezones for GMT+1-12 and GMT-1-12 
+                    // if ( timezoneId.startsWith("GMT") )
+                    String fallback = "Etc/GMT";
+                    logger.error("Timezone " + timezoneId + " not found in ical registry. " + " Using " + fallback);
+                    timeZone = registry.getTimeZone(fallback);
+                    if (timeZone == null)
+                    {
+                        if (timeZone == null)
+                        {
+                            throw new RaplaException(fallback + " timezone not found in ical registry. ical4j maybe corrupted or not loaded correctyl");
+                        }
+                    }
+                }
+                ((RaplaLocaleImpl) raplaLocale).setImportExportTimeZone(timeZone);
+                ((TimeZoneConverterImpl) importExportLocale).setImportExportTimeZone(timeZone);
+                if (operator instanceof LocalAbstractCachableOperator)
+                {
+                    ((LocalAbstractCachableOperator) operator).setTimeZone(timeZone);
+                }
             }
-        }
-        catch (Exception rc)
-        {
-            logger.error(
-                    "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
-        }
-
-        /*
+            catch (Exception rc)
+            {
+                logger.error(
+                        "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
+            }
+            
+            /*
         {// Rest Pages
             @SuppressWarnings("rawtypes")
             final Set<Entry<String, Factory>> restPageEntries = restPageFactories.entrySet();
@@ -167,24 +167,29 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
                 restPages.put(restPagePath, restWrapper);
             }
         }
-        */
-
-        //User user = getFirstAdmin(operator);
-        //adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
-        //addContainerProvidedComponentInstance(RemoteSession.class, adminSession);
-        //initializePlugins(preferences, ServerServiceContainer.class);
-        // start server provides
-        this.requestPreProcessors = requestPreProcessors.get();
-
-        final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
-        for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
-        {
-            final String key = extensionEntry.getKey();
-            ServerExtension extension = extensionEntry.getValue();
-            if (serverContainerContext.isServiceEnabled(key))
+             */
+            
+            //User user = getFirstAdmin(operator);
+            //adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
+            //addContainerProvidedComponentInstance(RemoteSession.class, adminSession);
+            //initializePlugins(preferences, ServerServiceContainer.class);
+            // start server provides
+            this.requestPreProcessors = requestPreProcessors.get();
+            
+            final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
+            for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
             {
-                extension.start();
+                final String key = extensionEntry.getKey();
+                ServerExtension extension = extensionEntry.getValue();
+                if (serverContainerContext.isServiceEnabled(key))
+                {
+                    extension.start();
+                }
             }
+        }
+        catch( RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
         }
     }
     

@@ -18,6 +18,7 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -79,11 +80,11 @@ public class CalendarOptionsImpl implements CalendarOptions {
 	private int minBlockWidth;
 
     @Inject
-	public CalendarOptionsImpl() throws RaplaException {
+	public CalendarOptionsImpl() throws RaplaInitializationException {
 	    this(new DefaultConfiguration());
 	}
 	
-    public CalendarOptionsImpl(Configuration config ) throws RaplaException {
+    public CalendarOptionsImpl(Configuration config ) throws RaplaInitializationException {
         this.config = config;
         Configuration worktime = config.getChild( WORKTIME );
         String worktimesString = worktime.getValue("8-18");
@@ -101,7 +102,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
     			mintimeMinutes = parseMinutes( worktimesString);
     		}
         } catch ( NumberFormatException e ) {
-            throw new RaplaException( "Invalid time in " + worktime  + ". use the following format : 8-18 or 8:30-18:00!");
+            throw new RaplaInitializationException( "Invalid time in " + worktime  + ". use the following format : 8-18 or 8:30-18:00!");
         }
 
         Configuration exclude = config.getChild( EXCLUDE_DAYS );
@@ -115,7 +116,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
 		        try {
 		            excludeDays.add( new Integer(normalizedToken) );
 		        } catch ( NumberFormatException e ) {
-		            throw new RaplaException("Invalid day in " + excludeDays  + ". only numbers are allowed!");
+		            throw new RaplaInitializationException("Invalid day in " + excludeDays  + ". only numbers are allowed!");
 		        }
 		    } // end of while ()
         }
