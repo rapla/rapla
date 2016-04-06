@@ -12,13 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.storage.RemoteLocaleService;
+import java.awt.Component;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.swing.Action;
@@ -26,12 +25,13 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
-import java.awt.Component;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.storage.RemoteLocaleService;
 
 final public class CountryChooser implements RaplaWidget
 {
@@ -41,7 +41,7 @@ final public class CountryChooser implements RaplaWidget
     Map<String,Set<String>> countries;
     
     @Inject
-    public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaException {
+    public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaInitializationException {
         this.logger = logger;
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
@@ -52,7 +52,7 @@ final public class CountryChooser implements RaplaWidget
         }
         catch (Exception e)
         {
-            throw new RaplaException(e.getMessage(), e);
+            throw new RaplaInitializationException(e.getMessage(), e);
         }
         String[] entries = createCountryArray();
         @SuppressWarnings("unchecked")

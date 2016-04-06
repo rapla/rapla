@@ -65,6 +65,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -156,7 +157,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
-            Set<PermissionExtension> permissionExtensions) throws RaplaException
+            Set<PermissionExtension> permissionExtensions) throws RaplaInitializationException
     {
         super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);
         try
@@ -165,7 +166,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         catch (Exception e)
         {
-            throw new RaplaException("Error parsing file '" + resolvedPath + "' " + e.getMessage());
+            throw new RaplaInitializationException("Error parsing file '" + resolvedPath + "' " + e.getMessage());
         }
         //        boolean validate = config.getChild( "validate" ).getValueAsBoolean( false );
         //        if ( validate )

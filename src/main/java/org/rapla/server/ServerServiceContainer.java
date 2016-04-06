@@ -1,10 +1,11 @@
 package org.rapla.server;
 
+import java.util.Collection;
+
 import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaException;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.StorageOperator;
-
-import java.util.Collection;
 
 public interface ServerServiceContainer extends Disposable, HttpService
 {
@@ -12,7 +13,7 @@ public interface ServerServiceContainer extends Disposable, HttpService
 
     StorageOperator getOperator();
 
-    String getFirstAdmin();
+    String getFirstAdmin() throws RaplaException;
 
     <T> T getMockService(final Class<T> test, final String accessToken);
 

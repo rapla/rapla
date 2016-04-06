@@ -1,18 +1,5 @@
 package org.rapla.server.internal;
 
-import org.apache.commons.codec.binary.Base64;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.server.RaplaKeyStorage;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -20,6 +7,21 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.apache.commons.codec.binary.Base64;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.server.RaplaKeyStorage;
 
 @DefaultImplementation(of=RaplaKeyStorage.class,context = InjectionContext.server)
 @Singleton
@@ -52,26 +54,29 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
      * Checks whether an encryption key exists or not, reads an existing one from the configuration file
      * or generates a new one. The decryption and encryption ciphers are also initialized here.
      *
-     * @throws RaplaException
+     * @throws RaplaInitializationException
      */
     @Inject
-    public RaplaKeyStorageImpl(RaplaFacade facade, Logger logger) throws RaplaException {
+    public RaplaKeyStorageImpl(RaplaFacade facade, Logger logger) throws RaplaInitializationException {
         this.facade = facade;
         this.logger = logger;
         byte[] linebreake = {};
         // we use an url safe encoder for the keys
         this.base64 = new Base64(64, linebreake, true);
-        rootKey = facade.getSystemPreferences().getEntryAsString(PRIVATE_KEY, null);
-        rootPublicKey = facade.getSystemPreferences().getEntryAsString(PUBLIC_KEY, null);
-        if ( rootKey == null || rootPublicKey == null)
+        try
         {
-        	try {
-		        generateRootKeyStorage();
-			} catch (NoSuchAlgorithmException e) {
-				throw new RaplaException( e.getMessage());
-			}
+            rootKey = facade.getSystemPreferences().getEntryAsString(PRIVATE_KEY, null);
+            rootPublicKey = facade.getSystemPreferences().getEntryAsString(PUBLIC_KEY, null);
+            if (rootKey == null || rootPublicKey == null)
+            {
+                generateRootKeyStorage();
+                cryptoHandler = new CryptoHandler(rootKey);
+            }
         }
-    	cryptoHandler = new CryptoHandler( rootKey);
+        catch (Exception e)
+        {
+            throw new RaplaInitializationException(e.getMessage());
+        }
     }
     
   

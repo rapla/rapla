@@ -1,7 +1,14 @@
 package org.rapla.server.internal;
 
+import java.util.Collection;
+import java.util.Date;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.rest.server.token.SignedToken;
 import org.rapla.rest.server.token.TokenInvalidException;
 import org.rapla.rest.server.token.ValidToken;
@@ -10,11 +17,6 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteStorage;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Collection;
-import java.util.Date;
 
 @Singleton
 public class TokenHandler
@@ -27,7 +29,7 @@ public class TokenHandler
     // 5 Hours until the token expires
     int accessTokenValiditySeconds = 300 * 60;
 
-    @Inject public TokenHandler(RaplaKeyStorage keyStorage, StorageOperator operator) throws RaplaException
+    @Inject public TokenHandler(RaplaKeyStorage keyStorage, StorageOperator operator) throws RaplaInitializationException
     {
         this.keyStore = keyStorage;
         this.operator = operator;
@@ -39,7 +41,7 @@ public class TokenHandler
         }
         catch (Exception e)
         {
-            throw new RaplaException(e.getMessage(), e);
+            throw new RaplaInitializationException(e.getMessage(), e);
         }
 
     }

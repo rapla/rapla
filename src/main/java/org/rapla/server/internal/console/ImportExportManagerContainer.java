@@ -1,6 +1,12 @@
 package org.rapla.server.internal.console;
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.sql.DataSource;
+
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.InjectionContext;
@@ -11,15 +17,11 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 
-import javax.sql.DataSource;
-import java.util.Arrays;
-import java.util.Collection;
-
 public class ImportExportManagerContainer extends ContainerImpl{
 
     private Runnable shutdownCommand;
 
-    public ImportExportManagerContainer(Logger logger, ServerContainerContext backendContext) throws RaplaException
+    public ImportExportManagerContainer(Logger logger, ServerContainerContext backendContext) throws RaplaInitializationException
     {
         super(logger);
         this.shutdownCommand = backendContext.getShutdownCommand();
@@ -31,7 +33,7 @@ public class ImportExportManagerContainer extends ContainerImpl{
         }
         else
         {
-            throw new RaplaException("No file configured for import/export");
+            throw new RaplaInitializationException("No file configured for import/export");
         }
         DataSource dbDatasource = backendContext.getMainDbDatasource();
         if ( dbDatasource != null)
@@ -41,7 +43,7 @@ public class ImportExportManagerContainer extends ContainerImpl{
         }
         else
         {
-            throw new RaplaException("No database configured for import/export");
+            throw new RaplaInitializationException("No database configured for import/export");
         }
         addContainerProvidedComponent(ImportExportManager.class, ImportExportManagerImpl.class);
     }
