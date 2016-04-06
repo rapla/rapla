@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
@@ -23,9 +24,6 @@ import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.extensionpoints.HelpMenuExtension;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
-import org.rapla.client.internal.ReservationControllerImpl;
-import org.rapla.client.internal.ReservationEditFactory;
-import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
@@ -115,7 +113,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
             DialogUiFactoryInterface dialogUiFactory,
             TemplateEditFactory templateEditFactory,
             Provider<LicenseInfoUI> licenseInfoUIProvider,
-            ReservationEditFactory editFactory,
             ReservationController reservationController,
             //FIXME hack for initialization
             SwingActivityController activityController
@@ -131,7 +128,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.templateEditFactory = templateEditFactory;
         // TODO Hack to solve dependency Cycle
         ((MenuFactoryImpl)menuFactory).setEditController( editController);
-        ((ReservationControllerImpl)reservationController).setEditFactory(editFactory);
 
 
         RaplaMenu editMenu = menuBarContainer.getEditMenu();

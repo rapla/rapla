@@ -13,7 +13,6 @@
 
 package org.rapla.plugin.abstractcalendar;
 
-import com.google.gwt.logging.client.DefaultLevel;
 import org.rapla.components.calendarview.html.HTMLBlock;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;

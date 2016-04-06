@@ -17,7 +17,6 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;

@@ -1,10 +1,10 @@
 package org.rapla.rest;
 
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-
-import org.rapla.framework.RaplaException;
 
 @Path("logger")
 public interface RemoteLogger

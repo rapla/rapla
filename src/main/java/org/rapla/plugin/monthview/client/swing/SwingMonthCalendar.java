@@ -47,7 +47,6 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 import javax.inject.Provider;
 import javax.swing.JComponent;
 import java.awt.Color;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
 

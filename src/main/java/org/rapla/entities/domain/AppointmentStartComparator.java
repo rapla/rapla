@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
-import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Comparator;
 

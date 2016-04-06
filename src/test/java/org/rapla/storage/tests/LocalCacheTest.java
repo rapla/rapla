@@ -39,7 +39,6 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;

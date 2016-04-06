@@ -16,23 +16,10 @@ package org.rapla.entities.domain.internal;
  *  @see org.rapla.facade.RaplaFacade
  */
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
-import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaObject;
@@ -59,6 +46,17 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {

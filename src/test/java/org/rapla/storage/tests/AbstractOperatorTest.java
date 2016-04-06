@@ -14,7 +14,6 @@ package org.rapla.storage.tests;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -29,11 +28,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import java.util.Date;
 

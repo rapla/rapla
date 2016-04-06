@@ -1,16 +1,17 @@
 package org.rapla.client;
 
+import org.rapla.client.event.ActivityPresenter;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 
+import javax.swing.event.ChangeListener;
 import java.util.Collection;
 import java.util.Date;
 
-public interface ReservationEdit
+public interface ReservationEdit extends ActivityPresenter
 {
     boolean isModifiedSinceLastChange();
 
@@ -29,13 +30,15 @@ public interface ReservationEdit
 
     void toFront();
 
-    void refresh(ModificationEvent evt) throws RaplaException;
-
     Reservation getOriginal();
 
     void updateReservation(Reservation persistant) throws RaplaException;
 
     void deleteReservation() throws RaplaException;
+
+    void addReservationChangeListener(ChangeListener listener);
+
+    void removeReservationChangeListener(ChangeListener listener);
 
     CommandHistory getCommandHistory();
 }

@@ -13,8 +13,6 @@
 
 package org.rapla.client.swing.gui.edit.test;
 
-import java.util.Collections;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -31,6 +29,8 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
+
+import java.util.Collections;
 
 public final class CategoryEditTest extends GUITestCase
 {

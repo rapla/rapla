@@ -55,7 +55,6 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;

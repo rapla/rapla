@@ -11,7 +11,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import java.util.Collection;
 import java.util.Date;
 
-public interface ReservationView<W> extends View<Presenter> {
+public interface ReservationView extends View<Presenter> {
 
 	interface Presenter {
 		void onSaveButtonClicked();

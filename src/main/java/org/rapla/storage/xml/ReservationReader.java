@@ -13,15 +13,12 @@
 
 package org.rapla.storage.xml;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
@@ -33,7 +30,6 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
 
 import java.util.Date;
 

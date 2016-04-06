@@ -1,19 +1,20 @@
 package org.rapla.client.swing.internal;
 
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.AbstractActivityController;
+import org.rapla.client.event.PlaceChangedEvent;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -22,7 +23,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
@@ -53,7 +53,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,12 +62,10 @@ import java.util.TreeMap;
 public class SavedCalendarView extends RaplaGUIComponent implements ActionListener {
 
     JComboBox selectionBox;
-    
+    private final EventBus eventBus;
     private boolean listenersEnabled = true;
     List<FileEntry> filenames = new ArrayList<FileEntry>();
-    final MultiCalendarView calendarContainer;
     final CalendarSelectionModel model;
-    final ResourceSelection resourceSelection; 
     JToolBar toolbar = new JToolBar();
     private final Set<PublishExtensionFactory> extensionFactories;
     private final StartupEnvironment environment;
@@ -124,7 +121,8 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         {
             return publishDialog.hasPublishActions();
         }
-        
+
+
     }
     
     class DeleteAction extends RaplaAction
@@ -219,10 +217,10 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
     }
     
-    public SavedCalendarView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final MultiCalendarView calendarContainer, final ResourceSelection resourceSelection,
-            final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
+    public SavedCalendarView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
+        this.eventBus = eventBus;
         this.extensionFactories = extensionFactories;
         this.environment = environment;
         this.infoFactory = infoFactory;
@@ -234,8 +232,6 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         publishAction = new PublishAction(facade, i18n, raplaLocale, logger);
         deleteAction = new DeleteAction( facade, i18n, raplaLocale, logger);
         this.model = model;
-        this.calendarContainer = calendarContainer;
-        this.resourceSelection = resourceSelection;
         JButton save = new JButton();
         JButton publish = new JButton();
         JButton delete = new JButton();
@@ -322,59 +318,12 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     {
         FileEntry selectedFile = getSelectedFile();
 
-        // keep current date   in mind
-        final Date tmpDate = model.getSelectedDate();
-        // keep in mind if current model had saved date
-      
-        String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
-        if(tmpModelHasStoredCalenderDate == null)
-        	tmpModelHasStoredCalenderDate = "false"; 
-        // load sets stored date
-        if ( selectedFile.isDefault)
-        {
-        	model.load(null);
-        }
-        else
-        {
-        	model.load(selectedFile.name);
-        }
-        closeFilter();
-        // check if new model had stored date
-        String newModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
-        if(newModelHasStoredCalenderDate == null)
-        	newModelHasStoredCalenderDate = "false"; 
-        if ("false".equals(newModelHasStoredCalenderDate)) {
+        String place = selectedFile.isDefault ? null: selectedFile.name;
 
-            if ("false".equals(tmpModelHasStoredCalenderDate))
-                    // if we are switching from a model with saved date to a model without date we reset to current date
-            {
-               model.setSelectedDate(tmpDate);
-            } else {
-               model.setSelectedDate(new Date());
-            }
-        }
-            
-        updateActions();
-		Entity preferences = getQuery().getPreferences();
-		ModificationEventImpl modificationEvt = new ModificationEventImpl();
-		// FIXME what is deserved here?
-        //modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
-		modificationEvt.addChanged(preferences);
-        resourceSelection.dataChanged(modificationEvt);
-        calendarContainer.update(modificationEvt);
-        calendarContainer.getSelectedCalendar().scrollToStart();
+        eventBus.fireEvent( new PlaceChangedEvent( new AbstractActivityController.Place( CalendarEditor.ACTIVITY_ID, place)));
     }
 
-	public void closeFilter() {
-		// CKO Not a good solution. FilterDialogs should close themselfs when model changes.
-        // BJO 00000139
-        if(resourceSelection.getFilterButton().isOpen())
-        	resourceSelection.getFilterButton().doClick();
-        if(calendarContainer.getFilterButton().isOpen())
-        	calendarContainer.getFilterButton().doClick();
-    
-        // BJO 00000139
-	}
+
    
     public void update() throws RaplaException
     {
@@ -421,7 +370,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 		return model;
 	}
 
-    private void updateActions() {
+    public void updateActions() {
         FileEntry selectedFile = getSelectedFile();
         boolean isDefault = selectedFile == null || selectedFile.isDefault ;
         final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getUpdateModule().getTemplate() == null;

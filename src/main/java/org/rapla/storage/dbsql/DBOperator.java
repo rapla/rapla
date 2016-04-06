@@ -19,7 +19,6 @@ import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;

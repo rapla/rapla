@@ -12,21 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile.tests;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.Collection;
-import java.util.concurrent.Future;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +27,21 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 import org.rapla.test.util.RaplaTestCase;
 import org.xml.sax.InputSource;
+
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.concurrent.Future;
 
 @RunWith(JUnit4.class)
 public class FileOperatorTest extends AbstractOperatorTest {

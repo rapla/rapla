@@ -15,8 +15,6 @@ package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
-import org.rapla.entities.Category;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;

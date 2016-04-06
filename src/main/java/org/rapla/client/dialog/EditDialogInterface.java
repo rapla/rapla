@@ -1,7 +1,7 @@
 package org.rapla.client.dialog;
 
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
-import org.rapla.client.swing.EditController;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
@@ -14,6 +14,6 @@ public interface EditDialogInterface<T>
 
     DialogInterface getDialog();
 
-    void start(Collection<T> editObjects, String title, PopupContext popupContext, boolean isNew, EditController.EditCallback<List<T>> callback) throws RaplaException;
+    void start(Collection<T> editObjects, String title, PopupContext popupContext,  EditController.EditCallback<List<T>> callback) throws RaplaException;
 
 }

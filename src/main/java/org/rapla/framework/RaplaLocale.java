@@ -3,7 +3,6 @@ package org.rapla.framework;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;

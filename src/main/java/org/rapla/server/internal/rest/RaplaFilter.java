@@ -1,35 +1,23 @@
 package org.rapla.server.internal.rest;
 
-import java.io.IOException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import dagger.MembersInjector;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.MainServlet;
+import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerStarter;
+import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.inject.dagger.DaggerReflectionStarter;
-import org.rapla.inject.dagger.DaggerReflectionStarter.Scope;
-import org.rapla.server.MainServlet;
-import org.rapla.server.MainServlet.RaplaJNDIContext;
-import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.dagger.DaggerRaplaServerStartupModule;
-import org.rapla.server.internal.ServerContainerContext;
-import org.rapla.server.internal.ServerServiceImpl;
-import org.rapla.server.internal.ServerStarter;
-import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
-import org.rapla.storage.StorageOperator;
-
-import dagger.MembersInjector;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RaplaFilter implements Filter
 {

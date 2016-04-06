@@ -28,7 +28,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
-import java.util.List;
 
 public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 {

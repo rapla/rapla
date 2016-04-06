@@ -35,8 +35,8 @@ import org.rapla.inject.InjectionContext;
 import javax.inject.Inject;
 import java.util.ArrayList;
 
-@DefaultImplementation(of = ReservationView.class, context = InjectionContext.gwt)
-public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView<IsWidget>
+@DefaultImplementation(of = ReservationView.class, context = InjectionContext.client)
+public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView
 {
 
     public static class Dual

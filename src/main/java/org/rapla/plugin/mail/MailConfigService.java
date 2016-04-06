@@ -1,12 +1,12 @@
 package org.rapla.plugin.mail;
 
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaException;
 
 @Path("mail/config")
 public interface MailConfigService 

@@ -3,24 +3,6 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
@@ -31,6 +13,23 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @Path("raplaclient")
 @Singleton

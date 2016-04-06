@@ -12,18 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.DeleteUndo;
-import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
@@ -44,6 +38,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -306,14 +306,13 @@ public class RaplaObjectAction extends RaplaAction {
     }
 
 	protected  void newEntity() throws RaplaException {
+        final Entity<? extends Entity> obj;
     	if ( Category.class == raplaType ) {
-        	Category category = (Category)object;
-        	final Category newCategory = createNewNodeAt(category);
-			editController.editNew(newCategory, popupContext );
+        	obj = createNewNodeAt((Category)object);
         } else {
-			Entity<? extends Entity> obj = newEntity(raplaType);
-	        editController.edit(obj, popupContext);
+			obj = newEntity(raplaType);
         }
+        editController.edit(obj, popupContext);
     }
 
 	protected void edit() throws RaplaException {

@@ -12,24 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import org.jdeferred.Promise;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
@@ -94,11 +77,30 @@ import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.jsonrpc.common.VoidResult;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.dbrm.RemoteOperator;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Vector;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -137,6 +139,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		this.i18n = i18n;
 		this.notifyQueue = notifyQueue;
 		locale = i18n.getLocale();
+	}
+
+	public CommandScheduler getScheduler()
+	{
+		return notifyQueue;
 	}
 
 	public RaplaResources getI18n()
@@ -513,7 +520,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		};
 	}
 
-	public static FutureResult<Map<Allocatable,Collection<Appointment>>> getAppointmentsAsync(StorageOperator operator, User user,
+	public static Promise<Map<Allocatable,Collection<Appointment>>,RaplaException,Object> getAppointmentsAsync(StorageOperator operator, User user,
 			Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId) {
         Collection<Allocatable> allocList;
         Map<String,String> annotationQuery = null;
@@ -550,7 +557,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			//annotationQuery = new LinkedHashMap<String,String>();
 			//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
 		}
-		FutureResult<Map<Allocatable,Collection<Appointment>>> query = operator.queryAppointments(user, allocList, start, end, reservationFilters, annotationQuery);
+		Promise<Map<Allocatable,Collection<Appointment>>,RaplaException,Object> query = operator.queryAppointments(user, allocList, start, end, reservationFilters, annotationQuery);
 		return query;
 	}
 
@@ -955,11 +962,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	   return false;
    }
    
-   public FutureResult<VoidResult> load()
+   public Promise<Void> load()
    {
 	   if (( operator instanceof RemoteOperator))
 	   {
-		   return new ResultImpl<VoidResult>(new RaplaException("Only RemoteOperator supports async loading"));
+		   throw new IllegalStateException("Only RemoteOperator supports async loading");
 	   }
        final FutureResult<User> connect = ((RemoteOperator)operator).connectAsync();
        return new FutureResult<VoidResult>() {

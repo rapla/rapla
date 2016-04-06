@@ -1,21 +1,11 @@
 package org.rapla.server.internal;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import org.rapla.framework.logger.Logger;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.entities.DependencyException;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.RaplaSecurityException;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
+import java.io.IOException;
 
 public class RaplaRpcAndRestProcessor
 {

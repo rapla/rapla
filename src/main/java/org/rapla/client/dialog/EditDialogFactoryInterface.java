@@ -1,6 +1,6 @@
 package org.rapla.client.dialog;
 
-import org.rapla.client.swing.EditController;
+import org.rapla.client.EditController;
 
 public interface EditDialogFactoryInterface
 {

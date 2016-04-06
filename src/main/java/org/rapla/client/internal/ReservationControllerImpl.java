@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import org.jdeferred.Promise;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -34,7 +35,6 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -65,9 +65,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
      * in a map, to lookupDeprecated if the reservation is already beeing edited.
      That prevents editing the same Reservation in different windows
      */
-    Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
     AppointmentFormater appointmentFormater;
-    private ReservationEditFactory editFactory;
     ClientFacade facade;
     private RaplaLocale raplaLocale;
     private Logger logger;
@@ -84,11 +82,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         this.appointmentFormater=appointmentFormater; 
         this.clipboard = clipboard;
         facade.addModificationListener(this);
-    }
-    
-    public void setEditFactory(ReservationEditFactory editFactory)
-    {
-        this.editFactory = editFactory;
     }
     
     protected RaplaFacade getFacade()
@@ -115,6 +108,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     {
         return i18n;
     }
+
+    Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
 
     public void addReservationEdit(ReservationEdit editWindow) {
         editWindowList.add(editWindow);
@@ -769,7 +764,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         for ( ReservationEdit edit:clone)
         {
             ReservationEdit c = edit;
-            c.refresh(evt);
+            c.updateView(evt);
             TimeInterval invalidateInterval = evt.getInvalidateInterval();
 			Reservation original = c.getOriginal();
 			if ( invalidateInterval != null && original != null)
@@ -1407,7 +1402,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 				firstTimeCall = false;
                 Collection<Reservation> reservations = Collections.singleton(mutableReservation);
                 ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
-                boolean result = saveCommand.execute();
+                Promise result = saveCommand.execute();
                 return result;
 			}
 			else
@@ -1501,7 +1496,9 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 			{
 				firstTimeCall = false;
 				Collection<Reservation> reservations = Collections.singleton(mutableReservation);
-                ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
+                //sourceComponent
+                final RaplaFacade raplaFacade = facade.getRaplaFacade();
+                SaveUndo saveCommand = new SaveUndo<Reservation>(raplaFacade,i18n,reservations,null);
                 boolean result = saveCommand.execute();
 				return result;
 			}
@@ -1567,53 +1564,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     	
     }
     
-	public class ReservationSave extends SaveUndo<Reservation> {
-    	
-    	private final PopupContext sourceComponent;
-    	Collection<Reservation> newReservations;
 
-    	public ReservationSave(Collection<Reservation> newReservations, Collection<Reservation> original, PopupContext sourceComponent)
-    	{
-    		super(ReservationControllerImpl.this.getFacade(), ReservationControllerImpl.this.getI18n(),newReservations, original);
-    		this.sourceComponent  = sourceComponent;
-    		this.newReservations = newReservations;
-    	}
-    	
-		public boolean execute() throws RaplaException
-		{
-			if ( firstTimeCall)
-			{
-				firstTimeCall = false;
-				return save(newReservations, sourceComponent);
-			}
-			else
-			{
-				return super.execute();
-			}
-		}
-
-		boolean save(Collection<Reservation> reservations,PopupContext sourceComponent) throws RaplaException {
-		    Provider<Set<EventCheck>> checkers = getEventChecks();
-            final Set<EventCheck> set = checkers.get();
-            for (EventCheck eventCheck:set)
-            {
-                boolean successful= eventCheck.check(reservations, sourceComponent);
-                if ( !successful)
-                {
-                    return false;
-                }
-            }
-	        try {
-	            getFacade().storeObjects( newReservations.toArray( Reservation.RESERVATION_ARRAY) );
-	            return true;
-	        } catch (Exception ex) {
-	            showException(ex,sourceComponent);
-	            return false;
-	        }
-		}
-		
-    	
-    }
 }
 
 

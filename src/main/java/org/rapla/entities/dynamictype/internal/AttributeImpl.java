@@ -702,7 +702,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
     }
 
-    public static Object parseAttributeValueWithoutRef(Attribute attribute, String text)
+    public static Object parseAttributeValueWithoutRef(Attribute attribute, String text) throws RaplaException
     {
         AttributeType type = attribute.getType();
         final String trim = text.trim();
@@ -733,7 +733,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             try
             {
-                return new Long(trim);
+                return Long.parseLong(trim);
             }
             catch (NumberFormatException ex)
             {

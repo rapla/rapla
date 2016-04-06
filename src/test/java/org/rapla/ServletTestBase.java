@@ -1,16 +1,6 @@
 package org.rapla;
 
-import java.io.File;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.EnumSet;
-import java.util.Map;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-
+import dagger.MembersInjector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -23,7 +13,15 @@ import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.rest.RaplaFilter;
 
-import dagger.MembersInjector;
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import java.io.File;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.EnumSet;
+import java.util.Map;
 
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase

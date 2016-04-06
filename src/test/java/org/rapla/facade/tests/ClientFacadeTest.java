@@ -12,20 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.tests;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -69,6 +55,20 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 @RunWith(JUnit4.class)
 public class ClientFacadeTest  {

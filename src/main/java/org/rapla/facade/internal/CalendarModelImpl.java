@@ -19,7 +19,6 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.Named;
-import org.rapla.entities.NamedComparator;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;

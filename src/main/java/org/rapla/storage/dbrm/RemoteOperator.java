@@ -13,27 +13,7 @@
 
 package org.rapla.storage.dbrm;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.Vector;
-import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import org.jdeferred.Promise;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -80,6 +60,7 @@ import org.rapla.jsonrpc.common.AsyncCallback;
 import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.jsonrpc.common.ResultImpl;
 import org.rapla.jsonrpc.common.VoidResult;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -94,6 +75,26 @@ import org.rapla.storage.dbrm.RemoteStorage.PasswordPost;
 import org.rapla.storage.dbrm.RemoteStorage.QueryAppointments;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Vector;
+import java.util.concurrent.locks.Lock;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -1013,8 +1014,40 @@ import org.rapla.storage.impl.EntityStore;
         return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
     }
 
-    public FutureResult<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
-            final ClassificationFilter[] filters, Map<String, String> annotationQuery)
+    static void test()
+    {
+        final StorageOperator operator = null;
+        final CommandScheduler scheduler = null;
+        final User user = null;
+        final Date start = null;
+        Promise test;
+        final Date end = null;
+        final Map<String, String> annotationQuery = null;
+        final Collection<Allocatable> allocatables = null;
+        final ClassificationFilter[] filters = null;
+        final QueryAppointments appointments = null;
+        final RemoteStorage stor = (RemoteStorage) null;
+        //        Promise<AppointmentMap,Exception,Object> prom = scheduler.when(stor, new CommandScheduler.Bla<RemoteStorage,AppointmentMap>()
+        //                {
+        //                    @Override public AppointmentMap get(RemoteStorage storage) throws Exception
+        //                    {
+        //                        final AppointmentMap appointmentMap = storage.queryAppointments(appointments);
+        //                        return appointmentMap;
+        //                    }
+        //                }
+        //        );
+        scheduler.when(stor, (storage) -> storage.queryAppointments(appointments))
+                .then((map) -> {
+            System.out.println(map);
+        })
+                .fail((e) -> {
+            e.printStackTrace();
+        });
+
+    }
+
+    public Map<Allocatable, Collection<Appointment>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end, final ClassificationFilter[] filters,
+            Map<String, String> annotationQuery)
     {
         RemoteStorage serv = getRemoteStorage();
 
@@ -1093,7 +1126,7 @@ import org.rapla.storage.impl.EntityStore;
         {
             final RemoteOperator resolver = this;
             appointmentMap.init(resolver);
-            return  appointmentMap.getResult(filters);
+            return appointmentMap.getResult(filters);
         }
         catch (RaplaException ex)
         {
@@ -1308,24 +1341,23 @@ import org.rapla.storage.impl.EntityStore;
 
             @Override public void get(final AsyncCallback<Map<Allocatable, Collection<Appointment>>> callback)
             {
-                serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)).get(new AsyncCallback<BindingMap>()
-                                                                                                      {
+                serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds))
+                        .get(new AsyncCallback<BindingMap>()
+                        {
 
-                                                                                                          @Override public void onFailure(Throwable caught)
-                                                                                                          {
-                                                                                                              callback.onFailure(caught);
-                                                                                                          }
+                            @Override public void onFailure(Throwable caught)
+                            {
+                                callback.onFailure(caught);
+                            }
 
-                                                                                                          @Override public void onSuccess(BindingMap result)
-                                                                                                          {
-                                                                                                              Map<String, List<String>> resultMap = result
-                                                                                                                      .get();
-                                                                                                              HashMap<Allocatable, Collection<Appointment>> convert = convert(
-                                                                                                                      resultMap);
-                                                                                                              callback.onSuccess(convert);
-                                                                                                          }
+                            @Override public void onSuccess(BindingMap result)
+                            {
+                                Map<String, List<String>> resultMap = result.get();
+                                HashMap<Allocatable, Collection<Appointment>> convert = convert(resultMap);
+                                callback.onSuccess(convert);
+                            }
 
-                                                                                                      });
+                        });
             }
 
             private HashMap<Allocatable, Collection<Appointment>> convert(Map<String, List<String>> resultMap)
@@ -1367,37 +1399,37 @@ import org.rapla.storage.impl.EntityStore;
 
             @Override public Map<Allocatable, Map<Appointment, Collection<Appointment>>> get() throws Exception
             {
-                List<ReservationImpl> serverResult = serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)).get();
+                List<ReservationImpl> serverResult = serv
+                        .getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)).get();
                 return getMap(allocatables, appointments, ignoreList, serverResult);
             }
 
             @Override public void get(final AsyncCallback<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> callback)
             {
-                serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)).get(new AsyncCallback<List<ReservationImpl>>()
-                                                                                                     {
+                serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds))
+                        .get(new AsyncCallback<List<ReservationImpl>>()
+                        {
 
-                                                                                                         @Override public void onFailure(Throwable caught)
-                                                                                                         {
-                                                                                                             callback.onFailure(caught);
-                                                                                                         }
+                            @Override public void onFailure(Throwable caught)
+                            {
+                                callback.onFailure(caught);
+                            }
 
-                                                                                                         @Override public void onSuccess(
-                                                                                                                 List<ReservationImpl> serverResult)
-                                                                                                         {
-                                                                                                             Map<Allocatable, Map<Appointment, Collection<Appointment>>> map;
-                                                                                                             try
-                                                                                                             {
-                                                                                                                 map = getMap(allocatables, appointments,
-                                                                                                                         ignoreList, serverResult);
-                                                                                                             }
-                                                                                                             catch (Exception e)
-                                                                                                             {
-                                                                                                                 callback.onFailure(e);
-                                                                                                                 return;
-                                                                                                             }
-                                                                                                             callback.onSuccess(map);
-                                                                                                         }
-                                                                                                     });
+                            @Override public void onSuccess(List<ReservationImpl> serverResult)
+                            {
+                                Map<Allocatable, Map<Appointment, Collection<Appointment>>> map;
+                                try
+                                {
+                                    map = getMap(allocatables, appointments, ignoreList, serverResult);
+                                }
+                                catch (Exception e)
+                                {
+                                    callback.onFailure(e);
+                                    return;
+                                }
+                                callback.onSuccess(map);
+                            }
+                        });
 
             }
         };
@@ -1435,7 +1467,7 @@ import org.rapla.storage.impl.EntityStore;
                     Set<Appointment> conflictingAppointments = AppointmentImpl
                             .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
                     allConflictingAppointments.addAll(conflictingAppointments);
-                    
+
                 }
                 appointmentBinding.put(appointment, allConflictingAppointments);
             }
@@ -1450,9 +1482,9 @@ import org.rapla.storage.impl.EntityStore;
         RemoteStorage serv = getRemoteStorage();
         String[] allocatableIds = getIdList(allocatables);
         String[] reservationIds = getIdList(ignoreList);
-        FutureResult<Date> nextAllocatableDate = serv
-                .getNextAllocatableDate(new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes, excludedDays,
-                        rowsPerHour));
+        FutureResult<Date> nextAllocatableDate = serv.getNextAllocatableDate(
+                new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes,
+                        excludedDays, rowsPerHour));
         return nextAllocatableDate;
     }
 
@@ -1501,9 +1533,8 @@ import org.rapla.storage.impl.EntityStore;
             throw new RaplaException(ex);
         }
     }
-    
-    @Override
-    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+
+    @Override public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
         checkConnected();
         RemoteStorage serv = getRemoteStorage();

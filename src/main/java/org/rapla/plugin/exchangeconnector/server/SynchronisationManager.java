@@ -1,26 +1,6 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Command;
 import org.rapla.components.util.CommandScheduler;
@@ -57,6 +37,8 @@ import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.plugin.mail.server.MailToUserImpl;
+import org.rapla.scheduler.Command;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.TimeZoneConverter;
@@ -65,7 +47,25 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 @Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = ServerExtension.class)
 @Singleton
@@ -131,11 +131,7 @@ public class SynchronisationManager implements ServerExtension
         logger.info("Scheduling Exchange synchronization tasks");
         scheduler.schedule(new RetryCommand(), delay, SCHEDULE_PERIOD);
 
-        scheduler.schedule(new Command()
-        {
-
-            @Override
-            public void execute() throws Exception
+        scheduler.schedule(() ->
             {
                 final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
                 Date lastUpdated = null;
@@ -159,7 +155,6 @@ public class SynchronisationManager implements ServerExtension
                         cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
                     }
                 }
-            }
         }, delay, 20000);
     }
 
@@ -505,7 +500,7 @@ public class SynchronisationManager implements ServerExtension
     }
 
     // is called when the calendarModel is changed (e.g. store of preferences), not when the reservation changes
-    private Collection<SynchronizationTask> updateTasksForUser(User user)
+    private Collection<SynchronizationTask> updateTasksForUser(User user) throws RaplaException
     {
 
         final ReferenceInfo<User> userId = user.getReference();

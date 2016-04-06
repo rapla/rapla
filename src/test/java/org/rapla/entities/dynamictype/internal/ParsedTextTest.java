@@ -1,13 +1,5 @@
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +24,14 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbfile.tests.FileOperatorTest.MyFileIO;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @RunWith(JUnit4.class)
 public class ParsedTextTest 

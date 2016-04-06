@@ -1,15 +1,15 @@
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.storage.impl.EntityStore;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 public class KeyAndPathResolver
 {

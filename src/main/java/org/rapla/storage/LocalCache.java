@@ -36,6 +36,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.RaplaException;
 
 import javax.inject.Provider;
 import java.util.ArrayList;
@@ -394,7 +395,7 @@ public class LocalCache implements EntityResolver
         return tryResolve(referenceInfo.getId(), type);
     }
 
-    @Override public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
+    @Override public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException
     {
         final Class<T> type = (Class<T>) referenceInfo.getType();
         return resolve(referenceInfo.getId(), type);
@@ -518,7 +519,15 @@ public class LocalCache implements EntityResolver
             {
                 lastChanged = new Date();
             }
-            Conflict conflict = new ConflictImpl(conflictId, lastChanged, lastChanged);
+            Conflict conflict;
+            try
+            {
+                conflict = new ConflictImpl(conflictId, lastChanged, lastChanged);
+            }
+            catch (RaplaException ex)
+            {
+                continue;
+            }
             Conflict conflictClone = fillConflictDisableInformation(null, conflict);
             disabled.add(conflictClone);
         }

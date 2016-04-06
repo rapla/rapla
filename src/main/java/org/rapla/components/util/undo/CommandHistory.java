@@ -1,19 +1,15 @@
 package org.rapla.components.util.undo;
 
+import org.jdeferred.AlwaysCallback;
+import org.jdeferred.DoneCallback;
+import org.jdeferred.Promise;
+import org.jdeferred.impl.DeferredObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
 
-/**
- * This is where all the committed actions are saved.
- * A list will be initialized, every action is an item of this list.
- * There is a list for the calendar view, and one for the edit view.
- * @author Jens Fritz
- *
- */
-
-//Erstellt von Dominick Krickl-Vorreiter
 public class  CommandHistory {
 	private List<CommandUndo<?>> history = new ArrayList<CommandUndo<?>>();
 	private int current = -1;
@@ -28,7 +24,7 @@ public class  CommandHistory {
 		}
 	}
 	
-	 public <T extends Exception> boolean storeAndExecute(CommandUndo<T> cmd) throws T {
+	 public <T extends Exception> Promise storeAndExecute(CommandUndo<T> cmd) throws T {
 		while (!history.isEmpty() && (current < history.size() - 1)) {
 			history.remove(history.size() - 1);
 		}
@@ -37,38 +33,71 @@ public class  CommandHistory {
 			history.remove(0);
 			current--;
 		}
-		
-		if (cmd.execute()) {
-			history.add(cmd);
-			current++;
-			fireChangeEvent();
-			return true;
-		}
-		else
-		{
-		    return false;
-		}
+		 final Promise<Object, T, Object> execute = cmd.execute();
+		 execute.done(new DoneCallback<Object>()
+		 {
+			 @Override public void onDone(Object result)
+			 {
+				 history.add(cmd);
+				 current++;
+				 fireChangeEvent();
+			 }
+		 });
+		 return  execute;
+	}
 
+	static final Promise<Object, Object, Object> EMPTY_PROMISE;
+	static
+	{
+		final DeferredObject<Object, Object, Object> objectObjectObjectDeferredObject = new DeferredObject<>();
+		objectObjectObjectDeferredObject.resolve(null);
+		EMPTY_PROMISE = objectObjectObjectDeferredObject.promise();
 	}
-	
-	public void undo() throws Exception {
+
+
+	public Promise undo() throws Exception {
 		if (!history.isEmpty() && (current >= 0)) {
-			if (history.get(current).undo())
+			final Promise<Object, ?, Object> undo = history.get(current).undo();
+			undo.done(new DoneCallback<Object>()
 			{
-				current--;
-			}
-			fireChangeEvent();
+				@Override public void onDone(Object result)
+				{
+					current--;
+
+				}
+			});
+			undo.always(new AlwaysCallback()
+			{
+				@Override public void onAlways(Promise.State state, Object resolved, Object rejected)
+				{
+					fireChangeEvent();
+				}
+			});
+			return undo;
 		}
+		return EMPTY_PROMISE;
 	}
-	
-	public void redo() throws Exception {
+
+	public Promise redo() throws Exception {
 		if (!history.isEmpty() && (current < history.size() - 1)) {
-			if (history.get(current + 1).execute()) 
+			final Promise<Object, ?, Object> execute = history.get(current + 1).execute();
+			execute.done(new DoneCallback<Object>()
 			{
-				current++;
-			}
-			fireChangeEvent();
+				@Override public void onDone(Object result)
+				{
+					current++;
+				}
+			});
+			execute.always(new AlwaysCallback()
+			{
+				@Override public void onAlways(Promise.State state, Object resolved, Object rejected)
+				{
+					fireChangeEvent();
+				}
+			});
+			return execute;
 		}
+		return EMPTY_PROMISE;
 	}
 	
 	public void clear() {

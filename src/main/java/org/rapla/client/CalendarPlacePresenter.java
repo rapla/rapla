@@ -2,10 +2,11 @@ package org.rapla.client;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
-import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
+import org.rapla.client.event.AbstractActivityController.Place;
 import org.rapla.client.event.PlaceChangedEvent;
+import org.rapla.client.event.PlacePresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -13,14 +14,15 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -99,7 +101,8 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
             view.show(viewNames, selectedView.getName(), calendarNames, calendar);
             final Date selectedDate = model.getSelectedDate();
             view.updateDate(selectedDate);
-            updateView();
+            final ModificationEventImpl event = new ModificationEventImpl();
+            updateView(event);
             view.replaceContent(selectedView.provideContent());
         }
         catch (RaplaException e)
@@ -301,7 +304,7 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
         updatePlace();
     }
 
-    public void updateView()
+    public void updateView(ModificationEvent event)
     {
         try
         {

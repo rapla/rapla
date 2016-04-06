@@ -14,7 +14,6 @@
 
 package org.rapla.server.extensionpoints;
 
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;

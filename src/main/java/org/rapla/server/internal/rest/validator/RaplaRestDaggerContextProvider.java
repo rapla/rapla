@@ -1,15 +1,13 @@
 package org.rapla.server.internal.rest.validator;
 
-import java.lang.reflect.Method;
-import java.util.Map;
-
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-
+import dagger.MembersInjector;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.validation.GeneralValidator;
 
-import dagger.MembersInjector;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.Provider;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 @Provider
 public class RaplaRestDaggerContextProvider implements ContextResolver<GeneralValidator>

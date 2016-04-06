@@ -4,7 +4,8 @@ import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
-import org.rapla.client.ActivityManager;
+import org.rapla.client.event.AbstractActivityController;
+import org.rapla.client.event.Activity;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -18,13 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-@DefaultImplementation(of=ActivityManager.class, context = InjectionContext.gwt)
-public class GwtActivityManagerImpl extends ActivityManager
+@DefaultImplementation(of=AbstractActivityController.class, context = InjectionContext.gwt)
+public class GwtActivityManagerImpl extends AbstractActivityController
 {
     @Inject
     public GwtActivityManagerImpl( EventBus eventBus, final Logger logger)
     {
-        super( eventBus, logger);
+        super( eventBus, logger, activityPresenters, placePresenters);
         History.addValueChangeHandler(new ValueChangeHandler<String>()
         {
             @Override

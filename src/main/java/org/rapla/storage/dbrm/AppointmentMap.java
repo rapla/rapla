@@ -1,24 +1,17 @@
 package org.rapla.storage.dbrm;
 
 import org.rapla.components.util.Assert;
-import org.rapla.components.util.iterator.IterableChain;
-import org.rapla.entities.Entity;
-import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 

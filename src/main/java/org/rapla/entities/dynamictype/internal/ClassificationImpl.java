@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import org.joda.time.IllegalFieldValueException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.IllegalFormatException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -379,7 +381,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         name = null;
     }
 
-    public void addRefValue(Attribute attribute, ReferenceInfo info)
+    public void addRefValue(Attribute attribute, ReferenceInfo info) throws RaplaException
     {
         if ( info == null)
         {
@@ -467,7 +469,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             }
             else
             {
-                throw new RaplaException("entity expected. but id used please use addRefValue instead of addValue in reading");
+                throw new IllegalArgumentException("entity expected. but id used please use addRefValue instead of addValue in reading");
             }
         }
         else if (attributeType.equals( AttributeType.DATE )) {
@@ -480,20 +482,22 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         return stringValue;
     }
 
-    private Object fromString(Attribute attribute,EntityResolver resolver, String value) throws RaplaException {
+    private Object fromString(Attribute attribute,EntityResolver resolver, String value) throws EntityNotFoundException, IllegalStateException {
         Class<? extends Entity> refType = attribute.getRefType();
         if (refType != null)
         {
             Entity resolved = resolver.resolve( value, refType );
             return resolved;
         }
-        Object result;
-        try {
-            result = AttributeImpl.parseAttributeValueWithoutRef(attribute, value);
-        } catch (RaplaException e) {
-            throw new IllegalStateException("Value not parsable");
+        try
+        {
+            Object result = AttributeImpl.parseAttributeValueWithoutRef(attribute, value);
+            return result;
         }
-        return result;
+        catch (RaplaException exception)
+        {
+            throw new IllegalStateException(exception.getMessage(),exception);
+        }
     }
     
     public String getValueUnresolvedString(Attribute attribute) {
@@ -528,8 +532,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 			fromString = fromString(attribute,resolver, stringRep);
 			return fromString;
 		} catch (EntityNotFoundException e) {
-			throw new IllegalStateException(e.getMessage());
-		}
+			return null;
+        }
     }
 
 	public ClassificationImpl clone() {

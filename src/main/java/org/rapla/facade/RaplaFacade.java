@@ -14,6 +14,7 @@ package org.rapla.facade;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
@@ -29,7 +30,8 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
@@ -43,6 +45,7 @@ import java.util.Set;
 */
 public interface RaplaFacade
 {
+    CommandScheduler getScheduler();
     /** Methods for quering the various entities of the backend
      */
     StorageOperator getOperator();
@@ -50,7 +53,7 @@ public interface RaplaFacade
 
     <T extends Entity> T tryResolve( ReferenceInfo<T> info);
 
-    <T extends Entity> T resolve( ReferenceInfo<T> info) throws RaplaException;
+    <T extends Entity> T resolve( ReferenceInfo<T> info) throws EntityNotFoundException;
 
     /** returns all DynamicTypes matching the specified classification
      possible keys are reservation, person and resource.
@@ -86,7 +89,7 @@ public interface RaplaFacade
      @param filters  you can specify classificationfilters or null for all reservations .
      */
     Reservation[] getReservations(User user,Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
-    FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
+    Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
 
 
 
@@ -116,7 +119,7 @@ public interface RaplaFacade
 
 
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
-    FutureResult<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
+    Promise<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
 
     /** returns all existing conflicts with the reservation */
     Conflict[] getConflicts(Reservation reservation) throws RaplaException;
@@ -157,7 +160,7 @@ public interface RaplaFacade
 
     Collection<Reservation> getTemplateReservations(Allocatable name) throws RaplaException;
 
-    FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
+    Promise<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
 
     boolean canAllocate(CalendarModel model,User user);
 

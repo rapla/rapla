@@ -1,18 +1,24 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
+import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
 
+import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -20,6 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+
 public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final List<T> newEntities;
 	protected final List<T> oldEntities;
@@ -64,7 +72,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 			this.oldEntities = null;
 		}
 	}
-	
+
 	protected RaplaFacade getFacade()
     {
         return facade;
@@ -80,64 +88,72 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	    return getI18n().getLocale();
 	}
 	
-	public boolean execute() throws RaplaException {
-		final boolean isNew = oldEntities == null;
+	public Promise<Void> execute() {
+		CommandScheduler scheduler =facade.getScheduler();
+		Promise<Void> promise = scheduler.run(() -> {
+			final boolean isNew = oldEntities == null;
 
-		List<T> toStore = new ArrayList<T>();
-		Map<T,T> newEntitiesPersistant = null;
-		// undo
-		if ( !firstTimeCall )
-		{
-			newEntitiesPersistant = getFacade().checklastChanged(newEntities,isNew);
-		}
-		else
-		{
-			firstTimeCall = false;
-		}
-		for ( T entity: newEntities)
-		{
-            @SuppressWarnings("unchecked")
-			T  mutableEntity = (T) entity.clone();
-			if (newEntitiesPersistant != null)
+			List<T> toStore = new ArrayList<T>();
+			Map<T, T> newEntitiesPersistant = null;
+			// undo
+			if (!firstTimeCall)
 			{
-				@SuppressWarnings("null")
-				Entity persistant = newEntitiesPersistant.get( entity);
-				checkConsistency( mutableEntity );
-				setNewTimestamp( mutableEntity, persistant);
+				newEntitiesPersistant = getFacade().checklastChanged(newEntities, isNew);
+				PopupContext popupContext = null;
+				checkEvents(newEntitiesPersistant.values(), popupContext);
 			}
-			toStore.add( mutableEntity);
-		}
-		@SuppressWarnings("unchecked")
-        Entity<T>[] array = toStore.toArray(new Entity[]{});
-		getFacade().storeObjects( array);
-		return true;
+			else
+			{
+				firstTimeCall = false;
+			}
+			for (T entity : newEntities)
+			{
+				@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
+				if (newEntitiesPersistant != null)
+				{
+					@SuppressWarnings("null") Entity persistant = newEntitiesPersistant.get(entity);
+					checkConsistency(mutableEntity);
+					setNewTimestamp(mutableEntity, persistant);
+				}
+				toStore.add(mutableEntity);
+			}
+			@SuppressWarnings("unchecked") Entity<T>[] array = toStore.toArray(new Entity[] {});
+
+			facade.storeObjects(array);
+		});
+		return promise;
 	}
 
-	public boolean undo() throws RaplaException {
-		boolean isNew = oldEntities == null;
+	public Promise<Void> undo()  {
+		CommandScheduler scheduler =facade.getScheduler();
+		Promise<Void> promise = scheduler.run(() -> {
 
-		if (isNew) {
-			getFacade().checklastChanged(newEntities, isNew);
-            Entity[] array = newEntities.toArray(new Entity[]{});
-			getFacade().removeObjects(array);
-		} else {
-			List<T> toStore = new ArrayList<T>();
-			Map<T,T> oldEntitiesPersistant = getFacade().checklastChanged(oldEntities, isNew);
-			for ( T entity: oldEntities)
-    		{
-                @SuppressWarnings("unchecked")
-				T mutableEntity = (T) entity.clone();
-            	T persistantVersion = oldEntitiesPersistant.get( entity);
-            	checkConsistency( mutableEntity);
-            	setNewTimestamp( mutableEntity, persistantVersion);
-				toStore.add( mutableEntity);
-    		}
-			@SuppressWarnings("unchecked")
-            Entity<T>[] array = toStore.toArray(new Entity[]{});
-			getFacade().storeObjects( array);
-		
-		}
-		return true;
+			boolean isNew = oldEntities == null;
+
+			if (isNew)
+			{
+				getFacade().checklastChanged(newEntities, isNew);
+				Entity[] array = newEntities.toArray(new Entity[] {});
+				getFacade().removeObjects(array);
+			}
+			else
+			{
+				List<T> toStore = new ArrayList<T>();
+				Map<T, T> oldEntitiesPersistant = getFacade().checklastChanged(oldEntities, isNew);
+				for (T entity : oldEntities)
+				{
+					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
+					T persistantVersion = oldEntitiesPersistant.get(entity);
+					checkConsistency(mutableEntity);
+					setNewTimestamp(mutableEntity, persistantVersion);
+					toStore.add(mutableEntity);
+				}
+				@SuppressWarnings("unchecked") Entity<T>[] array = toStore.toArray(new Entity[] {});
+				getFacade().storeObjects(array);
+
+			}
+		});
+		return promise;
 	}
 	
 	private void checkConsistency(Entity entity) throws EntityNotFoundException {
@@ -186,6 +202,29 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 			 buf.append(" " + i18n.getString(localName));
          }
          return buf.toString();
-     }   
-	    
+     }
+
+
+	boolean checkEvents(Collection<? extends Entity> entities,PopupContext sourceComponent) throws RaplaException {
+		Provider<Set<EventCheck>> checkers = getEventChecks();
+		List<Reservation> reservations = new ArrayList<Reservation>();
+		for ( Entity entity:entities)
+		{
+			if ( entity.getTypeClass() == Reservation.class)
+			{
+				reservations.add( (Reservation)entity);
+			}
+		}
+		final Set<EventCheck> set = checkers.get();
+		for (EventCheck eventCheck:set)
+		{
+			boolean successful= eventCheck.check(reservations, sourceComponent);
+			if ( !successful)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 }

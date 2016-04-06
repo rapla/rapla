@@ -13,12 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
@@ -34,6 +28,12 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class RaplaMainReader extends RaplaXMLReader
 {

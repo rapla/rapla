@@ -55,7 +55,6 @@ import javax.swing.JLabel;
 import java.awt.Font;
 import java.awt.Point;
 import java.text.MessageFormat;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;

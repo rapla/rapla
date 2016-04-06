@@ -12,25 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Provider;
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.entities.Entity;
@@ -42,6 +30,16 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable, EditDialogInterface<T>
 {
@@ -57,7 +55,7 @@ public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent
         this.dialogUiFactory = dialogUiFactory;
     }
 
-    protected void start(Collection<T> editObjects, String title, PopupContext popupContext, boolean isNew, EditController.EditCallback<List<T>> callback, final String confirm, final String cancel, Runnable confirmAction)
+    protected void start(Collection<T> editObjects, String title, PopupContext popupContext, EditController.EditCallback<List<T>> callback, final String confirm, final String cancel, Runnable confirmAction)
             throws RaplaException
     {
         ui = createUI(editObjects.iterator().next());

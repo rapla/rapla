@@ -1,9 +1,10 @@
 package org.rapla.client.edit.reservation.sample;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.client.PopupContext;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
-import org.rapla.client.event.StopActivityEvent;
+import org.rapla.client.event.Activity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
@@ -110,7 +111,10 @@ public class ReservationPresenter implements ReservationController, Presenter
 
     private void fireEventAndCloseView()
     {
-        eventBus.fireEvent(new StopActivityEvent(EDIT_ACTIVITY_ID, editReservation.getId()));
+        PopupContext popupContext = null;
+        final Activity event = new Activity(EDIT_ACTIVITY_ID, editReservation.getId(), popupContext);
+        event.setStop( true );
+        eventBus.fireEvent(event);
         view.hide();
     }
 

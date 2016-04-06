@@ -1,11 +1,10 @@
 package org.rapla.plugin.export2ical;
 
-import java.util.List;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 @Path("ical/timezones")
 public interface ICalTimezones 

@@ -23,11 +23,6 @@
  */
 package org.rapla.storage;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -42,7 +37,12 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.scheduler.Promise;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
 public interface StorageOperator extends EntityResolver {
 	int MAX_DEPENDENCY = 20;
@@ -89,7 +89,7 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    FutureResult<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
+    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
             ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
 
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
@@ -118,11 +118,11 @@ public interface StorageOperator extends EntityResolver {
     
     boolean supportsActiveMonitoring();
 
-    FutureResult<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
+    Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
     
-    FutureResult<Map<Allocatable, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList) throws RaplaException;
+    Promise<Map<Allocatable, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
 
-    FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour); 
+    Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
     
     Collection<Conflict> getConflicts(User user) throws RaplaException;
 

@@ -19,6 +19,7 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.Activity;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
@@ -29,9 +30,7 @@ import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.All
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
@@ -72,13 +71,8 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyVetoException;
-import java.beans.VetoableChangeListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,7 +81,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit
+final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit, RaplaWidget
 {
     ArrayList<ChangeListener> changeListenerList = new ArrayList<ChangeListener>();
     protected Reservation mutableReservation;
@@ -126,8 +120,6 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     JPanel mainContent = new JPanel();
     //JPanel split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 
-    RaplaFrame frame;
-
     ReservationInfoEdit reservationInfo;
     AppointmentListEdit appointmentEdit ;
     AllocatableSelection allocatableEdit;
@@ -150,7 +142,6 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
     private final ReservationControllerImpl reservationController;
     private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
@@ -160,13 +151,12 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
-             FrameControllerList frameControllerList, Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaException
+            Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.reservationToolbarExtensions = reservationToolbarExtensions;
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.reservationController = (ReservationControllerImpl) reservationController;
@@ -186,7 +176,6 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
         */
 
-        frame = new RaplaFrame(frameControllerList);
         mainContent.setLayout( tableLayout );
         mainContent.add(reservationInfo.getComponent(),"0,0");
         mainContent.add(appointmentEdit.getComponent(),"0,1");
@@ -254,9 +243,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         allocatableEdit.addChangeListener(listener);
         reservationInfo.addChangeListener(listener);
         reservationInfo.addDetailListener(listener);
-        frame.addVetoableChangeListener(listener);
 
-        frame.setIconImage( raplaImages.getIconFromKey("icon.edit_window_small").getImage());
         
         JPanel contentPane = (JPanel) frame.getContentPane();
         contentPane.setLayout(new BorderLayout());
@@ -264,14 +251,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         contentPane.add(toolBar, BorderLayout.NORTH);
         contentPane.add(buttonsPanel, BorderLayout.SOUTH);
         contentPane.add(mainContent, BorderLayout.CENTER);
-        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
-        frame.setSize(new Dimension(
-                                    Math.min(dimension.width,990)
-                                    // BJO 00000032 temp fix for filter out of frame bounds
-                                     ,Math.min(dimension.height-10,720)
-                                    //,Math.min(dimension.height-10,1000) 
-                                    )
-                      );
+
         
         Border  emptyLineBorder = new EmptyLineBorder();
         //BorderFactory.createEmptyBorder();
@@ -298,6 +278,16 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         
         back.setToolTipText(getString("undo"));
         back.setIcon(raplaImages.getIconFromKey("icon.undo"));
+    }
+
+    @Override public <T> RaplaWidget<T> startActivity(Activity activity)
+    {
+        return this;
+    }
+
+    @Override public Object getComponent()
+    {
+        return mainContent;
     }
 
     protected void setAccelerator(JButton button, Action yourAction,
@@ -375,11 +365,12 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             this.original = newReservation;
             setReservation(getFacade().edit(newReservation) , null);
         } catch (RaplaException ex) {
-            dialogUiFactory.showException(ex,new SwingPopupContext(frame, null));
+            dialogUiFactory.showException(ex,new SwingPopupContext(mainContent, null));
         }
     }
 
-    public void refresh(ModificationEvent evt) throws RaplaException {
+    @Override
+    public void updateView(ModificationEvent evt) throws RaplaException {
         allocatableEdit.dataChanged(evt);
     }
 
@@ -522,7 +513,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     }
 
 
-    class Listener extends AbstractAction implements AppointmentListener,ChangeListener,VetoableChangeListener, ReservationInfoEdit.DetailListener {
+    class Listener extends AbstractAction implements AppointmentListener,ChangeListener, ReservationInfoEdit.DetailListener {
         private static final long serialVersionUID = 1L;
 
     // Implementation of ReservationListener
@@ -596,11 +587,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             }
         }
 
-        public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException {
-        	if (!canClose())
-                throw new PropertyVetoException("Don't close",evt);
-            closeWindow();
-        }
+
     }
 
     protected boolean canClose() {
@@ -639,14 +626,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         	
             bSaving = true;
             
-            PopupContext popupContext = createPopupContext(frame, null);
+            PopupContext popupContext = createPopupContext(mainContent, null);
             ReservationControllerImpl.ReservationSave saveCommand = getPrivateReservationController().new ReservationSave(Collections.singleton(mutableReservation), original != null ? Collections.singleton( original) : null, popupContext);
             if (getCommandHistory().storeAndExecute(saveCommand))
             {
                 setSaved(true);
             }
         } catch (RaplaException ex) {
-            dialogUiFactory.showException(ex, new SwingPopupContext(frame, null));
+            dialogUiFactory.showException(ex, new SwingPopupContext(mainContent, null));
         } finally {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             if (bSaved)
@@ -667,7 +654,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     public void delete() throws RaplaException {
         try {
             DialogInterface dlg = infoFactory.createDeleteDialog(new Object[] {mutableReservation}
-                                                               ,new SwingPopupContext(frame, null));
+                                                               ,new SwingPopupContext(toolBar, null));
             dlg.start(true);
             if (dlg.getSelectedIndex() == 0) {
                 bDeleting = true;

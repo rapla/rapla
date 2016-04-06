@@ -95,21 +95,29 @@ class DynAttReader extends RaplaXMLReader {
     }
 
     private void parseContent(String content) throws RaplaSAXParseException {
-        if ( attribute.getRefType() != null)
+        try
         {
-            final ReferenceInfo id = AttributeImpl.parseRefType(attribute, content, getKeyAndPathResolver());
-            if ( id != null)
+            if ( attribute.getRefType() != null)
             {
-                classification.addRefValue(attribute, id);
+                final ReferenceInfo id = AttributeImpl.parseRefType(attribute, content, getKeyAndPathResolver());
+                if ( id != null)
+                {
+                    classification.addRefValue(attribute, id);
+                }
             }
+            else
+            {
+                Object value = AttributeImpl.parseAttributeValueWithoutRef(attribute, content);
+                if ( value != null)
+                {
+                    classification.addValue( attribute, value);
+                }
+            }
+
         }
-        else
+        catch (RaplaException ex)
         {
-            Object value = AttributeImpl.parseAttributeValueWithoutRef(attribute, content);
-            if ( value != null)
-            {
-                classification.addValue( attribute, value);
-            }
+            throw createSAXParseException( ex.getMessage(), ex);
         }
 
     }

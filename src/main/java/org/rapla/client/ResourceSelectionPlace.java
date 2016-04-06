@@ -1,7 +1,8 @@
 package org.rapla.client;
 
-import org.rapla.client.ActivityManager.Place;
 import org.rapla.client.ResourceSelectionView.Presenter;
+import org.rapla.client.event.AbstractActivityController.Place;
+import org.rapla.client.event.PlacePresenter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
@@ -10,7 +11,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
-import java.util.Arrays;
 import java.util.Collection;
 
 @Extension(provides = PlacePresenter.class, id = ResourceSelectionPlace.PLACE_ID)

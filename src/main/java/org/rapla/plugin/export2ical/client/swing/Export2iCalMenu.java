@@ -8,13 +8,9 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
@@ -31,11 +27,8 @@ import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 @Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)

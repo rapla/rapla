@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.util.Date;
-import java.util.Locale;
-import java.util.Set;
-
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -34,6 +30,10 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.PreferencePatch;
+
+import java.util.Date;
+import java.util.Locale;
+import java.util.Set;
 
 public class PreferencesImpl extends SimpleEntity implements Preferences, ModifiableTimestamp, DynamicTypeDependant
 {

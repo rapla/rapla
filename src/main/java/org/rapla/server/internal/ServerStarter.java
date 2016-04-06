@@ -8,12 +8,7 @@ import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 import javax.servlet.ServletException;
-import javax.sql.DataSource;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;

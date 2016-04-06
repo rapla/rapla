@@ -1,22 +1,11 @@
 package org.rapla.plugin.merge.client.swing;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController.EditCallback;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.EditController.EditCallback;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.AbstractDialog;
 import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
@@ -28,6 +17,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.merge.client.MergeController;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
 {

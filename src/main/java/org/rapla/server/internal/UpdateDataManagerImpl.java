@@ -48,8 +48,6 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 
-import com.google.gwt.safehtml.rebind.SafeHtmlTemplatesGenerator;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collection;

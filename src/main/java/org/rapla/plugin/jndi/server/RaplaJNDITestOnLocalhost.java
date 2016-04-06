@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.jndi.server;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -29,6 +25,10 @@ import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 
 @DefaultImplementation(context=InjectionContext.server, of=JNDIConfig.class)
 public class RaplaJNDITestOnLocalhost implements JNDIConfig

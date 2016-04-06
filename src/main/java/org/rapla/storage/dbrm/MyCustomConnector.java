@@ -1,11 +1,5 @@
 package org.rapla.storage.dbrm;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.Executor;
-
-import javax.inject.Inject;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.CommandScheduler;
@@ -15,6 +9,11 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.jsonrpc.client.gwt.MockProxy;
 import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 @DefaultImplementation(of=BasicRaplaHTTPConnector.CustomConnector.class,context = InjectionContext.swing)
 public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnector

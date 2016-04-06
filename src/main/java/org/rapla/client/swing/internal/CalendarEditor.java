@@ -13,8 +13,12 @@
 
 package org.rapla.client.swing.internal;
 
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.AbstractActivityController;
+import org.rapla.client.event.Activity;
+import org.rapla.client.event.ActivityPresenter;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -39,6 +43,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 import javax.swing.Icon;
@@ -52,13 +57,17 @@ import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Date;
 import java.util.Set;
 
-final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget {
+@Extension(id=CalendarEditor.ACTIVITY_ID,provides = ActivityPresenter.class)
+final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget<Component>, ActivityPresenter {
+    public static final String ACTIVITY_ID = "calendar";
 	public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
 	public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
 	public static final String SHOW_SELECTION_MENU_ENTRY = "show_resource_selection";
@@ -77,10 +86,14 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     final JPanel left;
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
+    final CalendarSelectionModel model;
     @Inject
-    public CalendarEditor(StartupEnvironment environment,RaplaMenuBarContainer menuBar,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final CalendarSelectionModel model,Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory infoFactory, final RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface) throws RaplaException {
+    public CalendarEditor(StartupEnvironment environment, RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
+            Logger logger, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory infoFactory, final RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory,
+            ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface, final EventBus eventBus) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.raplaImages = raplaImages;
+        this.model = model;
 
         calendarContainer = multiCalendarViewFactory.create(this);
         resourceSelection = resourceSelectionFactory.create(calendarContainer);
@@ -168,7 +181,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         {
 			public void actionPerformed(ActionEvent e) 
 			{
-				savedViews.closeFilter();
+				closeFilter();
 				int index = viewMenu.getIndexOfEntryWithId(SHOW_SELECTION_MENU_ENTRY);
 				JMenuItem component = (JMenuItem)viewMenu.getMenuComponent( index);
 				component.getAction().actionPerformed(e);
@@ -205,7 +218,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         JPanel jp = new JPanel();
         jp.setLayout( new BorderLayout());
         
-        savedViews = new SavedCalendarView(menuBar,facade, i18n, raplaLocale, logger, calendarContainer, resourceSelection, model, extensionFactories,
+        savedViews = new SavedCalendarView(menuBar,facade, i18n, raplaLocale, logger, eventBus,  model, extensionFactories,
                 environment, infoFactory, raplaImages, dialogUiFactory, ioInterface);
         jp.add( savedViews.getComponent(), BorderLayout.CENTER );
         templatePanel.setVisible( false);
@@ -232,33 +245,90 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
         content.setRightComponent(calendarContainer.getComponent());
         updateViews();
     }
-    
-    
-	public void updateOwnReservationsSelected() 
+
+    public void closeFilter() {
+        // CKO Not a good solution. FilterDialogs should close themselfs when model changes.
+        // BJO 00000139
+        if(resourceSelection.getFilterButton().isOpen())
+            resourceSelection.getFilterButton().doClick();
+        if(calendarContainer.getFilterButton().isOpen())
+            calendarContainer.getFilterButton().doClick();
+
+        // BJO 00000139
+    }
+
+
+    public void initForPlace(AbstractActivityController.Place place)
+    {
+        // keep current date   in mind
+        final Date tmpDate = model.getSelectedDate();
+        // keep in mind if current model had saved date
+
+        String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+        if(tmpModelHasStoredCalenderDate == null)
+            tmpModelHasStoredCalenderDate = "false";
+        final String file = place.getInfo();
+        model.load(file);
+        closeFilter();
+        // check if new model had stored date
+        String newModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+        if(newModelHasStoredCalenderDate == null)
+            newModelHasStoredCalenderDate = "false";
+        if ("false".equals(newModelHasStoredCalenderDate)) {
+
+            if ("false".equals(tmpModelHasStoredCalenderDate))
+            // if we are switching from a model with saved date to a model without date we reset to current date
+            {
+                model.setSelectedDate(tmpDate);
+            } else {
+                model.setSelectedDate(new Date());
+            }
+        }
+
+        savedViews.updateActions();
+
+        Entity preferences = getQuery().getPreferences( getUser());
+        ModificationEventImpl modificationEvt = new ModificationEventImpl();
+        // FIXME what is deserved here?
+        //modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
+        modificationEvt.addChanged(preferences);
+        resourceSelection.dataChanged(modificationEvt);
+        calendarContainer.update(modificationEvt);
+        calendarContainer.getSelectedCalendar().scrollToStart();
+    }
+
+    // FIMXE implement or change for gwt
+    @Override public RaplaWidget<Component> startActivity(Activity activity)
+    {
+        return calendarContainer;
+    }
+
+    @Override public void updateView(ModificationEvent evt)
+    {
+        listenersDisabled = true;
+        try
+        {
+            resourceSelection.dataChanged(evt);
+            conflictsView.dataChanged(evt);
+            calendarContainer.update(evt);
+            savedViews.update();
+            updateViews();
+            // this is done in calendarContainer update
+            //updateOwnReservationsSelected();
+        }
+        finally
+        {
+            listenersDisabled = false;
+        }
+    }
+
+    public void updateOwnReservationsSelected()
 	{
 		final CalendarSelectionModel model = resourceSelection.getModel();
 		boolean isSelected = model.isOnlyCurrentUserSelected();
 		ownReservationsMenu.setIcon(isSelected ? raplaImages.getIconFromKey("icon.checked") : raplaImages.getIconFromKey("icon.unchecked"));
 		ownReservationsMenu.setSelected(isSelected);
 	}
-
-    public void dataChanged(ModificationEvent evt) throws RaplaException {
-    	listenersDisabled = true;
-        try
-        {
-	    	resourceSelection.dataChanged(evt);
-	        conflictsView.dataChanged(evt);
-	        calendarContainer.update(evt);
-	        savedViews.update();
-	        updateViews();
-	        // this is done in calendarContainer update
- 	        //updateOwnReservationsSelected();
-        }
-        finally
-        {
-        	listenersDisabled = false;
-        }
-    }
 
     private void updateViews() throws RaplaException {
     	

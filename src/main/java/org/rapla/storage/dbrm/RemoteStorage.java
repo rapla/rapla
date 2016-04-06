@@ -12,9 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.storage.UpdateEvent;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -26,13 +29,9 @@ import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.storage.UpdateEvent;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @Path("storage")
 public interface RemoteStorage
@@ -95,13 +94,13 @@ public interface RemoteStorage
     @GET
     @Path("resources")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    void getResources() throws RaplaException;
+    UpdateEvent getResources() throws RaplaException;
 
     /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
     @POST
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    void queryAppointments(QueryAppointments job) throws RaplaException;
+    AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException;
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)

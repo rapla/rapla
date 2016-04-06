@@ -1,21 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -47,6 +31,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
+import org.rapla.scheduler.Promise;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
@@ -60,33 +45,80 @@ import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
-@DefaultImplementation(context = InjectionContext.server, of = RemoteStorage.class)
-public class RemoteStorageImpl implements RemoteStorage
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+@DefaultImplementation(context = InjectionContext.server, of = RemoteStorage.class) public class RemoteStorageImpl implements RemoteStorage
 {
-    @Inject
-    RemoteSession session;
-    @Inject
-    CachableStorageOperator operator;
-    @Inject
-    SecurityManager security;
-    @Inject
-    ShutdownService shutdownService;
+    @Inject RemoteSession session;
+    @Inject CachableStorageOperator operator;
+    @Inject SecurityManager security;
+    @Inject ShutdownService shutdownService;
 
-    @Inject
-    Set<AuthenticationStore> authenticationStore;
+    @Inject Set<AuthenticationStore> authenticationStore;
 
-    @Inject
-    RaplaResources i18n;
-    @Inject
-    Provider<MailInterface> mailInterface;
-    @Inject
-    UpdateDataManager updateDataManager;
+    @Inject RaplaResources i18n;
+    @Inject Provider<MailInterface> mailInterface;
+    @Inject UpdateDataManager updateDataManager;
     private final HttpServletRequest request;
 
-    @Inject
-    public RemoteStorageImpl(@Context HttpServletRequest request)
+    @Inject public RemoteStorageImpl(@Context HttpServletRequest request)
     {
         this.request = request;
+    }
+
+    private static class PromiseSynchroniser
+    {
+        static <T> T waitForRapla(Promise<T> promise, int timeout) throws RaplaException
+        {
+            try
+            {
+                return waitFor(promise, timeout);
+            }
+            catch (RaplaException ex)
+            {
+                throw ex;
+            }
+            catch (Throwable throwable)
+            {
+                throw new RaplaException(throwable.getMessage(), throwable);
+            }
+        }
+
+        static <T> T waitFor(Promise<T> promise, int timeout) throws Throwable
+        {
+            Semaphore semaphore = new Semaphore(0);
+            AtomicReference<T> atomicReference = new AtomicReference<>();
+            AtomicReference<Throwable> atomicReferenceE = new AtomicReference<>();
+            promise.whenComplete((t, ex) -> {
+                atomicReferenceE.set(ex);
+                atomicReference.set(t);
+                semaphore.release();
+            });
+            semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+            final Throwable throwable = atomicReferenceE.get();
+            if (throwable != null)
+            {
+                throw throwable;
+            }
+            final T t = atomicReference.get();
+            return t;
+        }
     }
 
     public UpdateEvent getResources() throws RaplaException
@@ -164,8 +196,7 @@ public class RemoteStorageImpl implements RemoteStorage
         return evt;
     }
 
-    @Override
-    public AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException
+    @Override public AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException
     {
         String[] allocatableIds = job.getResources();
         Date start = job.getStart();
@@ -187,8 +218,9 @@ public class RemoteStorageImpl implements RemoteStorage
             }
         }
         ClassificationFilter[] classificationFilters = null;
-        Map<Allocatable, Collection<Appointment>> reservations = operator.queryAppointments(user, allocatables, start, end, classificationFilters,
-                annotationQuery);
+        final Promise<Map<Allocatable, Collection<Appointment>>> mapFutureResult = operator
+                .queryAppointments(user, allocatables, start, end, classificationFilters, annotationQuery);
+        Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForRapla(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
         return list;
@@ -276,7 +308,7 @@ public class RemoteStorageImpl implements RemoteStorage
     {
         checkAuthentified();
         Boolean result = operator.canChangePassword();
-        result.toString();
+        return result.toString();
     }
 
     public void changePassword(PasswordPost job) throws RaplaException
@@ -344,8 +376,8 @@ public class RemoteStorageImpl implements RemoteStorage
         {
             String subject = getString("security_code");
             Preferences prefs = operator.getPreferences(null, true);
-            String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n"
-                    + getString("security_code") + Math.abs(user.getEmail().hashCode()) + "\n\n" + getString("send_code_mail_body_3") + "\n\n"
+            String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n" + getString(
+                    "security_code") + Math.abs(user.getEmail().hashCode()) + "\n\n" + getString("send_code_mail_body_3") + "\n\n"
                     + "-----------------------------------------------------------------------------------" + "\n\n" + getString("send_code_mail_body_4")
                     + prefs.getEntryAsString(ContainerImpl.TITLE, getString("rapla.title")) + " " + getString("send_code_mail_body_5");
 
@@ -510,8 +542,7 @@ public class RemoteStorageImpl implements RemoteStorage
         return result;
     }
 
-    @Override
-    public Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
+    @Override public Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         AppointmentImpl appointment = job.getAppointment();
@@ -523,13 +554,14 @@ public class RemoteStorageImpl implements RemoteStorage
         checkAuthentified();
         List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-        Date result = operator
-                .getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour).get();
+        Date result = PromiseSynchroniser.waitForRapla(
+                operator.getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour),
+                50000);
         return result;
+
     }
 
-    @Override
-    public BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
+    @Override public BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
@@ -539,7 +571,8 @@ public class RemoteStorageImpl implements RemoteStorage
         List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
-        Map<Allocatable, Collection<Appointment>> bindings = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).get();
+        final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList);
+        Map<Allocatable, Collection<Appointment>> bindings = PromiseSynchroniser.waitForRapla(promise, 100000);
         Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
         for (Allocatable alloc : bindings.keySet())
         {
@@ -584,7 +617,9 @@ public class RemoteStorageImpl implements RemoteStorage
         List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).get();
+        final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> promise = operator
+                .getAllAllocatableBindings(allocatables, asList, ignoreList);
+        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = PromiseSynchroniser.waitForRapla(promise, 10000);
         for (Allocatable alloc : bindings.keySet())
         {
             Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
@@ -638,8 +673,7 @@ public class RemoteStorageImpl implements RemoteStorage
         return ignoreConflictsWith;
     }
 
-    @Override
-    public void doMerge(MergeRequest job) throws RaplaException
+    @Override public void doMerge(MergeRequest job) throws RaplaException
     {
         AllocatableImpl allocatable = job.getAllocatable();
         String[] allocatableIds = job.getAllocatableIds();

@@ -1,11 +1,11 @@
 package org.rapla.plugin.mail;
 
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-
-import org.rapla.framework.RaplaException;
 
 @Path("mail/send")
 public interface MailToUserInterface 

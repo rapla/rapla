@@ -13,22 +13,6 @@
 
 package org.rapla.storage.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -65,6 +49,22 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * An abstract implementation of the StorageOperator-Interface. It operates on a
@@ -432,7 +432,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		}
 	}
 
-	public  abstract boolean isLoaded() throws RaplaException;
+	public  abstract boolean isLoaded();
 	
 	@Override
 	public <T extends Entity> Map<ReferenceInfo<T>,T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)	throws RaplaException {
@@ -558,8 +558,11 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 		return getI18n().getString(key);
 	}
 	
-	public DynamicType getDynamicType(String key) {
-		checkLoaded();
+	public DynamicType getDynamicType(String key)  {
+		if ( !isLoaded())
+		{
+			return null;
+		}
 		Lock readLock = null;
 		try {
 			readLock = readLock();
@@ -585,7 +588,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
 	}
 
 	@Override
-	public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo)
+	public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException
 	{
 		final Class<T> type = (Class<T>)referenceInfo.getType();
 		return resolve(referenceInfo.getId(), type);
@@ -638,7 +641,7 @@ public abstract class AbstractCachableOperator implements StorageOperator {
     }
 
 	final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
-			Collection<ReferenceInfo> removedIds)
+			Collection<ReferenceInfo> removedIds) throws RaplaException
 	{
 		HashMap<ReferenceInfo,Entity> oldEntities = new HashMap<ReferenceInfo,Entity>();
 		// First make a copy of the old entities

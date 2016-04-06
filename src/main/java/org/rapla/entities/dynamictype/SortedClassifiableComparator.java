@@ -1,11 +1,6 @@
 package org.rapla.entities.dynamictype;
 
 import org.rapla.entities.NamedComparator;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicType;
 
 import java.util.ArrayList;
 import java.util.Collection;

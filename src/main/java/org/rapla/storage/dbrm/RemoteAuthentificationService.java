@@ -12,16 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-
-import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.VoidResult;
 
 @Path("authentification")
 public interface RemoteAuthentificationService

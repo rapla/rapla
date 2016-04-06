@@ -13,12 +13,12 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
-import org.rapla.client.swing.EditController;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;

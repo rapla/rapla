@@ -22,7 +22,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;

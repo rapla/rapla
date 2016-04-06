@@ -98,7 +98,6 @@
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
 			</plugin>
-			<!--
 			<plugin>
 				<groupId>org.bsc.maven</groupId>
 				<artifactId>maven-processor-plugin</artifactId>
@@ -111,7 +110,7 @@
 						</goals>
 						<phase>generate-sources</phase>
 						<configuration>
-							<defaultOutputDirectory>${project.build.directory}/generated-sources</defaultOutputDirectory>
+							<defaultOutputDirectory>${project.build.directory}/generated-sources/apt</defaultOutputDirectory>
 							<processors>
 								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
 								<processor>dagger.internal.codegen.ComponentProcessor</processor>
@@ -120,16 +119,56 @@
 					</execution>
 				</executions>
 			</plugin>
-			-->
+			<!--
+
+			<plugin>
+				<groupId>org.bsc.maven</groupId>
+				<artifactId>maven-processor-plugin</artifactId>
+				<version>2.2.4</version>
+				<executions>
+					<execution>
+						<id>process</id>
+						<goals>
+							<goal>process</goal>
+						</goals>
+						<phase>generate-sources</phase>
+						<configuration>
+							<defaultOutputDirectory>${project.build.directory}/generated-sources/apt</defaultOutputDirectory>
+							<processors>
+								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
+								<processor>dagger.internal.codegen.ComponentProcessor</processor>
+							</processors>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-test</id>
+						<goals>
+							<goal>process-test</goal>
+						</goals>
+						<phase>generate-test-sources</phase>
+						<configuration>
+							<defaultOutputDirectory>${project.build.directory}/generated-test-sources/apt</defaultOutputDirectory>
+							<processors>
+								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
+								<processor>dagger.internal.codegen.ComponentProcessor</processor>
+							</processors>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
+					<!--
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 						<annotationProcessor>dagger.internal.codegen.ComponentProcessor</annotationProcessor>
 					</annotationProcessors>
+					-->
+					<proc>none</proc>
 					<useIncrementalCompilation>false</useIncrementalCompilation>
 					<optimize>false</optimize>
 					<verbose>false</verbose>

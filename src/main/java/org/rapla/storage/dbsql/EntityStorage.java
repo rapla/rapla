@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Timestamp;
@@ -381,7 +380,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         }
     }
 
-    protected void deleteFromSubStores(Set<String> ids) throws SQLException
+    protected void deleteFromSubStores(Set<String> ids) throws SQLException, RaplaException
     {
         for (SubStorage<T> storage : subStores)
         {

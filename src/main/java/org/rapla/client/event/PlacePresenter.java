@@ -1,10 +1,11 @@
-package org.rapla.client;
+package org.rapla.client.event;
 
-import org.rapla.client.ActivityManager.Place;
+import org.rapla.client.event.AbstractActivityController.Place;
+import org.rapla.facade.ModificationEvent;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
-@ExtensionPoint(context={ InjectionContext.gwt},id="place")
+@ExtensionPoint(context={ InjectionContext.client},id="place")
 public interface PlacePresenter
 {
     /**
@@ -18,7 +19,7 @@ public interface PlacePresenter
      * Forces the view to update its state. Can be triggered because changes where made by someone 
      * else or because of changes done by the user itself.
      */
-    void updateView();
+    void updateView(ModificationEvent event);
     
     void initForPlace(Place place);
 

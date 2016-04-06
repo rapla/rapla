@@ -49,6 +49,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.jsonrpc.common.FutureResult;
+import org.rapla.scheduler.Promise;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -86,7 +87,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -1418,14 +1418,12 @@ public class AppointmentController extends RaplaGUIComponent
 			this.newRepeatingType = newRepeatingType;
 		}
 		
-		public boolean execute()  {
+		public Promise<Void> execute()  {
 			setRepeatingType(newRepeatingType);
-			return true;
 		}
 
-		public boolean undo()  {
+		public Promise<Void> undo()  {
 			setRepeatingType(oldRepeatingType);
-			return true;
 		}
 		
 		private void setRepeatingType(RepeatingType repeatingType)  {
@@ -1476,20 +1474,21 @@ public class AppointmentController extends RaplaGUIComponent
 		try
 		{
 			CalendarOptions options = getCalendarOptions();
-			FutureResult<Date> nextAllocatableDate = getQuery().getNextAllocatableDate(Arrays.asList(allocatables), appointment,options );
-            Date newStart = nextAllocatableDate.get();
-			if ( newStart != null)
-			{
-				Appointment oldState = ((AppointmentImpl) appointment).clone();
-				appointment.move(newStart);
-				Appointment newState = ((AppointmentImpl) appointment).clone();
-				UndoDataChange changeDataCommand = new UndoDataChange(oldState, newState);
-				commandHistory.storeAndExecute(changeDataCommand);
-			}
-			else
-			{
-			    dialogUiFactory.showWarning("No free appointment found", new SwingPopupContext(getMainComponent(), null));
-			}
+			Promise<Date> nextAllocatableDate = getQuery().getNextAllocatableDate(Arrays.asList(allocatables), appointment,options );
+			nextAllocatableDate.thenAccept( (newStart) -> {
+				if (newStart != null)
+				{
+					Appointment oldState = ((AppointmentImpl) appointment).clone();
+					appointment.move(newStart);
+					Appointment newState = ((AppointmentImpl) appointment).clone();
+					UndoDataChange changeDataCommand = new UndoDataChange(oldState, newState);
+					commandHistory.storeAndExecute(changeDataCommand);
+				}
+				else
+				{
+					dialogUiFactory.showWarning("No free appointment found", new SwingPopupContext(getMainComponent(), null));
+				}
+			});
 		} 
 		catch (Exception ex)
 		{

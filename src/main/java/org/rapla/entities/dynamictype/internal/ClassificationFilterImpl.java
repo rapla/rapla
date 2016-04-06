@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
@@ -33,6 +27,12 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 public final class ClassificationFilterImpl
     implements

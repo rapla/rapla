@@ -12,18 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-
+import org.jdeferred.DoneCallback;
+import org.jdeferred.Promise;
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
+import org.rapla.client.EditController.EditCallback;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -31,8 +24,6 @@ import org.rapla.client.dialog.EditDialogFactoryInterface;
 import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.EditController;
-import org.rapla.client.swing.EditController.EditCallback;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
@@ -50,6 +41,16 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public class EditDialog<T extends Entity> extends AbstractDialog<T> implements ModificationListener, Disposable, EditDialogInterface<T>
 {
@@ -71,10 +72,10 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
     }
 
     @Override
-    public void start(Collection<T> editObjects, String title, PopupContext popupContext, boolean isNew, EditController.EditCallback<List<T>> callback)
+    public void start(Collection<T> editObjects, String title, PopupContext popupContext,  EditController.EditCallback<List<T>> callback)
             throws RaplaException
     {
-        start(editObjects, getI18n().format("edit.format", title), popupContext, isNew, callback, getString("save"), getString("cancel"), new SaveAction(callback, reservationController));
+        start(editObjects, getI18n().format("edit.format", title), popupContext,  callback, getString("save"), getString("cancel"), new SaveAction(callback, reservationController));
 
         List<T> toEdit = new ArrayList<T>(editObjects);
         setObjects(toEdit);
@@ -175,13 +176,21 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(getFacade(), getI18n(), entities, originals);
                     CommandHistory commandHistory = getUpdateModule().getCommandHistory();
-                    commandHistory.storeAndExecute(saveCommand);
+                    Promise promise = commandHistory.storeAndExecute(saveCommand);
+                    promise.done(new DoneCallback()
+                    {
+                        @Override public void onDone(Object o)
+                        {
+                            getPrivateEditDialog().removeEditDialog(EditDialog.this);
+                            dlg.close();
+                        }
+                    });
                 }
                 else
                 {
                     getFacade().storeObjects(saveObjects.toArray(new Entity[] {}));
                 }
-
+                org.jdeferred.Promise promise;
                 getPrivateEditDialog().removeEditDialog(EditDialog.this);
                 dlg.close();
                 if ( callback != null)

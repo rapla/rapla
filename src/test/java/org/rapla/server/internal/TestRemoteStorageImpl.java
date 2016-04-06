@@ -1,17 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.inject.Provider;
-
 import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
@@ -40,6 +28,16 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.test.util.RaplaTestCase;
+
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(JUnit4.class)
 public class TestRemoteStorageImpl

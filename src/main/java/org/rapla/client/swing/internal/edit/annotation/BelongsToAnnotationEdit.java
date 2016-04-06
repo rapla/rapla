@@ -1,30 +1,5 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.edit.fields.BooleanField;
-import org.rapla.client.swing.internal.edit.fields.ListField;
-import org.rapla.entities.Annotatable;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
-
-import javax.inject.Inject;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JList;
-import java.awt.Component;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 /*
 @Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_BELONGSTO)
 public class BelongsToAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension

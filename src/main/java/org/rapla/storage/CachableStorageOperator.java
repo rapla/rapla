@@ -45,8 +45,8 @@ public interface CachableStorageOperator extends StorageOperator {
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
 
-    UpdateResult getUpdateResult(Date since);
-    UpdateResult getUpdateResult(Date since,User user);
+    UpdateResult getUpdateResult(Date since) throws RaplaException;
+    UpdateResult getUpdateResult(Date since,User user) throws RaplaException;
 
     Date getHistoryValidStart();
     Date getConnectStart();
@@ -64,11 +64,11 @@ public interface CachableStorageOperator extends StorageOperator {
     Date requestLock(String id, Long validMilliseconds) throws RaplaException;
     void releaseLock(String id, Date updatedUntil);
 
-    Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange);
+    Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException;
 
-    Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment);
+    Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment) throws RaplaException;
 
-    Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable);
+    Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException;
 }
 
 

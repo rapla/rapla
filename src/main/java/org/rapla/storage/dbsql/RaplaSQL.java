@@ -60,7 +60,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
+import org.rapla.rest.client.swing.JSONParserWrapper;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
@@ -186,8 +186,7 @@ class RaplaSQL {
     }
 
 
-    synchronized public void removeAll(Connection con)
-    throws SQLException
+    synchronized public void removeAll(Connection con) throws SQLException, RaplaException
     {
         Date connectionTimestamp = getDatabaseTimestamp(con);
         final Collection<TableStorage> storeIt = (Collection)stores;
@@ -294,7 +293,7 @@ class RaplaSQL {
         }
     }
 
-    private void store(Connection con, Date connectionTimestamp, Map<Storage, List<Entity>> store, Storage storage) throws SQLException
+    private void store(Connection con, Date connectionTimestamp, Map<Storage, List<Entity>> store, Storage storage) throws SQLException,RaplaException
     {
         List<Entity>list = store.get( storage);
         storage.setConnection(con,connectionTimestamp);
@@ -349,7 +348,7 @@ class RaplaSQL {
         }
     }
 
-    public Collection<ReferenceInfo> update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException
+    public Collection<ReferenceInfo> update(Connection c, Date lastUpdated,  Date connectionTimestamp) throws SQLException,RaplaException
     {
         history.setConnection( c, connectionTimestamp);
         try
@@ -362,7 +361,7 @@ class RaplaSQL {
         }
     }
 
-    public List<PreferencePatch> getPatches(Connection c, Date lastUpdated) throws SQLException
+    public List<PreferencePatch> getPatches(Connection c, Date lastUpdated) throws SQLException, RaplaException
     {
         try
         {
@@ -393,7 +392,7 @@ class RaplaSQL {
     }
 
 
-    public Date getLastUpdated(Connection c) throws SQLException
+    public Date getLastUpdated(Connection c) throws SQLException,RaplaException
     {
         try
         {
@@ -406,7 +405,7 @@ class RaplaSQL {
         }
     }
 
-    public Date getLastRequested(Connection c, String id) throws SQLException
+    public Date getLastRequested(Connection c, String id) throws SQLException,RaplaException
     {
         try
         {
@@ -419,7 +418,7 @@ class RaplaSQL {
         }
     }
 
-    synchronized public Date getDatabaseTimestamp(Connection con) throws SQLException
+    synchronized public Date getDatabaseTimestamp(Connection con) throws SQLException,RaplaException
     {
         try
         {
@@ -432,7 +431,7 @@ class RaplaSQL {
         }
     }
 
-    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException
+    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException,RaplaException
     {
         try
         {
@@ -456,7 +455,7 @@ class RaplaSQL {
         }
     }
 
-    public void cleanupOldLocks(Connection c) throws SQLException
+    public void cleanupOldLocks(Connection c) throws SQLException,RaplaException
     {
         try
         {
@@ -469,7 +468,7 @@ class RaplaSQL {
         }
     }
 
-    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException
+    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException, RaplaException
     {
         try
         {
@@ -570,7 +569,7 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
-    Date getDatabaseTimestamp()
+    Date getDatabaseTimestamp() throws RaplaException
     {
         final Date now;
         {
@@ -623,7 +622,7 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
-    private void activateLocks(Collection<String> ids, Long validMilliseconds)
+    private void activateLocks(Collection<String> ids, Long validMilliseconds) throws RaplaException
     {
         try (final PreparedStatement insertStmt = con.prepareStatement(insertSql);
                 final PreparedStatement updateStatement = con.prepareStatement(activateSql);
@@ -1327,7 +1326,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation> {
     	super.loadAll();
     }
 
-    @Override protected void deleteFromSubStores(Set<String> ids) throws SQLException
+    @Override protected void deleteFromSubStores(Set<String> ids) throws SQLException,RaplaException
     {
         super.deleteFromSubStores(ids);
         appointmentStorage.deleteAppointments(ids);
@@ -1807,7 +1806,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         this.updateSql = "SELECT USER_ID, ROLE, STRING_VALUE, XML_VALUE, LAST_CHANGED FROM PREFERENCE WHERE LAST_CHANGED > ?";
     }
 
-    public List<PreferencePatch> getPatches(Date lastUpdated) throws SQLException
+    public List<PreferencePatch> getPatches(Date lastUpdated) throws SQLException, RaplaException
     {
         Map<String, PreferencePatch> userIdToPatch = new HashMap<String, PreferencePatch>();
         final ArrayList<PreferencePatch> patches = new ArrayList<PreferencePatch>();
@@ -2448,7 +2447,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         return 1;
     }
     
-    public Collection<ReferenceInfo> update(Date lastUpdated) throws SQLException
+    public Collection<ReferenceInfo> update(Date lastUpdated) throws SQLException, RaplaException
     {
         try(final PreparedStatement stmt = con.prepareStatement(loadAllUpdatesSql))
         {

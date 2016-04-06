@@ -13,8 +13,6 @@
 package org.rapla.storage.impl.server;
 
 import org.rapla.components.util.DateTools;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;

@@ -36,7 +36,6 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
 import javax.inject.Inject;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;

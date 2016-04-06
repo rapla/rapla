@@ -1,5 +1,7 @@
 package org.rapla.plugin.ical;
 
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -7,8 +9,6 @@ import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.rapla.framework.RaplaException;
 
 @Path("ical/import")
 public interface ICalImport

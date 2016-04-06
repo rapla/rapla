@@ -3,11 +3,13 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.Tools;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.server.extensionpoints.HtmlMainMenu;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -19,14 +21,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Tools;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
-import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
-import org.rapla.server.extensionpoints.HtmlMainMenu;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Path("index")
 @Singleton

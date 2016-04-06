@@ -1,25 +1,6 @@
 package org.rapla.client.edit.reservation.sample;
 
-import org.rapla.client.ActivityManager;
-import org.rapla.client.ActivityPresenter;
-import org.rapla.entities.Entity;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.storage.StorageOperator;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+/*
 @Extension(provides = ActivityPresenter.class, id = ReservationPresenter.EDIT_ACTIVITY_ID)
 @Singleton
 public class ReservationEditActivityController  implements ActivityPresenter
@@ -37,7 +18,7 @@ public class ReservationEditActivityController  implements ActivityPresenter
         this.logger = logger;
     }
 
-    @Override @SuppressWarnings("rawtypes") public boolean startActivity(ActivityManager.Activity activity)
+    @Override @SuppressWarnings("rawtypes") public boolean startActivity(Activity activity)
     {
         try
         {
@@ -68,3 +49,4 @@ public class ReservationEditActivityController  implements ActivityPresenter
         return false;
     }
 }
+*/

@@ -46,7 +46,6 @@ import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Font;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;

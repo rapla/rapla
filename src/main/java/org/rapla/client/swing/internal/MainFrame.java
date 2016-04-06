@@ -15,10 +15,12 @@ package org.rapla.client.swing.internal;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
@@ -54,15 +56,18 @@ public class MainFrame extends RaplaGUIComponent
     RaplaMenuBar menuBar;
     private final RaplaFrame frame ;
     Listener listener = new Listener();
-    CalendarEditor cal;
+    private final AbstractActivityController activityController;
+    //CalendarEditor cal;
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
     private final FrameControllerList frameControllerList;
     private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public MainFrame(RaplaMenuBarContainer menuBarContainer,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar, CalendarEditor editor, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+    public MainFrame(RaplaMenuBarContainer menuBarContainer, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
+            AbstractActivityController activityController, RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = raplaMenuBar;
+        this.activityController = activityController;
         this.raplaImages = raplaImages;
         this.frameControllerList = frameControllerList;
         this.dialogUiFactory = dialogUiFactory;
@@ -71,7 +76,6 @@ public class MainFrame extends RaplaGUIComponent
         // CKO TODO Title should be set in config along with the facade used
         frame.setTitle(title );
         	
-        cal = editor;
         getUpdateModule().addModificationListener(this);
 
         JMenuBar menuBar = menuBarContainer.getMenubar();
@@ -82,8 +86,9 @@ public class MainFrame extends RaplaGUIComponent
 
         getContentPane().setLayout( new BorderLayout() );
       //  getContentPane().add ( statusBar, BorderLayout.SOUTH);
-
-        getContentPane().add(  cal.getComponent() , BorderLayout.CENTER );
+        RaplaWidget<JComponent> widget = activityController.provideContent();
+        JComponent component = widget.getComponent();
+        getContentPane().add(  component , BorderLayout.CENTER );
     }
 
     public void show()  {
@@ -91,7 +96,7 @@ public class MainFrame extends RaplaGUIComponent
         createFrame();
         //dataChanged(null);
         setStatus();
-        cal.start();
+        activityController.init();
         frame.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
         frame.setVisible(true);
         frameControllerList.setMainWindow(frame);
@@ -133,7 +138,7 @@ public class MainFrame extends RaplaGUIComponent
     }
 
     public void dataChanged(ModificationEvent e) throws RaplaException {
-        cal.dataChanged( e );
+        activityController.updateView( e);
         new StatusFader(statusBar).updateStatus();
     }
     

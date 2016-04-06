@@ -12,10 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
+ import java.util.Date;
+ import java.util.Locale;
+ import java.util.TimeZone;
 
 /** Tools for manipulating dates.
  * At the moment of writing rapla internaly stores all appointments
