@@ -25,6 +25,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
 
@@ -42,11 +43,18 @@ import com.google.web.bindery.event.shared.EventBus;
     private final User user;
 
     @Inject public MergeMenuFactory(RaplaResources raplaResources, RaplaImages raplaImages, ClientFacade facade, DialogUiFactory dialogUiFactory,
-            EventBus eventBus)
+            EventBus eventBus) throws RaplaInitializationException
     {
         this.raplaResources = raplaResources;
         this.raplaImages = raplaImages;
-        user = facade.getUser();
+        try
+        {
+            user = facade.getUser();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e.getMessage(), e);
+        }
         permissionController = facade.getRaplaFacade().getPermissionController();
         this.dialogUiFactory = dialogUiFactory;
         this.eventBus = eventBus;

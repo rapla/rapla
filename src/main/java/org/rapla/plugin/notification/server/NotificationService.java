@@ -50,6 +50,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
+import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
@@ -205,7 +206,7 @@ public class NotificationService
         }
     }
     
-    private void sendMails(Collection<AllocationMail> mails)
+    private void sendMails(Collection<AllocationMail> mails) throws RaplaException
     {
         Iterator<AllocationMail> it = mails.iterator();
         while (it.hasNext()) {

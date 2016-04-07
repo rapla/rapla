@@ -301,7 +301,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         return;
                     String eventTypeAttributeNameKey = ((Attribute) selectedItem).getKey();
 
-                    Integer[] status  = importService.importICal(new Import(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey)).get();
+                    Integer[] status  = importService.importICal(new Import(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey));
                     int eventsInICal = status[0];
             		int eventsImported = status[1];
             		int eventsPresent = status[2];

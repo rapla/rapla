@@ -112,7 +112,7 @@ public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent
         return dlg;
     }
     
-    protected final void setObjects(List<T> objects)
+    protected final void setObjects(List<T> objects) throws RaplaException
     {
         ui.setObjects(objects);
     }

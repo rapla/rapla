@@ -16,6 +16,7 @@ import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.plugin.notification.server.NotificationService.AllocationMail;
 import org.rapla.rest.client.swing.JSONParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
@@ -44,7 +45,7 @@ public class NotificationStorage
         this.operator = (CachableStorageOperator) facade.getOperator();
     }
 
-    public synchronized Collection<AllocationMail> getMailsToSend()
+    public synchronized Collection<AllocationMail> getMailsToSend() throws RaplaException
     {
         exportMails.clear();
         mailToRaplaId.clear();
@@ -68,7 +69,7 @@ public class NotificationStorage
         return result;
     }
 
-    public void store(List<AllocationMail> mailList)
+    public void store(List<AllocationMail> mailList) throws RaplaException
     {
         final ArrayList<Entity> toStore = new ArrayList<Entity>();
         for (AllocationMail allocationMail : mailList)
@@ -92,7 +93,7 @@ public class NotificationStorage
         facade.storeObjects(toStore.toArray(Entity.ENTITY_ARRAY));
     }
 
-    public void increateAndStoreRetryCount(AllocationMail mail)
+    public void increateAndStoreRetryCount(AllocationMail mail) throws RaplaException
     {
         for (AllocationMail knownMail : mailToRaplaId.keySet())
         {
@@ -112,7 +113,7 @@ public class NotificationStorage
         }
     }
 
-    public synchronized void markSent(AllocationMail mail)
+    public synchronized void markSent(AllocationMail mail) throws RaplaException
     {
         AllocationMail allocMailToRemove = null;
         for (AllocationMail knownMail : mailToRaplaId.keySet())

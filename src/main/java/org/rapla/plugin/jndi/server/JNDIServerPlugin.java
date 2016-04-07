@@ -26,15 +26,15 @@ import org.rapla.storage.xml.RaplaXMLContextException;
 
 public class JNDIServerPlugin  {
     
-    private void convertSettings(RaplaFacade facade, Logger logger,Configuration config)
-    {
-        String className = JNDIPlugin.class.getName();
-        TypedComponentRole<RaplaConfiguration> newConfKey = JNDIPlugin.JNDISERVER_CONFIG;
-        if ( config.getAttributeNames().length > 2)
-        {
-            JNDIServerPlugin.convertToNewPluginConfig(facade, logger, className, newConfKey);
-        }
-    }
+//    private void convertSettings(RaplaFacade facade, Logger logger,Configuration config)
+//    {
+//        String className = JNDIPlugin.class.getName();
+//        TypedComponentRole<RaplaConfiguration> newConfKey = JNDIPlugin.JNDISERVER_CONFIG;
+//        if ( config.getAttributeNames().length > 2)
+//        {
+//            JNDIServerPlugin.convertToNewPluginConfig(facade, logger, className, newConfKey);
+//        }
+//    }
 
     static public void convertToNewPluginConfig(RaplaFacade facade, Logger logger, String className, TypedComponentRole<RaplaConfiguration> newConfKey)
             throws RaplaXMLContextException
@@ -74,7 +74,7 @@ public class JNDIServerPlugin  {
         {
             if (ex instanceof RaplaXMLContextException)
             {
-                throw ex;
+                throw (RaplaXMLContextException)ex;
             }
             throw new RaplaXMLContextException(ex.getMessage(), ex);
         }
