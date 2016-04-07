@@ -405,7 +405,7 @@ public class ExchangeAppointmentStorage
         return  logger;
     }
 
-    public void refresh()
+    public void refresh() throws RaplaException
     {
         final Collection<ImportExportEntity> exportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
         tasks.clear();

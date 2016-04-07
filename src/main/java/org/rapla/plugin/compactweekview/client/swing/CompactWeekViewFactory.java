@@ -38,6 +38,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -88,7 +89,14 @@ public class CompactWeekViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
-        config = facade.getRaplaFacade().getSystemPreferences().getEntry(CompactWeekviewPlugin.CONFIG, new RaplaConfiguration());
+        try
+        {
+            config = facade.getRaplaFacade().getSystemPreferences().getEntry(CompactWeekviewPlugin.CONFIG, new RaplaConfiguration());
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e.getMessage(), e);
+        }
     }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException

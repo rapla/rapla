@@ -94,7 +94,7 @@ public class ArchiverServiceImpl  implements ArchiverService
         delete(removeOlderInDays, raplaFacade, logger);
 	}
 
-    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger)
+    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger) throws RaplaException
     {
         Date endDate = new Date(raplaFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
         Reservation[] events = raplaFacade.getReservations(null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
