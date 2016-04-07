@@ -75,6 +75,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.rest.client.gwt.MockProxy;
 import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -187,59 +188,25 @@ import org.rapla.storage.impl.EntityStore;
         return user;
     }
 
-    public FutureResult<User> connectAsync()
+    public Promise<User> connectAsync()
     {
-        return new FutureResult<User>()
-        {
-
-            @Override public User get() throws Exception
-            {
-                return connect(null);
-            }
-
-            @Override public void get(final AsyncCallback<User> callback)
-            {
-                RemoteStorage serv = getRemoteStorage();
-                FutureResult<UpdateEvent> resources;
-                try
-                {
-                    resources = serv.getResources();
-                }
-                catch (RaplaException e)
-                {
-                    callback.onFailure(e);
-                    return;
-                }
-                resources.get(new AsyncCallback<UpdateEvent>()
-                {
-
-                    @Override public void onFailure(Throwable caught)
+        RemoteStorage serv = getRemoteStorage();
+        Promise<User> userPromise = getScheduler().supplyProxy(()->serv.getResources()).thenApply((evt)
+        -> {
+                    Lock writeLock = RaplaComponent.lock(RemoteOperator.this.lock.writeLock(), 10);
+                    try
                     {
-                        callback.onFailure(caught);
-                        return;
+                        User user = loadData(evt);
+                        initRefresh();
+                        return user;
                     }
-
-                    @Override public void onSuccess(UpdateEvent evt)
+                    finally
                     {
-                        Lock writeLock = RaplaComponent.lock(RemoteOperator.this.lock.writeLock(), 10);
-                        try
-                        {
-                            User user = loadData(evt);
-                            initRefresh();
-                            callback.onSuccess(user);
-                        }
-                        catch (RaplaException e)
-                        {
-                            callback.onFailure(e);
-                        }
-                        finally
-                        {
-                            unlock(writeLock);
-                        }
+                        unlock(writeLock);
                     }
-                });
-            }
-        };
+                }
+            );
+        return userPromise;
     }
 
     protected String login() throws RaplaException
@@ -1470,13 +1437,13 @@ import org.rapla.storage.impl.EntityStore;
         return result;
     }
 
-    @Override public FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment,
+    @Override public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment,
             Collection<Reservation> ignoreList, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour)
     {
         RemoteStorage serv = getRemoteStorage();
         String[] allocatableIds = getIdList(allocatables);
         String[] reservationIds = getIdList(ignoreList);
-        FutureResult<Date> nextAllocatableDate = serv.getNextAllocatableDate(
+        Promise<Date> nextAllocatableDate = serv.getNextAllocatableDate(
                 new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes,
                         excludedDays, rowsPerHour));
         return nextAllocatableDate;
