@@ -33,7 +33,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
     }
 
     @Override
-    public void logout()
+    public void logout() throws RaplaException
     {
         if (session != null)
         {

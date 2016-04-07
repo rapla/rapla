@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -32,6 +34,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
@@ -68,20 +71,25 @@ public class RaplaEventsRestPage
             allocatables.add(allocatable);
         }
 
-        ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
-        Map<String, String> annotationQuery = null;
-        User owner = null;
-        Map<Allocatable, Collection<Appointment>> appMap = operator.queryAppointments(owner, allocatables, start, end, filters, annotationQuery).get();
-        final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
-        List<ReservationImpl> result = new ArrayList<ReservationImpl>();
-        PermissionController permissionController = facade.getPermissionController();
-        for (Reservation r : reservations)
-        {
-            if (permissionController.canRead(r, user))
+        final ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
+        final Map<String, String> annotationQuery = null;
+        final User owner = null;
+        final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator.queryAppointments(owner, allocatables, start, end, filters, annotationQuery);
+        final List<ReservationImpl> result = new ArrayList<ReservationImpl>();
+        final Semaphore semaphore = new Semaphore(0);
+        promise.thenAccept((appMap) -> {
+            final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
+            PermissionController permissionController = facade.getPermissionController();
+            for (Reservation r : reservations)
             {
-                result.add((ReservationImpl) r);
+                if (permissionController.canRead(r, user))
+                {
+                    result.add((ReservationImpl) r);
+                }
             }
-        }
+            semaphore.release();
+        });
+        semaphore.tryAcquire(40, TimeUnit.SECONDS);
         return result;
     }
 

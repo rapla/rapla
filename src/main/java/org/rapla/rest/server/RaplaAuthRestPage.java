@@ -57,12 +57,12 @@ public class RaplaAuthRestPage
     }
 
     @POST
-    public String createPlain(LoginCredentials credentials) throws Exception
+    public String createPlain(LoginCredentials credentials) throws RaplaException
     {
         return dummy(credentials).getAccessToken();
     }
 
-    private LoginTokens dummy(LoginCredentials credentials)
+    private LoginTokens dummy(LoginCredentials credentials) throws RaplaException
     {
         User user = null;
         try

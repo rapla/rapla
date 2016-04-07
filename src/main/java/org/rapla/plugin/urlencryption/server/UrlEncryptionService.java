@@ -64,7 +64,7 @@ public class UrlEncryptionService implements UrlEncryption {
     }
 
 
-    private void initForRequest()
+    private void initForRequest() throws RaplaException
     {
         byte[] linebreake = {};
         this.base64 = new Base64(64, linebreake, true);
@@ -140,7 +140,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @param plain Plain text
      * @return String The encrypted result or null in case of an exception
      */
-    public synchronized String encrypt(String plain) {
+    public synchronized String encrypt(String plain) throws RaplaException {
         initForRequest();
         try {
             return this.base64.encodeToString(this.encryptionCipher.doFinal(plain.getBytes()));

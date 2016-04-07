@@ -37,6 +37,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -72,7 +73,7 @@ public class CompactViewFactory implements SwingViewFactory
             MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
-            IOInterface ioInterface, AppointmentFormater appointmentFormater)
+            IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaInitializationException
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -91,7 +92,14 @@ public class CompactViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
-        config = facade.getRaplaFacade().getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
+        try
+        {
+            config = facade.getRaplaFacade().getSystemPreferences().getEntry(TimeslotPlugin.CONFIG, new RaplaConfiguration());
+        }
+        catch(RaplaException e)
+        {
+            throw new RaplaInitializationException(e.getMessage(), e);
+        }
     }
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException

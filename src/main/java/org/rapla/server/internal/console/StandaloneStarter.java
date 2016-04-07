@@ -82,7 +82,7 @@ public class StandaloneStarter extends GUIStarter
         }
     }
 
-    private ConnectInfo getStartupConnectInfo()
+    private ConnectInfo getStartupConnectInfo() throws RaplaException
     {
         String username = startupUser != null ? startupUser : server.getFirstAdmin();
         return new ConnectInfo(username, "".toCharArray());

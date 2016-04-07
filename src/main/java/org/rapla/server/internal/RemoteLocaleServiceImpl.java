@@ -15,6 +15,7 @@ import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -47,48 +48,40 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     }
 
     @Override
-    public FutureResult<LocalePackage> locale(String id, String localeString)
+    public LocalePackage locale(String id, String localeString) throws RaplaException
     {
-        try
+        if (localeString == null)
         {
-            if (localeString == null)
+            if (session.isAuthentified(request))
             {
-                if (session.isAuthentified(request))
+                final User validUser = session.getUser(request);
+                final Preferences preferences = operator.getPreferences(validUser, true);
+                final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+                if (entry != null)
                 {
-                    final User validUser = session.getUser(request);
-                    final Preferences preferences = operator.getPreferences(validUser, true);
-                    final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
-                    if (entry != null)
-                    {
-                        localeString = new Locale(entry).toString();
-                    }
-                }
-                if (localeString == null)
-                {
-                    localeString = raplaLocale.getLocale().toString();
+                    localeString = new Locale(entry).toString();
                 }
             }
-            Locale locale = LocaleTools.getLocale(localeString);
-            final DefaultBundleManager defBundleManager = (DefaultBundleManager) bundleManager;
-            final I18nLocaleFormats formats = defBundleManager.getFormats(locale);
-            Map<String, Map<String, String>> bundles = resourceBundleList.getBundles(locale);
-            String language = locale.getLanguage();
-            String country = locale.getCountry();
-            Set<String> availableLanguages = defBundleManager.getAvailableLanguages();
-            final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles, availableLanguages);
-            return new ResultImpl<LocalePackage>(localePackage);
+            if (localeString == null)
+            {
+                localeString = raplaLocale.getLocale().toString();
+            }
         }
-        catch (Exception e1)
-        {
-            logger.error("No locales found", e1);
-            return new ResultImpl<LocalePackage>(e1);
-        }
+        Locale locale = LocaleTools.getLocale(localeString);
+        final DefaultBundleManager defBundleManager = (DefaultBundleManager) bundleManager;
+        final I18nLocaleFormats formats = defBundleManager.getFormats(locale);
+        Map<String, Map<String, String>> bundles = resourceBundleList.getBundles(locale);
+        String language = locale.getLanguage();
+        String country = locale.getCountry();
+        Set<String> availableLanguages = defBundleManager.getAvailableLanguages();
+        final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles, availableLanguages);
+        return localePackage;
     }
 
     @Override
-    public FutureResult<Map<String, Set<String>>> countries(Set<String> languages)
+    public Map<String, Set<String>> countries(Set<String> languages)
     {
         Map<String, Set<String>> result = ((DefaultBundleManager) bundleManager).getCountriesForLanguage(languages);
-        return new ResultImpl<Map<String, Set<String>>>(result);
+        return result;
     }
 }
