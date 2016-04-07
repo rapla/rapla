@@ -84,10 +84,12 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
@@ -172,7 +174,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	{
 		if ( operator== null)
 		{
-			throw new RaplaException("Dependency Cycle detected. Please use provider for facade ");
+//		    throw new RaplaException("Dependency Cycle detected. Please use provider for facade ");
+			throw new RaplaInitializationException("Dependency Cycle detected. Please use provider for facade ");
 		}
 		return operator.getPermissionController() ;
 	}
@@ -403,7 +406,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			this.modificationEvent = evt;
 		}
 
-		public void execute() {
+		public void execute() throws Exception {
 			run();
 		}
 
@@ -475,85 +478,82 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return objects;
 	}
 
-	public FutureResult<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters) {
-		if ( templateId != null)
-		{
-			final Allocatable template = getTemplate();
-			if ( template == null)
-			{
-				return new ResultImpl<Collection<Reservation>>( new RaplaException("Template for id " + templateId + " not found!"));
-			}
-		}
-		final Collection<Allocatable> allocatablesCollection = allocatables != null ? Arrays.asList(allocatables) : null;
-        final FutureResult<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = getAppointmentsAsync(operator, user, allocatablesCollection, start, end,
-				reservationFilters, templateId);
-		return new FutureResult<Collection<Reservation>>()
-		{
-			@Override public Collection<Reservation> get() throws Exception
-			{
-				final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = appointmentsAsync.get();
-				return CalendarModelImpl.getAllReservations(allocatableCollectionMap);
-			}
-
-			@Override public void get(final AsyncCallback<Collection<Reservation>> callback)
-			{
-				appointmentsAsync.get(new AsyncCallback<Map<Allocatable, Collection<Appointment>>>()
-				{
-					@Override public void onFailure(Throwable caught)
-					{
-						callback.onFailure(caught);
-					}
-
-					@Override public void onSuccess(Map<Allocatable, Collection<Appointment>> result)
-					{
-						final Collection<Reservation> allReservations = CalendarModelImpl.getAllReservations(result);
-						callback.onSuccess(allReservations);
-					}
-				});
-			}
-		};
+	public Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters) {
+        final CommandScheduler scheduler = getScheduler();
+        final Promise<Collection<Allocatable>> allocatablesPromise = scheduler.supply(() ->
+        {
+            if (templateId != null)
+            {
+                final Allocatable template = getTemplate();
+                if (template == null)
+                {
+                    throw new RaplaException("Template for id " + templateId + " not found!");
+                }
+            }
+            final Collection<Allocatable> allocatablesCollection = allocatables != null ? Arrays.asList(allocatables) : null;
+            return allocatablesCollection;
+        });
+        final Promise<Map<Allocatable, Collection<Appointment>>> appointmentMapPromise = allocatablesPromise.thenCompose((allocatablesCollection) ->
+        {
+            final Promise<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = getAppointmentsAsync(scheduler, operator, user, allocatablesCollection,
+                    start, end, reservationFilters, templateId);
+            return appointmentsAsync;
+        });
+        final Promise<Collection<Reservation>> promise = appointmentMapPromise.thenApply((appointments) ->
+        {
+            final Collection<Reservation> allReservations = CalendarModelImpl.getAllReservations(appointments);
+            return allReservations;
+        });
+        return promise;
 	}
 
-	public static Promise<Map<Allocatable,Collection<Appointment>>,RaplaException,Object> getAppointmentsAsync(StorageOperator operator, User user,
-			Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId) {
-        Collection<Allocatable> allocList;
-        Map<String,String> annotationQuery = null;
+    public static Promise<Map<Allocatable, Collection<Appointment>>> getAppointmentsAsync(CommandScheduler scheduler, StorageOperator operator, User user,
+            Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId)
+    {
+        final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() ->
+        {
+            Collection<Allocatable> allocList;
 
-		{
-    		if (allocatables != null)
-    		{
-    			if ( allocatables.size() == 0  && templateId == null)
-    			{
-					Map<Allocatable,Collection<Appointment>> emptyMap = Collections.emptyMap();
-                    return new ResultImpl<Map<Allocatable,Collection<Appointment>>>(emptyMap);
-    			}
-    			allocList = allocatables;
-    		}
-    		else
-    		{
-    			allocList = Collections.emptyList();
-    		}
-		}
+            {
+                if (allocatables != null)
+                {
+                    if (allocatables.size() == 0 && templateId == null)
+                    {
+                        Map<Allocatable, Collection<Appointment>> emptyMap = Collections.emptyMap();
+                        return null;
+                    }
+                    allocList = allocatables;
+                }
+                else
+                {
+                    allocList = Collections.emptyList();
+                }
+            }
 
-		if ( templateId != null)
-		{
-			user = null;
-			final Allocatable template = operator.tryResolve(templateId, Allocatable.class);
-			if ( template == null)
-			{
-				return new ResultImpl<>(new RaplaException("Can't load template with id " + templateId));
-			}
-			else
-			{
-				allocList = new ArrayList<>(allocList);
-				allocList.add( template);
-			}
-			//annotationQuery = new LinkedHashMap<String,String>();
-			//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, templateId);
-		}
-		Promise<Map<Allocatable,Collection<Appointment>>,RaplaException,Object> query = operator.queryAppointments(user, allocList, start, end, reservationFilters, annotationQuery);
-		return query;
-	}
+            if (templateId != null)
+            {
+                final Allocatable template = operator.tryResolve(templateId, Allocatable.class);
+                if (template == null)
+                {
+                    throw new RaplaException("Can't load template with id " + templateId);
+                }
+                else
+                {
+                    allocList = new ArrayList<>(allocList);
+                    allocList.add(template);
+                }
+            }
+            return allocList;
+        }).thenCompose((allocList) ->
+        {
+            final Map<String, String> annotationQuery = null;
+            final User callUser = templateId != null ? null : user;
+            Promise<Map<Allocatable, Collection<Appointment>>> query = operator.queryAppointments(callUser, allocList, start, end, reservationFilters,
+                    annotationQuery);
+            return query;
+        });
+        return promise;
+    }
 
 	public Allocatable[] getAllocatables() throws RaplaException {
 		return getAllocatables(null);
@@ -621,7 +621,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return allocatables;
 	}
 	
-	public Collection<Reservation> getTemplateReservations(Allocatable template) throws RaplaException
+	public Promise<Collection<Reservation>> getTemplateReservations(Allocatable template) throws RaplaException
 	{
 		User user = null;
 		Collection<Allocatable> allocList = new ArrayList<Allocatable>();
@@ -631,39 +631,23 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		Map<String,String> annotationQuery = null;
 		//Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
 		//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
-        try {
-
-			final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = operator.queryAppointments(user, allocList, start, end, null,
-					annotationQuery).get();
-			final Collection<Reservation> result = CalendarModelImpl.getAllReservations(allocatableCollectionMap);
+        final Promise<Map<Allocatable, Collection<Appointment>>> promiseMap = operator.queryAppointments(user, allocList, start, end, null, annotationQuery);
+        final Promise<Collection<Reservation>> reservationPromise = promiseMap.thenApply((allocatable) ->
+        {
+            final Collection<Reservation> result = CalendarModelImpl.getAllReservations(allocatable);
             return result;
-        } catch (RaplaException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RaplaException(e.getMessage(),e);
-        }
+        });
+        return reservationPromise;
 	}
 	
-	public Reservation[] getReservations(User user, Date start, Date end,ClassificationFilter[] filters) throws RaplaException {
-        try {
-            Collection<Reservation> collection = getReservationsAsync(user, null,start, end, filters).get();
-            return collection.toArray(Reservation.RESERVATION_ARRAY);
-        } catch (RaplaException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RaplaException(e.getMessage(),e);
-        }
+	public Promise<Collection<Reservation>> getReservations(User user, Date start, Date end,ClassificationFilter[] filters) {
+        Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,start, end, filters);
+        return collection;
 	}
 	
-	public Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) throws RaplaException {
-        try {
-            Collection<Reservation> collection = getReservationsAsync(null, allocatables,start, end, reservationFilters).get();
-            return collection.toArray(Reservation.RESERVATION_ARRAY);
-        } catch (RaplaException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RaplaException(e.getMessage(),e);
-        }
+	public Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) {
+        Promise<Collection<Reservation>> collection = getReservationsAsync(null, allocatables,start, end, reservationFilters);
+        return collection;
     }
 
 	public Period[] getPeriods() throws RaplaException {
@@ -729,59 +713,57 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return user;
 	}
 
-	  public Conflict[] getConflicts(Reservation reservation) throws RaplaException {
-	    	Date today = operator.today();
-	    	if ( RaplaComponent.isTemplate( reservation))
-	    	{
-	    		return Conflict.CONFLICT_ARRAY;
-	    	}
-	    	Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
-            Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
-            Collection<Reservation> ignoreList = Collections.singleton( reservation );
-            FutureResult<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindings = operator.getAllAllocatableBindings( allocatables, appointments, ignoreList);
-            Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
-            try {
-                allocatableBindings = allAllocatableBindings.get();
-            } catch (RaplaException e) {
-                throw e;
-            }catch (Exception e) {
-                throw new RaplaException(e.getMessage(), e);
-            }
+    public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
+    {
+        Date today = operator.today();
+        if (RaplaComponent.isTemplate(reservation))
+        {
+            return getScheduler().supply(() -> Collections.emptyList());
+        }
+        final Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
+        final Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
+        final Collection<Reservation> ignoreList = Collections.singleton(reservation);
+        final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindingsPromise = operator.getAllAllocatableBindings(allocatables,
+                appointments, ignoreList);
+        final Promise<Collection<Conflict>> promise = allAllocatableBindingsPromise.thenApply((map) ->
+        {
             ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
-            for ( Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry: allocatableBindings.entrySet() )
-			{
-				Allocatable allocatable= entry.getKey();
-				String annotation = allocatable.getAnnotation( ResourceAnnotations.KEY_CONFLICT_CREATION);
-				boolean holdBackConflicts = annotation != null && annotation.equals( ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
-				if ( holdBackConflicts)
-				{
-					continue;
-				}
-				Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
-				for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry: appointmentMap.entrySet())
-				{
-					Appointment appointment = appointmentEntry.getKey();
-					if ( reservation.hasAllocated( allocatable, appointment))
-					{
-						Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
-						if ( conflictionAppointments != null)
-						{
-							for ( Appointment conflictingAppointment: conflictionAppointments)
-							{
-								
-								Appointment appointment1 = appointment;
-								Appointment appointment2 = conflictingAppointment;
-								ConflictImpl.checkAndAddConflicts(conflictList, allocatable,appointment1, appointment2, today);
-							}
-						}
-					}
-				}
-			}
-            return conflictList.toArray(Conflict.CONFLICT_ARRAY);
+            for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
+            {
+                Allocatable allocatable = entry.getKey();
+                String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
+                boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+                if (holdBackConflicts)
+                {
+                    continue;
+                }
+                Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
+                for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry : appointmentMap.entrySet())
+                {
+                    Appointment appointment = appointmentEntry.getKey();
+                    if (reservation.hasAllocated(allocatable, appointment))
+                    {
+                        Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
+                        if (conflictionAppointments != null)
+                        {
+                            for (Appointment conflictingAppointment : conflictionAppointments)
+                            {
 
-	  }
+                                Appointment appointment1 = appointment;
+                                Appointment appointment2 = conflictingAppointment;
+                                ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment1, appointment2, today);
+                            }
+                        }
+                    }
+                }
+            }
+            return conflictList;
+        });
+        return promise;
+    }
 
-	public Conflict[] getConflicts() throws RaplaException {
+	public Collection<Conflict> getConflicts() throws RaplaException {
+	    
 		final User user;
         User workingUser = getWorkingUser();
 		if ( workingUser != null && !workingUser.isAdmin())
@@ -798,7 +780,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
 		}
 	
-		return conflicts.toArray(new Conflict[] {});
+		return conflicts;
 	}
 	
 //	public boolean canReadReservationsFromOthers(User user) {
@@ -858,7 +840,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 //
 //	}
 	
-	public FutureResult<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
+	public Promise<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
 		Collection<Reservation> ignoreList = new HashSet<Reservation>();
 		if ( appointments != null)
 		{
@@ -875,7 +857,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 	
 	
-	public FutureResult<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
+	public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
 		int worktimeStartMinutes = options.getWorktimeStartMinutes();
 		int worktimeEndMinutes = options.getWorktimeEndMinutes();
 		Integer[] excludeDays = options.getExcludeDays().toArray( new Integer[] {});
@@ -962,36 +944,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	   {
 		   throw new IllegalStateException("Only RemoteOperator supports async loading");
 	   }
-       final FutureResult<User> connect = ((RemoteOperator)operator).connectAsync();
-       return new FutureResult<VoidResult>() {
-
-        @Override
-        public VoidResult get() throws Exception {
-            User user = connect.get();
-            workingUserId = user.getId();
-            return VoidResult.INSTANCE;
-        }
-
-        @Override
-        public void get(final AsyncCallback<VoidResult> callback) {
-            connect.get( new AsyncCallback<User>() {
-
-                @Override
-                public void onFailure(Throwable caught) {
-                    callback.onFailure(caught);
-                }
-
-                @Override
-                public void onSuccess(User user) 
-                {
-                    workingUserId = user.getId();
-                    callback.onSuccess( VoidResult.INSTANCE);
-                }
-            });
-            
-        }
-       };
-       
+       final Promise<User> connect = ((RemoteOperator)operator).connectAsync();
+       final Promise<Void> promise = connect.thenAccept((user) -> {
+           workingUserId = user.getId();
+       });
+       return promise;
    }
 
    public boolean canChangePassword() {

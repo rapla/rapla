@@ -88,7 +88,7 @@ public interface RaplaFacade
      @param end   only reservations beginning before the end-date will be returned (can be null).
      @param filters  you can specify classificationfilters or null for all reservations .
      */
-    Reservation[] getReservations(User user,Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
+    Promise<Collection<Reservation>> getReservations(User user,Date start,Date end,ClassificationFilter[] filters);
     Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
 
 
@@ -100,7 +100,7 @@ public interface RaplaFacade
      @param end   only reservations beginning before the end-date will be returned (can be null).
      @param filters  you can specify classificationfilters or null for all reservations.
      **/
-    Reservation[] getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters) throws RaplaException;
+    Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters);
 
 
     /** returns all available periods */
@@ -122,12 +122,12 @@ public interface RaplaFacade
     Promise<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
 
     /** returns all existing conflicts with the reservation */
-    Conflict[] getConflicts(Reservation reservation) throws RaplaException;
+    Promise<Collection<Conflict>> getConflicts(Reservation reservation);
 
     /** returns all existing conflicts that are visible for the user
      conflicts
      */
-    Conflict[] getConflicts() throws RaplaException;
+    Collection<Conflict> getConflicts() throws RaplaException;
 
     /** returns if the user has the permissions to change/create an
      allocation on the passed appointment. Changes of an
@@ -158,7 +158,7 @@ public interface RaplaFacade
 
     Collection<Allocatable> getTemplates() throws RaplaException;
 
-    Collection<Reservation> getTemplateReservations(Allocatable name) throws RaplaException;
+    Promise<Collection<Reservation>> getTemplateReservations(Allocatable name) throws RaplaException;
 
     Promise<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
 

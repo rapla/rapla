@@ -34,6 +34,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
@@ -133,7 +134,7 @@ public class RaplaComponent
         }
         try {
             return new CalendarOptionsImpl( new RaplaConfiguration() );
-        } catch (RaplaException e) {
+        } catch (RaplaInitializationException e) {
             throw new IllegalStateException( e);
         }
     }

@@ -16,7 +16,7 @@ public class RaplaInitializationException extends RuntimeException
 
     public RaplaInitializationException(Throwable cause)
     {
-        super(cause);
+        super(cause.getMessage(), cause);
     }
 
 }
