@@ -10,9 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -52,6 +49,7 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
@@ -81,45 +79,6 @@ import org.rapla.storage.impl.EntityStore;
     @Inject public RemoteStorageImpl(@Context HttpServletRequest request)
     {
         this.request = request;
-    }
-
-    private static class PromiseSynchroniser
-    {
-        static <T> T waitForRapla(Promise<T> promise, int timeout) throws RaplaException
-        {
-            try
-            {
-                return waitFor(promise, timeout);
-            }
-            catch (RaplaException ex)
-            {
-                throw ex;
-            }
-            catch (Throwable throwable)
-            {
-                throw new RaplaException(throwable.getMessage(), throwable);
-            }
-        }
-
-        static <T> T waitFor(Promise<T> promise, int timeout) throws Throwable
-        {
-            Semaphore semaphore = new Semaphore(0);
-            AtomicReference<T> atomicReference = new AtomicReference<>();
-            AtomicReference<Throwable> atomicReferenceE = new AtomicReference<>();
-            promise.whenComplete((t, ex) -> {
-                atomicReferenceE.set(ex);
-                atomicReference.set(t);
-                semaphore.release();
-            });
-            semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-            final Throwable throwable = atomicReferenceE.get();
-            if (throwable != null)
-            {
-                throw throwable;
-            }
-            final T t = atomicReference.get();
-            return t;
-        }
     }
 
     public UpdateEvent getResources() throws RaplaException
@@ -221,7 +180,7 @@ import org.rapla.storage.impl.EntityStore;
         ClassificationFilter[] classificationFilters = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> mapFutureResult = operator
                 .queryAppointments(user, allocatables, start, end, classificationFilters, annotationQuery);
-        Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForRapla(mapFutureResult, 50000);
+        Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
         return list;
@@ -555,7 +514,7 @@ import org.rapla.storage.impl.EntityStore;
         checkAuthentified();
         List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-        Date result = PromiseSynchroniser.waitForRapla(
+        Date result = PromiseSynchroniser.waitForWithRaplaException(
                 operator.getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour),
                 50000);
         return result;
@@ -573,7 +532,7 @@ import org.rapla.storage.impl.EntityStore;
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList);
-        Map<Allocatable, Collection<Appointment>> bindings = PromiseSynchroniser.waitForRapla(promise, 100000);
+        Map<Allocatable, Collection<Appointment>> bindings = PromiseSynchroniser.waitForWithRaplaException(promise, 100000);
         Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
         for (Allocatable alloc : bindings.keySet())
         {
@@ -620,7 +579,7 @@ import org.rapla.storage.impl.EntityStore;
         List<Appointment> asList = cast(appointments);
         final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> promise = operator
                 .getAllAllocatableBindings(allocatables, asList, ignoreList);
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = PromiseSynchroniser.waitForRapla(promise, 10000);
+        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = PromiseSynchroniser.waitForWithRaplaException(promise, 10000);
         for (Allocatable alloc : bindings.keySet())
         {
             Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
