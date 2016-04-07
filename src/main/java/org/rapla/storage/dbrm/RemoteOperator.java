@@ -74,6 +74,7 @@ import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.rest.client.gwt.MockProxy;
 import org.rapla.scheduler.Cancelable;
+import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PreferencePatch;
@@ -191,21 +192,19 @@ import org.rapla.storage.impl.EntityStore;
     public Promise<User> connectAsync()
     {
         RemoteStorage serv = getRemoteStorage();
-        Promise<User> userPromise = getScheduler().supplyProxy(()->serv.getResources()).thenApply((evt)
-        -> {
-                    Lock writeLock = RaplaComponent.lock(RemoteOperator.this.lock.writeLock(), 10);
-                    try
-                    {
-                        User user = loadData(evt);
-                        initRefresh();
-                        return user;
-                    }
-                    finally
-                    {
-                        unlock(writeLock);
-                    }
-                }
-            );
+        Promise<User> userPromise = getScheduler().supplyProxy(() -> serv.getResources()).thenApply((evt) -> {
+            Lock writeLock = RaplaComponent.lock(RemoteOperator.this.lock.writeLock(), 10);
+            try
+            {
+                User user = loadData(evt);
+                initRefresh();
+                return user;
+            }
+            finally
+            {
+                unlock(writeLock);
+            }
+        });
         return userPromise;
     }
 
@@ -233,7 +232,7 @@ import org.rapla.storage.impl.EntityStore;
         String password = new String(this.connectInfo.getPassword());
         String username = this.connectInfo.getUsername();
         RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
-        LoginTokens loginToken = serv1.login(username, password, connectAs).get();
+        LoginTokens loginToken = serv1.login(username, password, connectAs);
         String accessToken = loginToken.getAccessToken();
         if (accessToken != null)
         {
@@ -289,20 +288,7 @@ import org.rapla.storage.impl.EntityStore;
                 }
                 if (isConnected() && tryLock)
                 {
-                    refreshAsync(new AsyncCallback<VoidResult>()
-                    {
-
-                        @Override public void onFailure(Throwable caught)
-                        {
-                            getLogger().error("Error refreshing.", caught);
-
-                        }
-
-                        @Override public void onSuccess(VoidResult result)
-                        {
-
-                        }
-                    });
+                    refreshAsync();
                 }
             }
         };
@@ -377,7 +363,7 @@ import org.rapla.storage.impl.EntityStore;
         RemoteStorage serv = getRemoteStorage();
         try
         {
-            UpdateEvent evt = serv.refresh(clientRepoVersion).get();
+            UpdateEvent evt = serv.refresh(clientRepoVersion);
             refresh(evt);
         }
         catch (EntityNotFoundException ex)
@@ -397,7 +383,7 @@ import org.rapla.storage.impl.EntityStore;
 
     boolean refreshInProgress;
 
-    synchronized private void refreshAsync(final AsyncCallback<VoidResult> callback)
+    synchronized private void refreshAsync()
     {
         if (refreshInProgress)
         {
@@ -406,50 +392,23 @@ import org.rapla.storage.impl.EntityStore;
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
         refreshInProgress = true;
-        try
-        {
-            serv.refresh(clientRepoVersion).get(new AsyncCallback<UpdateEvent>()
-            {
-
-                @Override public void onFailure(Throwable caught)
-                {
-                    refreshInProgress = false;
-                    callback.onFailure(caught);
-                }
-
-                @Override public void onSuccess(UpdateEvent evt)
-                {
-                    refreshInProgress = false;
-                    try
-                    {
-                        refresh(evt);
-                    }
-                    catch (EntityNotFoundException ex)
-                    {
-                        getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
-                        try
-                        {
-                            refreshAll();
-                        }
-                        catch (Exception e)
-                        {
-                            onFailure(ex);
-                            return;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        onFailure(ex);
-                        return;
-                    }
-                    callback.onSuccess(VoidResult.INSTANCE);
-                }
-            });
-        }
-        catch (Exception ex)
-        {
+        final Promise<UpdateEvent> updateEventPromise = getScheduler().supplyProxy(() -> serv.refresh(clientRepoVersion));
+        updateEventPromise.thenAccept((evt) -> {
             refreshInProgress = false;
-        }
+            try
+            {
+                refresh(evt);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
+                refreshAll();
+            }
+        }).exceptionally((caught) -> {
+            refreshInProgress = false;
+            getLogger().error("Error refreshing.", caught);
+            return null;
+        });
     }
 
     private String getLastSyncedTime()
@@ -472,7 +431,7 @@ import org.rapla.storage.impl.EntityStore;
         try
         {
             RemoteStorage serv = getRemoteStorage();
-            serv.restartServer().get();
+            serv.restartServer();
             fireStorageDisconnected(message);
         }
         catch (RaplaException ex)
@@ -513,7 +472,7 @@ import org.rapla.storage.impl.EntityStore;
             RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
             try
             {
-                serv1.logout().get();
+                serv1.logout();
             }
             catch (RaplaConnectException ex)
             {
@@ -629,11 +588,10 @@ import org.rapla.storage.impl.EntityStore;
     private User loadData() throws RaplaException
     {
         RemoteStorage serv = getRemoteStorage();
-        FutureResult<UpdateEvent> resources = serv.getResources();
         try
         {
+            UpdateEvent evt = serv.getResources();
             getLogger().debug("Getting Data..");
-            UpdateEvent evt = resources.get();
             return loadData(evt);
         }
         catch (RaplaException ex)
@@ -722,7 +680,7 @@ import org.rapla.storage.impl.EntityStore;
         evt.setLastValidated(lastSyncedTime);
         try
         {
-            UpdateEvent serverClosure = serv.dispatch(evt).get();
+            UpdateEvent serverClosure = serv.dispatch(evt);
             refresh(serverClosure);
         }
         catch (RaplaException ex)
@@ -741,7 +699,7 @@ import org.rapla.storage.impl.EntityStore;
         try
         {
             String localname = RaplaType.getLocalName(raplaType);
-            List<String> ids = serv.createIdentifier(localname, count).get();
+            List<String> ids = serv.createIdentifier(localname, count);
             List<ReferenceInfo<T>> result = new ArrayList<ReferenceInfo<T>>();
             for (String id : ids)
             {
@@ -774,7 +732,7 @@ import org.rapla.storage.impl.EntityStore;
         RemoteStorage remoteMethod = getRemoteStorage();
         try
         {
-            String canChangePassword = remoteMethod.canChangePassword().get();
+            String canChangePassword = remoteMethod.canChangePassword();
             boolean result = canChangePassword != null && canChangePassword.equalsIgnoreCase("true");
             return result;
         }
@@ -794,10 +752,9 @@ import org.rapla.storage.impl.EntityStore;
         if (user == null)
         {
             RemoteStorage remoteMethod = getRemoteStorage();
-            final FutureResult<String> result = remoteMethod.getUsername(userId.getId());
             try
             {
-                String username = result.get();
+                final String username = remoteMethod.getUsername(userId.getId());
                 return username;
             }
             catch (Exception e)
@@ -817,7 +774,7 @@ import org.rapla.storage.impl.EntityStore;
         {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.changePassword(new PasswordPost(username, new String(oldPassword), new String(newPassword))).get();
+            remoteMethod.changePassword(new PasswordPost(username, new String(oldPassword), new String(newPassword)));
             refresh();
         }
         catch (RaplaSecurityException ex)
@@ -840,7 +797,7 @@ import org.rapla.storage.impl.EntityStore;
         {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.changeEmail(username, newEmail).get();
+            remoteMethod.changeEmail(username, newEmail);
             refresh();
         }
         catch (RaplaException ex)
@@ -859,7 +816,7 @@ import org.rapla.storage.impl.EntityStore;
         {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.confirmEmail(username, newEmail).get();
+            remoteMethod.confirmEmail(username, newEmail);
         }
         catch (RaplaException ex)
         {
@@ -877,7 +834,7 @@ import org.rapla.storage.impl.EntityStore;
         {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.changeName(username, newTitle, newFirstname, newSurname).get();
+            remoteMethod.changeName(username, newTitle, newFirstname, newSurname);
             refresh();
         }
         catch (RaplaException ex)
@@ -905,7 +862,7 @@ import org.rapla.storage.impl.EntityStore;
         Map<ReferenceInfo<T>, T> result = new HashMap();
         try
         {
-            UpdateEvent entityList = serv.getEntityRecursive(array).get();
+            UpdateEvent entityList = serv.getEntityRecursive(array);
             Collection<Entity> list = entityList.getStoreObjects();
             Lock lock = readLock();
             try
@@ -975,70 +932,30 @@ import org.rapla.storage.impl.EntityStore;
         return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
     }
 
-    static void test()
+    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
+            final ClassificationFilter[] filters, Map<String, String> annotationQuery)
     {
-        final StorageOperator operator = null;
-        final CommandScheduler scheduler = null;
-        final User user = null;
-        final Date start = null;
-        Promise test;
-        final Date end = null;
-        final Map<String, String> annotationQuery = null;
-        final Collection<Allocatable> allocatables = null;
-        final ClassificationFilter[] filters = null;
-        final QueryAppointments appointments = null;
-        final RemoteStorage stor = (RemoteStorage) null;
-        //        Promise<AppointmentMap,Exception,Object> prom = scheduler.when(stor, new CommandScheduler.Bla<RemoteStorage,AppointmentMap>()
-        //                {
-        //                    @Override public AppointmentMap get(RemoteStorage storage) throws Exception
-        //                    {
-        //                        final AppointmentMap appointmentMap = storage.queryAppointments(appointments);
-        //                        return appointmentMap;
-        //                    }
-        //                }
-        //        );
-        scheduler.when(stor, (storage) -> storage.queryAppointments(appointments))
-                .then((map) -> {
-            System.out.println(map);
-        })
-                .fail((e) -> {
-            e.printStackTrace();
-        });
-
-    }
-
-    public Map<Allocatable, Collection<Appointment>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end, final ClassificationFilter[] filters,
-            Map<String, String> annotationQuery)
-    {
-        RemoteStorage serv = getRemoteStorage();
-
-        // if a refresh is due, we assume the system went to sleep so we refresh before we continue
-        // TODO we should make a refresh async as well
-        if (intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
-        {
-            getLogger().info("cache not uptodate. Refreshing first.");
-            try
+        final RemoteStorage serv = getRemoteStorage();
+        final CommandScheduler scheduler = getScheduler();
+        Promise<Map<Allocatable, Collection<Appointment>>> result = scheduler.supply(() -> {
+            // if a refresh is due, we assume the system went to sleep so we refresh before we continue
+            // TODO we should make a refresh async as well
+            if (intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime())
             {
+                getLogger().info("cache not uptodate. Refreshing first.");
                 refresh();
+                return true;
             }
-            catch (RaplaException e)
+            else
             {
-                return new ResultImpl<Map<Allocatable, Collection<Appointment>>>(e);
+                return false;
             }
-        }
-
-        String[] allocatableId = getIdList(allocatables);
-        final FutureResult<AppointmentMap> serverQuery = serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery));
-        return new FutureResult<Map<Allocatable, Collection<Appointment>>>()
-        {
-
-            @SuppressWarnings("unchecked") @Override public Map<Allocatable, Collection<Appointment>> get() throws Exception
-            {
-                AppointmentMap list;
+        }).thenCompose((refreshed) -> {
+            String[] allocatableId = getIdList(allocatables);
+            return scheduler.supplyProxy(() -> serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery))).thenApply(list -> {
                 Map<Allocatable, Collection<Appointment>> filtered;
                 {
                     long time = System.currentTimeMillis();
-                    list = serverQuery.get();
                     logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
                 }
                 {
@@ -1048,35 +965,9 @@ import org.rapla.storage.impl.EntityStore;
                 }
 
                 return filtered;
-            }
-
-            @Override public void get(final AsyncCallback<Map<Allocatable, Collection<Appointment>>> callback)
-            {
-                serverQuery.get(new AsyncCallback<AppointmentMap>()
-                {
-
-                    @Override public void onFailure(Throwable caught)
-                    {
-                        callback.onFailure(caught);
-                    }
-
-                    @SuppressWarnings("unchecked") @Override public void onSuccess(AppointmentMap list)
-                    {
-                        Map<Allocatable, Collection<Appointment>> filtered;
-                        try
-                        {
-                            filtered = processReservationResult(list, filters);
-                        }
-                        catch (RaplaException e)
-                        {
-                            callback.onFailure(e);
-                            return;
-                        }
-                        callback.onSuccess(filtered);
-                    }
-                });
-            }
-        };
+            });
+        });
+        return result;
     }
 
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
@@ -1088,10 +979,6 @@ import org.rapla.storage.impl.EntityStore;
             final RemoteOperator resolver = this;
             appointmentMap.init(resolver);
             return appointmentMap.getResult(filters);
-        }
-        catch (RaplaException ex)
-        {
-            throw ex;
         }
         finally
         {
@@ -1275,7 +1162,7 @@ import org.rapla.storage.impl.EntityStore;
         }
     }
 
-    @Override public FutureResult<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(final Collection<Allocatable> allocatables,
+    @Override public Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(final Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
         final RemoteStorage serv = getRemoteStorage();
@@ -1289,112 +1176,44 @@ import org.rapla.storage.impl.EntityStore;
             appointmentList.add((AppointmentImpl) app);
             appointmentMap.put(app.getId(), app);
         }
-        return new FutureResult<Map<Allocatable, Collection<Appointment>>>()
-        {
+        final Promise<BindingMap> bindingMapPromise = getScheduler()
+                .supplyProxy(() -> serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)));
 
-            @Override public Map<Allocatable, Collection<Appointment>> get() throws Exception
+        Promise<Map<Allocatable, Collection<Appointment>>> resultPromise = bindingMapPromise.thenApply((bindingMap) -> {
+            Map<String, List<String>> resultMap = bindingMap.get();
+            HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
+            for (Allocatable alloc : allocatables)
             {
-                checkConnected();
-                BindingMap bindingMap = serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)).get();
-                Map<String, List<String>> resultMap = bindingMap.get();
-                return convert(resultMap);
-            }
-
-            @Override public void get(final AsyncCallback<Map<Allocatable, Collection<Appointment>>> callback)
-            {
-                serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds))
-                        .get(new AsyncCallback<BindingMap>()
-                        {
-
-                            @Override public void onFailure(Throwable caught)
-                            {
-                                callback.onFailure(caught);
-                            }
-
-                            @Override public void onSuccess(BindingMap result)
-                            {
-                                Map<String, List<String>> resultMap = result.get();
-                                HashMap<Allocatable, Collection<Appointment>> convert = convert(resultMap);
-                                callback.onSuccess(convert);
-                            }
-
-                        });
-            }
-
-            private HashMap<Allocatable, Collection<Appointment>> convert(Map<String, List<String>> resultMap)
-            {
-                HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
-                for (Allocatable alloc : allocatables)
+                List<String> list = resultMap.get(alloc.getId());
+                if (list != null)
                 {
-                    List<String> list = resultMap.get(alloc.getId());
-                    if (list != null)
+                    Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
+                    for (String id : list)
                     {
-                        Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
-                        for (String id : list)
+                        Appointment e = appointmentMap.get(id);
+                        if (e != null)
                         {
-                            Appointment e = appointmentMap.get(id);
-                            if (e != null)
-                            {
-                                appointmentBinding.add(e);
-                            }
+                            appointmentBinding.add(e);
                         }
-                        result.put(alloc, appointmentBinding);
                     }
+                    result.put(alloc, appointmentBinding);
                 }
-                return result;
             }
-        };
-
+            return result;
+        });
+        return resultPromise;
     }
 
-    @Override public FutureResult<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(
-            final Collection<Allocatable> allocatables, final Collection<Appointment> appointments, final Collection<Reservation> ignoreList)
+    @Override public Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(final Collection<Allocatable> allocatables,
+            final Collection<Appointment> appointments, final Collection<Reservation> ignoreList)
     {
         final RemoteStorage serv = getRemoteStorage();
         final String[] allocatableIds = getIdList(allocatables);
         final List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray(new AppointmentImpl[] {}));
         final String[] reservationIds = getIdList(ignoreList);
-
-        return new FutureResult<Map<Allocatable, Map<Appointment, Collection<Appointment>>>>()
-        {
-
-            @Override public Map<Allocatable, Map<Appointment, Collection<Appointment>>> get() throws Exception
-            {
-                List<ReservationImpl> serverResult = serv
-                        .getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)).get();
-                return getMap(allocatables, appointments, ignoreList, serverResult);
-            }
-
-            @Override public void get(final AsyncCallback<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> callback)
-            {
-                serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds))
-                        .get(new AsyncCallback<List<ReservationImpl>>()
-                        {
-
-                            @Override public void onFailure(Throwable caught)
-                            {
-                                callback.onFailure(caught);
-                            }
-
-                            @Override public void onSuccess(List<ReservationImpl> serverResult)
-                            {
-                                Map<Allocatable, Map<Appointment, Collection<Appointment>>> map;
-                                try
-                                {
-                                    map = getMap(allocatables, appointments, ignoreList, serverResult);
-                                }
-                                catch (Exception e)
-                                {
-                                    callback.onFailure(e);
-                                    return;
-                                }
-                                callback.onSuccess(map);
-                            }
-                        });
-
-            }
-        };
-
+        final Promise<List<ReservationImpl>> listPromise = getScheduler()
+                .supplyProxy(() -> serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)));
+        return listPromise.thenApply((serverResult) -> getMap(allocatables, appointments, ignoreList, serverResult));
     }
 
     private Map<Allocatable, Map<Appointment, Collection<Appointment>>> getMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
@@ -1437,15 +1256,15 @@ import org.rapla.storage.impl.EntityStore;
         return result;
     }
 
-    @Override public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment,
-            Collection<Reservation> ignoreList, Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour)
+    @Override public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList,
+            Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour)
     {
         RemoteStorage serv = getRemoteStorage();
         String[] allocatableIds = getIdList(allocatables);
         String[] reservationIds = getIdList(ignoreList);
-        Promise<Date> nextAllocatableDate = serv.getNextAllocatableDate(
+        Promise<Date> nextAllocatableDate = getScheduler().supplyProxy(() -> serv.getNextAllocatableDate(
                 new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes,
-                        excludedDays, rowsPerHour));
+                        excludedDays, rowsPerHour)));
         return nextAllocatableDate;
     }
 
@@ -1469,7 +1288,7 @@ import org.rapla.storage.impl.EntityStore;
         RemoteStorage serv = getRemoteStorage();
         try
         {
-            List<ConflictImpl> list = serv.getConflicts().get();
+            List<ConflictImpl> list = serv.getConflicts();
             testResolve(list);
             setResolver(list);
             List<Conflict> result = new ArrayList<Conflict>();
