@@ -1,10 +1,10 @@
 package org.rapla.client.swing.toolkit;
 
+import javax.swing.JComboBox;
+
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.entities.Named;
 import org.rapla.framework.RaplaLocale;
-
-import javax.swing.JComboBox;
 
 public final class RaplaListComboBox extends JComboBox {
     private static final long serialVersionUID = 1L;

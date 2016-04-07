@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview.server;
 
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -22,8 +24,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-
-import javax.inject.Inject;
 
 @Extension(provides = HTMLViewPage.class,id = WeekviewPlugin.DAY_VIEW)
 public class HTMLDayViewPage extends HTMLWeekViewPage

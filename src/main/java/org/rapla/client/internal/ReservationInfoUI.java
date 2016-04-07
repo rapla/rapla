@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -25,10 +30,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
-
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
 

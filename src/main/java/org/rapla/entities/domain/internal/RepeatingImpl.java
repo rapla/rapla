@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Set;
+import java.util.TreeSet;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
@@ -19,11 +24,6 @@ import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
-
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Set;
-import java.util.TreeSet;
 
 final class RepeatingImpl implements Repeating,java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields

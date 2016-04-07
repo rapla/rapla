@@ -1,6 +1,11 @@
 package org.rapla.server.internal;
 
+import javax.inject.Inject;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+
 import org.rapla.entities.User;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -8,10 +13,6 @@ import org.rapla.rest.server.RaplaAuthRestPage;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
-
-import javax.inject.Inject;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 
 @DefaultImplementation(of = RemoteSession.class, context = InjectionContext.server)
 public class RemoteSessionImpl implements RemoteSession
@@ -36,7 +37,7 @@ public class RemoteSessionImpl implements RemoteSession
 
     }
 
-    private User extractUser(HttpServletRequest request)
+    private User extractUser(HttpServletRequest request) throws RaplaSecurityException
     {
         String token = request.getHeader("Authorization");
         if (token != null)
@@ -75,12 +76,26 @@ public class RemoteSessionImpl implements RemoteSession
             String password = request.getParameter("password");
             if (username != null && password != null)
             {
-                user = service.getUserWithPassword(username, password);
+                try
+                {
+                    user = service.getUserWithPassword(username, password);
+                }
+                catch(RaplaException e)
+                {
+                    throw new RaplaSecurityException(e);
+                }
             }
         }
         if (user == null)
         {
-            user = tokenHandler.getUserWithAccessToken(token);
+            try
+            {
+                user = tokenHandler.getUserWithAccessToken(token);
+            }
+            catch(RaplaException e)
+            {
+                throw new RaplaSecurityException(e);
+            }
         }
         return user;
     }
@@ -106,8 +121,15 @@ public class RemoteSessionImpl implements RemoteSession
         {
             return true;
         }
-        final User userFromRequest = extractUser(request);
-        return userFromRequest != null;
+        try
+        {
+            final User userFromRequest = extractUser(request);
+            return userFromRequest != null;
+        }
+        catch (RaplaSecurityException e)
+        {
+            return false;
+        }
     }
 
     public void logout()

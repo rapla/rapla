@@ -1,6 +1,16 @@
 package org.rapla.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyVetoException;
+import java.beans.VetoableChangeListener;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ActivityPresenter;
 import org.rapla.client.swing.images.RaplaImages;
@@ -12,15 +22,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Toolkit;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyVetoException;
-import java.beans.VetoableChangeListener;
-import java.util.Map;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
 @DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)

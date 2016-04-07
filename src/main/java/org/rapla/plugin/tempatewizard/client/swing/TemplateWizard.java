@@ -12,7 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import javax.inject.Inject;
+import javax.swing.MenuElement;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.Activity;
@@ -38,22 +55,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
-import javax.swing.MenuElement;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.text.Collator;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import com.google.web.bindery.event.shared.EventBus;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */

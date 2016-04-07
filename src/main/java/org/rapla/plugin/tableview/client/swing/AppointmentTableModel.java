@@ -1,17 +1,18 @@
 package org.rapla.plugin.tableview.client.swing;
 
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.plugin.tableview.RaplaTableColumn;
-
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
+
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 
 public class AppointmentTableModel extends DefaultTableModel
 {

@@ -12,6 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -19,9 +22,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import java.util.ArrayList;
-import java.util.Collection;
 /** Provides AppointmentListener handling.*/
 public class AbstractAppointmentEditor extends RaplaGUIComponent {
     ArrayList<AppointmentListener> listenerList = new ArrayList<AppointmentListener>();

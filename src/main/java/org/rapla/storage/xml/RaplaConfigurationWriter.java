@@ -13,14 +13,14 @@
 
 package org.rapla.storage.xml;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaException;
-
-import java.io.IOException;
-import java.util.LinkedHashMap;
 
 
 public class RaplaConfigurationWriter extends RaplaXMLWriter {

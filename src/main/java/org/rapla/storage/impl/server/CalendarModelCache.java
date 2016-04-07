@@ -1,5 +1,19 @@
 package org.rapla.storage.impl.server;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
@@ -18,20 +32,6 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 public class CalendarModelCache
 {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -48,7 +48,7 @@ public class CalendarModelCache
         this.logger = logger;
     }
 
-    private void removeCalendarModelFor(ReferenceInfo<User> userId)
+    private void removeCalendarModelFor(ReferenceInfo<User> userId) throws RaplaException
     {
         Lock lock = writeLock();
         try
@@ -210,7 +210,7 @@ public class CalendarModelCache
         return result;
     }
 
-    public Collection<Appointment> getAppointments(ReferenceInfo<User> userId, TimeInterval syncRange)
+    public Collection<Appointment> getAppointments(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException
     {
         final Lock lock = readLock();
         List<CalendarModelImpl> calendarModelList;
@@ -235,7 +235,7 @@ public class CalendarModelCache
         return appointments;
     }
 
-    void initCalendarMap()
+    void initCalendarMap() throws RaplaException
     {
         for (User user : operator.getUsers())
         {

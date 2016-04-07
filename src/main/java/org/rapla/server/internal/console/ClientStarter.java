@@ -1,13 +1,13 @@
 package org.rapla.server.internal.console;
 
+import java.net.URL;
+
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
-
-import java.net.URL;
 
 public class ClientStarter extends GUIStarter
 {

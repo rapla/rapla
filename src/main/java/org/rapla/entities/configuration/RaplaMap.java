@@ -12,9 +12,9 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
-import org.rapla.entities.RaplaObject;
-
 import java.util.Map;
+
+import org.rapla.entities.RaplaObject;
 
 /**
  * This Map can hold only Objects of type RaplaObject and String

@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import java.util.List;
+
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
-
-import java.util.List;
 
 @ExtensionPoint(context = InjectionContext.swing, id = "editDialogFor")
 public interface EditComponent<T,W> extends RaplaWidget<W>

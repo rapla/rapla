@@ -12,11 +12,11 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.framework.logger.internal;
 
+import javax.inject.Provider;
+
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
-
-import javax.inject.Provider;
 
 
 @SuppressWarnings("restriction")

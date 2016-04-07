@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot.client.swing;
 
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.Icon;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -35,11 +41,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.Icon;
-import java.util.Set;
 
 @Singleton
 @Extension(provides = SwingCalendarView.class, id = TimeslotPlugin.DAY_TIMESLOT)

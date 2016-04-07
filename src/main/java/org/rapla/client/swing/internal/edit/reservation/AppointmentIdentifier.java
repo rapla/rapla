@@ -12,13 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import org.rapla.client.internal.RaplaColors;
-import org.rapla.client.swing.toolkit.AWTColorUtil;
-
-import javax.swing.JLabel;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Insets;
+
+import javax.swing.JLabel;
+
+import org.rapla.client.internal.RaplaColors;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
 
 /** A label with a background-color corresponding to the index
     of the appointment.

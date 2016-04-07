@@ -12,8 +12,31 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+
+import javax.inject.Named;
+
 import org.rapla.RaplaResources;
-import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.xml.RaplaContentHandler;
@@ -45,6 +68,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
@@ -62,29 +86,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
-
-import javax.inject.Named;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 /** Use this Operator to keep the data stored in an XML-File.
  @see AbstractCachableOperator
@@ -226,7 +227,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }*/
     }
 
-
+    @Override
     final public void disconnect() throws RaplaException
     {
         super.disconnect();
@@ -627,7 +628,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 @Override public void write(BufferedWriter writer) throws IOException
                 {
                     raplaMainWriter.setWriter(writer);
-                    raplaMainWriter.printContent();
+                    try
+                    {
+                        raplaMainWriter.printContent();
+                    }
+                    catch (RaplaException e)
+                    {
+                        throw new IOException(e.getMessage(), e);
+                    }
                 }
             }, storageURL);
         }
@@ -645,7 +653,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         void write(BufferedWriter writer) throws IOException;
     }
 
-    private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds)
+    private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds) throws RaplaException
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
         final ArrayList<ImportExportEntity> importExportEntityList = new ArrayList<>();
@@ -731,7 +739,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
     
     @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection)
+    public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         final Lock lock = readLock();
         try

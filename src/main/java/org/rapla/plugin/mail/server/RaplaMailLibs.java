@@ -1,8 +1,9 @@
 package org.rapla.plugin.mail.server;
 
+import java.util.Properties;
+
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
-import java.util.Properties;
 
 public class RaplaMailLibs
 {

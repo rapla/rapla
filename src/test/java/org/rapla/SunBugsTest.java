@@ -12,14 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import java.util.Calendar;
-import java.util.Locale;
-import java.util.TimeZone;
 
 @RunWith(JUnit4.class)
 public class SunBugsTest

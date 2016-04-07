@@ -12,6 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.Action;
+import javax.swing.JMenuItem;
+import javax.swing.MenuElement;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -56,21 +72,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.PermissionController;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.Action;
-import javax.swing.JMenuItem;
-import javax.swing.MenuElement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 @Singleton @DefaultImplementation(of = MenuFactory.class, context = InjectionContext.swing) public class MenuFactoryImpl extends RaplaGUIComponent
         implements MenuFactory

@@ -12,6 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.Locale;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.internal.CountryChooser;
@@ -32,18 +45,6 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.dbrm.RestartServer;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.List;
-import java.util.Locale;
 
 @Extension(provides = SystemOptionPanel.class, id="startOption")
 public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {

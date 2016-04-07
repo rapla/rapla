@@ -1,9 +1,27 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.RaplaResources;
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.CompoundI18n;
@@ -47,25 +65,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 
 @Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = ServerExtension.class)
 @Singleton

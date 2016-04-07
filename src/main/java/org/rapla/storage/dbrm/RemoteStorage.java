@@ -12,12 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.entities.domain.internal.AppointmentImpl;
-import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.facade.internal.ConflictImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.storage.UpdateEvent;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -29,9 +26,13 @@ import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.facade.internal.ConflictImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.storage.UpdateEvent;
 
 @Path("storage")
 public interface RemoteStorage

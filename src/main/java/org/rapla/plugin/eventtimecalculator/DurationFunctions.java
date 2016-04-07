@@ -1,5 +1,10 @@
 package org.rapla.plugin.eventtimecalculator;
 
+import java.util.Collection;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -8,10 +13,6 @@ import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.inject.Extension;
-
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.List;
 
 @Extension(provides = FunctionFactory.class, id=DurationFunctions.NAMESPACE)
 public class DurationFunctions implements FunctionFactory

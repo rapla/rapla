@@ -12,12 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action.user;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -25,9 +22,13 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 
 public class PasswordChangeUI extends RaplaGUIComponent

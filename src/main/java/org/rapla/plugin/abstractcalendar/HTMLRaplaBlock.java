@@ -13,16 +13,16 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
+
 import org.rapla.components.calendarview.html.HTMLBlock;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.RaplaBlockContext;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
 
 
 public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {

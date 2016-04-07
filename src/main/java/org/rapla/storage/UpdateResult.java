@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
-import org.rapla.entities.Entity;
-import org.rapla.entities.storage.ReferenceInfo;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +21,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.rapla.entities.Entity;
+import org.rapla.entities.storage.ReferenceInfo;
 
 public class UpdateResult
 {

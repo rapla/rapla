@@ -1,17 +1,10 @@
 package org.rapla.plugin.tableview.client.gwt;
 
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.TableCellElement;
-import com.google.gwt.dom.client.TableElement;
-import com.google.gwt.dom.client.TableRowElement;
-import com.google.gwt.dom.client.TableSectionElement;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.Collection;
+import java.util.Locale;
+
+import javax.inject.Inject;
+
 import org.gwtbootstrap3.client.ui.constants.Responsiveness;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
@@ -28,9 +21,18 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.client.CalendarTableView;
 
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.Locale;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.TableCellElement;
+import com.google.gwt.dom.client.TableElement;
+import com.google.gwt.dom.client.TableRowElement;
+import com.google.gwt.dom.client.TableSectionElement;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Event;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.web.bindery.event.shared.EventBus;
 
 @DefaultImplementation(of = CalendarTableView.class, context = InjectionContext.gwt)
 public class CalendarListViewImpl extends AbstractView<CalendarTableView.Presenter>implements CalendarTableView<IsWidget>

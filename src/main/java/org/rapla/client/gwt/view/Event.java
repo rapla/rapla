@@ -1,14 +1,15 @@
 package org.rapla.client.gwt.view;
 
-import com.google.gwt.dom.client.ParagraphElement;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.Widget;
+import java.util.List;
+
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
-import java.util.List;
+import com.google.gwt.dom.client.ParagraphElement;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.Widget;
 
 public class Event extends Div
 {

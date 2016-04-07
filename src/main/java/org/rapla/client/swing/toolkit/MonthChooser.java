@@ -12,11 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import org.rapla.components.calendarview.MonthMapper;
+import java.util.Locale;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
-import java.util.Locale;
+
+import org.rapla.components.calendarview.MonthMapper;
 
 /** ComboBox that displays the month in long format 
  */

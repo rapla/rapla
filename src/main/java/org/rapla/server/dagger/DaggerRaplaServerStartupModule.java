@@ -1,7 +1,7 @@
 package org.rapla.server.dagger;
 
-import dagger.Module;
-import dagger.Provides;
+import javax.inject.Named;
+
 import org.jetbrains.annotations.Nullable;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerService;
@@ -11,7 +11,8 @@ import org.rapla.server.internal.ShutdownService;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Named;
+import dagger.Module;
+import dagger.Provides;
 
 @Module public class DaggerRaplaServerStartupModule
 {

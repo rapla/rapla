@@ -12,10 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import javax.swing.JMenuBar;
 import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import javax.swing.JMenuBar;
 
 public class RaplaMenubar extends JMenuBar {
     private static final long serialVersionUID = 1L;

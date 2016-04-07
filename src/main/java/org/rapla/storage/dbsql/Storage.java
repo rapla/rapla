@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import java.sql.SQLException;
+
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
-
-import java.sql.SQLException;
 
 interface Storage<T extends Entity<T>> extends TableStorage
 {

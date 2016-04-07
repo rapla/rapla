@@ -14,6 +14,8 @@
 
 package org.rapla.plugin.abstractcalendar.client.swing;
 
+import java.util.Date;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.calendarview.Block;
@@ -22,8 +24,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-
-import java.util.Date;
 
 public class SwingRaplaBuilder extends RaplaBuilder
 {

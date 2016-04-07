@@ -1,8 +1,8 @@
 package org.rapla.client;
 
-import org.rapla.entities.domain.Allocatable;
-
 import java.util.Collection;
+
+import org.rapla.entities.domain.Allocatable;
 
 public interface ResourceSelectionView<W>
 {

@@ -12,8 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import javax.swing.JTextPane;
 import java.net.URL;
+
+import javax.swing.JTextPane;
 
 final public class HTMLView extends JTextPane  {
     private static final long serialVersionUID = 1L;

@@ -12,6 +12,21 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
@@ -35,20 +50,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import org.rapla.framework.RaplaException;
 
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -116,7 +118,7 @@ public class UpdateEvent
             return result;
         }
 
-        public ReferenceInfo getReference()
+        public ReferenceInfo getReference() throws RaplaException
         {
             final Class<? extends Entity> aClass = RaplaType.find(localname);
             return new ReferenceInfo(id, aClass );
@@ -179,7 +181,7 @@ public class UpdateEvent
         preferencesPatches.add(patch);
     }
 
-    public Collection<ReferenceInfo> getRemoveIds()
+    public Collection<ReferenceInfo> getRemoveIds() throws RaplaException
     {
         if (removeSet == null)
         {

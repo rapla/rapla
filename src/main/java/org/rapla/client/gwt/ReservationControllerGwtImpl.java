@@ -1,5 +1,12 @@
 package org.rapla.client.gwt;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -14,12 +21,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 
 @DefaultImplementation(of= ReservationController.class, context = InjectionContext.gwt)
 public class ReservationControllerGwtImpl extends ReservationControllerImpl

@@ -1,13 +1,9 @@
 package org.rapla.server.internal.rest.provider;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import org.rapla.entities.DependencyException;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Produces;
@@ -17,10 +13,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
+
+import org.rapla.entities.DependencyException;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.rest.client.swing.JSONParserWrapper;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 @Provider
 @Produces(MediaType.APPLICATION_JSON)

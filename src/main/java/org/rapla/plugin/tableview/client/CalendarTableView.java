@@ -1,11 +1,11 @@
 package org.rapla.plugin.tableview.client;
 
+import java.util.Collection;
+
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.View;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
-
-import java.util.Collection;
 
 public interface CalendarTableView<W> extends View<Presenter> {
 

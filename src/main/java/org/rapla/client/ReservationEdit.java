@@ -1,15 +1,16 @@
 package org.rapla.client;
 
+import java.util.Collection;
+import java.util.Date;
+
+import javax.swing.event.ChangeListener;
+
 import org.rapla.client.event.ActivityPresenter;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
-
-import javax.swing.event.ChangeListener;
-import java.util.Collection;
-import java.util.Date;
 
 public interface ReservationEdit extends ActivityPresenter
 {

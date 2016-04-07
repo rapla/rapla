@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.common;
 
+import java.awt.Component;
+import java.awt.Dimension;
+import java.util.Date;
+import java.util.List;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
@@ -26,11 +31,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.Date;
-import java.util.List;
 
 
 public class CalendarAction extends RaplaAction {

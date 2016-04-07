@@ -13,6 +13,10 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import java.util.Date;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.DateTools;
@@ -24,9 +28,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import javax.inject.Inject;
-import java.util.Date;
 
 
 public class HTMLRaplaBuilder extends RaplaBuilder {

@@ -12,11 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import java.awt.Component;
+import java.awt.event.ActionListener;
+import java.util.Locale;
 
 import javax.inject.Inject;
 import javax.swing.Action;
@@ -24,9 +22,12 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
-import java.awt.Component;
-import java.awt.event.ActionListener;
-import java.util.Locale;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 final public class LanguageChooser implements RaplaWidget
 {

@@ -14,6 +14,15 @@
 
 package org.rapla.plugin.weekview.client.swing;
 
+import java.awt.Font;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.inject.Provider;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -41,14 +50,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
-
-import javax.inject.Provider;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import java.awt.Font;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 
 public class SwingWeekCalendar extends AbstractRaplaSwingCalendar

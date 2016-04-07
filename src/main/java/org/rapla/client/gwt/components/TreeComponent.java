@@ -1,5 +1,18 @@
 package org.rapla.client.gwt.components;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
+import org.gwtbootstrap3.client.ui.html.Div;
+import org.rapla.client.gwt.components.util.JQueryElement;
+import org.rapla.client.gwt.components.util.JS;
+import org.rapla.client.gwt.test.Event;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.DynamicType;
+
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArrayInteger;
 import com.google.gwt.core.client.Scheduler;
@@ -9,21 +22,10 @@ import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.user.client.Window;
+
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.gwtbootstrap3.client.ui.html.Div;
-import org.rapla.client.gwt.components.util.JQueryElement;
-import org.rapla.client.gwt.components.util.JS;
-import org.rapla.client.gwt.test.Event;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.dynamictype.DynamicType;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 
 public class TreeComponent extends Div
 {

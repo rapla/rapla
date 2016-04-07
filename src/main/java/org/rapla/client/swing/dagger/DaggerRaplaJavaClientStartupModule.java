@@ -1,7 +1,8 @@
 package org.rapla.client.swing.dagger;
 
-import dagger.Module;
-import dagger.Provides;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+
 import org.rapla.client.UserClientService;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
@@ -9,8 +10,8 @@ import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import dagger.Module;
+import dagger.Provides;
 
 @Module public class DaggerRaplaJavaClientStartupModule
 {

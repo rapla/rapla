@@ -1,10 +1,10 @@
 package org.rapla.plugin.weekview.client.weekview;
 
-import org.rapla.components.calendarview.Block;
-import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.Slot;
-
 import java.util.ArrayList;
 import java.util.Date;
+
+import org.rapla.components.calendarview.Block;
+import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.Slot;
 
 public class HTMLDaySlot extends ArrayList<HTMLWeekViewPresenter.Slot>
 {

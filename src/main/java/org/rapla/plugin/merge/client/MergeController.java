@@ -1,5 +1,12 @@
 package org.rapla.plugin.merge.client;
 
+import java.awt.Component;
+import java.util.Collection;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.entities.User;
@@ -11,12 +18,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.plugin.merge.client.extensionpoints.MergeCheckExtension;
 import org.rapla.plugin.merge.client.swing.MergeDialog;
 import org.rapla.plugin.merge.client.swing.MergeDialog.MergeDialogFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.awt.Component;
-import java.util.Collection;
-import java.util.Set;
 
 @Singleton
 public class MergeController

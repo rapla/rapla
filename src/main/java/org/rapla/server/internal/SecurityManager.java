@@ -12,6 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -34,15 +44,6 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
 
 /** checks if the client can store or delete an entity */
 @Singleton public class SecurityManager

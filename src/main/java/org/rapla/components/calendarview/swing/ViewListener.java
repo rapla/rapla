@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.Block;
-
 import java.awt.Component;
 import java.awt.Point;
 import java.util.Date;
+
+import org.rapla.components.calendarview.Block;
 
 /** Listeners for user-changes in the weekview.*/
 public interface ViewListener {

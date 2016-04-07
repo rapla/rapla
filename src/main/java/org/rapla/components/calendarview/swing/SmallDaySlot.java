@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.Block;
-
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -24,6 +22,8 @@ import java.awt.Rectangle;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.rapla.components.calendarview.Block;
 
 public class SmallDaySlot extends AbstractDaySlot
 {

@@ -12,18 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JSeparator;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.internal.common.InternMenus;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenubar;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.framework.RaplaException;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JSeparator;
 
 @Singleton
 public class RaplaMenuBarContainer

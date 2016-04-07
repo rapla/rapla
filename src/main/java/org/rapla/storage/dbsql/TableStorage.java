@@ -1,12 +1,12 @@
 package org.rapla.storage.dbsql;
 
-import org.rapla.framework.RaplaException;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import org.rapla.framework.RaplaException;
 
 public interface TableStorage
 {

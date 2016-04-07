@@ -13,6 +13,10 @@
 
 package org.rapla.storage.xml;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.RaplaMap;
@@ -22,10 +26,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
 
 
 public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {

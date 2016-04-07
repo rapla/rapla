@@ -13,8 +13,6 @@
 
 package org.rapla.components.iolayer;
 
-import org.rapla.framework.logger.Logger;
-
 import java.awt.Component;
 import java.awt.Frame;
 import java.awt.datatransfer.ClipboardOwner;
@@ -29,6 +27,8 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+
+import org.rapla.framework.logger.Logger;
 
 final public class WebstartIO extends DefaultIO {
     Method lookup;

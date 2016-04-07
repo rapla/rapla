@@ -1,28 +1,7 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import com.google.gson.Gson;
-import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.entities.Entity;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.storage.ImportExportDirections;
-import org.rapla.entities.storage.ImportExportEntity;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import static org.rapla.facade.RaplaComponent.unlock;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +18,30 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static org.rapla.facade.RaplaComponent.unlock;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.storage.ImportExportDirections;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
+import org.rapla.rest.client.swing.JSONParserWrapper;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+
+import com.google.gson.Gson;
 
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes

@@ -12,6 +12,26 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
@@ -24,25 +44,6 @@ import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-
 public class MainServlet extends HttpServlet
 {
 
@@ -50,7 +51,7 @@ public class MainServlet extends HttpServlet
     private Logger logger = null;
     ServerStarter serverStarter;
 
-    public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi)
+    public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) throws ServletException
     {
         String env_raplafile;
         DataSource env_rapladb = null;
@@ -94,7 +95,7 @@ public class MainServlet extends HttpServlet
             if (message != null)
             {
                 logger.error(message);
-                throw new RaplaException(message);
+                throw new ServletException(message);
             }
         }
         if (split.length == 0)

@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.Block;
-
 import java.awt.Component;
 import java.awt.Graphics;
+
+import org.rapla.components.calendarview.Block;
 
 public interface SwingBlock extends Block {
     Component getView();

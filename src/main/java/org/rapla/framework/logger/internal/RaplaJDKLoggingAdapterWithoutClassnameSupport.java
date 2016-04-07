@@ -12,9 +12,10 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.framework.logger.internal;
 
-import javax.inject.Provider;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.inject.Provider;
 
 
 public class RaplaJDKLoggingAdapterWithoutClassnameSupport implements Provider<org.rapla.framework.logger.Logger> {

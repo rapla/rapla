@@ -1,5 +1,10 @@
 package org.rapla.storage.xml;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.RaplaObject;
@@ -24,10 +29,6 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
-
-import javax.inject.Provider;
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class IOContext

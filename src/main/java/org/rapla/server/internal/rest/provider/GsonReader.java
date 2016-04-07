@@ -1,8 +1,10 @@
 package org.rapla.server.internal.rest.provider;
 
-import com.google.gson.Gson;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.jsonrpc.common.internal.JSONParserWrapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
@@ -10,11 +12,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
+
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.rest.client.swing.JSONParserWrapper;
+
+import com.google.gson.Gson;
 
 @Provider
 @Consumes(MediaType.APPLICATION_JSON)

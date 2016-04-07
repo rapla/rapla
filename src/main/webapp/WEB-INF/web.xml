@@ -9,11 +9,6 @@
      <filter-class>org.rapla.server.HTTPMethodOverrideFilter</filter-class>
   </filter>
   
-  <filter>
-  	<filter-name>MemberInjectionFilter</filter-name>
-  	<filter-class>org.rapla.server.internal.rest.RaplaFilter</filter-class>
-  </filter>
-  
   <filter-mapping>
     <filter-name>RaplaFilter</filter-name>
     <url-pattern>/rapla/*</url-pattern>
@@ -23,44 +18,33 @@
     <filter-name>RaplaFilter</filter-name>
     <url-pattern>/rapla</url-pattern>
   </filter-mapping>
-  
-  <filter-mapping>
-    <filter-name>MemberInjectionFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-  </filter-mapping>
 
   <listener>
     <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventor</listener-class>
   </listener>  
-
-	<listener>
-		<listener-class>org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap</listener-class>
-	</listener>
-
-	<context-param>
-		<param-name>resteasy.servlet.mapping.prefix</param-name>
-		<param-value>/rest</param-value>
-	</context-param>
-
-	<context-param>
-		<param-name>resteasy.use.builtin.providers</param-name>
-		<param-value>false</param-value>
-	</context-param>
-
-	<context-param>
-		<param-name>javax.ws.rs.Application</param-name>
-		<param-value>org.rapla.rest.RestApplication</param-value>
-	</context-param>
-
-	<servlet>
-		<servlet-name>RestServlet</servlet-name>
-		<display-name>RestServlet</display-name>
-		<servlet-class>org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher</servlet-class>
-	</servlet>
-	<servlet-mapping>
-		<servlet-name>RestServlet</servlet-name>
-		<url-pattern>/rest/*</url-pattern>
-	</servlet-mapping>
+  
+  <servlet>
+    <servlet-name>RaplaServer</servlet-name>
+    <display-name>RaplaServer</display-name>
+    <description>Rapla</description>
+    <servlet-class>org.rapla.server.MainServlet</servlet-class>
+    <!-- Config file path relative to this file -->
+    <init-param>
+      <param-name>config-file</param-name>
+      <param-value>raplaserver.xconf</param-value>
+    </init-param>
+    <load-on-startup>3</load-on-startup>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>RaplaServer</servlet-name>
+    <url-pattern>/rapla/*</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>RaplaServer</servlet-name>
+    <url-pattern>/rapla</url-pattern>
+  </servlet-mapping>
   
   <mime-mapping>
      <extension>css</extension>

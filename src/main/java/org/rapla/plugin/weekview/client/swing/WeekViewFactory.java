@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview.client.swing;
 
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.Icon;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -33,12 +40,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.weekview.WeekviewPlugin;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.Icon;
-import java.util.Set;
 
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = WeekviewPlugin.WEEK_VIEW)

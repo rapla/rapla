@@ -15,12 +15,6 @@
  */
 package com.google.web.bindery.event.shared;
 
-import com.google.web.bindery.event.shared.Event.Type;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +23,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+
+import com.google.web.bindery.event.shared.Event.Type;
 
 /**
  * Basic implementation of {@link EventBus}.

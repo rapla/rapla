@@ -1,8 +1,8 @@
 package org.rapla.framework;
 
-import org.rapla.framework.logger.Logger;
-
 import java.net.URL;
+
+import org.rapla.framework.logger.Logger;
 
 public interface StartupEnvironment
 {

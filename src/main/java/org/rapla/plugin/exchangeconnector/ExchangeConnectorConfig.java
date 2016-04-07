@@ -1,14 +1,15 @@
 package org.rapla.plugin.exchangeconnector;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.inject.Inject;
+
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.Map;
 
 public interface ExchangeConnectorConfig 
 {

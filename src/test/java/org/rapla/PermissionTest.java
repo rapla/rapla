@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
+import java.util.Date;
+import java.util.Locale;
+
+import javax.inject.Provider;
+
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -35,10 +40,6 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
-
-import javax.inject.Provider;
-import java.util.Date;
-import java.util.Locale;
 
 @RunWith(JUnit4.class)
 public class PermissionTest  {

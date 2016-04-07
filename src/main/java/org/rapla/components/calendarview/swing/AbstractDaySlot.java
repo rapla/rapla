@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import javax.swing.JPanel;
-import javax.swing.UIManager;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -23,6 +21,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.swing.JPanel;
+import javax.swing.UIManager;
 
 abstract class AbstractDaySlot extends JPanel implements DaySlot
 {

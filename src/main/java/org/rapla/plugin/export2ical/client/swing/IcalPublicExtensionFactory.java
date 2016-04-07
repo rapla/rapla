@@ -1,5 +1,9 @@
 package org.rapla.plugin.export2ical.client.swing;
 
+import java.beans.PropertyChangeListener;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
@@ -13,9 +17,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-
-import javax.inject.Inject;
-import java.beans.PropertyChangeListener;
 
 @Extension(provides=PublishExtensionFactory.class,id="ical")
 public class IcalPublicExtensionFactory implements PublishExtensionFactory

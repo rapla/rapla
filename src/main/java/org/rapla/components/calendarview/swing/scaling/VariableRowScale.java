@@ -1,8 +1,8 @@
 package org.rapla.components.calendarview.swing.scaling;
 
-import org.rapla.components.util.DateTools;
-
 import java.util.Date;
+
+import org.rapla.components.util.DateTools;
 
 
 

@@ -1,5 +1,14 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
+import java.awt.Component;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
+import javax.inject.Inject;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JList;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditField;
@@ -13,14 +22,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
-
-import javax.inject.Inject;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JList;
-import java.awt.Component;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 
 @Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_CONFLICTS)
 public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension

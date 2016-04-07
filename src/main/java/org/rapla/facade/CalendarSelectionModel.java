@@ -1,12 +1,12 @@
 package org.rapla.facade;
 
+import java.util.Collection;
+import java.util.Date;
+
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.RaplaException;
-
-import java.util.Collection;
-import java.util.Date;
 
 public interface CalendarSelectionModel extends CalendarModel{
     String getTitle();

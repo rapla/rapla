@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
+import java.util.Date;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,8 +56,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.Date;
 
 @RunWith(JUnit4.class)
 public class DynamicTypeTest  {

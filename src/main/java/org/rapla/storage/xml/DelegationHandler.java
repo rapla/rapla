@@ -13,13 +13,13 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.xml.sax.SAXException;
-
-import java.util.Collection;
-import java.util.HashSet;
 
 class DelegationHandler implements RaplaSAXHandler
 {

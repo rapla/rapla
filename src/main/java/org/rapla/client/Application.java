@@ -1,6 +1,8 @@
 package org.rapla.client;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.AbstractActivityController.Place;
 import org.rapla.client.event.PlaceChangedEvent;
@@ -12,8 +14,7 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
 public class Application implements ApplicationView.Presenter

@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.swing.table.TableColumn;
+
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
@@ -21,12 +28,6 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-
-import javax.inject.Inject;
-import javax.swing.table.TableColumn;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage extends TableViewPage<Reservation, TableColumn>

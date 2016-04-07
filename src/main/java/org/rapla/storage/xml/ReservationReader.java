@@ -13,6 +13,8 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Date;
+
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
@@ -30,8 +32,6 @@ import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-
-import java.util.Date;
 
 public class ReservationReader extends RaplaXMLReader {
     ReservationImpl reservation;
@@ -222,7 +222,7 @@ public class ReservationReader extends RaplaXMLReader {
         }
     }
 
-	private void addNewPermissionWithGroup(PermissionContainer container, Permission.AccessLevel acceassLevel, String groupKey) {
+	private void addNewPermissionWithGroup(PermissionContainer container, Permission.AccessLevel acceassLevel, String groupKey) throws RaplaSAXParseException  {
         ReferenceInfo<Category> group = getGroup(groupKey);
         PermissionImpl permission = (PermissionImpl)container.newPermission();
         permission.setAccessLevel( acceassLevel);

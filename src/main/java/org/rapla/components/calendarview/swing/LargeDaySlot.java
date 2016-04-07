@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.swing.scaling.IRowScale;
-
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -29,6 +22,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.swing.scaling.IRowScale;
 
 
 /** Komponente, welche eine beliebige anzahl von Slot-komponenten zusammenfasst.

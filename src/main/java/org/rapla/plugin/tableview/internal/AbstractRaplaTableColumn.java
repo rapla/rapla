@@ -1,5 +1,9 @@
 package org.rapla.plugin.tableview.internal;
 
+import java.util.Collections;
+import java.util.Date;
+import java.util.Locale;
+
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
@@ -16,10 +20,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
-
-import java.util.Collections;
-import java.util.Date;
-import java.util.Locale;
 
 public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn<T, C>
 {

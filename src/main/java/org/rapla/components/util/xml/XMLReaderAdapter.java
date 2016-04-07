@@ -12,10 +12,10 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.components.util.xml;
 
+import javax.xml.parsers.SAXParserFactory;
+
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-
-import javax.xml.parsers.SAXParserFactory;
 
 final public class XMLReaderAdapter {
     

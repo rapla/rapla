@@ -1,16 +1,17 @@
 package org.rapla.client.event;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import com.google.web.bindery.event.shared.EventBus;
 
 public abstract class AbstractActivityController implements PlaceChangedEventHandler, Activity.ActivityEventHandler
 {

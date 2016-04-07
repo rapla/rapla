@@ -12,16 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.Builder.PreperationResult;
-import org.rapla.components.calendarview.swing.SelectionHandler.SelectionStrategy;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.DateTools;
-
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.SwingConstants;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -35,6 +25,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
+import org.rapla.components.calendarview.swing.SelectionHandler.SelectionStrategy;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
 
 /** Graphical component for displaying a calendar like weekview.
  * This view doesn't show the times and arranges the different slots

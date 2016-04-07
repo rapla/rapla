@@ -1,5 +1,18 @@
 package org.rapla.client.swing.internal;
 
+import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Frame;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import javax.swing.JWindow;
+import javax.swing.event.ChangeListener;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -16,18 +29,6 @@ import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-import javax.swing.JWindow;
-import javax.swing.event.ChangeListener;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.Frame;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class FilterEditButton extends RaplaGUIComponent
 {

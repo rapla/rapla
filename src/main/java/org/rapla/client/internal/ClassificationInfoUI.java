@@ -13,6 +13,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Locale;
+
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -25,10 +29,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Locale;
 
 public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     

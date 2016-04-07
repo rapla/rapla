@@ -1,10 +1,5 @@
 package org.rapla.components.util.undo;
 
-import org.jdeferred.AlwaysCallback;
-import org.jdeferred.DoneCallback;
-import org.jdeferred.Promise;
-import org.jdeferred.impl.DeferredObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;

@@ -13,14 +13,15 @@
 
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.framework.RaplaLocale;
-
-import javax.swing.JComponent;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Rectangle;
+
+import javax.swing.JComponent;
+
+import org.rapla.framework.RaplaLocale;
 
 /** A vertical scale displaying the hours of day. Uses am/pm notation
  * in the appropriate locale.

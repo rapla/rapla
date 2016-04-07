@@ -1,5 +1,7 @@
 package org.rapla.client.gwt.components;
 
+import java.util.Date;
+
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.gwtbootstrap3.extras.datepicker.client.ui.DatePicker;
 import org.gwtbootstrap3.extras.datepicker.client.ui.base.constants.DatePickerLanguage;
@@ -8,8 +10,6 @@ import org.gwtbootstrap3.extras.datepicker.client.ui.base.events.ChangeDateHandl
 import org.rapla.client.gwt.components.util.GWTDateUtils;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
-
-import java.util.Date;
 
 public class DateComponent extends Div
 {

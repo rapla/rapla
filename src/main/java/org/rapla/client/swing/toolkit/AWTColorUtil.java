@@ -1,8 +1,8 @@
 package org.rapla.client.swing.toolkit;
 
-import org.rapla.client.internal.RaplaColors;
-
 import java.awt.Color;
+
+import org.rapla.client.internal.RaplaColors;
 
 public class AWTColorUtil {
 

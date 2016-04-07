@@ -12,32 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.PopupContext;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.calendar.RaplaCalendar;
-import org.rapla.components.calendar.RaplaTime;
-import org.rapla.components.calendar.TimeRenderer;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.entities.User;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-
-import javax.swing.Action;
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
-import javax.swing.JTable;
-import javax.swing.KeyStroke;
-import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.JTextComponent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Point;
@@ -55,6 +29,33 @@ import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+
+import javax.swing.Action;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JTable;
+import javax.swing.KeyStroke;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.JTextComponent;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.calendar.RaplaCalendar;
+import org.rapla.components.calendar.RaplaTime;
+import org.rapla.components.calendar.TimeRenderer;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.User;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 /**
     Base class for most components in the gui package. Eases

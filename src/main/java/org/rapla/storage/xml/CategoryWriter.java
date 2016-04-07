@@ -13,11 +13,11 @@
 
 package org.rapla.storage.xml;
 
+import java.io.IOException;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.RaplaObject;
 import org.rapla.framework.RaplaException;
-
-import java.io.IOException;
 
 public class CategoryWriter extends RaplaXMLWriter {
     public CategoryWriter(RaplaXMLContext sm) throws RaplaException {

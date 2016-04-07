@@ -1,7 +1,8 @@
 package org.rapla.client.event;
 
-import com.google.web.bindery.event.shared.Event;
 import org.rapla.client.PopupContext;
+
+import com.google.web.bindery.event.shared.Event;
 
 public class Activity extends Event<Activity.ActivityEventHandler>
 {

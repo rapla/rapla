@@ -1,12 +1,12 @@
 package org.rapla.plugin.archiver;
 
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 
 @Path("archiver")
 public interface ArchiverService

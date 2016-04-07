@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +20,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 
 /** Tries to put reservations that allocate the same Ressources in the same column.*/
 public class GroupStartTimesStrategy extends AbstractGroupStrategy {

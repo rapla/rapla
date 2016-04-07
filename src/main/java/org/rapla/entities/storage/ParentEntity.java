@@ -12,9 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage;
 
-import org.rapla.entities.Entity;
-
 import java.util.Collection;
+
+import org.rapla.entities.Entity;
 
 public interface ParentEntity {
 

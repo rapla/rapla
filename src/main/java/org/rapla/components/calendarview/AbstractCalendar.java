@@ -1,12 +1,12 @@
 package org.rapla.components.calendarview;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.DateTools.DateWithoutTimezone;
-import org.rapla.framework.RaplaLocale;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.DateTools.DateWithoutTimezone;
+import org.rapla.framework.RaplaLocale;
 
 public abstract class  AbstractCalendar {
 	private int daysInView = 7;

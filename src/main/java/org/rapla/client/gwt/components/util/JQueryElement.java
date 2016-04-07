@@ -1,6 +1,7 @@
 package org.rapla.client.gwt.components.util;
 
 import com.google.gwt.dom.client.Element;
+
 import jsinterop.annotations.JsPackage;
 
 @jsinterop.annotations.JsType(isNative = true,name = "jQuery",namespace = JsPackage.GLOBAL)

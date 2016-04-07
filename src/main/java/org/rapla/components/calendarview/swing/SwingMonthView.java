@@ -12,15 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.Builder.PreperationResult;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.DateTools.DateWithoutTimezone;
-
-import javax.swing.JComponent;
-import javax.swing.JLabel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -31,6 +22,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.DateTools.DateWithoutTimezone;
 
 /** Graphical component for displaying a calendar like monthview.
  *

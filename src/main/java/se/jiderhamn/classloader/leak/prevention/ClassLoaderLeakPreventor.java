@@ -17,10 +17,6 @@
  */
 package se.jiderhamn.classloader.leak.prevention;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
 import java.beans.PropertyEditorManager;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.Reference;
@@ -45,6 +41,11 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
 
 
 /** Changed by Christopher Kohlhaas

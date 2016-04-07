@@ -12,6 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.compactweekview.server;
 
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
@@ -32,14 +41,6 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-
-import javax.inject.Inject;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 
 @Extension(provides = HTMLViewPage.class,id= CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
 public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements  HTMLViewPage

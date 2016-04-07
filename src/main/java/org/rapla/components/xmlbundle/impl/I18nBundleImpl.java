@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.xmlbundle.impl;
 
+import java.text.MessageFormat;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -19,13 +26,6 @@ import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-
-import java.text.MessageFormat;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 
 /** The default implementation of the xmlbundle component allows reading from
  a compiled ResourceBundle as well as directly from the source-xml-file.

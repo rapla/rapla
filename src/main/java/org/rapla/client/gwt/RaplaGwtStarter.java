@@ -1,19 +1,21 @@
 package org.rapla.client.gwt;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.inject.Inject;
+
+import org.rapla.client.gwt.view.RaplaPopups;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.rest.client.gwt.AbstractJsonProxy;
+import org.rapla.storage.dbrm.LoginTokens;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.Cookies;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.Window;
-import org.rapla.client.gwt.view.RaplaPopups;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.jsonrpc.client.gwt.AbstractJsonProxy;
-import org.rapla.storage.dbrm.LoginTokens;
-
-import javax.inject.Inject;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 @DefaultImplementation(of=GwtStarter.class,context = InjectionContext.gwt, export = true)

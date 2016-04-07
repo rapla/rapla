@@ -1,13 +1,14 @@
 package org.rapla.client.swing.toolkit;
 
+import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeListener;
+
+import javax.swing.JMenuItem;
+
 import org.rapla.client.swing.Action;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.components.xmlbundle.I18nBundle;
-
-import javax.swing.JMenuItem;
-import java.awt.event.ActionEvent;
-import java.beans.PropertyChangeListener;
 
 public class ActionWrapper implements javax.swing.Action
 {

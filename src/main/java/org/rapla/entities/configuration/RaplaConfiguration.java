@@ -12,12 +12,12 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
+import java.io.Serializable;
+
 import org.rapla.entities.RaplaObject;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.TypedComponentRole;
-
-import java.io.Serializable;
 
 /**
  * This class adds just the get Type method to the DefaultConfiguration so that the config can be stored in a preference object

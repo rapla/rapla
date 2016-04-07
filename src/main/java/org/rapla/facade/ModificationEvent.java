@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
+import java.util.Set;
+
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.ReferenceInfo;
-
-import java.util.Set;
 
 /** Encapsulate the changes that are made in the backend-store.*/
 public interface ModificationEvent

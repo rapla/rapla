@@ -1,9 +1,14 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.event.logical.shared.ValueChangeEvent;
-import com.google.gwt.event.logical.shared.ValueChangeHandler;
-import com.google.gwt.user.client.History;
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.inject.Inject;
+
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.Activity;
 import org.rapla.framework.RaplaException;
@@ -11,13 +16,10 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.user.client.History;
+import com.google.web.bindery.event.shared.EventBus;
 
 @DefaultImplementation(of=AbstractActivityController.class, context = InjectionContext.gwt)
 public class GwtActivityManagerImpl extends AbstractActivityController

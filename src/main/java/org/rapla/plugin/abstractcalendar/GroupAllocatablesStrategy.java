@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.abstractcalendar;
 
-import org.rapla.components.calendarview.AbstractGroupStrategy;
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.CalendarView;
-import org.rapla.entities.NamedComparator;
-import org.rapla.entities.domain.Allocatable;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +21,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import org.rapla.components.calendarview.AbstractGroupStrategy;
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.CalendarView;
+import org.rapla.entities.NamedComparator;
+import org.rapla.entities.domain.Allocatable;
 /** Tries to put reservations that allocate the same Resources in the same column.*/
 public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
     Comparator<Allocatable> allocatableComparator;

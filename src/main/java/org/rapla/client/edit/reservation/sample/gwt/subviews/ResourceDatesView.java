@@ -1,8 +1,9 @@
 package org.rapla.client.edit.reservation.sample.gwt.subviews;
 
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.ui.IsWidget;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.Column;
 import org.gwtbootstrap3.client.ui.Container;
@@ -32,9 +33,9 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.ui.IsWidget;
 
 public class ResourceDatesView implements ReservationViewPart
 {

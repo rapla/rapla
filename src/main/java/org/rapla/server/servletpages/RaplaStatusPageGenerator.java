@@ -3,7 +3,7 @@
  */
 package org.rapla.server.servletpages;
 
-import org.rapla.RaplaResources;
+import java.io.IOException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -14,7 +14,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
+
+import org.rapla.RaplaResources;
 
 @Singleton
 @Path("server")

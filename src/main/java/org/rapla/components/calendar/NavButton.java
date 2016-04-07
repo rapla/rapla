@@ -13,10 +13,6 @@
 
 package org.rapla.components.calendar;
 
-import javax.swing.AbstractButton;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.plaf.ButtonUI;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -24,6 +20,11 @@ import java.awt.Polygon;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+
+import javax.swing.AbstractButton;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.plaf.ButtonUI;
 
 public class NavButton extends AbstractButton implements MouseListener {
     private static final long serialVersionUID = 1L;

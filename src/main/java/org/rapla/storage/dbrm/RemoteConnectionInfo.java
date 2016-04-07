@@ -1,10 +1,10 @@
 package org.rapla.storage.dbrm;
 
-import org.rapla.ConnectInfo;
-import org.rapla.jsonrpc.client.gwt.MockProxy;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.rapla.ConnectInfo;
+import org.rapla.rest.client.gwt.MockProxy;
 
 @Singleton
 public class RemoteConnectionInfo

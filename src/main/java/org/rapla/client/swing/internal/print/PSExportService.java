@@ -12,13 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.print;
 
-import org.rapla.RaplaResources;
-import org.rapla.components.iolayer.IOInterface;
-
 import java.awt.Component;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.util.Locale;
+
+import org.rapla.RaplaResources;
+import org.rapla.components.iolayer.IOInterface;
 
 public class PSExportService  implements ExportService {
     public final static String EXPORT_DIR = PSExportService.class.getName() + ".dir";

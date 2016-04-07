@@ -14,6 +14,10 @@
  */
 package org.rapla.storage;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.TimeZone;
+
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -22,10 +26,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.TimeZone;
 
 public interface CachableStorageOperator extends StorageOperator {
 
@@ -62,7 +62,7 @@ public interface CachableStorageOperator extends StorageOperator {
      * @throws RaplaException if the lock can not be received
      */
     Date requestLock(String id, Long validMilliseconds) throws RaplaException;
-    void releaseLock(String id, Date updatedUntil);
+    void releaseLock(String id, Date updatedUntil) throws RaplaException;
 
     Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException;
 

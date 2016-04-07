@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
+import java.util.Date;
+
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
@@ -19,8 +21,6 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classifiable;
-
-import java.util.Date;
 
 /** Objects that implement allocatable can be allocated by reservations.
     @see Reservation

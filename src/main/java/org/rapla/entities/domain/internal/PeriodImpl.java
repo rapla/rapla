@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.domain.Period;
-
 import java.util.Date;
 import java.util.Locale;
+
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.domain.Period;
 
 public class PeriodImpl implements Period
 {

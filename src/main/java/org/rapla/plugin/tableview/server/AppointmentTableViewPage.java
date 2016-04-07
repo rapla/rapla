@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.swing.table.TableColumn;
+
 import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.RaplaException;
@@ -21,10 +26,6 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-
-import javax.inject.Inject;
-import javax.swing.table.TableColumn;
-import java.util.List;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
         extends TableViewPage<AppointmentBlock, TableColumn>

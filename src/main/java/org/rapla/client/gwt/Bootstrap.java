@@ -1,6 +1,11 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.user.client.Window;
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.client.Application;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
@@ -8,16 +13,12 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.common.AsyncCallback;
-import org.rapla.jsonrpc.common.FutureResult;
-import org.rapla.jsonrpc.common.VoidResult;
+import org.rapla.rest.client.AsyncCallback;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.Arrays;
-import java.util.Collection;
+import com.google.gwt.user.client.Window;
 
 public class Bootstrap
 {
@@ -40,10 +41,10 @@ public class Bootstrap
     {
         final FacadeImpl facadeImpl = (FacadeImpl) facade;
         ((FacadeImpl) facade).setOperator( operator);
-        FutureResult<VoidResult> load = facadeImpl.load();
+        Promise<Void> load = facadeImpl.load();
         logger.info("Loading resources");
         RaplaPopups.getProgressBar().setPercent(40);
-        load.get(new AsyncCallback<VoidResult>()
+        load.then(new AsyncCallback<VoidResult>()
         {
 
             @Override

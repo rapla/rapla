@@ -12,8 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import org.jdeferred.DoneCallback;
-import org.jdeferred.Promise;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.EditController.EditCallback;
@@ -41,16 +50,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 public class EditDialog<T extends Entity> extends AbstractDialog<T> implements ModificationListener, Disposable, EditDialogInterface<T>
 {

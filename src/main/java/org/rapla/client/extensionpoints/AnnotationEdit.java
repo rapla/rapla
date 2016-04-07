@@ -1,10 +1,10 @@
 package org.rapla.client.extensionpoints;
 
+import java.util.Collection;
+
 import org.rapla.client.swing.EditField;
 import org.rapla.entities.Annotatable;
 import org.rapla.framework.RaplaException;
-
-import java.util.Collection;
 
 public interface AnnotationEdit
 {

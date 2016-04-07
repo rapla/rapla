@@ -12,6 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Allocatable;
@@ -27,15 +36,6 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 
 class PeriodModelImpl implements PeriodModel,ModificationListener

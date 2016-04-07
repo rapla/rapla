@@ -1,5 +1,11 @@
 package org.rapla.client.internal.edit;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.Activity;
@@ -13,11 +19,6 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 
 @Singleton
 @ExtensionRepeatable({ @Extension(id = EditActivity.EDIT_EVENTS_ID, provides = ActivityPresenter.class),

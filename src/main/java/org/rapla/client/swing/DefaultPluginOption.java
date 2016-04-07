@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import java.awt.BorderLayout;
+import java.util.Locale;
+
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.entities.configuration.Preferences;
@@ -22,12 +29,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import java.util.Locale;
 
 abstract public class DefaultPluginOption extends RaplaGUIComponent implements PluginOptionPanel
 {

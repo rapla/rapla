@@ -12,6 +12,27 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.jndi.client.swing;
 
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -37,26 +58,6 @@ import org.rapla.plugin.jndi.internal.JNDIConf;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
 
 
 @Extension(provides = PluginOptionPanel.class,id= JNDIPlugin.PLUGIN_ID)

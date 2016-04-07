@@ -1,5 +1,14 @@
 package org.rapla.plugin.eventtimecalculator;
 
+import javax.inject.Inject;
+import javax.swing.Box;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.TableModel;
+
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -10,15 +19,6 @@ import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
 import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
-
-import javax.inject.Inject;
-import javax.swing.Box;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTable;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.TableModel;
 
 
 @ExtensionRepeatable({

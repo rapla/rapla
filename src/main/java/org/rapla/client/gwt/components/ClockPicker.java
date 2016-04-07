@@ -1,14 +1,7 @@
 package org.rapla.client.gwt.components;
 
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.ui.TextBox;
-import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
+import java.util.Date;
+
 import org.gwtbootstrap3.client.ui.InputGroupAddon;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.html.Div;
@@ -17,7 +10,16 @@ import org.rapla.client.gwt.components.util.JS;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 
-import java.util.Date;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.user.client.ui.TextBox;
+
+import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
 public class ClockPicker extends Div
 {

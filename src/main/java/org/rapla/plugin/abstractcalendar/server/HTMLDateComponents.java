@@ -13,10 +13,10 @@
 
 package org.rapla.plugin.abstractcalendar.server;
 
+import java.util.Date;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaLocale;
-
-import java.util.Date;
 
 public class HTMLDateComponents {
     static public String getDateSelection(String prefix,Date calendarview, RaplaLocale raplaLocale) {

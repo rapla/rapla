@@ -1,5 +1,7 @@
 package org.rapla;
 
+import java.util.Date;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -8,8 +10,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.Date;
 
 
 @RunWith(JUnit4.class)

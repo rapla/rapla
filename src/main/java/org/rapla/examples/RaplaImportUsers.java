@@ -12,6 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.examples;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+
 import org.rapla.RaplaClient;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
@@ -21,12 +27,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.ConsoleLogger;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 
 /**Demonstration for connecting your app and importing some users */

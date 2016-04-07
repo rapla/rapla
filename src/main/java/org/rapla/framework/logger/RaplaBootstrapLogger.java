@@ -1,9 +1,9 @@
 package org.rapla.framework.logger;
 
-import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapter;
-
 import javax.inject.Provider;
 import javax.inject.Singleton;
+
+import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapter;
 
 @Singleton
 public class RaplaBootstrapLogger implements Provider<Logger> {

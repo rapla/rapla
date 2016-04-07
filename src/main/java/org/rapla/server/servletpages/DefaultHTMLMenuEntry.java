@@ -1,9 +1,10 @@
 package org.rapla.server.servletpages;
 
-import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import java.io.PrintWriter;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.PrintWriter;
+
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 
 public class DefaultHTMLMenuEntry  implements RaplaMenuGenerator
 {

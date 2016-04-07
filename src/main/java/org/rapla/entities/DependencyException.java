@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import org.rapla.framework.RaplaException;
-
 import java.util.Arrays;
 import java.util.Collection;
+
+import org.rapla.framework.RaplaException;
 
 public class DependencyException extends RaplaException {
     private static final long serialVersionUID = 1L;

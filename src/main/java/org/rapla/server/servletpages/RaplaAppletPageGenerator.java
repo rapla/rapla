@@ -3,8 +3,9 @@
  */
 package org.rapla.server.servletpages;
 
-import org.rapla.inject.dagger.DaggerReflectionStarter;
-import org.rapla.server.ServerServiceContainer;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -16,9 +17,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Collection;
+
+import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.server.ServerServiceContainer;
 
 @Singleton
 @Path("raplaapplet")

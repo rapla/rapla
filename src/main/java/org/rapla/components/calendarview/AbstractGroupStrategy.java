@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
-import org.rapla.components.util.DateTools;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +21,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.rapla.components.util.DateTools;
 
 /** Arranges blocks into groups, and tries to place one group into one slot.
     The subclass must overide the group method to perform the grouping on a given

@@ -12,44 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Command;
-import org.rapla.components.util.CommandScheduler;
-import org.rapla.components.util.xml.RaplaNonValidatedInput;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.User;
-import org.rapla.entities.domain.permission.PermissionExtension;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.ImportExportEntity;
-import org.rapla.entities.storage.RefEntity;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ConfigTools;
-import org.rapla.framework.logger.Logger;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.CachableStorageOperatorCommand;
-import org.rapla.storage.IdCreator;
-import org.rapla.storage.ImportExportManager;
-import org.rapla.storage.LocalCache;
-import org.rapla.storage.PreferencePatch;
-import org.rapla.storage.UpdateEvent;
-import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.impl.server.EntityHistory;
-import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
-import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
-import org.rapla.storage.xml.IOContext;
-import org.rapla.storage.xml.RaplaDefaultXMLContext;
-
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -69,6 +31,45 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+
+import org.rapla.RaplaResources;
+import org.rapla.components.util.xml.RaplaNonValidatedInput;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.permission.PermissionExtension;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.internal.ModifiableTimestamp;
+import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.RefEntity;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.ConfigTools;
+import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Command;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.CachableStorageOperatorCommand;
+import org.rapla.storage.IdCreator;
+import org.rapla.storage.ImportExportManager;
+import org.rapla.storage.LocalCache;
+import org.rapla.storage.PreferencePatch;
+import org.rapla.storage.UpdateEvent;
+import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.server.EntityHistory;
+import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
+import org.rapla.storage.xml.IOContext;
+import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
@@ -307,7 +308,7 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    private void refreshWithoutLock(Connection c) throws SQLException
+    private void refreshWithoutLock(Connection c) throws SQLException, RaplaException
     {
         final EntityStore entityStore = new EntityStore(cache);
         final Category superCategory = cache.getSuperCategory();
@@ -341,6 +342,7 @@ import java.util.concurrent.locks.Lock;
         return;
     }
 
+    @Override
     synchronized public void disconnect() throws RaplaException
     {
         super.disconnect();
@@ -676,7 +678,7 @@ import java.util.concurrent.locks.Lock;
     }
 
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects,
-            Connection connection, String userId)
+            Connection connection, String userId) throws RaplaException
     {
         final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<ReferenceInfo>();
         for (Entity entity : storeObjects)
@@ -925,7 +927,7 @@ import java.util.concurrent.locks.Lock;
         return date;
     }
 
-    private Date loadInitialLastUpdateFromDb(Connection connection) throws SQLException
+    private Date loadInitialLastUpdateFromDb(Connection connection) throws SQLException, RaplaException
     {
         final RaplaDefaultXMLContext createOutputContext = createOutputContext(cache);
         final RaplaSQL raplaSQL = new RaplaSQL(createOutputContext);
@@ -1036,7 +1038,7 @@ import java.util.concurrent.locks.Lock;
         }
     }
 
-    @Override public void releaseLock(String id, Date updatedUntil)
+    @Override public void releaseLock(String id, Date updatedUntil) throws RaplaException
     {
         try (Connection con = createConnection())
         {

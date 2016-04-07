@@ -12,14 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.swing.scaling.IRowScaleSmall;
-import org.rapla.components.calendarview.swing.scaling.OneRowScale;
-import org.rapla.components.util.TimeInterval;
-
 import java.awt.Cursor;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.util.Date;
+
+import org.rapla.components.calendarview.swing.scaling.IRowScaleSmall;
+import org.rapla.components.calendarview.swing.scaling.OneRowScale;
+import org.rapla.components.util.TimeInterval;
 
 
 /** DraggingHandler coordinates the drag events from the Block-Components

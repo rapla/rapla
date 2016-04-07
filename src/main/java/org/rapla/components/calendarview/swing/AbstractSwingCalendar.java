@@ -12,11 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview.swing;
 
-import org.rapla.components.calendarview.AbstractCalendar;
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.CalendarView;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.util.TimeInterval;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.util.ArrayList;
+import java.util.Date;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -28,15 +32,12 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.util.ArrayList;
-import java.util.Date;
+
+import org.rapla.components.calendarview.AbstractCalendar;
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.CalendarView;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.TimeInterval;
 
 
 public abstract class AbstractSwingCalendar extends AbstractCalendar implements CalendarView {

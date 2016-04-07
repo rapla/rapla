@@ -1,11 +1,12 @@
 package org.rapla.plugin.exchangeconnector;
 
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaException;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.util.List;
+
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
 
 @Path("exchange/config")
 public interface ExchangeConnectorConfigRemote

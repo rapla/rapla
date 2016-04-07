@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.fields;
 
-import org.rapla.RaplaResources;
-import org.rapla.components.calendar.RaplaNumber;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -26,12 +26,13 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Font;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
+
+import org.rapla.RaplaResources;
+import org.rapla.components.calendar.RaplaNumber;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
 
 public class LongField extends AbstractEditField implements ChangeListener, FocusListener, MultiEditField, SetGetField<Long>{
 	JPanel panel;

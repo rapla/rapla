@@ -1,15 +1,16 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.core.client.EntryPoint;
-import com.google.gwt.core.client.GWT;
+import java.util.List;
+
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.framework.RaplaException;
-import org.rapla.jsonrpc.client.EntryPointFactory;
-import org.rapla.jsonrpc.client.gwt.AbstractJsonProxy;
-import org.rapla.jsonrpc.common.ExceptionDeserializer;
+import org.rapla.rest.client.EntryPointFactory;
+import org.rapla.rest.client.ExceptionDeserializer;
+import org.rapla.rest.client.gwt.AbstractJsonProxy;
 import org.rapla.storage.dbrm.RaplaExceptionDeserializer;
 
-import java.util.List;
+import com.google.gwt.core.client.EntryPoint;
+import com.google.gwt.core.client.GWT;
 
 public class Rapla implements EntryPoint
 {

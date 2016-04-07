@@ -1,5 +1,11 @@
 package org.rapla.plugin.exchangeconnector.server;
 
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -12,11 +18,6 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
-
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import java.util.List;
 
 @DefaultImplementation(context=InjectionContext.server, of=ExchangeConnectorConfigRemote.class)
 public class ExchangeConnectorRemoteConfigFactory implements ExchangeConnectorConfigRemote

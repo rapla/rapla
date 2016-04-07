@@ -1,12 +1,8 @@
 package org.rapla.server.internal.rest;
 
-import dagger.MembersInjector;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.server.MainServlet;
-import org.rapla.server.internal.ServerServiceImpl;
-import org.rapla.server.internal.ServerStarter;
-import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.servlet.Filter;
@@ -15,9 +11,15 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.MainServlet;
+import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerStarter;
+import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
+
+import dagger.MembersInjector;
 
 public class RaplaFilter implements Filter
 {

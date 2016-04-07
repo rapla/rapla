@@ -13,6 +13,8 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Date;
+
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Category;
@@ -22,8 +24,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-
-import java.util.Date;
 
 public class UserReader extends RaplaXMLReader
 {

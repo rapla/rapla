@@ -1,17 +1,18 @@
 package org.rapla.framework.internal;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.framework.Disposable;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.impl.UtilConcurrentCommandScheduler;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 @DefaultImplementation(of=CommandScheduler.class,context = {InjectionContext.server})
 @Singleton

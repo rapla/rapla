@@ -1,8 +1,5 @@
 package org.rapla.plugin.jndi.internal;
 
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaException;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -12,6 +9,9 @@ import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
 
 @Path("jndi")
 public interface JNDIConfig 

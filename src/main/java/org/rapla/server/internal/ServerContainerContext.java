@@ -1,8 +1,9 @@
 package org.rapla.server.internal;
 
-import javax.sql.DataSource;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.sql.DataSource;
 
 public class ServerContainerContext
 {

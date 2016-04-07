@@ -1,13 +1,13 @@
 package org.rapla.entities.dynamictype;
 
-import org.rapla.entities.NamedComparator;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import org.rapla.entities.NamedComparator;
 
 public class SortedClassifiableComparator implements Comparator<Classifiable>
 {

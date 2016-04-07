@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
-import org.rapla.entities.Named;
-
 import java.util.Collection;
 import java.util.Locale;
+
+import org.rapla.entities.Named;
 /** A Classification is an instance of a DynamicType. It holds the
  * attribute values for the attributesof the corresponding type. You
  * need one classification for each object you want to

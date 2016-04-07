@@ -1,5 +1,16 @@
 package org.rapla.client.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.EventCheck;
@@ -17,16 +28,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
-
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final List<T> newEntities;

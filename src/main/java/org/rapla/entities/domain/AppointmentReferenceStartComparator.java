@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
+import java.util.Comparator;
+
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
-
-import java.util.Comparator;
 
 public class AppointmentReferenceStartComparator implements Comparator<ReferenceInfo<Appointment>> {
     EntityResolver resolver;

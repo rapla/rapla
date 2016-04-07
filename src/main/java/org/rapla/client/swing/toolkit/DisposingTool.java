@@ -1,9 +1,9 @@
 package org.rapla.client.swing.toolkit;
 
-import org.rapla.framework.Disposable;
-
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
+import org.rapla.framework.Disposable;
 
 /** Disposes an object on window close. Must be added as a WindowListener
  to the target window*/

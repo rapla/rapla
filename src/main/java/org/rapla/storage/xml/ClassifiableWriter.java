@@ -13,14 +13,14 @@
 
 package org.rapla.storage.xml;
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaException;
-
-import java.io.IOException;
-import java.util.Collection;
 
 class ClassifiableWriter extends RaplaXMLWriter {    
     public ClassifiableWriter(RaplaXMLContext sm) throws RaplaException {

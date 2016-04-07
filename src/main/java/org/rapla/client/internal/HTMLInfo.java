@@ -12,6 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import java.net.URL;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.xml.XMLWriter;
@@ -25,11 +30,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
-import java.net.URL;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
 
 public abstract class HTMLInfo<T> extends RaplaComponent
 {

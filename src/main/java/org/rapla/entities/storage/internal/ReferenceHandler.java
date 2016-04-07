@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import org.rapla.entities.Entity;
-import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import org.rapla.entities.Entity;
+import org.rapla.entities.storage.EntityReferencer;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>

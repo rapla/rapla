@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
-import org.rapla.client.PopupContext;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+
+import org.rapla.client.PopupContext;
 
 public class MenuContext
 {

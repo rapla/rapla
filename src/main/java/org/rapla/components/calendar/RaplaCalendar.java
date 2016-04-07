@@ -13,15 +13,16 @@
 
 package org.rapla.components.calendar;
 
-import javax.swing.JComponent;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.Font;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 /** This is another ComboBox-like calendar component.
  *  It is localizable and it uses swing-components.
  *  <p>The combobox editor is a {@link DateField}. If the ComboBox-Button

@@ -1,11 +1,11 @@
 package org.rapla.client;
 
+import java.util.List;
+
 import org.eclipse.jetty.util.Promise;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
-
-import java.util.List;
 
 public interface EditController
 {

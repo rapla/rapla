@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -25,13 +32,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Enumeration Pattern for all Rapla objects. You should not instanciate Objects of this type,

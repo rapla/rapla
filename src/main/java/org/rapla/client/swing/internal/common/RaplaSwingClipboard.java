@@ -1,16 +1,17 @@
 package org.rapla.client.swing.internal.common;
 
+import java.awt.datatransfer.StringSelection;
+import java.security.AccessControlException;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import java.awt.datatransfer.StringSelection;
-import java.security.AccessControlException;
 
 @DefaultImplementation(of=RaplaClipboard.class,context = InjectionContext.swing)
 @Singleton

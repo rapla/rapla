@@ -1,14 +1,14 @@
 package org.rapla.client.internal.edit;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.event.Activity;
 import org.rapla.client.event.ActivityPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.merge.client.MergeController;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 @Singleton
 @Extension(id=MergeActivity.ID,provides = ActivityPresenter.class)

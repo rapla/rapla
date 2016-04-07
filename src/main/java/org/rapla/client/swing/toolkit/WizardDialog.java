@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.framework.RaplaException;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.Frame;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -24,11 +24,12 @@ import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.Dimension;
-import java.awt.Frame;
+
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.framework.RaplaException;
 
 /** displays a wizard dialog with four buttons and a HTML help.
 

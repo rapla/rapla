@@ -12,6 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.Collection;
+import java.util.Collections;
+
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
@@ -44,15 +54,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.util.Collection;
-import java.util.Collections;
 
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *

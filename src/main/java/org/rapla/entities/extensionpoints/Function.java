@@ -1,11 +1,11 @@
 package org.rapla.entities.extensionpoints;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParseContext;
-
-import java.util.Collections;
-import java.util.List;
 
 
 public abstract class Function

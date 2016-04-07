@@ -1,16 +1,16 @@
 package org.rapla.client.swing.internal.dagger;
 
+import java.net.URL;
+
+import javax.inject.Provider;
+
 import org.rapla.client.ClientService;
 import org.rapla.client.UserClientService;
 import org.rapla.client.swing.dagger.DaggerRaplaJavaClientStartupModule;
-import org.rapla.client.swing.dagger.RaplaJavaClientComponent;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
-import org.rapla.jsonrpc.client.EntryPointFactory;
-import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
-
-import javax.inject.Provider;
-import java.net.URL;
+import org.rapla.rest.client.EntryPointFactory;
+import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
 
 public class DaggerClientCreator
 {

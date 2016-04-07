@@ -12,6 +12,9 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
+import java.io.IOException;
+import java.util.Date;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaObject;
@@ -20,9 +23,6 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaException;
-
-import java.io.IOException;
-import java.util.Date;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class DynamicTypeWriter extends RaplaXMLWriter

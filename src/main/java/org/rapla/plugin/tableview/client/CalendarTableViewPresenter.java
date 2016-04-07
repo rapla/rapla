@@ -1,6 +1,11 @@
 package org.rapla.plugin.tableview.client;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+
+import javax.inject.Inject;
+
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
@@ -13,10 +18,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 
-import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Extension(provides = CalendarPlugin.class, id = CalendarTableViewPresenter.TABLE_VIEW)
 public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
