@@ -40,6 +40,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
@@ -395,14 +396,14 @@ import org.rapla.storage.StorageOperator;
 
     private void checkPermissions(User user, Reservation r, Reservation original, Allocatable[] allocatables) throws RaplaSecurityException
     {
-        Conflict[] conflictsBefore = null;
-        Conflict[] conflictsAfter = null;
+        Collection<Conflict> conflictsBefore = null;
+        Collection<Conflict> conflictsAfter = null;
         try
         {
-            conflictsAfter = facade.getConflicts(r);
+            conflictsAfter = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r), 10000);
             if (original != null)
             {
-                conflictsBefore = facade.getConflicts(original);
+                conflictsBefore = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(original), 10000);
             }
         }
         catch (RaplaException ex)
@@ -415,7 +416,7 @@ import org.rapla.storage.StorageOperator;
         for (int i = 0; i < allocatables.length; i++)
         {
             Allocatable allocatable = allocatables[i];
-            checkConflictsAllowed(user, allocatable, conflictsBefore, conflictsAfter);
+            checkConflictsAllowed(user, allocatable, conflictsBefore.toArray(Conflict.CONFLICT_ARRAY), conflictsAfter.toArray(Conflict.CONFLICT_ARRAY));
             for (int j = 0; j < appointments.length; j++)
             {
                 Appointment appointment = appointments[j];

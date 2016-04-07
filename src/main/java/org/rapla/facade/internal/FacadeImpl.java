@@ -444,7 +444,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			{
 			//if (modificationListeners.size() > 0 ) {
 			   
-				new UpdateCommandModification(mod,evt).execute(); 
+				new UpdateCommandModification(mod,evt).run(); 
 			}
 		}
 		{
@@ -1749,7 +1749,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return getOperator().tryResolve( info);
 	}
 
-	public  <T extends Entity> T resolve( ReferenceInfo<T> info) throws RaplaException
+    public  <T extends Entity> T resolve( ReferenceInfo<T> info) throws EntityNotFoundException
 	{
 		return getOperator().resolve(info);
 	}
