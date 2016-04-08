@@ -29,6 +29,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
@@ -45,7 +46,7 @@ public class ReservationTableViewPage extends TableViewPage<Reservation, TableCo
 
     String getCalendarHTML() throws RaplaException
     {
-        final Collection<Reservation> reservations = model.queryReservations(model.getTimeIntervall());
+        final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()), 10000);
         final User user = model.getUser();
         List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns("events", user);
         return getCalendarHTML(columnPlugins, reservations, TableViewPlugin.EVENTS_SORTING_STRING_OPTION);

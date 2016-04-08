@@ -18,13 +18,13 @@ public class KeyAndPathResolver
     HashMap<String,Category> categories = new HashMap<String,Category>();
     HashMap<String,String> categoryPath = new HashMap<String,String>();
 
-    public KeyAndPathResolver(EntityStore store, Category superCategory)
+    public KeyAndPathResolver(EntityStore store, Category superCategory) throws EntityNotFoundException
     {
         this.store = store;
         fillCategoriesAndPaths(superCategory, 0);
     }
 
-    private void fillCategoriesAndPaths(Category category, int depth)
+    private void fillCategoriesAndPaths(Category category, int depth) throws EntityNotFoundException
     {
         if ( depth > 40)
         {
@@ -47,7 +47,7 @@ public class KeyAndPathResolver
         return categoryPath.get(id);
     }
 
-    public void addCategory(Category category)
+    public void addCategory(Category category) throws EntityNotFoundException
     {
         //final ReferenceInfo<Category> parentRef = category.getParentRef();
         final List<String> pathForCategory = getPathForCategory(category);

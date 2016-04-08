@@ -31,6 +31,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalExport;
+import org.rapla.scheduler.Promise;
 
 @Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{
@@ -66,10 +67,10 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	
 	public void actionPerformed(ActionEvent evt) {
 		getCalendarOptions();
-		try {
+		final TimeInterval interval = new TimeInterval(calendarModel.getStartDate(), calendarModel.getEndDate());
+		Promise<Collection<Appointment>> appointmentsPromise = calendarModel.queryAppointments(interval);
+		appointmentsPromise.thenAccept((appointments) -> {
 
-			final TimeInterval interval = new TimeInterval(calendarModel.getStartDate(), calendarModel.getEndDate());
-			Collection<Appointment> appointments= calendarModel.queryAppointments(interval);
 		    Set<String> appointmentIds = new LinkedHashSet<String>();
 		    for ( Appointment app:appointments)
 		    {
@@ -91,9 +92,10 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
                 String name =nonEmptyTitle +".ics";
 		        export(result, name);
 		    }
-		} catch (Exception ex) {
-		    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-		}
+		}).exceptionally((ex) -> {
+	          dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+	          return null;
+		});
 	}
 	private void export(String result, String name) throws RaplaException {
 		final byte[] bytes = result.getBytes();

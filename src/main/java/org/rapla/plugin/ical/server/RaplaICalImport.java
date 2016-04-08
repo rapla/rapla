@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,6 +38,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.ical.ICalImport;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -85,25 +88,32 @@ public class RaplaICalImport implements ICalImport {
     }
 
 	@Override
-    public Integer[] importICal(Import job) throws RaplaException
+    public Promise<Integer[]> importICal(Import job)
 	{
-        String content = job.getContent();
-        boolean isURL = job.isURL();
-        String[] allocatableIds = job.getAllocatableIds();
-        String eventTypeKey = job.getEventTypeKey();
-        String eventTypeNameAttributeKey = job.getEventTypeNameAttributeKey();
-		List<Allocatable> allocatables = new ArrayList<Allocatable>();
-		if ( allocatableIds.length > 0)
-		{
-			for ( String id:allocatableIds)
-			{
-				Allocatable allocatable = getAllocatable(id);
-				allocatables.add ( allocatable);
-			}
-		}
-		User user = session.getUser(request);
-		Integer[] count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-		return count;
+        try
+        {
+            String content = job.getContent();
+            boolean isURL = job.isURL();
+            String[] allocatableIds = job.getAllocatableIds();
+            String eventTypeKey = job.getEventTypeKey();
+            String eventTypeNameAttributeKey = job.getEventTypeNameAttributeKey();
+            List<Allocatable> allocatables = new ArrayList<Allocatable>();
+            if ( allocatableIds.length > 0)
+            {
+                for ( String id:allocatableIds)
+                {
+                    Allocatable allocatable = getAllocatable(id);
+                    allocatables.add ( allocatable);
+                }
+            }
+            User user = session.getUser(request);
+            final Promise<Integer[]> count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
+            return count;
+        }
+        catch(RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
 	}
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{
@@ -142,7 +152,7 @@ public class RaplaICalImport implements ICalImport {
 	 * @throws MalformedURLException
 	 * @throws RaplaException
 	 */
-	public Integer[] importCalendar(String content, boolean isURL, List<Allocatable> resources, User user, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
+	public Promise<Integer[]> importCalendar(String content, boolean isURL, List<Allocatable> resources, User user, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
         final TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
 
 	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_NOTES_COMPATIBILITY, true);
@@ -152,9 +162,7 @@ public class RaplaICalImport implements ICalImport {
 	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_VALIDATION, true);
 	    CalendarBuilder builder = new CalendarBuilder();
 		Calendar calendar = null;
-		int eventsInICal = 0;
-		int eventsImported = 0;
-		int eventsPresent = 0;
+        int eventsInICal = 0;
 		int eventsSkipped = 0;
 		try {
     		if (isURL) {
@@ -348,59 +356,69 @@ public class RaplaICalImport implements ICalImport {
 			}
         }
 		Date minStart = null;
-		Map<String, List<Entity<Reservation>>> imported = getImportedReservations(minStart);
-        List<Reservation> toImport = new ArrayList<Reservation>();
-		for (Reservation reservation:eventList)
-		{
-		    String uid = reservation.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
-		    if ( uid == null)
-		    {
-		    	eventsImported++;
-		    	toImport.add( reservation);
-		    }
-		    else
-		    {
-				List<Entity<Reservation>> alreadyImported = imported.get( uid);
-			    if ( alreadyImported == null || alreadyImported.isEmpty())
-			    {
-			    	eventsImported++;
-			    	toImport.add( reservation);
-			    }
-			    else
-			    {
-			    	logger.debug("Ignoring event with uid " + uid + " already imported. Ignoring");
-			    	eventsPresent++;
-			    }
-		    }
-		}
+        final int eventsInICalFinal = eventsInICal;
+        int eventsSkippedFinal = eventsSkipped;
+		Promise<Map<String, List<Entity<Reservation>>>> importedPromise = getImportedReservations(minStart);
+        return importedPromise.thenApply((imported) ->
+        {
+            int eventsPresent = 0;
+            int eventsImported = 0;
+            List<Reservation> toImport = new ArrayList<Reservation>();
+            for (Reservation reservation : eventList)
+            {
+                String uid = reservation.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
+                if (uid == null)
+                {
+                    eventsImported++;
+                    toImport.add(reservation);
+                }
+                else
+                {
+                    List<Entity<Reservation>> alreadyImported = imported.get(uid);
+                    if (alreadyImported == null || alreadyImported.isEmpty())
+                    {
+                        eventsImported++;
+                        toImport.add(reservation);
+                    }
+                    else
+                    {
+                        logger.debug("Ignoring event with uid " + uid + " already imported. Ignoring");
+                        eventsPresent++;
+                    }
+                }
+            }
 
-		facade.storeObjects(toImport.toArray(Reservation.RESERVATION_ARRAY));
-		return new Integer[] {eventsInICal, eventsImported, eventsPresent, eventsSkipped};
+            facade.storeObjects(toImport.toArray(Reservation.RESERVATION_ARRAY));
+            return new Integer[] { eventsInICalFinal, eventsImported, eventsPresent, eventsSkippedFinal };
+        });
 	}
 
-	protected Map<String, List<Entity<Reservation>>> getImportedReservations(Date start)
-			throws RaplaException {
-		Map<String,List<Entity<Reservation>>> keyMap;
-		 User user = null;
-	     Date end = null;
-	     keyMap = new LinkedHashMap<String, List<Entity<Reservation>>>();
-	     Reservation[] reservations = facade.getReservations(user, start, end, null);
-	     for ( Reservation r:reservations)
-	     {
-	         String key = r.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
-	         if  ( key != null )
-	         {
-	             List<Entity<Reservation>> list = keyMap.get( key);
-	             if ( list == null)
-	             {
-	                 list = new ArrayList<Entity<Reservation>>();
-	                 keyMap.put( key, list);
-	             }
-	             list.add( r);
-	         }
-	     }
-		return keyMap;
-	}
+    protected Promise<Map<String, List<Entity<Reservation>>>> getImportedReservations(Date start)
+    {
+        Map<String, List<Entity<Reservation>>> keyMap;
+        User user = null;
+        Date end = null;
+        keyMap = new LinkedHashMap<String, List<Entity<Reservation>>>();
+        Promise<Collection<Reservation>> reservationsPromise = facade.getReservations(user, start, end, null);
+        return reservationsPromise.thenApply((reservations) ->
+        {
+            for (Reservation r : reservations)
+            {
+                String key = r.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
+                if (key != null)
+                {
+                    List<Entity<Reservation>> list = keyMap.get(key);
+                    if (list == null)
+                    {
+                        list = new ArrayList<Entity<Reservation>>();
+                        keyMap.put(key, list);
+                    }
+                    list.add(r);
+                }
+            }
+            return keyMap;
+        });
+    }
 
 //    
 //	private Date toRaplaDate(TimeZone timeZone2,

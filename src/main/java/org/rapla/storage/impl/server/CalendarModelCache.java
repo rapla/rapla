@@ -28,6 +28,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -210,6 +211,7 @@ public class CalendarModelCache
         return result;
     }
 
+    // TODO change to Promise
     public Collection<Appointment> getAppointments(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException
     {
         final Lock lock = readLock();
@@ -230,7 +232,7 @@ public class CalendarModelCache
         for (CalendarModelImpl calendarModelImpl : calendarModelList)
         {
             // check if filter or calendar selection changes so that we need to add or remove events from the exchange calendar
-            appointments.addAll(calendarModelImpl.queryAppointments(syncRange));
+            appointments.addAll(PromiseSynchroniser.waitForWithRaplaException(calendarModelImpl.queryAppointments(syncRange), 10000));
         }
         return appointments;
     }

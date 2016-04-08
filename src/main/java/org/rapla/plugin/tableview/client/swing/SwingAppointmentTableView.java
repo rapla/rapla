@@ -76,6 +76,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 public class SwingAppointmentTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
@@ -242,16 +243,19 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             protected Void doInBackground() throws Exception
             {
 //                Thread.sleep(4000);
-                final List<AppointmentBlock> blocks = SwingAppointmentTableView.this.model.getBlocks();
-                SwingUtilities.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
+                final Promise<List<AppointmentBlock>> blocksPromise = SwingAppointmentTableView.this.model.getBlocks();
+                blocksPromise.thenAccept((blocks) ->
+                { // TODO take away Swing Thread
+                    SwingUtilities.invokeLater(new Runnable()
                     {
-                        appointmentTableModel.setAppointments(blocks);
-                        final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
-                        glassPane.deactivate();
-                    }
+                        @Override
+                        public void run()
+                        {
+                            appointmentTableModel.setAppointments(blocks);
+                            final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
+                            glassPane.deactivate();
+                        }
+                    });
                 });
                 return null;
             }
@@ -409,8 +413,16 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 AppointmentBlock block = selectedEvents.get(0);
                 Appointment appointment = block.getAppointment();
                 Reservation reservation = appointment.getReservation();
-                if (!permissionController.canModify(reservation, getUser()))
+                try
                 {
+                    if (!permissionController.canModify(reservation, getUser()))
+                    {
+                        return;
+                    }
+                }
+                catch (RaplaException e)
+                {
+                    getLogger().error(e.getMessage(), e);
                     return;
                 }
                 try

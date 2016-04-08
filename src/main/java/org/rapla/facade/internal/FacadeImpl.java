@@ -495,7 +495,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         });
         final Promise<Map<Allocatable, Collection<Appointment>>> appointmentMapPromise = allocatablesPromise.thenCompose((allocatablesCollection) ->
         {
-            final Promise<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = getAppointmentsAsync(scheduler, operator, user, allocatablesCollection,
+            final Promise<Map<Allocatable, Collection<Appointment>>> appointmentsAsync = operator.queryAppointments(user, allocatablesCollection,
                     start, end, reservationFilters, templateId);
             return appointmentsAsync;
         });

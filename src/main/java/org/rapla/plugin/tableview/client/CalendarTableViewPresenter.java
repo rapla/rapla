@@ -16,6 +16,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
+import org.rapla.scheduler.Promise;
 
 import com.google.web.bindery.event.shared.EventBus;
 
@@ -81,17 +82,18 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     }
 
     @Override
+    /** ASYNC */
     public void updateContent()
     {
-        try
+        Promise<Collection<Reservation>> resultPromise = model.queryReservations(model.getTimeIntervall());
+        resultPromise.thenAccept((result) ->
         {
-            Collection<Reservation> result =model.queryReservations(model.getTimeIntervall());
             logger.info(result.size() + " Reservations loaded.");
             view.update(result);
-        }
-        catch (RaplaException e)
+        }).exceptionally((e) ->
         {
             logger.error(e.getMessage(), e);
-        }
+            return null;
+        });
     }
 }

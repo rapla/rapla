@@ -152,12 +152,9 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
                 catch (RaplaException ex)
                 {
                     ErrorDialog dialog;
-                    try {
-                        dialog = errorDialogProvider.get();
-                        final SwingPopupContext popupContext = (SwingPopupContext) menuContext.getPopupContext();
-                        dialog.showExceptionDialog(ex, popupContext.getParent());
-                    } catch (RaplaException ex1) {
-                    }
+                    dialog = errorDialogProvider.get();
+                    final SwingPopupContext popupContext = (SwingPopupContext) menuContext.getPopupContext();
+                    dialog.showExceptionDialog(ex, popupContext.getParent());
                 }
             }
 

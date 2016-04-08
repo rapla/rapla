@@ -25,6 +25,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
@@ -42,7 +43,7 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
     {
         User user = model.getUser();
         List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments", user);
-        final List<AppointmentBlock> blocks = model.getBlocks();
+        final List<AppointmentBlock> blocks = PromiseSynchroniser.waitForWithRaplaException(model.getBlocks(), 10000);
         return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
     }
 

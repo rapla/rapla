@@ -76,7 +76,14 @@ import com.google.web.bindery.event.shared.EventBus;
 
     @Override public boolean isEnabled()
     {
-        return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+        try
+        {
+            return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+        }
+        catch (RaplaException e)
+        {
+            return false;
+        }
     }
 
     public String getId()
@@ -88,9 +95,10 @@ import com.google.web.bindery.event.shared.EventBus;
     {
         typeMap.clear();
         List<DynamicType> eventTypes = new ArrayList<DynamicType>();
-        final User user = getUser();
+        User user;
         try
         {
+            user = getUser();
             DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
             for (DynamicType type : types)
             {

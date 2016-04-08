@@ -73,7 +73,15 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	@Override
 	public boolean isEnabled()
 	{
-	    final RaplaConfiguration config = getFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+	    RaplaConfiguration config;
+        try
+        {
+            config = getFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+        }
+        catch (RaplaException e)
+        {
+            return false;
+        }
         final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
         return enabled;
 	}

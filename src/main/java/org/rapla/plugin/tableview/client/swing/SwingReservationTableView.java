@@ -73,6 +73,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 public class SwingReservationTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
@@ -195,13 +196,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             }
         });
 
-        final Collection<Reservation> reservations = model.queryReservations(model.getTimeIntervall());
-        reservationTableModel.setReservations(reservations.toArray( new Reservation[] {}));
-
-        
-        Listener listener = new Listener();
-      	table.getSelectionModel().addListSelectionListener( listener);
-      	table.addFocusListener( listener);
+        final Promise<Collection<Reservation>> promise = model.queryReservations(model.getTimeIntervall());
+        promise.thenAccept((reservations) ->
+        {
+            reservationTableModel.setReservations(reservations.toArray(new Reservation[] {}));
+            Listener listener = new Listener();
+            table.getSelectionModel().addListSelectionListener(listener);
+            table.addFocusListener(listener);
+        });
     }
     
 
@@ -321,9 +323,12 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     public void update() throws RaplaException
     {
-        final Collection<Reservation> reservations = model.queryReservations(model.getTimeIntervall());
-        reservationTableModel.setReservations(reservations.toArray( new Reservation[] {}));
-        dateChooser.update();
+        final Promise<Collection<Reservation>> promise = model.queryReservations(model.getTimeIntervall());
+        promise.thenAccept((reservations) ->
+        {
+            reservationTableModel.setReservations(reservations.toArray(new Reservation[] {}));
+            dateChooser.update();
+        });
     }
 
     public JComponent getDateSelection()

@@ -44,6 +44,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.scheduler.Promise;
 
 @Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener
@@ -70,14 +71,17 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
         exportEntry.addActionListener(this);
     }
 	
-	 public void actionPerformed(ActionEvent evt) {
-         try {
-             export( model);
-         } catch (Exception ex) {
-             dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null) );
-         }
-     }
-	 
+    public void actionPerformed(ActionEvent evt)
+    {
+        try
+        {
+            export(model);
+        }
+        catch (RaplaException ex)
+        {
+            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+        }
+    }
     
 	public String getId() {
 		return PLUGIN_ID;
@@ -90,67 +94,79 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	private static final String LINE_BREAK = "\n"; 
 	private static final String CELL_BREAK = ";"; 
 	
-	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void export(final CalendarSelectionModel model) throws Exception
-	{
-	    // generates a text file from all filtered events;
-	    StringBuffer buf = new StringBuffer();
-	    Collection< ? extends RaplaTableColumn<?,?>> columns;
-	    List<Object> objects = new ArrayList<Object>();
-	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
-	    {
-	    	columns = tableConfigLoader.loadColumns("events", getUser());
-		    objects.addAll( model.queryReservations(model.getTimeIntervall()));
-	    }
-	    else
-	    {
-	    	columns = tableConfigLoader.loadColumns( "appointments", getUser());
-		    objects.addAll( model.getBlocks());
-	    }
-	    for (RaplaTableColumn column: columns)
-    	{
-	    	buf.append( column.getColumnName());
-	    	buf.append(CELL_BREAK);
-    	}
-	    for (Object row: objects)
-	    {
-	    	buf.append(LINE_BREAK);
-	    	for (RaplaTableColumn column: columns)
-	    	{
-	    		Object value = column.getValue( row);
-	    		Class columnClass = column.getColumnClass();
-	    		boolean isDate = columnClass.isAssignableFrom( java.util.Date.class);
-	    		String formated = "";
-	    		if(value != null) {
-					if ( isDate)
-					{ 
-						SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-						format.setTimeZone( getRaplaLocale().getTimeZone());
-						String timestamp = format.format(   (java.util.Date)value);
-						formated = timestamp;
-					}
-					else
-					{
-						String escaped = escape(value);
-						formated = escaped;
-					}
-	    		}
-				buf.append( formated );
-	    	   	buf.append(CELL_BREAK);
-	    	}
-	    }
-        byte[] bytes = buf.toString().getBytes();
-        
-		DateFormat sdfyyyyMMdd = new SimpleDateFormat("yyyyMMdd");
-		final String calendarName = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
-		String filename = calendarName + "-" + sdfyyyyMMdd.format( model.getStartDate() )  + "-" + sdfyyyyMMdd.format( model.getEndDate() ) + ".csv";
-		if (saveFile( bytes, filename,"csv"))
-		{
-			exportFinished(getMainComponent());
-		}
-	}
-	
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void export(final CalendarSelectionModel model) throws RaplaException
+    {
+        // generates a text file from all filtered events;
+        Promise<List<Object>> promise;
+        Collection<? extends RaplaTableColumn<?, ?>> columns;
+        if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
+        {
+            columns = tableConfigLoader.loadColumns("events", getUser());
+            promise = model.queryReservations(model.getTimeIntervall()).thenApply((list) ->
+            {
+                return new ArrayList<Object>(list);
+            });
+        }
+        else
+        {
+            columns = tableConfigLoader.loadColumns("appointments", getUser());
+            promise = model.getBlocks().thenApply((list) ->
+            {
+                return new ArrayList<Object>(list);
+            });
+        }
+        promise.thenAccept((objects) ->
+        {
+            StringBuffer buf = new StringBuffer();
+            for (RaplaTableColumn column : columns)
+            {
+                buf.append(column.getColumnName());
+                buf.append(CELL_BREAK);
+            }
+            for (Object row : objects)
+            {
+                buf.append(LINE_BREAK);
+                for (RaplaTableColumn column : columns)
+                {
+                    Object value = column.getValue(row);
+                    Class columnClass = column.getColumnClass();
+                    boolean isDate = columnClass.isAssignableFrom(java.util.Date.class);
+                    String formated = "";
+                    if (value != null)
+                    {
+                        if (isDate)
+                        {
+                            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            format.setTimeZone(getRaplaLocale().getTimeZone());
+                            String timestamp = format.format((java.util.Date) value);
+                            formated = timestamp;
+                        }
+                        else
+                        {
+                            String escaped = escape(value);
+                            formated = escaped;
+                        }
+                    }
+                    buf.append(formated);
+                    buf.append(CELL_BREAK);
+                }
+            }
+            byte[] bytes = buf.toString().getBytes();
+
+            DateFormat sdfyyyyMMdd = new SimpleDateFormat("yyyyMMdd");
+            final String calendarName = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
+            String filename = calendarName + "-" + sdfyyyyMMdd.format(model.getStartDate()) + "-" + sdfyyyyMMdd.format(model.getEndDate()) + ".csv";
+            if (saveFile(bytes, filename, "csv"))
+            {
+                exportFinished(getMainComponent());
+            }
+        }).exceptionally((ex) ->
+        {
+            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+            return null;
+        });
+    }	
 	
 	 protected boolean exportFinished(Component topLevel) {
 			try {

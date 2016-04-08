@@ -61,6 +61,7 @@ import org.rapla.plugin.ical.ICalImport;
 import org.rapla.plugin.ical.ICalImport.Import;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
 import org.rapla.plugin.ical.ImportFromICalResources;
+import org.rapla.scheduler.Promise;
 
 /**
  * 
@@ -301,24 +302,28 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         return;
                     String eventTypeAttributeNameKey = ((Attribute) selectedItem).getKey();
 
-                    Integer[] status  = importService.importICal(new Import(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey));
-                    int eventsInICal = status[0];
-            		int eventsImported = status[1];
-            		int eventsPresent = status[2];
-            		int eventsSkipped = status[3];
-            		getFacade().refresh();
-					dlg.close();
-					String text = "Imported " + eventsImported + "/" + eventsInICal + ". " + eventsPresent + " present";
-					if (eventsSkipped > 0)
-					{
-						text += " and " + eventsSkipped + " skipped ";
-					}
-					else
-					{
-						text+=".";
-					}
-					DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), false,  title, text);
-					okDlg.start(true);
+                    Promise<Integer[]> statusPromise = importService
+                            .importICal(new Import(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey));
+                    statusPromise.thenAccept((status) ->
+                    {
+                        int eventsInICal = status[0];
+                        int eventsImported = status[1];
+                        int eventsPresent = status[2];
+                        int eventsSkipped = status[3];
+                        getFacade().refresh();
+                        dlg.close();
+                        String text = "Imported " + eventsImported + "/" + eventsInICal + ". " + eventsPresent + " present";
+                        if (eventsSkipped > 0)
+                        {
+                            text += " and " + eventsSkipped + " skipped ";
+                        }
+                        else
+                        {
+                            text += ".";
+                        }
+                        DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), false, title, text);
+                        okDlg.start(true);
+                    });
 				} catch (Exception e1) {
 				    dialogUiFactory.showException(e1, new SwingPopupContext(getMainComponent(), null));
 				}

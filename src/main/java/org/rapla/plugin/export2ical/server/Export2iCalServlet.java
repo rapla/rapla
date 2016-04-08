@@ -38,6 +38,8 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.TimeZoneConverter;
 
 import net.fortuna.ical4j.data.CalendarOutputter;
@@ -167,8 +169,8 @@ public class Export2iCalServlet
 				return;
 			}
 
-			Collection<Appointment> appointments = calModel.queryAppointments(new TimeInterval(null, null));
-			write(response, appointments, filename,user, null);
+			Promise<Collection<Appointment>> appointments = calModel.queryAppointments(new TimeInterval(null, null));
+			write(response, PromiseSynchroniser.waitForWithRaplaException(appointments, 10000), filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -278,8 +280,8 @@ public class Export2iCalServlet
 
 		Date endDate = null;
         Date startDate = facade.today();
-        final Reservation[] reservations = calModel.queryReservations(startDate, endDate);
-		
+        final Promise<Collection<Reservation>> reservationsPromise = calModel.queryReservations(new TimeInterval(startDate, endDate));
+		final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(reservationsPromise, 10000);
 		// set to minvalue
 		Date maxDate = new Date();
 		maxDate.setTime(0);
