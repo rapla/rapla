@@ -43,9 +43,9 @@ public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
     }
 
     @Override
-    public void start(Collection<T> editObjects, String title, PopupContext popupContext, boolean isNew, EditCallback<List<T>> callback) throws RaplaException
+    public void start(Collection<T> editObjects, String title, PopupContext popupContext, EditCallback<List<T>> callback) throws RaplaException
     {
-        start(editObjects, getI18n().getString(title), popupContext, isNew, callback, getString("merge"), getString("cancel"), new MergeAction());
+        start(editObjects, getI18n().getString(title), popupContext, callback, getString("merge"), getString("cancel"), new MergeAction());
         setObjects(new ArrayList<T>(editObjects));
     }
 
@@ -75,7 +75,14 @@ public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
             }
             mergeController.doMerge(selectedAllocatable, allocatableIds);
             dlg.close();
-            getClientFacade().getRaplaFacade().refresh();
+            try
+            {
+                getClientFacade().getRaplaFacade().refresh();
+            }
+            catch (RaplaException e)
+            {
+                dialogUiFactory.showException(e, null);
+            }
         }
     }
 
@@ -110,5 +117,4 @@ public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
             return new MergeDialog<T>(facade, i18n, raplaLocale, logger, reservationController, raplaImages, dialogUiFactory, editUiProvider, mergeController);
         }
     }
-
 }

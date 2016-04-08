@@ -1,6 +1,7 @@
 package org.rapla.plugin.archiver.server;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -19,6 +20,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.archiver.ArchiverService;
+import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.RaplaSecurityException;
@@ -97,29 +99,31 @@ public class ArchiverServiceImpl  implements ArchiverService
     static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger) throws RaplaException
     {
         Date endDate = new Date(raplaFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
-        Reservation[] events = raplaFacade.getReservations(null, null, endDate, null); //ClassificationFilter.CLASSIFICATIONFILTER_ARRAY );
-        List<Reservation> toRemove = new ArrayList<Reservation>();
-        for ( int i=0;i< events.length;i++)
+        Promise<Collection<Reservation>> eventsPromise = raplaFacade.getReservations(null, null, endDate, null); 
+        eventsPromise.thenAccept((events) ->
         {
-            Reservation event = events[i];
-            if ( !RaplaComponent.isTemplate(event) && isOlderThan( event, endDate))
+            List<Reservation> toRemove = new ArrayList<Reservation>();
+            for (Reservation event : events)
             {
-                toRemove.add(event);
+                if (!RaplaComponent.isTemplate(event) && isOlderThan(event, endDate))
+                {
+                    toRemove.add(event);
+                }
             }
-        }
-        if ( toRemove.size() > 0)
-        {
-            logger.info("Removing " + toRemove.size() + " old events.");
-            Reservation[] eventsToRemove = toRemove.toArray( Reservation.RESERVATION_ARRAY);
-            int STEP_SIZE = 100;
-            for ( int i=0;i< eventsToRemove.length;i+=STEP_SIZE)
+            if (toRemove.size() > 0)
             {
-                int blockSize = Math.min( eventsToRemove.length- i, STEP_SIZE);
-                Reservation[] eventBlock = new Reservation[blockSize];
-                System.arraycopy( eventsToRemove,i, eventBlock,0, blockSize);
-                raplaFacade.removeObjects(eventBlock);
+                logger.info("Removing " + toRemove.size() + " old events.");
+                Reservation[] eventsToRemove = toRemove.toArray(Reservation.RESERVATION_ARRAY);
+                int STEP_SIZE = 100;
+                for (int i = 0; i < eventsToRemove.length; i += STEP_SIZE)
+                {
+                    int blockSize = Math.min(eventsToRemove.length - i, STEP_SIZE);
+                    Reservation[] eventBlock = new Reservation[blockSize];
+                    System.arraycopy(eventsToRemove, i, eventBlock, 0, blockSize);
+                    raplaFacade.removeObjects(eventBlock);
+                }
             }
-        }
+        });
     }
 
     static private boolean isOlderThan( Reservation event, Date maxAllowedDate )

@@ -103,31 +103,24 @@ import com.google.web.bindery.event.shared.EventBus;
         {
             public void actionPerformed(ActionEvent e)
             {
-                try
+                final RaplaMenuItem e1 = (RaplaMenuItem) e.getSource();
+                PopupContext popupContext = new SwingPopupContext(e1.getComponent(), null);
+                StringBuilder ids = new StringBuilder();
+                boolean first = true;
+                for (Object object : selectedObjects)
                 {
-                    final RaplaMenuItem e1 = (RaplaMenuItem) e.getSource();
-                    PopupContext popupContext = new SwingPopupContext(e1.getComponent(), null);
-                    StringBuilder ids = new StringBuilder();
-                    boolean first = true;
-                    for (Object object : selectedObjects)
+                    if (first)
                     {
-                        if (first)
-                        {
-                            first = false;
-                        }
-                        else
-                        {
-                            ids.append(",");
-                        }
-                        ids.append(((Entity) object).getId());
+                        first = false;
                     }
-                    final String info = ids.toString();
-                    eventBus.fireEvent(new Activity(SwingActivityController.MERGE_ALLOCATABLES, info, popupContext));
+                    else
+                    {
+                        ids.append(",");
+                    }
+                    ids.append(((Entity) object).getId());
                 }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, menuContext.getPopupContext());
-                }
+                final String info = ids.toString();
+                eventBus.fireEvent(new Activity(SwingActivityController.MERGE_ALLOCATABLES, info, popupContext));
             }
         });
 

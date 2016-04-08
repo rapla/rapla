@@ -16,6 +16,7 @@ import javax.inject.Inject;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -259,7 +260,16 @@ public class Export2iCalConverter
         if (!doExportAsMeeting)
             return;
         ReferenceInfo<User> ownerId = appointment.getOwnerRef();
-        final User owner = facade.resolve( ownerId);
+        User owner;
+        try
+        {
+            owner = facade.resolve( ownerId);
+        }
+        catch (EntityNotFoundException e1)
+        {
+            getLogger().error("Error getting user for Export2iCal: " +e1.getMessage(), e1);
+            return;
+        }
         try
         {
             Organizer organizer = null;

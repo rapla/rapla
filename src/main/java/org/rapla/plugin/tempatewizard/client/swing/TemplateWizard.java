@@ -97,7 +97,14 @@ import com.google.web.bindery.event.shared.EventBus;
 
     @Override public boolean isEnabled()
     {
-        return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+        try
+        {
+            return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+        }
+        catch (RaplaException e)
+        {
+            return false;
+        }
     }
 
     private Collection<Allocatable> updateTemplateNames() throws RaplaException
@@ -136,7 +143,16 @@ import com.google.web.bindery.event.shared.EventBus;
     public MenuElement getMenuElement()
     {
         //final RaplaFacade clientFacade = getClientFacade();
-        User user = getUser();
+        User user;
+        try
+        {
+            user = getUser();
+        }
+        catch (RaplaException e)
+        {
+            getLogger().error("Error creating menu element for TemplateWizard: "+e.getMessage(), e);
+            return null;
+        }
         boolean canCreateReservation = permissionController.canCreateReservation(user);
         MenuElement element;
         if (templateNames.size() == 0)
