@@ -15,6 +15,7 @@ package org.rapla.plugin.periodcopy.client.swing;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -45,6 +46,7 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
@@ -276,7 +278,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 	}
 
 	public List<Reservation> getReservations() throws RaplaException {
-	    Reservation[] reservations = model.getReservations( getSourceStart(), getSourceEnd() );
+	    Collection<Reservation> reservations = model.queryReservations( new TimeInterval(getSourceStart(), getSourceEnd() ));
 	    List<Reservation> listModel = new ArrayList<Reservation>();
 	      
         for ( Reservation reservation:reservations) {

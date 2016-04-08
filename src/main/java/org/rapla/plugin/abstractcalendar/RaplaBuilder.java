@@ -39,6 +39,7 @@ import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
@@ -145,10 +146,11 @@ public abstract class RaplaBuilder
     	conflictsSelected.clear();
         conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
         Collection<Allocatable> allocatables ;
+        TimeInterval interval = new TimeInterval( startDate, endDate);
+        bindings = model.queryAppointmentBindings(interval);
         if ( !conflictsSelected.isEmpty() )
         {
             allocatables = Util.getAllocatables( conflictsSelected );
-            bindings = model.queryAppointments(startDate, endDate);
             Collection<Appointment> all = new LinkedHashSet<Appointment>();
             for ( Collection<Appointment> appointments: bindings.values())
             {
@@ -158,7 +160,6 @@ public abstract class RaplaBuilder
         }
         else
         {
-            bindings = model.queryAppointments(startDate, endDate);
             Collection<Appointment> all = new LinkedHashSet<Appointment>();
             allocatables = new ArrayList<Allocatable>(bindings.keySet());
             Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));

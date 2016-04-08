@@ -125,12 +125,12 @@ public class CopyPeriodPluginTest {
             }
         };
         CopyPluginMenu init = new CopyPluginMenu( getFacade(), rr, getRaplaLocale(), getLogger(), i18n, copyDialogProvider, raplaImages, dialogUiFactory);
-        Reservation[] original = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
+        Reservation[] original = model.queryReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
         Assert.assertNotNull(findReservationWithName(original, "power planting"));
 
         init.copy( Arrays.asList(original), destPeriod.getStart(),destPeriod.getEnd(), false);
 
-        Reservation[] copy = model.getReservations( destPeriod.getStart(), destPeriod.getEnd());
+        Reservation[] copy = model.queryReservations( destPeriod.getStart(), destPeriod.getEnd());
         Assert.assertNotNull(findReservationWithName(copy, "power planting"));
 
     }

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -102,7 +101,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	    if (model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW))
 	    {
 	    	columns = tableConfigLoader.loadColumns("events", getUser());
-		    objects.addAll(Arrays.asList( model.getReservations())); 
+		    objects.addAll( model.queryReservations(model.getTimeIntervall()));
 	    }
 	    else
 	    {

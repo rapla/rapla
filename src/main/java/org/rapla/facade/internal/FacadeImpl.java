@@ -507,54 +507,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         return promise;
 	}
 
-    public static Promise<Map<Allocatable, Collection<Appointment>>> getAppointmentsAsync(CommandScheduler scheduler, StorageOperator operator, User user,
-            Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId)
-    {
-        final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() ->
-        {
-            Collection<Allocatable> allocList;
-
-            {
-                if (allocatables != null)
-                {
-                    if (allocatables.size() == 0 && templateId == null)
-                    {
-                        Map<Allocatable, Collection<Appointment>> emptyMap = Collections.emptyMap();
-                        return null;
-                    }
-                    allocList = allocatables;
-                }
-                else
-                {
-                    allocList = Collections.emptyList();
-                }
-            }
-
-            if (templateId != null)
-            {
-                final Allocatable template = operator.tryResolve(templateId, Allocatable.class);
-                if (template == null)
-                {
-                    throw new RaplaException("Can't load template with id " + templateId);
-                }
-                else
-                {
-                    allocList = new ArrayList<>(allocList);
-                    allocList.add(template);
-                }
-            }
-            return allocList;
-        }).thenCompose((allocList) ->
-        {
-            final Map<String, String> annotationQuery = null;
-            final User callUser = templateId != null ? null : user;
-            Promise<Map<Allocatable, Collection<Appointment>>> query = operator.queryAppointments(callUser, allocList, start, end, reservationFilters,
-                    annotationQuery);
-            return query;
-        });
-        return promise;
-    }
-
 	public Allocatable[] getAllocatables() throws RaplaException {
 		return getAllocatables(null);
 		

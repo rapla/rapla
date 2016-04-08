@@ -135,7 +135,7 @@ abstract public class TableViewPage<T, C> implements HTMLViewPage
     }
 	 
 
-	public  String getCalendarHTML(List< RaplaTableColumn<T, C>> columPluigns, List<T> rowObjects,String sortingStringOption) {
+	public  String getCalendarHTML(List< RaplaTableColumn<T, C>> columPluigns, Collection<T> rowObjects,String sortingStringOption) {
 
 	       RaplaTableColumn<T, C> columPlugin = null;
 	       int sortDirection =1;

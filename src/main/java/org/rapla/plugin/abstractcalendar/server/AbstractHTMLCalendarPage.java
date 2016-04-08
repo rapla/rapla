@@ -88,7 +88,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return builder;
     }
 
-    abstract protected AbstractHTMLView createCalendarView();
+    abstract protected AbstractHTMLView createCalendarView() throws RaplaException;
     abstract protected DateTools.IncrementSize getIncrementSize();
 
     public String getCalendarHTML() {
@@ -175,8 +175,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 
         Date currentDate = calendarview;
         model.setSelectedDate( currentDate );
-        view = createCalendarView();
         try {
+            view = createCalendarView();
         	configureView();
         } catch (RaplaException ex) {
             logger.error("Can't configure view ", ex);

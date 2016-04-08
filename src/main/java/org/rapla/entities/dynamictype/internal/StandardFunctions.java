@@ -439,23 +439,18 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof CalendarModel)
             {
                 final CalendarModel calendarModel = (CalendarModel) object;
-                Reservation[] reservations;
+                Collection<Appointment> appointments;
                 try
                 {
-                    reservations = calendarModel.getReservations();
+                    appointments = calendarModel.queryAppointments(calendarModel.getTimeIntervall());
                 }
                 catch (RaplaException e)
                 {
                     return null;
                 }
                 List<Appointment> result = new ArrayList<Appointment>();
-                for (Reservation event : reservations)
-                {
-                    result.addAll(event.getSortedAppointments());
-                }
-                final Appointment[] resultArray = result.toArray(new Appointment[result.size()]);
-                Arrays.sort(resultArray, new AppointmentStartComparator());
-                result = Arrays.asList(resultArray);
+                result.addAll(appointments);
+                Collections.sort(result, new AppointmentStartComparator());
                 return result;
             }
 
@@ -1266,16 +1261,16 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof CalendarModel)
             {
                 final CalendarModel calendarModel = (CalendarModel) object;
-                Reservation[] reservations;
+                Collection<Reservation> reservations;
                 try
                 {
-                    reservations = calendarModel.getReservations();
+                    reservations = calendarModel.queryReservations(calendarModel.getTimeIntervall());
                 }
                 catch (RaplaException e)
                 {
                     return null;
                 }
-                return Arrays.asList(reservations);
+                return reservations;
             }
             return Collections.emptyList();
         }

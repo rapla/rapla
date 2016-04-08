@@ -167,7 +167,7 @@ public class Export2iCalServlet
 				return;
 			}
 
-			Collection<Appointment> appointments = calModel.getAppointments(new TimeInterval(null, null));
+			Collection<Appointment> appointments = calModel.queryAppointments(new TimeInterval(null, null));
 			write(response, appointments, filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
@@ -278,7 +278,7 @@ public class Export2iCalServlet
 
 		Date endDate = null;
         Date startDate = facade.today();
-        final Reservation[] reservations = calModel.getReservations(startDate, endDate);
+        final Reservation[] reservations = calModel.queryReservations(startDate, endDate);
 		
 		// set to minvalue
 		Date maxDate = new Date();

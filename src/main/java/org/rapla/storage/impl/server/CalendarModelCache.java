@@ -230,7 +230,7 @@ public class CalendarModelCache
         for (CalendarModelImpl calendarModelImpl : calendarModelList)
         {
             // check if filter or calendar selection changes so that we need to add or remove events from the exchange calendar
-            appointments.addAll(calendarModelImpl.getAppointments(syncRange));
+            appointments.addAll(calendarModelImpl.queryAppointments(syncRange));
         }
         return appointments;
     }

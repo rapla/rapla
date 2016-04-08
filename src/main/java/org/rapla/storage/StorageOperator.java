@@ -89,8 +89,9 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
-            ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
+    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
+
+    Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments( User user,Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
 
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 
@@ -134,4 +135,6 @@ public interface StorageOperator extends EntityResolver {
     void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException;
 
     Collection<Allocatable> getDependent(Collection<Allocatable> allocatables);
+
+
 }

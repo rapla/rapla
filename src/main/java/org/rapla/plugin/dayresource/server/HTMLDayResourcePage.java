@@ -1,12 +1,5 @@
 package org.rapla.plugin.dayresource.server;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
@@ -27,6 +20,12 @@ import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.rapla.plugin.weekview.server.HTMLDayViewPage;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 @Extension(provides = HTMLViewPage.class,id= DayResourcePlugin.DAY_RESOURCE_VIEW)
 public class HTMLDayResourcePage extends HTMLDayViewPage
 {
@@ -38,32 +37,23 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
 	}
 
 	@Override
-	protected AbstractHTMLView createCalendarView() {
+	protected AbstractHTMLView createCalendarView() throws RaplaException {
 		final List<Allocatable> selectedAllocatablesSorted = model.getSelectedAllocatablesSorted();
-        HTMLWeekView weekView = new HTMLWeekView(){
+		Collection<Allocatable> selectedAllocatables =model.getSelectedAllocatablesAsList();
+
+		HTMLWeekView weekView = new HTMLWeekView(){
             
             
         	@Override
         	protected String createColumnHeader(int i)
         	{
-            	try 
-            	{
-					Allocatable allocatable = selectedAllocatablesSorted.get(i);
-					return  allocatable.getName( getRaplaLocale().getLocale());
-				} 
-            	catch (RaplaException e) {
-					return "";
-				}
+            	Allocatable allocatable = selectedAllocatablesSorted.get(i);
+				return  allocatable.getName( getRaplaLocale().getLocale());
         	}
             
             @Override
             protected int getColumnCount() {
-            	try {
-        		  Collection<Allocatable> selectedAllocatables =model.getSelectedAllocatablesAsList();
-        		  return selectedAllocatables.size();
-          	  	} catch (RaplaException e) {
-          	  		return 0;
-          	  	}
+				return selectedAllocatables.size();
             }
             
             public void rebuild(Builder b) {

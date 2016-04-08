@@ -69,7 +69,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 		try {
 
 			final TimeInterval interval = new TimeInterval(calendarModel.getStartDate(), calendarModel.getEndDate());
-			Collection<Appointment> appointments= calendarModel.getAppointments(interval);
+			Collection<Appointment> appointments= calendarModel.queryAppointments(interval);
 		    Set<String> appointmentIds = new LinkedHashSet<String>();
 		    for ( Appointment app:appointments)
 		    {

@@ -1,6 +1,5 @@
 package org.rapla.plugin.tableview.client;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 
@@ -86,8 +85,7 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     {
         try
         {
-            Reservation[] reservations = model.getReservations();
-            Collection<Reservation> result = Arrays.asList(reservations);
+            Collection<Reservation> result =model.queryReservations(model.getTimeIntervall());
             logger.info(result.size() + " Reservations loaded.");
             view.update(result);
         }

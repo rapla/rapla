@@ -12,7 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -43,12 +45,10 @@ public class ReservationTableViewPage extends TableViewPage<Reservation, TableCo
 
     String getCalendarHTML() throws RaplaException
     {
-        final Date startDate = model.getStartDate();
-        final Date endDate = model.getEndDate();
-        final List<Reservation> reservations = Arrays.asList(model.getReservations(startDate, endDate));
+        final Collection<Reservation> reservations = model.queryReservations(model.getTimeIntervall());
         final User user = model.getUser();
-        List<RaplaTableColumn<Reservation, TableColumn>> columPluigns = tableConfigLoader.loadColumns("events", user);
-        return getCalendarHTML(columPluigns, reservations, TableViewPlugin.EVENTS_SORTING_STRING_OPTION);
+        List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns("events", user);
+        return getCalendarHTML(columnPlugins, reservations, TableViewPlugin.EVENTS_SORTING_STRING_OPTION);
     }
 
     @Override

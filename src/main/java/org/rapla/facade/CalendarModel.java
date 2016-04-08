@@ -15,6 +15,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.scheduler.Promise;
 
 public interface CalendarModel extends Cloneable, ClassifiableFilter 
 {
@@ -40,6 +41,8 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
     void setEndDate( Date date );
 
+    TimeInterval getTimeIntervall();
+
     Collection<RaplaObject> getSelectedObjects();
 
 
@@ -47,24 +50,20 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     String getOption(String name);
     
 
-    List<Allocatable> getSelectedAllocatablesSorted();
+    List<Allocatable> getSelectedAllocatablesSorted() throws RaplaException;
 
-    Collection<Allocatable> getSelectedAllocatablesAsList();
+    Collection<Allocatable> getSelectedAllocatablesAsList() throws RaplaException;
 
     //Map<Allocatable,Collection<Reservation>> queryReservations( Date startDate, Date endDate ) throws RaplaException;
 
-    /** use get */
-    @Deprecated
-    Reservation[] getReservations( Date startDate, Date endDate ) throws RaplaException;
 
-    Reservation[] getReservations() throws RaplaException;
 
     CalendarModel clone();
     
   
     
-    List<AppointmentBlock> getBlocks() throws RaplaException;
-    
+
+
     DynamicType guessNewEventType() throws RaplaException;
     
 	/** returns the marked time intervals in the calendar. */ 
@@ -72,10 +71,13 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     
 	Collection<Allocatable> getMarkedAllocatables();
 
-    Collection<Appointment> getAppointments(TimeInterval interval) throws RaplaException;
-	
+    Promise<Collection<Reservation>> queryReservations( TimeInterval interval );
+    Promise<Collection<Appointment>> queryAppointments(TimeInterval interval);
+    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointmentBindings(TimeInterval interval);
+    Promise<List<AppointmentBlock>> getBlocks();
+
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
 
-    Map<Allocatable,Collection<Appointment>> queryAppointments(Date startDate, Date endDate);
+
 
 }

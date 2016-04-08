@@ -45,7 +45,7 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
         super(raplaLocale, raplaResources, facade, logger, appointmentFormater);
     }
 
-    protected AbstractHTMLView createCalendarView() {
+    protected AbstractHTMLView createCalendarView() throws RaplaException {
         HTMLWeekView weekView = new HTMLWeekView()
         {
         	public void rebuild(Builder b) {

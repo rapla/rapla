@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.util.Date;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,10 +50,13 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Date;
 
 @RunWith(JUnit4.class)
 public class DynamicTypeTest  {
@@ -66,7 +67,7 @@ public class DynamicTypeTest  {
 	Logger logger;
 	CalendarSelectionModel model;
 	@Before
-	public void setUp()
+	public void setUp() throws RaplaException
 	{
 		logger = RaplaTestCase.initLoger();
 		clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
@@ -141,7 +142,7 @@ public class DynamicTypeTest  {
     	}
     	{
     		Thread.sleep(100);
-	    	model.getReservations();
+	    	model.queryReservations(model.getTimeIntervall());
     	}
 //    	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();
 //    	assertTrue(errorMessages.toString(),errorMessages.size() == 0);       		
@@ -191,7 +192,7 @@ public class DynamicTypeTest  {
             DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger);
             InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory, raplaImages);
-	    	model.getReservations();
+	    	model.queryReservations(model.getTimeIntervall());
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
 	        DateRenderer dateRenderer = new RaplaDateRenderer(facade, i18n, raplaLocale, logger);

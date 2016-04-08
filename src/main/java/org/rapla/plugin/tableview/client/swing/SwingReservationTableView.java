@@ -195,7 +195,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             }
         });
 
-        reservationTableModel.setReservations( model.getReservations() );
+        final Collection<Reservation> reservations = model.queryReservations(model.getTimeIntervall());
+        reservationTableModel.setReservations(reservations.toArray( new Reservation[] {}));
 
         
         Listener listener = new Listener();
@@ -320,7 +321,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     
     public void update() throws RaplaException
     {
-        reservationTableModel.setReservations( model.getReservations() );
+        final Collection<Reservation> reservations = model.queryReservations(model.getTimeIntervall());
+        reservationTableModel.setReservations(reservations.toArray( new Reservation[] {}));
         dateChooser.update();
     }
 
@@ -422,12 +424,12 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             if (me.getClickCount() > 1  && selectedEvents.size() == 1 )
             {
                 Reservation reservation = selectedEvents.get( 0);
-                if (!permissionController.canModify( reservation, getUser()))
-                {
-                    return;
-                }
                 final PopupContext popupContext = createPopupContext(getComponent(),null);
                 try {
+                    if (!permissionController.canModify( reservation, getUser()))
+                    {
+                        return;
+                    }
                     editController.edit( reservation,popupContext );
                 } catch (RaplaException ex) {
                     dialogUiFactory.showException (ex, popupContext);
