@@ -39,7 +39,6 @@ import org.rapla.client.swing.internal.edit.fields.PermissionListField.Permissio
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
 import org.rapla.entities.Entity;
 import org.rapla.entities.NamedComparator;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
@@ -52,6 +51,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
@@ -262,54 +262,77 @@ public class TemplateEdit extends RaplaGUIComponent
                 private static final long serialVersionUID = 1L;
     
                 public void run() {
-                    try
+                    Collection<ReferenceInfo<Entity>> toRemoveObj = Collections.synchronizedSet(new LinkedHashSet<>());
+                    for (Entity toRem : toRemove)
                     {
-                        LinkedHashSet<RaplaObject> toRemoveObj = new LinkedHashSet<RaplaObject>();
-                        toRemoveObj.addAll( toRemove);
-                        LinkedHashSet<RaplaObject> toStoreObj = new LinkedHashSet<RaplaObject>();
-                        toStoreObj.addAll( toStore);
-                        for ( Allocatable template:toRemove)
+                        toRemoveObj.add(toRem.getReference());
+                    }
+                    Collection<Entity> toStoreObj = Collections.synchronizedSet(new LinkedHashSet<>());
+                    toStoreObj.addAll(toStore);
+                    Promise<Void> p = null;
+                    for (Allocatable template : toRemove)
+                    {
+                        Promise<Collection<Reservation>> reservationsPromise = getQuery().getTemplateReservations(template);
+                        final Promise<Void> voidPromise = reservationsPromise.thenAccept((reservations) ->
                         {
-                            Collection<Reservation> reservations = getQuery().getTemplateReservations(template);
-                            toRemoveObj.addAll( reservations);
+                            for (Reservation reservation : reservations)
+                            {
+                                toRemoveObj.add(((Entity) reservation).getReference());
+                            }
+                        });
+                        if (p == null)
+                        {
+                            p = voidPromise;
                         }
-              
-                        //Collection<Allocatable> newEntity = Collections.singleton( template);
-                        //Collection<Allocatable> originalEntity = null;
-                        //SaveUndo<Allocatable> cmd = new SaveUndo<Allocatable>(getContext(), newEntity, originalEntity);
-                        //getModification().getCommandHistory().storeAndExecute( cmd);
-                        
-                        Entity[] storedObjects = toStoreObj.toArray(Entity.ENTITY_ARRAY); 
-                        Entity[] removedObjects = toRemoveObj.toArray(Entity.ENTITY_ARRAY);
-                        // FIXME Implement as undo
-                        getFacade().storeAndRemove(storedObjects, removedObjects);
-              
-                        Allocatable selectedTemplate = templateList.getSelectedValue();
-                        Date start = null;
-                        
-                        if ( selectedTemplate != null)
+                        else
                         {
-                            Collection<Reservation> reservations = getQuery().getTemplateReservations(selectedTemplate);
-                            for ( Reservation r:reservations)
+                            p = p.thenCombine(voidPromise, (a, b) ->
+                            {
+                                return null;
+                            });
+                        }
+                    }
+                    p = p.thenCompose((a) ->
+                    {
+                        final Promise<Void> dispatch = getFacade().dispatch(toStoreObj, toRemoveObj, getUser());
+                        return dispatch;
+                    });
+
+                    Promise<Collection<Reservation>> resPromise = p.thenCompose((a) ->
+                    {
+                        Allocatable selectedTemplate = templateList.getSelectedValue();
+                        Promise<Collection<Reservation>> reservations = getQuery().getTemplateReservations(selectedTemplate);
+                        return reservations;
+                    });
+                    final Promise<Void> accept = resPromise.thenAccept((reservations) ->
+                    {
+                        Allocatable selectedTemplate = templateList.getSelectedValue();
+
+                        Date start = null;
+                        if (selectedTemplate != null)
+                        {
+                            for (Reservation r : reservations)
                             {
                                 Date firstDate = r.getFirstDate();
-                                if ( start == null || firstDate.before(start ))
+                                if (start == null || firstDate.before(start))
                                 {
                                     start = firstDate;
                                 }
                             }
-                            if ( start != null)
+                            if (start != null)
                             {
-                                calendarSelectionModel.setSelectedDate( start);
+                                calendarSelectionModel.setSelectedDate(start);
                             }
                         }
-                        getUpdateModule().setTemplate( selectedTemplate);
-                    }
-                    catch (RaplaException ex)
+                        getUpdateModule().setTemplate(selectedTemplate);
+                    }).whenComplete((a, ex) ->
                     {
-                        dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
-                    }
-                    dlg.close();
+                        if (ex != null)
+                        {
+                            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                        }
+                        dlg.close();
+                    });
                 }
             };
             final JList list = templateList.getList();
