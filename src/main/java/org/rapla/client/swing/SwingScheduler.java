@@ -7,6 +7,7 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 
 @DefaultImplementation(of = CommandScheduler.class,context = InjectionContext.swing)

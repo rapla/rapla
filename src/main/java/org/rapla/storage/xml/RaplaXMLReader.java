@@ -371,7 +371,14 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         store.put(entity);
         if ( entity instanceof  Category)
         {
-            keyAndPathResolver.addCategory((Category)entity);
+            try
+            {
+                keyAndPathResolver.addCategory((Category)entity);
+            }
+            catch (EntityNotFoundException e)
+            {
+                throw new RaplaSAXParseException(e.getMessage(), e);
+            }
         }
     }
 

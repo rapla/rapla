@@ -7,16 +7,11 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
-
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 
 @DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
 @Singleton
-public final class GwtCommandScheduler implements CommandScheduler, Disposable
+public final class GwtCommandScheduler extends org.rapla.scheduler.client.gwt.GwtCommandScheduler implements Disposable
 {
     private final Logger gwtLogger;
 
@@ -26,88 +21,16 @@ public final class GwtCommandScheduler implements CommandScheduler, Disposable
         this.gwtLogger = gwtLogger;
     }
 
-    @Override public void execute(final Runnable command)
-    {
-        schedule(new Command()
-        {
-            @Override public void execute() throws Exception
-            {
-                command.run();
-            }
-        }, 0);
-    }
-
-    @Override
-    public Cancelable schedule(final Command command, long delay, final long period)
-    {
-        if (period > 0)
-        {
-            RepeatingCommand cmd = new RepeatingCommand()
-            {
-
-                @Override
-                public boolean execute()
-                {
-                    try
-                    {
-                        //gwtLogger.info("Refreshing client with period " + period);
-                        command.execute();
-                    }
-                    catch (Exception e)
-                    {
-                        gwtLogger.warn(e.getMessage(), e);
-                    }
-                    return true;
-                }
-            };
-            Scheduler.get().scheduleFixedPeriod(cmd, (int) period);
-        }
-        else
-        {
-            ScheduledCommand entry = new ScheduledCommand()
-            {
-
-                @Override
-                public void execute()
-                {
-                    try
-                    {
-                        //gwtLogger.info("Refreshing client without period ");
-                        command.execute();
-                    }
-                    catch (Exception e)
-                    {
-                        gwtLogger.warn(e.getMessage(), e);
-                    }
-
-                }
-            };
-            Scheduler.get().scheduleEntry(entry);
-        }
-
-        return new Cancelable()
-        {
-
-            public void cancel()
-            {
-            }
-        };
-    }
-
-    @Override
-    public Cancelable schedule(Command command, long delay)
-    {
-        return schedule(command, delay, -1);
-    }
-
-    @Override
-    public Cancelable scheduleSynchronized(Object synchronizationObject, Command command, long delay)
-    {
-        return schedule(command, delay);
-    }
 
     public void dispose()
     {
         // FIXME remove tasks that are canceled
+    }
+
+
+    @Override
+    protected void warn(String message, Exception e)
+    {
+        gwtLogger.warn(message, e);
     }
 }
