@@ -18,7 +18,6 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -86,7 +85,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         this.view = view;
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
-        conflicts = new LinkedHashSet<Conflict>( Arrays.asList(getQuery().getConflicts( )));
+        conflicts = new LinkedHashSet<Conflict>( getQuery().getConflicts( ));
         updateTree();
         final JTree navTree = treeSelection.getTree();
         content.setLayout(new BorderLayout());
@@ -290,8 +289,8 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
     	TimeInterval invalidateInterval = evt.getInvalidateInterval();
     	if ( invalidateInterval != null && invalidateInterval.getStart() == null)
     	{
-    		 Conflict[] conflictArray = getQuery().getConflicts( );
-    		 conflicts = new LinkedHashSet<Conflict>( Arrays.asList(conflictArray));
+    		 Collection<Conflict> conflictArray = getQuery().getConflicts( );
+    		 conflicts = new LinkedHashSet<Conflict>( conflictArray);
     		 updateTree();
     	}
     	else if ( evt.isModified() )

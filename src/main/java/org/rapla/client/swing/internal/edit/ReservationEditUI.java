@@ -50,6 +50,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -69,12 +70,19 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
             DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaException
+            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         classificationField = classificationFieldFactory.create();
-        this.permissionListField = permissionListFieldFactory.create(getString("permissions")); 
+        try
+        {
+            this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
+        }
+        catch (RaplaException e1)
+        {
+            throw new RaplaInitializationException(e1);
+        } 
 
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
                 appointmentFormater, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,

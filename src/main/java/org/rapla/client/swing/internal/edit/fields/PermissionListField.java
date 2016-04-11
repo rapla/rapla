@@ -372,7 +372,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
             this.permissionFieldFactory = permissionFieldFactory;
         }
 
-        public PermissionListField create(final String fieldName)
+        public PermissionListField create(final String fieldName) throws RaplaException
         {
             return new PermissionListField(facade, i18n, raplaLocale, logger, fieldName, raplaListEditFactory, permissionFieldFactory);
         }

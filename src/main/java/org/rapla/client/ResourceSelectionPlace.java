@@ -9,6 +9,7 @@ import org.rapla.client.event.AbstractActivityController.Place;
 import org.rapla.client.event.PlacePresenter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
@@ -37,12 +38,12 @@ public class ResourceSelectionPlace implements Presenter, PlacePresenter
     @Override
     public Object provideContent()
     {
-        updateView();
+        updateView(null);
         return view.provideContent();
     }
 
     @Override
-    public void updateView()
+    public void updateView(ModificationEvent event)
     {
         try
         {

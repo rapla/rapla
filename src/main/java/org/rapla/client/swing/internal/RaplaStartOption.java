@@ -132,7 +132,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         calendarName.setText(name);
         
     	try {
-    		String timezoneId = preferences.getEntryAsString( ContainerImpl.TIMEZONE,timezoneService.getDefaultTimezone().get());
+    		String timezoneId = preferences.getEntryAsString( ContainerImpl.TIMEZONE,timezoneService.getDefaultTimezone());
 			cboTimezone.setSelectedItem(timezoneId);
 
             String localeId = preferences.getEntryAsString( ContainerImpl.LOCALE,null);
@@ -148,11 +148,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
                 languageChooser.setSelectedLanguage(null);
             }
 		}
-		catch (RaplaException ex)
-		{
-			throw ex;
-		}
-	    catch (Exception ex)
+		catch (Exception ex)
 	    {
 	    	throw new RaplaException(ex);
 	    }
@@ -206,14 +202,10 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 	{
 		try
 		{
-			List<String> zoneString = timezoneService.getICalTimezones().get();
+			List<String> zoneString = timezoneService.getICalTimezones();
 			return zoneString.toArray(new String[] {});
 		}
-		catch (RaplaException ex)
-		{
-			throw ex;
-		}
-	    catch (Exception ex)
+		catch (Exception ex)
 	    {
 	    	throw new RaplaException(ex);
 	    }

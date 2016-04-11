@@ -197,7 +197,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
      * 
      * @see org.rapla.client.swing.gui.internal.view.ITreeFactory#createClassifiableModel(org.rapla.entities.dynamictype.Classifiable[], org.rapla.entities.dynamictype.DynamicType[])
      */
-    protected void updateTree()
+    protected void updateTree() throws RaplaException
     {
 
         treeSelection.getTree().setRootVisible(false);
@@ -266,62 +266,71 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
             @Override
             public void drop(DropTargetDropEvent dtde)
             {
-                TreePath selectionPath = tree.getSelectionPath();
-                TreePath sourcePath = selectionPath.getParentPath();
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                Point dropLocation = dtde.getLocation();
-                TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
-                if (isDropAllowed(sourcePath, targetPath, selectedNode))
+                try
                 {
-                    DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
-                    final Category categoryToMove = (Category) selectedNode.getUserObject();
-                    final Category targetCategory = (Category) targetParentNode.getUserObject();
-                    Collection<Category> categoriesToStore = new ArrayList<>();
-                    final Category categoryToMoveEdit = getFacade().edit(categoryToMove);
-                    final Category targetParentCategoryEdit = getFacade().edit(targetCategory.getParent());
-                    if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
+                    TreePath selectionPath = tree.getSelectionPath();
+                    TreePath sourcePath = selectionPath.getParentPath();
+                    DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                    Point dropLocation = dtde.getLocation();
+                    TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                    if (isDropAllowed(sourcePath, targetPath, selectedNode))
                     {
-                        // remove from old parent
-                        final Category moveCategoryParent = getFacade().edit(categoryToMove.getParent());
-                        moveCategoryParent.removeCategory(categoryToMoveEdit);
-                        categoriesToStore.add(moveCategoryParent);
-                    }
-                    final Collection<Category> categories = getFacade().edit(Arrays.asList(targetParentCategoryEdit.getCategories()));
-                    for (Category category : categories)
-                    {
-                        targetParentCategoryEdit.removeCategory(category);
-                    }
-                    for (Category category : categories)
-                    {
-                        if (category.equals(targetCategory))
+                        DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
+                        final Category categoryToMove = (Category) selectedNode.getUserObject();
+                        final Category targetCategory = (Category) targetParentNode.getUserObject();
+                        Collection<Category> categoriesToStore = new ArrayList<>();
+                        final Category categoryToMoveEdit = getFacade().edit(categoryToMove);
+                        final Category targetParentCategoryEdit = getFacade().edit(targetCategory.getParent());
+                        if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
                         {
-                            targetParentCategoryEdit.addCategory(categoryToMoveEdit);
+                            // remove from old parent
+                            final Category moveCategoryParent = getFacade().edit(categoryToMove.getParent());
+                            moveCategoryParent.removeCategory(categoryToMoveEdit);
+                            categoriesToStore.add(moveCategoryParent);
                         }
-                        else if (category.equals(categoryToMoveEdit))
+                        final Collection<Category> categories = getFacade().edit(Arrays.asList(targetParentCategoryEdit.getCategories()));
+                        for (Category category : categories)
                         {
-                            continue;
+                            targetParentCategoryEdit.removeCategory(category);
                         }
-                        targetParentCategoryEdit.addCategory(category);
+                        for (Category category : categories)
+                        {
+                            if (category.equals(targetCategory))
+                            {
+                                targetParentCategoryEdit.addCategory(categoryToMoveEdit);
+                            }
+                            else if (category.equals(categoryToMoveEdit))
+                            {
+                                continue;
+                            }
+                            targetParentCategoryEdit.addCategory(category);
+                        }
+                        categoriesToStore.add(targetParentCategoryEdit);
+                        categoriesToStore.add(categoryToMoveEdit);
+                        try
+                        {
+                            getFacade().storeObjects(categoriesToStore.toArray(Entity.ENTITY_ARRAY));
+                            dtde.dropComplete(true);
+                            updateTree();
+                        }
+                        catch (Exception e)
+                        {
+                            dialogUiFactory.showError(e, new SwingPopupContext(getMainComponent(), null));
+                            dtde.dropComplete(false);
+                            updateTree();
+                        }
                     }
-                    categoriesToStore.add(targetParentCategoryEdit);
-                    categoriesToStore.add(categoryToMoveEdit);
-                    try
+                    else
                     {
-                        getFacade().storeObjects(categoriesToStore.toArray(Entity.ENTITY_ARRAY));
-                        dtde.dropComplete(true);
-                        updateTree();
-                    }
-                    catch (Exception e)
-                    {
-                        dialogUiFactory.showError(e, new SwingPopupContext(getMainComponent(), null));
+                        dtde.rejectDrop();
                         dtde.dropComplete(false);
-                        updateTree();
                     }
                 }
-                else
+                catch(RaplaException e)
                 {
                     dtde.rejectDrop();
                     dtde.dropComplete(false);
+                    getLogger().error("Error performing drag and drop operation: "+e.getMessage(), e);
                 }
             }
 
@@ -439,10 +448,18 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
                 RaplaObjectAction editAction = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
                         createPopupContext(getComponent(), null), editController, infoFactory, raplaImages, dialogUiFactory);
                 PermissionController permissionController = getFacade().getPermissionController();
-                if (permissionController.canModify(entity, getUser()))
+                try
                 {
-                    editAction.setEdit(entity);
-                    editAction.actionPerformed();
+                    final User user = getUser();
+                    if (permissionController.canModify(entity, user))
+                    {
+                        editAction.setEdit(entity);
+                        editAction.actionPerformed();
+                    }
+                }
+                catch (RaplaException e)
+                {
+                    getLogger().error("Error getting user in resource selection: "+e.getMessage(), e);
                 }
             }
         }
@@ -576,7 +593,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
             this.menuBar = menuBar;
         }
 
-        public ResourceSelection create(MultiCalendarView view)
+        public ResourceSelection create(MultiCalendarView view) throws RaplaException
         {
             return new ResourceSelection(menuBar, facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory,
                     raplaImages, dialogUiFactory, filterEditButtonFactory);

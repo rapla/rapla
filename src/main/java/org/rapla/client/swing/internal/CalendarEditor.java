@@ -19,7 +19,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Date;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -36,7 +35,6 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.Activity;
 import org.rapla.client.event.ActivityPresenter;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
@@ -59,6 +57,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
@@ -89,163 +88,172 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     boolean listenersDisabled = false;
     private final RaplaImages raplaImages;
     final CalendarSelectionModel model;
+    private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
     public CalendarEditor(StartupEnvironment environment, RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale,
             Logger logger, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, TreeFactory treeFactory, InfoFactory infoFactory, final RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory,
-            ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface, final EventBus eventBus) throws RaplaException {
+            ResourceSelectionFactory resourceSelectionFactory, MultiCalendarViewFactory multiCalendarViewFactory, IOInterface ioInterface, final EventBus eventBus) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
-        this.raplaImages = raplaImages;
-        this.model = model;
-
-        calendarContainer = multiCalendarViewFactory.create(this);
-        resourceSelection = resourceSelectionFactory.create(calendarContainer);
-        calendarContainer.addValueChangeListener(new ChangeListener()
+        try
+            {
+            this.raplaImages = raplaImages;
+            this.model = model;
+            this.dialogUiFactory = dialogUiFactory;
+    
+            calendarContainer = multiCalendarViewFactory.create(this);
+            resourceSelection = resourceSelectionFactory.create(calendarContainer);
+            calendarContainer.addValueChangeListener(new ChangeListener()
+            {
+    
+    			public void stateChanged(ChangeEvent e) {
+    				if ( listenersDisabled)
+    				{
+    					return;
+    				}
+    				try {
+    					resourceSelection.updateMenu();
+    				} catch (RaplaException e1) {
+    					getLogger().error(e1.getMessage(), e1);
+    				}
+    			}
+            	
+            });
+            final ChangeListener treeListener = new ChangeListener() {
+    	          public void stateChanged(ChangeEvent e) {
+    	        	  if ( listenersDisabled)
+    	        	  {
+    	        		  return;
+    	        	  }
+    	        	  conflictsView.clearSelection();
+    	          }
+    	      };
+    
+    	      
+            final RaplaMenu viewMenu = menuBar.getViewMenu();
+            ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
+            ownReservationsMenu.setText( getString("only_own_reservations"));
+            ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
+            ownReservationsMenu.addActionListener(new ActionListener() {
+    			
+    			public void actionPerformed(ActionEvent e) {
+    		    	boolean isSelected = model.isOnlyCurrentUserSelected();
+    		    	// switch selection options
+    		    	model.setOption( CalendarModel.ONLY_MY_EVENTS, isSelected ? "false":"true");
+    		    	updateOwnReservationsSelected();
+    		    	try {
+    	               	Entity preferences = getQuery().getPreferences();
+    	   		    	ModificationEventImpl modificationEvt = new ModificationEventImpl();
+    	   		    	modificationEvt.addChanged( preferences );
+    	   				resourceSelection.dataChanged(modificationEvt);
+    	   				calendarContainer.update(modificationEvt);
+    	   				conflictsView.dataChanged( modificationEvt);
+    		    	} catch (Exception ex) {
+    		    	    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+    		    	}
+    
+    			}
+    		});
+            ownReservationsMenu.setText( getString("only_own_reservations"));
+            ownReservationsMenu.setIcon( raplaImages.getIconFromKey("icon.unchecked"));
+            updateOwnReservationsSelected();
+    
+    
+            viewMenu.insertBeforeId( ownReservationsMenu, "show_tips" );
+    
+            resourceSelection.getTreeSelection().addChangeListener( treeListener);
+            conflictsView = new ConflictSelection(facade, i18n, raplaLocale, logger, calendarContainer, model, treeFactory, dialogUiFactory);
+            left = new JPanel(new GridBagLayout());
+            GridBagConstraints c = new GridBagConstraints();
+            c.gridheight = 1;
+            c.gridx = 1;
+            c.gridy = 1;
+            c.weightx = 0;
+            c.weighty = 0;
+            c.anchor = GridBagConstraints.EAST;
+            final JButton max  = new JButton();
+            final JButton tree  = new JButton();
+            tree.setEnabled( false );
+            minimized = new JToolBar(JToolBar.VERTICAL);
+            minimized.setFloatable( false);
+            minimized.add( max);
+            minimized.add( tree);
+            
+            
+            max.setIcon( UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
+            tree.setIcon( raplaImages.getIconFromKey("icon.tree"));
+            JButton min = new RaplaButton(RaplaButton.SMALL);
+            ActionListener minmaxAction = new ActionListener() 
+            {
+    			public void actionPerformed(ActionEvent e) 
+    			{
+    				closeFilter();
+    				int index = viewMenu.getIndexOfEntryWithId(SHOW_SELECTION_MENU_ENTRY);
+    				JMenuItem component = (JMenuItem)viewMenu.getMenuComponent( index);
+    				component.getAction().actionPerformed(e);
+    				final boolean newSelected = !component.isSelected();
+    				component.setSelected(newSelected);
+    			    javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
+    			    component.setIcon(newSelected ? raplaImages.getIconFromKey("icon.checked"):raplaImages.getIconFromKey("icon.unchecked"));
+    			}
+    		};
+    		min.addActionListener( minmaxAction);
+    		max.addActionListener( minmaxAction);
+            tree.addActionListener( minmaxAction);
+            
+            templatePanel = new JToolBar(JToolBar.VERTICAL);
+            templatePanel.setFloatable( false);
+            final JButton exitTemplateEdit  = new JButton();
+            //exitTemplateEdit.setIcon(raplaImages.getIconFromKey("icon.close"));
+            exitTemplateEdit.setText(getString("close-template"));
+            templatePanel.add( exitTemplateEdit);
+            exitTemplateEdit.addActionListener( new ActionListener() {
+    			
+    			public void actionPerformed(ActionEvent e) {
+    				getUpdateModule().setTemplate( null );
+    				
+    			}
+    		});
+            
+    		Icon icon = UIManager.getDefaults().getIcon("InternalFrame.minimizeIcon");
+            min.setIcon( icon) ;
+            //left.add(min, c);
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.weightx = 1;
+             c.gridy = 1;
+            JPanel jp = new JPanel();
+            jp.setLayout( new BorderLayout());
+            
+            savedViews = new SavedCalendarView(menuBar,facade, i18n, raplaLocale, logger, eventBus,  model, extensionFactories,
+                    environment, infoFactory, raplaImages, dialogUiFactory, ioInterface);
+            jp.add( savedViews.getComponent(), BorderLayout.CENTER );
+            templatePanel.setVisible( false);
+            jp.add( templatePanel, BorderLayout.WEST );
+            JToolBar mintb =new JToolBar();
+            mintb.setFloatable( false);
+           // mintb.add( min);
+            min.setAlignmentY( JButton.TOP);
+            jp.add( min, BorderLayout.EAST);
+            left.add(jp, c);
+            c.fill = GridBagConstraints.BOTH;
+            c.gridy = 2;
+            c.weightx = 1;
+            c.weighty = 2.5;
+            left.add(resourceSelection.getComponent(), c);
+            c.weighty = 1.0;
+            c.gridy = 3;
+            left.add(conflictsView.getComponent(), c);
+            c.weighty = 0.0;
+            c.fill = GridBagConstraints.NONE;
+            c.gridy = 4;
+            c.anchor = GridBagConstraints.WEST;
+            left.add(conflictsView.getSummaryComponent(), c);
+            content.setRightComponent(calendarContainer.getComponent());
+            updateViews();
+        }
+        catch (RaplaException ex)
         {
-
-			public void stateChanged(ChangeEvent e) {
-				if ( listenersDisabled)
-				{
-					return;
-				}
-				try {
-					resourceSelection.updateMenu();
-				} catch (RaplaException e1) {
-					getLogger().error(e1.getMessage(), e1);
-				}
-			}
-        	
-        });
-        final ChangeListener treeListener = new ChangeListener() {
-	          public void stateChanged(ChangeEvent e) {
-	        	  if ( listenersDisabled)
-	        	  {
-	        		  return;
-	        	  }
-	        	  conflictsView.clearSelection();
-	          }
-	      };
-
-	      
-        final RaplaMenu viewMenu = menuBar.getViewMenu();
-        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.setText( getString("only_own_reservations"));
-        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.addActionListener(new ActionListener() {
-			
-			public void actionPerformed(ActionEvent e) {
-		    	boolean isSelected = model.isOnlyCurrentUserSelected();
-		    	// switch selection options
-		    	model.setOption( CalendarModel.ONLY_MY_EVENTS, isSelected ? "false":"true");
-		    	updateOwnReservationsSelected();
-		    	try {
-	               	Entity preferences = getQuery().getPreferences();
-	   		    	ModificationEventImpl modificationEvt = new ModificationEventImpl();
-	   		    	modificationEvt.addChanged( preferences );
-	   				resourceSelection.dataChanged(modificationEvt);
-	   				calendarContainer.update(modificationEvt);
-	   				conflictsView.dataChanged( modificationEvt);
-		    	} catch (Exception ex) {
-		    	    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-		    	}
-
-			}
-		});
-        ownReservationsMenu.setText( getString("only_own_reservations"));
-        ownReservationsMenu.setIcon( raplaImages.getIconFromKey("icon.unchecked"));
-        updateOwnReservationsSelected();
-
-
-        viewMenu.insertBeforeId( ownReservationsMenu, "show_tips" );
-
-        resourceSelection.getTreeSelection().addChangeListener( treeListener);
-        conflictsView = new ConflictSelection(facade, i18n, raplaLocale, logger, calendarContainer, model, treeFactory, dialogUiFactory);
-        left = new JPanel(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridheight = 1;
-        c.gridx = 1;
-        c.gridy = 1;
-        c.weightx = 0;
-        c.weighty = 0;
-        c.anchor = GridBagConstraints.EAST;
-        final JButton max  = new JButton();
-        final JButton tree  = new JButton();
-        tree.setEnabled( false );
-        minimized = new JToolBar(JToolBar.VERTICAL);
-        minimized.setFloatable( false);
-        minimized.add( max);
-        minimized.add( tree);
-        
-        
-        max.setIcon( UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
-        tree.setIcon( raplaImages.getIconFromKey("icon.tree"));
-        JButton min = new RaplaButton(RaplaButton.SMALL);
-        ActionListener minmaxAction = new ActionListener() 
-        {
-			public void actionPerformed(ActionEvent e) 
-			{
-				closeFilter();
-				int index = viewMenu.getIndexOfEntryWithId(SHOW_SELECTION_MENU_ENTRY);
-				JMenuItem component = (JMenuItem)viewMenu.getMenuComponent( index);
-				component.getAction().actionPerformed(e);
-				final boolean newSelected = !component.isSelected();
-				component.setSelected(newSelected);
-			    javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
-			    component.setIcon(newSelected ? raplaImages.getIconFromKey("icon.checked"):raplaImages.getIconFromKey("icon.unchecked"));
-			}
-		};
-		min.addActionListener( minmaxAction);
-		max.addActionListener( minmaxAction);
-        tree.addActionListener( minmaxAction);
-        
-        templatePanel = new JToolBar(JToolBar.VERTICAL);
-        templatePanel.setFloatable( false);
-        final JButton exitTemplateEdit  = new JButton();
-        //exitTemplateEdit.setIcon(raplaImages.getIconFromKey("icon.close"));
-        exitTemplateEdit.setText(getString("close-template"));
-        templatePanel.add( exitTemplateEdit);
-        exitTemplateEdit.addActionListener( new ActionListener() {
-			
-			public void actionPerformed(ActionEvent e) {
-				getUpdateModule().setTemplate( null );
-				
-			}
-		});
-        
-		Icon icon = UIManager.getDefaults().getIcon("InternalFrame.minimizeIcon");
-        min.setIcon( icon) ;
-        //left.add(min, c);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1;
-         c.gridy = 1;
-        JPanel jp = new JPanel();
-        jp.setLayout( new BorderLayout());
-        
-        savedViews = new SavedCalendarView(menuBar,facade, i18n, raplaLocale, logger, eventBus,  model, extensionFactories,
-                environment, infoFactory, raplaImages, dialogUiFactory, ioInterface);
-        jp.add( savedViews.getComponent(), BorderLayout.CENTER );
-        templatePanel.setVisible( false);
-        jp.add( templatePanel, BorderLayout.WEST );
-        JToolBar mintb =new JToolBar();
-        mintb.setFloatable( false);
-       // mintb.add( min);
-        min.setAlignmentY( JButton.TOP);
-        jp.add( min, BorderLayout.EAST);
-        left.add(jp, c);
-        c.fill = GridBagConstraints.BOTH;
-        c.gridy = 2;
-        c.weightx = 1;
-        c.weighty = 2.5;
-        left.add(resourceSelection.getComponent(), c);
-        c.weighty = 1.0;
-        c.gridy = 3;
-        left.add(conflictsView.getComponent(), c);
-        c.weighty = 0.0;
-        c.fill = GridBagConstraints.NONE;
-        c.gridy = 4;
-        c.anchor = GridBagConstraints.WEST;
-        left.add(conflictsView.getSummaryComponent(), c);
-        content.setRightComponent(calendarContainer.getComponent());
-        updateViews();
+            throw new RaplaInitializationException(ex);
+        }
     }
 
     public void closeFilter() {
@@ -260,44 +268,44 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
     }
 
 
-    public void initForPlace(AbstractActivityController.Place place)
-    {
-        // keep current date   in mind
-        final Date tmpDate = model.getSelectedDate();
-        // keep in mind if current model had saved date
-
-        String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
-        if(tmpModelHasStoredCalenderDate == null)
-            tmpModelHasStoredCalenderDate = "false";
-        final String file = place.getInfo();
-        model.load(file);
-        closeFilter();
-        // check if new model had stored date
-        String newModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
-        if(newModelHasStoredCalenderDate == null)
-            newModelHasStoredCalenderDate = "false";
-        if ("false".equals(newModelHasStoredCalenderDate)) {
-
-            if ("false".equals(tmpModelHasStoredCalenderDate))
-            // if we are switching from a model with saved date to a model without date we reset to current date
-            {
-                model.setSelectedDate(tmpDate);
-            } else {
-                model.setSelectedDate(new Date());
-            }
-        }
-
-        savedViews.updateActions();
-
-        Entity preferences = getQuery().getPreferences( getUser());
-        ModificationEventImpl modificationEvt = new ModificationEventImpl();
-        // FIXME what is deserved here?
-        //modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
-        modificationEvt.addChanged(preferences);
-        resourceSelection.dataChanged(modificationEvt);
-        calendarContainer.update(modificationEvt);
-        calendarContainer.getSelectedCalendar().scrollToStart();
-    }
+//    public void initForPlace(AbstractActivityController.Place place)
+//    {
+//        // keep current date   in mind
+//        final Date tmpDate = model.getSelectedDate();
+//        // keep in mind if current model had saved date
+//
+//        String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+//        if(tmpModelHasStoredCalenderDate == null)
+//            tmpModelHasStoredCalenderDate = "false";
+//        final String file = place.getInfo();
+//        model.load(file);
+//        closeFilter();
+//        // check if new model had stored date
+//        String newModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+//        if(newModelHasStoredCalenderDate == null)
+//            newModelHasStoredCalenderDate = "false";
+//        if ("false".equals(newModelHasStoredCalenderDate)) {
+//
+//            if ("false".equals(tmpModelHasStoredCalenderDate))
+//            // if we are switching from a model with saved date to a model without date we reset to current date
+//            {
+//                model.setSelectedDate(tmpDate);
+//            } else {
+//                model.setSelectedDate(new Date());
+//            }
+//        }
+//
+//        savedViews.updateActions();
+//
+//        Entity preferences = getQuery().getPreferences( getUser());
+//        ModificationEventImpl modificationEvt = new ModificationEventImpl();
+//        // FIXME what is deserved here?
+//        //modificationEvt.addOperation( new UpdateResult.Change(preferences, preferences));
+//        modificationEvt.addChanged(preferences);
+//        resourceSelection.dataChanged(modificationEvt);
+//        calendarContainer.update(modificationEvt);
+//        calendarContainer.getSelectedCalendar().scrollToStart();
+//    }
 
     // FIMXE implement or change for gwt
     @Override public RaplaWidget<Component> startActivity(Activity activity)
@@ -317,6 +325,10 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
             updateViews();
             // this is done in calendarContainer update
             //updateOwnReservationsSelected();
+        }
+        catch(RaplaException ex)
+        {
+            dialogUiFactory.showException(ex, null);
         }
         finally
         {

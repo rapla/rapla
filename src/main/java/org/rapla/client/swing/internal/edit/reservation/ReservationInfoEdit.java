@@ -204,7 +204,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         
     }
 
-    private boolean canNotWriteOneAttribute()
+    private boolean canNotWriteOneAttribute() throws RaplaException
     {
         final PermissionController permissionController = getClientFacade().getRaplaFacade().getPermissionController();
         final User user = getUser();
@@ -219,7 +219,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         return false;
     }
 
-    private void updatePermissionFieldVisiblity() {
+    private void updatePermissionFieldVisiblity() throws RaplaException {
         PermissionController permissionController = getFacade().getPermissionController();
         final User user = getUser();
         boolean canAdmin = permissionController.canAdmin((Reservation) classifiable, user);
@@ -793,7 +793,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             this.longFieldFactory = longFieldFactory;
         }
 
-        public ReservationInfoEdit create(CommandHistory commandHistory)
+        public ReservationInfoEdit create(CommandHistory commandHistory) throws RaplaException
         {
             return new ReservationInfoEdit(facade, i18n, raplaLocale, logger, treeFactory, commandHistory, raplaImages, dateFieldFactory,
                     dialogUiFactory, permissionListFieldFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);

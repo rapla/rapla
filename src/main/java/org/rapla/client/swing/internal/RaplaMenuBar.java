@@ -78,6 +78,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
@@ -119,7 +120,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             SwingActivityController activityController
 
     )
-            throws RaplaException
+            throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.licenseInfoUIProvider = licenseInfoUIProvider;
@@ -139,10 +140,19 @@ public class RaplaMenuBar extends RaplaGUIComponent
         RaplaMenu importMenu = menuBarContainer.getImportMenu();
         RaplaMenu exportMenu = menuBarContainer.getExportMenu();
 
-        if (getUser().isAdmin())
-    {
-        addPluginExtensions(adminMenuExt, adminMenu);
-    }
+        User user;
+        try
+        {
+            user = getUser();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
+        if (user.isAdmin())
+        {
+            addPluginExtensions(adminMenuExt, adminMenu);
+        }
         addPluginExtensions(importMenuExt, importMenu);
         addPluginExtensions(exportMenuExt, exportMenu);
         addPluginExtensions(helpMenuExt, extraMenu);
@@ -208,7 +218,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         RaplaMenuItem userOptions = new RaplaMenuItem("userOptions");
         editMenu.add(userOptions);
-        if (isTemplateEditAllowed(getUser()))
+        if (isTemplateEditAllowed(user))
         {
             templateEdit = new RaplaMenuItem("template");
             updateTemplateText();
@@ -219,37 +229,58 @@ public class RaplaMenuBar extends RaplaGUIComponent
         boolean modifyPreferencesAllowed = isModifyPreferencesAllowed();
         if (modifyPreferencesAllowed)
         {
-            userOptions.setAction(createOptionAction(getQuery().getPreferences()));
+            try
+            {
+                userOptions.setAction(createOptionAction(getQuery().getPreferences()));
+            }
+            catch (RaplaException e)
+            {
+                throw new RaplaInitializationException(e);
+            }
         }
         else
         {
             userOptions.setVisible(false);
         }
 
+        try
         {
-            SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
-            RaplaMenuItem menu = createMenuItem(action);
-            viewMenu.insertBeforeId(menu, "view_save");
-            action.setEnabled(modifyPreferencesAllowed);
+            {
+                SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), "show_tips", RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, dialogUiFactory);
+                RaplaMenuItem menu = createMenuItem(action);
+                viewMenu.insertBeforeId(menu, "view_save");
+                action.setEnabled(modifyPreferencesAllowed);
+            }
+            {
+                SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
+                        CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
+                RaplaMenuItem menu = createMenuItem(action);
+                viewMenu.insertBeforeId(menu, "view_save");
+                action.setEnabled(modifyPreferencesAllowed);
+            }
+            {
+                SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
+                        CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY, dialogUiFactory);
+                RaplaMenuItem menu = createMenuItem(action);
+                viewMenu.insertBeforeId(menu, "view_save");
+            }
         }
+        catch(RaplaException e)
         {
-            SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
-                    CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
-            RaplaMenuItem menu = createMenuItem(action);
-            viewMenu.insertBeforeId(menu, "view_save");
-            action.setEnabled(modifyPreferencesAllowed);
-        }
-        {
-            SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
-                    CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY, dialogUiFactory);
-            RaplaMenuItem menu = createMenuItem(action);
-            viewMenu.insertBeforeId(menu, "view_save");
+            throw new RaplaInitializationException(e);
         }
 
         if (isAdmin())
         {
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
-            adminOptions.setAction(createOptionAction(getQuery().getSystemPreferences()));
+            try
+            {
+                adminOptions.setAction(createOptionAction(getQuery().getSystemPreferences()));
+            }
+            catch (RaplaException e)
+            {
+                throw new RaplaInitializationException(e);
+            }
             adminMenu.add(adminOptions);
 
         }

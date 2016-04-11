@@ -475,13 +475,13 @@ public class MultiCalendarView extends RaplaGUIComponent
             this.menuBar = menuBar;
         }
 
-        public MultiCalendarView create(boolean editable)
+        public MultiCalendarView create(boolean editable) throws RaplaException
         {
             return new MultiCalendarView(menuBar,facade, i18n, raplaLocale, logger, model, raplaImages, dialogUiFactory,
                     factoryList, filterEditButtonFactory, editable);
         }
 
-        public MultiCalendarView create(CalendarEditor calendarEditor)
+        public MultiCalendarView create(CalendarEditor calendarEditor) throws RaplaException
         {
             return new MultiCalendarView(menuBar,facade, i18n, raplaLocale, logger, model, calendarEditor, raplaImages,  dialogUiFactory,
                      factoryList, filterEditButtonFactory);

@@ -31,9 +31,11 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -48,7 +50,7 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
     @Inject
     public AllocatableMergeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            BooleanFieldFactory booleanFieldFactory) throws RaplaException
+            BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory);
         
@@ -66,11 +68,18 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
             @Override
             public void stateChanged(ChangeEvent e)
             {
-                final Allocatable value = allocatableSelectField.getValue();
-                AllocatableMergeEditUI.super.setObjects(Collections.singletonList(value));
-                classificationField.getComponent().revalidate();
-                permissionListField.getComponent().revalidate();
-                holdBackConflictsField.getComponent().revalidate();
+                try
+                {
+                    final Allocatable value = allocatableSelectField.getValue();
+                    AllocatableMergeEditUI.super.setObjects(Collections.singletonList(value));
+                    classificationField.getComponent().revalidate();
+                    permissionListField.getComponent().revalidate();
+                    holdBackConflictsField.getComponent().revalidate();
+                }
+                catch (RaplaException e1)
+                {
+                    dialogUiFactory.showException(e1, null);
+                }
             }
         });
         editPanel.setPreferredSize(new Dimension(800, 600));

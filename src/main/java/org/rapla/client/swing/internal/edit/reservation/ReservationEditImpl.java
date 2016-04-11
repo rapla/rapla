@@ -78,6 +78,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
@@ -152,7 +153,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
-            Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaException
+            Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.reservationToolbarExtensions = reservationToolbarExtensions;

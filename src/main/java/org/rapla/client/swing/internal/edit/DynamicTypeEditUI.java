@@ -58,6 +58,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
@@ -104,7 +105,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaException {
+    public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
         annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, annotationExtensions);
@@ -169,7 +170,14 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             }
         });
      
-        this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
+        try
+        {
+            this.permissionListField = permissionListFieldFactory.create(getString("permissions"));
+        }
+        catch (RaplaException e1)
+        {
+            throw new RaplaInitializationException(e1);
+        }
         editPanel.add(this.permissionListField.getComponent(),"1,10,3,10");
         this.permissionListField.setUserSelectVisible( false );
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));

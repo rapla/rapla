@@ -370,7 +370,7 @@ public class TemplateEdit extends RaplaGUIComponent
             this.permissionController = facade.getRaplaFacade().getPermissionController();
         }
 
-        public TemplateEdit create()
+        public TemplateEdit create() throws RaplaException
         {
             return new TemplateEdit(facade, i18n, raplaLocale, logger, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory,
                     permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory);

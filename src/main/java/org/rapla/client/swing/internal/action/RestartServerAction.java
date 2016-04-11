@@ -27,7 +27,7 @@ import org.rapla.storage.dbrm.RestartServer;
 public class RestartServerAction extends RaplaAction {
     private final RestartServer service;
 
-    public RestartServerAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final RestartServer service, RaplaImages raplaImages) throws RaplaException {
+    public RestartServerAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final RestartServer service, RaplaImages raplaImages) {
         super(facade, i18n, raplaLocale, logger);
         this.service = service;
         putValue(NAME,getString("restart_server"));
