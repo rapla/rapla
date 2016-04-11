@@ -51,7 +51,7 @@ public class UserInfoUI extends HTMLInfo<User> {
         else
         {
             // no links for user resource to its person so we pass null as link controller
-            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false,null, clientFacade.getUser());
+            Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false, null, user);
 			att.addAll(classificationAttributes);
         }
         createTable(att,buf,false);
