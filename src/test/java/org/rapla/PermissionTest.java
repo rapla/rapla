@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
@@ -35,6 +36,8 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
@@ -141,9 +144,9 @@ public class PermissionTest  {
         // Uncovers bug 1237332,
         ClassificationFilter filter = testFacade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","R1");
-        final Reservation[] reservationsForAllocatable = testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter });
-        Assert.assertEquals(1, reservationsForAllocatable.length);
-        Reservation evt = reservationsForAllocatable[0];
+        final Collection<Reservation> reservationsForAllocatable = PromiseSynchroniser.waitForWithRaplaException(testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
+        Assert.assertEquals(1, reservationsForAllocatable.size());
+        Reservation evt = reservationsForAllocatable.iterator().next();
         final User owner = testFacade.getOperator().tryResolve(evt.getOwnerRef());
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);

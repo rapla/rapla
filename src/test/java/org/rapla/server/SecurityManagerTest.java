@@ -126,7 +126,7 @@ public class SecurityManagerTest  {
 			ClassificationFilter eventFilter = eventType.newClassificationFilter();
 			eventFilter.addEqualsRule("name", "conflicting event");
 			
-			Reservation event = facade1.getReservationsForAllocatable( null, null, null, eventFilter.toArray())[0];
+			Reservation event = PromiseSynchroniser.waitForWithRaplaException(facade1.getReservationsForAllocatable( null, null, null, eventFilter.toArray()), 10000).iterator().next();
 				// But moving back the appointment to today should fail
 			event = facade1.edit( event );
 			Date startPlus1 = new Date( start.getTime() + DateTools.MILLISECONDS_PER_HOUR) ;
@@ -161,7 +161,7 @@ public class SecurityManagerTest  {
 	}
 
 	@Test
-	public void testUserAdminGroup()
+	public void testUserAdminGroup() throws Exception
 	{
 		clientFacade1.login("monty", "burns".toCharArray());
 		final RaplaFacade raplaFacade = clientFacade1.getRaplaFacade();

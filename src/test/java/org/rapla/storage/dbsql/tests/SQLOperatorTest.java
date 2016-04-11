@@ -12,6 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -51,24 +69,6 @@ import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TimeZone;
-
 @RunWith(JUnit4.class)
 public class SQLOperatorTest extends AbstractOperatorTest
 {
@@ -78,7 +78,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
 
     
     @Before
-    public void setUp() throws SQLException
+    public void setUp() throws Exception
     {
         logger = RaplaTestCase.initLoger();
         org.hsqldb.jdbc.JDBCDataSource datasource = createDatasource();
@@ -96,7 +96,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     }
 
     @After
-    public void shutDown()
+    public void shutDown() throws Exception
     {
         RaplaTestCase.dispose(facade);
     }
@@ -682,7 +682,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     }
 
     @Test
-    public void testInsertAndDelete()
+    public void testInsertAndDelete() throws Exception
     {
         final User user = facade.getUser("homer");
         Reservation reservation = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
@@ -697,7 +697,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{reservation} , user);
     }
     @Test
-    public void testChangesAddChangeDelete()
+    public void testChangesAddChangeDelete() throws Exception
     {
     	CachableStorageOperator operator = getOperator();
     	operator.refresh();

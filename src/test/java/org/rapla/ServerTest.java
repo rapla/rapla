@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Locale;
 
 import javax.inject.Provider;
@@ -56,6 +57,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.PermissionController;
@@ -283,9 +285,9 @@ public class ServerTest
         DynamicType reservationType = facade.getDynamicType(typeKey);
         ClassificationFilter filter = reservationType.newClassificationFilter();
         filter.addRule("name", new Object[][] { { "contains", name } });
-        Reservation[] reservations = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter });
-        if (reservations.length > 0)
-            return reservations[0];
+        Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }),10000);
+        if (!reservations.isEmpty())
+            return reservations.iterator().next();
         else
             return null;
     }
@@ -463,7 +465,8 @@ public class ServerTest
     public void testReservationWithExceptionDoesntShow() throws Exception
     {
         {
-            getRaplaFacade1().removeObjects(getRaplaFacade1().getReservationsForAllocatable(null, null, null, null));
+            final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(getRaplaFacade1().getReservationsForAllocatable(null, null, null, null), 10000);
+            getRaplaFacade1().removeObjects(reservations.toArray(Reservation.RESERVATION_ARRAY));
         }
         Date start = new Date();
         Date end = new Date(start.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
@@ -483,9 +486,9 @@ public class ServerTest
             clientFacade1.logout();
         }
         {
-            Reservation[] res = getRaplaFacade2()
-                    .getReservationsForAllocatable(null, start, new Date(start.getTime() + 8 * DateTools.MILLISECONDS_PER_WEEK), null);
-            Assert.assertEquals(1, res.length);
+            Collection<Reservation> res = PromiseSynchroniser.waitForWithRaplaException(
+                    getRaplaFacade2().getReservationsForAllocatable(null, start, new Date(start.getTime() + 8 * DateTools.MILLISECONDS_PER_WEEK), null), 10000);
+            Assert.assertEquals(1, res.size());
             Thread.sleep(100);
             clientFacade2.logout();
         }
@@ -539,8 +542,8 @@ public class ServerTest
         raplaFacade1.store(r);
         r = raplaFacade1.getPersistant(r);
         raplaFacade1.remove(r);
-        Reservation[] allRes = raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f });
-        Assert.assertEquals(0, allRes.length);
+        Collection<Reservation> allRes = PromiseSynchroniser.waitForWithRaplaException(raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f }), 10000);
+        Assert.assertEquals(0, allRes.size());
     }
 
     @Test
@@ -572,8 +575,8 @@ public class ServerTest
         clientFacade1.login("homer", "duffs".toCharArray());
         ClassificationFilter f = r.getClassification().getType().newClassificationFilter();
         f.addEqualsRule("name", "newReservation");
-        Reservation[] allRes = raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f });
-        Reservation test = allRes[0];
+        Collection<Reservation> allRes = PromiseSynchroniser.waitForWithRaplaException(raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f }), 10000);
+        Reservation test = allRes.iterator().next();
         allocatable = raplaFacade1.getAllocatables()[0];
         Appointment[] restrictions = test.getRestriction(allocatable);
         Assert.assertEquals("Restrictions needs to be saved!", 2, restrictions.length);
@@ -604,8 +607,8 @@ public class ServerTest
         Date end = null;
         ClassificationFilter filter = facade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name", reservationName);
-        Reservation[] reservations = facade.getReservations(user, start, end, filter.toArray());
-        Reservation bowling = reservations[0];
+        Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservations(user, start, end, filter.toArray()), 10000);
+        Reservation bowling = reservations.iterator().next();
         Classification classification = bowling.getClassification();
         Object descriptionValue = classification.getValue("description");
         String description = descriptionValue.toString();
@@ -656,11 +659,15 @@ public class ServerTest
         //userMod2.logout();
     }
 
-    private Reservation findReservation(RaplaFacade queryMod,String name) throws RaplaException {
-        Reservation[] reservations = queryMod.getReservationsForAllocatable(null,null,null,null);
-        for (int i=0;i<reservations.length;i++) {
-            if (reservations[i].getName(locale).equals(name))
-                return reservations[i];
+    private Reservation findReservation(RaplaFacade queryMod, String name) throws RaplaException
+    {
+        Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(queryMod.getReservationsForAllocatable(null, null, null, null),
+                10000);
+        for (Iterator<Reservation> it = reservations.iterator(); it.hasNext();)
+        {
+            Reservation reservation = it.next();
+            if (reservation.getName(locale).equals(name))
+                return reservation;
         }
         return null;
     }
