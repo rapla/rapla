@@ -232,7 +232,7 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
     public void resourcesSelected(Collection<Allocatable> selected)
     {
         model.setSelectedObjects(selected);
-        updateView();
+        updateView(null);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
