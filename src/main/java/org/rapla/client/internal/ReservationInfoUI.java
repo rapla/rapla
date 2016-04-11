@@ -44,11 +44,6 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         this.permissionController = facade.getPermissionController();
     }
 
-    @Override public String getUsername(ReferenceInfo<User> userId)
-    {
-        return getFacade().getOperator().getUsername( userId);
-    }
-
     private void addRestriction(Reservation reservation, Allocatable allocatable, StringBuffer buf) {
         Appointment[] appointments = reservation.getRestriction(allocatable);
         if ( appointments.length == 0 )
