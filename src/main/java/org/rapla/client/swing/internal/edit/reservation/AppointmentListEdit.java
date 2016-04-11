@@ -71,7 +71,8 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 /** Default GUI for editing multiple appointments.*/
 class AppointmentListEdit extends AbstractAppointmentEditor
@@ -350,7 +351,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			}
 		}
 
-		public boolean execute() {
+		public Promise<Void> execute() {
 			selectedAppointment = listEdit.getList().getSelectedIndices();
 			Set<Appointment> appointmentList = list.keySet();
 			for (Appointment appointment:appointmentList) {
@@ -359,10 +360,10 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			replaceList(mutableReservation);
 	        fireAppointmentRemoved(appointmentList);
 			listEdit.getList().requestFocus();
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
-		public boolean undo() {
+		public Promise<Void> undo() {
 			Set<Appointment> appointmentList = list.keySet();
 			for (Appointment appointment:appointmentList) 
 			{
@@ -378,7 +379,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			} finally {
 				disableInternSelectionListener = false;
 			}
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
 		public String getCommandoName() {
@@ -428,19 +429,19 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			this.newAppointment = appointment;
 		}
 
-		public boolean execute()  {
+		public Promise<Void> execute()  {
 			mutableReservation.addAppointment(newAppointment);
 			addToModel(newAppointment);
 			selectAppointment(newAppointment, true);
 			fireAppointmentAdded(Collections.singleton(newAppointment));
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
-		public boolean undo() {
+		public Promise<Void> undo() {
 			model.removeElement(newAppointment);
 			mutableReservation.removeAppointment(newAppointment);
 			fireAppointmentRemoved(Collections.singleton(newAppointment));
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
 		public String getCommandoName() {
@@ -468,7 +469,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		public AppointmentSplit() {
 		}
 
-		public boolean execute()  {
+		public Promise<Void> execute()  {
 			try {
 				// Generate time blocks from selected appointment
 				List<AppointmentBlock> splits = new ArrayList<AppointmentBlock>();
@@ -512,14 +513,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 					Appointment app = splitAppointments.get(0);
 					selectAppointment( app, true);
 				}
-				return true;
+				return ResolvedPromise.VOID_PROMISE;
 			} catch (RaplaException ex) {
-			    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-				return false;
+				return new ResolvedPromise<Void>( ex);
 			}
 		}
 		
-		public boolean undo()  {
+		public Promise<Void> undo()  {
             // Switch the type of the appointment to old type
             mutableReservation.addAppointment(wholeAppointment);
 
@@ -541,7 +541,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			fireAppointmentAdded(Collections.singleton(wholeAppointment));
 		
 			selectAppointment(wholeAppointment, true);
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 	
 
@@ -571,14 +571,14 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			this.newAppointment = newAppointment;
 		}
 		
-		public boolean execute() {
+		public Promise<Void> execute() {
 			setAppointment(newAppointment);
-			return oldAppointment != null;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 
-		public boolean undo()  {
+		public Promise<Void> undo()  {
 			setAppointment(oldAppointment);
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
 		private void setAppointment(Appointment toAppointment) {
