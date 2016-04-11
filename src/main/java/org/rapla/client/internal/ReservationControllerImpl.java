@@ -58,6 +58,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
 
 public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
 {
@@ -1096,14 +1097,14 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             this.sourceComponent = sourceComponent;
         }
         
-        public boolean execute() throws RaplaException 
+        public Promise<Void> execute()
         {
             Reservation modifiableReservation = getModifiedReservationForExecute();
             if ( firstTimeCall)
             {
                 firstTimeCall = false;
                 Collection<Reservation> reservations = Collections.singleton(modifiableReservation);
-                ReservationSave saveCommand = new ReservationSave(reservations,null, sourceComponent);
+                SaveUndo<Reservation> saveCommand = new ReservationSave(reservations,null, sourceComponent);
                 return saveCommand.execute();
             }
             else
@@ -1179,11 +1180,10 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 			return modifiableReservation;
 		}
         
-        public boolean undo() throws RaplaException 
+        public Promise<Void> undo()
         {
             Reservation modifiableReservation = getModifiedReservationForUndo();
             getFacade().store( modifiableReservation);
-            return true;
         }
 
 		protected Reservation getModifiedReservationForUndo()
@@ -1281,7 +1281,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         	lastCopy = null;
     	}
     	
-    	public boolean execute() throws RaplaException {
+    	public Promise<Void> execute() {
     		boolean resizing = newEnd != null;
     		Date sourceStart = oldStart;
     		Date destStart = newStart;
@@ -1289,7 +1289,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     		return doMove(resizing, sourceStart, destStart, destEnd, false);
     	}
 
-    	public boolean undo() throws RaplaException { 
+    	public Promise<Void> undo()  {
     		boolean resizing = newEnd != null;
     		
     		Date sourceStart = newStart;
@@ -1299,8 +1299,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     		return doMove(resizing, sourceStart, destStart, destEnd, true);
     	}
 
-		private boolean doMove(boolean resizing, Date sourceStart,
-				Date destStart, Date destEnd, boolean undo) throws RaplaException {
+		private Promise<Void> doMove(boolean resizing, Date sourceStart,
+				Date destStart, Date destEnd, boolean undo) {
 			Reservation reservation        = appointment.getReservation();
             Reservation mutableReservation = getFacade().edit(reservation);
             Appointment mutableAppointment = mutableReservation.findAppointment(appointment);
@@ -1426,8 +1426,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
      * @author Jens Fritz
      *
      */    
-    
-    //Erstellt von Dominik Krickl-Vorreiter    
     class AppointmentPaste implements CommandUndo<RaplaException> {
 
 		private final Appointment fromAppointment;
@@ -1454,7 +1452,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 			assert !(!asNewReservation && copyWholeReservation);
 		}
 		
-		public boolean execute() throws RaplaException {
+		public Promise<Void> execute()  {
 			Reservation mutableReservation = null;
 			
 			if (asNewReservation) {
@@ -1509,16 +1507,14 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 			}
 		}
 
-		public boolean undo() throws RaplaException {			
+		public Promise<Void> undo()  {
 			if (asNewReservation) {
 				Reservation mutableReservation = getFacade().edit(saveReservation);
-				getFacade().remove(mutableReservation);
-				return true;
+				return getFacade().remove(mutableReservation);
 			} else {
 				Reservation mutableReservation = getFacade().edit(saveReservation);
 				mutableReservation.removeAppointment(saveAppointment);
-	            getFacade().store(mutableReservation);
-				return true;
+	            return getFacade().store(mutableReservation);
 			}
 		}
 		
@@ -1535,7 +1531,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 		private final Collection<Reservation> fromReservations;
 		Date start;
 		boolean keepTime;
-		Collection<Reservation> clones; 
+		Collection<Reservation> clones;
+        SaveUndo<Reservation> saveCmd;
 		
 		public ReservationPaste(Collection<Reservation> fromReservation,Date start, boolean keepTime) {
 			this.fromReservations        = fromReservation;
@@ -1543,19 +1540,17 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 			this.keepTime = keepTime;
 		}
 		
-		public boolean execute() throws RaplaException {
+		public Promise<Void> execute() {
             final User user = getClientFacade().getUser();
             clones = getFacade().copy(fromReservations,start, keepTime, user);
 			PopupContext sourceComponent = getPopupContext();
 			save(clones, sourceComponent);
-			return true;
 		}
 
 
-        public boolean undo() throws RaplaException {			
+        public Promise<Void> undo()  {
 			getFacade().storeAndRemove(Reservation.RESERVATION_ARRAY,clones.toArray( Reservation.RESERVATION_ARRAY) );
-			return true;
-		}	
+		}
 		
 		public String getCommandoName() 
 		{
