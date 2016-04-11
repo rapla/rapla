@@ -641,7 +641,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         User editObject = editObject(user, null);
         List<Entity> editList = new ArrayList<>(1);
         editList.add(editObject);
-        Collection<ReferenceInfo> removeList = Collections.emptyList();
+        Collection<ReferenceInfo<Entity>> removeList = Collections.emptyList();
         // synchronization will be done in the dispatch method
         storeAndRemove(editList, removeList, user);
     }
@@ -683,7 +683,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             ArrayList<Entity> arrayList = new ArrayList<>();
             arrayList.add(editableUser);
             arrayList.add(editablePerson);
-            Collection<ReferenceInfo> removeObjects = Collections.emptySet();
+            Collection<ReferenceInfo<Entity>> removeObjects = Collections.emptySet();
             // synchronization will be done in the dispatch method
             storeAndRemove(arrayList, removeObjects, null);
         }
@@ -694,7 +694,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         User editableUser = user.isReadOnly() ? editObject(user, user) : user;
         Allocatable personReference = editableUser.getPerson();
         ArrayList<Entity> storeObjects = new ArrayList<>();
-        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
+        Collection<ReferenceInfo<Entity>> removeObjects = Collections.emptySet();
         storeObjects.add(editableUser);
         if (personReference == null)
         {
@@ -3221,7 +3221,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         ArrayList<Entity> storeObjects = new ArrayList<>();
         storeObjects.add(refUser);
-        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
+        Collection<ReferenceInfo<Entity>> removeObjects = Collections.emptySet();
         storeAndRemove(storeObjects, removeObjects, null);
     }
 
