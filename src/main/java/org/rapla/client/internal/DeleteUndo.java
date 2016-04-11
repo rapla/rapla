@@ -61,10 +61,10 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	public Promise<Void> execute()
 	{
 	    Collection<Entity<?>> toStore = Collections.emptyList();
-	    Collection<ReferenceInfo<?>> toRemove = new ArrayList<>();
+	    Collection<ReferenceInfo<T>> toRemove = new ArrayList<>();
 	    for ( T entity: entities)
 		{
-			toRemove.add( entity.getReference());
+            toRemove.add( entity.getReference());
     	}
 		return getFacade().dispatch(toStore,toRemove, user);
 	}
@@ -84,7 +84,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 		}
 		// Todo generate undo for category store
 		@SuppressWarnings("unchecked")
-		Collection<ReferenceInfo<?>> toRemove = Collections.emptyList();
+		Collection<ReferenceInfo<Entity<?>>> toRemove = Collections.emptyList();
 		return getFacade().dispatch(toStore,toRemove, user);
 	}
 	

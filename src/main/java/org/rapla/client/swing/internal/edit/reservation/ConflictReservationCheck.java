@@ -16,6 +16,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +46,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 @Extension(provides = EventCheck.class,id="conflictcheck")
@@ -64,53 +67,72 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         this.dialogUiFactory = dialogUiFactory;
     }
 
-    public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
-        List<Conflict> conflictList = new ArrayList<Conflict>();
-        for (Reservation reservation:reservations)
+    public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent) {
+        final List<Conflict> conflictList = Collections.synchronizedList(new ArrayList<Conflict>());
+        Promise<Void> p = null;
+        for (Reservation reservation : reservations)
         {
-            Conflict[] conflicts =  getQuery().getConflicts(reservation);
-            for ( Conflict conflict: conflicts)
+            Promise<Collection<Conflict>> promise = getQuery().getConflicts(reservation);
+            final Promise<Void> resultPromise = promise.thenAccept((conflicts) ->
             {
-                if ( conflict.checkEnabled())
+                for (Conflict conflict : conflicts)
                 {
-                    conflictList.add( conflict);
+                    if (conflict.checkEnabled())
+                    {
+                        conflictList.add(conflict);
+                    }
+                }
+            });
+            if (p == null)
+            {
+                p = resultPromise;
+            }
+            else
+            {
+                p = p.thenCombine(resultPromise, (a, b) ->
+                {
+                    return null;
+                });
+            }
+        }
+        if (p == null)
+        {
+            return new ResolvedPromise<Boolean>(true);
+        }
+        return p.thenApply((a) ->
+        {
+            if (conflictList.size() == 0)
+            {
+                return true;
+            }
+            boolean showWarning = getQuery().getPreferences().getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
+            User user = getUser();
+            if (!showWarning && canCreateConflicts(conflictList, user))
+            {
+                return true;
+            }
+            JComponent content = getConflictPanel(conflictList);
+            DialogInterface dialog = dialogUiFactory.create(sourceComponent, true, content, new String[] { getString("continue"), getString("back") });
+            dialog.setDefault(1);
+            dialog.setIcon("icon.big_folder_conflicts");
+            dialog.getAction(0).setIcon("icon.save");
+            dialog.getAction(1).setIcon("icon.cancel");
+            dialog.setTitle(getString("warning.conflict"));
+            dialog.start(true);
+            if (dialog.getSelectedIndex() == 0)
+            {
+                try
+                {
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    dialogUiFactory.showException(ex, new SwingPopupContext((Component) sourceComponent, null));
+                    return false;
                 }
             }
-        }
-        if (conflictList.size() == 0) {
-            return true;
-        }
-        boolean showWarning = getQuery().getPreferences().getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
-        User user = getUser();
-        if ( !showWarning && canCreateConflicts( conflictList, user))
-        {
-            return true;
-        }
-        JComponent content = getConflictPanel(conflictList);
-        DialogInterface dialog = dialogUiFactory.create(
-                    sourceComponent
-                    ,true
-                    ,content
-                    ,new String[] {
-                            getString("continue")
-                            ,getString("back")
-                    }
-        );
-        dialog.setDefault(1);
-        dialog.setIcon("icon.big_folder_conflicts");
-        dialog.getAction(0).setIcon("icon.save");
-        dialog.getAction(1).setIcon("icon.cancel");
-        dialog.setTitle(getString("warning.conflict"));
-        dialog.start(true);
-        if (dialog.getSelectedIndex()  == 0) {
-            try {
-                return true;
-            } catch (Exception ex) {
-                dialogUiFactory.showException(ex,new SwingPopupContext((Component)sourceComponent, null));
-                return false;
-            }
-        }
-        return false;
+            return false;
+        });
     }
 
     private boolean canCreateConflicts(Collection<Conflict> conflicts, User user) 

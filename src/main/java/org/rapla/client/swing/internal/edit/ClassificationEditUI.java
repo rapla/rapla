@@ -171,7 +171,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         return values;
     }
 
-	private SetGetField<?> createField(Attribute attribute)  {
+	private SetGetField<?> createField(Attribute attribute) throws RaplaException {
 		AttributeType type = attribute.getType();
 		String label = getAttName(attribute.getKey());
 		SetGetField<?> field = null;

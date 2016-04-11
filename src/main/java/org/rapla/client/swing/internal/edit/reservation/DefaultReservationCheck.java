@@ -40,6 +40,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 @Extension(provides = EventCheck.class,id="defaultcheck")
 public class DefaultReservationCheck extends RaplaGUIComponent implements EventCheck
@@ -57,7 +59,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
         this.dialogUiFactory = dialogUiFactory;
     }
 
-    public boolean check(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException {
+    public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent) {
         try
         {
             
@@ -151,17 +153,17 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                 dialog.getAction(0).setIcon("icon.save");
                 dialog.getAction(1).setIcon("icon.cancel");
                 dialog.start(true);
-                return dialog.getSelectedIndex() == 0;
+                return new ResolvedPromise<Boolean>(dialog.getSelectedIndex() == 0);
             }
 
             
 
-            return true;
+            return new ResolvedPromise<Boolean>(true);
         }
         catch (RaplaException ex)
         {
             dialogUiFactory.showWarning( ex.getMessage(), sourceComponent);
-            return false;
+            return new ResolvedPromise<Boolean>(false);
         }
     }
 
