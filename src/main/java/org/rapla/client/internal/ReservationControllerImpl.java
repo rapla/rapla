@@ -294,7 +294,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         private Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<Appointment, Allocatable[]>();
         private Map<Appointment, Reservation> parentReservations = new HashMap<Appointment, Reservation>();
 
-        public DeleteBlocksCommand(Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd)
+        public DeleteBlocksCommand(Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd) throws RaplaException
         {
             super(ReservationControllerImpl.this.getClientFacade().getRaplaFacade(), ReservationControllerImpl.this.getI18n(), reservationsToRemove,
                     ReservationControllerImpl.this.getClientFacade().getUser());

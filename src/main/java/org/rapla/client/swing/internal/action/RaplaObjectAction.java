@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -44,6 +38,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class RaplaObjectAction extends RaplaAction {
     public final static int DELETE = 1;
@@ -156,7 +156,18 @@ public class RaplaObjectAction extends RaplaAction {
 
     protected void update() {
         boolean enabled = true;
-        User user = getUser();
+        User user = null;
+        try
+        {
+            user = getUser();
+        }
+        catch (RaplaException e)
+        {
+            enabled = false;
+            setEnabled( false);
+            return;
+        }
+
         if (type == EDIT || type == DELETE) {
             enabled = permissionController.canModify(object, user);
 
