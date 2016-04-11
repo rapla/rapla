@@ -9,8 +9,11 @@ import java.util.Map.Entry;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.Activity;
+import org.rapla.client.event.ActivityPresenter;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -25,9 +28,9 @@ import com.google.web.bindery.event.shared.EventBus;
 public class GwtActivityManagerImpl extends AbstractActivityController
 {
     @Inject
-    public GwtActivityManagerImpl( EventBus eventBus, final Logger logger)
+    public GwtActivityManagerImpl( EventBus eventBus, final Logger logger, Map<String, ActivityPresenter> activityPresenters)
     {
-        super( eventBus, logger, activityPresenters, placePresenters);
+        super( eventBus, logger, activityPresenters);
         History.addValueChangeHandler(new ValueChangeHandler<String>()
         {
             @Override
@@ -35,7 +38,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
             {
                 try
                 {
-                    GwtActivityManagerImpl.this.init(getApplication());
+                    GwtActivityManagerImpl.this.init();
                 }
                 catch (RaplaException e)
                 {
@@ -68,7 +71,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
                     final String[] activitiyIds = split[1].split(",");
                     for (String info : activitiyIds)
                     {
-                        final Activity activity = new Activity(id, info);
+                        final Activity activity = new Activity(id, info, null);
                         activities.add(activity);
                     }
                 }
@@ -117,6 +120,13 @@ public class GwtActivityManagerImpl extends AbstractActivityController
             sb.deleteCharAt(sb.length()-1);
         }
         History.newItem(sb.toString(), false);
+    }
+
+    @Override
+    protected void initComponent(RaplaWidget<Object> objectRaplaWidget)
+    {
+        // FIXME implement me
+        throw new NotImplementedException("implement me");
     }
 
 }
