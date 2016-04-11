@@ -12,76 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.EventObject;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.DefaultCellEditor;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.JTree;
-import javax.swing.MenuSelectionManager;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.EventListenerList;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
-import javax.swing.plaf.basic.BasicCheckBoxMenuItemUI;
-import javax.swing.plaf.basic.BasicRadioButtonMenuItemUI;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableColumnModel;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -137,7 +67,78 @@ import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.DefaultCellEditor;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.JTree;
+import javax.swing.MenuSelectionManager;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
+import javax.swing.plaf.basic.BasicCheckBoxMenuItemUI;
+import javax.swing.plaf.basic.BasicRadioButtonMenuItemUI;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableColumnModel;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -433,32 +434,33 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
         }
 
-        try
-        {
             //      System.out.println("getting allocated resources");
-            Map<Allocatable, Collection<Appointment>> allocatableBindings = getQuery().getAllocatableBindings(allAllocatables, appointmentsWithoutTemplates)
-                    .get();
-            removeFromBindings(appointments);
-            for (Map.Entry<Allocatable, Collection<Appointment>> entry : allocatableBindings.entrySet())
-            {
-                Allocatable alloc = entry.getKey();
-                Collection<Appointment> list = this.allocatableBindings.get(alloc);
-                if (list == null)
+            final Promise<Map<Allocatable, Collection<Appointment>>> promise = getQuery()
+                    .getAllocatableBindings(allAllocatables, appointmentsWithoutTemplates);
+            final Collection<Appointment> finalApps = appointments;
+            promise.thenAccept( (allocatableBindings) -> {
+                //Map<Allocatable, Collection<Appointment>> allocatableBindings = ((Promise<Map<Allocatable, Collection<Appointment>>>) promise)
+                removeFromBindings(finalApps);
+                for (Map.Entry<Allocatable, Collection<Appointment>> entry : allocatableBindings.entrySet())
                 {
-                    list = new HashSet<Appointment>();
-                    this.allocatableBindings.put(alloc, list);
+                    Allocatable alloc = entry.getKey();
+                    Collection<Appointment> list = this.allocatableBindings.get(alloc);
+                    if (list == null)
+                    {
+                        list = new HashSet<Appointment>();
+                        this.allocatableBindings.put(alloc, list);
+                    }
+                    Collection<Appointment> bindings = entry.getValue();
+                    list.addAll(bindings);
                 }
-                Collection<Appointment> bindings = entry.getValue();
-                list.addAll(bindings);
-            }
-            //this.allocatableBindings.putAll(allocatableBindings);
-            completeModel.treeDidChange();
-            selectedModel.treeDidChange();
-        }
-        catch (Exception ex)
+                //this.allocatableBindings.putAll(allocatableBindings);
+                completeModel.treeDidChange();
+                selectedModel.treeDidChange();
+            }).exceptionally( (ex) ->
         {
             dialogUiFactory.showException(ex, new SwingPopupContext(content, null));
-        }
+            return null;
+        });
     }
 
     private void removeFromBindings(Collection<Appointment> appointments)
@@ -2222,22 +2224,22 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             this.elements = changed;
         }
 
-        public boolean execute()
+        public Promise<Void> execute()
         {
             if (command.equals("add"))
                 add(elements);
             else
                 remove(elements);
-            return true;
+            return ResolvedPromise.VOID_PROMISE;
         }
 
-        public boolean undo()
+        public Promise<Void> undo()
         {
             if (command.equals("add"))
                 remove(elements);
             else
                 add(elements);
-            return true;
+            return ResolvedPromise.VOID_PROMISE;
         }
 
         public String getCommandoName()
@@ -2272,16 +2274,16 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             this.selectedColumn = selectedColummn;
         }
 
-        public boolean execute()
+        public Promise<Void> execute()
         {
             selectedModel.setValueAt(newRestriction, selectedNode, selectedColumn);
-            return true;
+            return new ResolvedPromise<Void>((Void)null);
         }
 
-        public boolean undo()
+        public Promise<Void> undo()
         {
             selectedModel.setValueAt(oldRestriction, selectedNode, selectedColumn);
-            return true;
+            return new ResolvedPromise<Void>((Void)null);
         }
 
         public String getCommandoName()
