@@ -60,7 +60,7 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
     }
 
     @Override
-    protected Provider<Set<EventCheck>> getEventChecks() throws RaplaException
+    protected Provider<Set<EventCheck>> getEventChecks()
     {
         return new Provider<Set<EventCheck>>()
         {

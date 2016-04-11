@@ -94,7 +94,7 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     }
 
     @Override
-    protected Provider<Set<EventCheck>> getEventChecks() throws RaplaException
+    protected Provider<Set<EventCheck>> getEventChecks()
     {
         return checkers;
     }

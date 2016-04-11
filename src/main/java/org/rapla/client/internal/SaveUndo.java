@@ -205,26 +205,5 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
      }
 
 
-	boolean checkEvents(Collection<? extends Entity> entities,PopupContext sourceComponent) throws RaplaException {
-		Provider<Set<EventCheck>> checkers = getEventChecks();
-		List<Reservation> reservations = new ArrayList<Reservation>();
-		for ( Entity entity:entities)
-		{
-			if ( entity.getTypeClass() == Reservation.class)
-			{
-				reservations.add( (Reservation)entity);
-			}
-		}
-		final Set<EventCheck> set = checkers.get();
-		for (EventCheck eventCheck:set)
-		{
-			boolean successful= eventCheck.check(reservations, sourceComponent);
-			if ( !successful)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
 
 }

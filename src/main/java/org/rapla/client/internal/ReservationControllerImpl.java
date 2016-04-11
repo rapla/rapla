@@ -12,22 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -61,6 +45,21 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
 {
@@ -247,7 +246,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<String> iconList, String title, String content,
             String dialogIcon) throws RaplaException;
 
-    abstract protected Provider<Set<EventCheck>> getEventChecks() throws RaplaException;
+    abstract protected Provider<Set<EventCheck>> getEventChecks();
 /*
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables)
     {
@@ -1108,20 +1107,16 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             try
             {
                 Reservation mutableReservation = getModifiedReservationForExecute();
-                User user = getClientFacade().getUser();
                 Collection<Reservation> reservations = Collections.singleton(mutableReservation);
                 // checker
-                if (firstTimeCall)
+                try
+                {
+                    return checkAndDistpatch(reservations, Collections.emptyList(), firstTimeCall);
+                }
+                finally
                 {
                     firstTimeCall = false;
-                    checkEvents(reservations, sourceComponent);
                 }
-                else
-                {
-                    getFacade().checklastChanged(reservations, false);
-                }
-                Promise result = getFacade().dispatch(reservations, Collections.emptyList(), user);
-                return result;
             }
             catch (RaplaException ex)
             {
@@ -1134,11 +1129,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             try
             {
                 Reservation mutableReservation = getModifiedReservationForUndo();
-                User user = getClientFacade().getUser();
                 Collection<Reservation> reservations = Collections.singleton(mutableReservation);
-                getFacade().checklastChanged(reservations, false);
-                Promise result = getFacade().dispatch(reservations, Collections.emptyList(), user);
-                return result;
+                return checkAndDistpatch(reservations, Collections.emptyList(), false);
             }
             catch (RaplaException ex)
             {
@@ -1212,8 +1204,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             //            }
             return modifiableReservation;
         }
-
-
 
         protected Reservation getModifiedReservationForUndo() throws RaplaException
         {
@@ -1335,10 +1325,11 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
         private Promise<Void> doMove(boolean resizing, Date sourceStart, Date destStart, Date destEnd, boolean undo)
         {
+            Reservation mutableReservation;
             try
             {
                 Reservation reservation = appointment.getReservation();
-                Reservation mutableReservation = getFacade().edit(reservation);
+                mutableReservation = getFacade().edit(reservation);
                 Appointment mutableAppointment = mutableReservation.findAppointment(appointment);
 
                 if (mutableAppointment == null)
@@ -1439,26 +1430,21 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                         }
                     }
                 }
-
-                User user = getClientFacade().getUser();
-                Collection<Reservation> reservations = Collections.singleton(mutableReservation);
-                // checker
-                if (firstTimeCall)
-                {
-                    firstTimeCall = false;
-                    checkEvents(reservations, sourceComponent);
-                }
-                else
-                {
-                    getFacade().checklastChanged(reservations, false);
-                }
-                Promise result = getFacade().dispatch(reservations, Collections.emptyList(), user);
-                return result;
             }
             catch (RaplaException ex)
             {
                 return new ResolvedPromise<Void>(ex);
             }
+            Collection<Reservation> reservations = Collections.singleton(mutableReservation);
+            try
+            {
+                return checkAndDistpatch(reservations, Collections.emptyList(), firstTimeCall);
+            }
+            finally
+            {
+                firstTimeCall = false;
+            }
+
         }
 
         public String getCommandoName()
@@ -1467,9 +1453,13 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         }
     }
 
-    Promise<Boolean> checkEvents(Collection<? extends Entity> entities, PopupContext sourceComponent) throws RaplaException
+    Promise<Boolean> checkEvents(Collection<? extends Entity> entities, PopupContext sourceComponent)
     {
-        Provider<Set<EventCheck>> checkers = getEventChecks();
+        return checkEvents(getEventChecks(), entities, sourceComponent);
+    }
+
+    Promise<Boolean> checkEvents(Provider<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent)
+    {
         List<Reservation> reservations = new ArrayList<Reservation>();
         for (Entity entity : entities)
         {
@@ -1479,15 +1469,15 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             }
         }
         final Set<EventCheck> set = checkers.get();
+        Promise<Boolean> check = new ResolvedPromise<Boolean>(true);
         for (EventCheck eventCheck : set)
         {
-            boolean successful = eventCheck.check(reservations, sourceComponent);
-            if (!successful)
-            {
-                return false;
-            }
+            check = check.thenCompose((result) -> {
+                final Promise<Boolean> promise = result ? eventCheck.check(reservations, sourceComponent) : new ResolvedPromise<Boolean>(false);
+                return promise;
+            });
         }
-        return true;
+        return check;
     }
 
     /**
@@ -1512,7 +1502,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         private Reservation saveReservation = null;
         private Appointment saveAppointment = null;
         private boolean firstTimeCall = true;
-        User user;
 
         public AppointmentPaste(Appointment fromAppointment, Reservation fromReservation, Allocatable[] restrictedAllocatables, boolean asNewReservation,
                 boolean copyWholeReservation, long offset, PopupContext sourceComponent) throws RaplaException
@@ -1524,15 +1513,14 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             this.copyWholeReservation = copyWholeReservation;
             this.offset = offset;
             this.sourceComponent = sourceComponent;
-            this.user = getClientFacade().getUser();
             assert !(!asNewReservation && copyWholeReservation);
         }
 
         public Promise<Void> execute()
         {
+            Reservation mutableReservation;
             try
             {
-                Reservation mutableReservation;
                 final RaplaFacade facade = getFacade();
                 if (asNewReservation)
                 {
@@ -1580,24 +1568,20 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                 }
 
                 saveReservation = mutableReservation;
-
-                final Collection<Reservation> storeList = Collections.singleton(mutableReservation);
-                ;
-                if (firstTimeCall)
-                {
-                    firstTimeCall = false;
-                    checkEvents(storeList, sourceComponent);
-                }
-                else
-                {
-                    facade.checklastChanged(storeList, false);
-                }
-                Promise result = facade.dispatch(storeList, Collections.emptyList(), user);
-                return result;
             }
             catch (RaplaException ex)
             {
                 return new ResolvedPromise<Void>(ex);
+            }
+
+            final Collection<Reservation> storeList = Collections.singleton(mutableReservation);
+            try
+            {
+                return checkAndDistpatch(storeList, Collections.emptyList(), firstTimeCall);
+            }
+            finally
+            {
+                firstTimeCall = false;
             }
         }
 
@@ -1619,12 +1603,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                     storeList = Collections.singleton(mutableReservation);
                     removeList = Collections.emptyList();
                 }
-                if (!firstTimeCall)
-                {
-                    getFacade().checklastChanged(storeList, false);
-                }
-                Promise result = getFacade().dispatch(storeList, removeList, user);
-                return result;
+                return checkAndDistpatch(storeList, removeList, false);
             }
             catch (RaplaException ex)
             {
@@ -1637,6 +1616,45 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             return getI18n().getString("paste");
         }
 
+    }
+
+    public Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime)
+    {
+        final RaplaFacade facade = getFacade();
+        Promise<Boolean> promise;
+        User user;
+        try
+        {
+            user = getClientFacade().getUser();
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<Void>(e);
+        }
+
+        if (firstTime)
+        {
+            promise = checkEvents(storeList, sourceComponent);
+        }
+        else
+        {
+            try
+            {
+                facade.checklastChanged(storeList, false);
+                promise = new ResolvedPromise<Boolean>(true);
+            }
+            catch (Exception ex)
+            {
+                promise = new ResolvedPromise<Boolean>(ex);
+            }
+        }
+        Promise<Void> result = promise.thenCompose((checkResult) -> {
+            if (checkResult)
+                return facade.dispatch(storeList, removeList, user);
+            else
+                return new ResolvedPromise<Void>(new CommandAbortedException("Command Aborted"));
+        });
+        return result;
     }
 
     class ReservationPaste implements CommandUndo<RaplaException>
@@ -1661,24 +1679,19 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             {
                 User user = getClientFacade().getUser();
                 clones = getFacade().copy(fromReservations, start, keepTime, user);
-                PopupContext sourceComponent = getPopupContext();
-                Collection<Reservation> reservations = clones;
-                // checker
-                if (firstTimeCall)
-                {
-                    firstTimeCall = false;
-                    checkEvents(reservations, sourceComponent);
-                }
-                else
-                {
-                    getFacade().checklastChanged(reservations, false);
-                }
-                Promise result = getFacade().dispatch(reservations, Collections.emptyList(), user);
-                return result;
             }
             catch (RaplaException ex)
             {
                 return new ResolvedPromise<Void>(ex);
+            }
+            // checker
+            try
+            {
+                return checkAndDistpatch(clones, Collections.emptyList(), firstTimeCall);
+            }
+            finally
+            {
+                firstTimeCall = false;
             }
         }
 
@@ -1688,9 +1701,9 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             {
                 User user = getClientFacade().getUser();
                 Collection<ReferenceInfo<Reservation>> removeList = new ArrayList<>();
-                for ( Reservation clone:clones)
+                for (Reservation clone : clones)
                 {
-                    removeList.add( clone.getReference());
+                    removeList.add(clone.getReference());
                 }
                 Promise result = getFacade().dispatch(Collections.emptyList(), removeList, user);
                 return result;
