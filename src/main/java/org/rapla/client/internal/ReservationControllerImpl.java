@@ -1467,7 +1467,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         }
     }
 
-    boolean checkEvents(Collection<? extends Entity> entities, PopupContext sourceComponent) throws RaplaException
+    Promise<Boolean> checkEvents(Collection<? extends Entity> entities, PopupContext sourceComponent) throws RaplaException
     {
         Provider<Set<EventCheck>> checkers = getEventChecks();
         List<Reservation> reservations = new ArrayList<Reservation>();
