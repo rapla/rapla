@@ -55,6 +55,7 @@ import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
@@ -88,7 +89,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     
     @SuppressWarnings("unchecked")
     @Inject
-	public CopyDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException {
+	public CopyDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.periodCopyI18n = periodCopyI18n;
         this.model = model;
@@ -98,7 +99,15 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         destBegin = createRaplaCalendar(dateRenderer, ioInterface);
         
         
-        Period[] periods = getQuery().getPeriods();
+        Period[] periods;
+        try
+        {
+            periods = getQuery().getPeriods();
+        }
+        catch (RaplaException e1)
+        {
+            throw new RaplaInitializationException(e1);
+        }
         singleChooser = booleanFieldFactory.create("singleChooser");
         singleChooser.addChangeListener( new ChangeListener() {
 			
@@ -203,7 +212,14 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         sourcePeriodChooser.setSelectedIndex(0);
         destPeriodChooser.setSelectedIndex(0);
         
-        updateReservations();
+        try
+        {
+            updateReservations();
+        }
+        catch (RaplaException e1)
+        {
+            throw new RaplaInitializationException(e1);
+        }
     }
     
     public Date getSourceStart()

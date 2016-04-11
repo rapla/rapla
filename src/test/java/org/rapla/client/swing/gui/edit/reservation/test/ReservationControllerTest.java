@@ -29,12 +29,14 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.StorageOperator;
 
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 import java.awt.Point;
 import java.awt.Window;
+import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
 
@@ -42,17 +44,17 @@ public final class ReservationControllerTest extends GUITestCase {
 	ClientFacade facade = null;
 
 	public void testMain() throws Exception {
-		Reservation[] reservations = facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null);
+		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
 		final ReservationController c = getService(ReservationController.class);
-		final Reservation reservation = reservations[0];
+		final Reservation reservation = reservations.iterator().next();
 		c.edit(reservation);
 		getLogger().info("ReservationController started");
 	}
 
 	public void testMove() throws Exception {
-		Reservation[] reservations = facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null);
+		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
 		final ReservationController c =  getService(ReservationController.class);
-		final Reservation reservation = reservations[0];
+		final Reservation reservation = reservations.iterator().next();
 		Appointment[] appointments = reservation.getAppointments();
 		final Appointment appointment = appointments[0];
 		final Date from = appointment.getStart();
@@ -109,9 +111,9 @@ public final class ReservationControllerTest extends GUITestCase {
 		Allocatable[] periods = facade.getRaplaFacade().getAllocatables(filters);
 		facade.getRaplaFacade().removeObjects(periods);
 		Thread.sleep(500);
-		Reservation[] reservations = facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null);
+		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
 		ReservationController c = getService(ReservationController.class);
-		c.edit(reservations[0]);
+		c.edit(reservations.iterator().next());
 		getLogger().info("ReservationController started");
 		ReservationEdit editor = c.getEditWindows()[0];
 		Date startDate = new Date();

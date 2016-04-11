@@ -12,6 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.gui.tests;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Locale;
+
+import javax.inject.Provider;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.rapla.RaplaResources;
@@ -26,6 +33,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
@@ -39,12 +47,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.test.util.RaplaTestCase;
-
-import javax.inject.Provider;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
 
 /** listens for allocation changes */
 public class CopyPeriodPluginTest {
@@ -75,10 +79,13 @@ public class CopyPeriodPluginTest {
         return logger;
     }
 
-    private Reservation findReservationWithName(Reservation[] reservations, String name) {
-        for (int i=0;i<reservations.length;i++) {
-            if ( reservations[i].getName( locale).equals( name )) {
-                return reservations[i];
+    private Reservation findReservationWithName(Collection<Reservation> reservations, String name) {
+        for (Iterator<Reservation> it = reservations.iterator(); it.hasNext();)
+        {
+            Reservation reservation = it.next();
+            if (reservation.getName(locale).equals(name))
+            {
+                return reservation;
             }
         }
         return null;
@@ -125,12 +132,12 @@ public class CopyPeriodPluginTest {
             }
         };
         CopyPluginMenu init = new CopyPluginMenu( getFacade(), rr, getRaplaLocale(), getLogger(), i18n, copyDialogProvider, raplaImages, dialogUiFactory);
-        Reservation[] original = model.queryReservations( sourcePeriod.getStart(), sourcePeriod.getEnd());
+        Collection<Reservation>original = PromiseSynchroniser.waitForWithRaplaException(model.queryReservations( new TimeInterval(sourcePeriod.getStart(), sourcePeriod.getEnd())), 10000);
         Assert.assertNotNull(findReservationWithName(original, "power planting"));
 
-        init.copy( Arrays.asList(original), destPeriod.getStart(),destPeriod.getEnd(), false);
+        init.copy( original, destPeriod.getStart(),destPeriod.getEnd(), false);
 
-        Reservation[] copy = model.queryReservations( destPeriod.getStart(), destPeriod.getEnd());
+        Collection<Reservation> copy = PromiseSynchroniser.waitForWithRaplaException(model.queryReservations( new TimeInterval(destPeriod.getStart(), destPeriod.getEnd())), 10000);
         Assert.assertNotNull(findReservationWithName(copy, "power planting"));
 
     }

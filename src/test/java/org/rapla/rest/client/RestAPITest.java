@@ -1,6 +1,9 @@
 package org.rapla.rest.client;
 
-import junit.framework.TestCase;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -9,13 +12,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
 import org.rapla.framework.logger.Logger;
-import org.rapla.jsonrpc.client.swing.HTTPConnector;
+import org.rapla.rest.client.swing.HTTPConnector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import junit.framework.TestCase;
 
 @RunWith(JUnit4.class)
 public class RestAPITest  {

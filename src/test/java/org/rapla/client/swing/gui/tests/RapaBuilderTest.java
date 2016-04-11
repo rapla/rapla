@@ -13,6 +13,10 @@
 
 package org.rapla.client.swing.gui.tests;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,17 +31,13 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
 
 @RunWith(JUnit4.class)
 public final class RapaBuilderTest
 {
     ClientFacade facade;
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
         facade = RaplaTestCase.createSimpleSimpsonsWithHomer();
     }
