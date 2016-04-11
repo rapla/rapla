@@ -12,26 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
@@ -71,7 +51,28 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 /**
    Gui for editing the {@link Classification} of a reservation. Same as
    {@link org.rapla.client.swing.internal.edit.ClassificationEditUI}. It will only layout the
@@ -566,29 +567,35 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         		this.keyName   = fieldName;
         	}
         	
-			public boolean execute() throws RaplaException {
+			public Promise<Void> execute() {
 				return mapValue(newValue);
 			}
 			
-			public boolean undo() throws RaplaException {
+			public Promise<Void> undo()  {
 				return mapValue(oldValue);
 			}
 
-			protected boolean mapValue(Object valueToSet) throws RaplaException {
-				Object attValue = getAttValue(keyName);
-				if (attValue != valueToSet && (attValue == null || valueToSet == null || !attValue.equals(valueToSet))) {
-				    SetGetField<?> editField = (SetGetField<?>) getEditField();
-					
-					if (editField == null) 
-						throw new RaplaException("Field with key " + keyName + " not found!");
-					
-					setAttValue(keyName, valueToSet);
-					mapFrom(  editField);
-				}
+			protected Promise<Void> mapValue(Object valueToSet)  {
+                try
+                {
+                    Object attValue = getAttValue(keyName);
+                    if (attValue != valueToSet && (attValue == null || valueToSet == null || !attValue.equals(valueToSet)))
+                    {
+                        SetGetField<?> editField = (SetGetField<?>) getEditField();
 
-	            fireInfoChanged();
-	            
-				return true;
+                        if (editField == null)
+                            throw new RaplaException("Field with key " + keyName + " not found!");
+
+                        setAttValue(keyName, valueToSet);
+                        mapFrom(editField);
+                    }
+                    fireInfoChanged();
+                    return ResolvedPromise.VOID_PROMISE;
+                }
+                catch ( RaplaException ex)
+                {
+                    return new ResolvedPromise<Void>(ex);
+                }
 			}
 
 			protected EditField getEditField() {
@@ -650,19 +657,17 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         	this.newClassification = newClassification;
 		}
 		
-		public boolean execute() throws RaplaException {
+		public Promise<Void> execute() {
 	        classification = newClassification;
-			setType(newDynamicType);
-	        return true;
+			return setType(newDynamicType);
 		}
 		
-		public boolean undo() throws RaplaException  {
+		public Promise<Void> undo()   {
 	        classification = oldClassification;
-			setType(oldDynamicType);
-	        return true;
+			return setType(oldDynamicType);
 		}
 
-		protected void setType(DynamicType typeToSet) throws RaplaException {
+		protected Promise<Void> setType(DynamicType typeToSet) {
 			if (!typeSelector.getSelectedItem().equals(typeToSet)) {
 		        internalUpdate = true;
 		        try {
@@ -673,15 +678,23 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 	        }
 	        
 	        classifiable.setClassification(classification);
-	        editUI.setObjects(Collections.singletonList(classification));
-	        permissionListField.getComponent().setVisible( selectedView == TabSelected.Info);
-	        //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);
-	        editUI.layout();
-	        editUI.getComponent().invalidate();
-	        content.validate();
-	        updateHeight();
-	        content.repaint();
-	        fireInfoChanged();
+            try
+            {
+                editUI.setObjects(Collections.singletonList(classification));
+                permissionListField.getComponent().setVisible(selectedView == TabSelected.Info);
+                //tabSelector.setVisible(hasSecondTab(classification) || selectedView == TabSelected.Info);
+                editUI.layout();
+                editUI.getComponent().invalidate();
+                content.validate();
+                updateHeight();
+                content.repaint();
+                fireInfoChanged();
+                return ResolvedPromise.VOID_PROMISE;
+            }
+            catch (RaplaException ex)
+            {
+                return new ResolvedPromise<Void>(ex);
+            }
 		}
 	
 		public String getCommandoName() 
@@ -712,17 +725,15 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             return test;
         }
 
-        public boolean execute() throws RaplaException {
-            setPermissions(newPermissions);
-            return true;
+        public Promise<Void> execute()  {
+            return setPermissions(newPermissions);
         }
         
-        public boolean undo() throws RaplaException  {
-            setPermissions(oldPermissions);
-            return true;
+        public Promise<Void> undo()   {
+            return setPermissions(oldPermissions);
         }
 
-        protected void setPermissions(Collection<Permission> permissions) {
+        protected Promise<Void> setPermissions(Collection<Permission> permissions) {
             
             PermissionContainer permissionContainer = (PermissionContainer) classifiable;
             internalUpdate = true;
@@ -747,6 +758,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 internalUpdate = false;
             }
             fireInfoChanged();
+            return ResolvedPromise.VOID_PROMISE;
         }
     
         public String getCommandoName() 
