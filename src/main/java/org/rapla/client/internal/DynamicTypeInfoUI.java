@@ -23,6 +23,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -56,7 +57,8 @@ public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
     }
 
     @Override
-    public String getTooltip(DynamicType object, User user) {
+    public String getTooltip(DynamicType object, User user) throws RaplaException 
+    {
         if ( clientFacade.getUser().isAdmin()) {
             return createHTMLAndFillLinks( object, null, user);
         } else {
