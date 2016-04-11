@@ -1607,16 +1607,16 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	public void storeObjects(Entity<?>[] obj) throws RaplaException {
-		dispatch(obj, Entity.ENTITY_ARRAY);
+		storeAndRemove(obj, Entity.ENTITY_ARRAY);
 	}
 
 	public void removeObjects(Entity<?>[] obj) throws RaplaException {
-		dispatch(Entity.ENTITY_ARRAY, obj);
+		storeAndRemove(Entity.ENTITY_ARRAY, obj);
 	}
 
-	public void dispatch(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
+	public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
         User workingUser = getWorkingUser();
-        dispatch(storeObjects, removedObjects, workingUser);
+        storeAndRemove(storeObjects, removedObjects, workingUser);
 	}
 
 	public Promise<Void> dispatch( Collection<Entity<?>> storeList, Collection<ReferenceInfo<?>> removeList, User user)
@@ -1670,7 +1670,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 
-	public void dispatch(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
+	public void storeAndRemove(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
 	{
 		ArrayList<Entity<?>>storeList = new ArrayList<>();
 		ArrayList<ReferenceInfo<?>>removeList = new ArrayList<>();
