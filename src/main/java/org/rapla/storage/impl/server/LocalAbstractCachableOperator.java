@@ -639,9 +639,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             unlock(writeLock);
         }
         User editObject = editObject(user, null);
-        List<Entity<?>> editList = new ArrayList<Entity<?>>(1);
+        List<Entity> editList = new ArrayList<>(1);
         editList.add(editObject);
-        Collection<ReferenceInfo<?>> removeList = Collections.emptyList();
+        Collection<ReferenceInfo> removeList = Collections.emptyList();
         // synchronization will be done in the dispatch method
         storeAndRemove(editList, removeList, user);
     }
@@ -680,10 +680,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     classification.setValue(attribute, surname);
                 }
             }
-            ArrayList<Entity<?>> arrayList = new ArrayList<Entity<?>>();
+            ArrayList<Entity> arrayList = new ArrayList<>();
             arrayList.add(editableUser);
             arrayList.add(editablePerson);
-            Collection<ReferenceInfo<?>> removeObjects = Collections.emptySet();
+            Collection<ReferenceInfo> removeObjects = Collections.emptySet();
             // synchronization will be done in the dispatch method
             storeAndRemove(arrayList, removeObjects, null);
         }
@@ -693,8 +693,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         User editableUser = user.isReadOnly() ? editObject(user, user) : user;
         Allocatable personReference = editableUser.getPerson();
-        ArrayList<Entity<?>> storeObjects = new ArrayList<Entity<?>>();
-        Collection<ReferenceInfo<?>> removeObjects = Collections.emptySet();
+        ArrayList<Entity> storeObjects = new ArrayList<>();
+        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
         storeObjects.add(editableUser);
         if (personReference == null)
         {
@@ -3219,9 +3219,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void storeUser(User refUser) throws RaplaException
     {
-        ArrayList<Entity<?>> storeObjects = new ArrayList<Entity<?>>();
+        ArrayList<Entity> storeObjects = new ArrayList<>();
         storeObjects.add(refUser);
-        Collection<ReferenceInfo<?>> removeObjects = Collections.emptySet();
+        Collection<ReferenceInfo> removeObjects = Collections.emptySet();
         storeAndRemove(storeObjects, removeObjects, null);
     }
 
@@ -3821,7 +3821,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final Allocatable resolve = resolve(allocatableId);
                 allocatables.add(resolve);
             }
-            final Collection<Entity<?>> storeObjects = new LinkedHashSet<>();
+            final Collection<Entity> storeObjects = new LinkedHashSet<>();
             if (!selectedObject.isReadOnly())
             {
                 storeObjects.add(selectedObject);

@@ -1345,14 +1345,14 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return castedResult;
 	}
 
-	public <T extends Entity> Map<T,T> checklastChanged(List<T> entities, boolean isNew) throws RaplaException
+	public <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException
 	{
 		Map<T,T> persistantVersions= getPersistant(entities);
 		checklastChanged(entities, persistantVersions,isNew);
 		return persistantVersions;
 	}
 
-	private <T extends Entity> void checklastChanged(List<T> entities, Map<T,T> persistantVersions, boolean isNew) throws RaplaException
+	private <T extends Entity> void checklastChanged(Collection<T> entities, Map<T,T> persistantVersions, boolean isNew) throws RaplaException
 	{
 		refresh();
 		for ( T entity:entities)
@@ -1594,32 +1594,38 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return castedResult;
 	}
 
-	public void store(Entity<?> obj) throws RaplaException {
+	@Override
+	public <T extends Entity> void store(T obj) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't store null objects");
 		storeObjects(new Entity[] { obj });
 	}
 
-	public void remove(Entity<?> obj) throws RaplaException {
+	@Override
+	public <T extends Entity> void remove(T obj) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't remove null objects");
 		removeObjects(new Entity[] { obj });
 	}
 
-	public void storeObjects(Entity<?>[] obj) throws RaplaException {
+	@Override
+	public <T extends Entity> void storeObjects(T[] obj) throws RaplaException {
 		storeAndRemove(obj, Entity.ENTITY_ARRAY);
 	}
 
-	public void removeObjects(Entity<?>[] obj) throws RaplaException {
+	@Override
+	public <T extends Entity> void removeObjects(T[] obj) throws RaplaException {
 		storeAndRemove(Entity.ENTITY_ARRAY, obj);
 	}
 
-	public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
+	@Override
+	public <T extends Entity, S extends Entity> void storeAndRemove(T[] storeObjects, S[] removedObjects) throws RaplaException {
         User workingUser = getWorkingUser();
         storeAndRemove(storeObjects, removedObjects, workingUser);
 	}
 
-	public Promise<Void> dispatch( Collection<Entity<?>> storeList, Collection<ReferenceInfo<?>> removeList, User user)
+	@Override
+	public <T extends Entity,S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user)
 	{
 		long time = System.currentTimeMillis();
 		try
@@ -1633,7 +1639,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 					throw new RaplaException("Removed Objects cant be null");
 				}
 			}
-			for (Entity toStore : storeList) {
+			for (T toStore : storeList) {
 				if (toStore == null) {
 					throw new RaplaException("Stored Objects cant be null");
 				}
@@ -1642,8 +1648,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 					checkReservation((Reservation) toStore);
 				}
 			}
-			List<Entity<?>> transientCategories = new ArrayList<>();
-			for (Entity toStore : storeList) {
+			List<T> transientCategories = new ArrayList<>();
+			for (T toStore : storeList) {
 				final Class typeClass = toStore.getTypeClass();
 				if ( typeClass == Category.class)
 				{
@@ -1669,22 +1675,21 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return ResolvedPromise.VOID_PROMISE;
 	}
 
-
-	public void storeAndRemove(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
+	@Override
+	public <T extends Entity,S extends Entity> void storeAndRemove(T[] storedObjects, S[] removedObjects, User user) throws RaplaException
 	{
-		ArrayList<Entity<?>>storeList = new ArrayList<>();
-		ArrayList<ReferenceInfo<?>>removeList = new ArrayList<>();
-		for (Entity<?> toRemove : removedObjects) {
+		ArrayList<T>storeList = new ArrayList<>();
+		ArrayList<ReferenceInfo<S>>removeList = new ArrayList<>();
+		for (S toRemove : removedObjects) {
 			removeList.add( toRemove.getReference());
 		}
-		for (Entity toStore : storedObjects) {
+		for (T toStore : storedObjects) {
 			storeList.add( toStore);
 		}
-
-
+		dispatch( storeList, removeList, user);
 	}
 
-	public void addTransientCategories(List<Entity<?>> storeList, CategoryImpl toStore, int depth)
+	private <T extends  Entity> void addTransientCategories(List<T> storeList, CategoryImpl toStore, int depth)
 	{
 		if ( depth >20)
 		{
@@ -1694,7 +1699,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         {
             if (tryResolve(cat.getReference())== null)
             {
-                storeList.add( cat );
+                storeList.add( (T)cat );
 				addTransientCategories(storeList, (CategoryImpl) cat, depth +1);
             }
         }

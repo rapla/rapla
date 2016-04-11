@@ -36,13 +36,13 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
    	protected boolean firstTimeCall = true;
    	private RaplaFacade facade;
    	RaplaResources i18n;
-	PopupContext popupContext;
+	PopupContext
 	
 	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity)
 	{
 		this( facade, i18n,newEntity, originalEntity, null);
 	}
-	
+
 	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName)
 	{
 	    this.facade = facade;
@@ -101,10 +101,10 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 			if (!firstTimeCall)
 			{
 				newEntitiesPersistant = getFacade().checklastChanged(newEntities, isNew);
-				checkEvents(newEntitiesPersistant.values(), popupContext);
 			}
 			else
 			{
+				checkEvents(newEntitiesPersistant.values(), popupContext);
 				firstTimeCall = false;
 			}
 			for (T entity : newEntities)

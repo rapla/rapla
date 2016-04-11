@@ -242,7 +242,7 @@ public interface RaplaFacade
      * @return the latest persistant map of the entities
      * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
      */
-    <T extends Entity> Map<T,T> checklastChanged(List<T> entities, boolean isNew) throws RaplaException;
+    <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException;
 
     /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
     Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException;
@@ -258,23 +258,23 @@ public interface RaplaFacade
     <T extends Entity> Map<T,T> getPersistant(Collection<T> list) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator} */
-    void storeObjects(Entity<?>[] obj) throws RaplaException;
+    <T extends Entity> void storeObjects(T[] obj) throws RaplaException;
     /** @see #storeObjects(Entity[]) */
-    void store(Entity<?> obj) throws RaplaException;
+    <T extends Entity> void store(T obj) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator} */
-    void removeObjects(Entity<?>[] obj) throws RaplaException;
+    <T extends Entity> void removeObjects(T[] obj) throws RaplaException;
 
     /** @see #removeObjects(Entity[]) */
-    void remove(Entity<?> obj) throws RaplaException;
+    <T extends Entity> void remove(T obj) throws RaplaException;
 
     /** stores and removes objects in the one transaction
      * @throws RaplaException */
-    void storeAndRemove( Entity<?>[] storedObjects, Entity<?>[] removedObjects) throws RaplaException;
+    <T extends Entity, S extends Entity> void  storeAndRemove( T[] storedObjects, S[] removedObjects) throws RaplaException;
 
-    void storeAndRemove( Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException;
+    <T extends Entity, S extends Entity> void storeAndRemove( T[] storedObjects, S[] removedObjects, User user) throws RaplaException;
 
-    Promise<Void> dispatch( Collection<Entity<?>> storeList, Collection<ReferenceInfo<?>> removeList, User user);
+    <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user);
     /**
      * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then 
      * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the

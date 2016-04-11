@@ -170,8 +170,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return (Entity) refEntity;
     }
 
-    @SuppressWarnings("rawtypes") public void storeAndRemove(final Collection<? extends Entity<?>> storeObjects,
-            final Collection<? extends ReferenceInfo<?>> removeObjects, final User user) throws RaplaException
+    @SuppressWarnings("rawtypes")
+    @Override
+    public <T extends Entity,S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
+            final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
     {
         checkConnected();
 

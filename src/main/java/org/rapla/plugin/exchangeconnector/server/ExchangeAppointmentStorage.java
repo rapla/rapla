@@ -265,8 +265,8 @@ public class ExchangeAppointmentStorage
             unlock(lock);
         }
 
-        Collection<Entity<?>> storeObjects = new HashSet<>();
-        Collection<ReferenceInfo<?>> removeObjects = new HashSet<>();
+        Collection<Entity> storeObjects = new HashSet<>();
+        Collection<ReferenceInfo> removeObjects = new HashSet<>();
         for (SynchronizationTask task : toRemove)
         {
             // remove task from memory 
