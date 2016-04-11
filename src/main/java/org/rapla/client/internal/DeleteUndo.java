@@ -2,6 +2,7 @@ package org.rapla.client.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,8 +17,10 @@ import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaException> {
 	// FIXME Delete of categories in multiple levels can cause the lower levels not to be deleted if it contains categories higher in rank but same hierarchy that are also deleted
@@ -55,24 +58,20 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
         return i18n;
     }
 	
-	public boolean execute() throws RaplaException 
+	public Promise<Void> execute()
 	{
-	    Collection<Category> toStore = new ArrayList<Category>();
-	    List<T> toRemove = new ArrayList<T>();
+	    Collection<Entity<?>> toStore = Collections.emptyList();
+	    Collection<ReferenceInfo<?>> toRemove = new ArrayList<>();
 	    for ( T entity: entities)
 		{
-			toRemove.add( entity);
+			toRemove.add( entity.getReference());
     	}
-		Entity<?>[] arrayStore = toStore.toArray( Category.ENTITY_ARRAY);
-		@SuppressWarnings("unchecked")
-		Entity<T>[] arrayRemove = toRemove.toArray(new Entity[]{});
-		getFacade().storeAndRemove(arrayStore,arrayRemove);
-		return true;
+		return getFacade().dispatch(toStore,toRemove, user);
 	}
 	
-	public boolean undo() throws RaplaException 
+	public Promise<Void> undo()
 	{
-		List<Entity<T>> toStore = new ArrayList<Entity<T>>();
+		Collection<Entity<?>> toStore = new ArrayList<>();
 		for ( T entity: entities)
 		{
             Entity<T>  mutableEntity = entity.clone();
@@ -85,9 +84,8 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 		}
 		// Todo generate undo for category store
 		@SuppressWarnings("unchecked")
-        Entity<T>[] array = toStore.toArray(new Entity[]{});
-		getFacade().storeObjects( array);
-		return true;
+		Collection<ReferenceInfo<?>> toRemove = Collections.emptyList();
+		return getFacade().dispatch(toStore,toRemove, user);
 	}
 	
 	

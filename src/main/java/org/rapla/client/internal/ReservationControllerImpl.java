@@ -1497,8 +1497,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                 //sourceComponent
                 final RaplaFacade raplaFacade = facade.getRaplaFacade();
                 SaveUndo saveCommand = new SaveUndo<Reservation>(raplaFacade,i18n,reservations,null);
-                boolean result = saveCommand.execute();
-				return result;
+				return saveCommand.execute();
 			}
 			else
 			{

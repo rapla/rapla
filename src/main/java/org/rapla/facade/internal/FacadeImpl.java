@@ -92,6 +92,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -1606,58 +1607,84 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	public void storeObjects(Entity<?>[] obj) throws RaplaException {
-		storeAndRemove(obj, Entity.ENTITY_ARRAY);
+		dispatch(obj, Entity.ENTITY_ARRAY);
 	}
 
 	public void removeObjects(Entity<?>[] obj) throws RaplaException {
-		storeAndRemove(Entity.ENTITY_ARRAY, obj);
+		dispatch(Entity.ENTITY_ARRAY, obj);
 	}
 
-	public void storeAndRemove(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
+	public void dispatch(Entity<?>[] storeObjects, Entity<?>[] removedObjects) throws RaplaException {
         User workingUser = getWorkingUser();
-        storeAndRemove(storeObjects, removedObjects, workingUser);
+        dispatch(storeObjects, removedObjects, workingUser);
 	}
 
-	@Override public void storeAndRemove(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
+	public Promise<Void> dispatch( Collection<Entity<?>> storeList, Collection<ReferenceInfo<?>> removeList, User user)
 	{
-        if (storedObjects.length == 0 && removedObjects.length == 0)
-            return;
-        long time = System.currentTimeMillis();
-        for (int i = 0; i < storedObjects.length; i++) {
-            if (storedObjects[i] == null) {
-                throw new RaplaException("Stored Objects cant be null");
-            }
-            if (storedObjects[i].getTypeClass() == Reservation.class) {
-                checkReservation((Reservation) storedObjects[i]);
-            }
-        }
+		long time = System.currentTimeMillis();
+		try
+		{
+			if (storeList.size() == 0 && removeList.size() == 0)
+				return ResolvedPromise.VOID_PROMISE;
 
-        for (int i = 0; i < removedObjects.length; i++) {
-            if (removedObjects[i] == null) {
-                throw new RaplaException("Removed Objects cant be null");
-            }
-        }
 
-        ArrayList<Entity<?>>storeList = new ArrayList<>();
-        ArrayList<ReferenceInfo<?>>removeList = new ArrayList<>();
-        for (Entity toStore : storedObjects) {
-			if ( toStore instanceof Category)
-			{
-				// add non resolvable categories
-				addTransientCategories(storeList, (CategoryImpl) toStore,0);
+			for (ReferenceInfo<?> removedObject:removeList) {
+				if (removedObject == null) {
+					throw new RaplaException("Removed Objects cant be null");
+				}
 			}
-            storeList.add( toStore);
-        }
-        for (Entity<?> toRemove : removedObjects) {
-            removeList.add( toRemove.getReference());
-        }
-        operator.storeAndRemove(storeList, removeList, user);
-    
-        if (getLogger().isDebugEnabled())
-            getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
+			for (Entity toStore : storeList) {
+				if (toStore == null) {
+					throw new RaplaException("Stored Objects cant be null");
+				}
+				final Class typeClass = toStore.getTypeClass();
+				if (typeClass == Reservation.class) {
+					checkReservation((Reservation) toStore);
+				}
+			}
+			List<Entity<?>> transientCategories = new ArrayList<>();
+			for (Entity toStore : storeList) {
+				final Class typeClass = toStore.getTypeClass();
+				if ( typeClass == Category.class)
+				{
+					// add non resolvable categories
+					addTransientCategories(transientCategories, (CategoryImpl) toStore,0);
+				}
+			}
+			if ( transientCategories.size() > 0)
+			{
+				storeList = new ArrayList<>(storeList);
+				storeList.addAll( transientCategories);
+			}
+
+			operator.storeAndRemove(storeList, removeList, user);
+
+			if (getLogger().isDebugEnabled())
+				getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
+		}
+		catch ( Exception ex)
+		{
+			return new ResolvedPromise<Void>(ex);
+		}
+		return ResolvedPromise.VOID_PROMISE;
 	}
 
-	public void addTransientCategories(ArrayList<Entity<?>> storeList, CategoryImpl toStore, int depth)
+
+	public void dispatch(Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException
+	{
+		ArrayList<Entity<?>>storeList = new ArrayList<>();
+		ArrayList<ReferenceInfo<?>>removeList = new ArrayList<>();
+		for (Entity<?> toRemove : removedObjects) {
+			removeList.add( toRemove.getReference());
+		}
+		for (Entity toStore : storedObjects) {
+			storeList.add( toStore);
+		}
+
+
+	}
+
+	public void addTransientCategories(List<Entity<?>> storeList, CategoryImpl toStore, int depth)
 	{
 		if ( depth >20)
 		{

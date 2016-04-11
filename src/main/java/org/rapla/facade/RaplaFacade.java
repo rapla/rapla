@@ -274,6 +274,7 @@ public interface RaplaFacade
 
     void storeAndRemove( Entity<?>[] storedObjects, Entity<?>[] removedObjects, User user) throws RaplaException;
 
+    Promise<Void> dispatch( Collection<Entity<?>> storeList, Collection<ReferenceInfo<?>> removeList, User user);
     /**
      * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then 
      * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the
