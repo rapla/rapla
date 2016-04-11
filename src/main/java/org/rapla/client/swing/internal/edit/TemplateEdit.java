@@ -162,8 +162,15 @@ public class TemplateEdit extends RaplaGUIComponent
         String username = usernameMap.get(user);
         if ( username == null)
         {
-            username = getFacade().getOperator().getUsername(user);
-            usernameMap.put( user, username);
+            try
+            {
+                username = getFacade().getOperator().getUsername(user);
+                usernameMap.put( user, username);
+            }
+            catch (RaplaException e)
+            {
+                getLogger().error("Could not resolve username for user: " + e.getMessage(), e);
+            }
         }
         return username;
 

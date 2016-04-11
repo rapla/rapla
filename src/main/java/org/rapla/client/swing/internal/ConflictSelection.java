@@ -65,6 +65,8 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 
 public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget {
@@ -210,15 +212,13 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         }
 
         @Override
-        public boolean execute() throws RaplaException {
-            store_( enable);
-            return true;
+        public Promise<Void> execute() {
+            return store_( enable);
         }
         
         @Override
-        public boolean undo() throws RaplaException {
-            store_( !enable);
-            return true;
+        public Promise<Void> undo() {
+            return store_( !enable);
         }
         @Override
         public String getCommandoName() 
@@ -227,7 +227,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         }
         
 
-        private void store_( boolean newFlag) throws RaplaException {
+        private Promise<Void> store_( boolean newFlag) {
             Collection<Conflict> conflictOrig = new ArrayList<Conflict>();
             for ( Conflict conflict:ConflictSelection.this.conflicts)
             {
@@ -236,29 +236,46 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                     conflictOrig.add( conflict);
                 }
             }
+            User user;
+            try
+            {
+                user = getUser();
+            }
+            catch (RaplaException e1)
+            {
+                return new ResolvedPromise<>(e1);
+            }
             ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
             for ( Conflict conflict:conflictOrig)
             {
-                Conflict clone = getFacade().edit( conflict);
+                Conflict clone;
+                try
+                {
+                    clone = getFacade().edit( conflict);
+                }
+                catch (RaplaException e)
+                {
+                    return new ResolvedPromise<>(e);
+                }
                 conflicts.add( clone);
             }
             for (Conflict conflict: conflicts)
             {
                 setEnabled( ((ConflictImpl)conflict), newFlag);
             }
-            store( conflicts );
-            updateTree();
+            final Promise<Void> store = store( conflicts, user );
+            final Promise<Void> prom = store.thenAccept((a) ->
+            {
+                updateTree();
+            });
+            return prom;
         }
 
     }
 
-    
-    
-
-    
-    private void store(Collection<Conflict> conflicts) throws RaplaException 
+    private Promise<Void> store(Collection<Conflict> conflicts, User user) 
     {
-        getFacade().storeObjects( conflicts.toArray(Conflict.CONFLICT_ARRAY));
+        return getFacade().dispatch(conflicts, Collections.emptyList(), user);
     }
 
     private void setEnabled(ConflictImpl conflictImpl, boolean enabled)
