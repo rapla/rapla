@@ -1,5 +1,8 @@
 package org.rapla.components.util.undo;
 
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -28,71 +31,38 @@ public class  CommandHistory {
 			history.remove(0);
 			current--;
 		}
-		 final Promise<Object, T, Object> execute = cmd.execute();
-		 execute.done(new DoneCallback<Object>()
-		 {
-			 @Override public void onDone(Object result)
+		 final Promise<Void> execute = cmd.execute();
+		 execute.thenRun(()->
 			 {
 				 history.add(cmd);
 				 current++;
 				 fireChangeEvent();
 			 }
-		 });
+		 );
 		 return  execute;
 	}
 
-	static final Promise<Object, Object, Object> EMPTY_PROMISE;
-	static
-	{
-		final DeferredObject<Object, Object, Object> objectObjectObjectDeferredObject = new DeferredObject<>();
-		objectObjectObjectDeferredObject.resolve(null);
-		EMPTY_PROMISE = objectObjectObjectDeferredObject.promise();
-	}
-
-
 	public Promise undo() throws Exception {
 		if (!history.isEmpty() && (current >= 0)) {
-			final Promise<Object, ?, Object> undo = history.get(current).undo();
-			undo.done(new DoneCallback<Object>()
-			{
-				@Override public void onDone(Object result)
+			final Promise<? extends Object> undo = history.get(current).undo();
+			undo.thenRun(()->
 				{
 					current--;
-
 				}
-			});
-			undo.always(new AlwaysCallback()
-			{
-				@Override public void onAlways(Promise.State state, Object resolved, Object rejected)
-				{
-					fireChangeEvent();
-				}
-			});
+			).whenComplete((t,ex)-> {fireChangeEvent();});
 			return undo;
 		}
-		return EMPTY_PROMISE;
+		return new ResolvedPromise(null);
 	}
 
 	public Promise redo() throws Exception {
 		if (!history.isEmpty() && (current < history.size() - 1)) {
-			final Promise<Object, ?, Object> execute = history.get(current + 1).execute();
-			execute.done(new DoneCallback<Object>()
-			{
-				@Override public void onDone(Object result)
-				{
-					current++;
-				}
-			});
-			execute.always(new AlwaysCallback()
-			{
-				@Override public void onAlways(Promise.State state, Object resolved, Object rejected)
-				{
-					fireChangeEvent();
-				}
-			});
+			final Promise<? extends Object> execute = history.get(current + 1).execute();
+			execute.thenRun(() -> {	current++;
+			}).whenComplete((t,ex) ->  {fireChangeEvent();});
 			return execute;
-		}
-		return EMPTY_PROMISE;
+		};
+		return new ResolvedPromise(null);
 	}
 	
 	public void clear() {
