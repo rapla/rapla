@@ -31,8 +31,6 @@ public interface ReservationController
 {
     void edit( Reservation reservation ) throws RaplaException;
     void edit( AppointmentBlock appointmentBlock) throws RaplaException;
-    //boolean save(Reservation reservation,PopupContext context) throws RaplaException;
-    boolean save(Collection<Reservation> reservation,PopupContext context) throws RaplaException;
 
     ReservationEdit[] getEditWindows();
 

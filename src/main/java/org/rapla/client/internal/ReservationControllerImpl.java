@@ -357,7 +357,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                     }
                 }
                 Collection<Reservation> updateArray = toUpdate.values();
-                Collection<ReferenceInfo<?>> removeArray = new ArrayList<>();
+                Collection<ReferenceInfo<Reservation>> removeArray = new ArrayList<>();
                 for (Reservation reservation : reservationsToRemove)
                 {
                     removeArray.add(reservation.getReference());
@@ -923,17 +923,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         return offset;
     }
 
-    public boolean save(Reservation reservation, PopupContext sourceComponent) throws RaplaException
-    {
-        return save(Collections.singleton(reservation), sourceComponent);
-    }
-
-    public boolean save(Collection<Reservation> reservations, PopupContext sourceComponent) throws RaplaException
-    {
-        ReservationSave saveCommand = new ReservationSave(reservations, null, sourceComponent);
-        return getCommandHistory().storeAndExecute(saveCommand);
-    }
-
     @Override public void exchangeAllocatable(final AppointmentBlock appointmentBlock, final Allocatable oldAllocatable, final Allocatable newAllocatable,
             final Date newStart, PopupContext context) throws RaplaException
     {
@@ -1116,18 +1105,44 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
         public Promise<Void> execute()
         {
-            Reservation modifiableReservation = getModifiedReservationForExecute();
-            if (firstTimeCall)
+            try
             {
-                firstTimeCall = false;
-                Collection<Reservation> reservations = Collections.singleton(modifiableReservation);
-                SaveUndo<Reservation> saveCommand = new SaveUndo<Reservation>(reservations, null, sourceComponent);
-                return saveCommand.execute();
+                Reservation mutableReservation = getModifiedReservationForExecute();
+                User user = getClientFacade().getUser();
+                Collection<Reservation> reservations = Collections.singleton(mutableReservation);
+                // checker
+                if (firstTimeCall)
+                {
+                    firstTimeCall = false;
+                    checkEvents(reservations, sourceComponent);
+                }
+                else
+                {
+                    getFacade().checklastChanged(reservations, false);
+                }
+                Promise result = getFacade().dispatch(reservations, Collections.emptyList(), user);
+                return result;
             }
-            else
+            catch (RaplaException ex)
             {
-                getFacade().store(modifiableReservation);
-                return true;
+                return new ResolvedPromise<Void>(ex);
+            }
+        }
+
+        public Promise<Void> undo()
+        {
+            try
+            {
+                Reservation mutableReservation = getModifiedReservationForUndo();
+                User user = getClientFacade().getUser();
+                Collection<Reservation> reservations = Collections.singleton(mutableReservation);
+                getFacade().checklastChanged(reservations, false);
+                Promise result = getFacade().dispatch(reservations, Collections.emptyList(), user);
+                return result;
+            }
+            catch (RaplaException ex)
+            {
+                return new ResolvedPromise<Void>(ex);
             }
         }
 
@@ -1198,11 +1213,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             return modifiableReservation;
         }
 
-        public Promise<Void> undo()
-        {
-            Reservation modifiableReservation = getModifiedReservationForUndo();
-            getFacade().store(modifiableReservation);
-        }
+
 
         protected Reservation getModifiedReservationForUndo() throws RaplaException
         {
@@ -1581,9 +1592,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                 {
                     facade.checklastChanged(storeList, false);
                 }
-                final List<ReferenceInfo> removeList = Collections.emptyList();
-                final Collection<Entity> storeList1 = (Collection) storeList;
-                Promise result = facade.dispatch(storeList1, removeList, user);
+                Promise result = facade.dispatch(storeList, Collections.emptyList(), user);
                 return result;
             }
             catch (RaplaException ex)
@@ -1597,7 +1606,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             try
             {
                 final Collection<Reservation> storeList;
-                final Collection<ReferenceInfo<?>> removeList;
+                final Collection<ReferenceInfo<Reservation>> removeList;
                 if (asNewReservation)
                 {
                     removeList = Collections.singleton(saveReservation.getReference());
@@ -1678,7 +1687,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             try
             {
                 User user = getClientFacade().getUser();
-                Collection<ReferenceInfo<?>> removeList = new ArrayList<>();
+                Collection<ReferenceInfo<Reservation>> removeList = new ArrayList<>();
                 for ( Reservation clone:clones)
                 {
                     removeList.add( clone.getReference());

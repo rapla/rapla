@@ -50,6 +50,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Promise;
 
 public class EditDialog<T extends Entity> extends AbstractDialog<T> implements ModificationListener, Disposable, EditDialogInterface<T>
 {
@@ -142,54 +143,29 @@ public class EditDialog<T extends Entity> extends AbstractDialog<T> implements M
                 Collection<T> entities = new ArrayList<T>();
                 entities.addAll(saveObjects);
                 boolean canUndo = true;
-                Boolean isReservation = null;
                 for (T obj : saveObjects)
                 {
                     if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
                     {
                         canUndo = false;
                     }
-                    if (obj instanceof Reservation)
-                    {
-                        if (isReservation == null)
-                        {
-                            isReservation = true;
-                        }
-                    }
-                    else
-                    {
-                        isReservation = false;
-                    }
                 }
-                if (isReservation != null && isReservation)
-                {
-                    @SuppressWarnings("unchecked") Collection<Reservation> castToReservation = (Collection<Reservation>) saveObjects;
-                    Component mainComponent = getMainComponent();
-                    PopupContext popupContext = createPopupContext(mainComponent, null);
-                    if (!reservationController.save(castToReservation, popupContext))
-                    {
-                        return;
-                    }
-                }
-                else if (canUndo)
+                if (canUndo)
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(getFacade(), getI18n(), entities, originals);
                     CommandHistory commandHistory = getUpdateModule().getCommandHistory();
                     Promise promise = commandHistory.storeAndExecute(saveCommand);
-                    promise.done(new DoneCallback()
+                    promise.thenRun( () ->
                     {
-                        @Override public void onDone(Object o)
-                        {
                             getPrivateEditDialog().removeEditDialog(EditDialog.this);
                             dlg.close();
-                        }
+                            FIXME callback;
                     });
                 }
                 else
                 {
                     getFacade().storeObjects(saveObjects.toArray(new Entity[] {}));
                 }
-                org.jdeferred.Promise promise;
                 getPrivateEditDialog().removeEditDialog(EditDialog.this);
                 dlg.close();
                 if ( callback != null)
