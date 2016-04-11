@@ -58,6 +58,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
+import org.rapla.scheduler.Promise;
 
 /** sample UseCase that only displays the text of the configuration and
  all reservations of the user.*/
@@ -260,12 +261,16 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     @SuppressWarnings("unchecked")
 	private void updateReservations() throws RaplaException 
     {
-    	DefaultListModel listModel = new DefaultListModel();
-    	List<Reservation> reservations = getReservations();
-		for ( Reservation reservation: reservations) {
-         	listModel.addElement( reservation.getName( getLocale() ) );
-         }
-         selectedReservations.setModel( listModel);
+        Promise<List<Reservation>> reservationsPromise = getReservations();
+        reservationsPromise.thenAccept((reservations) ->
+        {
+            DefaultListModel listModel = new DefaultListModel();
+            for (Reservation reservation : reservations)
+            {
+                listModel.addElement(reservation.getName(getLocale()));
+            }
+            selectedReservations.setModel(listModel);
+        });
     }
 
     public JComponent getComponent() {
@@ -277,19 +282,22 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 		return value != null && ((Boolean)value).booleanValue();
 	}
 
-	public List<Reservation> getReservations() throws RaplaException {
-	    Collection<Reservation> reservations = model.queryReservations( new TimeInterval(getSourceStart(), getSourceEnd() ));
-	    List<Reservation> listModel = new ArrayList<Reservation>();
-	      
-        for ( Reservation reservation:reservations) {
-        	
-        	boolean includeSingleAppointments = isSingleAppointments();
-			if  (isIncluded(reservation, includeSingleAppointments))
-        	{
-        		listModel.add( reservation );
-        	}
-        }
-        return listModel;
+	public Promise<List<Reservation>> getReservations() throws RaplaException {
+	    Promise<Collection<Reservation>> reservationsPromise = model.queryReservations( new TimeInterval(getSourceStart(), getSourceEnd() ));
+	    final Promise<List<Reservation>> promise = reservationsPromise.thenApply((reservations) -> {
+            List<Reservation> listModel = new ArrayList<Reservation>();
+            for (Reservation reservation : reservations)
+            {
+
+                boolean includeSingleAppointments = isSingleAppointments();
+                if (isIncluded(reservation, includeSingleAppointments))
+                {
+                    listModel.add(reservation);
+                }
+            }
+            return listModel;
+        });
+	    return promise;
 	}
 }
 

@@ -46,6 +46,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
+import org.rapla.scheduler.Promise;
 
 @Extension(provides = EditMenuExtension.class,id="org.rapla.plugin.periodcopy")
 public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtension, ActionListener
@@ -114,8 +115,15 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
             
             if ( dialog.getSelectedIndex() == 1) {
             	
-            	List<Reservation> reservations = useCase.getReservations();
-            	copy( reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments );
+            	Promise<List<Reservation>> reservationsPromise = useCase.getReservations();
+                reservationsPromise.thenAccept((reservations) ->
+                {
+                    copy(reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments);
+                }).exceptionally((ex) ->
+                {
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    return null;
+                });
             }
          } catch (Exception ex) {
              dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null) );
