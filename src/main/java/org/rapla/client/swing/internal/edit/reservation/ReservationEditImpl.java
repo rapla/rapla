@@ -372,8 +372,15 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     }
 
     @Override
-    public void updateView(ModificationEvent evt) throws RaplaException {
-        allocatableEdit.dataChanged(evt);
+    public void updateView(ModificationEvent evt) {
+        try
+        {
+            allocatableEdit.dataChanged(evt);
+        }
+        catch (RaplaException e)
+        {
+            dialogUiFactory.showException(e, null);
+        }
     }
 
     public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException  {

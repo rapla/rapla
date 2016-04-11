@@ -23,12 +23,15 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang.NotImplementedException;
+import org.eclipse.jetty.util.Promise;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.EditDialogFactoryInterface;
 import org.rapla.client.dialog.EditDialogInterface;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.domain.Reservation;
@@ -96,11 +99,20 @@ public class EditControllerImpl implements
         }
         edit(Collections.singletonList(obj), title, popupContext, listCallback);
 	}
+	
+	@Override
+	public <T extends Entity> Promise<T> edit(T obj, String title, PopupContext popupContext) throws RaplaException
+	{
+	    // FIXME implement me
+	    throw new NotImplementedException("implement me");
+	}
 
-	public <T extends Entity> void edit(List<T> list, String title,PopupContext popupContext, EditController.EditCallback<List<T>> callback) throws RaplaException {
+	public <T extends Entity> RaplaWidget edit(List<T> list, String title,PopupContext popupContext, EditController.EditCallback<List<T>> callback) throws RaplaException {
 
 		//		if selektion contains only one object start usual Edit dialog
         editAndOpenDialog(list, title, popupContext, callback);
+        // FIXME get raplawidget
+        return null;
 	}
 
 
