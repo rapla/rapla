@@ -71,7 +71,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         this.permissionController =facade.getRaplaFacade().getPermissionController();
     }
 
-    User getUser()
+    private User getUser() throws RaplaException
     {
         return clientFacade.getUser();
     }
@@ -377,7 +377,16 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             copyContextAllocatables = Collections.emptyList();
         }
 
-        User user = getUser();
+        User user;
+        try
+        {
+            user = getUser();
+        }
+        catch (RaplaException e1)
+        {
+            view.showException(e1);
+            return;
+        }
         {
             final String text = getString("copy");
             final String icon = "icon.copy";
@@ -403,7 +412,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             final String text = getString("cut");
             final String icon = "icon.cut";
 
-            final boolean enabled = permissionController.canCreateReservation(getUser());
+            final boolean enabled = permissionController.canCreateReservation(user);
             final MenuEntry entry = new MenuEntry(text, icon, enabled);
             menu.add(entry);
             mapping.put(entry, new Runnable()
@@ -469,16 +478,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
         {
             final String text = getString("view");
             final String icon = "icon.help";
-            boolean enabled = true;
-            try
-            {
-                boolean canRead = permissionController.canRead(appointment, user);
-                enabled = canRead;
-            }
-            catch (RaplaException ex)
-            {
-                getLogger().error("Can't get user", ex);
-            }
+            boolean enabled = permissionController.canRead(appointment, user);
             final MenuEntry entry = new MenuEntry(text, icon, enabled);
             menu.add(entry);
             mapping.put(entry, new Runnable()
@@ -527,7 +527,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
     }
 
     // TODO DELETE
-    protected boolean canAllocate()
+    private boolean canAllocate() throws RaplaException
     {
         //Date start, Date end,
         Collection<Allocatable> allocatables = model.getMarkedAllocatables();

@@ -47,8 +47,7 @@ final public class CountryChooser implements RaplaWidget
         Collection<String> languages = raplaLocale.getAvailableLanguages();
         try
         {
-            final FutureResult<Map<String, Set<String>>> countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages));
-            this.countries = countries.get();
+            this.countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages));
         }
         catch (Exception e)
         {
