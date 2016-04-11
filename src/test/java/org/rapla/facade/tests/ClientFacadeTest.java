@@ -12,6 +12,20 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.tests;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,23 +66,10 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.jsonrpc.common.FutureResult;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 @RunWith(JUnit4.class)
 public class ClientFacadeTest  {
@@ -94,8 +95,8 @@ public class ClientFacadeTest  {
     @Test
     public void testBelongsTo() throws Exception
     {
-        Reservation[] all = facade.getReservationsForAllocatable(null, null, null, null);
-        facade.removeObjects( all );
+        Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(null, null, null, null);
+        facade.removeObjects( PromiseSynchroniser.waitForWithRaplaException(all, 10000).toArray(Reservation.RESERVATION_ARRAY) );
         Reservation orig =  facade.newReservation();
         final DynamicType resourceType = facade.getDynamicType("room");
         final Allocatable parentResource = facade.getAllocatables(resourceType.newClassificationFilter().toArray())[0];
@@ -141,9 +142,9 @@ public class ClientFacadeTest  {
             newEvent = facade.clone(orig, user);
             Appointment firstAppointment = newEvent.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                     .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
-            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
                 final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
@@ -160,9 +161,9 @@ public class ClientFacadeTest  {
             newEvent.addAppointment(newAppointment);
             final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
             {
-                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+                final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                         .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
-                final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+                final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
                 for (Allocatable allocatable : allocatables)
                 {
                     final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
@@ -172,9 +173,9 @@ public class ClientFacadeTest  {
             }
             firstAppointment.move( newAppointment.getEnd());
             {
-                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+                final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                         .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
-                final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+                final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
 
                 for (Allocatable allocatable : allocatables)
                 {
@@ -190,9 +191,9 @@ public class ClientFacadeTest  {
             newEvent.addAllocatable(childResource);
             Appointment firstAppointment = newEvent.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                     .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
-            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
                 final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
@@ -207,9 +208,9 @@ public class ClientFacadeTest  {
             newEvent.addAllocatable(childChildResource);
             Appointment firstAppointment = newEvent.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                     .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
-            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
                 final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
@@ -222,9 +223,9 @@ public class ClientFacadeTest  {
         {// now check from parent
             final Appointment firstAppointment = orig.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                     .getAllocatableBindings(allocatables, Arrays.asList(firstAppointment));
-            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
                 final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
@@ -241,9 +242,9 @@ public class ClientFacadeTest  {
             facade.store(edit);
             final Appointment firstAppointment = orig.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                     .getAllocatableBindings(allocatables, Arrays.asList(firstAppointment));
-            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
                 final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable));
@@ -289,8 +290,8 @@ public class ClientFacadeTest  {
             {
                 Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
                 Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
-                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
-                final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+                final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+                final Map<Allocatable, Collection<Appointment>> result = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
                 for (Allocatable allocatable : allocatablesFromAppointment)
                 {
                     final Collection<Appointment> collection = result.get(allocatable);
@@ -307,8 +308,8 @@ public class ClientFacadeTest  {
             {
                 Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(clone.getAllocatables()[0]);
                 Collection<Appointment> forAppointment = Arrays.asList(clone.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
-                final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
-                final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+                final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+                final Map<Allocatable, Collection<Appointment>> result = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
                 for (Allocatable allocatable : allocatablesFromAppointment)
                 {
                     final Collection<Appointment> collection = result.get(allocatable);
@@ -320,8 +321,8 @@ public class ClientFacadeTest  {
         {// check other direction
             Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
             Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
-            final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+            final Map<Allocatable, Collection<Appointment>> result = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatablesFromAppointment)
             {
                 final Collection<Appointment> collection = result.get(allocatable);
@@ -332,8 +333,8 @@ public class ClientFacadeTest  {
             facade.remove(reservation1);
             Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(clone.getAllocatables()[0]);
             Collection<Appointment> forAppointment = Arrays.asList(clone.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
-            final Map<Allocatable, Collection<Appointment>> result = allocatableBindings.get();
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
+            final Map<Allocatable, Collection<Appointment>> result = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatablesFromAppointment)
             {
                 final Collection<Appointment> collection = result.get(allocatable);
@@ -344,9 +345,9 @@ public class ClientFacadeTest  {
     
     @Test
     public void testConflicts() throws Exception {
-        Conflict[] conflicts= facade.getConflicts( );
-        Reservation[] all = facade.getReservationsForAllocatable(null, null, null, null);
-        facade.removeObjects( all );
+        Collection<Conflict> conflicts= facade.getConflicts( );
+        Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(null, null, null, null);
+        facade.removeObjects( PromiseSynchroniser.waitForWithRaplaException(all, 10000).toArray(Reservation.RESERVATION_ARRAY) );
         Reservation orig =  facade.newReservation();
         orig.getClassification().setValue("name","new");
         Date start = DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 0, 0)));
@@ -360,16 +361,16 @@ public class ClientFacadeTest  {
             newEvent = facade.clone(orig, clientFacade.getUser());
             Appointment firstAppointment = newEvent.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
-            final FutureResult<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
+            final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                     .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
-            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = allocatableBindings.get();
+            final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = PromiseSynchroniser.waitForWithRaplaException(allocatableBindings, 10000);
             facade.store(newEvent);
         }
-        Conflict[] conflictsAfter = facade.getConflicts( );
-        Assert.assertEquals(1, conflictsAfter.length - conflicts.length);
-        HashSet<Conflict> set = new HashSet<Conflict>( Arrays.asList( conflictsAfter ));
+        Collection<Conflict> conflictsAfter = facade.getConflicts( );
+        Assert.assertEquals(1, conflictsAfter.size() - conflicts.size());
+        HashSet<Conflict> set = new HashSet<Conflict>( conflictsAfter );
 
-        Assert.assertTrue(set.containsAll(new HashSet<Conflict>(Arrays.asList(conflicts))));
+        Assert.assertTrue(set.containsAll(new HashSet<Conflict>(conflicts)));
     }
 
 
@@ -377,7 +378,8 @@ public class ClientFacadeTest  {
     public void testClone() throws Exception {
         ClassificationFilter filter = facade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","power planting");
-        Reservation orig = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter})[0];
+        final Promise<Collection<Reservation>> reservationsForAllocatablePromise = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter});
+        Reservation orig = PromiseSynchroniser.waitForWithRaplaException(reservationsForAllocatablePromise, 10000).iterator().next();
         Reservation clone = facade.clone( orig, clientFacade.getUser() );
         Appointment a = clone.getAppointments()[0];
         Date newStart = new SerializableDateTimeFormat().parseDateTime("2005-10-10","10:20:00");
@@ -385,10 +387,10 @@ public class ClientFacadeTest  {
         a.move( newStart );
         a.getRepeating().setEnd( newEnd );
         facade.store( clone );
-        Reservation[] allPowerPlantings = facade.getReservationsForAllocatable(null,  null, null, new ClassificationFilter[] { filter});
-        Assert.assertEquals(2, allPowerPlantings.length);
-        Reservation[] onlyClones = facade.getReservationsForAllocatable(null,  newStart, null, new ClassificationFilter[] { filter});
-        Assert.assertEquals(1, onlyClones.length);
+        Collection<Reservation> allPowerPlantings = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(null,  null, null, new ClassificationFilter[] { filter}), 10000);
+        Assert.assertEquals(2, allPowerPlantings.size());
+        Collection<Reservation> onlyClones = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(null,  newStart, null, new ClassificationFilter[] { filter}), 10000);
+        Assert.assertEquals(1, onlyClones.size());
     }
 
 
@@ -425,7 +427,7 @@ public class ClientFacadeTest  {
         // query the event from the store
         ClassificationFilter eventFilter = facade.getDynamicType("event").newClassificationFilter();
         eventFilter.addEqualsRule("name","dummy-event");
-        Reservation persistantEvent = facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { eventFilter })[0];
+        Reservation persistantEvent = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { eventFilter }),10000).iterator().next();
         // Another way to get the persistant event would have been
         //Reservation persistantEvent = facade.getPersistant( nonPeristantEvent );
 
@@ -534,7 +536,7 @@ public class ClientFacadeTest  {
     }
     
     @Test
-    public void testMerge()
+    public void testMerge() throws Exception
     {
         // set up model
         final User user = clientFacade.getUser();
@@ -593,8 +595,8 @@ public class ClientFacadeTest  {
                 final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
                 Allocatable[] allocatablesToLookFor = new Allocatable[]{allocatableWinsMerge};
                 final Date tomorrow = DateTools.addDay(today);
-                final Reservation[] reservations = facade.getReservationsForAllocatable(allocatablesToLookFor, today, tomorrow, null);
-                Assert.assertEquals(1, reservations.length);
+                final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatablesToLookFor, today, tomorrow, null), 10000);
+                Assert.assertEquals(1, reservations.size());
             }
         }
         final ReferenceInfo<Allocatable> groupAllocatableReference;
@@ -709,7 +711,7 @@ public class ClientFacadeTest  {
             final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
             Reservation myTestReservation = null;
             Allocatable[] allocatablesToLookFor = new Allocatable[]{allocatableWinsMerge};
-            final Reservation[] reservations = facade.getReservationsForAllocatable(allocatablesToLookFor, today, DateTools.addDay(today), null);
+            final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatablesToLookFor, today, DateTools.addDay(today), null), 10000);
             for (Reservation reservation : reservations)
             {
                 if(reservation.getReference().equals(reservationReference))
@@ -799,7 +801,7 @@ public class ClientFacadeTest  {
     }
     
     @Test
-    public void testGroupConflicts()
+    public void testGroupConflicts() throws RaplaException
     {
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
         User user = clientFacade.getUser();
@@ -817,12 +819,12 @@ public class ClientFacadeTest  {
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Conflict[] conflicts = facade.getConflicts(newReservation);
-        Assert.assertEquals(1, conflicts.length);
+        final Collection<Conflict> conflicts = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        Assert.assertEquals(1, conflicts.size());
     }
     
     @Test
-    public void testBelongsToConflicts()
+    public void testBelongsToConflicts() throws Exception
     {
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
         User user = clientFacade.getUser();
@@ -840,8 +842,8 @@ public class ClientFacadeTest  {
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Conflict[] conflicts = facade.getConflicts(newReservation);
-        Assert.assertEquals(1, conflicts.length);
+        final Collection<Conflict> conflicts = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        Assert.assertEquals(1, conflicts.size());
     }
 
 }
