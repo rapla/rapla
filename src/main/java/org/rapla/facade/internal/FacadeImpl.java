@@ -574,7 +574,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return allocatables;
 	}
 	
-	public Promise<Collection<Reservation>> getTemplateReservations(Allocatable template) throws RaplaException
+	public Promise<Collection<Reservation>> getTemplateReservations(Allocatable template)
 	{
 		User user = null;
 		Collection<Allocatable> allocList = new ArrayList<Allocatable>();

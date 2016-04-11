@@ -158,9 +158,9 @@ public interface RaplaFacade
 
     Collection<Allocatable> getTemplates() throws RaplaException;
 
-    Promise<Collection<Reservation>> getTemplateReservations(Allocatable name) throws RaplaException;
+    Promise<Collection<Reservation>> getTemplateReservations(Allocatable name);
 
-    Promise<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) throws RaplaException;
+    Promise<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options);
 
     boolean canAllocate(CalendarModel model,User user);
 
