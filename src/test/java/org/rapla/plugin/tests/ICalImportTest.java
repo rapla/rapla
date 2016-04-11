@@ -1,5 +1,14 @@
 package org.rapla.plugin.tests;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,18 +24,11 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
 
 @RunWith(JUnit4.class)
 public class ICalImportTest {
@@ -37,7 +39,7 @@ public class ICalImportTest {
     User user;
 
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
         logger = RaplaTestCase.initLoger();
         ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
@@ -98,14 +100,14 @@ public class ICalImportTest {
         User user = facade.getUser("homer");
         String eventTypeKey = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].getKey();
         importer.importCalendar(content, isUrl, allocatables, user, eventTypeKey, "name");
-        Reservation[] reservations;
+        Collection<Reservation> reservations;
         {
             Date start = null;
             Date end = null;
-            reservations = facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null);
+            reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null), 10000);
         }
-        Assert.assertEquals(1, reservations.length);
-        Reservation event = reservations[0];
+        Assert.assertEquals(1, reservations.size());
+        Reservation event = reservations.iterator().next();
         Appointment[] appointments = event.getAppointments();
         Assert.assertEquals(1, appointments.length);
         Appointment appointment = appointments[0];

@@ -1,6 +1,16 @@
 package org.rapla.server.internal;
 
-import junit.framework.TestCase;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.inject.Provider;
+
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -27,17 +37,10 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.test.util.RaplaTestCase;
 
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import junit.framework.TestCase;
 
 @RunWith(JUnit4.class)
 public class TestRemoteStorageImpl
@@ -224,7 +227,7 @@ public class TestRemoteStorageImpl
 
     
     @Test
-    public void testGroupConflicts()
+    public void testGroupConflicts() throws Exception
     {
         final RaplaFacade facade = clientFacade.getRaplaFacade();
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
@@ -243,12 +246,12 @@ public class TestRemoteStorageImpl
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Conflict[] conflicts = facade.getConflicts(newReservation);
-        Assert.assertEquals(1, conflicts.length);
+        final Collection<Conflict> conflicts = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        Assert.assertEquals(1, conflicts.size());
     }
     
     @Test
-    public void testBelongsToConflicts()
+    public void testBelongsToConflicts() throws Exception
     {
         final RaplaFacade facade = clientFacade.getRaplaFacade();
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
@@ -267,8 +270,8 @@ public class TestRemoteStorageImpl
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Conflict[] conflicts = facade.getConflicts(newReservation);
-        Assert.assertEquals(1, conflicts.length);
+        final Collection<Conflict> conflicts = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        Assert.assertEquals(1, conflicts.size());
     }
 
 }

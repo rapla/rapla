@@ -12,9 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.test.util;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Provider;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
-import org.rapla.components.util.CommandScheduler;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
@@ -22,13 +30,15 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.jsonrpc.client.EntryPointFactory;
-import org.rapla.jsonrpc.client.swing.BasicRaplaHTTPConnector;
+import org.rapla.rest.client.EntryPointFactory;
+import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.ServerContainerContext;
@@ -46,14 +56,6 @@ import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.xml.sax.InputSource;
-
-import javax.inject.Provider;
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 
 public abstract class RaplaTestCase
 {
@@ -83,25 +85,25 @@ public abstract class RaplaTestCase
         return "src/test/resources/" + xmlFile;
     }
 
-    public static ClientFacade createSimpleSimpsonsWithHomer()
+    public static ClientFacade createSimpleSimpsonsWithHomer() throws RaplaException
     {
         ClientFacade facade = (ClientFacade)RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
         facade.login("homer","duffs".toCharArray());
         return facade;
     }
 
-    public static RaplaFacade createFacadeWithFile(Logger logger, String xmlFile)
+    public static RaplaFacade createFacadeWithFile(Logger logger, String xmlFile) throws RaplaException
     {
         String resolvedPath = getTestDataFile(xmlFile);
         return _createFacadeWithFile(logger, resolvedPath, new VoidFileIO());
     }
 
-    public static RaplaFacade createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
+    public static RaplaFacade createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO) throws RaplaException
     {
         return _createFacadeWithFile(logger, resolvedPath, fileIO);
     }
 
-    private static FacadeImpl _createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO)
+    private static FacadeImpl _createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO) throws RaplaException
     {
 
         DefaultBundleManager bundleManager = new DefaultBundleManager();
@@ -126,7 +128,7 @@ public abstract class RaplaTestCase
         return facade;
     }
 
-    static public  void dispose(RaplaFacade facade)
+    static public  void dispose(RaplaFacade facade) throws RaplaException
     {
         if ( facade == null)
         {
@@ -170,7 +172,7 @@ public abstract class RaplaTestCase
         }
     }
 
-    public static RaplaFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile)
+    public static RaplaFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile) throws RaplaException
     {
         DefaultBundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
@@ -204,7 +206,7 @@ public abstract class RaplaTestCase
         return facade;
     }
 
-    public static Provider<ClientFacade> createFacadeWithRemote(final Logger logger, int port)
+    public static Provider<ClientFacade> createFacadeWithRemote(final Logger logger, int port) throws RaplaException
     {
         final String serverURL = "http://localhost:" + port + "/";
 

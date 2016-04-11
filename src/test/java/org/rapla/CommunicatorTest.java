@@ -1,5 +1,6 @@
 package org.rapla;
 
+import java.util.Collection;
 import java.util.Date;
 
 import javax.inject.Provider;
@@ -21,6 +22,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -102,10 +104,10 @@ public class CommunicatorTest
 
            facade.store( newEvent );
 
-           Reservation[] events = facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null);
-           Assert.assertTrue(events.length > 0);
+           Collection<Reservation> events = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null), 10000);
+           Assert.assertTrue(events.size() > 0);
            
-           Reservation r = events[0];
+           Reservation r = events.iterator().next();
            Reservation editable = facade.edit( r);
            facade.store( editable );
 

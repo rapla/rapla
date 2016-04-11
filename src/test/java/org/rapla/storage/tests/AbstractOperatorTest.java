@@ -28,6 +28,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.CachableStorageOperator;
 
 import java.util.Date;
@@ -70,7 +71,7 @@ public abstract class AbstractOperatorTest  {
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","test"}});
-	        Reservation reservation = facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} )[0];
+	        Reservation reservation = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
 	        Assert.assertEquals(2, apps.length);
@@ -169,7 +170,7 @@ public abstract class AbstractOperatorTest  {
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","test"}});
-	        Reservation reservation = facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} )[0];
+	        Reservation reservation = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
 			Assert.assertEquals("test-att-value", reservation.getClassification().getValue("test-att"));

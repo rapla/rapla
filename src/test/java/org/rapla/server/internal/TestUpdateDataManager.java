@@ -1,5 +1,13 @@
 package org.rapla.server.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,19 +26,14 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class TestUpdateDataManager
@@ -41,7 +44,7 @@ public class TestUpdateDataManager
     CachableStorageOperator operator;
 
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
         logger = RaplaTestCase.initLoger();
         JDBCDataSource datasource = new org.hsqldb.jdbc.JDBCDataSource();
@@ -61,7 +64,7 @@ public class TestUpdateDataManager
     }
 
     @Test
-    public void testNothingChangeFastUpdate()
+    public void testNothingChangeFastUpdate() throws Exception
     {
         final User user = facade.getUser("homer");
         Date lastSynced = new Date();
@@ -74,18 +77,18 @@ public class TestUpdateDataManager
     }
 
     @Test
-    public void testInsertChangeAndDeleteSimple()
+    public void testInsertChangeAndDeleteSimple() throws Exception
     {
         testInsertChangeAndDelete(1, 1);
     }
 
     @Test
-    public void testInsertChangeAndDelete()
+    public void testInsertChangeAndDelete() throws Exception
     {
         testInsertChangeAndDelete(500, 150);
     }
 
-    private void testInsertChangeAndDelete(final int countInsert, final int countDelete)
+    private void testInsertChangeAndDelete(final int countInsert, final int countDelete) throws RaplaException
     {
         // create second user first
         final User readUser = facade.getUser("monty");
@@ -196,11 +199,13 @@ public class TestUpdateDataManager
             }
             if ( createAndRemoveEvents)
             {
-                final Reservation[] reservations = facade.getReservationsForAllocatable(allocatables, null, null, null);
-                for (int i = 0; i < maxChangesPerType; i++)
+                final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables, null, null, null), 10000);
+                int i = 0;
+                for (Iterator<Reservation> it = reservations.iterator(); it.hasNext(); )
                 {
-                    final Reservation reservation = facade.edit(reservations[i]);
+                    final Reservation reservation = facade.edit(it.next());
                     reservation.getClassification().setValue("name", "changedReservation" + i);
+                    i++;
                     changedEntities.add(reservation);
                 }
                 updatedReservations = changedEntities.size() - updatedAllocatables;
@@ -247,7 +252,7 @@ public class TestUpdateDataManager
                     removedIds.add(allocatables[i].getReference());
                 }
             }
-            final Reservation[] reservations = facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null);
+            final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null), 10000);
             if ( createAndRemoveEvents)
             {
                 for ( Reservation event:reservations)
@@ -274,7 +279,7 @@ public class TestUpdateDataManager
      * removed, so not affected by the client.
      */
     @Test
-    public void testInsertDeleteInOne()
+    public void testInsertDeleteInOne() throws Exception
     {
         // create second user first
         Date lastSynced = new Date();

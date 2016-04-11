@@ -12,6 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.tests;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +56,7 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
@@ -55,14 +64,6 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class LocalCacheTest  {
@@ -160,26 +161,26 @@ public class LocalCacheTest  {
 		            Map<String, String> annotationQuery = null;
 		            {
 		                final Period period = periods[2];
-		                Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(null, null, period.getStart(), period.getEnd(), filters,
-                                annotationQuery).get();
+		                Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(storage.queryAppointments(null, null, period.getStart(), period.getEnd(), filters,
+                                annotationQuery), 10000);
                         Assert.assertEquals(0, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		            {
 		                final Period period = periods[1];
-	                    Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(null, null, period.getStart(), period.getEnd(), filters,
-                                annotationQuery).get();
+	                    Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(storage.queryAppointments(null, null, period.getStart(), period.getEnd(), filters,
+                                annotationQuery), 10000);
                         Assert.assertEquals(2, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		            {
     		            User user = cache.getUser("homer");
-    		            Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(user, null, null, null, filters, annotationQuery).get();
+    		            Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(storage.queryAppointments(user, null, null, null, filters, annotationQuery), 10000);
                         Assert.assertEquals(3, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		            {
 		                User user = cache.getUser("homer");
 		                final Period period = periods[1];
-                        Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(user, null, period.getStart(), period.getEnd(), filters,
-                                annotationQuery).get();
+                        Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(storage.queryAppointments(user, null, period.getStart(), period.getEnd(), filters,
+                                annotationQuery), 10000);
                         Assert.assertEquals(2, CalendarModelImpl.getAllAppointments(reservations).size());
 		            }
 		        }
@@ -232,7 +233,7 @@ public class LocalCacheTest  {
 		Collection<Allocatable> allocatables = null;
 		Map<String, String> annotationQuery = null;
 		ClassificationFilter[] filters = null;
-		Map<Allocatable, Collection<Appointment>> reservations = storage.queryAppointments(user, allocatables, startDate, endDate, filters, annotationQuery).get();
+		Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(storage.queryAppointments(user, allocatables, startDate, endDate, filters, annotationQuery), 10000);
         Assert.assertEquals(1, CalendarModelImpl.getAllAppointments(reservations).size());
     }
 }

@@ -1,5 +1,11 @@
 package org.rapla.framework;
 
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,11 +15,6 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.ConsoleLogger;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.xml.RaplaXMLContextException;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.Map;
-import java.util.Set;
 
 @RunWith(JUnit4.class)
 public class TestContainerImpl
@@ -37,7 +38,7 @@ public class TestContainerImpl
         container = new ContainerImpl(logger);
     }
 
-    @Test public void testProviderProvider() throws RaplaXMLContextException
+    @Test public void testProviderProvider() throws Exception
     {
         final MyClass<Integer> mzClass = container.inject(MyClass.class);
         final Provider<MyOtherClass<Integer>> myOtherClassProvider = mzClass.get();
@@ -50,7 +51,7 @@ public class TestContainerImpl
         void doSomething(T obj);
     }
 
-    @Test public void testSetProvider() throws RaplaXMLContextException
+    @Test public void testSetProvider() throws Exception
     {
         container.addContainerProvidedComponent(MyExtensionPoint.class, MyOtherClass.class);
         container.addContainerProvidedComponent(MyExtensionPoint.class, MyOtherClass2.class);
@@ -58,7 +59,7 @@ public class TestContainerImpl
         myClass.doAll();
     }
 
-    @Test public void testMapProvider() throws RaplaXMLContextException
+    @Test public void testMapProvider() throws Exception
     {
         container.addContainerProvidedComponent(MyExtensionPoint.class, MyOtherClass.class);
         container.addContainerProvidedComponent(MyExtensionPoint.class, MyOtherClass2.class);
