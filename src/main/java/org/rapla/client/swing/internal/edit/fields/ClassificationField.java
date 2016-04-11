@@ -237,7 +237,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		content.add(scrollPane, BorderLayout.CENTER);
 	}
 
-    private boolean canNotWriteOneAttribute(final List<T> list)
+    private boolean canNotWriteOneAttribute(final List<T> list) throws RaplaException
     {
         final ClientFacade clientFacade = getClientFacade();
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();

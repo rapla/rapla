@@ -77,7 +77,7 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
 		return treeModel;
     }
 
-	protected Allocatable[] getAllocatables()
+	protected Allocatable[] getAllocatables() throws RaplaException
 	{
 		Allocatable[] allocatables;
 		if (dynamicTypeConstraint !=null)

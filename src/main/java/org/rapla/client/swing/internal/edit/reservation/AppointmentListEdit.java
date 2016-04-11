@@ -623,7 +623,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             this.ioInterface = ioInterface;
         }
 
-        public AppointmentListEdit create(CommandHistory commandHistory)
+        public AppointmentListEdit create(CommandHistory commandHistory) throws RaplaException
         {
             return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, reservationController, commandHistory, raplaImages,
                     dateRenderer, dialogUiFactory, ioInterface);

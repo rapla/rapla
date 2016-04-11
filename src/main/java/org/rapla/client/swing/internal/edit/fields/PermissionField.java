@@ -429,7 +429,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
             this.longFieldFactory = longFieldFactory;
         }
 
-        public PermissionField create()
+        public PermissionField create() throws RaplaException
         {
             return new PermissionField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, dateFieldFactory, longFieldFactory);
         }

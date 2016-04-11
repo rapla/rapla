@@ -540,7 +540,7 @@ import org.rapla.storage.PermissionController;
     }
 
     // This will exclude DynamicTypes and non editable Objects from the list
-    private List<Entity<?>> getEditableObjects(Collection<Entity<?>> list)
+    private List<Entity<?>> getEditableObjects(Collection<Entity<?>> list) throws RaplaException
     {
         Iterator<Entity<?>> it = list.iterator();
         ArrayList<Entity<?>> editableObjects = new ArrayList<Entity<?>>();
@@ -554,7 +554,7 @@ import org.rapla.storage.PermissionController;
         return editableObjects;
     }
 
-    private List<Entity<?>> getDeletableObjects(Collection<Entity<?>> list)
+    private List<Entity<?>> getDeletableObjects(Collection<Entity<?>> list) throws RaplaException
     {
         Iterator<Entity<?>> it = list.iterator();
         Category superCategory = getQuery().getSuperCategory();
