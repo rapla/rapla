@@ -42,7 +42,7 @@ public class  CommandHistory {
 		 return  execute;
 	}
 
-	public Promise<Void> undo() throws Exception {
+	public Promise<Void> undo()  {
 		if (!history.isEmpty() && (current >= 0)) {
 			final Promise<Void> undo = history.get(current).undo();
 			undo.thenRun(()->
@@ -55,7 +55,7 @@ public class  CommandHistory {
 		return ResolvedPromise.VOID_PROMISE;
 	}
 
-	public Promise<Void> redo() throws Exception {
+	public Promise<Void> redo()  {
 		if (!history.isEmpty() && (current < history.size() - 1)) {
 			final Promise<Void> execute = history.get(current + 1).execute();
 			execute.thenRun(() -> {	current++;
