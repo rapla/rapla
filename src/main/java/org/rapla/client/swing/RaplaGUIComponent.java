@@ -125,7 +125,7 @@ public class RaplaGUIComponent extends RaplaComponent
 		return false;
 	}
 
-	protected Date getStartDate(CalendarModel model)
+	protected Date getStartDate(CalendarModel model) throws RaplaException
 	{
 		final RaplaFacade raplaFacade = getFacade();
 		return getStartDate(model, raplaFacade, getUser());

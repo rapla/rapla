@@ -180,7 +180,14 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         {
             return;
         }
-        showPopupMenu(b, p);
+        try
+        {
+            showPopupMenu(b, p);
+        }
+        catch(RaplaException e)
+        {
+            dialogUiFactory.showException(e, null);
+        }
     }
 
     public void blockEdit(Block block, Point p)
@@ -288,7 +295,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         return Collections.emptyList();
     }
 
-    protected void showPopupMenu(SwingRaplaBlock b, Point p)
+    protected void showPopupMenu(SwingRaplaBlock b, Point p) throws RaplaException
     {
         Component component = b.getView();
         AppointmentBlock appointmentBlock = b.getAppointmentBlock();
