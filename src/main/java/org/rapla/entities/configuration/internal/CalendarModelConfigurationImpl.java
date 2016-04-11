@@ -139,14 +139,18 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 		for ( String id: selected)
 		{
             String type = typeList.get(i);
-            final Class<? extends Entity> aClass = RaplaType.find(type);
-            if ( aClass != null)
+            final Class<? extends Entity> aClass;
+            try
             {
-                Entity entity = resolver.tryResolve(id, aClass);
-                if (entity != null)
-                {
-                    result.add(entity);
-                }
+                aClass = RaplaType.find(type);
+            } catch (RaplaException ex)
+            {
+                continue;
+            }
+            Entity entity = resolver.tryResolve(id, aClass);
+            if (entity != null)
+            {
+                result.add(entity);
             }
             i++;
 		}
