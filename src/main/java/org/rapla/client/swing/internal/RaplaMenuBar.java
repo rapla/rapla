@@ -83,6 +83,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.dbrm.RestartServer;
 
 @Singleton
@@ -387,22 +388,24 @@ public class RaplaMenuBar extends RaplaGUIComponent
             else
             {
                 CommandHistory commandHistory = getCommandHistory();
-                try
+                final Promise<Void> promise;
+                if (source == redo)
                 {
-                    if (source == redo)
-                    {
-                        commandHistory.redo();
-                    }
-                    if (source == undo)
-                    {
-                        commandHistory.undo();
-                    }
-
+                    promise = commandHistory.redo();
                 }
-                catch (Exception ex)
+                else if (source == undo)
+                {
+                    promise = commandHistory.undo();
+                }
+                else {
+                    promise = null;
+                }
+                promise.exceptionally( (ex) ->
                 {
                     dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    return null;
                 }
+                );
             }
         }
 
