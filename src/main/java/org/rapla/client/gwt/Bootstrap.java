@@ -11,9 +11,7 @@ import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.client.AsyncCallback;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -29,7 +27,7 @@ public class Bootstrap
     private final Logger logger;
 
     @Inject
-    public Bootstrap(RaplaFacade facade,StorageOperator operator,Provider<Application> application, Logger logger)
+    public Bootstrap(RaplaFacade facade, StorageOperator operator, Provider<Application> application, Logger logger)
     {
         this.application = application;
         this.operator = operator;
@@ -40,42 +38,36 @@ public class Bootstrap
     public void load()
     {
         final FacadeImpl facadeImpl = (FacadeImpl) facade;
-        ((FacadeImpl) facade).setOperator( operator);
+        ((FacadeImpl) facade).setOperator(operator);
         Promise<Void> load = facadeImpl.load();
         logger.info("Loading resources");
         RaplaPopups.getProgressBar().setPercent(40);
-        load.then(new AsyncCallback<VoidResult>()
+        load.thenRun(() ->
         {
-
-            @Override
-            public void onSuccess(VoidResult result)
+            try
             {
-                try
-                {
-                    RaplaPopups.getProgressBar().setPercent(70);
-                    Collection<Allocatable> allocatables = Arrays.asList(facadeImpl.getAllocatables());
-                    logger.info("loaded " + allocatables.size() + " resources. Starting application");
-                    application.get().start();
-                }
-                catch (RaplaException e)
-                {
-                    onFailure(e);
-                }
-                catch (Exception e)
-                {
-                    onFailure(e);
-                }
+                RaplaPopups.getProgressBar().setPercent(70);
+                Collection<Allocatable> allocatables = Arrays.asList(facadeImpl.getAllocatables());
+                logger.info("loaded " + allocatables.size() + " resources. Starting application");
+                application.get().start();
             }
-
-            @Override
-            public void onFailure(Throwable e)
+            catch (Exception e)
             {
                 logger.error(e.getMessage(), e);
                 if (e instanceof RaplaSecurityException)
                 {
                     Window.Location.replace("../rest/auth");
                 }
+
             }
+        }).exceptionally((e) ->
+        {
+            logger.error(e.getMessage(), e);
+            if (e instanceof RaplaSecurityException)
+            {
+                Window.Location.replace("../rest/auth");
+            }
+            return null;
         });
 
     }
