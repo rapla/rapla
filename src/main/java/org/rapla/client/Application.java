@@ -56,7 +56,7 @@ public class Application implements ApplicationView.Presenter
                 @Override
                 public void dataChanged(ModificationEvent evt) throws RaplaException
                 {
-                    abstractActivityController.updateView(e);
+                    abstractActivityController.updateView(evt);
                     // TODO inform activities?
                 }
             });
