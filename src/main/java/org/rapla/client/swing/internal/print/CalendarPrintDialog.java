@@ -442,11 +442,8 @@ public class CalendarPrintDialog extends DialogUI
 
     public void showException(Exception ex) {
         ErrorDialog dialog;
-        try {
-            dialog = errorDialogProvider.get();
-            dialog.showExceptionDialog(ex,this);
-        } catch (RaplaException e) {
-        }
+        dialog = errorDialogProvider.get();
+        dialog.showExceptionDialog(ex,this);
     }
 }
 
