@@ -43,7 +43,7 @@ public class RaplaFrame extends JFrame
      * @throws RaplaException
     */
     @Inject
-    public RaplaFrame(FrameControllerList frameList) throws RaplaException {
+    public RaplaFrame(FrameControllerList frameList) {
         enableEvents(AWTEvent.WINDOW_EVENT_MASK);
         /*
         AWTAdapterFactory fact =
