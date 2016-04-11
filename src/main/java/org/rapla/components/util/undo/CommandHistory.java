@@ -42,9 +42,9 @@ public class  CommandHistory {
 		 return  execute;
 	}
 
-	public Promise undo() throws Exception {
+	public Promise<Void> undo() throws Exception {
 		if (!history.isEmpty() && (current >= 0)) {
-			final Promise<? extends Object> undo = history.get(current).undo();
+			final Promise<Void> undo = history.get(current).undo();
 			undo.thenRun(()->
 				{
 					current--;
@@ -52,17 +52,17 @@ public class  CommandHistory {
 			).whenComplete((t,ex)-> {fireChangeEvent();});
 			return undo;
 		}
-		return new ResolvedPromise(null);
+		return ResolvedPromise.VOID_PROMISE;
 	}
 
-	public Promise redo() throws Exception {
+	public Promise<Void> redo() throws Exception {
 		if (!history.isEmpty() && (current < history.size() - 1)) {
-			final Promise<? extends Object> execute = history.get(current + 1).execute();
+			final Promise<Void> execute = history.get(current + 1).execute();
 			execute.thenRun(() -> {	current++;
 			}).whenComplete((t,ex) ->  {fireChangeEvent();});
 			return execute;
 		};
-		return new ResolvedPromise(null);
+		return ResolvedPromise.VOID_PROMISE;
 	}
 	
 	public void clear() {
