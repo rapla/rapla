@@ -334,6 +334,9 @@ public class StandardFunctions implements FunctionFactory
             {
                 return Collections.singletonList((AppointmentBlock) object);
             }
+            /* TODO implement build in methods in tables for resources and appointments
+            blocks = blocks(appointments)
+            events = events(appointments)
             if (object instanceof CalendarModel)
             {
                 final CalendarModel calendarModel = (CalendarModel) object;
@@ -348,7 +351,7 @@ public class StandardFunctions implements FunctionFactory
                 }
                 return blocks;
             }
-
+            */
             return Collections.emptyList();
         }
 
@@ -436,6 +439,9 @@ public class StandardFunctions implements FunctionFactory
             {
                 return Collections.singletonList((Appointment) object);
             }
+            /* TODO implement build in methods in tables for resources and appointments
+            blocks = blocks(appointments)
+            events = events(appointments)
             if (object instanceof CalendarModel)
             {
                 final CalendarModel calendarModel = (CalendarModel) object;
@@ -453,6 +459,7 @@ public class StandardFunctions implements FunctionFactory
                 Collections.sort(result, new AppointmentStartComparator());
                 return result;
             }
+            */
 
             return Collections.emptyList();
         }
@@ -1258,6 +1265,9 @@ public class StandardFunctions implements FunctionFactory
             {
                 return Collections.singletonList((Reservation) object);
             }
+            /* TODO implement build in methods in tables for resources and appointments
+            blocks = blocks(appointments)
+            events = events(appointments)
             if (object instanceof CalendarModel)
             {
                 final CalendarModel calendarModel = (CalendarModel) object;
@@ -1272,6 +1282,7 @@ public class StandardFunctions implements FunctionFactory
                 }
                 return reservations;
             }
+            */
             return Collections.emptyList();
         }
     }
