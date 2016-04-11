@@ -89,6 +89,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 /** GUI for editing a single Appointment. */
 public class AppointmentController extends RaplaGUIComponent
@@ -522,7 +523,7 @@ public class AppointmentController extends RaplaGUIComponent
 				this.newoneDay = newoneDay;
 			}
 
-			public boolean execute()  {
+			public Promise<Void> execute()  {
 				listenerEnabled = false;
 				if (newStart != null && oldStart != null) {
 					startTime.setTime(newStart);
@@ -547,10 +548,10 @@ public class AppointmentController extends RaplaGUIComponent
 				getLogger().debug("SingleEditor adjusted");
 				mapFromAppointment();
 				listenerEnabled = true;
-				return true;
+				return ResolvedPromise.VOID_PROMISE;
 			}
 
-			public boolean undo()  {
+			public Promise<Void> undo()  {
 				listenerEnabled = false;
 				if (oldStart != null && newStart != null) {
 					startTime.setTime(oldStart);
@@ -574,7 +575,7 @@ public class AppointmentController extends RaplaGUIComponent
 				getLogger().debug("SingleEditor undo");
 				mapFromAppointment();
 				listenerEnabled = true;
-				return true;
+				return ResolvedPromise.VOID_PROMISE;
 			}
 
 			public String getCommandoName()
@@ -1311,7 +1312,7 @@ public class AppointmentController extends RaplaGUIComponent
 			}
 
 			@SuppressWarnings("unchecked")
-			public boolean execute()  {
+			public Promise<Void> execute()  {
 				Repeating repeating = appointment.getRepeating();
 				if (pressedButton == addButton) {
 					repeating.addException(exception);
@@ -1325,11 +1326,11 @@ public class AppointmentController extends RaplaGUIComponent
 					specialExceptions.setListData(repeating.getExceptions());
 					fireAppointmentChanged();
 				}
-				return true;
+				return ResolvedPromise.VOID_PROMISE;
 			}
 
 			@SuppressWarnings("unchecked")
-			public boolean undo() {
+			public Promise<Void> undo() {
 				Repeating repeating = appointment.getRepeating();
 				if (pressedButton == addButton) {
 					repeating.removeException(exception);
@@ -1344,7 +1345,7 @@ public class AppointmentController extends RaplaGUIComponent
 					specialExceptions.setListData(repeating.getExceptions());
 					fireAppointmentChanged();
 				}
-				return true;
+				return ResolvedPromise.VOID_PROMISE;
 			}
 
 			public String getCommandoName() {
@@ -1420,10 +1421,12 @@ public class AppointmentController extends RaplaGUIComponent
 		
 		public Promise<Void> execute()  {
 			setRepeatingType(newRepeatingType);
+			return ResolvedPromise.VOID_PROMISE;
 		}
 
 		public Promise<Void> undo()  {
 			setRepeatingType(oldRepeatingType);
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
 		private void setRepeatingType(RepeatingType repeatingType)  {
@@ -1506,7 +1509,7 @@ public class AppointmentController extends RaplaGUIComponent
 			this.newState = newState;
 		}
 		
-		public boolean execute() {
+		public Promise<Void> execute() {
 			((AppointmentImpl) appointment).copy(newState);
 			if ( appointment.isRepeatingEnabled())
 			{
@@ -1518,10 +1521,10 @@ public class AppointmentController extends RaplaGUIComponent
 				singleEditor.mapFromAppointment();
 			}
 			fireAppointmentChanged();
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 
-		public boolean undo()  {
+		public Promise<Void> undo()  {
 			((AppointmentImpl) appointment).copy(oldState);
 			if ( appointment.isRepeatingEnabled())
 			{
@@ -1532,7 +1535,7 @@ public class AppointmentController extends RaplaGUIComponent
 				singleEditor.mapFromAppointment();
 			}
 			fireAppointmentChanged();
-			return true;
+			return ResolvedPromise.VOID_PROMISE;
 		}
 		
 		public String getCommandoName() {
