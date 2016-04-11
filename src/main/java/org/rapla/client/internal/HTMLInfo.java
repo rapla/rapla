@@ -221,7 +221,7 @@ public abstract class HTMLInfo<T> extends RaplaComponent
         return buf.toString();
     }
 
-    public String getTooltip(T object, User user)
+    public String getTooltip(T object, User user) throws RaplaException
     {
         if (object instanceof Named)
             return ((Named) object).getName(getI18n().getLocale());
