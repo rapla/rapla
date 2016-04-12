@@ -24,6 +24,7 @@ import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenubar;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 
 @Singleton
 public class RaplaMenuBarContainer
@@ -41,7 +42,7 @@ public class RaplaMenuBarContainer
     private final RaplaMenu importMenu;
     private final RaplaMenu exportMenu;
     @Inject public RaplaMenuBarContainer(RaplaResources i18n)
-            throws RaplaException
+            throws RaplaInitializationException
     {
         menubar = new RaplaMenubar();
         systemMenu =  new RaplaMenu( InternMenus.FILE_MENU_ROLE.getId() );

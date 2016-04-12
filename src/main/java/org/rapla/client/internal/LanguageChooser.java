@@ -26,6 +26,7 @@ import javax.swing.JList;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -36,7 +37,7 @@ final public class LanguageChooser implements RaplaWidget
     Logger logger;
 
     @Inject
-    public LanguageChooser(Logger logger, final RaplaResources i18n, final RaplaLocale raplaLocale) throws RaplaException {
+    public LanguageChooser(Logger logger, final RaplaResources i18n, final RaplaLocale raplaLocale)  {
         this.logger = logger;
         country = raplaLocale.getLocale().getCountry();
         String[] languages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
