@@ -42,6 +42,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -49,7 +50,7 @@ import org.rapla.framework.logger.Logger;
 public class RaplaRightsReport extends RaplaGUIComponent implements
 		ItemListener, TreeSelectionListener,
 		DocumentListener {
-	final Category rootCategory = getQuery().getUserGroupsCategory();
+	final Category rootCategory;
 
 	// definition of different panels
 	JPanel mainPanel;
@@ -75,9 +76,18 @@ public class RaplaRightsReport extends RaplaGUIComponent implements
     private final DialogUiFactoryInterface dialogUiFactory;
 
 	@Inject
-	public RaplaRightsReport(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+	public RaplaRightsReport(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) throws
+			RaplaInitializationException {
 		super(facade, i18n, raplaLocale, logger);
-        this.treeFactory = treeFactory;
+		try
+		{
+			rootCategory = facade.getRaplaFacade().getUserGroupsCategory();
+		}
+		catch (RaplaException e)
+		{
+			throw new RaplaInitializationException(e);
+		}
+		this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
 
 		// creation of different panels

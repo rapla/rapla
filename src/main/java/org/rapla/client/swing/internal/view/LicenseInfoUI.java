@@ -33,6 +33,7 @@ import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -50,7 +51,7 @@ final public class LicenseInfoUI
     private final Provider<LicenseUI> licenseUiProvider;
 
     @Inject
-    public LicenseInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaException  {
+    public LicenseInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaInitializationException{
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
         this.licenseUiProvider = licenseUiProvider;
