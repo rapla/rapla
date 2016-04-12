@@ -14,9 +14,9 @@ import javax.inject.Inject;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.event.AbstractActivityController.Place;
-import org.rapla.client.event.PlaceChangedEvent;
-import org.rapla.client.event.PlacePresenter;
+import org.rapla.client.event.Action;
+import org.rapla.client.event.ActionPresenter;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -33,8 +33,8 @@ import org.rapla.inject.Extension;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(provides = PlacePresenter.class, id = CalendarPlacePresenter.PLACE_ID)
-public class CalendarPlacePresenter implements Presenter, PlacePresenter
+@Extension(provides = ActionPresenter.class, id = CalendarPlacePresenter.PLACE_ID)
+public class CalendarPlacePresenter implements Presenter, ActionPresenter
 {
     public static final String PLACE_ID = "cal";
     private static final String TODAY_DATE = "today";
@@ -177,8 +177,7 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
     {
         String id = PLACE_ID;
         String info = calcCalId() + "/" + calcDate() + "/" + calcViewId();
-        Place place = new Place(id, info);
-        PlaceChangedEvent event = new PlaceChangedEvent(place);
+        Action event = new Action(id, info, null);
         eventBus.fireEvent(event);
     }
 
@@ -242,20 +241,20 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
 
     }
 
+//    @Override
+//    public void resetPlace()
+//    {
+//        if ( viewPluginPresenter != null)
+//        {
+//            final Collection<CalendarPlugin> values = viewPluginPresenter.values();
+//            selectedView = values.iterator().next();
+//        }
+//    }
+//
     @Override
-    public void resetPlace()
+    public <T> RaplaWidget<T> startActivity(Action activity)
     {
-        if ( viewPluginPresenter != null)
-        {
-            final Collection<CalendarPlugin> values = viewPluginPresenter.values();
-            selectedView = values.iterator().next();
-        }
-    }
-
-    @Override
-    public void initForPlace(Place place)
-    {
-        String id = place.getInfo();
+        String id = activity.getInfo() != null ? activity.getId() + "/" + activity.getInfo() : activity.getId();
         String[] split = id.split("/");
         changeCalendar(split[0], false);
         if (split.length > 1)
@@ -285,6 +284,8 @@ public class CalendarPlacePresenter implements Presenter, PlacePresenter
                 selectView(viewId);
             }
         }
+        // FIXME 
+        return (RaplaWidget<T>) view.provideContent();
     }
 
     private void selectView(String viewId)

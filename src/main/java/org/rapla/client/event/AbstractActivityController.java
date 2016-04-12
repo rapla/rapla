@@ -2,22 +2,19 @@ package org.rapla.client.event;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.rapla.client.Application;
-import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public abstract class AbstractActivityController implements PlaceChangedEventHandler, Activity.ActivityEventHandler
+public abstract class AbstractActivityController implements Action.ActionEventHandler
 {
     protected Place place;
-    protected final Set<Activity> activities = new LinkedHashSet<Activity>();
+    protected final Set<Action> activities = new LinkedHashSet<Action>();
     protected final Logger logger;
     private RaplaWidget activePlace;
 
@@ -33,15 +30,14 @@ public abstract class AbstractActivityController implements PlaceChangedEventHan
 
     protected Application application;
 
-    public AbstractActivityController(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger)
+    public AbstractActivityController(EventBus eventBus, Logger logger)
     {
         this.logger = logger;
-        eventBus.addHandler(PlaceChangedEvent.TYPE, this);
-        eventBus.addHandler(Activity.TYPE, this);
+        eventBus.addHandler(Action.TYPE, this);
     }
 
     @Override
-    public void handleActivity(Activity activity)
+    public void handleAction(Action activity)
     {
         if ( activity.isStop())
         {
@@ -56,9 +52,9 @@ public abstract class AbstractActivityController implements PlaceChangedEventHan
         }
     }
 
-    abstract  protected boolean isPlace( Activity activity);
+    abstract  protected boolean isPlace( Action activity);
 
-    private boolean startActivity(Activity activity)
+    private boolean startActivity(Action activity)
     {
         if ( activity == null)
         {
@@ -102,22 +98,14 @@ public abstract class AbstractActivityController implements PlaceChangedEventHan
 //    }
 
 
-    @Override
-    public void placeChanged(PlaceChangedEvent event)
-    {
-        place = event.getNewPlace();
-        updateHistroryEntry();
-        selectPlace(place);
-    }
-
     public final void init() throws RaplaException
     {
         parsePlaceAndActivities();
         selectPlace(place);
         if (!activities.isEmpty())
         {
-            ArrayList<Activity> toRemove = new ArrayList<Activity>();
-            for (Activity activity : activities)
+            ArrayList<Action> toRemove = new ArrayList<Action>();
+            for (Action activity : activities)
             {
                 if (!startActivity(activity))
                 {

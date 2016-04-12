@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
-import org.rapla.client.event.Activity;
+import org.rapla.client.event.Action;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
@@ -75,7 +75,7 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     @Override
     public void selectReservation(Reservation selectedObject, PopupContext context)
     {
-        final Activity activity = new Activity(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context);
+        final Action activity = new Action(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context);
         eventBus.fireEvent(activity);
         logger.info("selection changed");
 

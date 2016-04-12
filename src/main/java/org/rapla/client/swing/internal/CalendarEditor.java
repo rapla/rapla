@@ -35,8 +35,8 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.Activity;
-import org.rapla.client.event.ActivityPresenter;
+import org.rapla.client.event.Action;
+import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -66,8 +66,8 @@ import org.rapla.inject.Extension;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(id=CalendarEditor.ACTIVITY_ID,provides = ActivityPresenter.class)
-final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget<Component>, ActivityPresenter {
+@Extension(id=CalendarEditor.ACTIVITY_ID,provides = ActionPresenter.class)
+final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget<Component>, ActionPresenter {
     public static final String ACTIVITY_ID = "calendar";
 	public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
 	public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
@@ -308,7 +308,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 //    }
 
     // FIMXE implement or change for gwt
-    @Override public RaplaWidget<Component> startActivity(Activity activity)
+    @Override public RaplaWidget<Component> startActivity(Action activity)
     {
         return calendarContainer;
     }

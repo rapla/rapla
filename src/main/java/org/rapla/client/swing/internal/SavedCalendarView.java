@@ -32,8 +32,7 @@ import javax.swing.event.ListSelectionListener;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.PlaceChangedEvent;
+import org.rapla.client.event.Action;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
@@ -322,7 +321,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
 
         String place = selectedFile.isDefault ? null: selectedFile.name;
 
-        eventBus.fireEvent( new PlaceChangedEvent( new AbstractActivityController.Place( CalendarEditor.ACTIVITY_ID, place)));
+        eventBus.fireEvent( new Action( CalendarEditor.ACTIVITY_ID, place, null));
     }
 
 

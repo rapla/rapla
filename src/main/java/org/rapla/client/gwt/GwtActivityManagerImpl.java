@@ -9,11 +9,8 @@ import java.util.Map.Entry;
 
 import javax.inject.Inject;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.Activity;
-import org.rapla.client.event.ActivityPresenter;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.event.Action;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -28,9 +25,9 @@ import com.google.web.bindery.event.shared.EventBus;
 public class GwtActivityManagerImpl extends AbstractActivityController
 {
     @Inject
-    public GwtActivityManagerImpl( EventBus eventBus, final Logger logger, Map<String, ActivityPresenter> activityPresenters)
+    public GwtActivityManagerImpl( EventBus eventBus, final Logger logger)
     {
-        super( eventBus, logger, activityPresenters);
+        super( eventBus, logger);
         History.addValueChangeHandler(new ValueChangeHandler<String>()
         {
             @Override
@@ -71,7 +68,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
                     final String[] activitiyIds = split[1].split(",");
                     for (String info : activitiyIds)
                     {
-                        final Activity activity = new Activity(id, info, null);
+                        final Action activity = new Action(id, info, null);
                         activities.add(activity);
                     }
                 }
@@ -88,26 +85,26 @@ public class GwtActivityManagerImpl extends AbstractActivityController
         }
         if (!activities.isEmpty())
         {
-            Map<String, List<Activity>> activitiesMap = new LinkedHashMap<String, List<Activity>>();
+            Map<String, List<Action>> activitiesMap = new LinkedHashMap<String, List<Action>>();
             sb.append("?");
-            for (Iterator<Activity> iterator = activities.iterator(); iterator.hasNext();)
+            for (Iterator<Action> iterator = activities.iterator(); iterator.hasNext();)
             {
-                final Activity activity = iterator.next();
-                List<Activity> activitiesList = activitiesMap.get(activity.getId());
+                final Action activity = iterator.next();
+                List<Action> activitiesList = activitiesMap.get(activity.getId());
                 if(activitiesList == null)
                 {
-                    activitiesList = new ArrayList<Activity>();
+                    activitiesList = new ArrayList<Action>();
                     activitiesMap.put(activity.getId(), activitiesList);
                 }
                 activitiesList.add(activity);
             }
-            for (Entry<String, List<Activity>> entries : activitiesMap.entrySet())
+            for (Entry<String, List<Action>> entries : activitiesMap.entrySet())
             {
                 final String name = entries.getKey();
                 sb.append(name);
                 sb.append("=");
-                final List<Activity> activitiesList = entries.getValue();
-                for (Activity activity : activitiesList)
+                final List<Action> activitiesList = entries.getValue();
+                for (Action activity : activitiesList)
                 {
                     sb.append(activity.getInfo());
                     sb.append(",");
@@ -123,10 +120,9 @@ public class GwtActivityManagerImpl extends AbstractActivityController
     }
 
     @Override
-    protected void initComponent(RaplaWidget<Object> objectRaplaWidget)
+    protected boolean isPlace(Action activity)
     {
-        // FIXME implement me
-        throw new NotImplementedException("implement me");
+        return false;
     }
 
 }

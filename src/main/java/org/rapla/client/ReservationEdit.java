@@ -5,14 +5,14 @@ import java.util.Date;
 
 import javax.swing.event.ChangeListener;
 
-import org.rapla.client.event.ActivityPresenter;
+import org.rapla.client.event.ActionPresenter;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
 
-public interface ReservationEdit extends ActivityPresenter
+public interface ReservationEdit extends ActionPresenter
 {
     boolean isModifiedSinceLastChange();
 

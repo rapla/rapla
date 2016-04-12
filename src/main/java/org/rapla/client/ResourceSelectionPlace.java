@@ -6,7 +6,9 @@ import javax.inject.Inject;
 
 import org.rapla.client.ResourceSelectionView.Presenter;
 import org.rapla.client.event.AbstractActivityController.Place;
-import org.rapla.client.event.PlacePresenter;
+import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.event.Action;
+import org.rapla.client.event.ActionPresenter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -15,8 +17,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-@Extension(provides = PlacePresenter.class, id = ResourceSelectionPlace.PLACE_ID)
-public class ResourceSelectionPlace implements Presenter, PlacePresenter
+@Extension(provides = ActionPresenter.class, id = ResourceSelectionPlace.PLACE_ID)
+public class ResourceSelectionPlace implements Presenter, ActionPresenter
 {
     public static final String PLACE_ID = "ResSel";
     private final ResourceSelectionView view;
@@ -35,12 +37,12 @@ public class ResourceSelectionPlace implements Presenter, PlacePresenter
         view.setPresenter(this);
     }
 
-    @Override
-    public Object provideContent()
-    {
-        updateView(null);
-        return view.provideContent();
-    }
+//    @Override
+//    public Object provideContent()
+//    {
+//        updateView(null);
+//        return view.provideContent();
+//    }
 
     @Override
     public void updateView(ModificationEvent event)
@@ -64,14 +66,22 @@ public class ResourceSelectionPlace implements Presenter, PlacePresenter
         model.setSelectedObjects(selected);
     }
 
+//    @Override
+//    public void resetPlace()
+//    {
+//    }
+//
+//    @Override
+//    public void initForPlace(Place place)
+//    {
+//
+//    }
+    
     @Override
-    public void resetPlace()
+    public <T> RaplaWidget<T> startActivity(Action activity)
     {
-    }
-
-    @Override
-    public void initForPlace(Place place)
-    {
-
+        updateView(null);
+        // FIXME
+        return (RaplaWidget<T>) view.provideContent();
     }
 }

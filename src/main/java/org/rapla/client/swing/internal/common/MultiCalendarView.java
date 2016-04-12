@@ -71,6 +71,8 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 
 public class MultiCalendarView extends RaplaGUIComponent
@@ -106,8 +108,9 @@ public class MultiCalendarView extends RaplaGUIComponent
             return test;
         }
 
-        public void update( ) throws RaplaException
+        public Promise<Void> update( ) 
         {
+            return new ResolvedPromise<Void>((Void)null);
         }
 
     };

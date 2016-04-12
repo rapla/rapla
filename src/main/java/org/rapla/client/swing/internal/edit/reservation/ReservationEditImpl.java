@@ -51,7 +51,6 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.Activity;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.swing.InfoFactory;
@@ -282,7 +281,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         back.setIcon(raplaImages.getIconFromKey("icon.undo"));
     }
 
-    @Override public <T> RaplaWidget<T> startActivity(Activity activity)
+    @Override public <T> RaplaWidget<T> startActivity(Action activity)
     {
         return this;
     }

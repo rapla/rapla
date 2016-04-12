@@ -8,8 +8,8 @@ import javax.inject.Singleton;
 
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
-import org.rapla.client.event.Activity;
-import org.rapla.client.event.ActivityPresenter;
+import org.rapla.client.event.Action;
+import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Allocatable;
@@ -21,11 +21,11 @@ import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
 
 @Singleton
-@ExtensionRepeatable({ @Extension(id = EditActivity.EDIT_EVENTS_ID, provides = ActivityPresenter.class),
-        @Extension(id = EditActivity.EDIT_RESOURCES_ID, provides = ActivityPresenter.class)
+@ExtensionRepeatable({ @Extension(id = EditActivity.EDIT_EVENTS_ID, provides = ActionPresenter.class),
+        @Extension(id = EditActivity.EDIT_RESOURCES_ID, provides = ActionPresenter.class)
 }
 )
-public class EditActivity implements ActivityPresenter
+public class EditActivity implements ActionPresenter
 {
     final static public String EDIT_EVENTS_ID = "editEvents";
     final static public String EDIT_RESOURCES_ID = "editResources";
@@ -38,7 +38,7 @@ public class EditActivity implements ActivityPresenter
         this.raplaFacade = facade;
     }
 
-    @Override public RaplaWidget startActivity(Activity activity)
+    @Override public RaplaWidget startActivity(Action activity)
     {
         final String activityId = activity.getId();
         String info = activity.getInfo();

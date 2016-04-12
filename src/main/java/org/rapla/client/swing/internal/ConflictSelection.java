@@ -393,11 +393,12 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                  model.setSelectedDate(date);
              }
          }
-         try {
-            view.getSelectedCalendar().update();
-        } catch (RaplaException e1) {
-            getLogger().error("Can't switch to conflict dates.", e1);
-        }
+        final Promise<Void> updatePromise = view.getSelectedCalendar().update();
+        updatePromise.exceptionally((ex) ->
+        {
+            getLogger().error("Can't switch to conflict dates.", ex);
+            return null;
+        });
     }
 
     private Collection<Conflict> getSelectedConflictsInModel() {

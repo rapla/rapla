@@ -1,15 +1,17 @@
 package org.rapla.client;
 
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.AbstractActivityController.Place;
-import org.rapla.client.event.Activity;
-import org.rapla.client.event.ActivityPresenter;
-import org.rapla.client.event.PlaceChangedEvent;
+import org.rapla.client.event.Action;
+import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -30,14 +32,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
-
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
 
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
 public class Application implements ApplicationView.Presenter, ModificationListener
@@ -51,7 +49,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final RaplaResources i18n;
 
     private final EventBus eventBus;
-    private final Map<String, ActivityPresenter> activityPresenters;
+    private final Map<String, ActionPresenter> activityPresenters;
     final private Provider<Set<ClientExtension>> clientExtensions;
     final Provider<CalendarSelectionModel> calendarModelProvider;
     private final CommandScheduler scheduler;
@@ -61,7 +59,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
     public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
-            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, ActivityPresenter> activityPresenters,
+            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, ActionPresenter> activityPresenters,
             Provider<Set<ClientExtension>> clientExtensions,
             Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler
     )
@@ -80,10 +78,10 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         mainView.setPresenter(this);
     }
 
-    public boolean startAction(Activity activity, boolean isPlace)
+    public boolean startAction(Action activity, boolean isPlace)
     {
         final String activityId = activity.getId();
-        final ActivityPresenter activityPresenter = activityPresenters.get(activityId);
+        final ActionPresenter activityPresenter = activityPresenters.get(activityId);
         if ( activityPresenter == null)
         {
             return false;
@@ -227,7 +225,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     {
         if ("resources".equals(action))
         {
-            eventBus.fireEvent(new PlaceChangedEvent(new Place(ResourceSelectionPlace.PLACE_ID, null)));
+            eventBus.fireEvent(new Action(ResourceSelectionPlace.PLACE_ID, null, null));
         }
     }
 

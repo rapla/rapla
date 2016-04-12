@@ -157,4 +157,9 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
 
     }
 
+    @Override
+    public void init(boolean showToolTips, String windowTitle)
+    {
+    }
+
 }

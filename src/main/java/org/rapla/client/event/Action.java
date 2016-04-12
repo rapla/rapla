@@ -4,7 +4,7 @@ import org.rapla.client.PopupContext;
 
 import com.google.web.bindery.event.shared.Event;
 
-public class Activity extends Event<Activity.ActivityEventHandler>
+public class Action extends Event<Action.ActionEventHandler>
 {
     private final String info;
     private final String id;
@@ -12,14 +12,14 @@ public class Activity extends Event<Activity.ActivityEventHandler>
     private static final String ACTIVITY_SEPARATOR = "=";
     private boolean stop = false;
 
-    public interface ActivityEventHandler
+    public interface ActionEventHandler
     {
-        void handleActivity(Activity event);
+        void handleAction(Action event);
     }
 
-    public static final Type<ActivityEventHandler> TYPE = new Type<ActivityEventHandler>();
+    public static final Type<ActionEventHandler> TYPE = new Type<ActionEventHandler>();
 
-    public Activity(String id, String info, PopupContext popupContext)
+    public Action(String id, String info, PopupContext popupContext)
     {
         this.id = id;
         this.info = info;
@@ -56,12 +56,12 @@ public class Activity extends Event<Activity.ActivityEventHandler>
         return id + "=" + info;
     }
 
-    @Override protected void dispatch(ActivityEventHandler handler)
+    @Override protected void dispatch(ActionEventHandler handler)
     {
-        handler.handleActivity(this);
+        handler.handleAction(this);
     }
 
-    public static Activity fromString(final String activityString)
+    public static Action fromString(final String activityString)
     {
         if (activityString == null)
         {
@@ -72,7 +72,7 @@ public class Activity extends Event<Activity.ActivityEventHandler>
         {
             String id = activityString.substring(0, indexOf);
             String info = activityString.substring(indexOf + 1);
-            return new Activity(id, info, null);
+            return new Action(id, info, null);
         }
         return null;
     }
@@ -94,7 +94,7 @@ public class Activity extends Event<Activity.ActivityEventHandler>
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Activity other = (Activity) obj;
+        Action other = (Action) obj;
         if (id == null)
         {
             if (other.id != null)
