@@ -1,19 +1,27 @@
 package org.rapla.client;
 
-public interface ApplicationView<W>
-{
+import org.rapla.client.swing.toolkit.RaplaWidget;
 
+public interface ApplicationView<T>
+{
     interface Presenter
     {
         void menuClicked(String action);
+
+        void mainClosing();
     }
 
     void setPresenter(Presenter presenter);
 
-    void setLoggedInUser(String loggedInUser);
+    void setStatusMessage(String message, boolean hightlight);
+
+    void init(boolean showToolTips, String windowTitle);
 
     void updateMenu();
 
-    void updateContent(W w);
+    void updateContent(RaplaWidget<T> w);
+
+    void createPopup(RaplaWidget<T> w);
+
 
 }

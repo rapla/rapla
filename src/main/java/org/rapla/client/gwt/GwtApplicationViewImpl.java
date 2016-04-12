@@ -18,6 +18,7 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -30,7 +31,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
 
 @DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
-public class ApplicationViewImpl implements ApplicationView<IsWidget>
+public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
     private final RaplaResources i18n;
@@ -40,7 +41,7 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
     private Presenter presenter;
 
     @Inject
-    public ApplicationViewImpl(final RaplaResources i18n) throws RaplaException
+    public GwtApplicationViewImpl(final RaplaResources i18n) throws RaplaException
     {
         this.i18n = i18n;
         final RootPanel root = RootPanel.get();
@@ -91,12 +92,12 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
     }
 
     @Override
-    public void setLoggedInUser(final String loggedInUser)
+    public void setStatusMessage(final String message, boolean highlight)
     {
         final NavbarText user = new NavbarText();
         user.setPull(Pull.RIGHT);
         user.setMarginRight(25);
-        user.add(new Text(loggedInUser));
+        user.add(new Text(message));
         menu.add(user);
 
     }
@@ -144,10 +145,16 @@ public class ApplicationViewImpl implements ApplicationView<IsWidget>
     }
 
     @Override
-    public void updateContent(IsWidget w)
+    public void updateContent(RaplaWidget<IsWidget> w)
     {
         this.applicationContent.clear();
-        this.applicationContent.add(w);
+        final IsWidget component = w.getComponent();
+        this.applicationContent.add(component);
+    }
+
+    @Override public void createPopup(RaplaWidget<IsWidget> w)
+    {
+
     }
 
 }

@@ -12,6 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.xmlbundle.LocaleChangeEvent;
+import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.logger.Logger;
+
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Graphics;
@@ -24,34 +47,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.image.ImageObserver;
-import java.beans.PropertyVetoException;
 import java.net.URL;
 
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
-
-public final class LoginDialog extends RaplaFrame implements LocaleChangeListener
+public final class LoginDialog extends JFrame implements LocaleChangeListener
 {
 	private static final long	serialVersionUID	= -1887723833652617352L;
 	
@@ -77,9 +75,9 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
     private final RaplaLocale raplaLocale;
     private final Logger logger;
 
-    private LoginDialog(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, FrameControllerList frameControllerList) throws RaplaException
+    private LoginDialog(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale) throws RaplaException
 	{
-		super(frameControllerList);
+		super();
 		this.env =  env;
 		this.i18n = i18n;
 		localeSelector = bundleManager;
@@ -88,9 +86,9 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 		this.raplaLocale = raplaLocale;
 	}
 	
-	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector, FrameControllerList frameControllerList) throws RaplaException
+	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException
 	{
-		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, logger, raplaLocale,frameControllerList);
+		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, logger, raplaLocale);
 		dlg.init(languageSelector);
 		return dlg;
 	}
@@ -234,7 +232,8 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 		// ################## END FRAME ###################
 		
 	}
-	
+
+	/*
 	boolean closeCalledFromOutside = false;
 	
 	@Override
@@ -250,6 +249,7 @@ public final class LoginDialog extends RaplaFrame implements LocaleChangeListene
 			exitAction.actionPerformed( new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "exit"));
 		}
 	}
+	*/
 	
 	public String getUsername()
 	{

@@ -14,52 +14,35 @@ main.raplaContainer.dispose();
 package org.rapla.client.internal;
 
 import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
+import org.rapla.client.Application;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListener;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.MainFrame;
+import org.rapla.client.swing.internal.SwingApplicationViewImpl;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -68,13 +51,9 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
-import org.rapla.storage.dbrm.RemoteOperator;
-import org.rapla.storage.dbrm.StatusUpdater;
 
 /** Implementation of the UserClientService.
 */
@@ -87,12 +66,10 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     RaplaResources i18n;
     boolean started;
     boolean restartingGUI;
-    boolean defaultLanguageChoosen;
-    private FrameControllerList frameControllerList;
+    boolean defaultLanguageChosen;
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
-	static boolean lookAndFeelSet;
-    final Logger logger;
+	final Logger logger;
     final StartupEnvironment env;
     final DialogUiFactoryInterface dialogUiFactory;
     final ClientFacade facade;
@@ -100,30 +77,23 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
     final RaplaImages raplaImages;
-    final Provider<MainFrame> mainFrameProvider;
-    final Provider<RaplaFrame> raplaFrameProvider;
-    final private ModifiableCalendarState calendarModelContainer;
+    //final Provider<RaplaFrame> raplaFrameProvider;
 
-    final private Provider<Set<ClientExtension>> clientExtensions;
+    final private Application application;
 
     @Inject
 	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
-            FrameControllerList frameControllerList, RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
-            RaplaImages raplaImages, Provider<MainFrame> mainFrameProvider, Provider<RaplaFrame> raplaFrameProvider, Provider<CalendarSelectionModel> calendarModel,
-            Provider<Set<ClientExtension>> clientExtensions) {
+            RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
+            RaplaImages raplaImages, Application application) {
         this.env = env;
         this.i18n = i18n;
         this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.facade = facade;
-        this.frameControllerList = frameControllerList;
         this.raplaLocale = raplaLocale;
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
-        this.mainFrameProvider = mainFrameProvider;
-        this.raplaFrameProvider = raplaFrameProvider;
-        this.calendarModelContainer = new ModifiableCalendarState(facade,calendarModel);
-        this.clientExtensions = clientExtensions;
+        this.application = application;
         ((FacadeImpl)this.facade).setOperator( storageOperator);
         this.raplaImages = raplaImages;
         initialize();
@@ -135,34 +105,6 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         return logger;
     }
 
-    public static void setLookandFeel() {
-    	if ( lookAndFeelSet )
-    	{
-    		return;
-    	}
-        UIDefaults defaults = UIManager.getDefaults();
-        Font textFont = defaults.getFont("Label.font");
-        if ( textFont == null)
-        {
-        	textFont = new Font("SansSerif", Font.PLAIN, 12);
-        } 
-        else 
-        {
-        	textFont = textFont.deriveFont( Font.PLAIN );
-        }
-        defaults.put("Label.font", textFont);
-        defaults.put("Button.font", textFont);
-        defaults.put("Menu.font", textFont);
-        defaults.put("MenuItem.font", textFont);
-        defaults.put("RadioButton.font", textFont);
-        defaults.put("CheckBoxMenuItem.font", textFont);
-        defaults.put("CheckBox.font", textFont);
-        defaults.put("ComboBox.font", textFont);
-        defaults.put("Tree.expandedIcon",RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_minus.gif"));
-        defaults.put("Tree.collapsedIcon",RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_plus.gif"));
-        defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN,(float)10.));
-        lookAndFeelSet = true;
-    }
 
     protected void initialize() {
         advanceLoading(false);
@@ -184,8 +126,8 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
  			}
          }
  		
-    	setLookandFeel();
-    	defaultLanguageChoosen = true;
+    	SwingApplicationViewImpl.setLookandFeel();
+    	defaultLanguageChosen = true;
     	getLogger().info("Starting gui ");
 		
         //Add this service to the container
@@ -203,23 +145,24 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         	getLogger().debug("RaplaClient started");
             ClientFacade facade = getClientFacade();
             facade.addUpdateErrorListener(this);
-            StorageOperator operator = facade.getRaplaFacade().getOperator();
-            if ( operator instanceof RemoteOperator)
-            {
-                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
-                remoteConnection.setStatusUpdater( new StatusUpdater()
-    	    		{
-    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
-    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
-    	    			
-    	            	public void setStatus(Status status) {
-    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
-    	    				frameControllerList.setCursor( cursor);
-    	            	}
-    	    			
-    	    		}
-    	    		);
-            }
+            // TODO Promise wait cursor
+//            StorageOperator operator = facade.getRaplaFacade().getOperator();
+//            if ( operator instanceof RemoteOperator)
+//            {
+//                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
+//                remoteConnection.setStatusUpdater( new StatusUpdater()
+//    	    		{
+//    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
+//    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
+//
+//    	            	public void setStatus(Status status) {
+//    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
+//    	    				frameControllerList.setCursor( cursor);
+//    	            	}
+//
+//    	    		}
+//    	    		);
+//            }
             advanceLoading(true);
 
             logoutAvailable = true;
@@ -269,66 +212,15 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
      *
      */
     private void beginRaplaSession() throws Exception {
-        initLanguage();
-        ClientFacade facade = getClientFacade();
-
-//        StorageOperator operator = facade.getOperator();
-
-        ((FacadeImpl)facade).addDirectModificationListener( new ModificationListener() {
-			
-			public void dataChanged(ModificationEvent evt) throws RaplaException {
-                calendarModelContainer.dataChanged(evt);
-			}
-        });
-//        if ( facade.isClientForServer() )
-//        {
-//            addContainerProvidedComponent (RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION , ConnectionOption.class);
-//        } 
-        
-        Preferences systemPreferences = facade.getRaplaFacade().getSystemPreferences();
-        //List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
-        //addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
-
-        // start client provides
-        for ( ClientExtension ext:clientExtensions.get())
-        {
-            ext.start();
-        }
-
-        //FIXME add customizable DateRenderer
-        // Add daterender if not provided by the plugins
-//        if ( !getContext().has( DateRenderer.class))
-//        {
-//            addContainerProvidedComponent(DateRenderer.class, RaplaDateRenderer.class);
-//        }
-        started = true;
-        boolean showToolTips = facade.getRaplaFacade().getPreferences( facade.getUser() ).getEntryAsBoolean( RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
-        javax.swing.ToolTipManager.sharedInstance().setEnabled(showToolTips);
-        //javax.swing.ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
-        javax.swing.ToolTipManager.sharedInstance().setInitialDelay( 1000 );
-        javax.swing.ToolTipManager.sharedInstance().setDismissDelay( 10000 );
-        javax.swing.ToolTipManager.sharedInstance().setReshowDelay( 0 );
-        JPopupMenu.setDefaultLightWeightPopupEnabled(false);
-
-        RaplaFrame mainComponent = raplaFrameProvider.get();
-        RaplaGUIComponent.setMainComponent( mainComponent);
-        mainComponent.addWindowListener(new WindowAdapter() {
-            public void windowClosed(WindowEvent e) {
-                try {
-                    if ( !isRestartingGUI()) {
-                        stop();
-                    } else {
-                        restartingGUI = false;
-                    }
-                } catch (Exception ex) {
-                    getLogger().error(ex.getMessage(),ex);
-                }
+        application.start(defaultLanguageChosen, () -> {
+            if ( !isRestartingGUI()) {
+                stop();
+            } else {
+                restartingGUI = false;
             }
-    
         });
-        MainFrame mainFrame = mainFrameProvider.get();
+        started = true;
         fireClientStarted();
-        mainFrame.show();
     }
 
     /*
@@ -347,35 +239,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     }
     */
     
-    private void initLanguage() throws RaplaException
-    {
-        RaplaFacade facade = getClientFacade().getRaplaFacade();
-        if ( !defaultLanguageChoosen)
-        {
-            Preferences prefs = facade.edit(facade.getSystemPreferences());
-            String currentLanguage = raplaLocale.getLocale().getLanguage();
-            prefs.putEntry( RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
-            try
-            {
-                facade.store( prefs);
-            }
-            catch (Exception e)
-            {
-                getLogger().error("Can't  store language change", e);
-            }
-        }
-        else
-        {
-            String language = facade.getSystemPreferences().getEntryAsString( RaplaLocale.LANGUAGE_ENTRY, null);
-            if ( language != null)
-            {
-                DefaultBundleManager localeSelector =  (DefaultBundleManager)bundleManager;
-                localeSelector.setLanguage( language );
-            }
-        }
-		AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
-        AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
-    }
+
 
     public boolean isRestartingGUI() 
     {
@@ -481,8 +345,6 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     }
 
     public void dispose() {
-        if (frameControllerList != null)
-            frameControllerList.closeAll();
         ((DefaultScheduler)commandScheduler).dispose();
         stop();
         getLogger().debug("RaplaClient disposed");
@@ -505,7 +367,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
 			final Logger logger = getLogger();
 			final LanguageChooser languageChooser = new LanguageChooser(logger,i18n,raplaLocale);
             final DefaultBundleManager localeSelector = (DefaultBundleManager)bundleManager;
-            final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent(), frameControllerList);
+            final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent());
             
             Action languageChanged = new AbstractAction()
             {
@@ -516,11 +378,11 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                         String lang = languageChooser.getSelectedLanguage();
                         if (lang == null)
                         {
-                            defaultLanguageChoosen = true;
+                            defaultLanguageChosen = true;
                         }
                         else
                         {
-                            defaultLanguageChoosen = false;
+                            defaultLanguageChosen = false;
                             getLogger().debug("Language changing to " + lang);
                             localeSelector.setLanguage(lang);
                             getLogger().info("Language changed " + localeSelector.getLocale().getLanguage() );
@@ -532,7 +394,6 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                 
             };
             languageChooser.setChangeAction( languageChanged);
-            
             //dlg.setIcon( i18n.getIcon("icon.rapla-small"));
             Action loginAction = new AbstractAction() {
                 private static final long serialVersionUID = 1L;
@@ -557,7 +418,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
                     }
                     if ( success) {
-                        dlg.close();
+                        dlg.dispose();
                         loginMutex.release();
                         try {
                             beginRaplaSession();
@@ -572,7 +433,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
             Action exitAction = new AbstractAction() {
                 private static final long serialVersionUID = 1L;
                 public void actionPerformed(ActionEvent evt) {
-                    dlg.close();
+                    dlg.dispose();
                     loginMutex.release();
                     stop();
                     fireClientAborted();
@@ -604,13 +465,13 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     public void disconnected(final String message) {
         if ( started )
         {
-        	SwingUtilities.invokeLater( new Runnable() {
+        	SwingUtilities.invokeLater(new Runnable() {
 				
 				public void run() {
 					boolean modal = true;
 					String title = i18n.getString("restart_client");
 					try {
-					    Component owner = frameControllerList.getMainWindow();
+					    Component owner = null;
 					    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), modal, title, message);
 						Runnable action = new Runnable() {
 							private static final long serialVersionUID = 1L;

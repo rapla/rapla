@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.rapla.client.Application;
 import org.rapla.client.event.PlaceChangedEvent.PlaceChangedEventHandler;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
@@ -18,25 +19,23 @@ public abstract class AbstractActivityController implements PlaceChangedEventHan
     protected Place place;
     protected final Set<Activity> activities = new LinkedHashSet<Activity>();
     protected final Logger logger;
-    private final Map<String, ActivityPresenter> activityPresenters;
     private RaplaWidget activePlace;
 
-//    public Application getApplication()
-//    {
-//        return application;
-//    }
-//
-//    public void setApplication(Application application)
-//    {
-//        this.application = application;
-//    }
-//
-//    protected Application application;
+    public Application getApplication()
+    {
+        return application;
+    }
 
-    public AbstractActivityController(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger, Map<String, ActivityPresenter> activityPresenters)
+    public void setApplication(Application application)
+    {
+        this.application = application;
+    }
+
+    protected Application application;
+
+    public AbstractActivityController(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger)
     {
         this.logger = logger;
-        this.activityPresenters = activityPresenters;
         eventBus.addHandler(PlaceChangedEvent.TYPE, this);
         eventBus.addHandler(Activity.TYPE, this);
     }
@@ -57,30 +56,17 @@ public abstract class AbstractActivityController implements PlaceChangedEventHan
         }
     }
 
+    abstract  protected boolean isPlace( Activity activity);
+
     private boolean startActivity(Activity activity)
     {
         if ( activity == null)
         {
             return false;
         }
-        final String activityId = activity.getId();
-        final ActivityPresenter activityPresenter = activityPresenters.get(activityId);
-        if ( activityPresenters == null)
-        {
-            return false;
-        }
-        final RaplaWidget<Object> objectRaplaWidget = activityPresenter.startActivity(activity);
-
-        activePlace = objectRaplaWidget;
-        if ( objectRaplaWidget != null)
-        {
-            initComponent( objectRaplaWidget);
-        }
-        final boolean result =  objectRaplaWidget != null;
-        return result;
+        boolean isPlace = isPlace( activity);
+        return application.startAction( activity, isPlace);
     }
-
-    protected abstract void initComponent( RaplaWidget<Object> objectRaplaWidget);
 
     private void selectPlace(Place place)
     {
@@ -150,11 +136,6 @@ public abstract class AbstractActivityController implements PlaceChangedEventHan
 
     protected abstract void updateHistroryEntry();
 
-
-    public void updateView(ModificationEvent e)
-    {
-        //actualPlacePresenter.updateView(e);
-    }
 
     public <T> RaplaWidget<T> provideContent()
     {

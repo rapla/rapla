@@ -1,32 +1,19 @@
 package org.rapla.client.swing;
 
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Toolkit;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyVetoException;
-import java.beans.VetoableChangeListener;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.ActivityPresenter;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.event.Activity;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 @DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)
-public class SwingActivityController extends AbstractActivityController implements VetoableChangeListener
+public class SwingActivityController extends AbstractActivityController
 {
     
     public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
@@ -35,51 +22,22 @@ public class SwingActivityController extends AbstractActivityController implemen
     public static final String EDIT_RESORCES = "editResources";
     public static final String MERGE_ALLOCATABLES = "merge";
 
-    private final RaplaImages raplaImages;
-    private final FrameControllerList frameControllerList;
-//    private final EditController editController;
+
+    //    private final EditController editController;
 //    private final ClientFacade facade;
 //    private final CalendarSelectionModel model;
 //    private final MergeController mergeController;
 
     @Inject
-    public SwingActivityController(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger, Map<String, ActivityPresenter> activityPresenters,
-            RaplaImages raplaImages, FrameControllerList frameControllerList)
+    public SwingActivityController(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger)
     {
-        super(eventBus, logger, activityPresenters);
-        this.raplaImages = raplaImages;
-        this.frameControllerList = frameControllerList;
+        super(eventBus, logger);
     }
 
-    protected void initComponent( RaplaWidget<Object> objectRaplaWidget)
+
+    @Override protected boolean isPlace(Activity activity)
     {
-        RaplaFrame frame = new RaplaFrame(frameControllerList);
-        final Container component = (Container)objectRaplaWidget.getComponent();
-        frame.setContentPane(component);
-        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
-        frame.setSize(new Dimension(
-                        Math.min(dimension.width,990)
-                        // BJO 00000032 temp fix for filter out of frame bounds
-                        ,Math.min(dimension.height-10,720)
-                        //,Math.min(dimension.height-10,1000)
-                )
-        );
-        frame.addVetoableChangeListener(this);
-        frame.setIconImage( raplaImages.getIconFromKey("icon.edit_window_small").getImage());
-    }
-
-    private void showFrame()
-    {
-
-
-
-    }
-
-    public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
-    {
-        if (!canClose())
-            throw new PropertyVetoException("Don't close",evt);
-        closeWindow();
+        return false;
     }
 
     @Override protected void parsePlaceAndActivities() throws RaplaException
