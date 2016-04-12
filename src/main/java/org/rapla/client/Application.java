@@ -79,7 +79,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
     public boolean startAction(ApplicationEvent activity, boolean isPlace)
     {
-        final String activityId = activity.getId();
+        final String activityId = activity.getApplicationEventId();
         final ActionPresenter activityPresenter = activityPresenters.get(activityId);
         if ( activityPresenter == null)
         {

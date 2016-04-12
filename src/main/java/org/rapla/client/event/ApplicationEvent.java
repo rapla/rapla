@@ -7,7 +7,7 @@ import com.google.web.bindery.event.shared.Event;
 public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHandler>
 {
     private final String info;
-    private final String id;
+    private final String applicationEventId;
     private final PopupContext popupContext;
     private static final String ACTIVITY_SEPARATOR = "=";
     private boolean stop = false;
@@ -19,9 +19,9 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
 
     public static final Type<ApplicationEventHandler> TYPE = new Type<ApplicationEventHandler>();
 
-    public ApplicationEvent(String id, String info, PopupContext popupContext)
+    public ApplicationEvent(String applictionEventId, String info, PopupContext popupContext)
     {
-        this.id = id;
+        this.applicationEventId = applictionEventId;
         this.info = info;
         this.popupContext = popupContext;
     }
@@ -36,9 +36,9 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
         return stop;
     }
 
-    public String getId()
+    public String getApplicationEventId()
     {
-        return id;
+        return applicationEventId;
     }
 
     public String getInfo()
@@ -53,7 +53,7 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
 
     @Override public String toString()
     {
-        return id + "=" + info;
+        return applicationEventId + "=" + info;
     }
 
     @Override protected void dispatch(ApplicationEventHandler handler)
@@ -81,7 +81,7 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((applicationEventId == null) ? 0 : applicationEventId.hashCode());
         result = prime * result + ((info == null) ? 0 : info.hashCode());
         return result;
     }
@@ -95,12 +95,12 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
         if (getClass() != obj.getClass())
             return false;
         ApplicationEvent other = (ApplicationEvent) obj;
-        if (id == null)
+        if (applicationEventId == null)
         {
-            if (other.id != null)
+            if (other.applicationEventId != null)
                 return false;
         }
-        else if (!id.equals(other.id))
+        else if (!applicationEventId.equals(other.applicationEventId))
             return false;
         if (info == null)
         {

@@ -90,11 +90,11 @@ public class GwtActivityManagerImpl extends AbstractActivityController
             for (Iterator<ApplicationEvent> iterator = activities.iterator(); iterator.hasNext();)
             {
                 final ApplicationEvent activity = iterator.next();
-                List<ApplicationEvent> activitiesList = activitiesMap.get(activity.getId());
+                List<ApplicationEvent> activitiesList = activitiesMap.get(activity.getApplicationEventId());
                 if(activitiesList == null)
                 {
                     activitiesList = new ArrayList<ApplicationEvent>();
-                    activitiesMap.put(activity.getId(), activitiesList);
+                    activitiesMap.put(activity.getApplicationEventId(), activitiesList);
                 }
                 activitiesList.add(activity);
             }

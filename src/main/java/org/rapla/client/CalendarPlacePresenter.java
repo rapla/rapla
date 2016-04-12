@@ -254,7 +254,7 @@ public class CalendarPlacePresenter implements Presenter, ActionPresenter
     @Override
     public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
     {
-        String id = activity.getInfo() != null ? activity.getId() + "/" + activity.getInfo() : activity.getId();
+        String id = activity.getInfo() != null ? activity.getApplicationEventId() + "/" + activity.getInfo() : activity.getApplicationEventId();
         String[] split = id.split("/");
         changeCalendar(split[0], false);
         if (split.length > 1)

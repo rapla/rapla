@@ -42,7 +42,7 @@ public class EditActivity implements ActionPresenter
 
     @Override public RaplaWidget startActivity(ApplicationEvent activity)
     {
-        final String activityId = activity.getId();
+        final String activityId = activity.getApplicationEventId();
         String info = activity.getInfo();
         PopupContext popupContext = activity.getPopupContext();
         if (activityId.equals(EDIT_RESOURCES_ID) || activityId.equals(EDIT_EVENTS_ID))
