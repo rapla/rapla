@@ -48,6 +48,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
@@ -70,7 +71,7 @@ import com.google.web.bindery.event.shared.EventBus;
     private final EventBus eventBus;
 
     @Inject public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-            RaplaImages raplaImages, EventBus eventBus) throws RaplaException
+            RaplaImages raplaImages, EventBus eventBus) throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
         this.model = model;
@@ -79,7 +80,14 @@ import com.google.web.bindery.event.shared.EventBus;
         this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
         getUpdateModule().addModificationListener(this);
-        templateNames = updateTemplateNames();
+        try
+        {
+            templateNames = updateTemplateNames();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
     }
 
     public String getId()

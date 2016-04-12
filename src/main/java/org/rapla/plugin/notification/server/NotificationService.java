@@ -80,7 +80,7 @@ public class NotificationService
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n,
             AppointmentFormater appointmentFormater, Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger, NotificationStorage notificationStorage)
-                    throws RaplaException
+
     {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;

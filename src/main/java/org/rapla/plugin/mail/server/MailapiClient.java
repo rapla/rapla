@@ -32,7 +32,7 @@ public class MailapiClient implements MailInterface
     Object externalMailSession;
 
     @Inject
-    public MailapiClient( RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession) throws  RaplaException {
+    public MailapiClient( RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession)  {
     	this.facade = facade;
     	this.externalMailSession =  externalMailSession.get();
     }

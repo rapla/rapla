@@ -38,6 +38,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -55,7 +56,8 @@ public class AttributeEdit extends RaplaGUIComponent
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+    public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactoryInterface dialogUiFactory) throws
+            RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
 
         // 1.

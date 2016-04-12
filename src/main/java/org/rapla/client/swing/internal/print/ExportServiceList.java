@@ -35,6 +35,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
 
 
@@ -47,7 +48,8 @@ public class ExportServiceList   {
     private final RaplaResources i18n;
 
     @Inject
-    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws
+            RaplaInitializationException {
         this.i18n = i18n;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;

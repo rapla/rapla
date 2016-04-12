@@ -75,7 +75,7 @@ public class ExchangeAppointmentStorage
 
      */
     @Inject
-    public ExchangeAppointmentStorage(RaplaFacade facade, Logger logger,CachableStorageOperator operator) throws RaplaException
+    public ExchangeAppointmentStorage(RaplaFacade facade, Logger logger,CachableStorageOperator operator)
     {
         this.facade = facade;
         this.logger = logger;

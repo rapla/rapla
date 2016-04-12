@@ -79,7 +79,7 @@ public class Export2iCalServlet
 	RaplaResources i18n;
 
     @Inject
-    public Export2iCalServlet() throws RaplaException
+    public Export2iCalServlet()
     {
     }
 

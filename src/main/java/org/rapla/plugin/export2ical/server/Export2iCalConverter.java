@@ -1,43 +1,5 @@
 package org.rapla.plugin.export2ical.server;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.TimeZone;
-
-import javax.inject.Inject;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.DateTools;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.NameFormatUtil;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.ConfigurationException;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.server.TimeZoneConverter;
-
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ComponentList;
 import net.fortuna.ical4j.model.DateTime;
@@ -69,6 +31,43 @@ import net.fortuna.ical4j.model.property.Summary;
 import net.fortuna.ical4j.model.property.Uid;
 import net.fortuna.ical4j.model.property.Version;
 import net.fortuna.ical4j.util.CompatibilityHints;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.NameFormatUtil;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.ConfigurationException;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.logger.Logger;
+import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.server.TimeZoneConverter;
+
+import javax.inject.Inject;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class Export2iCalConverter
 {
@@ -86,7 +85,7 @@ public class Export2iCalConverter
     final RaplaResources i18n;
 
     @Inject public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale, Logger logger, RaplaFacade facade, RaplaResources i18n )
-            throws RaplaException
+            throws RaplaInitializationException
     {
         this.timezoneConverter = timezoneConverter;
         this.facade = facade;
@@ -94,7 +93,17 @@ public class Export2iCalConverter
         this.logger = logger;
         this.i18n = i18n;
         TimeZone zone = timezoneConverter.getImportExportTimeZone();
-        DynamicType[] dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        DynamicType[] dynamicTypes = new DynamicType[0];
+        RaplaConfiguration config = null;
+        try
+        {
+            config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+            dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException( e);
+        }
         for (DynamicType type : dynamicTypes)
         {
             if (type.getAnnotation(DynamicTypeAnnotations.KEY_LOCATION) != null)
@@ -104,7 +113,7 @@ public class Export2iCalConverter
         }
         CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_VALIDATION, true);
 
-        RaplaConfiguration config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+
         global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
         global_export_attendees_participation_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS)
                 .getValue(Export2iCalPlugin.DEFAULT_attendee_participation_status);

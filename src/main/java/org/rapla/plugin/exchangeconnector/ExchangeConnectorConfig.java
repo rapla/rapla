@@ -5,10 +5,12 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 
 public interface ExchangeConnectorConfig 
@@ -79,12 +81,25 @@ String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
 		    
                 
 		    @Inject
-	    	public ConfigReader(RaplaFacade facade) throws RaplaException
+	    	public ConfigReader(RaplaFacade facade) throws RaplaInitializationException
 	    	{
-		        this(facade.getSystemPreferences().getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()), facade.getSystemPreferences().getEntry(EXCHANGE_CLIENT_CONFIG, new RaplaConfiguration()));
+		        this(getSystemPreferences(facade).getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()), getSystemPreferences(facade)
+						.getEntry(EXCHANGE_CLIENT_CONFIG, new RaplaConfiguration()));
 	    	}
-		    
-		    public ConfigReader(Configuration serverConfig, Configuration clientConfig)
+
+			public static Preferences getSystemPreferences(RaplaFacade facade) throws RaplaInitializationException
+			{
+				try
+				{
+					return facade.getSystemPreferences();
+				}
+				catch (RaplaException e)
+				{
+					throw new RaplaInitializationException(e);
+				}
+			}
+
+			public ConfigReader(Configuration serverConfig, Configuration clientConfig)
 		    {
 	            load(serverConfig,EXCHANGE_WS_FQDN,DEFAULT_EXCHANGE_WS_FQDN);
 		        loadInt(serverConfig,SYNCING_PERIOD_PAST,DEFAULT_SYNCING_PERIOD_PAST);

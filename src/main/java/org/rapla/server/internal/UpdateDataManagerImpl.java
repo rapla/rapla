@@ -73,7 +73,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
     private final PermissionController permissionController;
 
 
-    @Inject public UpdateDataManagerImpl(Logger logger, CachableStorageOperator operator, SecurityManager securityManager) throws RaplaException
+    @Inject public UpdateDataManagerImpl(Logger logger, CachableStorageOperator operator, SecurityManager securityManager)
     {
         this.logger = logger;
         this.operator = operator;

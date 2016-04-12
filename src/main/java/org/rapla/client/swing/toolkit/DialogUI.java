@@ -551,9 +551,6 @@ public class DialogUI extends JDialog
                     ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, this);
                     dialog.showWarningDialog(message, owner);
                 }
-                catch (RaplaException e)
-                {
-                }
                 catch (Throwable e)
                 {
                     logger.error(e.getMessage(), e);
@@ -575,10 +572,6 @@ public class DialogUI extends JDialog
                 {
                     dialog.showExceptionDialog(ex, owner);
                 }
-            }
-            catch (RaplaException ex2)
-            {
-                logger.error(ex2.getMessage(), ex2);
             }
             catch (Throwable ex2)
             {
@@ -628,7 +621,7 @@ public class DialogUI extends JDialog
                 ErrorDialog dialog = new ErrorDialog(logger, i18n, raplaImages, this);
                 dialog.showWarningDialog(warning, owner);
             }
-            catch (RaplaException ex2)
+            catch (Throwable ex2)
             {
                 logger.error(ex2.getMessage(), ex2);
             }

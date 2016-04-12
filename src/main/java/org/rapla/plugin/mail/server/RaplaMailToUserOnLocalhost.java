@@ -32,7 +32,6 @@ public class RaplaMailToUserOnLocalhost implements MailToUserInterface
     RemoteSession session;
     private final HttpServletRequest request;
     @Inject public RaplaMailToUserOnLocalhost(@Context HttpServletRequest request)
-            throws RaplaSecurityException
     {
         this.request = request;
     }

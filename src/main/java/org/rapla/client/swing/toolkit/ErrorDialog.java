@@ -43,7 +43,7 @@ final public class ErrorDialog {
 
 
     @Inject
-    public ErrorDialog(Logger logger, RaplaResources i18n, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+    public ErrorDialog(Logger logger, RaplaResources i18n, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)  {
         this.logger = logger;
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
