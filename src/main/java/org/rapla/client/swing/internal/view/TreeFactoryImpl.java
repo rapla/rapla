@@ -1073,8 +1073,24 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 {
                     final Category category = (Category) nodeInfo;
                     final Category parent = category.getParent();
-                    final Category userGroupsCategory = getFacade().getUserGroupsCategory();
-                    User user = getClientFacade().getUser();
+                    Category userGroupsCategory = null;
+                    try
+                    {
+                        userGroupsCategory = getFacade().getUserGroupsCategory();
+                    }
+                    catch (RaplaException e)
+                    {
+                        getLogger().error("Could not resolve user group category: " + e.getMessage(), e);
+                    }
+                    User user = null;
+                    try
+                    {
+                        user = getClientFacade().getUser();
+                    }
+                    catch (RaplaException e)
+                    {
+                        getLogger().error("Coudl not resolve user: " + e.getMessage(), e);
+                    }
                     topCategoryNode = parent == null || (  userGroupsCategory != null  && userGroupsCategory.equals( category) && !user.isAdmin() && PermissionController.getAdminGroups(user).size() > 0);
                 }
                 else
