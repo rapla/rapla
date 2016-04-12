@@ -6,6 +6,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
@@ -19,9 +20,17 @@ public class ArchiverServiceTask  implements ServerExtension
 {
     @Inject
 	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final ImportExportManager importExportManager)
-            throws RaplaException
+            throws RaplaInitializationException
     {
-        final RaplaConfiguration config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());
+        final RaplaConfiguration config;
+        try
+        {
+            config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
         final int days = config.getChild( ArchiverService.REMOVE_OLDER_THAN_ENTRY).getValueAsInteger(-20);
         final boolean export = config.getChild( ArchiverService.EXPORT).getValueAsBoolean(false);
         if ( days != -20 || export)

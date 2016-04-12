@@ -54,6 +54,7 @@ import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -109,13 +110,14 @@ public class DialogUI extends JDialog
         return getOwnerWindow(owner);
     }
 
-    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Dialog parent) throws RaplaException {
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Dialog parent) throws RaplaInitializationException {
         super( parent );
         this.images = images;
         service( i18n, images, bundleManager, frameList );
     }
 
-    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Frame parent) throws RaplaException {
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Frame parent) throws
+            RaplaInitializationException {
         super( parent );
         this.images = images;
         service( i18n, images, bundleManager, frameList );
@@ -275,7 +277,7 @@ public class DialogUI extends JDialog
     }
 
 
-    private void service(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList) throws RaplaException {
+    private void service(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList) throws RaplaInitializationException {
         this.i18n = i18n;
         if (useDefaultOptions) {
     		if (buttons.length > 1) {

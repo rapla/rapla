@@ -58,6 +58,7 @@ import org.rapla.components.iolayer.ComponentPrinter;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
@@ -171,7 +172,8 @@ public class CalendarPrintDialog extends DialogUI
     private final Logger logger;
 
     @Inject
-    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws RaplaException {
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
+            RaplaInitializationException {
         super(i18n, raplaImages, bundleManager, frameList, owner);
         this.raplaLocale = raplaLocale;
         this.logger = logger;

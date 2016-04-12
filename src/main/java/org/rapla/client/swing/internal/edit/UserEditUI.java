@@ -12,25 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.JToolBar;
-import javax.swing.JTree;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -56,9 +37,28 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
+
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JToolBar;
+import javax.swing.JTree;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /****************************************************************
  * This is the controller-class for the User-Edit-Panel         *
@@ -86,7 +86,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws RaplaException {
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws
+            RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.raplaImages = raplaImages;
@@ -100,7 +101,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(nameField);
         emailField = textFieldFactory.create(getString("email"));
         fields.add(emailField);
-        adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, getString("admin"),getUser());
+        adminField = new AdminBooleanField(facade, i18n, raplaLocale, logger, getString("admin"));
         fields.add(adminField);
         this.groupField = groupField;
         fields.add(this.groupField);
@@ -109,9 +110,16 @@ public class UserEditUI  extends AbstractEditUI<User> {
     
     class AdminBooleanField extends BooleanField implements ChangeListener {
         User user;
-        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName, User user)  {
+        public AdminBooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName) throws RaplaInitializationException  {
             super(facade, i18n, raplaLocale, logger, fieldName);
-            this.user = user;
+            try
+            {
+                this.user = facade.getUser();
+            }
+            catch (RaplaException e)
+            {
+                throw new RaplaInitializationException(e);
+            }
         }
         
 		public void stateChanged(ChangeEvent e) {
@@ -161,10 +169,18 @@ public class UserEditUI  extends AbstractEditUI<User> {
         RaplaButton newButton  = new RaplaButton(RaplaButton.SMALL);
         RaplaButton removeButton  = new RaplaButton(RaplaButton.SMALL);
         
-        public PersonSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
+        public PersonSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaInitializationException {
             super(facade, i18n, raplaLocale, logger);
             setFieldName( getString("person"));
-            final Category rootCategory = getQuery().getUserGroupsCategory();
+            final Category rootCategory;
+            try
+            {
+                rootCategory = facade.getRaplaFacade().getUserGroupsCategory();
+            }
+            catch (RaplaException e)
+            {
+                throw new RaplaInitializationException(e);
+            }
             if ( rootCategory == null )
                 return;
             toolbar.add( newButton  );

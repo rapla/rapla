@@ -30,6 +30,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 
 /** displays a wizard dialog with four buttons and a HTML help.
 
@@ -48,11 +49,12 @@ public class WizardDialog extends DialogUI {
     };
 
 
-    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Dialog owner) throws RaplaException {
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Dialog owner) throws
+            RaplaInitializationException {
         super(i18n, raplaImages, bundleManager, frameList,owner);
     }
 
-    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Frame owner) throws RaplaException {
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Frame owner) throws RaplaInitializationException {
         super(i18n, raplaImages, bundleManager, frameList,owner);
     }
 
