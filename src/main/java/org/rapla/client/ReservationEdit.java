@@ -33,6 +33,8 @@ public interface ReservationEdit extends TaskPresenter
 
     void deleteReservation() throws RaplaException;
 
+    void save() throws RaplaException;
+
     void addReservationChangeListener(ChangeListener listener);
 
     void removeReservationChangeListener(ChangeListener listener);

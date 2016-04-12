@@ -658,7 +658,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
     }
 
-    private void save() throws RaplaException
+    public void save() throws RaplaException
     {
         try
         {

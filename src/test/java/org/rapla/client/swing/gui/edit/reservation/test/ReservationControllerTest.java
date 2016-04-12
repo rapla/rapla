@@ -14,6 +14,7 @@
 package org.rapla.client.swing.gui.edit.reservation.test;
 
 import org.junit.Assert;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
@@ -45,9 +46,9 @@ public final class ReservationControllerTest extends GUITestCase {
 
 	public void testMain() throws Exception {
 		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
-		final ReservationController c = getService(ReservationController.class);
+		final EditController c = getService(EditController.class);
 		final Reservation reservation = reservations.iterator().next();
-		c.edit(reservation);
+		c.edit(reservation,createPopupContext());
 		getLogger().info("ReservationController started");
 	}
 
@@ -112,9 +113,10 @@ public final class ReservationControllerTest extends GUITestCase {
 		facade.getRaplaFacade().removeObjects(periods);
 		Thread.sleep(500);
 		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
-		ReservationController c = getService(ReservationController.class);
-		c.edit(reservations.iterator().next());
+		EditController c = getService(EditController.class);
+		c.edit(reservations.iterator().next(),createPopupContext());
 		getLogger().info("ReservationController started");
+
 		ReservationEdit editor = c.getEditWindows()[0];
 		Date startDate = new Date();
 		editor.addAppointment(startDate, new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_DAY));

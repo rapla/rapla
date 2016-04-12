@@ -390,7 +390,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements CalendarP
 //        }
     }
 
-    Component getComponent()
+    public JComponent getComponent()
     {
         return content;
     }
