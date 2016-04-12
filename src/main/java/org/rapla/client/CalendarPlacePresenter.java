@@ -14,7 +14,7 @@ import javax.inject.Inject;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.DateTools;
@@ -177,7 +177,7 @@ public class CalendarPlacePresenter implements Presenter, ActionPresenter
     {
         String id = PLACE_ID;
         String info = calcCalId() + "/" + calcDate() + "/" + calcViewId();
-        Action event = new Action(id, info, null);
+        ApplicationEvent event = new ApplicationEvent(id, info, null);
         eventBus.fireEvent(event);
     }
 
@@ -252,7 +252,7 @@ public class CalendarPlacePresenter implements Presenter, ActionPresenter
 //    }
 //
     @Override
-    public <T> RaplaWidget<T> startActivity(Action activity)
+    public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
     {
         String id = activity.getInfo() != null ? activity.getId() + "/" + activity.getInfo() : activity.getId();
         String[] split = id.split("/");

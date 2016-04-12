@@ -91,7 +91,7 @@ public abstract class RaplaComboBox extends JPanel {
        // Implementation of ActionListener
        public void actionPerformed(ActionEvent e) {
            // Ignore action, when Popup is closing
-           log("Action Performed");
+           log("ApplicationEvent Performed");
            if (m_pressed && m_closing) {
                m_closing = false;
                            return;

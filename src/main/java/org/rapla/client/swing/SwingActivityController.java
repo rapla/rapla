@@ -2,7 +2,7 @@ package org.rapla.client.swing;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -35,7 +35,7 @@ public class SwingActivityController extends AbstractActivityController
     }
 
 
-    @Override protected boolean isPlace(Action activity)
+    @Override protected boolean isPlace(ApplicationEvent activity)
     {
         return false;
     }

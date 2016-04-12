@@ -8,7 +8,7 @@ import javax.inject.Singleton;
 
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Entity;
@@ -40,7 +40,7 @@ public class EditActivity implements ActionPresenter
         this.raplaFacade = facade;
     }
 
-    @Override public RaplaWidget startActivity(Action activity)
+    @Override public RaplaWidget startActivity(ApplicationEvent activity)
     {
         final String activityId = activity.getId();
         String info = activity.getInfo();

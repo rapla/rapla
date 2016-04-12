@@ -19,9 +19,7 @@ public interface ReservationEdit extends ActionPresenter
     void addAppointment( Date start, Date end) throws RaplaException;
 	
     Reservation getReservation();
-    void save() throws RaplaException;
-    void delete() throws RaplaException;
-    
+
     void addAppointmentListener(AppointmentListener listener);
     void removeAppointmentListener(AppointmentListener listener);
    

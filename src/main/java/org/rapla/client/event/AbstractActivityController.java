@@ -11,10 +11,10 @@ import org.rapla.framework.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public abstract class AbstractActivityController implements Action.ActionEventHandler
+public abstract class AbstractActivityController implements ApplicationEvent.ApplicationEventHandler
 {
     protected Place place;
-    protected final Set<Action> activities = new LinkedHashSet<Action>();
+    protected final Set<ApplicationEvent> activities = new LinkedHashSet<ApplicationEvent>();
     protected final Logger logger;
     private RaplaWidget activePlace;
 
@@ -33,11 +33,11 @@ public abstract class AbstractActivityController implements Action.ActionEventHa
     public AbstractActivityController(EventBus eventBus, Logger logger)
     {
         this.logger = logger;
-        eventBus.addHandler(Action.TYPE, this);
+        eventBus.addHandler(ApplicationEvent.TYPE, this);
     }
 
     @Override
-    public void handleAction(Action activity)
+    public void handleApplicationEvent(ApplicationEvent activity)
     {
         if ( activity.isStop())
         {
@@ -52,9 +52,9 @@ public abstract class AbstractActivityController implements Action.ActionEventHa
         }
     }
 
-    abstract  protected boolean isPlace( Action activity);
+    abstract  protected boolean isPlace( ApplicationEvent activity);
 
-    private boolean startActivity(Action activity)
+    private boolean startActivity(ApplicationEvent activity)
     {
         if ( activity == null)
         {
@@ -104,8 +104,8 @@ public abstract class AbstractActivityController implements Action.ActionEventHa
         selectPlace(place);
         if (!activities.isEmpty())
         {
-            ArrayList<Action> toRemove = new ArrayList<Action>();
-            for (Action activity : activities)
+            ArrayList<ApplicationEvent> toRemove = new ArrayList<ApplicationEvent>();
+            for (ApplicationEvent activity : activities)
             {
                 if (!startActivity(activity))
                 {

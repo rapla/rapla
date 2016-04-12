@@ -385,10 +385,8 @@ public class RaplaObjectAction extends RaplaAction {
     protected void editSelection() throws RaplaException {
  		if (objectList == null || objectList.size() == 0)
  			return;
-        String title = null;
         List<Entity> list = new ArrayList<Entity>(objectList);
-        EditController.EditCallback<List<Entity>> callback = null;
-        editController.edit(list,title, popupContext, callback);
+        editController.edit(list, popupContext);
  	}
 
 	public void setPerson(boolean b) {

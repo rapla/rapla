@@ -26,7 +26,7 @@ import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
@@ -167,7 +167,7 @@ import com.google.web.bindery.event.shared.EventBus;
             getLogger().warn("Type not found for " + source + " in map " + typeMap);
             return;
         }
-        eventBus.fireEvent(new Action(SwingActivityController.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext));
+        eventBus.fireEvent(new ApplicationEvent(SwingActivityController.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext));
     }
 
     public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException

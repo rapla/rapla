@@ -9,7 +9,7 @@ import javax.inject.Inject;
 import org.rapla.client.PopupContext;
 import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
@@ -114,7 +114,7 @@ public class ReservationPresenter implements ReservationController, Presenter
     private void fireEventAndCloseView()
     {
         PopupContext popupContext = null;
-        final Action event = new Action(EDIT_ACTIVITY_ID, editReservation.getId(), popupContext);
+        final ApplicationEvent event = new ApplicationEvent(EDIT_ACTIVITY_ID, editReservation.getId(), popupContext);
         event.setStop( true );
         eventBus.fireEvent(event);
         view.hide();

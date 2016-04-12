@@ -5,9 +5,8 @@ import java.util.Collection;
 import javax.inject.Inject;
 
 import org.rapla.client.ResourceSelectionView.Presenter;
-import org.rapla.client.event.AbstractActivityController.Place;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.client.event.Action;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
@@ -78,7 +77,7 @@ public class ResourceSelectionPlace implements Presenter, ActionPresenter
 //    }
     
     @Override
-    public <T> RaplaWidget<T> startActivity(Action activity)
+    public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
     {
         updateView(null);
         // FIXME

@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 import javax.inject.Inject;
 
 import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -68,7 +68,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
                     final String[] activitiyIds = split[1].split(",");
                     for (String info : activitiyIds)
                     {
-                        final Action activity = new Action(id, info, null);
+                        final ApplicationEvent activity = new ApplicationEvent(id, info, null);
                         activities.add(activity);
                     }
                 }
@@ -85,26 +85,26 @@ public class GwtActivityManagerImpl extends AbstractActivityController
         }
         if (!activities.isEmpty())
         {
-            Map<String, List<Action>> activitiesMap = new LinkedHashMap<String, List<Action>>();
+            Map<String, List<ApplicationEvent>> activitiesMap = new LinkedHashMap<String, List<ApplicationEvent>>();
             sb.append("?");
-            for (Iterator<Action> iterator = activities.iterator(); iterator.hasNext();)
+            for (Iterator<ApplicationEvent> iterator = activities.iterator(); iterator.hasNext();)
             {
-                final Action activity = iterator.next();
-                List<Action> activitiesList = activitiesMap.get(activity.getId());
+                final ApplicationEvent activity = iterator.next();
+                List<ApplicationEvent> activitiesList = activitiesMap.get(activity.getId());
                 if(activitiesList == null)
                 {
-                    activitiesList = new ArrayList<Action>();
+                    activitiesList = new ArrayList<ApplicationEvent>();
                     activitiesMap.put(activity.getId(), activitiesList);
                 }
                 activitiesList.add(activity);
             }
-            for (Entry<String, List<Action>> entries : activitiesMap.entrySet())
+            for (Entry<String, List<ApplicationEvent>> entries : activitiesMap.entrySet())
             {
                 final String name = entries.getKey();
                 sb.append(name);
                 sb.append("=");
-                final List<Action> activitiesList = entries.getValue();
-                for (Action activity : activitiesList)
+                final List<ApplicationEvent> activitiesList = entries.getValue();
+                for (ApplicationEvent activity : activitiesList)
                 {
                     sb.append(activity.getInfo());
                     sb.append(",");
@@ -120,7 +120,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
     }
 
     @Override
-    protected boolean isPlace(Action activity)
+    protected boolean isPlace(ApplicationEvent activity)
     {
         return false;
     }

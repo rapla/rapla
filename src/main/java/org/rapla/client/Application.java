@@ -10,7 +10,7 @@ import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.event.AbstractActivityController;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -77,7 +77,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         mainView.setPresenter(this);
     }
 
-    public boolean startAction(Action activity, boolean isPlace)
+    public boolean startAction(ApplicationEvent activity, boolean isPlace)
     {
         final String activityId = activity.getId();
         final ActionPresenter activityPresenter = activityPresenters.get(activityId);
@@ -223,7 +223,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     {
         if ("resources".equals(action))
         {
-            eventBus.fireEvent(new Action(ResourceSelectionPlace.PLACE_ID, null, null));
+            eventBus.fireEvent(new ApplicationEvent(ResourceSelectionPlace.PLACE_ID, null, null));
         }
     }
 

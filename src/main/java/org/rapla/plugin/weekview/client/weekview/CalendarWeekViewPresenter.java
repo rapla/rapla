@@ -11,7 +11,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.menu.MenuPresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
@@ -105,7 +105,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         final AppointmentBlock appointmentBlock = block.getAppointmentBlock();
         final Appointment appointment = appointmentBlock.getAppointment();
         final Reservation reservation = appointment.getReservation();
-        eventBus.fireEvent(new Action(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context));
+        eventBus.fireEvent(new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context));
     }
 
     @Override

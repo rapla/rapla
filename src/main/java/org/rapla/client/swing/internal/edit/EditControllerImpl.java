@@ -65,56 +65,15 @@ public class EditControllerImpl implements
 
     @Override
 	public <T extends Entity> void edit(T obj, PopupContext popupContext) throws RaplaException {
-        String title = null;
-        EditCallback<List<T>> callback = null;
         List<T> list = Collections.singletonList(obj);
-        editAndOpenDialog(list, title, popupContext, callback);
+        edit(list,  popupContext);
 	}
 
-	public <T extends Entity> void edit(final T obj, final String title,final PopupContext popupContext, final EditController.EditCallback<T> callback) throws RaplaException {
-        final EditCallback<List<T>> listCallback;
-        if ( callback != null)
-        {
-            listCallback = new EditCallback<List<T>>()
-            {
-                @Override public void onFailure(Throwable e)
-                {
-                    callback.onFailure(e);
-                }
-
-                @Override public void onSuccess(List<T> editObject)
-                {
-                    callback.onSuccess(editObject.get(0));
-                }
-
-                @Override public void onAbort()
-                {
-                    callback.onAbort();
-                }
-            };
-        }
-        else
-        {
-            listCallback = null;
-        }
-        edit(Collections.singletonList(obj), title, popupContext, listCallback);
+	public <T extends Entity> void edit(final List<T> list,final PopupContext popupContext) throws RaplaException {
+        String title = null;
+        editAndOpenDialog(list, title, popupContext);
 	}
 	
-	@Override
-	public <T extends Entity> Promise<T> edit(T obj, String title, PopupContext popupContext) throws RaplaException
-	{
-	    // FIXME implement me
-	    throw new NotImplementedException("implement me");
-	}
-
-	public <T extends Entity> RaplaWidget edit(List<T> list, String title,PopupContext popupContext, EditController.EditCallback<List<T>> callback) throws RaplaException {
-
-		//		if selektion contains only one object start usual Edit dialog
-        editAndOpenDialog(list, title, popupContext, callback);
-        // FIXME get raplawidget
-        return null;
-	}
-
 
 	void addEditDialog(EditDialogInterface editWindow) {
 		editWindowList.add(editWindow);
@@ -157,7 +116,7 @@ public class EditControllerImpl implements
 			return null;
 	}
 
-    private <T extends Entity> void editAndOpenDialog(List<T> list, String title, PopupContext popupContext, EditCallback<List<T>> callback) throws RaplaException {
+    private <T extends Entity> void editAndOpenDialog(List<T> list, String title, PopupContext popupContext) throws RaplaException {
         if( list.size() == 0)
         {
             throw new RaplaException("Empty list not allowed. You must have at least one entity to edit.");

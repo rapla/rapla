@@ -11,7 +11,7 @@ import javax.swing.ImageIcon;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.SwingActivityController;
@@ -120,7 +120,7 @@ import com.google.web.bindery.event.shared.EventBus;
                     ids.append(((Entity) object).getId());
                 }
                 final String info = ids.toString();
-                eventBus.fireEvent(new Action(SwingActivityController.MERGE_ALLOCATABLES, info, popupContext));
+                eventBus.fireEvent(new ApplicationEvent(SwingActivityController.MERGE_ALLOCATABLES, info, popupContext));
             }
         });
 

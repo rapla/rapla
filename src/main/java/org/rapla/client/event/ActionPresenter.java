@@ -8,6 +8,6 @@ import org.rapla.inject.InjectionContext;
 @ExtensionPoint(context={ InjectionContext.client},id = "activity")
 public interface ActionPresenter
 {
-    <T> RaplaWidget<T> startActivity(Action activity);
+    <T> RaplaWidget<T> startActivity(ApplicationEvent activity);
     void updateView(ModificationEvent event);
 }

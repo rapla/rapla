@@ -35,7 +35,7 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.Action;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
@@ -308,7 +308,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 //    }
 
     // FIMXE implement or change for gwt
-    @Override public RaplaWidget<Component> startActivity(Action activity)
+    @Override public RaplaWidget<Component> startActivity(ApplicationEvent activity)
     {
         return calendarContainer;
     }
