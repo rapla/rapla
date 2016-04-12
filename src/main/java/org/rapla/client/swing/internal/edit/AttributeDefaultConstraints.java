@@ -1,24 +1,5 @@
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -54,14 +35,32 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-public class AttributeDefaultConstraints extends AbstractEditField
-    implements ActionListener
-        ,ChangeListener
+import javax.inject.Inject;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+public class AttributeDefaultConstraints extends AbstractEditField implements ActionListener, ChangeListener
 {
     JPanel panel = new JPanel();
     JLabel nameLabel = new JLabel();
@@ -73,34 +72,17 @@ public class AttributeDefaultConstraints extends AbstractEditField
     JLabel multiSelectLabel = new JLabel();
     JLabel tabLabel = new JLabel();
     JLabel specialkeyLabel = new JLabel(); // BJO
-    AttributeType types[] = {
-        AttributeType.BOOLEAN
-        ,AttributeType.STRING
-        ,AttributeType.INT
-        ,AttributeType.CATEGORY
-        ,AttributeType.ALLOCATABLE
-        ,AttributeType.DATE
-    };
+    AttributeType types[] = { AttributeType.BOOLEAN, AttributeType.STRING, AttributeType.INT, AttributeType.CATEGORY, AttributeType.ALLOCATABLE,
+            AttributeType.DATE };
 
-    String tabs[] = {
-            AttributeAnnotations.VALUE_EDIT_VIEW_MAIN
-            ,AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL
-            ,AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW
-    };
+    String tabs[] = { AttributeAnnotations.VALUE_EDIT_VIEW_MAIN, AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL,
+            AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW };
 
-    String multiSelectOptions[] = {
-            "yes"
-            ,"no"
-    };
+    String multiSelectOptions[] = { "yes", "no" };
 
-    String multiSelectOptionsAllocatable[] = {
-            "yes"
-            ,"no"
-            ,"belongsTo"
-            ,"package"
-    };
+    String multiSelectOptionsAllocatable[] = { "yes", "no", "belongsTo", "package" };
     boolean mapping = false;
-    MultiLanguageField name ;
+    MultiLanguageField name;
     TextField key;
     JComboBox classSelect = new JComboBox();
     ListField<DynamicType> dynamicTypeSelect;
@@ -110,8 +92,8 @@ public class AttributeDefaultConstraints extends AbstractEditField
     TextField defaultSelectText;
     BooleanField defaultSelectBoolean;
     JComboBox multiSelect = new JComboBox();
-    RaplaNumber defaultSelectNumber = new RaplaNumber(new Long(0),null,null, false);
-    RaplaCalendar defaultSelectDate ;
+    RaplaNumber defaultSelectNumber = new RaplaNumber(new Long(0), null, null, false);
+    RaplaCalendar defaultSelectDate;
     RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
     JComboBox tabSelect = new JComboBox();
     DialogInterface dialog;
@@ -122,23 +104,33 @@ public class AttributeDefaultConstraints extends AbstractEditField
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
 
-    @Inject
-    public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer, final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaException
+    @Inject public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+            Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer,
+            final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
+            MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
-        this.permissionController = facade.getRaplaFacade().getPermissionController();
+        final RaplaFacade raplaFacade = facade.getRaplaFacade();
+        this.permissionController = raplaFacade.getPermissionController();
         annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, attributeExtensionSet);
         key = textFieldFactory.create();
         name = multiLanguageFieldFactory.create();
-        final DynamicType[] dynamicTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-        Collection<DynamicType> typeList = new ArrayList<DynamicType>(
-                Arrays.asList(dynamicTypes));
-        typeList.addAll(Arrays.asList(getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
+        Collection<DynamicType> typeList;
+        try
+        {
+            final DynamicType[] dynamicTypes = raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+            typeList = new ArrayList<DynamicType>(Arrays.asList(dynamicTypes));
+            typeList.addAll(Arrays.asList(raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
         dynamicTypeSelect = new ListField<DynamicType>(facade, i18n, raplaLocale, logger, true);
-        dynamicTypeSelect.setVector( typeList );
+        dynamicTypeSelect.setVector(typeList);
         final Locale locale = raplaLocale.getLocale();
-        dynamicTypeSelect.setRenderer( new NamedListCellRenderer(locale));
+        dynamicTypeSelect.setRenderer(new NamedListCellRenderer(locale));
 
         rootCategory = getQuery().getSuperCategory();
 
@@ -146,24 +138,23 @@ public class AttributeDefaultConstraints extends AbstractEditField
         categorySelect.setUseNull(false);
         defaultSelectCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
         defaultSelectText = textFieldFactory.create();
-        addCopyPaste( defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
+        addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
         //addCopyPaste( expectedRows.getNumberField());
         //addCopyPaste( expectedColumns.getNumberField());
 
         defaultSelectBoolean = booleanFieldFactory.create();
         defaultSelectDate = createRaplaCalendar(dateRenderer, ioInterface);
-        defaultSelectDate.setNullValuePossible( true);
-        defaultSelectDate.setDate( null);
+        defaultSelectDate.setNullValuePossible(true);
+        defaultSelectDate.setDate(null);
         double fill = TableLayout.FILL;
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout( new double[][]
-            {{5, pre, 5, fill },  // Columns
-             {5, pre ,5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5,pre, 5, pre, 5}} // Rows
-                                          ));
+        panel.setLayout(new TableLayout(new double[][] { { 5, pre, 5, fill },  // Columns
+                { 5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5, pre, 5 } } // Rows
+        ));
         panel.add("1,1,l,f", nameLabel);
-        panel.add("3,1,f,f", name.getComponent() );
+        panel.add("3,1,f,f", name.getComponent());
         panel.add("1,3,l,f", keyLabel);
-        panel.add("3,3,f,f", key.getComponent() );
+        panel.add("3,3,f,f", key.getComponent());
         panel.add("1,5,l,f", typeLabel);
         panel.add("3,5,l,f", classSelect);
 
@@ -185,13 +176,17 @@ public class AttributeDefaultConstraints extends AbstractEditField
         panel.add("1,15,l,t", specialkeyLabel); // BJO
         panel.add("3,15,l,t", annotationButton);
         annotationButton.setText(getString("edit"));
-        annotationButton.addActionListener(new ActionListener() {
+        annotationButton.addActionListener(new ActionListener()
+        {
 
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
+            @Override public void actionPerformed(ActionEvent e)
+            {
+                try
+                {
                     showAnnotationDialog();
-                } catch (RaplaException ex) {
+                }
+                catch (RaplaException ex)
+                {
                     dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
                 }
 
@@ -201,7 +196,7 @@ public class AttributeDefaultConstraints extends AbstractEditField
         setModel();
 
         nameLabel.setText(getString("name") + ":");
-        keyLabel.setText(getString("key") +" *" + ":");
+        keyLabel.setText(getString("key") + " *" + ":");
         typeLabel.setText(getString("type") + ":");
         categoryLabel.setText(getString("root") + ":");
         dynamicTypeLabel.setText(getString("root") + ":");
@@ -209,29 +204,31 @@ public class AttributeDefaultConstraints extends AbstractEditField
         multiSelectLabel.setText("Multiselect:");
         defaultLabel.setText(getString("default") + ":");
         specialkeyLabel.setText(getString("options") + ":");
-        categorySelect.addChangeListener ( this );
-        categorySelect.addChangeListener( new ChangeListener() {
+        categorySelect.addChangeListener(this);
+        categorySelect.addChangeListener(new ChangeListener()
+                                         {
 
-            public void stateChanged(ChangeEvent e)
-            {
-                final Category rootCategory = categorySelect.getValue();
-                defaultSelectCategory.setRootCategory( rootCategory );
-                defaultSelectCategory.setValue( null);
-                defaultSelectCategory.getComponent().setEnabled( rootCategory != null);
-            }
-        }
+                                             public void stateChanged(ChangeEvent e)
+                                             {
+                                                 final Category rootCategory = categorySelect.getValue();
+                                                 defaultSelectCategory.setRootCategory(rootCategory);
+                                                 defaultSelectCategory.setValue(null);
+                                                 defaultSelectCategory.getComponent().setEnabled(rootCategory != null);
+                                             }
+                                         }
 
         );
-        name.addChangeListener ( this );
-        key.addChangeListener ( this );
-        classSelect.addActionListener ( this );
-        tabSelect.addActionListener( this);
+        name.addChangeListener(this);
+        key.addChangeListener(this);
+        classSelect.addActionListener(this);
+        tabSelect.addActionListener(this);
         multiSelect.addActionListener(this);
-        defaultSelectCategory.addChangeListener( this );
-        defaultSelectText.addChangeListener( this );
-        defaultSelectBoolean.addChangeListener( this );
-        defaultSelectNumber.addChangeListener( this );
-        defaultSelectDate.addDateChangeListener( new DateChangeListener() {
+        defaultSelectCategory.addChangeListener(this);
+        defaultSelectText.addChangeListener(this);
+        defaultSelectBoolean.addChangeListener(this);
+        defaultSelectNumber.addChangeListener(this);
+        defaultSelectDate.addDateChangeListener(new DateChangeListener()
+        {
 
             public void dateChanged(DateChangeEvent evt)
             {
@@ -240,22 +237,24 @@ public class AttributeDefaultConstraints extends AbstractEditField
         });
     }
 
-	@SuppressWarnings("unchecked")
-	private void setModel() {
-		DefaultComboBoxModel model = new DefaultComboBoxModel();
-        for (AttributeType type:types) {
+    @SuppressWarnings("unchecked") private void setModel()
+    {
+        DefaultComboBoxModel model = new DefaultComboBoxModel();
+        for (AttributeType type : types)
+        {
             model.addElement(getString("type." + type));
         }
-        classSelect.setModel( model );
+        classSelect.setModel(model);
 
         model = new DefaultComboBoxModel();
-        for ( String tab:tabs ) {
+        for (String tab : tabs)
+        {
             model.addElement(getString(tab));
         }
-        tabSelect.setModel( model );
+        tabSelect.setModel(model);
 
         setMultiSelectModel();
-	}
+    }
 
     private void setMultiSelectModel()
     {
@@ -269,79 +268,88 @@ public class AttributeDefaultConstraints extends AbstractEditField
         multiSelect.setModel(model);
     }
 
-    public JComponent getComponent() {
+    public JComponent getComponent()
+    {
         return panel;
     }
 
-    private void clearValues() {
-    	 categorySelect.setValue(null);
-         defaultSelectCategory.setValue( null);
-         defaultSelectText.setValue("");
-         defaultSelectBoolean.setValue( null);
-         defaultSelectNumber.setNumber(null);
-         defaultSelectDate.setDate(null);
-         multiSelect.setSelectedItem(null);
-	}
+    private void clearValues()
+    {
+        categorySelect.setValue(null);
+        defaultSelectCategory.setValue(null);
+        defaultSelectText.setValue("");
+        defaultSelectBoolean.setValue(null);
+        defaultSelectNumber.setNumber(null);
+        defaultSelectDate.setDate(null);
+        multiSelect.setSelectedItem(null);
+    }
 
-    public void mapFrom(Attribute attribute) throws RaplaException  {
-    	try {
+    public void mapFrom(Attribute attribute) throws RaplaException
+    {
+        try
+        {
             mapping = true;
             this.attribute = attribute;
             clearValues();
             String classificationType = attribute.getDynamicType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-			emailPossible = classificationType != null && (classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON) || classificationType.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE));
-            name.setValue( attribute.getName());
-            key.setValue( attribute.getKey());
+            emailPossible =
+                    classificationType != null && (classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON) || classificationType
+                            .equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE));
+            name.setValue(attribute.getName());
+            key.setValue(attribute.getKey());
             final AttributeType attributeType = attribute.getType();
             classSelect.setSelectedItem(getString("type." + attributeType));
-            if (attributeType.equals(AttributeType.CATEGORY)) {
-                final Category rootCategory = (Category)attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
-                categorySelect.setValue( rootCategory );
-                defaultSelectCategory.setRootCategory( rootCategory);
-                defaultSelectCategory.setValue( (Category)attribute.convertValue(attribute.defaultValue()));
-                defaultSelectCategory.getComponent().setEnabled( rootCategory != null);
+            if (attributeType.equals(AttributeType.CATEGORY))
+            {
+                final Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+                categorySelect.setValue(rootCategory);
+                defaultSelectCategory.setRootCategory(rootCategory);
+                defaultSelectCategory.setValue((Category) attribute.convertValue(attribute.defaultValue()));
+                defaultSelectCategory.getComponent().setEnabled(rootCategory != null);
             }
-            else if (attributeType.equals(AttributeType.ALLOCATABLE)) {
-                final DynamicType rootCategory = (DynamicType)attribute.getConstraint(ConstraintIds.KEY_DYNAMIC_TYPE);
-                dynamicTypeSelect.setValue( rootCategory );
+            else if (attributeType.equals(AttributeType.ALLOCATABLE))
+            {
+                final DynamicType rootCategory = (DynamicType) attribute.getConstraint(ConstraintIds.KEY_DYNAMIC_TYPE);
+                dynamicTypeSelect.setValue(rootCategory);
             }
             else if (attributeType.equals(AttributeType.STRING))
             {
-                defaultSelectText.setValue( (String)attribute.defaultValue());
+                defaultSelectText.setValue((String) attribute.defaultValue());
             }
             else if (attributeType.equals(AttributeType.BOOLEAN))
             {
-                defaultSelectBoolean.setValue( (Boolean)attribute.defaultValue());
+                defaultSelectBoolean.setValue((Boolean) attribute.defaultValue());
             }
             else if (attributeType.equals(AttributeType.INT))
             {
-                defaultSelectNumber.setNumber( (Number)attribute.defaultValue());
+                defaultSelectNumber.setNumber((Number) attribute.defaultValue());
             }
             else if (attributeType.equals(AttributeType.DATE))
             {
-                defaultSelectDate.setDate( (Date)attribute.defaultValue());
+                defaultSelectDate.setDate((Date) attribute.defaultValue());
             }
 
             {
                 final Object selectedItem = multiSelect.getSelectedItem();
                 setMultiSelectModel();
-                if ( selectedItem != null)
+                if (selectedItem != null)
                 {
                     multiSelect.setSelectedItem(selectedItem);
                 }
             }
-            if (attributeType.equals(AttributeType.CATEGORY) || attributeType.equals(AttributeType.ALLOCATABLE)) {
-            	Boolean multiSelectValue = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT) ;
+            if (attributeType.equals(AttributeType.CATEGORY) || attributeType.equals(AttributeType.ALLOCATABLE))
+            {
+                Boolean multiSelectValue = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
                 final boolean aBoolean = multiSelectValue != null ? multiSelectValue : Boolean.FALSE;
-                Boolean belongsToBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO) ;
+                Boolean belongsToBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
                 final boolean belongsTo = belongsToBoolean != null ? belongsToBoolean : Boolean.FALSE;
-                Boolean packageBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_PACKAGE) ;
+                Boolean packageBoolean = (Boolean) attribute.getConstraint(ConstraintIds.KEY_PACKAGE);
                 final boolean packages = packageBoolean != null ? packageBoolean : Boolean.FALSE;
-                if ( belongsTo )
+                if (belongsTo)
                 {
                     multiSelect.setSelectedItem(getString("belongsTo"));
                 }
-                else if(packages)
+                else if (packages)
                 {
                     multiSelect.setSelectedItem(getString("package"));
                 }
@@ -353,46 +361,55 @@ public class AttributeDefaultConstraints extends AbstractEditField
             String selectedTab = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
             tabSelect.setSelectedItem(getString(selectedTab));
             update();
-        } finally {
+        }
+        finally
+        {
             mapping = false;
         }
     }
 
-    public void mapTo(Attribute attribute) throws RaplaException  {
-        attribute.getName().setTo( name.getValue());
-        attribute.setKey( key.getValue());
+    public void mapTo(Attribute attribute) throws RaplaException
+    {
+        attribute.getName().setTo(name.getValue());
+        attribute.setKey(key.getValue());
         AttributeType type = types[classSelect.getSelectedIndex()];
-        attribute.setType( type );
-        if ( type.equals(AttributeType.CATEGORY)) {
+        attribute.setType(type);
+        if (type.equals(AttributeType.CATEGORY))
+        {
             Object defaultValue = defaultSelectCategory.getValue();
             Object rootCategory = categorySelect.getValue();
-            if ( rootCategory == null)
+            if (rootCategory == null)
             {
                 rootCategory = this.rootCategory;
                 defaultValue = null;
             }
-            attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, rootCategory );
-            attribute.setDefaultValue( defaultValue);
-        } else {
+            attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, rootCategory);
+            attribute.setDefaultValue(defaultValue);
+        }
+        else
+        {
             attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, null);
         }
 
-        if ( type.equals(AttributeType.ALLOCATABLE)) {
+        if (type.equals(AttributeType.ALLOCATABLE))
+        {
             Object rootType = dynamicTypeSelect.getValue();
-//            if ( rootType == null)
-//            {
-//                rootType = this.rootCategory;
-//            }
-            attribute.setConstraint(ConstraintIds.KEY_DYNAMIC_TYPE, rootType );
-	        attribute.setDefaultValue( null);
-        } else {
+            //            if ( rootType == null)
+            //            {
+            //                rootType = this.rootCategory;
+            //            }
+            attribute.setConstraint(ConstraintIds.KEY_DYNAMIC_TYPE, rootType);
+            attribute.setDefaultValue(null);
+        }
+        else
+        {
             attribute.setConstraint(ConstraintIds.KEY_DYNAMIC_TYPE, null);
         }
 
-        if ( type.equals(AttributeType.ALLOCATABLE) || type.equals(AttributeType.CATEGORY))
+        if (type.equals(AttributeType.ALLOCATABLE) || type.equals(AttributeType.CATEGORY))
         {
             final Object selectedItem = multiSelect.getSelectedItem();
-            if ( selectedItem == null)
+            if (selectedItem == null)
             {
                 attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, null);
                 attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, null);
@@ -407,58 +424,66 @@ public class AttributeDefaultConstraints extends AbstractEditField
         }
         else
         {
-        	attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, null);
+            attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, null);
         }
 
-        if ( type.equals(AttributeType.BOOLEAN)) {
+        if (type.equals(AttributeType.BOOLEAN))
+        {
             final Object defaultValue = defaultSelectBoolean.getValue();
-            attribute.setDefaultValue( defaultValue);
+            attribute.setDefaultValue(defaultValue);
         }
 
-        if ( type.equals(AttributeType.INT)) {
+        if (type.equals(AttributeType.INT))
+        {
             final Object defaultValue = defaultSelectNumber.getNumber();
-            attribute.setDefaultValue( defaultValue);
+            attribute.setDefaultValue(defaultValue);
         }
 
-        if ( type.equals(AttributeType.DATE)) {
+        if (type.equals(AttributeType.DATE))
+        {
             final Object defaultValue = defaultSelectDate.getDate();
-            attribute.setDefaultValue( defaultValue);
+            attribute.setDefaultValue(defaultValue);
         }
-        if ( type.equals(AttributeType.STRING)) {
+        if (type.equals(AttributeType.STRING))
+        {
             final Object defaultValue = defaultSelectText.getValue();
-            attribute.setDefaultValue( defaultValue);
+            attribute.setDefaultValue(defaultValue);
         }
-        List<Annotatable> asList = Arrays.asList((Annotatable)attribute);
+        List<Annotatable> asList = Arrays.asList((Annotatable) attribute);
         annotationEdit.mapTo(asList);
         String selectedTab = tabs[tabSelect.getSelectedIndex()];
-        if ( selectedTab != null && !selectedTab.equals(AttributeAnnotations.VALUE_EDIT_VIEW_MAIN)) {
-            attribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW,  selectedTab);
-        } else {
-            attribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW,  null);
+        if (selectedTab != null && !selectedTab.equals(AttributeAnnotations.VALUE_EDIT_VIEW_MAIN))
+        {
+            attribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, selectedTab);
+        }
+        else
+        {
+            attribute.setAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, null);
         }
     }
 
-    private void update() throws RaplaException {
+    private void update() throws RaplaException
+    {
         AttributeType type = types[classSelect.getSelectedIndex()];
-        List<Annotatable> asList = Arrays.asList((Annotatable)attribute);
-        annotationEdit.setObjects( asList);
+        List<Annotatable> asList = Arrays.asList((Annotatable) attribute);
+        annotationEdit.setObjects(asList);
         final boolean categoryVisible = type.equals(AttributeType.CATEGORY);
         final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);
         final boolean textVisible = type.equals(AttributeType.STRING);
         final boolean booleanVisible = type.equals(AttributeType.BOOLEAN);
         final boolean numberVisible = type.equals(AttributeType.INT);
-        final boolean dateVisible  = type.equals(AttributeType.DATE);
-        categoryLabel.setVisible( categoryVisible );
-        categorySelect.getComponent().setVisible( categoryVisible );
-        dynamicTypeLabel.setVisible( allocatableVisible);
-        dynamicTypeSelect.getComponent().setVisible( allocatableVisible);
-        defaultLabel.setVisible( !allocatableVisible);
-        defaultSelectCategory.getComponent().setVisible( categoryVisible);
-        defaultSelectText.getComponent().setVisible( textVisible);
-        defaultSelectBoolean.getComponent().setVisible( booleanVisible);
-        defaultSelectNumber.setVisible( numberVisible);
-        defaultSelectDate.setVisible( dateVisible);
-        multiSelectLabel.setVisible( categoryVisible || allocatableVisible);
+        final boolean dateVisible = type.equals(AttributeType.DATE);
+        categoryLabel.setVisible(categoryVisible);
+        categorySelect.getComponent().setVisible(categoryVisible);
+        dynamicTypeLabel.setVisible(allocatableVisible);
+        dynamicTypeSelect.getComponent().setVisible(allocatableVisible);
+        defaultLabel.setVisible(!allocatableVisible);
+        defaultSelectCategory.getComponent().setVisible(categoryVisible);
+        defaultSelectText.getComponent().setVisible(textVisible);
+        defaultSelectBoolean.getComponent().setVisible(booleanVisible);
+        defaultSelectNumber.setVisible(numberVisible);
+        defaultSelectDate.setVisible(dateVisible);
+        multiSelectLabel.setVisible(categoryVisible || allocatableVisible);
         multiSelect.setVisible(categoryVisible || allocatableVisible);
     }
 
@@ -469,15 +494,14 @@ public class AttributeDefaultConstraints extends AbstractEditField
         {
             dialog.close();
         }
-        dialog = dialogUiFactory.create(
-                new SwingPopupContext(getComponent(), null)
-                ,modal
-                ,annotationEdit.getComponent()
-                ,new String[] { getString("close")});
+        dialog = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), modal, annotationEdit.getComponent(), new String[] { getString("close") });
 
-        dialog.getAction(0).setRunnable( new Runnable() {
+        dialog.getAction(0).setRunnable(new Runnable()
+        {
             private static final long serialVersionUID = 1L;
-            public void run() {
+
+            public void run()
+            {
                 fireContentChanged();
                 dialog.close();
             }
@@ -486,30 +510,36 @@ public class AttributeDefaultConstraints extends AbstractEditField
         dialog.start(true);
     }
 
-    public void actionPerformed(ActionEvent evt) {
+    public void actionPerformed(ActionEvent evt)
+    {
         if (mapping)
             return;
-        if ( evt.getSource() == classSelect) {
+        if (evt.getSource() == classSelect)
+        {
             setMultiSelectModel();
-        	clearValues();
+            clearValues();
             AttributeType newType = types[classSelect.getSelectedIndex()];
-            if (newType.equals(AttributeType.CATEGORY)) {
-                categorySelect.setValue( rootCategory );
+            if (newType.equals(AttributeType.CATEGORY))
+            {
+                categorySelect.setValue(rootCategory);
             }
         }
         fireContentChanged();
-        try {
+        try
+        {
             update();
-        } catch (RaplaException ex) {
+        }
+        catch (RaplaException ex)
+        {
             dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
         }
     }
 
-	public void stateChanged(ChangeEvent e) {
+    public void stateChanged(ChangeEvent e)
+    {
         if (mapping)
             return;
         fireContentChanged();
     }
-
 
 }

@@ -17,6 +17,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -60,7 +61,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @throws RaplaException
      */
     @Inject
-    public UrlEncryptionService() throws RaplaException {//, InvalidKeyException {
+    public UrlEncryptionService() throws RaplaInitializationException1 {//, InvalidKeyException {
     }
 
 
