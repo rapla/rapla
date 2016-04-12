@@ -10,6 +10,7 @@ import org.rapla.client.ResourceSelectionView.Presenter;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.gwt.components.TreeComponent;
 import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.inject.DefaultImplementation;
@@ -18,7 +19,7 @@ import org.rapla.inject.InjectionContext;
 import com.google.gwt.user.client.ui.IsWidget;
 
 @DefaultImplementation(of = ResourceSelectionView.class, context = InjectionContext.gwt)
-public class ResourceSelectionViewImpl extends AbstractView<Presenter>implements ResourceSelectionView<IsWidget>
+public class ResourceSelectionViewImpl extends AbstractView<Presenter>implements ResourceSelectionView
 {
     private final TreeComponent tree;
 
@@ -38,9 +39,9 @@ public class ResourceSelectionViewImpl extends AbstractView<Presenter>implements
     
     
     @Override
-    public IsWidget provideContent()
+    public RaplaWidget provideContent()
     {
-        return tree;
+        return () -> tree;
     }
 
     @Override

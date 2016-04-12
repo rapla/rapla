@@ -16,7 +16,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-@Extension(provides = TaskPresenter.class, id = ResourceSelectionPlace.PLACE_ID)
+// FIXME Do we need ResourceSelection as a seperate Place anymore
+//@Extension(provides = TaskPresenter.class, id = ResourceSelectionPlace.PLACE_ID)
 public class ResourceSelectionPlace implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "ResSel";

@@ -26,9 +26,9 @@ public class Bootstrap
     private final Logger logger;
 
     @Inject
-    public Bootstrap(RaplaFacade facade, StorageOperator operator, Provider<Application> application, Logger logger)
+    public Bootstrap(RaplaFacade facade, StorageOperator operator,  Logger logger)
     {
-        this.application = application;
+        this.application = null;//FIXME add application;
         this.operator = operator;
         this.facade = facade;
         this.logger = logger;

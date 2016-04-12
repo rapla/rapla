@@ -1,14 +1,6 @@
 package org.rapla.plugin.merge.client;
 
-import java.awt.Component;
-import java.util.Collection;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -17,19 +9,23 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.merge.client.extensionpoints.MergeCheckExtension;
 import org.rapla.plugin.merge.client.swing.MergeDialog;
-import org.rapla.plugin.merge.client.swing.MergeDialog.MergeDialogFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.Set;
 
 @Singleton
 public class MergeController
 {
 
-    private final MergeDialogFactory mergeDialogFactory;
+    private final MergeDialog.MergeDialogFactory mergeDialogFactory;
     private final ClientFacade clientFacade;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final Set<MergeCheckExtension> checkers;
 
     @Inject
-    public MergeController(MergeDialogFactory mergeDialogFactory, final ClientFacade clientFacade, final DialogUiFactoryInterface dialogUiFactory,
+    public MergeController(MergeDialog.MergeDialogFactory mergeDialogFactory, final ClientFacade clientFacade, final DialogUiFactoryInterface dialogUiFactory,
             final Set<MergeCheckExtension> checkers)
     {
         this.mergeDialogFactory = mergeDialogFactory;
@@ -47,10 +43,10 @@ public class MergeController
                 mergeCheckExtension.precheckAllocatableSelection(entities);
             }
             String title = "merge";
-            final Component mainComponent = null;
-            final SwingPopupContext popupContext = new SwingPopupContext(mainComponent, null);
-            final MergeDialog<T> mergeDialog = mergeDialogFactory.create(this);
-            mergeDialog.start(entities, title, popupContext);
+//            final Component mainComponent = null;
+//            final SwingPopupContext popupContext = new SwingPopupContext(mainComponent, null);
+//            final MergeDialog<T> mergeDialog = mergeDialogFactory.create(this);
+//            mergeDialog.start(entities, title, popupContext);
         }
         catch (RaplaException e)
         {

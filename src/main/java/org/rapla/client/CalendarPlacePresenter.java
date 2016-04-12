@@ -52,7 +52,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
     public CalendarPlacePresenter(final CalendarPlaceView view, final RaplaFacade facade, final RaplaResources i18n, final CalendarSelectionModel model,
-            final Logger logger, final EventBus eventBus, Map<String, CalendarPlugin> views)
+            final Logger logger, final EventBus eventBus/*, Map<String, CalendarPlugin> views*/)
     {
         this.view = view;
         this.facade = facade;
@@ -61,7 +61,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
         this.logger = logger;
         this.eventBus = eventBus;
         view.setPresenter(this);
-
+        Map<String, CalendarPlugin> views = Collections.emptyMap();
         viewPluginPresenter = new LinkedHashMap<String, CalendarPlugin>();
         for (Entry<String, CalendarPlugin> entry : views.entrySet())
         {

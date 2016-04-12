@@ -19,6 +19,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -34,6 +37,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.CalendarPlaceView;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.TaskPresenter;
@@ -51,6 +55,7 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.Entity;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -62,14 +67,15 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.Extension;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.inject.InjectionContext;
 
-@Extension(id=CalendarEditor.ACTIVITY_ID,provides = TaskPresenter.class)
-final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget<Component>, TaskPresenter
+@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.swing)
+final public class CalendarEditor extends RaplaGUIComponent implements CalendarPlaceView<Component>
 {
-    public static final String ACTIVITY_ID = "calendar";
 	public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
 	public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
 	public static final String SHOW_SELECTION_MENU_ENTRY = "show_resource_selection";
@@ -308,13 +314,8 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 //        calendarContainer.getSelectedCalendar().scrollToStart();
 //    }
 
-    // FIMXE implement or change for gwt
-    @Override public RaplaWidget<Component> startActivity(ApplicationEvent activity)
-    {
-        return calendarContainer;
-    }
 
-    @Override public void updateView(ModificationEvent evt)
+    public void updateView(ModificationEvent evt)
     {
         listenersDisabled = true;
         try
@@ -389,13 +390,43 @@ final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidg
 //        }
     }
 
+    Component getComponent()
+    {
+        return content;
+    }
 
 	public void start()  {
         calendarContainer.getSelectedCalendar().scrollToStart();
     }
 
-    public JComponent getComponent() {
+    // FIXME implement or change View Presenter methods
+    @Override public void show(List<String> viewNames, String selectedView, List<String> calendarNames, String selectedCalendar)
+    {
+
+    }
+
+    @Override public void replaceContent(Component provider)
+    {
+
+    }
+
+    @Override public void setPresenter(Presenter presenter)
+    {
+
+    }
+
+    @Override public void updateResources(Allocatable[] entries, Collection<Allocatable> selected)
+    {
+
+    }
+
+    @Override public Component provideContent()
+    {
         return content;
     }
 
+    @Override public void updateDate(Date selectedDate)
+    {
+
+    }
 }

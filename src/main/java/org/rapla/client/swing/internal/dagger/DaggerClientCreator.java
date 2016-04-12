@@ -48,7 +48,7 @@ public class DaggerClientCreator
         }
         else
         {
-            RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
+            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
             client = component.getClientService();
         }
         userClientServiceProvider.setClient( (UserClientService) client );

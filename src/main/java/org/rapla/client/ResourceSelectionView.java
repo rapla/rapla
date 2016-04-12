@@ -2,9 +2,10 @@ package org.rapla.client;
 
 import java.util.Collection;
 
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.domain.Allocatable;
 
-public interface ResourceSelectionView<W>
+public interface ResourceSelectionView
 {
 
     interface Presenter
@@ -13,7 +14,7 @@ public interface ResourceSelectionView<W>
         void selectionChanged(Collection<Allocatable> selected);
     }
 
-    W provideContent();
+    RaplaWidget provideContent();
 
     void setPresenter(Presenter presenter);
 
