@@ -18,6 +18,7 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
+import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -28,7 +29,9 @@ import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
 
 @DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
 public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
@@ -154,12 +157,17 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
 
     @Override public void createPopup(RaplaWidget<IsWidget> w)
     {
-
+        final PopupPanel popup = RaplaPopups.createNewPopupPanel();
+        popup.setAnimationEnabled(true);
+        popup.setAnimationType(AnimationType.ROLL_DOWN);
+        popup.add(w.getComponent());
+        popup.center();
     }
 
     @Override
     public void init(boolean showToolTips, String windowTitle)
     {
+        RaplaPopups.getProgressBar().setPercent(100);
     }
 
 }

@@ -13,7 +13,6 @@ import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.Action;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
-import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
@@ -188,7 +187,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             mainView.updateMenu();
             // Test for the resources
             clientFacade.addModificationListener(this);
-            RaplaPopups.getProgressBar().setPercent(100);
             final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
             String statusMessage = i18n.format("rapla.welcome",name);
             if ( admin)
