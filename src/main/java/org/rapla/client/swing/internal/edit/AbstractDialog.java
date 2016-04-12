@@ -56,7 +56,7 @@ public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent
         this.dialogUiFactory = dialogUiFactory;
     }
 
-    protected void start(Collection<T> editObjects, String title, PopupContext popupContext, EditController.EditCallback<List<T>> callback, final String confirm, final String cancel, Runnable confirmAction)
+    protected void start(Collection<T> editObjects, String title, PopupContext popupContext,  final String confirm, final String cancel, Runnable confirmAction)
             throws RaplaException
     {
         ui = createUI(editObjects.iterator().next());
@@ -94,7 +94,7 @@ public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent
         dlg = dialogUiFactory
                 .create(popupContext, modal, panel, new String[] { confirm, cancel });
 
-        final AbortAction action = new AbortAction(callback);
+        final AbortAction action = new AbortAction();
         dlg.setAbortAction(action);
         dlg.getAction(0).setRunnable(confirmAction);
         dlg.getAction(1).setRunnable(action);
@@ -164,7 +164,7 @@ public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent
     class AbortAction implements Runnable
     {
         private static final long serialVersionUID = 1L;
-        public AbortAction(EditController.EditCallback<List<T>> callback)
+        public AbortAction()
         {
         }
 

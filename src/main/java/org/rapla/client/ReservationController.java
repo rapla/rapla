@@ -29,10 +29,10 @@ import org.rapla.framework.RaplaException;
  */
 public interface ReservationController
 {
-    void edit( Reservation reservation ) throws RaplaException;
-    void edit( AppointmentBlock appointmentBlock) throws RaplaException;
-
-    ReservationEdit[] getEditWindows();
+//    void edit( Reservation reservation ) throws RaplaException;
+//    void edit( AppointmentBlock appointmentBlock) throws RaplaException;
+//
+//    ReservationEdit[] getEditWindows();
 
     /** copies an appointment without interaction */
     Appointment copyAppointment( Appointment appointment ) throws RaplaException;

@@ -14,6 +14,6 @@ public interface EditDialogInterface<T>
 
     DialogInterface getDialog();
 
-    void start(Collection<T> editObjects, String title, PopupContext popupContext,  EditController.EditCallback<List<T>> callback) throws RaplaException;
+    void start(Collection<T> editObjects, String title, PopupContext popupContext) throws RaplaException;
 
 }

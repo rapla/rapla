@@ -11,7 +11,7 @@ import javax.inject.Singleton;
 import org.rapla.RaplaResources;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.event.ActionPresenter;
+import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.i18n.BundleManager;
@@ -48,7 +48,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final RaplaResources i18n;
 
     private final EventBus eventBus;
-    private final Map<String, ActionPresenter> activityPresenters;
+    private final Map<String, TaskPresenter> activityPresenters;
     final private Provider<Set<ClientExtension>> clientExtensions;
     final Provider<CalendarSelectionModel> calendarModelProvider;
     private final CommandScheduler scheduler;
@@ -58,7 +58,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
     public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
-            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, ActionPresenter> activityPresenters,
+            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, TaskPresenter> activityPresenters,
             Provider<Set<ClientExtension>> clientExtensions,
             Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler
     )
@@ -80,7 +80,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     public boolean startAction(ApplicationEvent activity, boolean isPlace)
     {
         final String activityId = activity.getApplicationEventId();
-        final ActionPresenter activityPresenter = activityPresenters.get(activityId);
+        final TaskPresenter activityPresenter = activityPresenters.get(activityId);
         if ( activityPresenter == null)
         {
             return false;

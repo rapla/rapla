@@ -36,7 +36,7 @@ import javax.swing.event.ChangeListener;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.event.ActionPresenter;
+import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -66,8 +66,9 @@ import org.rapla.inject.Extension;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(id=CalendarEditor.ACTIVITY_ID,provides = ActionPresenter.class)
-final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget<Component>, ActionPresenter {
+@Extension(id=CalendarEditor.ACTIVITY_ID,provides = TaskPresenter.class)
+final public class CalendarEditor extends RaplaGUIComponent implements RaplaWidget<Component>, TaskPresenter
+{
     public static final String ACTIVITY_ID = "calendar";
 	public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
 	public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");

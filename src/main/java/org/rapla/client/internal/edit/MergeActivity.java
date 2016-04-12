@@ -4,15 +4,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.event.ActionPresenter;
+import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.merge.client.MergeController;
 
 @Singleton
-@Extension(id=MergeActivity.ID,provides = ActionPresenter.class)
-public class MergeActivity implements ActionPresenter
+@Extension(id=MergeActivity.ID,provides = TaskPresenter.class)
+public class MergeActivity implements TaskPresenter
 {
     final static public String ID = "merge";
 

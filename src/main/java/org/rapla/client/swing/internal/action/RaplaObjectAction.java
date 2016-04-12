@@ -394,4 +394,3 @@ public class RaplaObjectAction extends RaplaAction {
 	}
 
 }
-

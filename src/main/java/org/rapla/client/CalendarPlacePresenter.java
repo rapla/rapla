@@ -15,7 +15,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.event.ActionPresenter;
+import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
@@ -33,8 +33,8 @@ import org.rapla.inject.Extension;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-@Extension(provides = ActionPresenter.class, id = CalendarPlacePresenter.PLACE_ID)
-public class CalendarPlacePresenter implements Presenter, ActionPresenter
+@Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID)
+public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "cal";
     private static final String TODAY_DATE = "today";

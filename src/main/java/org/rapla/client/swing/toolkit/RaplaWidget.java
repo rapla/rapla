@@ -13,6 +13,7 @@
 package org.rapla.client.swing.toolkit;
 
 /** Should be implemented by all rapla-gui-components that have a view.*/
+@FunctionalInterface
 public interface RaplaWidget<T> {
     T getComponent();
 }

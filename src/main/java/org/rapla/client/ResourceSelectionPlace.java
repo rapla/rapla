@@ -7,7 +7,7 @@ import javax.inject.Inject;
 import org.rapla.client.ResourceSelectionView.Presenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.client.event.ActionPresenter;
+import org.rapla.client.event.TaskPresenter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -16,8 +16,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-@Extension(provides = ActionPresenter.class, id = ResourceSelectionPlace.PLACE_ID)
-public class ResourceSelectionPlace implements Presenter, ActionPresenter
+@Extension(provides = TaskPresenter.class, id = ResourceSelectionPlace.PLACE_ID)
+public class ResourceSelectionPlace implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "ResSel";
     private final ResourceSelectionView view;

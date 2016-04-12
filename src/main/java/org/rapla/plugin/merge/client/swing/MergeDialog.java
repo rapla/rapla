@@ -1,18 +1,6 @@
 package org.rapla.plugin.merge.client.swing;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-
 import org.rapla.RaplaResources;
-import org.rapla.client.EditController.EditCallback;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -29,6 +17,16 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.merge.client.MergeController;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
 {
     private final Provider<AllocatableMergeEditUI> editUiProvider;
@@ -43,9 +41,9 @@ public class MergeDialog<T extends Allocatable> extends AbstractDialog<T>
     }
 
     @Override
-    public void start(Collection<T> editObjects, String title, PopupContext popupContext, EditCallback<List<T>> callback) throws RaplaException
+    public void start(Collection<T> editObjects, String title, PopupContext popupContext) throws RaplaException
     {
-        start(editObjects, getI18n().getString(title), popupContext, callback, getString("merge"), getString("cancel"), new MergeAction());
+        start(editObjects, getI18n().getString(title), popupContext, getString("merge"), getString("cancel"), new MergeAction());
         setObjects(new ArrayList<T>(editObjects));
     }
 
