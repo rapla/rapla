@@ -12,11 +12,13 @@ import org.rapla.client.event.Action;
 import org.rapla.client.event.ActionPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
 
@@ -50,13 +52,28 @@ public class EditActivity implements ActionPresenter
             Class<? extends Entity> clazz = activityId.equals(EDIT_RESOURCES_ID) ? Allocatable.class: Reservation.class;
             for (String id : ids)
             {
-                final Entity resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
+                Entity resolve;
+                try
+                {
+                    resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
+                }
+                catch (EntityNotFoundException e)
+                {
+                    return null;
+                }
                 entities.add(resolve);
             }
             EditController.EditCallback<List<Entity>> callback = null;
             String title = null;
-            final RaplaWidget edit = editController.edit(entities, title, popupContext, callback);
-            return  edit;
+            try
+            {
+                RaplaWidget edit = editController.edit(entities, title, popupContext, callback);
+                return edit;
+            }
+            catch (RaplaException e)
+            {
+                return null;
+            }
         }
         else
         {
