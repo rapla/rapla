@@ -302,10 +302,8 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         return;
                     String eventTypeAttributeNameKey = ((Attribute) selectedItem).getKey();
 
-                    Promise<Integer[]> statusPromise = importService
+                    Integer[] status = importService
                             .importICal(new Import(iCal, isURL, allocatableIds, eventTypeKey, eventTypeAttributeNameKey));
-                    statusPromise.thenAccept((status) ->
-                    {
                         int eventsInICal = status[0];
                         int eventsImported = status[1];
                         int eventsPresent = status[2];
@@ -323,7 +321,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         }
                         DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), false, title, text);
                         okDlg.start(true);
-                    });
+
 				} catch (Exception e1) {
 				    dialogUiFactory.showException(e1, new SwingPopupContext(getMainComponent(), null));
 				}

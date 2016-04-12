@@ -19,7 +19,7 @@ public class DaggerServerCreator
         }
         else
         {
-            RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
+            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
             server = component.getServerServiceContainer();
         }
         return server;

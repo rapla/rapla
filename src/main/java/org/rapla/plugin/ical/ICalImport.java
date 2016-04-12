@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 @Path("ical/import")
@@ -15,7 +16,7 @@ public interface ICalImport
 {
     @POST
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<Integer[]> importICal(Import job);
+    Integer[] importICal(Import job) throws RaplaException;
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)

@@ -21,6 +21,7 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 
+import org.rapla.client.gwt.Rapla;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -40,6 +41,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -88,10 +90,8 @@ public class RaplaICalImport implements ICalImport {
     }
 
 	@Override
-    public Promise<Integer[]> importICal(Import job)
+    public Integer[] importICal(Import job) throws RaplaException
 	{
-        try
-        {
             String content = job.getContent();
             boolean isURL = job.isURL();
             String[] allocatableIds = job.getAllocatableIds();
@@ -108,12 +108,8 @@ public class RaplaICalImport implements ICalImport {
             }
             User user = session.getUser(request);
             final Promise<Integer[]> count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-            return count;
-        }
-        catch(RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
+            return PromiseSynchroniser.waitForWithRaplaException( count, 10000);
+
 	}
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException
 	{
