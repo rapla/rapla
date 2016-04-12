@@ -50,6 +50,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
+import org.rapla.scheduler.Promise;
 
 
 public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
@@ -137,13 +138,16 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 		return listener;
     }
 
-    protected RaplaBuilder createBuilder() throws RaplaException
+    protected Promise<RaplaBuilder> createBuilder() 
     {
-    	RaplaBuilder builder = super.createBuilder();
-    	builder.setSmallBlocks( true );
-        GroupStartTimesStrategy strategy = new GroupStartTimesStrategy( );
-        builder.setBuildStrategy( strategy );
-        return builder;
+    	Promise<RaplaBuilder> builderPromise = super.createBuilder();
+    	final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) -> {
+    	    builder.setSmallBlocks( true );
+    	    GroupStartTimesStrategy strategy = new GroupStartTimesStrategy( );
+    	    builder.setBuildStrategy( strategy );
+    	    return builder;
+    	});
+    	return nextBuilderPromise;
     }
 
     protected void configureView() throws RaplaException {

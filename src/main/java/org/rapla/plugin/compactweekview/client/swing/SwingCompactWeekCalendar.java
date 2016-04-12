@@ -61,6 +61,7 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
+import org.rapla.scheduler.Promise;
 
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
@@ -196,26 +197,28 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
         return listener;
     }
 
-    protected RaplaBuilder createBuilder() throws RaplaException {
-        RaplaBuilder builder = super.createBuilder();
-        
-		builder.setSmallBlocks( true );
-      
-        String[] slotNames;
-        final List<Allocatable> allocatables = getSortedAllocatables();
-      	GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
-    	strategy.setFixedSlotsEnabled( true);
-    	strategy.setResolveConflictsEnabled( false );
-    	strategy.setAllocatables(allocatables) ;
-    	builder.setBuildStrategy( strategy );
-        slotNames = new String[ allocatables.size() ];
-        for (int i = 0; i <allocatables.size(); i++ ) {
-            slotNames[i] = allocatables.get(i).getName( getRaplaLocale().getLocale() );
-        }
-        builder.setSplitByAllocatables( true );
-        ((SwingCompactWeekView)view).setLeftColumnSize( 150);
-        ((SwingCompactWeekView)view).setSlots( slotNames );
-        return builder;
+    protected Promise<RaplaBuilder> createBuilder() {
+        Promise<RaplaBuilder> builderPromise = super.createBuilder();
+        final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) ->
+        {
+            builder.setSmallBlocks(true);
+            final List<Allocatable> allocatables = getSortedAllocatables();
+            GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale());
+            strategy.setFixedSlotsEnabled(true);
+            strategy.setResolveConflictsEnabled(false);
+            strategy.setAllocatables(allocatables);
+            builder.setBuildStrategy(strategy);
+            final String[] slotNames = new String[allocatables.size()];
+            for (int i = 0; i < allocatables.size(); i++)
+            {
+                slotNames[i] = allocatables.get(i).getName(getRaplaLocale().getLocale());
+            }
+            builder.setSplitByAllocatables(true);
+            ((SwingCompactWeekView) view).setLeftColumnSize(150);
+            ((SwingCompactWeekView) view).setSlots(slotNames);
+            return builder;
+        });
+        return nextBuilderPromise;
     }
 
     protected void configureView() throws RaplaException {

@@ -17,11 +17,11 @@ package org.rapla.client.swing;
 import javax.swing.JComponent;
 
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 public interface SwingCalendarView extends RaplaWidget
 {
-    void update() throws RaplaException;
+    Promise<Void> update();
     /** you can provide a DateSelection component if you want */
     JComponent getDateSelection();
     /** Most times you can only scroll programaticaly if the window is visible and the size of

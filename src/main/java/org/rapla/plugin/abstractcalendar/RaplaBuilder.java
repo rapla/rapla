@@ -70,6 +70,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 public abstract class RaplaBuilder 
@@ -140,65 +141,67 @@ public abstract class RaplaBuilder
         return logger;
     }
     
-    public void setFromModel(CalendarModel model, Date startDate, Date endDate) throws RaplaException {
-    	Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
-
-    	conflictsSelected.clear();
-        conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
-        Collection<Allocatable> allocatables ;
-        TimeInterval interval = new TimeInterval( startDate, endDate);
-        bindings = model.queryAppointmentBindings(interval);
-        if ( !conflictsSelected.isEmpty() )
-        {
-            allocatables = Util.getAllocatables( conflictsSelected );
-            Collection<Appointment> all = new LinkedHashSet<Appointment>();
-            for ( Collection<Appointment> appointments: bindings.values())
+    public Promise<RaplaBuilder> initFromModel(CalendarModel model, Date startDate, Date endDate)
+    {
+        final RaplaBuilder builder = this;
+        final TimeInterval interval = new TimeInterval( startDate, endDate);
+        final Promise<Map<Allocatable, Collection<Appointment>>> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
+        final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
+            Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
+            conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
+            bindings = appointmentBindings;
+            Collection<Allocatable> allocatables ;
+            if ( !conflictsSelected.isEmpty() )
             {
-                all.addAll( appointments);
+                allocatables = Util.getAllocatables( conflictsSelected );
+                Collection<Appointment> all = new LinkedHashSet<Appointment>();
+                for ( Collection<Appointment> appointments: bindings.values())
+                {
+                    all.addAll( appointments);
+                }
+                conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
             }
-            conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
-        }
-        else
-        {
-            Collection<Appointment> all = new LinkedHashSet<Appointment>();
-            allocatables = new ArrayList<Allocatable>(bindings.keySet());
-            Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
-            for ( Collection<Appointment> appointments: bindings.values())
+            else
             {
-                all.addAll( appointments);
-            }
-            conflictingAppointments = null;
-
+                Collection<Appointment> all = new LinkedHashSet<Appointment>();
+                allocatables = new ArrayList<Allocatable>(bindings.keySet());
+                Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
+                for ( Collection<Appointment> appointments: bindings.values())
+                {
+                    all.addAll( appointments);
+                }
+                conflictingAppointments = null;
+                
 //            long time = System.currentTimeMillis();
-
+                
 //            getLogger().info("Kram took " + (System.currentTimeMillis() - time) + " ms ");
-
-        }
-     
-
-        if ( conflictsSelected.isEmpty() )
-        {
-            // FIXME check if needed
+                
+            }
+            
+            
+            if ( conflictsSelected.isEmpty() )
+            {
+                // FIXME check if needed
 //        	if ( allocatables.isEmpty() || startDate == null)
-            //        	{
-            //        		filteredReservations = Arrays.asList( model.getReservations(  startDate, endDate ));
-            //        	}
-            //        	else
-            //        	{
-            //        		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
-            //        	}
-        }
-        selectedReservations = CalendarModelImpl.getAllReservations(bindings );
-        User user = model.getUser();
-		CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions( user, getClientFacade());
-        nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
-        isResourceColoring =calendarOptions.isResourceColoring();
-        isEventColoring =calendarOptions.isEventColoring();
-
-        setEditingUser(user);
-        setExceptionsExcluded( !calendarOptions.isExceptionsVisible());
-
-        /* Uncomment this to color allocatables in the reservation view
+                //        	{
+                //        		filteredReservations = Arrays.asList( model.getReservations(  startDate, endDate ));
+                //        	}
+                //        	else
+                //        	{
+                //        		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
+                //        	}
+            }
+            selectedReservations = CalendarModelImpl.getAllReservations(bindings );
+            User user = model.getUser();
+            CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions( user, getClientFacade());
+            nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
+            isResourceColoring =calendarOptions.isResourceColoring();
+            isEventColoring =calendarOptions.isEventColoring();
+            
+            setEditingUser(user);
+            setExceptionsExcluded( !calendarOptions.isExceptionsVisible());
+            
+            /* Uncomment this to color allocatables in the reservation view
         if ( allocatables.size() == 0) {
             allocatables = new ArrayList();
             for (int i=0;i< reservations.size();i++) {
@@ -211,14 +214,17 @@ public abstract class RaplaBuilder
                 }
             }
         }*/
-
-        selectedAllocatables.clear();
-        if (allocatables != null ) {
-            List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
-            Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
-            selectedAllocatables.addAll(new HashSet<Allocatable>(list));
-        }
-        createColorMap();
+            
+            selectedAllocatables.clear();
+            if (allocatables != null ) {
+                List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
+                Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
+                selectedAllocatables.addAll(new HashSet<Allocatable>(list));
+            }
+            createColorMap();
+            return builder;
+        });
+        return builderPromise;
     }
 
 

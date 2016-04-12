@@ -84,7 +84,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
-		builder.setFromModel( model, startDate, endDate  );
+		builder.initFromModel( model, startDate, endDate  );
         return builder;
     }
 

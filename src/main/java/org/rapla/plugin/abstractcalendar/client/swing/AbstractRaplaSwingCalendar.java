@@ -71,6 +71,9 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.server.PromiseSynchroniser;
 
 public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     implements
@@ -173,16 +176,15 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     public void dateChanged(DateChangeEvent evt) {
         try {
-            // TODO why is that here
-            //Date date = evt.getDate();
-            // model.setSelectedDate( date );
-            update();
+            // TODO think about asynchronous call
+            final Promise<Void> update = update();
+            PromiseSynchroniser.waitForWithRaplaException(update, 10000);
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex, new SwingPopupContext(view.getComponent(), null));
         }
     }
 
-    public void update(  ) throws RaplaException {
+    public Promise<Void> update() {
     	if ( titleView != null)
         {
             titleView.setText( model.getNonEmptyTitle());
@@ -193,19 +195,29 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         	int minBlockWidth = getCalendarOptions().getMinBlockWidth();
 			view.setMinBlockWidth( minBlockWidth);
         }
-        configureView( );
+        try
+        {
+            configureView( );
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
         Date startDate = getStartDate() ;
         Date endDate = getEndDate();
         ensureViewTimeframeIsInModel(startDate, endDate);
       
 
-        view.rebuild( createBuilder() );
-        
-        if ( !view.isEditable())
-        {
-            Dimension size = view.getComponent().getPreferredSize();
-            container.setBounds( 0,0, size.width, size.height + 40);
-        }
+        final Promise<RaplaBuilder> builderPromise = createBuilder();
+        final Promise<Void> voidPromise = builderPromise.thenAccept((builder) -> {
+            view.rebuild( builder );
+            if ( !view.isEditable())
+            {
+                Dimension size = view.getComponent().getPreferredSize();
+                container.setBounds( 0,0, size.width, size.height + 40);
+            }
+        });
+        return voidPromise;
     }
 
 	protected Date getEndDate() {
@@ -234,20 +246,22 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     }
 
    
-    protected RaplaBuilder createBuilder() throws RaplaException
+    protected Promise<RaplaBuilder> createBuilder() 
     {
         RaplaBuilder builder = new SwingRaplaBuilder(getFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater, raplaImages);
         Date startDate = getStartDate();
 		Date endDate = getEndDate();
-		builder.setFromModel( model, startDate, endDate );
-		builder.setRepeatingVisible( view.isEditable());
-		
-        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
-        boolean compactColumns = getCalendarOptions().isCompactColumns() ||  builder.getAllocatables().size() ==0 ;
-        strategy.setFixedSlotsEnabled( !compactColumns);
-        strategy.setResolveConflictsEnabled( true );
-        builder.setBuildStrategy( strategy );
-        return builder;
+		final Promise<RaplaBuilder> builderPromise = builder.initFromModel( model, startDate, endDate );
+		final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((initializedBuilder) -> {
+		    initializedBuilder.setRepeatingVisible( view.isEditable());
+		    GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
+		    boolean compactColumns = getCalendarOptions().isCompactColumns() ||  initializedBuilder.getAllocatables().size() ==0 ;
+		    strategy.setFixedSlotsEnabled( !compactColumns);
+		    strategy.setResolveConflictsEnabled( true );
+		    initializedBuilder.setBuildStrategy( strategy );
+		    return initializedBuilder;
+		});
+		return nextBuilderPromise;
     }
 
     public JComponent getComponent()
@@ -314,7 +328,8 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		    	
 		    	try 
 		    	{
-		    		update();
+		    		final Promise<Void> update = update();
+		    		PromiseSynchroniser.waitForWithRaplaException(update, 10000);
 				} 
 				catch (RaplaException e) 
 				{
@@ -332,9 +347,11 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		    	Component component = container;
 		        view.updateSize( (int)newWidth );
 		        container.setBounds( 0,0, (int)newWidth, (int)preferedHeight);
-		        try {
-		    		update();
-				} 
+                try
+                {
+                    final Promise<Void> update = update();
+                    PromiseSynchroniser.waitForWithRaplaException(update, 10000);
+                }
 				catch (RaplaException e) 
 				{
 					throw new PrinterException(e.getMessage());

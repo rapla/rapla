@@ -25,9 +25,9 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
+import org.rapla.scheduler.Promise;
 
 
 public class HTMLRaplaBuilder extends RaplaBuilder {
@@ -46,16 +46,18 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
 
     
     @Override
-    public void setFromModel(CalendarModel model, Date startDate, Date endDate)
-    		throws RaplaException {
-    	super.setFromModel(model, startDate, endDate);
-        {
-        	String option = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
-        	if (option != null && option.equalsIgnoreCase("true"))
-        	{
-        		onlyAllocationInfo = true;
-        	}
-        }
+    public Promise<RaplaBuilder> initFromModel(CalendarModel model, Date startDate, Date endDate) 
+    {
+    	final Promise<RaplaBuilder> builderPromise = super.initFromModel(model, startDate, endDate);
+    	final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) -> {
+    	    String option = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
+    	    if (option != null && option.equalsIgnoreCase("true"))
+    	    {
+    	        onlyAllocationInfo = true;
+    	    }
+    	    return builder;
+    	});
+    	return nextBuilderPromise;
     }
     
     @Override

@@ -77,6 +77,7 @@ import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummar
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.PermissionController;
 
 public class SwingAppointmentTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
@@ -192,14 +193,12 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             public void dateChanged(DateChangeEvent evt)
             {
-                try
-                {
-                    update();
-                }
-                catch (RaplaException ex)
+                final Promise<Void> updatePromise = update();
+                updatePromise.exceptionally((ex) ->
                 {
                     SwingAppointmentTableView.this.dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-                }
+                    return null;
+                });
             }
         });
 
@@ -216,7 +215,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         });
     }
 
-    protected void update(CalendarModel model) throws RaplaException
+    protected Promise<Void> update(CalendarModel model) 
     {
         SwingUtilities.invokeLater(new Runnable()
         {
@@ -237,36 +236,31 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                 disabledGlassPane.activate();
             }
         });
-        new SwingWorker<Void, Void>()
-        {
-            @Override
-            protected Void doInBackground() throws Exception
+        final Promise<List<AppointmentBlock>> blocksPromise = SwingAppointmentTableView.this.model.getBlocks();
+        final Promise<Void> voidPromise = blocksPromise.thenAccept((blocks) ->
+        { // TODO take away Swing Thread
+            SwingUtilities.invokeLater(new Runnable()
             {
-//                Thread.sleep(4000);
-                final Promise<List<AppointmentBlock>> blocksPromise = SwingAppointmentTableView.this.model.getBlocks();
-                blocksPromise.thenAccept((blocks) ->
-                { // TODO take away Swing Thread
-                    SwingUtilities.invokeLater(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            appointmentTableModel.setAppointments(blocks);
-                            final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
-                            glassPane.deactivate();
-                        }
-                    });
-                });
-                return null;
-            }
-
-        }.execute();
+                @Override
+                public void run()
+                {
+                    appointmentTableModel.setAppointments(blocks);
+                    final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
+                    glassPane.deactivate();
+                }
+            });
+        });
+        return voidPromise;
     }
 
-    public void update() throws RaplaException
+    public Promise<Void> update()
     {
-        update(model);
-        dateChooser.update();
+        final Promise<Void> voidPromise = update(model);
+        final Promise<Void> returnVoidPromise = voidPromise.thenAccept((a) ->
+        {
+            dateChooser.update();
+        });
+        return returnVoidPromise;
     }
 
     public JComponent getDateSelection()

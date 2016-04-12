@@ -59,10 +59,11 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotProvider;
+import org.rapla.scheduler.Promise;
 
 public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 {
-	List<Timeslot> timeslots;
+	private List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
     public SwingCompactCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarModel settings, boolean editable, boolean printing, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException {
@@ -244,56 +245,59 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
         };
     }
 
-    protected RaplaBuilder createBuilder() throws RaplaException {
-    	timeslots = timeslotProvider.getTimeslots();
-    	List<Integer> startTimes = new ArrayList<Integer>();
-    	for (Timeslot slot:timeslots) {
-    		 startTimes.add( slot.getMinuteOfDay());
-    	}
-        RaplaBuilder builder = super.createBuilder();
-        builder.setSmallBlocks( true );
-        GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
-    	strategy.setFixedSlotsEnabled( true);
-    	strategy.setResolveConflictsEnabled( false );
-        strategy.setStartTimes( startTimes );
-//Uncommont if you want to sort by resource name instead of event name
-        //        strategy.setBlockComparator( new Comparator<Block>() {
-//			
-//			public int compare(Block b1, Block b2) {
-//		        int result = b1.getStart().compareTo(b2.getStart());
-//		        if (result != 0)
-//		        {
-//		        	return result; 
-//		        }
-//		        Allocatable a1 = ((AbstractRaplaBlock) b1).getGroupAllocatable();
-//		        Allocatable a2 = ((AbstractRaplaBlock) b2).getGroupAllocatable();
-//		        if ( a1 != null && a2 != null)
-//		        {
-//		        	String name1 = a1.getName( getLocale());
-//					String name2 = a2.getName(getLocale());
-//					
-//					result = name1.compareTo(name2);
-//			        if (result != 0)
-//			        {
-//			        	return result; 
-//			        }
-//
-//		        }
-//		        return b1.getName().compareTo(b2.getName());
-//			}
-//		});
-    	builder.setBuildStrategy( strategy);    	
-        builder.setSplitByAllocatables( false );
-        String[] slotNames = new String[ timeslots.size() ];
-        int maxSlotLength = 5;
-        for (int i = 0; i <timeslots.size(); i++ ) {
-        	String slotName = timeslots.get( i ).getName();
-        	maxSlotLength = Math.max( maxSlotLength, slotName.length());
-			slotNames[i] = slotName;
-        }
-        ((SwingCompactWeekView)view).setLeftColumnSize( 30+ maxSlotLength * 6);
-        ((SwingCompactWeekView)view).setSlots( slotNames );
-    	return builder;
+    protected Promise<RaplaBuilder> createBuilder() {
+        Promise<RaplaBuilder> builderPromise = super.createBuilder();
+        final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) -> {
+            timeslots = timeslotProvider.getTimeslots();
+            List<Integer> startTimes = new ArrayList<Integer>();
+            for (Timeslot slot:timeslots) {
+                 startTimes.add( slot.getMinuteOfDay());
+            }
+            builder.setSmallBlocks( true );
+            GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
+            strategy.setFixedSlotsEnabled( true);
+            strategy.setResolveConflictsEnabled( false );
+            strategy.setStartTimes( startTimes );
+    //Uncommont if you want to sort by resource name instead of event name
+            //        strategy.setBlockComparator( new Comparator<Block>() {
+//              
+//              public int compare(Block b1, Block b2) {
+//                  int result = b1.getStart().compareTo(b2.getStart());
+//                  if (result != 0)
+//                  {
+//                      return result; 
+//                  }
+//                  Allocatable a1 = ((AbstractRaplaBlock) b1).getGroupAllocatable();
+//                  Allocatable a2 = ((AbstractRaplaBlock) b2).getGroupAllocatable();
+//                  if ( a1 != null && a2 != null)
+//                  {
+//                      String name1 = a1.getName( getLocale());
+//                      String name2 = a2.getName(getLocale());
+//                      
+//                      result = name1.compareTo(name2);
+//                      if (result != 0)
+//                      {
+//                          return result; 
+//                      }
+    //
+//                  }
+//                  return b1.getName().compareTo(b2.getName());
+//              }
+//          });
+            builder.setBuildStrategy( strategy);        
+            builder.setSplitByAllocatables( false );
+            String[] slotNames = new String[ timeslots.size() ];
+            int maxSlotLength = 5;
+            for (int i = 0; i <timeslots.size(); i++ ) {
+                String slotName = timeslots.get( i ).getName();
+                maxSlotLength = Math.max( maxSlotLength, slotName.length());
+                slotNames[i] = slotName;
+            }
+            ((SwingCompactWeekView)view).setLeftColumnSize( 30+ maxSlotLength * 6);
+            ((SwingCompactWeekView)view).setSlots( slotNames );
+            return builder;
+        });
+        return nextBuilderPromise;
     }
 
     

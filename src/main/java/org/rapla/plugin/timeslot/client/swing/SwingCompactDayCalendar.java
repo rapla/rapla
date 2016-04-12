@@ -63,6 +63,7 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotProvider;
+import org.rapla.scheduler.Promise;
 
 public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 {
@@ -301,62 +302,67 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
         };
     }
 
-    protected RaplaBuilder createBuilder() throws RaplaException
+    protected Promise<RaplaBuilder> createBuilder() 
     {
-        RaplaBuilder builder = super.createBuilder();
-        timeslots = timeslotProvider.getTimeslots();
-        List<Integer> startTimes = new ArrayList<Integer>();
-        for (Timeslot slot : timeslots)
+        Promise<RaplaBuilder> builderPromise = super.createBuilder();
+        final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) ->
         {
-            startTimes.add(slot.getMinuteOfDay());
-        }
-
-        final List<Allocatable> allocatables = getSortedAllocatables();
-        builder.setSmallBlocks(true);
-        builder.setSplitByAllocatables(true);
-        GroupStartTimesStrategy strategy = new GroupStartTimesStrategy()
-        {
-            @Override protected Map<Block, Integer> getBlockMap(CalendarView wv, List<Block> blocks)
+            timeslots = timeslotProvider.getTimeslots();
+            List<Integer> startTimes = new ArrayList<Integer>();
+            for (Timeslot slot : timeslots)
             {
-                if (allocatables != null)
-                {
-                    Map<Block, Integer> map = new LinkedHashMap<Block, Integer>();
-                    for (Block block : blocks)
-                    {
-                        int index = getIndex(allocatables, block);
-
-                        if (index >= 0)
-                        {
-                            map.put(block, index);
-                        }
-                    }
-                    return map;
-                }
-                else
-                {
-                    return super.getBlockMap(wv, blocks);
-                }
+                startTimes.add(slot.getMinuteOfDay());
             }
-        };
-        strategy.setAllocatables(allocatables);
-        strategy.setFixedSlotsEnabled(true);
-        strategy.setResolveConflictsEnabled(false);
-        strategy.setStartTimes(startTimes);
-        builder.setBuildStrategy(strategy);
 
-        String[] slotNames = new String[timeslots.size()];
-        int maxSlotLength = 5;
-        for (int i = 0; i < timeslots.size(); i++)
-        {
-            String slotName = timeslots.get(i).getName();
-            maxSlotLength = Math.max(maxSlotLength, slotName.length());
-            slotNames[i] = slotName;
-        }
-        ((SwingCompactWeekView) view).setLeftColumnSize(30 + maxSlotLength * 6);
-        // builder.setSplitByAllocatables( false );
+            final List<Allocatable> allocatables = getSortedAllocatables();
+            builder.setSmallBlocks(true);
+            builder.setSplitByAllocatables(true);
+            GroupStartTimesStrategy strategy = new GroupStartTimesStrategy()
+            {
+                @Override
+                protected Map<Block, Integer> getBlockMap(CalendarView wv, List<Block> blocks)
+                {
+                    if (allocatables != null)
+                    {
+                        Map<Block, Integer> map = new LinkedHashMap<Block, Integer>();
+                        for (Block block : blocks)
+                        {
+                            int index = getIndex(allocatables, block);
 
-        ((SwingCompactWeekView) view).setSlots(slotNames);
-        return builder;
+                            if (index >= 0)
+                            {
+                                map.put(block, index);
+                            }
+                        }
+                        return map;
+                    }
+                    else
+                    {
+                        return super.getBlockMap(wv, blocks);
+                    }
+                }
+            };
+            strategy.setAllocatables(allocatables);
+            strategy.setFixedSlotsEnabled(true);
+            strategy.setResolveConflictsEnabled(false);
+            strategy.setStartTimes(startTimes);
+            builder.setBuildStrategy(strategy);
+
+            String[] slotNames = new String[timeslots.size()];
+            int maxSlotLength = 5;
+            for (int i = 0; i < timeslots.size(); i++)
+            {
+                String slotName = timeslots.get(i).getName();
+                maxSlotLength = Math.max(maxSlotLength, slotName.length());
+                slotNames[i] = slotName;
+            }
+            ((SwingCompactWeekView) view).setLeftColumnSize(30 + maxSlotLength * 6);
+            // builder.setSplitByAllocatables( false );
+
+            ((SwingCompactWeekView) view).setSlots(slotNames);
+            return builder;
+        });
+        return nextBuilderPromise;
     }
 
     private int getIndex(final List<Allocatable> allocatables, Block block)

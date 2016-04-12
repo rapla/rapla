@@ -60,6 +60,7 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
+import org.rapla.scheduler.Promise;
 
 
 public class SwingDayResourceCalendar extends SwingDayCalendar
@@ -115,44 +116,45 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
         return wv;
     }
     
-    protected RaplaBuilder createBuilder() throws RaplaException
+    protected Promise<RaplaBuilder> createBuilder() 
     {
-    	RaplaBuilder builder = super.createBuilder();
-        builder.setSplitByAllocatables( true );
-        
-        final List<Allocatable> allocatables = getSortedAllocatables();
-        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() )
+    	Promise<RaplaBuilder> builderPromise = super.createBuilder();
+        final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) ->
         {
-        	@Override
-        	protected Map<Block, Integer> getBlockMap(CalendarView wv,
-        			List<Block> blocks) 
-        	{
-        		if (allocatables != null)
-        		{
-        			Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
-        			for (Block block:blocks)
-        			{
-        				int index = getIndex(allocatables, block);
-        				
-        				if ( index >= 0 )
-        				{
-        					map.put( block, index );
-        				}
-        		     }
-        		     return map;		
-        		}
-        		else 
-        		{
-        			return super.getBlockMap(wv, blocks);
-        		}
-        	}
+            builder.setSplitByAllocatables(true);
+            final List<Allocatable> allocatables = getSortedAllocatables();
+            GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale())
+            {
+                @Override
+                protected Map<Block, Integer> getBlockMap(CalendarView wv, List<Block> blocks)
+                {
+                    if (allocatables != null)
+                    {
+                        Map<Block, Integer> map = new LinkedHashMap<Block, Integer>();
+                        for (Block block : blocks)
+                        {
+                            int index = getIndex(allocatables, block);
 
-			
-        };
-       
-        strategy.setResolveConflictsEnabled( true );
-        builder.setBuildStrategy( strategy );
-        return builder;
+                            if (index >= 0)
+                            {
+                                map.put(block, index);
+                            }
+                        }
+                        return map;
+                    }
+                    else
+                    {
+                        return super.getBlockMap(wv, blocks);
+                    }
+                }
+
+            };
+
+            strategy.setResolveConflictsEnabled(true);
+            builder.setBuildStrategy(strategy);
+            return builder;
+        });
+        return nextBuilderPromise;
     }
     
   

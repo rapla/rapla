@@ -114,12 +114,6 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
         ((SwingWeekView)view).scrollDateVisible( evt.getDate());
     }
 
-    protected RaplaBuilder createBuilder() throws RaplaException
-    {
-    	RaplaBuilder builder = super.createBuilder();
-        return builder;
-    }
-
     @Override
     protected void configureView() {
         SwingWeekView view = (SwingWeekView) this.view;

@@ -171,7 +171,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         builder.setNonFilteredEventsVisible(false);
         {
             long time = System.currentTimeMillis();
-            builder.setFromModel(model, startDate, endDate);
+            builder.initFromModel(model, startDate, endDate);
             logger.info("events loaded took  " + (System.currentTimeMillis() - time) + " ms");
         }
 
