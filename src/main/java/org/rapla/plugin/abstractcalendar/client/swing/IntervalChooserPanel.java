@@ -46,6 +46,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -86,7 +87,8 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
     JPanel periodPanel;
 
     @Inject
-    public IntervalChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws RaplaException
+    public IntervalChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws
+            RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;

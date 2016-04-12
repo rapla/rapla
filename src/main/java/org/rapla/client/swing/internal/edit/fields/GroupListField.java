@@ -34,6 +34,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -53,10 +54,19 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws
+            RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
-    	final Category rootCategory = getQuery().getUserGroupsCategory();
+        final Category rootCategory;
+        try
+        {
+            rootCategory = facade.getRaplaFacade().getUserGroupsCategory();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
         if ( rootCategory == null )
             return;
         newCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory );

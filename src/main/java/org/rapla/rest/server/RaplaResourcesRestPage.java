@@ -50,7 +50,7 @@ public class RaplaResourcesRestPage  {
     private final HttpServletRequest request;
 
 	@Inject
-	public RaplaResourcesRestPage(@Context HttpServletRequest request) throws RaplaException {
+	public RaplaResourcesRestPage(@Context HttpServletRequest request) {
         this.request = request;
 	}
 

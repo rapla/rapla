@@ -12,6 +12,7 @@ import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.User;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -60,7 +61,7 @@ public class SwingApplicationViewImpl implements ApplicationView<JComponent>
 
     @Inject
     public SwingApplicationViewImpl(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
-             RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+             RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException {
         this.i18n = i18n;
         this.logger = logger;
         this.menuBar = raplaMenuBar;

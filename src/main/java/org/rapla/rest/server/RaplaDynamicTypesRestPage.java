@@ -27,7 +27,7 @@ public class RaplaDynamicTypesRestPage
     RaplaFacade facade;
     private final HttpServletRequest request;
     @Inject
-    public RaplaDynamicTypesRestPage(@Context HttpServletRequest request) throws RaplaException
+    public RaplaDynamicTypesRestPage(@Context HttpServletRequest request)
     {
         this.request = request;
     }

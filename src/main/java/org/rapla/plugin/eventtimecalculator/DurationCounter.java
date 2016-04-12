@@ -32,7 +32,7 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
 
 
     @Inject
-    public DurationCounter(EventTimeCalculatorFactory factory,EventTimeCalculatorResources i18n) throws RaplaException {
+    public DurationCounter(EventTimeCalculatorFactory factory,EventTimeCalculatorResources i18n)  {
         this.i18n = i18n;
         this.factory = factory;
     }

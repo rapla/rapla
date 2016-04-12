@@ -45,7 +45,7 @@ public class RaplaAuthRestPage
     TokenHandler tokenHandler;
 
     @Inject
-    public RaplaAuthRestPage() throws RaplaException
+    public RaplaAuthRestPage()
     {
     }
 

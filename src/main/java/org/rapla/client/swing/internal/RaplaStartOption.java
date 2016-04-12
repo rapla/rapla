@@ -38,6 +38,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
@@ -67,7 +68,8 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 
 
     @Inject
-    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer) throws RaplaException {
+    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer) throws
+            RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         isRestartPossible = restartServer.isRestartPossible();
         double pre = TableLayout.PREFERRED;
@@ -79,8 +81,17 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add(new JLabel(getString("custom_applicationame")), "0,0");
         panel.add(calendarName, "2,0");
         calendarName.setEnabled(true);
-    	String[] timeZoneIDs = getTimeZonesFromResource();
-		panel.add(new JLabel(getString("timezone")), "0,2");
+
+        String[] timeZoneIDs = new String[0];
+        try
+        {
+            timeZoneIDs = getTimeZonesFromResource();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
+        panel.add(new JLabel(getString("timezone")), "0,2");
 		@SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(timeZoneIDs);
 		cboTimezone = jComboBox;

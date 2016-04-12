@@ -61,7 +61,7 @@ public class UrlEncryptionService implements UrlEncryption {
      * @throws RaplaException
      */
     @Inject
-    public UrlEncryptionService() throws RaplaInitializationException1 {//, InvalidKeyException {
+    public UrlEncryptionService() throws RaplaInitializationException {//, InvalidKeyException {
     }
 
 

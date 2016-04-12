@@ -47,7 +47,7 @@ import org.rapla.storage.StorageOperator;
     @Inject RemoteSession session;
     private final HttpServletRequest request;
 
-    @Inject public RaplaEventsRestPage(@Context HttpServletRequest request) throws RaplaException
+    @Inject public RaplaEventsRestPage(@Context HttpServletRequest request)
     {
         this.request = request;
     }
