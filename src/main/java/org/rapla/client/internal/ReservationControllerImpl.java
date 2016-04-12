@@ -191,7 +191,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             }
         }
 
-        DeleteBlocksCommand command = new DeleteBlocksCommand(reservationsToRemove, appointmentsToRemove, exceptionsToAdd);
+        DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(),i18n,reservationsToRemove, appointmentsToRemove, exceptionsToAdd);
         CommandHistory commanHistory = getCommandHistory();
         commanHistory.storeAndExecute(command);
     }
@@ -244,7 +244,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     }
 */
 
-    public class DeleteBlocksCommand extends DeleteUndo<Reservation>
+    static public class DeleteBlocksCommand extends DeleteUndo<Reservation>
     {
         Set<Reservation> reservationsToRemove;
         Set<Appointment> appointmentsToRemove;
@@ -253,10 +253,10 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         private Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<Appointment, Allocatable[]>();
         private Map<Appointment, Reservation> parentReservations = new HashMap<Appointment, Reservation>();
 
-        public DeleteBlocksCommand(Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd) throws RaplaException
+        public DeleteBlocksCommand(ClientFacade clientFacade, RaplaResources i18n,Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove, Map<Appointment, List<Date>> exceptionsToAdd) throws RaplaException
         {
-            super(ReservationControllerImpl.this.getClientFacade().getRaplaFacade(), ReservationControllerImpl.this.getI18n(), reservationsToRemove,
-                    ReservationControllerImpl.this.getClientFacade().getUser());
+            super(clientFacade.getRaplaFacade(), i18n, reservationsToRemove,
+                    clientFacade.getUser());
             this.reservationsToRemove = reservationsToRemove;
             this.appointmentsToRemove = appointmentsToRemove;
             this.exceptionsToAdd = exceptionsToAdd;
@@ -436,7 +436,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
                 return;
         }
 
-        DeleteBlocksCommand command = new DeleteBlocksCommand(reservationsToRemove, appointmentsToRemove, exceptionsToAdd)
+        DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(),i18n,reservationsToRemove, appointmentsToRemove, exceptionsToAdd)
         {
             public String getCommandoName()
             {
@@ -613,7 +613,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         Set<Reservation> reservationsToRemove = new HashSet<Reservation>(reservations);
         Set<Appointment> appointmentsToRemove = Collections.emptySet();
         Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
-        DeleteBlocksCommand command = new DeleteBlocksCommand(reservationsToRemove, appointmentsToRemove, exceptionsToAdd)
+        DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(),i18n,reservationsToRemove, appointmentsToRemove, exceptionsToAdd)
         {
             public String getCommandoName()
             {

@@ -103,7 +103,8 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 			}
 			else
 			{
-				checkEvents(newEntitiesPersistant.values(), popupContext);
+				// FIXME CHECK EVENTS
+				//checkEvents(newEntitiesPersistant.values(), popupContext);
 				firstTimeCall = false;
 			}
 			for (T entity : newEntities)

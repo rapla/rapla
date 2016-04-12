@@ -6,6 +6,7 @@ import java.util.List;
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.entities.Entity;
+import org.rapla.entities.domain.AppointmentBlock;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -21,9 +22,19 @@ public class EditController
         this.eventBus = eventBus;
     }
 
-    void newObject( Object contextObject, PopupContext popupContext )
+    public ReservationEdit[] getEditWindows()
+    {
+        return new ReservationEdit[] {};
+
+    }
+    public void newObject( Object contextObject, PopupContext popupContext )
     {
 
+    }
+
+    public <T extends Entity> void edit( AppointmentBlock appointmentBlock, PopupContext popupContext)
+    {
+        // FIXME either implement as RaplaType or as seperate edit window
     }
 
     public <T extends Entity> void edit( T obj, PopupContext popupContext )

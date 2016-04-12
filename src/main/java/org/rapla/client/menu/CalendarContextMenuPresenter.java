@@ -15,6 +15,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -22,6 +23,7 @@ import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.menu.data.MenuCallback;
 import org.rapla.client.menu.data.MenuEntry;
 import org.rapla.client.menu.data.Point;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -39,7 +41,7 @@ import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.storage.PermissionController;
 
 @Singleton
-public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
+public class CalendarContextMenuPresenter extends RaplaComponent implements MenuView.Presenter
 {
     protected boolean keepTime = false;
 
@@ -50,21 +52,23 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
 
     private final PermissionController permissionController;
     ClientFacade clientFacade;
+    private final EditController editController;
 
     //    private final InfoFactory infoFactory;
 
     //private final MenuFactory menuFactory;
 
     @Inject
-    public MenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            CalendarSelectionModel model, ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
-            MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view)
+    public CalendarContextMenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
+            ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
+            MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view, EditController editController)
     {
         super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
         this.model = model;
         this.reservationController = reservationController;
         this.view = view;
         this.clipboard = clipboard;
+        this.editController = editController;
         this.clientFacade = clientFacade;
         //        this.infoFactory = infoFactory;
       //  this.menuFactory = menuFactory;
@@ -150,7 +154,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             {
                 if (permissionController.canUserAllocateSomething(user))
                 {
-                    ReservationEdit[] editWindows = reservationController.getEditWindows();
+                    ReservationEdit[] editWindows = editController.getEditWindows();
                     if (editWindows.length > 0)
                     {
                         final String text = getString("add_to");
@@ -282,7 +286,9 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             if (!permissionController.canModify(b.getReservation(), getUser()))
                 return;
             final AppointmentBlock appointmentBlock = b.getAppointmentBlock();
-            reservationController.edit(appointmentBlock);
+            // FIXME convert point and component to popupContext
+            PopupContext popupContext = null;
+            editController.edit(appointmentBlock,popupContext);
         }
         catch (RaplaException ex)
         {
@@ -442,14 +448,7 @@ public class MenuPresenter extends RaplaComponent implements MenuView.Presenter
             {
                 public void run()
                 {
-                    try
-                    {
-                        reservationController.edit(appointmentBlock);
-                    }
-                    catch (RaplaException e)
-                    {
-                        view.showException(e);
-                    }
+                    editController.edit(appointmentBlock, popupContext);
                 }
             });
         }

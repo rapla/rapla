@@ -50,7 +50,7 @@ public class MergeController
             final Component mainComponent = null;
             final SwingPopupContext popupContext = new SwingPopupContext(mainComponent, null);
             final MergeDialog<T> mergeDialog = mergeDialogFactory.create(this);
-            mergeDialog.start(entities, title, popupContext, null);
+            mergeDialog.start(entities, title, popupContext);
         }
         catch (RaplaException e)
         {

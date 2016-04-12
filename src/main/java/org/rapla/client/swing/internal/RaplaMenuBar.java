@@ -433,14 +433,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
             public void actionPerformed(ActionEvent arg0)
             {
-                try
-                {
-                    editController.edit(preferences, createPopupContext(getMainComponent(), null));
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-                }
+                editController.edit(preferences, createPopupContext(getMainComponent(), null));
             }
 
         };

@@ -27,8 +27,6 @@ public interface ReservationEdit extends TaskPresenter
 
     void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException;
 
-    void toFront();
-
     Reservation getOriginal();
 
     void updateReservation(Reservation persistant) throws RaplaException;

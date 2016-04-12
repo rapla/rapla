@@ -19,6 +19,7 @@ import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -51,6 +52,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     private final MenuFactory menuFactory;
     private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
+    private final EditController editController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final IntervalChooserPanel dateChooser;
@@ -65,7 +67,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     @Inject
     public AppointmentTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
             Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
+            ReservationController reservationController, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
             RaplaMenuBarContainer menuBar)
     {
         this.facade = facade;
@@ -78,6 +80,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
         this.menuFactory = menuFactory;
         this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;
+        this.editController = editController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dateChooser = dateChooser;
@@ -97,7 +100,7 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         return new SwingAppointmentTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, objectMenuFactories, editable, printing, tableConfigLoader, menuFactory,
-                calendarSelectionModel, reservationController, infoFactory, raplaImages, dateChooser, dialogUiFactory, ioInterface);
+                calendarSelectionModel, reservationController, editController,infoFactory, raplaImages, dateChooser, dialogUiFactory, ioInterface);
     }
 
     public String getViewId()

@@ -12,7 +12,7 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.menu.MenuPresenter;
+import org.rapla.client.menu.CalendarContextMenuPresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -47,12 +47,12 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     private final HTMLRaplaBuilder builder;
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
-    private final MenuPresenter presenter;
+    private final CalendarContextMenuPresenter presenter;
 
     @SuppressWarnings("unchecked")
     @Inject
     public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, EventBus eventBus,
-            CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, MenuPresenter presenter)
+            CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter)
     {
         super();
         this.view = view;

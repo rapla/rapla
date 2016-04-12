@@ -16,6 +16,7 @@ import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -63,11 +64,15 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     final PermissionController permissionController;
+    final EditController editController;
+
 
     public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, JComponent calendarContainerComponent,
             Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
+        // FIXME get EditController
+        this.editController = null;
         this.model = model;
         this.calendarContainerComponent = calendarContainerComponent;
         this.objectMenuFactories = objectMenuFactories;
@@ -133,7 +138,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
                 if (permissionController.canUserAllocateSomething(user))
                 {
-                    ReservationEdit[] editWindows = reservationController.getEditWindows();
+                    ReservationEdit[] editWindows = editController.getEditWindows();
                     if (editWindows.length > 0)
                     {
                         RaplaMenu addItem = new RaplaMenu("add_to");
@@ -203,7 +208,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
             if (!permissionController.canModify(b.getReservation(), getUser()))
                 return;
             final AppointmentBlock appointmentBlock = b.getAppointmentBlock();
-            reservationController.edit(appointmentBlock);
+            editController.edit(appointmentBlock,new SwingPopupContext(b.getView(), null));
         }
         catch (RaplaException ex)
         {
@@ -343,7 +348,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
     {
-        AppointmentAction action = new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), createPopupContext(parent, p), calendarSelectionModel, reservationController, infoFactory, raplaImages, dialogUiFactory);
+        AppointmentAction action = new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), createPopupContext(parent, p), calendarSelectionModel, reservationController,editController, infoFactory, raplaImages, dialogUiFactory);
         menu.add(action);
         return action;
     }

@@ -148,14 +148,14 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     List<AppointmentListener> appointmentListeners = new ArrayList<AppointmentListener>();
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
-    private final ReservationControllerImpl reservationController;
     private final InfoFactory infoFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
+    private final JPanel contentPane;
 
     @Inject public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            Set<AppointmentStatusFactory> appointmentStatusFactories, ReservationController reservationController, InfoFactory infoFactory,
+            Set<AppointmentStatusFactory> appointmentStatusFactories,  InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
             Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaInitializationException
@@ -166,10 +166,15 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         this.infoFactory = infoFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
-        this.reservationController = (ReservationControllerImpl) reservationController;
         commandHistory = new CommandHistory();
-        this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
-        this.appointmentEdit = appointmentListEditFactory.create(commandHistory);
+        try
+        {
+            this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
+            this.appointmentEdit = appointmentListEditFactory.create(commandHistory);
+        } catch (RaplaException ex)
+        {
+            throw new RaplaInitializationException( ex);
+        }
         allocatableEdit = allocatableSelectionFactory.create(true, commandHistory);
 
         //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
@@ -251,7 +256,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         reservationInfo.addChangeListener(listener);
         reservationInfo.addDetailListener(listener);
 
-        JPanel contentPane = (JPanel) frame.getContentPane();
+        contentPane = new JPanel();
         contentPane.setLayout(new BorderLayout());
         mainContent.setBorder(BorderFactory.createLoweredBevelBorder());
         contentPane.add(toolBar, BorderLayout.NORTH);
@@ -292,7 +297,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
     @Override public Object getComponent()
     {
-        return mainContent;
+        return contentPane;
     }
 
     protected void setAccelerator(JButton button, Action yourAction, KeyStroke keyStroke)
@@ -320,11 +325,6 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     public boolean isModifiedSinceLastChange()
     {
         return !bSaved;
-    }
-
-    final private ReservationControllerImpl getPrivateReservationController()
-    {
-        return reservationController;
     }
 
     public void addAppointment(Date start, Date end) throws RaplaException
@@ -426,11 +426,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
 
         setTitle();
         boolean packFrame = false;
-        frame.place(true, packFrame);
-        frame.setVisible(true);
         // Insert into open ReservationEditWindows, so that
         // we can't edit the same Reservation in different windows
-        getPrivateReservationController().addReservationEdit(this);
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
         final User user = getUserModule().getUser();
@@ -442,10 +439,25 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         }
     }
 
+//        frame.place(true, packFrame);
+//        frame.setVisible(true);
+
+
+
+    /*
     @Override public void toFront()
     {
         frame.requestFocus();
         frame.toFront();
+    }
+    */
+
+    public void closeWindow()
+    {
+        appointmentEdit.dispose();
+        // FIXME fire Close event
+        //frame.dispose();
+        getLogger().debug("Edit window closed.");
     }
 
     static void disableComponentAndAllChildren(Container component)
@@ -484,7 +496,8 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
     private void setTitle()
     {
         String title = getI18n().format((bNew) ? "new_reservation.format" : "edit_reservation.format", getName(mutableReservation));
-        frame.setTitle(title);
+        // FIXME post new title to popup container
+        //frame.setTitle(title);
     }
 
     private void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException
@@ -524,13 +537,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
         //        	fireAppointmentSelected(Collections.singleton(appointment));
     }
 
-    public void closeWindow()
-    {
-        appointmentEdit.dispose();
-        getPrivateReservationController().removeReservationEdit(this);
-        frame.dispose();
-        getLogger().debug("Edit window closed.");
-    }
+
 
     class Listener extends AbstractAction implements AppointmentListener, ChangeListener, ReservationInfoEdit.DetailListener
     {
@@ -659,7 +666,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
             PopupContext popupContext = createPopupContext(mainContent, null);
             final Set<Reservation> singleton = Collections.singleton(mutableReservation);
             final Set<Reservation> originals = original != null ? Collections.singleton(original) : null;
-            SaveUndo<Reservation> saveCommand = new SaveUndo<Reservation>(singleton, originals, popupContext);
+            SaveUndo<Reservation> saveCommand = new SaveUndo<Reservation>(getFacade(),getI18n(),singleton, originals/*, popupContext*/);
             final Promise<Void> promise = getUpdateModule().getCommandHistory().storeAndExecute(saveCommand);
             promise.thenRun(() -> {
                 setSaved(true);
@@ -692,7 +699,7 @@ final class ReservationEditImpl extends AbstractAppointmentEditor implements Res
                 Set<Reservation> reservationsToRemove = Collections.singleton(original);
                 Set<Appointment> appointmentsToRemove = Collections.emptySet();
                 Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
-                CommandUndo<RaplaException> deleteCommand = getPrivateReservationController().new DeleteBlocksCommand(reservationsToRemove,
+                CommandUndo<RaplaException> deleteCommand = new ReservationControllerImpl.DeleteBlocksCommand(getClientFacade(),getI18n(),reservationsToRemove,
                         appointmentsToRemove, exceptionsToAdd)
                 {
                     public String getCommandoName()

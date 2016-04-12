@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.Iterator;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -57,14 +58,16 @@ public class AppointmentAction extends RaplaAction {
 	private Collection<Allocatable> contextAllocatables;
 	private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
+    private final EditController editController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     
-	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+	public AppointmentAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, CalendarSelectionModel calendarSelectionModel, ReservationController reservationController,EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
+        this.editController = editController;
         this.popupContext = popupContext;
         this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;
@@ -240,7 +243,7 @@ public class AppointmentAction extends RaplaAction {
     }
 
     public void edit() throws RaplaException {
-        getReservationController().edit( appointmentBlock);
+        editController.edit( appointmentBlock, popupContext);
     }
 
     private void delete() throws RaplaException {

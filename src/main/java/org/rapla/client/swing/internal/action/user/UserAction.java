@@ -26,6 +26,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
 
+import java.util.Collections;
+
 public class UserAction extends RaplaAction {
     Object object;
     public final int NEW = 1;
@@ -100,7 +102,9 @@ public class UserAction extends RaplaAction {
                 User newUser = getFacade().newUser();
                 // create new user dialog and show password dialog if user is created successfully
                 final String title = getString("user");
-                editController.edit(newUser, title,popupContext,new EditController.EditCallback<User>()
+                editController.edit( newUser, /*title,*/popupContext);//,new EditController.EditCallback<User>()
+/*
+                FIXME call change password dialog after new user
                     {
                             @Override public void onFailure(Throwable e)
                             {
@@ -128,7 +132,7 @@ public class UserAction extends RaplaAction {
                             }
                         }
                 );
-
+*/
             }
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex, popupContext);
