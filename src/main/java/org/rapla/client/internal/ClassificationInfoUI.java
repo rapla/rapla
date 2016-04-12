@@ -27,6 +27,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 
@@ -47,8 +48,15 @@ public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
 
     public String getUsername(ReferenceInfo<User> userId)
     {
-        String name = getFacade().getOperator().getUsername(userId);
-        return name;
+        try
+        {
+            String name = getFacade().getOperator().getUsername(userId);
+            return name;
+        }
+        catch (RaplaException e)
+        {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 
     protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller, User user) {
