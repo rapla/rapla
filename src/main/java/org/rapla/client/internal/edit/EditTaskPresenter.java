@@ -51,8 +51,7 @@ import java.util.Set;
 
 @Singleton
 @ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
-        @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class)
-}
+        @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class) }
 )
 public class EditTaskPresenter implements TaskPresenter
 {

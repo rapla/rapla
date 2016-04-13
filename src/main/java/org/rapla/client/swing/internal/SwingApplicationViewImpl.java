@@ -6,6 +6,7 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -233,7 +234,16 @@ public class SwingApplicationViewImpl implements ApplicationView<JComponent>
 
     @Override public void createPopup(RaplaWidget<JComponent> w)
     {
-
+        try
+        {
+            DialogInterface dialog = dialogUiFactory.create(null, true, w.getComponent(), new String[]{});
+            dialog.setSize(600, 600);
+            dialog.start(false);
+        }
+        catch (RaplaException e)
+        {
+            dialogUiFactory.showException(e, null);
+        }
     }
 
     protected void initComponent( RaplaWidget<Object> objectRaplaWidget)

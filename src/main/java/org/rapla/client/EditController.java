@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.internal.edit.EditTaskPresenter;
+import org.rapla.client.swing.SwingActivityController;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
 
@@ -47,8 +49,22 @@ public class EditController
     public <T extends Entity> void edit( List<T> obj, PopupContext popupContext )
     {
         // FIXME generate ids and info from object list;
-        String applicationEventId = null;
-        String info = null;
+        String applicationEventId = EditTaskPresenter.EDIT_RESOURCES_ID;
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (T t : obj)
+        {
+            if (first)
+            {
+                first = false;
+            }
+            else
+            {
+                sb.append(",");
+            }
+            sb.append(t.getId());
+        }
+        String info = sb.toString();
         final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext);
         eventBus.fireEvent(event);
     }
