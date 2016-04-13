@@ -1,6 +1,7 @@
 package org.rapla;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -8,8 +9,12 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -21,7 +26,7 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl;
-import org.rapla.server.internal.rest.RaplaFilter;
+import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 
 import dagger.MembersInjector;
 
@@ -38,17 +43,25 @@ public abstract class ServletTestBase
         WebAppContext context = new WebAppContext(jettyServer, contextPath, "/");
 //        context.addFilter(org.rapla.server.HTTPMethodOverrideFilter.class, "/rapla/*", null);
         context.addEventListener(new ResteasyBootstrap());
-        final RaplaFilter filter = new RaplaFilter() {
+        final Filter filter = new Filter()
+        {
             @Override
             public void init(FilterConfig filterConfig) throws ServletException
             {
                 // do not init context as given from outside
             }
-            
+
             @Override
-            protected Map<String, MembersInjector> getMembersInjector()
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
             {
-                return serverServiceImpl.getMembersInjector();
+                request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, serverServiceImpl.getMembersInjector());
+                chain.doFilter(request, response);
+            }
+
+            @Override
+            public void destroy()
+            {
+
             }
         };
         final FilterHolder holder = new FilterHolder(filter);

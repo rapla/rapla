@@ -101,7 +101,9 @@ public class SwingApplicationViewImpl implements ApplicationView<JComponent>
             }
 
         });
-
+        frame.pack();
+        frame.requestFocus();
+        frame.setVisible(true);
     }
 
 

@@ -172,6 +172,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         try
         {
             AbstractActivityController am = abstractActivityController;
+            am.setApplication(this);
             am.init();
 
             User user = clientFacade.getUser();

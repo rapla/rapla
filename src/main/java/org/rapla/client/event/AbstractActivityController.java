@@ -64,44 +64,9 @@ public abstract class AbstractActivityController implements ApplicationEvent.App
         return application.startAction( activity, isPlace);
     }
 
-    private void selectPlace(Place place)
-    {
-//        if (place != null && placePresenters.containsKey(place.getId()))
-//        {
-//            final String placeId = place.getId();
-//            actualPlacePresenter = placePresenters.get(placeId);
-//            actualPlacePresenter.initForPlace(place);
-//            // FIXME for gwt
-//            //mainView.updateContent( actualPlacePresenter.provideContent());
-//        }
-//        else
-//        {
-//            actualPlacePresenter = findBestSuited();
-//            actualPlacePresenter.resetPlace();
-//            // FIXME for gwt
-//            //mainView.updateContent( actualPlacePresenter.provideContent());
-//        }
-    }
-
-//    private PlacePresenter findBestSuited()
-//    {
-//        final Set<Map.Entry<String, PlacePresenter>> entrySet = placePresenters.entrySet();
-//        for (Map.Entry<String, PlacePresenter> entry : entrySet)
-//        {
-//            if(entry.getKey().equals(CalendarPlacePresenter.PLACE_ID))
-//            {
-//                return entry.getValue();
-//            }
-//        }
-//        // last change take first...
-//        return placePresenters.values().iterator().next();
-//    }
-
-
     public final void init() throws RaplaException
     {
         parsePlaceAndActivities();
-        selectPlace(place);
         if (!activities.isEmpty())
         {
             ArrayList<ApplicationEvent> toRemove = new ArrayList<ApplicationEvent>();

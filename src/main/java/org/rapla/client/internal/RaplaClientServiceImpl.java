@@ -19,6 +19,7 @@ import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -79,12 +80,12 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     final RaplaImages raplaImages;
     //final Provider<RaplaFrame> raplaFrameProvider;
 
-    final private Application application;
+    final private Provider<Application> application;
 
     @Inject
 	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
             RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
-            RaplaImages raplaImages, Application application) {
+            RaplaImages raplaImages, Provider<Application> application) {
         this.env = env;
         this.i18n = i18n;
         this.logger = logger;
@@ -212,7 +213,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
      *
      */
     private void beginRaplaSession() throws Exception {
-        application.start(defaultLanguageChosen, () -> {
+        application.get().start(defaultLanguageChosen, () -> {
             if ( !isRestartingGUI()) {
                 stop();
             } else {

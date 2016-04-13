@@ -37,12 +37,17 @@ public class SwingActivityController extends AbstractActivityController
 
     @Override protected boolean isPlace(ApplicationEvent activity)
     {
+        final String applicationEventId = activity.getApplicationEventId();
+        switch(applicationEventId)
+        {
+            case "cal":
+                return true;
+        }
         return false;
     }
 
     @Override protected void parsePlaceAndActivities() throws RaplaException
     {
-
 
     }
 

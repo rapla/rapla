@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -32,17 +33,23 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
+import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.rest.server.RestApplication;
 import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
+import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
+
+import dagger.MembersInjector;
 
 public class MainServlet extends HttpServlet
 {
@@ -50,7 +57,14 @@ public class MainServlet extends HttpServlet
     private static final long serialVersionUID = 1L;
     private Logger logger = null;
     ServerStarter serverStarter;
+    private final HttpServletDispatcher dispatcher;
+    private Map<String, MembersInjector> membersInjector;
 
+    public MainServlet()
+    {
+        dispatcher = new HttpServletDispatcher();
+    }
+    
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) throws ServletException
     {
         String env_raplafile;
@@ -147,7 +161,48 @@ public class MainServlet extends HttpServlet
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
         serverStarter = init(logger, getServletContext());
+        if(serverStarter != null)
+        {
+            final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
+            membersInjector = server.getMembersInjector();
+        }
     }
+    
+    @Override
+    public void init(ServletConfig config) throws ServletException
+    {
+        dispatcher.init(new ServletConfig()
+        {
+            @Override public String getServletName()
+            {
+                return config.getServletName();
+            }
+
+            @Override public ServletContext getServletContext()
+            {
+                return config.getServletContext();
+            }
+
+            @Override public String getInitParameter(String name)
+            {
+                switch ( name)
+                {
+                    case "resteasy.servlet.mapping.prefix": return "rapla/";
+                    case "resteasy.use.builtin.providers": return  "false";
+                    case "javax.ws.rs.Application": return RestApplication.class.getCanonicalName();
+                }
+                return config.getInitParameter( name);
+            }
+
+            @Override public Enumeration<String> getInitParameterNames()
+            {
+                return config.getInitParameterNames();
+            }
+        });
+        
+        super.init(config);
+    }
+    
     public static ServerStarter init(Logger logger, ServletContext context) throws ServletException
     {
         logger.info("Init RaplaServlet");
@@ -321,7 +376,9 @@ public class MainServlet extends HttpServlet
 
                 return;
             }
-            serverStarter.getServer().service(request, response);
+            request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, membersInjector);
+//            serverStarter.getServer().service(request, response);
+            dispatcher.service(request, response);
         }
 
         finally
