@@ -101,6 +101,7 @@ public class SwingApplicationViewImpl implements ApplicationView<JComponent>
             }
 
         });
+        frame.setPreferredSize(new Dimension(1280, 1000));
         frame.pack();
         frame.requestFocus();
         frame.setVisible(true);

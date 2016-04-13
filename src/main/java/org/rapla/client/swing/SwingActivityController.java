@@ -1,6 +1,8 @@
 package org.rapla.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.framework.RaplaException;
@@ -8,8 +10,7 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
 @DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)
@@ -29,7 +30,7 @@ public class SwingActivityController extends AbstractActivityController
 //    private final MergeController mergeController;
 
     @Inject
-    public SwingActivityController(@SuppressWarnings("rawtypes") EventBus eventBus, Logger logger)
+    public SwingActivityController(EventBus eventBus, Logger logger)
     {
         super(eventBus, logger);
     }
@@ -48,7 +49,7 @@ public class SwingActivityController extends AbstractActivityController
 
     @Override protected void parsePlaceAndActivities() throws RaplaException
     {
-
+        activities.add(new ApplicationEvent("cal", "Standard", null));
     }
 
     @Override protected void updateHistroryEntry()

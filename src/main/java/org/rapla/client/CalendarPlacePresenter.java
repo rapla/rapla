@@ -254,35 +254,43 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
     @Override
     public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
     {
-        String id = activity.getInfo() != null ? activity.getApplicationEventId() + "/" + activity.getInfo() : activity.getApplicationEventId();
-        String[] split = id.split("/");
-        changeCalendar(split[0], false);
-        if (split.length > 1)
+//        return (RaplaWidget<T>) view.provideContent();
+        String id = activity.getInfo();
+        if (id != null)
         {
-            String date = split[1];
-            Date nextDate;
-            if (TODAY_DATE.equalsIgnoreCase(date))
+            String[] split = id.split("/");
+            changeCalendar(split[0], false);
+            if (split.length > 1)
             {
-                model.setSelectedDate(facade.today());
-            }
-            else
-            {
-                try
+                String date = split[1];
+                Date nextDate;
+                if (TODAY_DATE.equalsIgnoreCase(date))
                 {
-                    nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
-                    model.setSelectedDate(nextDate);
-                    view.updateDate(nextDate);
+                    model.setSelectedDate(facade.today());
                 }
-                catch (ParseDateException e)
+                else
                 {
-                    logger.error("Error loading date from place: " + e.getMessage(), e);
+                    try
+                    {
+                        nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
+                        model.setSelectedDate(nextDate);
+                        view.updateDate(nextDate);
+                    }
+                    catch (ParseDateException e)
+                    {
+                        logger.error("Error loading date from place: " + e.getMessage(), e);
+                    }
+                }
+                if (split.length > 2)
+                {
+                    String viewId = split[2];
+                    selectView(viewId);
                 }
             }
-            if (split.length > 2)
-            {
-                String viewId = split[2];
-                selectView(viewId);
-            }
+        }
+        else
+        {
+            changeCalendar(null);
         }
         // FIXME 
         return (RaplaWidget<T>) view.provideContent();

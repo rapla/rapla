@@ -74,7 +74,7 @@ import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.swing)
-final public class CalendarEditor extends RaplaGUIComponent implements CalendarPlaceView<Component>
+final public class CalendarEditor extends RaplaGUIComponent implements CalendarPlaceView<RaplaWidget<Component>>, RaplaWidget<Component>
 {
 	public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
 	public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
@@ -405,7 +405,7 @@ final public class CalendarEditor extends RaplaGUIComponent implements CalendarP
 
     }
 
-    @Override public void replaceContent(Component provider)
+    @Override public void replaceContent(RaplaWidget<Component> provider)
     {
 
     }
@@ -420,9 +420,9 @@ final public class CalendarEditor extends RaplaGUIComponent implements CalendarP
 
     }
 
-    @Override public Component provideContent()
+    @Override public RaplaWidget<Component> provideContent()
     {
-        return content;
+        return this;
     }
 
     @Override public void updateDate(Date selectedDate)
