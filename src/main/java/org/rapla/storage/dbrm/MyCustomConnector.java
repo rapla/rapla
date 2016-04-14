@@ -1,6 +1,7 @@
 package org.rapla.storage.dbrm;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -11,6 +12,7 @@ import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.rest.client.SerializableExceptionInformation;
 import org.rapla.rest.client.gwt.MockProxy;
 import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.scheduler.CommandScheduler;
@@ -60,13 +62,14 @@ public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnecto
         return accessToken;
     }
 
-    @Override public Exception deserializeException(String classname, String message, List<String> params)
+    @Override public Exception deserializeException(SerializableExceptionInformation exe)
     {
+        final String message = exe.getMessage();
         if (message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
         {
             return new BasicRaplaHTTPConnector.AuthenticationException(message);
         }
-        RaplaException ex = new RaplaExceptionDeserializer().deserializeException(classname, message.toString(), params);
+        RaplaException ex = new RaplaExceptionDeserializer().deserializeException(exe);
         return ex;
     }
 

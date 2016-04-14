@@ -13,6 +13,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.client.swing.HTTPConnector;
+import org.rapla.rest.client.swing.HTTPConnector.HttpCallResult;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -67,25 +68,25 @@ public class RestAPITest  {
         Map<String, String> additionalHeaders = new HashMap<>();
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/server");
-            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
+            final HttpCallResult result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
-            TestCase.assertTrue( result.contains("Server running"));
+            TestCase.assertTrue( result.parseJson().getAsString().contains("Server running"));
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/calendar");
-            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
+            final HttpCallResult result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
-            TestCase.assertTrue( result.toLowerCase().contains("<title>rapla"));
+            TestCase.assertTrue( result.parseJson().getAsString().toLowerCase().contains("<title>rapla"));
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth");
-            final String result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
+            final HttpCallResult result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
 
             TestCase.assertNotNull(result);
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth?username=homer&password=duffs");
-            final String result = connector.sendCallWithString("POST", baseUrl, body, authenticationToken, "application/json", additionalHeaders);
+            final HttpCallResult result = connector.sendCallWithString("POST", baseUrl, body, authenticationToken, "application/json", additionalHeaders);
             TestCase.assertNotNull(result);
         }
 
