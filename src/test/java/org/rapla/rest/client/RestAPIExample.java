@@ -7,8 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.rapla.rest.client.swing.HTTPConnector.HttpCallResult;
 import org.rapla.rest.client.swing.HTTPJsonConnector;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -45,9 +47,9 @@ public class RestAPIExample {
             callObj.addProperty("password", password);
             String emptyAuthenticationToken = null;
             Map<String, String> additionalHeaders = new HashMap<>();
-            JsonElement resultBody = connector.sendPost(methodURL, callObj, emptyAuthenticationToken, additionalHeaders);
+            HttpCallResult resultBody = connector.sendPost(methodURL, callObj, emptyAuthenticationToken, additionalHeaders);
             assertNoError(resultBody);
-            JsonObject resultObject = resultBody.getAsJsonObject();
+            JsonObject resultObject = resultBody.parseJson().getAsJsonObject();
             authenticationToken = resultObject.get("accessToken").getAsString();
             String validity = resultObject.get("validUntil").getAsString();
             System.out.println("token valid until " + validity);
@@ -60,9 +62,9 @@ public class RestAPIExample {
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=resource");
             Map<String, String> additionalHeaders = new HashMap<>();
-            JsonElement resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.getAsJsonArray();
+            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -73,9 +75,9 @@ public class RestAPIExample {
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=person");
             Map<String, String> additionalHeaders = new HashMap<>();
-            JsonElement resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.getAsJsonArray();
+            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -86,9 +88,9 @@ public class RestAPIExample {
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=reservation");
             Map<String, String> additionalHeaders = new HashMap<>();
-            JsonElement resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.getAsJsonArray();
+            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -113,16 +115,16 @@ public class RestAPIExample {
             {
                 URL methodURL =new URL(baseUrl,"resources");
                 Map<String, String> additionalHeaders = new HashMap<>();
-                JsonElement resultBody = connector.sendPost( methodURL, eventObject, authenticationToken, additionalHeaders);
+                HttpCallResult resultBody = connector.sendPost( methodURL, eventObject, authenticationToken, additionalHeaders);
                 // we test if the new resource has the name and extract the id for later testing
                 printAttributesAndAssertName(resultBody,  objectName);
-                resourceId = resultBody.getAsJsonObject().get("id").getAsString();
+                resourceId = resultBody.parseJson().getAsJsonObject().get("id").getAsString();
             }
             // now we test again if the new resource is created  by using the get method
             {
                 URL methodURL =new URL(baseUrl,"resources/"+resourceId);
                 Map<String, String> additionalHeaders = new HashMap<>();
-                JsonElement resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
+                HttpCallResult resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
@@ -132,9 +134,9 @@ public class RestAPIExample {
             String resourceTypes =URLEncoder.encode("['"+ resourceType +"']","UTF-8");
             URL methodURL =new URL(baseUrl,"resources?resourceTypes="+ resourceTypes+  "&attributeFilter="+attributeFilter) ;
             Map<String, String> additionalHeaders = new HashMap<>();
-            JsonElement resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.getAsJsonArray();
+            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -181,16 +183,16 @@ public class RestAPIExample {
             {
                 URL methodURL =new URL(baseUrl,"events");
                 Map<String, String> additionalHeaders = new HashMap<>();
-                JsonElement resultBody = connector.sendPost( methodURL, eventObject, authenticationToken, additionalHeaders);
+                HttpCallResult resultBody = connector.sendPost( methodURL, eventObject, authenticationToken, additionalHeaders);
                 // we test if the new event has the name and extract the id for later testing
                 printAttributesAndAssertName(resultBody,  objectName);
-                eventId = resultBody.getAsJsonObject().get("id").getAsString();
+                eventId = resultBody.parseJson().getAsJsonObject().get("id").getAsString();
             }
             // now we test again if the new event is created  by using the get method
             {
                 URL methodURL =new URL(baseUrl,"events/"+eventId);
                 Map<String, String> additionalHeaders = new HashMap<>();
-                JsonElement resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
+                HttpCallResult resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
@@ -205,9 +207,9 @@ public class RestAPIExample {
             String attributeFilter = URLEncoder.encode("{'name' :'"+ eventName +"'}","UTF-8");
             URL methodURL =new URL(baseUrl,"events?start="+start + "&end="+end + "&resources="+resources +"&eventTypes=" + eventTypes +"&attributeFilter="+attributeFilter) ;
             Map<String, String> additionalHeaders = new HashMap<>();
-            JsonElement resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.getAsJsonArray();
+            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -235,14 +237,14 @@ public class RestAPIExample {
             URL methodURL =new URL(baseUrl, "events/"+eventId);
             {
                 Map<String, String> additionalHeaders = new HashMap<>();
-                JsonElement resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken, additionalHeaders);
+                HttpCallResult resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken, additionalHeaders);
                 // we test if the new event is in the patched result
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
             // now we test again if the new event has the new name by using the get method
             {
                 Map<String, String> additionalHeaders = new HashMap<>();
-                JsonElement resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
+                HttpCallResult resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
         }
@@ -269,9 +271,9 @@ public class RestAPIExample {
         }
     }
 
-    private void printAttributesAndAssertName(JsonElement resultBody, String objectName) {
+    private void printAttributesAndAssertName(HttpCallResult resultBody, String objectName) {
         assertNoError(resultBody);
-        JsonObject event = resultBody.getAsJsonObject();
+        JsonObject event = resultBody.parseJson().getAsJsonObject();
         JsonObject classification = event.get("classification").getAsJsonObject().get("data").getAsJsonObject();
         System.out.println("Attributes for object id");
         for (Entry<String, JsonElement> entry:classification.entrySet())
@@ -286,12 +288,12 @@ public class RestAPIExample {
         }
     }
 
-    public void assertNoError(JsonElement resultBody) {
-        if(!resultBody.isJsonObject())
+    public void assertNoError(HttpCallResult resultBody) {
+        if(resultBody.getResponseCode() != 200)
         {
             return;
         }
-        JsonElement error = resultBody.getAsJsonObject().get("error");
+        final JsonElement error = resultBody.parseJson();
         if (error!= null)
         {
             System.err.println(error);
