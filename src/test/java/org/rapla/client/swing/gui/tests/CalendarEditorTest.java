@@ -28,7 +28,7 @@ public final class CalendarEditorTest extends GUITestCase
         settings.setSelectedDate(new Date());
         CalendarPlaceViewSwing editor = null;// new CalendarPlaceViewSwing(getContext(),settings);
         testComponent(editor.getComponent(),1024,600);
-        editor.start();
+        //editor.start();
         //editor.listUI.treeSelection.getTree().setSelectionRow(1);
     }
 
