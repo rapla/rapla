@@ -144,7 +144,7 @@ public class URLEncyrptionPublicExtensionFactory  implements PublishExtensionFac
 	            {
 	                urlExtension = pageParameters;
 	            }
-	            return new URL( codeBase,"rest/" + urlExtension).toExternalForm();
+	            return new URL( codeBase,"rapla/" + urlExtension).toExternalForm();
 	        } 
 	        catch (RaplaException ex)
 	        {

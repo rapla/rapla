@@ -13,7 +13,7 @@ public class ExportMenuEntry extends DefaultHTMLMenuEntry implements  HtmlMainMe
 	@Inject
 	public ExportMenuEntry(AutoExportResources i18n) {
         
-		super(i18n.getString( "calendar_list"),"rest/calendar");
+		super(i18n.getString( "calendar_list"),"rapla/calendar");
 
 	}
 	

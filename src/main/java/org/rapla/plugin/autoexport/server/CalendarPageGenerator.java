@@ -63,7 +63,7 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
  * You will need the autoexport plugin to create a calendarview-view.
  *
  * Call:
- * rest/calendar?user=<username>&file=<export_name>
+ * rapla/calendar?user=<username>&file=<export_name>
  *
  * Optional Parameters:
  *
@@ -198,7 +198,7 @@ public class CalendarPageGenerator
 
                     String filename = URLEncoder.encode(key, "UTF-8");
                     out.print("<li>");
-                    String test = AbstractHTMLCalendarPage.getUrl( request, "rest/calendar");
+                    String test = AbstractHTMLCalendarPage.getUrl( request, "rapla/calendar");
                     out.print("<a href=\""+test+"?user=" + user.getUsername() + "&file=" + filename + "&details=*" + "&folder=true" + "\">");
                     out.print(title);
                     out.print("</a>");

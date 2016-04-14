@@ -15,6 +15,6 @@ public class RaplaJnlpEntry extends DefaultHTMLMenuEntry implements HtmlMainMenu
     @Inject
     public RaplaJnlpEntry(RaplaResources i18n)
     {
-        super( i18n.getString("start_rapla_with_webstart"), "rest/raplaclient");
+        super( i18n.getString("start_rapla_with_webstart"), "rapla/raplaclient");
     }
 }

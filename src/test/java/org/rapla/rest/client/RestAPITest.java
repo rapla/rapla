@@ -70,13 +70,13 @@ public class RestAPITest  {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/server");
             final HttpCallResult result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
-            TestCase.assertTrue( result.parseJson().getAsString().contains("Server running"));
+            TestCase.assertTrue( result.getResult().contains("Server running"));
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/calendar");
             final HttpCallResult result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
-            TestCase.assertTrue( result.parseJson().getAsString().toLowerCase().contains("<title>rapla"));
+            TestCase.assertTrue( result.getResult().contains("<title>Rapla"));
         }
         {
             URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth");

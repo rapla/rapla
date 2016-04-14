@@ -46,6 +46,7 @@ public class RaplaStatusPageGenerator  {
         out.println( "<hr>" );
         out.println( "</body>" );
         out.println( "</html>" );
+        out.close();
     }
 
 }

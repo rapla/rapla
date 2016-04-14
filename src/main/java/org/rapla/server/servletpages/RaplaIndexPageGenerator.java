@@ -54,7 +54,7 @@ public class RaplaIndexPageGenerator
     public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response )
             throws IOException, ServletException
     {
-        if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rest/index/"))
+        if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/index/"))
         {
             response.sendRedirect("../index");
         }

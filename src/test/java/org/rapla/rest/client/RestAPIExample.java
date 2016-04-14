@@ -289,7 +289,7 @@ public class RestAPIExample {
     }
 
     public void assertNoError(HttpCallResult resultBody) {
-        if(resultBody.getResponseCode() != 200)
+        if(resultBody.getResponseCode() == 200)
         {
             return;
         }

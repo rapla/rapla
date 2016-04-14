@@ -85,7 +85,7 @@ public class PublishDialog extends RaplaGUIComponent
             }
             final String urlExtension = pageParameters;
 
-            return new URL( codeBase,"rest/" + urlExtension).toExternalForm();
+            return new URL( codeBase,"rapla/" + urlExtension).toExternalForm();
         } 
         catch (Exception ex)
         {

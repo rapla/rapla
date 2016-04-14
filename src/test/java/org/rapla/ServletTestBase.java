@@ -24,6 +24,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
+import org.rapla.rest.server.RestApplication;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
@@ -66,22 +67,22 @@ public abstract class ServletTestBase
         };
         final FilterHolder holder = new FilterHolder(filter);
         context.addFilter(holder, "/*", EnumSet.allOf(DispatcherType.class));
-        context.setInitParameter("resteasy.servlet.mapping.prefix", "/rest");
+        context.setInitParameter("resteasy.servlet.mapping.prefix", "/rapla");
         context.setInitParameter("resteasy.use.builtin.providers", "false");
-        context.setInitParameter("javax.ws.rs.Application", "org.rapla.rest.RestApplication");
+        context.setInitParameter("javax.ws.rs.Application", RestApplication.class.getCanonicalName());
         context.setResourceBase(webappFolder.getAbsolutePath());
         context.setMaxFormContentSize(64000000);
 
         final ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
         servletHolder.setServlet(new HttpServletDispatcher());
-        context.addServlet(servletHolder, "/rest/*");
+        context.addServlet(servletHolder, "/rapla/*");
         jettyServer.start();
         Handler[] childHandlers = context.getChildHandlersByClass(ServletHandler.class);
         final ServletHandler childHandler = (ServletHandler) childHandlers[0];
         final ServletHolder[] servlets = childHandler.getServlets();
         ServletHolder servlet = servlets[0];
 
-                URL server = new URL("http://127.0.0.1:"+port+"/rest/auth");
+                URL server = new URL("http://127.0.0.1:"+port+"/rapla/auth");
                 HttpURLConnection connection = (HttpURLConnection)server.openConnection();
                 int timeout = 10000;
                 int interval = 200;

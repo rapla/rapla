@@ -46,6 +46,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
@@ -84,8 +86,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
-		builder.initFromModel( model, startDate, endDate  );
-        return builder;
+		final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
+		return PromiseSynchroniser.waitForWithRaplaException(initBuilder, 1000);
     }
 
     abstract protected AbstractHTMLView createCalendarView() throws RaplaException;
@@ -211,7 +213,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		out.println("<html>");
 		out.println("<head>");
 		out.println("  <title>" + getTitle() + "</title>");
-        final String formAction = getUrl(request,"rest/calendar");
+        final String formAction = getUrl(request,"rapla/calendar");
 
         out.println("  " + getCssLine(request, "calendar.css"));
         out.println("  " + getCssLine(request, "default.css"));
