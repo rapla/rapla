@@ -53,6 +53,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     final Provider<CalendarSelectionModel> calendarModelProvider;
     private final CommandScheduler scheduler;
     //final private ModifiableCalendarState calendarState;
+    private TaskPresenter taskPresenter;
 
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -80,12 +81,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     public boolean startAction(ApplicationEvent activity, boolean isPlace)
     {
         final String activityId = activity.getApplicationEventId();
-        final TaskPresenter activityPresenter = activityPresenters.get(activityId);
-        if ( activityPresenter == null)
+        taskPresenter = activityPresenters.get(activityId);
+        if ( taskPresenter == null)
         {
             return false;
         }
-        final RaplaWidget objectRaplaWidget = activityPresenter.startActivity(activity);
+        final RaplaWidget objectRaplaWidget = taskPresenter.startActivity(activity);
         if ( isPlace)
         {
             mainView.updateContent( objectRaplaWidget);
@@ -212,7 +213,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         clientFacade.removeModificationListener(this);
         try {
 
-            closeCallback.run();;
+            closeCallback.run();
 
         } catch (Exception ex) {
             logger.error(ex.getMessage(),ex);
@@ -222,15 +223,11 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     @Override
     public void menuClicked(String action)
     {
-        if ("resources".equals(action))
-        {
-            eventBus.fireEvent(new ApplicationEvent(ResourceSelectionPlace.PLACE_ID, null, null));
-        }
     }
 
     @Override public void dataChanged(ModificationEvent evt) throws RaplaException
     {
-        // FIXME
-        // TODO inform activities?
+        mainView.updateView( evt);
+        taskPresenter.updateView(evt);
     }
 }

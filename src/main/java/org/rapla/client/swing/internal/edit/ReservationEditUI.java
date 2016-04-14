@@ -12,18 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.MultiCalendarViewPresenter;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.InfoFactory;
@@ -31,7 +22,6 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
@@ -56,6 +46,16 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.Collection;
+import java.util.Collections;
+
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
@@ -70,7 +70,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
             DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaInitializationException
+            DateFieldFactory dateFieldFactory, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = facade.getRaplaFacade().getPermissionController();

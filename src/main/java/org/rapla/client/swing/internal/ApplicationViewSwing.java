@@ -44,7 +44,7 @@ import java.beans.VetoableChangeListener;
 
 @DefaultImplementation(of =ApplicationView.class,context= InjectionContext.swing)
 @Singleton
-public class SwingApplicationViewImpl implements ApplicationView<JComponent>
+public class ApplicationViewSwing implements ApplicationView<JComponent>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
     private final RaplaResources i18n;
@@ -54,14 +54,14 @@ public class SwingApplicationViewImpl implements ApplicationView<JComponent>
     RaplaMenuBar menuBar;
     private final RaplaFrame frame ;
     Listener listener = new Listener();
-    //CalendarEditor cal;
+    //CalendarPlaceViewSwing cal;
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
     private final FrameControllerList frameControllerList;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public SwingApplicationViewImpl(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
+    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
              RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException {
         this.i18n = i18n;
         this.logger = logger;
@@ -83,6 +83,12 @@ public class SwingApplicationViewImpl implements ApplicationView<JComponent>
         getContentPane().setLayout( new BorderLayout() );
         //  getContentPane().add ( statusBar, BorderLayout.SOUTH);
 
+    }
+
+    // FIXME should be moved to Presenter
+    public void updateView( ModificationEvent event) throws RaplaException
+    {
+        menuBar.updateView( event);
     }
 
     @Override

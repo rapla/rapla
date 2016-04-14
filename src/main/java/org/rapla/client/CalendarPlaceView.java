@@ -1,39 +1,33 @@
 package org.rapla.client;
 
+import java.awt.Component;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.domain.Allocatable;
 
-public interface CalendarPlaceView<W>
+public interface CalendarPlaceView<W> extends  RaplaWidget<W>
 {
-
     interface Presenter
     {
-        void changeView(String view);
+        void minmaxPressed();
 
-        void changeCalendar(String selectedValue);
-
-        void resourcesSelected(Collection<Allocatable> selected);
-
-        void selectDate(Date newDate);
-
-        void next();
-
-        void previous();
+        void closeTemplate();
     }
 
-    void show(List<String> viewNames, String selectedView, List<String> calendarNames, String selectedCalendar);
+    void addSavedViews(RaplaWidget<W> savedViews);
+    void addSummaryView(RaplaWidget<W> summaryView);
 
-    void replaceContent(W provider);
+    void addConflictsView(RaplaWidget<W> conflictsView);
+
+    void addCalendarView(RaplaWidget<W> calendarView);
+
+    void addResourceSelectionView(RaplaWidget<W> resourceSelectionView);
 
     void setPresenter(Presenter presenter);
 
-    void updateResources(Allocatable[] entries, Collection<Allocatable> selected);
-
-    W provideContent();
-
-    void updateDate(Date selectedDate);
+    void updateView(boolean showConflicts, boolean showSelection, boolean templateMode);
 
 }

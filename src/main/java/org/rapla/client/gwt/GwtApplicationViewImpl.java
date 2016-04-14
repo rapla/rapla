@@ -20,6 +20,8 @@ import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -102,6 +104,12 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
         user.setMarginRight(25);
         user.add(new Text(message));
         menu.add(user);
+
+    }
+
+    @Override public void updateView(ModificationEvent event) throws RaplaException
+    {
+
 
     }
 

@@ -10,39 +10,15 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 
-package org.rapla.client.swing.internal;
+package org.rapla.client.internal;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTree;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.internal.common.MultiCalendarView;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
@@ -63,32 +39,68 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
+import javax.inject.Inject;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget {
+
+public class ConflictSelectionPresenter extends RaplaGUIComponent implements RaplaWidget {
 	public RaplaTree treeSelection = new RaplaTree();
 	protected final CalendarSelectionModel model;
-	MultiCalendarView view;
 	protected JPanel content = new JPanel();
 	JLabel summary = new JLabel();
 	Collection<Conflict> conflicts;
 	Listener listener = new Listener();
     private final TreeFactory treeFactory;
+    private final EventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-	 
-    public ConflictSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,final MultiCalendarView view, final CalendarSelectionModel model, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) throws RaplaException {
+
+    @Inject
+    public ConflictSelectionPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final CalendarSelectionModel model,
+            TreeFactory treeFactory, EventBus eventBus, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException{
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
-        this.view = view;
         this.treeFactory = treeFactory;
+        this.eventBus = eventBus;
         this.dialogUiFactory = dialogUiFactory;
-        conflicts = new LinkedHashSet<Conflict>( getQuery().getConflicts( ));
-        updateTree();
+        try
+        {
+            conflicts = new LinkedHashSet<Conflict>(getQuery().getConflicts());
+            updateTree();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
         final JTree navTree = treeSelection.getTree();
         content.setLayout(new BorderLayout());
 
@@ -229,7 +241,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
 
         private Promise<Void> store_( boolean newFlag) {
             Collection<Conflict> conflictOrig = new ArrayList<Conflict>();
-            for ( Conflict conflict:ConflictSelection.this.conflicts)
+            for ( Conflict conflict:ConflictSelectionPresenter.this.conflicts)
             {
                 if ( conflictStrings.contains( conflict.getId()))
                 {
@@ -393,12 +405,7 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
                  model.setSelectedDate(date);
              }
          }
-        final Promise<Void> updatePromise = view.getSelectedCalendar().update();
-        updatePromise.exceptionally((ex) ->
-        {
-            getLogger().error("Can't switch to conflict dates.", ex);
-            return null;
-        });
+        eventBus.fireEvent( new CalendarRefreshEvent());
     }
 
     private Collection<Conflict> getSelectedConflictsInModel() {
@@ -501,8 +508,8 @@ public class ConflictSelection extends RaplaGUIComponent implements RaplaWidget 
         treeSelection.getTree().setSelectionPaths( new TreePath[] {});
     }
 
-    public Component getSummaryComponent() {
-        return summary;
+    public RaplaWidget<Component> getSummaryComponent() {
+        return () -> summary;
     }   
     
    

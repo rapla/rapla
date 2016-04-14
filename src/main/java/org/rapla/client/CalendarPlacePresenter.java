@@ -1,155 +1,178 @@
 package org.rapla.client;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
-import org.rapla.client.base.CalendarPlugin;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.CalendarRefreshEvent;
+import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.internal.ConflictSelectionPresenter;
+import org.rapla.client.internal.MultiCalendarViewPresenter;
+import org.rapla.client.internal.ResourceSelectionPresenter;
+import org.rapla.client.internal.SavedCalendarPresenter;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.action.SaveableToggleAction;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.swing.JMenuItem;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Date;
 
-@Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID)
-public class CalendarPlacePresenter implements Presenter, TaskPresenter
+@Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "cal";
+    public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
+    public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
+    public static final String SHOW_SELECTION_MENU_ENTRY = "show_resource_selection";
+    public static final String SHOW_CONFLICTS_MENU_ENTRY = "show_conflicts";
     private static final String TODAY_DATE = "today";
+    boolean listenersDisabled = false;
 
     private final CalendarPlaceView view;
+    private DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade facade;
     private final CalendarSelectionModel model;
     private final EventBus eventBus;
     private final RaplaResources i18n;
-    private Map<String, CalendarPlugin> viewPluginPresenter;
-    private CalendarPlugin selectedView;
     private Logger logger;
-    private String calendar;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Inject
-    public CalendarPlacePresenter(final CalendarPlaceView view, final RaplaFacade facade, final RaplaResources i18n, final CalendarSelectionModel model,
-            final Logger logger, final EventBus eventBus/*, Map<String, CalendarPlugin> views*/)
+    final private ResourceSelectionPresenter resourceSelectionPresenter;
+    final private SavedCalendarPresenter savedViews;
+    final private ConflictSelectionPresenter conflictsView;
+    final private MultiCalendarViewPresenter calendarContainer;
+    final ClientFacade clientFacade;
+
+    @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
+            final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final EventBus eventBus,/*, Map<String, CalendarPlugin> views*/
+            ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarPresenter savedViews, ConflictSelectionPresenter conflictsView,
+            MultiCalendarViewPresenter calendarContainer, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.view = view;
-        this.facade = facade;
+        this.dialogUiFactory = dialogUiFactory;
+        this.facade = clientFacade.getRaplaFacade();
+        this.clientFacade = clientFacade;
         this.i18n = i18n;
         this.model = model;
         this.logger = logger;
         this.eventBus = eventBus;
-        view.setPresenter(this);
-        Map<String, CalendarPlugin> views = Collections.emptyMap();
-        viewPluginPresenter = new LinkedHashMap<String, CalendarPlugin>();
-        for (Entry<String, CalendarPlugin> entry : views.entrySet())
-        {
-            viewPluginPresenter.put(entry.getKey(), entry.getValue());
-        }
-        if (views.size() > 0)
-        {
-            selectView(null);
-        }
+        this.resourceSelectionPresenter = resourceSelectionPresenter;
+        view.addSavedViews(savedViews);
+        view.addResourceSelectionView(resourceSelectionPresenter);
+        view.addConflictsView(conflictsView);
+        view.addSummaryView(conflictsView.getSummaryComponent());
+        view.addCalendarView(calendarContainer);
 
-    }
-
-    private void init()
-    {
-        try
+        updateOwnReservationsSelected();
+        calendarContainer.addValueChangeListener(new ChangeListener()
         {
-            List<String> viewNames = new ArrayList<String>();
-            for (CalendarPlugin plugin : viewPluginPresenter.values())
+
+            public void stateChanged(ChangeEvent e)
             {
-                if (plugin.isEnabled())
+                if (listenersDisabled)
                 {
-                    viewNames.add(plugin.getName());
+                    return;
+                }
+                try
+                {
+                    resourceSelectionPresenter.updateMenu();
+                }
+                catch (RaplaException e1)
+                {
+                    logger.error(e1.getMessage(), e1);
                 }
             }
-            List<String> calendarNames = new ArrayList<String>();
-            final Preferences preferences = facade.getPreferences();
-            Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
-            if (exportMap != null)
+
+        });
+
+        final ChangeListener treeListener = new ChangeListener()
+        {
+            public void stateChanged(ChangeEvent e)
             {
-                calendarNames.addAll(exportMap.keySet());
+                if (listenersDisabled)
+                {
+                    return;
+                }
+                conflictsView.clearSelection();
             }
-            Collections.sort(calendarNames);
-            final String defaultCalendar = i18n.getString("default");
-            calendarNames.add(0, defaultCalendar);
-            if (calendar == null)
-            {
-                changeCalendar(defaultCalendar, false);
-            }
-            view.show(viewNames, selectedView.getName(), calendarNames, calendar);
-            final Date selectedDate = model.getSelectedDate();
-            view.updateDate(selectedDate);
-            final ModificationEventImpl event = new ModificationEventImpl();
-            updateView(event);
-            view.replaceContent(selectedView.provideContent());
+        };
+
+        resourceSelectionPresenter.getTreeSelection().addChangeListener(treeListener);
+        this.savedViews = savedViews;
+        this.conflictsView = conflictsView;
+        this.calendarContainer = calendarContainer;
+        try
+        {
+            calendarContainer.init(true);
         }
         catch (RaplaException e)
         {
-            logger.error("Error initializing calendar selection: " + e.getMessage(), e);
+            throw new RaplaInitializationException(e);
         }
-    }
+        view.setPresenter(this);
+        eventBus.addHandler(CalendarRefreshEvent.TYPE, (evt) -> {
+            calendarContainer.getSelectedCalendar().update();
+        });
 
-    @Override
-    public void changeCalendar(String newCalendarName)
-    {
-        changeCalendar(newCalendarName, true);
-    }
+        eventBus.addHandler(OwnReservationsEvent.TYPE, (evt) -> {
+            try
+            {
+                Entity preferences = facade.getPreferences();
+                ModificationEventImpl modificationEvt = new ModificationEventImpl();
+                modificationEvt.addChanged(preferences);
+                resourceSelectionPresenter.dataChanged(modificationEvt);
+                calendarContainer.update(modificationEvt);
+                conflictsView.dataChanged(modificationEvt);
+            }
+            catch (Exception ex)
+            {
+                dialogUiFactory.showException(ex, null);
+            }
+        });
 
-    public void changeCalendar(String newCalendarName, boolean fireEvent)
-    {
+
         try
         {
-            if (!newCalendarName.equals(calendar))
-            {
-                calendar = newCalendarName;
-                Date selectedDate = model.getSelectedDate();
-                model.load(newCalendarName == i18n.getString("default") ? null : newCalendarName);
-                model.setSelectedDate(selectedDate);
-                if (fireEvent)
-                {
-                    updatePlace();
-                }
-                updateResourcesTree();
-            }
+            updateViews();
         }
-        catch (Exception e)
+        catch (RaplaException e)
         {
-            logger.error("error changing to calendar " + newCalendarName, e);
+            throw new RaplaInitializationException(e);
         }
+
     }
 
-    @Override
+
+    /*
     public void selectDate(Date newDate)
     {
         updateSelectedDate(newDate);
         updatePlace();
     }
 
-    @Override
     public void next()
     {
         final Date selectedDate = model.getSelectedDate();
@@ -158,7 +181,6 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
         updatePlace();
     }
 
-    @Override
     public void previous()
     {
         final Date selectedDate = model.getSelectedDate();
@@ -189,148 +211,109 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
         return dateString;
     }
 
-    private String calcCalId()
-    {
-        if (calendar == null)
-        {
-            return "";
-        }
-        return calendar;
-    }
-
-    private String calcViewId()
-    {
-        if (selectedView == null)
-            return "";
-        for (Entry<String, CalendarPlugin> entry : viewPluginPresenter.entrySet())
-        {
-            if (entry.getValue() == selectedView)
-            {
-                return entry.getKey();
-            }
-        }
-        return "";
-    }
-
-    private void updateResourcesTree()
-    {
-        try
-        {
-            Allocatable[] allocatables = facade.getAllocatables();
-            Allocatable[] entries = allocatables;
-            Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
-            view.updateResources(entries, selectedAllocatables);
-        }
-        catch (RaplaException e)
-        {
-            logger.error("error while updating resource tree " + e.getMessage(), e);
-        }
-    }
-
     @Override
     public void resourcesSelected(Collection<Allocatable> selected)
     {
         model.setSelectedObjects(selected);
         updateView(null);
     }
+*/
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    //@Inject
-    public void setViews(Map<String, CalendarPlugin> views)
+    //    @Override
+    //    public void resetPlace()
+    //    {
+    //        if ( viewPluginPresenter != null)
+    //        {
+    //            final Collection<CalendarPlugin> values = viewPluginPresenter.values();
+    //            selectedView = values.iterator().next();
+    //        }
+    //    }
+    //
+    @Override public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
     {
-
+        return view;
     }
 
-//    @Override
-//    public void resetPlace()
-//    {
-//        if ( viewPluginPresenter != null)
-//        {
-//            final Collection<CalendarPlugin> values = viewPluginPresenter.values();
-//            selectedView = values.iterator().next();
-//        }
-//    }
-//
-    @Override
-    public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
+    public void updateView(ModificationEvent evt)
     {
-//        return (RaplaWidget<T>) view.provideContent();
-        String id = activity.getInfo();
-        if (id != null)
-        {
-            String[] split = id.split("/");
-            changeCalendar(split[0], false);
-            if (split.length > 1)
-            {
-                String date = split[1];
-                Date nextDate;
-                if (TODAY_DATE.equalsIgnoreCase(date))
-                {
-                    model.setSelectedDate(facade.today());
-                }
-                else
-                {
-                    try
-                    {
-                        nextDate = SerializableDateTimeFormat.INSTANCE.parseDate(date, false);
-                        model.setSelectedDate(nextDate);
-                        view.updateDate(nextDate);
-                    }
-                    catch (ParseDateException e)
-                    {
-                        logger.error("Error loading date from place: " + e.getMessage(), e);
-                    }
-                }
-                if (split.length > 2)
-                {
-                    String viewId = split[2];
-                    selectView(viewId);
-                }
-            }
-        }
-        else
-        {
-            changeCalendar(null);
-        }
-        // FIXME 
-        return (RaplaWidget<T>) view.provideContent();
-    }
-
-    private void selectView(String viewId)
-    {
-        if (viewId != null)
-        {
-            selectedView = viewPluginPresenter.get(viewId);
-        }
-        if (selectedView == null)
-        {
-            selectedView = viewPluginPresenter.values().iterator().next();
-        }
-    }
-
-    @Override
-    public void changeView(String view)
-    {
-        selectView(view);
-        updatePlace();
-    }
-
-    public void updateView(ModificationEvent event)
-    {
+        listenersDisabled = true;
         try
         {
-            selectedView.updateContent();
+            resourceSelectionPresenter.dataChanged(evt);
+            conflictsView.dataChanged(evt);
+            calendarContainer.update(evt);
+            savedViews.update();
+            updateViews();
+            // this is done in calendarContainer update
+            //updateOwnReservationsSelected();
         }
-        catch (Exception e)
+        catch (RaplaException ex)
         {
-            logger.error("error updating view " + e.getMessage(), e);
+            dialogUiFactory.showException(ex, null);
+        }
+        finally
+        {
+            listenersDisabled = false;
         }
     }
 
-    public Object provideContent()
+    private void updateViews() throws RaplaException
     {
-        init();
-        return view.provideContent();
+        boolean showConflicts = facade.getPreferences().getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
+        boolean showSelection = facade.getPreferences().getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
+        boolean templateMode = clientFacade.getTemplate() != null;
+
+        view.updateView(showConflicts, showSelection, templateMode);
+    }
+
+    public void updateOwnReservationsSelected()
+    {
+        final CalendarSelectionModel model = resourceSelectionPresenter.getModel();
+        boolean isSelected = model.isOnlyCurrentUserSelected();
+    }
+
+    @Override public void minmaxPressed()
+    {
+        closeFilter();
+        try
+        {
+            TypedComponentRole<Boolean> configEntry = CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY;
+            User user = clientFacade.getUser();
+            Preferences prefs = facade.edit( facade.getPreferences(user));
+            final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
+            boolean newSelected = !oldEntry;
+            prefs.putEntry(configEntry, newSelected);
+            facade.store(prefs);
+            // show Tooltip only when selection pane is visible
+            javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
+        }
+        catch (RaplaException e)
+        {
+            dialogUiFactory.showException( e, null);
+        }
+
+    }
+
+    public void start()
+    {
+        calendarContainer.getSelectedCalendar().scrollToStart();
+    }
+
+    @Override public void closeTemplate()
+    {
+        clientFacade.setTemplate(null);
+    }
+
+    public void closeFilter()
+    {
+        // CKO Not a good solution. FilterDialogs should close themselfs when model changes.
+        // BJO 00000139
+        if (resourceSelectionPresenter.getFilterButton().isOpen())
+            resourceSelectionPresenter.getFilterButton().doClick();
+        if (calendarContainer.getFilterButton().isOpen())
+            calendarContainer.getFilterButton().doClick();
+
+        // BJO 00000139
     }
 
 }

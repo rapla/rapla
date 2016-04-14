@@ -14,7 +14,7 @@
 package org.rapla.client.swing.gui.tests;
 
 import org.junit.Test;
-import org.rapla.client.swing.internal.CalendarEditor;
+import org.rapla.client.swing.internal.CalendarPlaceViewSwing;
 import org.rapla.facade.CalendarSelectionModel;
 
 import java.util.Date;
@@ -26,7 +26,7 @@ public final class CalendarEditorTest extends GUITestCase
     public void testShow() throws Exception {
         CalendarSelectionModel settings = getFacade().getRaplaFacade().newCalendarModel(getFacade().getUser() );
         settings.setSelectedDate(new Date());
-        CalendarEditor editor = null;// new CalendarEditor(getContext(),settings);
+        CalendarPlaceViewSwing editor = null;// new CalendarPlaceViewSwing(getContext(),settings);
         testComponent(editor.getComponent(),1024,600);
         editor.start();
         //editor.listUI.treeSelection.getTree().setSelectionRow(1);
@@ -38,7 +38,7 @@ public final class CalendarEditorTest extends GUITestCase
         CalendarModel settings = new CalendarModelImpl( getClientService().getContext() );
         settings.setSelectionType( Reservation.TYPE );
         settings.setSelectedDate(new Date());
-        CalendarEditor editor = new CalendarEditor(getClientService().getContext(),settings);
+        CalendarPlaceViewSwing editor = new CalendarPlaceViewSwing(getClientService().getContext(),settings);
         testComponent(editor.getComponent(),1024,600);
         editor.start();
         editor.getComponent().revalidate();

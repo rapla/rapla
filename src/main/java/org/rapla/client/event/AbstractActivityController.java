@@ -37,7 +37,7 @@ public abstract class AbstractActivityController implements ApplicationEvent.App
     }
 
     @Override
-    public void handleApplicationEvent(ApplicationEvent activity)
+    public void handle(ApplicationEvent activity)
     {
         if ( activity.isStop())
         {

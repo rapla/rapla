@@ -38,12 +38,15 @@ import javax.swing.KeyStroke;
 import javax.swing.MenuElement;
 import javax.swing.SwingUtilities;
 
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
+import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -71,12 +74,15 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
+import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -97,38 +103,32 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final TemplateEditFactory templateEditFactory;
+    private CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
+    final private EventBus eventBus;
+    RaplaMenuItem ownReservationsMenu;
 
-    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            PrintAction printAction,
-            Set<AdminMenuExtension> adminMenuExt,
-            Set<EditMenuExtension> editMenuExt,
-            Set<ViewMenuExtension> viewMenuExt,
-            Set<HelpMenuExtension> helpMenuExt,
-            Set<ImportMenuExtension> importMenuExt,
-            Set<ExportMenuExtension> exportMenuExt,
-            MenuFactory menuFactory,
-            EditController editController,
-            CalendarSelectionModel model,
-            UserClientService clientService,
-            RestartServer restartServerService,
-            RaplaImages raplaImages, 
-            DialogUiFactoryInterface dialogUiFactory,
-            TemplateEditFactory templateEditFactory,
-            Provider<LicenseInfoUI> licenseInfoUIProvider,
-            ReservationController reservationController,
+
+    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt,
+            Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt, MenuFactory menuFactory,
+            EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
+            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, TemplateEditFactory templateEditFactory,
+            Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController,
             //FIXME hack for initialization
-            SwingActivityController activityController
+            SwingActivityController activityController,
 
-    )
+            EventBus eventBus)
             throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.model = model;
         this.licenseInfoUIProvider = licenseInfoUIProvider;
         this.editController = editController;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.templateEditFactory = templateEditFactory;
+        this.eventBus = eventBus;
         // TODO Hack to solve dependency Cycle
         ((MenuFactoryImpl)menuFactory).setEditController( editController);
 
@@ -253,17 +253,11 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 action.setEnabled(modifyPreferencesAllowed);
             }
             {
-                SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_CONFLICTS_MENU_ENTRY,
-                        CalendarEditor.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
+                SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarPlacePresenter.SHOW_CONFLICTS_MENU_ENTRY,
+                        CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, dialogUiFactory);
                 RaplaMenuItem menu = createMenuItem(action);
                 viewMenu.insertBeforeId(menu, "view_save");
                 action.setEnabled(modifyPreferencesAllowed);
-            }
-            {
-                SaveableToggleAction action = new SaveableToggleAction(facade, getI18n(), getRaplaLocale(), getLogger(), CalendarEditor.SHOW_SELECTION_MENU_ENTRY,
-                        CalendarEditor.SHOW_SELECTION_CONFIG_ENTRY, dialogUiFactory);
-                RaplaMenuItem menu = createMenuItem(action);
-                viewMenu.insertBeforeId(menu, "view_save");
             }
         }
         catch(RaplaException e)
@@ -286,6 +280,24 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         }
 
+        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
+        ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
+        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
+        ownReservationsMenu.addActionListener(new ActionListener()
+        {
+
+            public void actionPerformed(ActionEvent e)
+            {
+                boolean isSelected = model.isOnlyCurrentUserSelected();
+                // switch selection options
+                model.setOption(CalendarModel.ONLY_MY_EVENTS, isSelected ? "false" : "true");
+                eventBus.fireEvent( new OwnReservationsEvent());
+            }
+        });
+
+        ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
+        ownReservationsMenu.setIcon(raplaImages.getIconFromKey("icon.unchecked"));
+
         RaplaMenuItem info = new RaplaMenuItem("info");
         info.setAction(createInfoAction());
         extraMenu.add(info);
@@ -301,6 +313,15 @@ public class RaplaMenuBar extends RaplaGUIComponent
         exportMenu.setEnabled(exportMenu.getMenuComponentCount() != 0);
         importMenu.setEnabled(importMenu.getMenuComponentCount() != 0);
         getUpdateModule().addModificationListener(listener);
+    }
+
+    public void updateView(ModificationEvent evt)
+    {
+
+        boolean isSelected = model.isOnlyCurrentUserSelected();
+        ownReservationsMenu.setIcon(isSelected ? raplaImages.getIconFromKey("icon.checked") : raplaImages.getIconFromKey("icon.unchecked"));
+        ownReservationsMenu.setSelected(isSelected);
+
     }
 
     public CommandHistory getCommandHistory()

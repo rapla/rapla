@@ -35,7 +35,7 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingApplicationViewImpl;
+import org.rapla.client.swing.internal.ApplicationViewSwing;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
@@ -127,7 +127,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
  			}
          }
  		
-    	SwingApplicationViewImpl.setLookandFeel();
+    	ApplicationViewSwing.setLookandFeel();
     	defaultLanguageChosen = true;
     	getLogger().info("Starting gui ");
 		

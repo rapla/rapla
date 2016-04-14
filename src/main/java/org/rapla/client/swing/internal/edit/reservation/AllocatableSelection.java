@@ -15,6 +15,7 @@ package org.rapla.client.swing.internal.edit.reservation;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.MultiCalendarViewPresenter;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
@@ -26,7 +27,6 @@ import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MenuFactoryImpl;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.CalendarAction;
-import org.rapla.client.swing.internal.common.MultiCalendarView.MultiCalendarViewFactory;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -72,6 +72,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultCellEditor;
@@ -201,14 +202,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final MenuFactory menuFactory;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final MultiCalendarViewFactory multiCalendarViewFactory;
+    private final Provider<MultiCalendarViewPresenter> multiCalendarViewFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final FrameControllerList frameControllerList;
 
     public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean addCalendarButton,
             CommandHistory commandHistory, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages,
-            DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory,
+            DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory,
             BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList)
     {
         super(facade, i18n, raplaLocale, logger);
@@ -2314,7 +2315,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final RaplaImages raplaImages;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
-        private final MultiCalendarViewFactory multiCalendarViewFactory;
+        private final Provider<MultiCalendarViewPresenter> multiCalendarViewFactory;
         private final BooleanFieldFactory booleanFieldFactory;
         private final FilterEditButtonFactory filterEditButtonFactory;
         private final FrameControllerList frameControllerList2;
@@ -2323,7 +2324,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, TreeFactory treeFactory, CalendarSelectionModel model,
                 MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
-                DateFieldFactory dateFieldFactory, MultiCalendarViewFactory multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
+                DateFieldFactory dateFieldFactory, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList)
         {
             super();

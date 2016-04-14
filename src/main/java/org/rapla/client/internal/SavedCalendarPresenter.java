@@ -1,4 +1,4 @@
-package org.rapla.client.swing.internal;
+package org.rapla.client.internal;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -39,8 +40,12 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.PublishDialog;
+import org.rapla.client.swing.internal.RaplaMenuBarContainer;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
@@ -52,6 +57,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
@@ -61,7 +67,8 @@ import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public class SavedCalendarView extends RaplaGUIComponent implements ActionListener {
+public class SavedCalendarPresenter extends RaplaGUIComponent implements ActionListener, RaplaWidget<Component>
+{
 
     JComboBox selectionBox;
     private final EventBus eventBus;
@@ -90,7 +97,7 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
     class PublishAction extends RaplaAction
     {
         PublishDialog publishDialog;
-        public PublishAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException {
+        public PublishAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)  {
             super(facade, i18n, raplaLocale, logger);
             final String name = getString("publish") ;
             putValue(NAME,name);
@@ -214,13 +221,14 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
             return true;
         }
         
-		private SavedCalendarView getOuterType() {
-            return SavedCalendarView.this;
+		private SavedCalendarPresenter getOuterType() {
+            return SavedCalendarPresenter.this;
         }
     }
-    
-    public SavedCalendarView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException {
+
+    @Inject
+    public SavedCalendarPresenter(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
+            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.eventBus = eventBus;
         this.extensionFactories = extensionFactories;
@@ -276,9 +284,16 @@ public class SavedCalendarView extends RaplaGUIComponent implements ActionListen
         }
         toolbar.add(delete);
         toolbar.setBorder( BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        
-        update();
-        
+
+        try
+        {
+            update();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
+
         final int defaultIndex = getDefaultIndex();
         if (defaultIndex != -1)
         	selectionBox.setSelectedIndex(defaultIndex); 

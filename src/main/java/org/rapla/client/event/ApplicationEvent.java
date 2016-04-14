@@ -14,7 +14,7 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
 
     public interface ApplicationEventHandler
     {
-        void handleApplicationEvent(ApplicationEvent event);
+        void handle(ApplicationEvent event);
     }
 
     public static final Type<ApplicationEventHandler> TYPE = new Type<ApplicationEventHandler>();
@@ -58,7 +58,7 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
 
     @Override protected void dispatch(ApplicationEventHandler handler)
     {
-        handler.handleApplicationEvent(this);
+        handler.handle(this);
     }
 
     public static ApplicationEvent fromString(final String activityString)

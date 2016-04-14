@@ -11,7 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 
-package org.rapla.client.swing.internal;
+package org.rapla.client.internal;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DropMode;
 import javax.swing.JComponent;
@@ -48,18 +47,23 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
 
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
+import org.rapla.client.swing.internal.MenuFactoryImpl;
+import org.rapla.client.swing.internal.RaplaMenuBarContainer;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.RaplaObjectAction;
-import org.rapla.client.swing.internal.common.MultiCalendarView;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.PopupEvent;
@@ -81,11 +85,12 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
+public class ResourceSelectionPresenter extends RaplaGUIComponent implements RaplaWidget
 {
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
@@ -93,7 +98,6 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
     protected JPanel buttonsPanel = new JPanel();
 
     protected final CalendarSelectionModel model;
-    MultiCalendarView view;
     Listener listener = new Listener();
 
     protected FilterEditButton filterEdit;
@@ -104,17 +108,19 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaMenuBarContainer menuBar;
+    private final EventBus eventBus;
 
-    private ResourceSelection(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            MultiCalendarView view, CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController,
-            InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory)
-                    throws RaplaException
+    @Inject
+    public ResourceSelectionPresenter(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,
+            EventBus eventBus)
+                    throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
 
         this.menuBar = menuBar;
         this.model = model;
-        this.view = view;
+        this.eventBus = eventBus;
         this.treeFactory = treeFactory;
         this.menuFactory = menuFactory;
         this.editController = editController;
@@ -141,7 +147,14 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
         final TreeCellRenderer renderer = getTreeFactory().createRenderer();
         treeSelection.getTree().setCellRenderer(renderer);
 
-        updateTree();
+        try
+        {
+            updateTree();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
         updateSelection();
         treeSelection.addChangeListener(listener);
         treeSelection.addPopupListener(listener);
@@ -149,7 +162,14 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
         treeSelection.getTree().addFocusListener(listener);
         javax.swing.ToolTipManager.sharedInstance().registerComponent(treeSelection.getTree());
 
-        updateMenu();
+        try
+        {
+            updateMenu();
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
     }
 
     protected HashSet<?> setSelectedObjects()
@@ -169,7 +189,7 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
         return treeSelection;
     }
 
-    protected CalendarSelectionModel getModel()
+    public CalendarSelectionModel getModel()
     {
         return model;
     }
@@ -523,7 +543,8 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
 
     public void applyFilter() throws RaplaException
     {
-        view.getSelectedCalendar().update();
+        eventBus.fireEvent(new CalendarRefreshEvent());
+
     }
 
     public void updateMenu() throws RaplaException
@@ -556,48 +577,5 @@ public class ResourceSelection extends RaplaGUIComponent implements RaplaWidget
         return menuFactory;
     }
 
-    @Singleton
-    public static class ResourceSelectionFactory
-    {
-        private final ClientFacade facade;
-        private final RaplaResources i18n;
-        private final RaplaLocale raplaLocale;
-        private final Logger logger;
-        private final CalendarSelectionModel model;
-        private final TreeFactory treeFactory;
-        private final MenuFactory menuFactory;
-        private final EditController editController;
-        private final InfoFactory infoFactory;
-        private final RaplaImages raplaImages;
-        private final DialogUiFactoryInterface dialogUiFactory;
-        private final FilterEditButtonFactory filterEditButtonFactory;
-        private final RaplaMenuBarContainer menuBar;
-
-        @Inject
-        public ResourceSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
-                TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages,
-                DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, RaplaMenuBarContainer menuBar)
-        {
-            this.facade = facade;
-            this.i18n = i18n;
-            this.raplaLocale = raplaLocale;
-            this.logger = logger;
-            this.model = model;
-            this.treeFactory = treeFactory;
-            this.menuFactory = menuFactory;
-            this.editController = editController;
-            this.infoFactory = infoFactory;
-            this.raplaImages = raplaImages;
-            this.dialogUiFactory = dialogUiFactory;
-            this.filterEditButtonFactory = filterEditButtonFactory;
-            this.menuBar = menuBar;
-        }
-
-        public ResourceSelection create(MultiCalendarView view) throws RaplaException
-        {
-            return new ResourceSelection(menuBar, facade, i18n, raplaLocale, logger, view, model, treeFactory, menuFactory, editController, infoFactory,
-                    raplaImages, dialogUiFactory, filterEditButtonFactory);
-        }
-    }
 
 }
