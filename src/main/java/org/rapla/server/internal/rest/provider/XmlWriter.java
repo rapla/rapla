@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Produces;
@@ -17,10 +15,9 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.rapla.rest.client.SerializableExceptionInformation;
 
 @Provider
 @Produces(MediaType.APPLICATION_XML)
@@ -33,7 +30,7 @@ public class XmlWriter<T> implements MessageBodyWriter<T>
     {
         try
         {
-            contexts.put(Throwable.class, JAXBContext.newInstance(ExceptionXml.class));
+            contexts.put(Throwable.class, JAXBContext.newInstance(SerializableExceptionInformation.class));
         }
         catch (Exception e)
         {
@@ -62,17 +59,7 @@ public class XmlWriter<T> implements MessageBodyWriter<T>
             if (t instanceof Throwable)
             {
                 Throwable exception = (Throwable) t;
-                final ExceptionXml exceptionXml = new ExceptionXml();
-                exceptionXml.message = exception.getMessage();
-                exceptionXml.stacktrace = new ArrayList<>();
-                for (StackTraceElement el : exception.getStackTrace())
-                {
-                    final StacktraceEntry stacktraceEntry = new StacktraceEntry();
-                    stacktraceEntry.className = el.getClassName();
-                    stacktraceEntry.lineNumber = el.getLineNumber();
-                    stacktraceEntry.methodName = el.getMethodName();
-                    exceptionXml.stacktrace.add(stacktraceEntry);
-                }
+                final SerializableExceptionInformation exceptionXml = new SerializableExceptionInformation(exception);
                 try
                 {
                     final JAXBContext jaxbContext = contexts.get(Throwable.class);
@@ -83,41 +70,22 @@ public class XmlWriter<T> implements MessageBodyWriter<T>
                     entityStream.write(e.getMessage().getBytes("UTF-8"));
                 }
             }
-            final Class<? extends Object> clazz = t.getClass();
-            JAXBContext jaxbContext = contexts.get(clazz);
-            if (jaxbContext == null)
+            else
             {
-                jaxbContext = JAXBContext.newInstance(clazz);
-                contexts.put(clazz, jaxbContext);
+                final Class<? extends Object> clazz = t.getClass();
+                JAXBContext jaxbContext = contexts.get(clazz);
+                if (jaxbContext == null)
+                {
+                    jaxbContext = JAXBContext.newInstance(clazz);
+                    contexts.put(clazz, jaxbContext);
+                }
+                final Marshaller marshaller = jaxbContext.createMarshaller();
+                marshaller.marshal(t, entityStream);
             }
-            final Marshaller marshaller = jaxbContext.createMarshaller();
-            marshaller.marshal(t, entityStream);
         }
         catch (Exception e)
         {
             throw new IOException(e.getMessage(), e);
         }
-    }
-
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
-    private static class ExceptionXml
-    {
-        @XmlElement(name = "message")
-        private String message;
-        @XmlElement(name = "exception")
-        private List<StacktraceEntry> stacktrace;
-    }
-
-    @XmlAccessorType(XmlAccessType.FIELD)
-    private static class StacktraceEntry
-    {
-        @XmlElement(name = "lineNumber")
-        private int lineNumber;
-        @XmlElement(name = "className")
-        private String className;
-        @XmlElement(name = "methodName")
-        private String methodName;
-
     }
 }

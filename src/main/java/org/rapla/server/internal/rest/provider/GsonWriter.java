@@ -16,12 +16,12 @@ import javax.ws.rs.ext.Provider;
 
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
+import org.rapla.rest.client.SerializableExceptionInformation;
 import org.rapla.rest.client.swing.JSONParserWrapper;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 @Provider
@@ -67,41 +67,8 @@ public class GsonWriter<T> implements MessageBodyWriter<T>
 
     private String serializeException(Throwable exception)
     {
-        final JsonObject obj = new JsonObject();
-        obj.addProperty("message", exception.getMessage());
-        JsonArray stackTrace = new JsonArray();
-        for (StackTraceElement el : exception.getStackTrace())
-        {
-            JsonElement jsonRep = gson.toJsonTree(el);
-            stackTrace.add(jsonRep);
-        }
-        final JsonObject data = new JsonObject();
-        data.addProperty("exception", exception.getClass().getName());
-        data.add("stacktrace", stackTrace);
-        final JsonElement params = getParams(exception);
-        if (params != null)
-        {
-            data.add("params", params);
-        }
-        obj.add("data", data);
-        final JsonObject wrapper = new JsonObject();
-        wrapper.add("error", obj);
-        final String json = gson.toJson(wrapper);
+        final SerializableExceptionInformation se = new SerializableExceptionInformation(exception);
+        final String json = gson.toJson(se);
         return json;
     }
-
-    private JsonElement getParams(Throwable exception)
-    {
-        JsonArray params = null;
-        if (exception instanceof DependencyException)
-        {
-            params = new JsonArray();
-            for (String dep : ((DependencyException) exception).getDependencies())
-            {
-                params.add(new JsonPrimitive(dep));
-            }
-        }
-        return params;
-    }
-
 }
