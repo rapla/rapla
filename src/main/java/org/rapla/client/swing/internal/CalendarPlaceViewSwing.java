@@ -115,16 +115,6 @@ import java.awt.event.ActionListener;
         min.setAlignmentY(JButton.TOP);
         jp.add(min, BorderLayout.EAST);
         left.add(jp, c);
-        c.fill = GridBagConstraints.BOTH;
-        c.gridy = 2;
-        c.weightx = 1;
-        c.weighty = 2.5;
-        c.weighty = 1.0;
-        c.gridy = 3;
-        c.weighty = 0.0;
-        c.fill = GridBagConstraints.NONE;
-        c.gridy = 4;
-        c.anchor = GridBagConstraints.WEST;
     }
 
     private Component savedViewsComponent;
@@ -140,6 +130,10 @@ import java.awt.event.ActionListener;
 
     @Override public void addSummaryView(RaplaWidget<Component> conflictsSummaryView)
     {
+        c.weighty = 0.0;
+        c.fill = GridBagConstraints.NONE;
+        c.gridy = 4;
+        c.anchor = GridBagConstraints.WEST;
         conflictsSummaryViewComponent = conflictsSummaryView.getComponent();
         left.add(conflictsSummaryViewComponent, c);
     }
@@ -148,6 +142,8 @@ import java.awt.event.ActionListener;
 
     @Override public void addConflictsView(RaplaWidget<Component> conflictsView)
     {
+        c.weighty = 1.0;
+        c.gridy = 3;
         conflictsViewComponent = conflictsView.getComponent();
         left.add(conflictsViewComponent, c);
     }
@@ -159,6 +155,10 @@ import java.awt.event.ActionListener;
 
     @Override public void addResourceSelectionView(RaplaWidget<Component> resourceSelectionView)
     {
+        c.fill = GridBagConstraints.BOTH;
+        c.gridy = 2;
+        c.weightx = 1;
+        c.weighty = 2.5;
         left.add(resourceSelectionView.getComponent(), c);
     }
 
