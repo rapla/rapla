@@ -129,8 +129,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.dialogUiFactory = dialogUiFactory;
         this.templateEditFactory = templateEditFactory;
         this.eventBus = eventBus;
-        // TODO Hack to solve dependency Cycle
-        ((MenuFactoryImpl)menuFactory).setEditController( editController);
 
 
         RaplaMenu editMenu = menuBarContainer.getEditMenu();

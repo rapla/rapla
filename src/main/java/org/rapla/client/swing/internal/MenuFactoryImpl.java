@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.Action;
 import javax.swing.JMenuItem;
@@ -90,14 +91,14 @@ import org.rapla.storage.PermissionController;
     private final PermissionController permissionController;
     private final CalendarSelectionModel model;
     private final UserClientService service;
-    private EditController editController;
+    private final Provider<EditController> editControllerProvider;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, CalendarSelectionModel model,
-            UserClientService service, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+            UserClientService service, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<EditController> editControllerProvider)
     {
         super(facade, i18n, raplaLocale, logger);
         this.reservationWizards = reservationWizards;
@@ -108,11 +109,7 @@ import org.rapla.storage.PermissionController;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-    }
-
-    public void setEditController(EditController editController)
-    {
-        this.editController = editController;
+        this.editControllerProvider = editControllerProvider;
     }
 
     /**
@@ -520,6 +517,7 @@ import org.rapla.storage.PermissionController;
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext)
     {
+        final EditController editController = editControllerProvider.get();
         RaplaObjectAction action = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, editController, infoFactory,
                 raplaImages, dialogUiFactory);
         return action;
@@ -527,6 +525,7 @@ import org.rapla.storage.PermissionController;
 
     private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext)
     {
+        final EditController editController = editControllerProvider.get();
         DynamicTypeAction action = new DynamicTypeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, editController, infoFactory,
                 raplaImages, dialogUiFactory);
         return action;
@@ -534,6 +533,7 @@ import org.rapla.storage.PermissionController;
 
     private UserAction newUserAction(PopupContext popupContext)
     {
+        final EditController editController = editControllerProvider.get();
         UserAction action = new UserAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, service, editController, raplaImages,
                 dialogUiFactory);
         return action;
