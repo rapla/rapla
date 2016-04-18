@@ -89,6 +89,7 @@ public class ResourceSelectionPresenter implements Presenter
         this.eventBus = eventBus;
         this.editController = editController;
         this.dialogUiFactory = dialogUiFactory;
+        view.setPresenter(this);
 
         try
         {

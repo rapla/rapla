@@ -38,4 +38,6 @@ public interface ResourceSelectionView<T> extends RaplaWidget<T>
     void addChangeListener(RaplaChangeListener changeListener);
 
     void closeFilterButton();
+    
+    void setPresenter(Presenter presenter);
 }
