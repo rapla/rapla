@@ -42,6 +42,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -219,6 +220,14 @@ public class MultiCalendarViewPresenter extends RaplaGUIComponent
         });
     }
     
+	public void addChangeListener(final RaplaChangeListener raplaChangeListener)
+	{
+        addValueChangeListener((evt) ->
+        {
+            raplaChangeListener.onChange();
+        });
+	}
+	
 	public void addValueChangeListener(ChangeListener changeListener) {
 		listeners .add( changeListener);
 	}

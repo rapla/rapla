@@ -39,7 +39,7 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -437,7 +437,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             focusedObject = selectedEvents.get(0);
         }
 
-        MenuContext menuContext = new MenuContext(focusedObject, new SwingPopupContext(getComponent(), p));
+        SwingMenuContext menuContext = new SwingMenuContext(focusedObject, new SwingPopupContext(getComponent(), p), null, p);
         menuContext.setSelectedDate(focusedObject != null ? new Date(focusedObject.getStart()) : new Date());
         {
             menuContext.setSelectedObjects(selectedEvents);
@@ -485,7 +485,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         return printable.print(graphics, format, page);
     }
 
-    private MenuInterface addObjectMenu(MenuInterface menu, MenuContext context, String afterId) throws RaplaException
+    private MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
     {
         Component parent = getComponent();
         AppointmentBlock appointmentBlock = (AppointmentBlock) context.getFocusedObject();

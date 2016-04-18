@@ -23,7 +23,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -120,7 +120,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         {
             RaplaPopupMenu menu = new RaplaPopupMenu();
             Object focusedObject = null;
-            MenuContext context = new MenuContext( focusedObject);
+            SwingMenuContext context = new SwingMenuContext( focusedObject);
             menuFactory.addReservationWizards(menu, context, null);
 
             User user = getUser();
@@ -332,7 +332,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         while (it.hasNext())
         {
             ObjectMenuFactory objectMenuFact = it.next();
-            MenuContext menuContext = new MenuContext( appointment);
+            SwingMenuContext menuContext = new SwingMenuContext( appointment);
             menuContext.setSelectedDate( start);
 
             RaplaMenuItem[] items = objectMenuFact.create(menuContext, appointment);

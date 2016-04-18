@@ -36,7 +36,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -76,7 +76,7 @@ import org.rapla.storage.PermissionController;
 @Singleton @DefaultImplementation(of = MenuFactory.class, context = InjectionContext.swing) public class MenuFactoryImpl extends RaplaGUIComponent
         implements MenuFactory
 {
-    public void addReservationWizards(MenuInterface menu, MenuContext context, String afterId) throws RaplaException
+    public void addReservationWizards(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
     {
         final User user = getUser();
         if (permissionController.canCreateReservation(user))
@@ -207,12 +207,12 @@ import org.rapla.storage.PermissionController;
         return canAllocateSelected;
     }
 
-    public MenuInterface addNew(MenuInterface menu, MenuContext context, String afterId) throws RaplaException
+    public MenuInterface addNew(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
     {
         return addNew(menu, context, afterId, false);
     }
 
-    public MenuInterface addNew(MenuInterface menu, MenuContext context, String afterId, boolean addNewReservationMenu) throws RaplaException
+    public MenuInterface addNew(MenuInterface menu, SwingMenuContext context, String afterId, boolean addNewReservationMenu) throws RaplaException
     {
         // Do nothing if the user can't allocate anything
         User user = getUser();
@@ -309,12 +309,12 @@ import org.rapla.storage.PermissionController;
         return menu;
     }
 
-    public MenuInterface addObjectMenu(MenuInterface menu, MenuContext context) throws RaplaException
+    public MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context) throws RaplaException
     {
         return addObjectMenu(menu, context, "EDIT_BEGIN");
     }
 
-    public MenuInterface addObjectMenu(MenuInterface menu, MenuContext context, String afterId) throws RaplaException
+    public MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
     {
         Object focusedObject = context.getFocusedObject();
         final PopupContext popupContext = context.getPopupContext();

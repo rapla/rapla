@@ -41,7 +41,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -354,7 +354,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         if ( selectedEvents.size() == 1) {
             focusedObject = selectedEvents.get( 0);
         }
-        MenuContext menuContext = new MenuContext(  focusedObject, new SwingPopupContext(getComponent(),p));
+        SwingMenuContext menuContext = new SwingMenuContext(  focusedObject, new SwingPopupContext(getComponent(),p), null, p);
         menuContext.setSelectedObjects( selectedEvents);
 
         // add the new reservations wizards

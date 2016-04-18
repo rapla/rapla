@@ -24,7 +24,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -72,7 +72,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         this.treeFactory = treeFactory;
     }
 
-    public RaplaMenuItem[] create( final MenuContext menuContext, final RaplaObject focusedObject )
+    public RaplaMenuItem[] create( final SwingMenuContext menuContext, final RaplaObject focusedObject )
     {
     	if (!old.isAdmin())
     	{

@@ -12,27 +12,35 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
+import javax.swing.JComponent;
+
+import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
 
-public class MenuContext
+public class SwingMenuContext implements MenuContext
 {
     Collection<?> selectedObjects = Collections.EMPTY_LIST;
     Object focused;
     private final PopupContext popupContext;
 
     private Date selectedDate;
+    private JComponent component;
+    private Point point;
     
-    public MenuContext( Object focusedObject) {
-        this(  focusedObject, null );
+    public SwingMenuContext( Object focusedObject) {
+        this(  focusedObject, null, null, null );
     }
 
-    public MenuContext(  Object focusedObject, PopupContext popupContext) {this.focused = focusedObject;
+    public SwingMenuContext(  Object focusedObject, PopupContext popupContext, JComponent component, Point point) {this.focused = focusedObject;
         this.popupContext = popupContext;
+        this.component = component;
+        this.point = point;
     }
 
     public void setSelectedObjects(Collection<?> selectedObjects) {
@@ -60,6 +68,16 @@ public class MenuContext
     public Date getSelectedDate()
     {
         return selectedDate;
+    }
+    
+    public Point getPoint()
+    {
+        return point;
+    }
+
+    public JComponent getComponent()
+    {
+        return component;
     }
 }
 

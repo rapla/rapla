@@ -17,7 +17,7 @@ import org.rapla.client.AppointmentListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarViewPresenter;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -807,7 +807,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
             String seperatorId = "ADD_REMOVE_SEPERATOR";
             menu.add(new RaplaSeparator(seperatorId));
-            MenuContext menuContext = createMenuContext(p, selectedObject);
+            SwingMenuContext menuContext = createMenuContext(p, selectedObject, table);
             Collection<?> list = getSelectedAllocatables(table.getTree());
             menuContext.setSelectedObjects(list);
             RaplaMenu newMenu = new RaplaMenu("new");
@@ -827,9 +827,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
     }
 
-    protected MenuContext createMenuContext(Point p, Object obj)
+    protected SwingMenuContext createMenuContext(Point p, Object obj, JComponent table)
     {
-        MenuContext menuContext = new MenuContext( obj, new SwingPopupContext(getComponent(), p));
+        SwingMenuContext menuContext = new SwingMenuContext( obj, new SwingPopupContext(getComponent(), p), table, p);
         return menuContext;
     }
 

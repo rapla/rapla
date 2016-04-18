@@ -15,7 +15,7 @@ import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ErrorDialog;
@@ -55,7 +55,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
         this.errorDialogProvider = errorDialogProvider;
     }
 
-    public RaplaMenuItem[] create(final MenuContext menuContext, final RaplaObject focusedObject)
+    public RaplaMenuItem[] create(final SwingMenuContext menuContext, final RaplaObject focusedObject)
     {
         if (!isAdmin())
         {

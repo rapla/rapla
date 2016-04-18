@@ -13,7 +13,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -60,7 +60,7 @@ import com.google.web.bindery.event.shared.EventBus;
         this.eventBus = eventBus;
     }
 
-    @Override public RaplaMenuItem[] create(final MenuContext menuContext, RaplaObject focusedObject)
+    @Override public RaplaMenuItem[] create(final SwingMenuContext menuContext, RaplaObject focusedObject)
     {
         final Collection<?> selectedObjects = menuContext.getSelectedObjects();
         if (selectedObjects != null && selectedObjects.size() <= 1)

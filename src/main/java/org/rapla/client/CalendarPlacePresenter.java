@@ -1,6 +1,7 @@
 package org.rapla.client;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -12,17 +13,10 @@ import org.rapla.client.internal.ConflictSelectionPresenter;
 import org.rapla.client.internal.MultiCalendarViewPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarPresenter;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.action.SaveableToggleAction;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.components.util.ParseDateException;
-import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -34,13 +28,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
-import javax.swing.JMenuItem;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Date;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
@@ -81,46 +69,36 @@ import java.util.Date;
         this.eventBus = eventBus;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         view.addSavedViews(savedViews);
-        view.addResourceSelectionView(resourceSelectionPresenter);
+        view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsView);
         view.addSummaryView(conflictsView.getSummaryComponent());
         view.addCalendarView(calendarContainer);
 
         updateOwnReservationsSelected();
-        calendarContainer.addValueChangeListener(new ChangeListener()
+        calendarContainer.addChangeListener(() ->
         {
-
-            public void stateChanged(ChangeEvent e)
+            if (listenersDisabled)
             {
-                if (listenersDisabled)
-                {
-                    return;
-                }
-                try
-                {
-                    resourceSelectionPresenter.updateMenu();
-                }
-                catch (RaplaException e1)
-                {
-                    logger.error(e1.getMessage(), e1);
-                }
+                return;
             }
-
+            try
+            {
+                resourceSelectionPresenter.updateMenu();
+            }
+            catch (RaplaException e1)
+            {
+                logger.error(e1.getMessage(), e1);
+            }
         });
 
-        final ChangeListener treeListener = new ChangeListener()
+        resourceSelectionPresenter.addChangeListener(() ->
         {
-            public void stateChanged(ChangeEvent e)
+            if (listenersDisabled)
             {
-                if (listenersDisabled)
-                {
-                    return;
-                }
-                conflictsView.clearSelection();
+                return;
             }
-        };
-
-        resourceSelectionPresenter.getTreeSelection().addChangeListener(treeListener);
+            conflictsView.clearSelection();
+        });
         this.savedViews = savedViews;
         this.conflictsView = conflictsView;
         this.calendarContainer = calendarContainer;
@@ -308,8 +286,7 @@ import java.util.Date;
     {
         // CKO Not a good solution. FilterDialogs should close themselfs when model changes.
         // BJO 00000139
-        if (resourceSelectionPresenter.getFilterButton().isOpen())
-            resourceSelectionPresenter.getFilterButton().doClick();
+        resourceSelectionPresenter.closeFilterButton();
         if (calendarContainer.getFilterButton().isOpen())
             calendarContainer.getFilterButton().doClick();
 

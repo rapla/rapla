@@ -1,6 +1,6 @@
 package org.rapla.client.extensionpoints;
 
-import org.rapla.client.swing.MenuContext;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.RaplaObject;
 import org.rapla.inject.ExtensionPoint;
@@ -12,5 +12,5 @@ import org.rapla.inject.InjectionContext;
 @ExtensionPoint(context = InjectionContext.swing,id="contextmenu")
 public interface ObjectMenuFactory
 {
-    RaplaMenuItem[] create(MenuContext menuContext,RaplaObject focusedObject);
+    RaplaMenuItem[] create(SwingMenuContext menuContext,RaplaObject focusedObject);
 }
