@@ -20,6 +20,7 @@ import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -61,12 +62,13 @@ public class DayViewFactory implements SwingViewFactory
     private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
+    private final EditController editController;
 
     @Inject
     public DayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
-            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater)
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -84,6 +86,7 @@ public class DayViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
+        this.editController = editController;
     }
     
     @Override
@@ -96,7 +99,7 @@ public class DayViewFactory implements SwingViewFactory
     {
         return new SwingDayCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider,
                 calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory,
-                ioInterface, appointmentFormater);
+                ioInterface, appointmentFormater, editController);
     }
 
     public String getViewId()

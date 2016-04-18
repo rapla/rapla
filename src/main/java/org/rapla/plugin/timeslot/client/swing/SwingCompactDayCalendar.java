@@ -27,6 +27,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -74,10 +75,10 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
             boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
             RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
-            AppointmentFormater appointmentFormater) throws RaplaException
+            AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
         this.timeslotProvider = timeslotProvider;
     }
 
@@ -162,7 +163,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     protected ViewListener createListener() throws RaplaException
     {
         return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories,
-                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory)
+                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController)
         {
             @Override protected Collection<Allocatable> getMarkedAllocatables()
             {

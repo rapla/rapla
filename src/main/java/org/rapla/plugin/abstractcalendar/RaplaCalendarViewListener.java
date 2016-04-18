@@ -68,11 +68,10 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
 
     public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EditController editController)
     {
         super(facade, i18n, raplaLocale, logger);
-        // FIXME get EditController
-        this.editController = null;
+        this.editController = editController;
         this.model = model;
         this.calendarContainerComponent = calendarContainerComponent;
         this.objectMenuFactories = objectMenuFactories;

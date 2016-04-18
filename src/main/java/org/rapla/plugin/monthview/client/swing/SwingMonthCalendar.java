@@ -22,6 +22,7 @@ import javax.inject.Provider;
 import javax.swing.JComponent;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -57,11 +58,11 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 {
     public SwingMonthCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable, boolean printing, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater)
+            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
                     throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
+                infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
 
     public static Color DATE_NUMBER_COLOR_HIGHLIGHTED = Color.black;
@@ -133,7 +134,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory);
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController);
         listener.setKeepTime( true);
 		return listener;
     }

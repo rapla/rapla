@@ -20,6 +20,7 @@ import javax.inject.Singleton;
 import javax.swing.Icon;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -66,12 +67,13 @@ public class CompactWeekViewFactory implements SwingViewFactory
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
     private final Configuration config;
+    private final EditController editController;
 
     @Inject
     public CompactWeekViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
-            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater)
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -89,6 +91,7 @@ public class CompactWeekViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.appointmentFormater = appointmentFormater;
+        this.editController = editController;
         try
         {
             config = facade.getRaplaFacade().getSystemPreferences().getEntry(CompactWeekviewPlugin.CONFIG, new RaplaConfiguration());
@@ -102,7 +105,7 @@ public class CompactWeekViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         return new SwingCompactWeekCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
 
     public String getViewId()

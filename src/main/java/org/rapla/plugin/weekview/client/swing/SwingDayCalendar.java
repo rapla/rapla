@@ -19,6 +19,7 @@ import java.util.Set;
 import javax.inject.Provider;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -44,10 +45,10 @@ public class SwingDayCalendar extends SwingWeekCalendar
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
-            IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
+            IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
+                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
 
     @Override

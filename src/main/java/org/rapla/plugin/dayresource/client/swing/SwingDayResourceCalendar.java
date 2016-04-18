@@ -28,6 +28,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -69,10 +70,10 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
-            IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException
+            IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
+                infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }    
   
    
@@ -159,7 +160,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
   
     protected ViewListener createListener() throws RaplaException {
-    	return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory) {
+    	return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()

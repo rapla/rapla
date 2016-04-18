@@ -27,6 +27,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -66,8 +67,8 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 	private List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
 	
-    public SwingCompactCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarModel settings, boolean editable, boolean printing, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater) throws RaplaException {
-        super( facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater);
+    public SwingCompactCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarModel settings, boolean editable, boolean printing, Set<ObjectMenuFactory>objectMenuFactories, MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException {
+        super( facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
         this.timeslotProvider = timeslotProvider;
     }
   
@@ -157,7 +158,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
    
     
      protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory) {
+        return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController) {
         	/** override to change the allocatable to the row that is selected */
             @Override
             public void selectionChanged(Date start,Date end) 
