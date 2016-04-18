@@ -5,10 +5,12 @@ import java.util.List;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.facade.RaplaFacade;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -17,11 +19,13 @@ import javax.inject.Singleton;
 public class EditController
 {
     private final EventBus eventBus;
+    private final RaplaFacade facade;
 
     @Inject
-    public EditController(EventBus eventBus)
+    public EditController(EventBus eventBus, RaplaFacade facade)
     {
         this.eventBus = eventBus;
+        this.facade = facade;
     }
 
     public ReservationEdit[] getEditWindows()
@@ -48,7 +52,6 @@ public class EditController
 //  orientieren sich an den oberen beiden Methoden zur Bearbeitung von einem Element
     public <T extends Entity> void edit( List<T> obj, PopupContext popupContext )
     {
-        // FIXME generate ids and info from object list;
         String applicationEventId = EditTaskPresenter.EDIT_RESOURCES_ID;
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
@@ -65,7 +68,8 @@ public class EditController
             sb.append(t.getId());
         }
         String info = sb.toString();
-        final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext);
+        ApplicationEventContext context = new EditApplicationEventContext(obj);
+        final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
         eventBus.fireEvent(event);
     }
 }

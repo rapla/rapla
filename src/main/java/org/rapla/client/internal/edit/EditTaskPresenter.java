@@ -2,12 +2,14 @@ package org.rapla.client.internal.edit;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
+import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -87,21 +89,29 @@ public class EditTaskPresenter implements TaskPresenter
         PopupContext popupContext = activity.getPopupContext();
         if (activityId.equals(EDIT_RESOURCES_ID) || activityId.equals(EDIT_EVENTS_ID))
         {
-            String[] ids = ((String) info).split(",");
+            final ApplicationEventContext context = activity.getContext();
             List<Entity> entities = new ArrayList<>();
-            Class<? extends Entity> clazz = activityId.equals(EDIT_RESOURCES_ID) ? Allocatable.class: Reservation.class;
-            for (String id : ids)
+            if(context != null && context instanceof EditApplicationEventContext)
             {
-                Entity resolve;
-                try
+                entities.addAll(((EditApplicationEventContext)context).getSelectedObjects());
+            }
+            else
+            {
+                String[] ids = ((String) info).split(",");
+                Class<? extends Entity> clazz = activityId.equals(EDIT_RESOURCES_ID) ? Allocatable.class: Reservation.class;
+                for (String id : ids)
                 {
-                    resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
+                    Entity resolve;
+                    try
+                    {
+                        resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
+                    }
+                    catch (EntityNotFoundException e)
+                    {
+                        return null;
+                    }
+                    entities.add(resolve);
                 }
-                catch (EntityNotFoundException e)
-                {
-                    return null;
-                }
-                entities.add(resolve);
             }
             String title = null;
             try
@@ -205,9 +215,20 @@ public class EditTaskPresenter implements TaskPresenter
             }
         }
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
-        Collection<T> toEdit = raplaFacade.edit(list);
+        Collection<T> nonEditableObjects = new ArrayList<>(list);
+        Collection<T> toEdit = new ArrayList<>();
+        for (Iterator<T> iterator = nonEditableObjects.iterator(); iterator.hasNext();)
+        {
+            T t = iterator.next();
+            if(!t.isReadOnly())
+            {
+                iterator.remove();
+                toEdit.add(t);
+            }
+        }
+        toEdit.addAll(raplaFacade.edit(nonEditableObjects));
         List<T> originals = new ArrayList<T>();
-        Map<T, T> persistant = raplaFacade.getPersistant(toEdit);
+        Map<T, T> persistant = raplaFacade.getPersistant(nonEditableObjects);
         for (T entity : toEdit)
         {
 
@@ -266,8 +287,8 @@ public class EditTaskPresenter implements TaskPresenter
                                 CommandHistory commandHistory = clientFacade.getCommandHistory();
                                 Promise promise = commandHistory.storeAndExecute(saveCommand);
                                 promise.thenRun(() -> {
-                         //           getPrivateEditDialog().removeEditDialog(EditDialog.this);
-                           //         dlg.close();
+//                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
+//                                    dlg.close();
                              //       FIXME callback;
                                 });
                             }

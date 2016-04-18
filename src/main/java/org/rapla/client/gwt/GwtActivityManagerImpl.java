@@ -68,7 +68,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
                     final String[] activitiyIds = split[1].split(",");
                     for (String info : activitiyIds)
                     {
-                        final ApplicationEvent activity = new ApplicationEvent(id, info, null);
+                        final ApplicationEvent activity = new ApplicationEvent(id, info, null, null);
                         activities.add(activity);
                     }
                 }

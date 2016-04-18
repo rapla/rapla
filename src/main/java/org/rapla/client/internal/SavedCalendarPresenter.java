@@ -337,7 +337,7 @@ public class SavedCalendarPresenter extends RaplaGUIComponent implements ActionL
 
         String place = selectedFile.isDefault ? null: selectedFile.name;
 
-        eventBus.fireEvent( new ApplicationEvent( CalendarPlacePresenter.PLACE_ID, place, null));
+        eventBus.fireEvent( new ApplicationEvent( CalendarPlacePresenter.PLACE_ID, place, null, null));
     }
 
 

@@ -33,6 +33,7 @@ import javax.swing.MenuElement;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingActivityController;
@@ -344,7 +345,8 @@ import com.google.web.bindery.event.shared.EventBus;
     {
         final String id = template.getId();
         PopupContext popupContext = createPopupContext( source.getComponent(), null);
-        eventBus.fireEvent(new ApplicationEvent(SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext));
+        ApplicationEventContext context = null;
+        eventBus.fireEvent(new ApplicationEvent(SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext, context));
     }
 
 }

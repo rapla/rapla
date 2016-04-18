@@ -1,5 +1,6 @@
 package org.rapla.plugin.weekview.client.weekview;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -7,11 +8,13 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.menu.CalendarContextMenuPresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
@@ -105,7 +108,8 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         final AppointmentBlock appointmentBlock = block.getAppointmentBlock();
         final Appointment appointment = appointmentBlock.getAppointment();
         final Reservation reservation = appointment.getReservation();
-        eventBus.fireEvent(new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context));
+        ApplicationEventContext eventContext = new EditApplicationEventContext<>(Collections.singletonList(appointment));
+        eventBus.fireEvent(new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context, eventContext));
     }
 
     @Override

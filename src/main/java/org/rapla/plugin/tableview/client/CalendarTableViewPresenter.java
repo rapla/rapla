@@ -1,14 +1,17 @@
 package org.rapla.plugin.tableview.client;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 
 import javax.inject.Inject;
 
+import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
@@ -74,7 +77,8 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     @Override
     public void selectReservation(Reservation selectedObject, PopupContext context)
     {
-        final ApplicationEvent activity = new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context);
+        ApplicationEventContext editContext = new EditApplicationEventContext<>(Collections.singletonList(selectedObject));
+        final ApplicationEvent activity = new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context, editContext);
         eventBus.fireEvent(activity);
         logger.info("selection changed");
 

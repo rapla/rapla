@@ -1,6 +1,7 @@
 package org.rapla.plugin.tableview.client.gwt;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 
 import javax.inject.Inject;
@@ -8,10 +9,12 @@ import javax.inject.Inject;
 import org.gwtbootstrap3.client.ui.constants.Responsiveness;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
+import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.menu.data.Point;
 import org.rapla.entities.domain.Allocatable;
@@ -69,7 +72,8 @@ public class CalendarListViewImpl extends AbstractView<CalendarTableView.Present
                 final String reservationId = clickTarget.getAttribute(ELEMENT_ID);
                 String id = ReservationPresenter.EDIT_ACTIVITY_ID;
                 PopupContext popupContext = new GwtPopupContext(new Point(event.getX(), event.getY()));
-                eventBus.fireEvent(new ApplicationEvent(id, reservationId, popupContext));
+                ApplicationEventContext editContext = null;
+                eventBus.fireEvent(new ApplicationEvent(id, reservationId, popupContext, editContext));
             }
         }, ClickEvent.getType());
         table.setClassName("table table-striped table-hover table-selectable");

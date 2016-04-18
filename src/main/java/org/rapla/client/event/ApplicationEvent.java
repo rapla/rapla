@@ -7,10 +7,15 @@ import com.google.web.bindery.event.shared.Event;
 public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHandler>
 {
     private final String info;
+    private final ApplicationEventContext context;
     private final String applicationEventId;
     private final PopupContext popupContext;
     private static final String ACTIVITY_SEPARATOR = "=";
     private boolean stop = false;
+    
+    public interface ApplicationEventContext
+    {
+    }
 
     public interface ApplicationEventHandler
     {
@@ -19,11 +24,17 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
 
     public static final Type<ApplicationEventHandler> TYPE = new Type<ApplicationEventHandler>();
 
-    public ApplicationEvent(String applictionEventId, String info, PopupContext popupContext)
+    public ApplicationEvent(String applictionEventId, String info, PopupContext popupContext, ApplicationEventContext context)
     {
         this.applicationEventId = applictionEventId;
         this.info = info;
         this.popupContext = popupContext;
+        this.context = context;
+    }
+    
+    public ApplicationEventContext getContext()
+    {
+        return context;
     }
 
     public void setStop(boolean stop)
@@ -72,7 +83,7 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
         {
             String id = activityString.substring(0, indexOf);
             String info = activityString.substring(indexOf + 1);
-            return new ApplicationEvent(id, info, null);
+            return new ApplicationEvent(id, info, null, null);
         }
         return null;
     }

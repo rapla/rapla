@@ -19,8 +19,6 @@ public class SwingActivityController extends AbstractActivityController
     
     public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
     public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
-    public static final String EDIT_EVENTS = "editEvents";
-    public static final String EDIT_RESORCES = "editResources";
     public static final String MERGE_ALLOCATABLES = "merge";
 
 
@@ -49,7 +47,7 @@ public class SwingActivityController extends AbstractActivityController
 
     @Override protected void parsePlaceAndActivities() throws RaplaException
     {
-        activities.add(new ApplicationEvent("cal", "Standard", null));
+        activities.add(new ApplicationEvent("cal", "Standard", null, null));
     }
 
     @Override protected void updateHistroryEntry()

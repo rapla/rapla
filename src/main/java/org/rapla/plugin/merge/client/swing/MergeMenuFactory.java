@@ -2,6 +2,7 @@ package org.rapla.plugin.merge.client.swing;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -10,11 +11,13 @@ import javax.inject.Singleton;
 import javax.swing.ImageIcon;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.SwingActivityController;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
@@ -120,7 +123,8 @@ import com.google.web.bindery.event.shared.EventBus;
                     ids.append(((Entity) object).getId());
                 }
                 final String info = ids.toString();
-                eventBus.fireEvent(new ApplicationEvent(SwingActivityController.MERGE_ALLOCATABLES, info, popupContext));
+                ApplicationEventContext context = new EditApplicationEventContext(new ArrayList( selectedObjects));
+                eventBus.fireEvent(new ApplicationEvent(SwingActivityController.MERGE_ALLOCATABLES, info, popupContext, context));
             }
         });
 

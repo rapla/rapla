@@ -31,11 +31,9 @@ import org.rapla.client.internal.ResourceSelectionView.Presenter;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingMenuContext;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MenuFactoryImpl;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
-import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -51,7 +49,6 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 import org.rapla.storage.PermissionController;
 
@@ -183,20 +180,13 @@ public class ResourceSelectionPresenter implements Presenter
 
             // FIXME get informations
             PopupContext popupContext = null;//new SwingPopupContext(getComponent(), null)
-            RaplaImages raplaImages = null;
-            InfoFactory infoFactory = null;
-            RaplaResources i18n = null;
-            RaplaLocale raplaLocale = null;
-            RaplaObjectAction editAction = new RaplaObjectAction(facade, i18n, raplaLocale, logger,
-                    popupContext, editController, infoFactory, raplaImages, dialogUiFactory);
             PermissionController permissionController = getRaplaFacade().getPermissionController();
             try
             {
                 final User user = facade.getUser();
                 if (permissionController.canModify(entity, user))
                 {
-                    editAction.setEdit(entity);
-                    editAction.actionPerformed();
+                    editController.edit(entity, popupContext);
                 }
             }
             catch (RaplaException e)
