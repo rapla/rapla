@@ -93,6 +93,7 @@ public class ResourceSelectionPresenter implements Presenter
         try
         {
             updateMenu();
+            view.update();
         }
         catch (RaplaException e)
         {
