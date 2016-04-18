@@ -114,12 +114,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt, MenuFactory menuFactory,
             EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, TemplateEditFactory templateEditFactory,
-            Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController,
-            //FIXME hack for initialization
-            SwingActivityController activityController,
-
-            EventBus eventBus)
-            throws RaplaInitializationException
+            Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController, EventBus eventBus)            throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
