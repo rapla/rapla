@@ -5,14 +5,15 @@ import java.util.Date;
 
 import javax.swing.event.ChangeListener;
 
-import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 
-public interface ReservationEdit extends TaskPresenter
+public interface ReservationEdit<T> extends RaplaWidget<T>
 {
     boolean isModifiedSinceLastChange();
 
@@ -40,4 +41,6 @@ public interface ReservationEdit extends TaskPresenter
     void removeReservationChangeListener(ChangeListener listener);
 
     CommandHistory getCommandHistory();
+
+    void updateView(ModificationEvent evt);
 }

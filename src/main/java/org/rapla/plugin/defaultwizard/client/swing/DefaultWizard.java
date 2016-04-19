@@ -17,7 +17,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +25,12 @@ import javax.inject.Inject;
 import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -171,7 +169,7 @@ import com.google.web.bindery.event.shared.EventBus;
             return;
         }
         ApplicationEventContext context = null;
-        eventBus.fireEvent(new ApplicationEvent(SwingActivityController.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext, context));
+        eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext, context));
     }
 
     public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException

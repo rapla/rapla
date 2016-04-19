@@ -1,15 +1,34 @@
 package org.rapla.client.internal.edit;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.EditDialogInterface;
-import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -21,42 +40,35 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
+import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.google.web.bindery.event.shared.EventBus;
 
 @Singleton
 @ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
-        @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class) }
-)
+        @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class),
+        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), })
 public class EditTaskPresenter implements TaskPresenter
 {
+    Collection<ReservationEdit<?>> editReservationList = new ArrayList<ReservationEdit<?>>();
     Collection<EditDialogInterface<?>> editWindowList = new ArrayList<EditDialogInterface<?>>();
     protected final Map<String, Provider<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -64,25 +76,29 @@ public class EditTaskPresenter implements TaskPresenter
     private final RaplaResources i18n;
     private final ClientFacade clientFacade;
     private final EventBus eventBus;
+    private final CalendarModel model;
 
-
-
+    public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
     final static public String EDIT_EVENTS_ID = "editEvents";
     final static public String EDIT_RESOURCES_ID = "editResources";
+    private final ReservationEditFactory editFactory;
 
     @Inject
-    public EditTaskPresenter(ClientFacade clientFacade, Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
-            EventBus eventBus)
+    public EditTaskPresenter(ClientFacade clientFacade, Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory,
+            RaplaResources i18n, EventBus eventBus, CalendarModel model, ReservationEditFactory editFactory)
     {
         this.editUiProvider = editUiProvider;
         this.dialogUiFactory = dialogUiFactory;
         this.i18n = i18n;
         this.clientFacade = clientFacade;
         this.eventBus = eventBus;
+        this.model = model;
+        this.editFactory = editFactory;
         this.raplaFacade = clientFacade.getRaplaFacade();
     }
 
-    @Override public RaplaWidget startActivity(ApplicationEvent activity)
+    @Override
+    public RaplaWidget startActivity(ApplicationEvent activity)
     {
         final String activityId = activity.getApplicationEventId();
         String info = activity.getInfo();
@@ -91,17 +107,17 @@ public class EditTaskPresenter implements TaskPresenter
         {
             final ApplicationEventContext context = activity.getContext();
             List<Entity> entities = new ArrayList<>();
-            if(context != null && context instanceof EditApplicationEventContext)
+            if (context != null && context instanceof EditApplicationEventContext)
             {
-                entities.addAll(((EditApplicationEventContext)context).getSelectedObjects());
+                entities.addAll(((EditApplicationEventContext) context).getSelectedObjects());
             }
             else
             {
                 String[] ids = ((String) info).split(",");
-                Class<? extends Entity> clazz = activityId.equals(EDIT_RESOURCES_ID) ? Allocatable.class: Reservation.class;
+                Class<? extends Entity> clazz = activityId.equals(EDIT_RESOURCES_ID) ? Allocatable.class : Reservation.class;
                 for (String id : ids)
                 {
-                    Entity resolve;
+                    Entity<?> resolve;
                     try
                     {
                         resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
@@ -116,8 +132,31 @@ public class EditTaskPresenter implements TaskPresenter
             String title = null;
             try
             {
-                RaplaWidget edit = createEditDialog(entities, title, popupContext,activity);
+                RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, activity);
                 return edit;
+            }
+            catch (RaplaException e)
+            {
+                return null;
+            }
+        }
+        else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(activityId))
+        {
+            try
+            {
+                final String dynamicTypeId = info;
+                final Entity resolve = raplaFacade.resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
+                final DynamicType type = (DynamicType) resolve;
+                Classification newClassification = type.newClassification();
+                final User user = clientFacade.getUser();
+                Reservation r = raplaFacade.newReservation(newClassification, user);
+                Appointment appointment = createAppointment();
+                r.addAppointment(appointment);
+                final List<Reservation> singletonList = Collections.singletonList(r);
+                List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, user);
+                String title = null;
+                final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, activity);
+                return editDialog;
             }
             catch (RaplaException e)
             {
@@ -130,12 +169,22 @@ public class EditTaskPresenter implements TaskPresenter
         }
     }
 
+    protected Appointment createAppointment() throws RaplaException
+    {
+
+        Date startDate = RaplaComponent.getStartDate(model, raplaFacade, clientFacade.getUser());
+        Date endDate = RaplaComponent.calcEndDate(model, startDate);
+        Appointment appointment = raplaFacade.newAppointment(startDate, endDate);
+        return appointment;
+    }
 
     //	enhancement of the method to deal with arrays
-    private String guessTitle(Collection obj) {
+    private String guessTitle(Collection obj)
+    {
         Class<? extends Entity> raplaType = getRaplaType(obj);
         String title = "";
-        if(raplaType != null) {
+        if (raplaType != null)
+        {
             String localname = RaplaType.getLocalName(raplaType);
             title = i18n.getString(localname);
         }
@@ -144,14 +193,16 @@ public class EditTaskPresenter implements TaskPresenter
     }
 
     //	method for determining the consistent RaplaType from different objects
-    protected Class<? extends Entity> getRaplaType(Collection obj){
+    protected Class<? extends Entity> getRaplaType(Collection obj)
+    {
         Set<Class<? extends Entity>> types = new HashSet<Class<? extends Entity>>();
-
 
         //		iterate all committed objects and store RaplayType of the objects in a Set
         //		identic typs aren't stored double because of Set
-        for (Object o : obj) {
-            if (o instanceof Entity) {
+        for (Object o : obj)
+        {
+            if (o instanceof Entity)
+            {
                 final Class<? extends Entity> type = ((Entity) o).getTypeClass();
                 types.add(type);
             }
@@ -164,28 +215,28 @@ public class EditTaskPresenter implements TaskPresenter
             return null;
     }
 
-
-
-    private <T extends Entity> RaplaWidget createEditDialog(List<T> list, String title, PopupContext popupContext, ApplicationEvent applicationEvent) throws RaplaException {
-        if( list.size() == 0)
+    private <T extends Entity> RaplaWidget createEditDialog(List<T> list, String title, PopupContext popupContext, ApplicationEvent applicationEvent)
+            throws RaplaException
+    {
+        if (list.size() == 0)
         {
             throw new RaplaException("Empty list not allowed. You must have at least one entity to edit.");
         }
-        if(title == null)
+        if (title == null)
         {
             title = guessTitle(list);
 
         }
         //		checks if all entities are from the same type; otherwise return
-        if(getRaplaType(list) == null)
+        if (getRaplaType(list) == null)
         {
             return null;
         }
 
-        if ( list.size() == 1)
+        if (list.size() == 1)
         {
             Entity<?> testObj = (Entity<?>) list.get(0);
-            if ( testObj instanceof Reservation)
+            if (testObj instanceof Reservation)
             {
                 return startReservationEdit((Reservation) testObj, null);
             }
@@ -193,13 +244,14 @@ public class EditTaskPresenter implements TaskPresenter
             // Lookup if the entity (not a reservation) is already beeing edited
             EditDialogInterface c = null;
             Iterator<EditDialogInterface<?>> it = editWindowList.iterator();
-            while (it.hasNext()) {
-                c =  it.next();
+            while (it.hasNext())
+            {
+                c = it.next();
                 List<?> editObj = c.getObjects();
-                if (editObj != null && editObj.size() == 1 )
+                if (editObj != null && editObj.size() == 1)
                 {
                     Object first = editObj.get(0);
-                    if (first  instanceof Entity && ((Entity<?>) first).isIdentical(testObj))
+                    if (first instanceof Entity && ((Entity<?>) first).isIdentical(testObj))
                     {
                         break;
                     }
@@ -220,7 +272,7 @@ public class EditTaskPresenter implements TaskPresenter
         for (Iterator<T> iterator = nonEditableObjects.iterator(); iterator.hasNext();)
         {
             T t = iterator.next();
-            if(!t.isReadOnly())
+            if (!t.isReadOnly())
             {
                 iterator.remove();
                 toEdit.add(t);
@@ -232,7 +284,8 @@ public class EditTaskPresenter implements TaskPresenter
         for (T entity : toEdit)
         {
 
-            @SuppressWarnings("unchecked") Entity<T> mementable = persistant.get(entity);
+            @SuppressWarnings("unchecked")
+            Entity<T> mementable = persistant.get(entity);
             if (mementable != null)
             {
                 if (originals == null)
@@ -251,79 +304,80 @@ public class EditTaskPresenter implements TaskPresenter
             }
         }
         final List<T> origs = originals;
-        if (toEdit.size() > 0) {
+        if (toEdit.size() > 0)
+        {
             final EditComponent<T, JComponent> ui = createUI(toEdit.iterator().next());
             ui.setObjects(new ArrayList<T>(toEdit));
-            JPanel jPanel= new JPanel();
+            JPanel jPanel = new JPanel();
             jPanel.setLayout(new BorderLayout());
             jPanel.add(ui.getComponent(), BorderLayout.CENTER);
             JPanel buttonsPanel = new JPanel();
 
             RaplaButton saveButton = new RaplaButton(i18n.getString("save"), RaplaButton.DEFAULT);
-            saveButton.addActionListener(
-                    (evt)
-            -> {
-                        try
-                        {
-                            ui.mapToObjects();
-                            // FIXME handle save
-                            //bSaving = true;
+            saveButton.addActionListener((evt) ->
+            {
+                try
+                {
+                    ui.mapToObjects();
+                    // FIXME handle save
+                    //bSaving = true;
 
-                            // object which is processed by EditComponent
-                            List<T> saveObjects = ui.getObjects();
-                            Collection<T> entities = new ArrayList<T>();
-                            entities.addAll(saveObjects);
-                            boolean canUndo = true;
-                            for (T obj : saveObjects)
-                            {
-                                if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
-                                {
-                                    canUndo = false;
-                                }
-                            }
-                            if (canUndo)
-                            {
-                                @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities,origs);
-                                CommandHistory commandHistory = clientFacade.getCommandHistory();
-                                Promise promise = commandHistory.storeAndExecute(saveCommand);
-                                promise.thenRun(() -> {
-//                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
-//                                    dlg.close();
-                             //       FIXME callback;
-                                });
-                            }
-                            else
-                            {
-                               raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
-                            }
-                            //getPrivateEditDialog().removeEditDialog(EditDialog.this);
-                            close(applicationEvent);
-
-                        }
-                        catch (IllegalAnnotationException ex)
+                    // object which is processed by EditComponent
+                    List<T> saveObjects = ui.getObjects();
+                    Collection<T> entities = new ArrayList<T>();
+                    entities.addAll(saveObjects);
+                    boolean canUndo = true;
+                    for (T obj : saveObjects)
+                    {
+                        if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
                         {
-                            dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component) jPanel, null));
-
-                        }
-                        catch (RaplaException ex)
-                        {
-                            dialogUiFactory.showException(ex, new SwingPopupContext((Component) jPanel, null));
+                            canUndo = false;
                         }
                     }
-            );
+                    if (canUndo)
+                    {
+                        @SuppressWarnings({ "unchecked", "rawtypes" })
+                        SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
+                        CommandHistory commandHistory = clientFacade.getCommandHistory();
+                        Promise promise = commandHistory.storeAndExecute(saveCommand);
+                        promise.thenRun(() ->
+                        {
+                            //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
+                            //                                    dlg.close();
+                            //       FIXME callback;
+                        });
+                    }
+                    else
+                    {
+                        raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
+                    }
+                    //getPrivateEditDialog().removeEditDialog(EditDialog.this);
+                    close(applicationEvent);
+
+                }
+                catch (IllegalAnnotationException ex)
+                {
+                    dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component) jPanel, null));
+
+                }
+                catch (RaplaException ex)
+                {
+                    dialogUiFactory.showException(ex, new SwingPopupContext((Component) jPanel, null));
+                }
+            });
             RaplaButton cancelButton = new RaplaButton(i18n.getString("cancel"), RaplaButton.DEFAULT);
-            cancelButton.addActionListener((evt) -> {
-                        close(applicationEvent);
-                    }
-            );
+            cancelButton.addActionListener((evt) ->
+            {
+                close(applicationEvent);
+            });
 
-            saveButton.setDefaultCapable( true);
+            saveButton.setDefaultCapable(true);
             buttonsPanel.add(saveButton);
             buttonsPanel.add(cancelButton);
             jPanel.add(buttonsPanel, BorderLayout.SOUTH);
             JLabel header = new JLabel();
             jPanel.add(header, BorderLayout.NORTH);
-            header.setText( i18n.format("edit.format", title));
+            header.setText(i18n.format("edit.format", title));
             return () -> jPanel;
         }
         return null;
@@ -331,24 +385,25 @@ public class EditTaskPresenter implements TaskPresenter
 
     private void close(ApplicationEvent applicationEvent)
     {
-        applicationEvent.setStop( true);
+        applicationEvent.setStop(true);
         eventBus.fireEvent(applicationEvent);
     }
 
-    @Override public void updateView(ModificationEvent event)
+    @Override
+    public void updateView(ModificationEvent event)
     {
         // FIXME
     }
 
-
     @SuppressWarnings("unchecked")
-    protected <T extends Entity> EditComponent<T,JComponent> createUI(T obj) throws RaplaException {
+    protected <T extends Entity> EditComponent<T, JComponent> createUI(T obj) throws RaplaException
+    {
         final Class typeClass = obj.getTypeClass();
         final String id = typeClass.getName();
         final Provider<EditComponent> editComponentProvider = editUiProvider.get(id);
-        if ( editComponentProvider != null)
+        if (editComponentProvider != null)
         {
-            EditComponent<T,JComponent> ui = (EditComponent<T,JComponent>)editComponentProvider.get();
+            EditComponent<T, JComponent> ui = (EditComponent<T, JComponent>) editComponentProvider.get();
             return ui;
         }
         else
@@ -357,22 +412,22 @@ public class EditTaskPresenter implements TaskPresenter
         }
     }
 
-//    public void dataChanged(ModificationEvent evt) throws RaplaException
-//    {
-//        super.dataChanged(evt);
-//        if (bSaving || dlg == null || !dlg.isVisible() || ui == null)
-//            return;
-//        if (shouldCancelOnModification(evt))
-//        {
-//            getPrivateEditDialog().removeEditDialog(this);
-//        }
-//    }
-//
-//    @Override
-//    protected void cleanupAfterClose()
-//    {
-//        getPrivateEditDialog().removeEditDialog(EditDialog.this);
-//    }
+    //    public void dataChanged(ModificationEvent evt) throws RaplaException
+    //    {
+    //        super.dataChanged(evt);
+    //        if (bSaving || dlg == null || !dlg.isVisible() || ui == null)
+    //            return;
+    //        if (shouldCancelOnModification(evt))
+    //        {
+    //            getPrivateEditDialog().removeEditDialog(this);
+    //        }
+    //    }
+    //
+    //    @Override
+    //    protected void cleanupAfterClose()
+    //    {
+    //        getPrivateEditDialog().removeEditDialog(EditDialog.this);
+    //    }
 
     class SaveAction<T> implements Runnable
     {
@@ -388,11 +443,13 @@ public class EditTaskPresenter implements TaskPresenter
         }
     }
 
-    void addEditDialog(EditDialogInterface editWindow) {
+    void addEditDialog(EditDialogInterface editWindow)
+    {
         editWindowList.add(editWindow);
     }
 
-    void removeEditDialog(EditDialogInterface editWindow) {
+    void removeEditDialog(EditDialogInterface editWindow)
+    {
         editWindowList.remove(editWindow);
     }
 
@@ -406,32 +463,32 @@ public class EditTaskPresenter implements TaskPresenter
         return editWindowList.toArray(new ReservationEdit[] {});
     }
 
-    private RaplaWidget startReservationEdit(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
+    private RaplaWidget<?> startReservationEdit(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
     {
-        // FIXME
         // Lookup if the reservation is already beeing edited
-//        ReservationEdit c = null;
-//        Iterator<ReservationEdit> it = editWindowList.iterator();
-//        while (it.hasNext())
-//        {
-//            c = it.next();
-//            if (c.getReservation().isIdentical(reservation))
-//                break;
-//            else
-//                c = null;
-//        }
-//
-//        if (c != null)
-//        {
-//            c.toFront();
-//        }
-//        else
-//        {
-//            c = editFactory.create(reservation, appointmentBlock);
-//            // only is allowed to exchange allocations
-//        }
-//        return c;
-        return null;
+        ReservationEdit<?> c = null;
+        Iterator<ReservationEdit<?>> it = editReservationList.iterator();
+        while (it.hasNext())
+        {
+            c = it.next();
+            if (c.getReservation().isIdentical(reservation))
+                break;
+            else
+                c = null;
+        }
+
+        if (c != null)
+        {
+            // FIXME bring to front
+            // c.toFront();
+        }
+        else
+        {
+            c = editFactory.create(reservation, appointmentBlock);
+            editReservationList.add(c);
+            // only is allowed to exchange allocations
+        }
+        return c;
     }
 
 }

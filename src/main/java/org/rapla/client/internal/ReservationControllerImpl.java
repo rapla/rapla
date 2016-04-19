@@ -727,6 +727,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     public void dataChanged(ModificationEvent evt) throws RaplaException
     {
 
+        // FIXME switch to EditTaskPresenter
         // we need to clone the list, because it could be modified during edit
         ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
         for (ReservationEdit edit : clone)
