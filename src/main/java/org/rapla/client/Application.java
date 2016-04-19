@@ -87,6 +87,10 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             return false;
         }
         final RaplaWidget objectRaplaWidget = taskPresenter.startActivity(activity);
+        if (objectRaplaWidget == null)
+        {
+            return false;
+        }
         if ( isPlace)
         {
             mainView.updateContent( objectRaplaWidget);
