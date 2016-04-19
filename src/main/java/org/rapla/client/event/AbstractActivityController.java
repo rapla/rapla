@@ -39,6 +39,7 @@ public abstract class AbstractActivityController implements ApplicationEvent.App
     @Override
     public void handle(ApplicationEvent activity)
     {
+        // FIXME handle stop event to application so popups can be closed
         if ( activity.isStop())
         {
             activities.remove(activity);
@@ -46,9 +47,11 @@ public abstract class AbstractActivityController implements ApplicationEvent.App
         }
         else
         {
-            activities.add(activity);
-            updateHistroryEntry();
-            startActivity(activity);
+            if(startActivity(activity))
+            {
+                activities.add(activity);
+                updateHistroryEntry();
+            }
         }
     }
 
