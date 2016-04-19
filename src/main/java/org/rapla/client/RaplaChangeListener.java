@@ -3,6 +3,6 @@ package org.rapla.client;
 public interface RaplaChangeListener
 {
 
-    void onChange();
+    void onChange(PopupContext context);
     
 }

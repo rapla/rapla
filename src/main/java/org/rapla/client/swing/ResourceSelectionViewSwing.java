@@ -352,7 +352,8 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
     {
         getTreeSelection().addChangeListener((evt) ->
         {
-            changeListener.onChange();
+            final SwingPopupContext context = new SwingPopupContext((Component) evt.getSource(), null);
+            changeListener.onChange(context);
         });
     }
     

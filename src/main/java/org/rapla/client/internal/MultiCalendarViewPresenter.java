@@ -42,6 +42,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -224,7 +225,8 @@ public class MultiCalendarViewPresenter extends RaplaGUIComponent
 	{
         addValueChangeListener((evt) ->
         {
-            raplaChangeListener.onChange();
+            PopupContext context = new SwingPopupContext(getComponent(), null);
+            raplaChangeListener.onChange(context);
         });
 	}
 	

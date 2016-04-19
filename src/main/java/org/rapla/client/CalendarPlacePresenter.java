@@ -70,12 +70,12 @@ import com.google.web.bindery.event.shared.EventBus;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
-        view.addConflictsView(conflictsView);
+        view.addConflictsView(conflictsView.getConflictsView());
         view.addSummaryView(conflictsView.getSummaryComponent());
         view.addCalendarView(calendarContainer);
 
         updateOwnReservationsSelected();
-        calendarContainer.addChangeListener(() ->
+        calendarContainer.addChangeListener((context) ->
         {
             if (listenersDisabled)
             {
@@ -91,7 +91,7 @@ import com.google.web.bindery.event.shared.EventBus;
             }
         });
 
-        resourceSelectionPresenter.addChangeListener(() ->
+        resourceSelectionPresenter.addChangeListener((context) ->
         {
             if (listenersDisabled)
             {
