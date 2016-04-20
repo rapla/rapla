@@ -14,7 +14,7 @@ package org.rapla.client.swing.internal.common;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.MultiCalendarViewPresenter;
+import org.rapla.client.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -29,6 +29,7 @@ import org.rapla.framework.logger.Logger;
 
 import javax.inject.Provider;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.util.Date;
 import java.util.List;
@@ -38,11 +39,11 @@ public class CalendarAction extends RaplaAction {
     List<?> objects;
     Component parent;
     Date start;
-    private final Provider<MultiCalendarViewPresenter> multiCalendarViewFactory;
+    private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final FrameControllerList frameControllerList;
 
-    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory, FrameControllerList frameControllerList)
+    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, Provider<MultiCalendarPresenter> multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory, FrameControllerList frameControllerList)
     {
         super(facade, i18n, raplaLocale, logger);
         this.multiCalendarViewFactory = multiCalendarViewFactory;
@@ -86,14 +87,14 @@ public class CalendarAction extends RaplaAction {
             model.setReservationFilter( null);
             frame.setTitle("Rapla "  + getString("calendar"));
 
-            MultiCalendarViewPresenter cal = multiCalendarViewFactory.get();
+            MultiCalendarPresenter cal = multiCalendarViewFactory.get();
             cal.init( false);
-            frame.setContentPane(cal.getComponent());
+            frame.setContentPane((Container) cal.provideContent().getComponent());
             frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;
             frame.place( true, packFrame );
             frame.setVisible(true);
-            cal.getSelectedCalendar().scrollToStart();
+            cal.scrollToStart();
         } catch (Exception ex) {
             dialogUiFactory.showException(ex, new SwingPopupContext(parent, null));
         }

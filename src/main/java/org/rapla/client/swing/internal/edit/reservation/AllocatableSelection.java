@@ -15,7 +15,7 @@ package org.rapla.client.swing.internal.edit.reservation;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.MultiCalendarViewPresenter;
+import org.rapla.client.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
@@ -202,14 +202,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final MenuFactory menuFactory;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    private final Provider<MultiCalendarViewPresenter> multiCalendarViewFactory;
+    private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final FrameControllerList frameControllerList;
 
     public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean addCalendarButton,
             CommandHistory commandHistory, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages,
-            DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory,
+            DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory,
             BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList)
     {
         super(facade, i18n, raplaLocale, logger);
@@ -2315,7 +2315,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final RaplaImages raplaImages;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
-        private final Provider<MultiCalendarViewPresenter> multiCalendarViewFactory;
+        private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
         private final BooleanFieldFactory booleanFieldFactory;
         private final FilterEditButtonFactory filterEditButtonFactory;
         private final FrameControllerList frameControllerList2;
@@ -2324,7 +2324,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, TreeFactory treeFactory, CalendarSelectionModel model,
                 MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
-                DateFieldFactory dateFieldFactory, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
+                DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList)
         {
             super();

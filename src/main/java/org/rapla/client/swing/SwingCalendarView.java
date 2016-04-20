@@ -19,7 +19,7 @@ import javax.swing.JComponent;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.scheduler.Promise;
 
-public interface SwingCalendarView extends RaplaWidget
+public interface SwingCalendarView<T> extends RaplaWidget<T>
 {
     Promise<Void> update();
     /** you can provide a DateSelection component if you want */

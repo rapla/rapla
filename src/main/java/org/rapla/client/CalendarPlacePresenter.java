@@ -10,7 +10,7 @@ import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.ConflictSelectionPresenter;
-import org.rapla.client.internal.MultiCalendarViewPresenter;
+import org.rapla.client.internal.MultiCalendarPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarPresenter;
 import org.rapla.client.swing.toolkit.RaplaWidget;
@@ -51,13 +51,13 @@ import com.google.web.bindery.event.shared.EventBus;
     final private ResourceSelectionPresenter resourceSelectionPresenter;
     final private SavedCalendarPresenter savedViews;
     final private ConflictSelectionPresenter conflictsView;
-    final private MultiCalendarViewPresenter calendarContainer;
+    final private MultiCalendarPresenter calendarContainer;
     final ClientFacade clientFacade;
 
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
             final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final EventBus eventBus,/*, Map<String, CalendarPlugin> views*/
             ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarPresenter savedViews, ConflictSelectionPresenter conflictsView,
-            MultiCalendarViewPresenter calendarContainer, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+            MultiCalendarPresenter calendarContainer, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.view = view;
         this.dialogUiFactory = dialogUiFactory;
@@ -72,7 +72,7 @@ import com.google.web.bindery.event.shared.EventBus;
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsView.getConflictsView());
         view.addSummaryView(conflictsView.getSummaryComponent());
-        view.addCalendarView(calendarContainer);
+        view.addCalendarView(calendarContainer.provideContent());
 
         updateOwnReservationsSelected();
         calendarContainer.addChangeListener((context) ->
@@ -112,7 +112,7 @@ import com.google.web.bindery.event.shared.EventBus;
         }
         view.setPresenter(this);
         eventBus.addHandler(CalendarRefreshEvent.TYPE, (evt) -> {
-            calendarContainer.getSelectedCalendar().update();
+            calendarContainer.update();
         });
 
         eventBus.addHandler(OwnReservationsEvent.TYPE, (evt) -> {
@@ -274,7 +274,7 @@ import com.google.web.bindery.event.shared.EventBus;
 
     public void start()
     {
-        calendarContainer.getSelectedCalendar().scrollToStart();
+        calendarContainer.scrollToStart();
     }
 
     @Override public void closeTemplate()
@@ -287,8 +287,7 @@ import com.google.web.bindery.event.shared.EventBus;
         // CKO Not a good solution. FilterDialogs should close themselfs when model changes.
         // BJO 00000139
         resourceSelectionPresenter.closeFilterButton();
-        if (calendarContainer.getFilterButton().isOpen())
-            calendarContainer.getFilterButton().doClick();
+        calendarContainer.closeFilterButton();
 
         // BJO 00000139
     }

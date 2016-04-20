@@ -14,7 +14,7 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.MultiCalendarViewPresenter;
+import org.rapla.client.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.InfoFactory;
@@ -70,7 +70,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
             InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
             DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, Provider<MultiCalendarViewPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaInitializationException
+            DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = facade.getRaplaFacade().getPermissionController();
