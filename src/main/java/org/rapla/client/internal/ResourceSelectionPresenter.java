@@ -21,10 +21,10 @@ import java.util.HashSet;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.EditController;
 import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ResourceSelectionView.Presenter;
@@ -42,6 +42,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -69,6 +70,7 @@ public class ResourceSelectionPresenter implements Presenter
     private final RaplaResources i18n;
 
     private final MenuFactory menuFactory;
+    private CalendarPlacePresenter calendarPlacePresenter;
 
     @Inject
     public ResourceSelectionPresenter(RaplaMenuBarContainer menuBar, ClientFacade facade, Logger logger, RaplaResources i18n, MenuFactory menuFactory,
@@ -91,12 +93,26 @@ public class ResourceSelectionPresenter implements Presenter
         try
         {
             updateMenu();
-            view.update();
+            ClassificationFilter[] filter = model.getAllocatableFilter();
+            Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
+            view.update(filter, model, selectedObjects);
         }
         catch (RaplaException e)
         {
             throw new RaplaInitializationException(e);
         }
+    }
+    
+    @Override
+    public void updateFilters(ClassificationFilter[] filters)
+    {
+        model.setAllocatableFilter(filters);
+        applyFilter();
+    }
+    
+    public void setCalendarPlacePresenter(CalendarPlacePresenter calendarPlacePresenter)
+    {
+        this.calendarPlacePresenter = calendarPlacePresenter;
     }
     
     private RaplaFacade getRaplaFacade()
@@ -205,7 +221,9 @@ public class ResourceSelectionPresenter implements Presenter
     {
         if (evt != null && evt.isModified())
         {
-            view.update();
+            ClassificationFilter[] filter = model.getAllocatableFilter();
+            Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
+            view.update(filter, model, selectedObjects);
         }
         // No longer needed here as directly done in RaplaClientServiceImpl
         // ((CalendarModelImpl) model).dataChanged( evt);
@@ -298,10 +316,11 @@ public class ResourceSelectionPresenter implements Presenter
     {
         return view;
     }
-
-    public void addChangeListener(RaplaChangeListener changeListener)
+    
+    @Override
+    public void treeSelectionChanged()
     {
-        view.addChangeListener(changeListener);
+        calendarPlacePresenter.resourceSelectionChanged();
     }
 
     public void closeFilterButton()

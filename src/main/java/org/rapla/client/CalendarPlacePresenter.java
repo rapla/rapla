@@ -68,6 +68,11 @@ import com.google.web.bindery.event.shared.EventBus;
         this.logger = logger;
         this.eventBus = eventBus;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
+        this.savedViews = savedViews;
+        this.conflictsView = conflictsView;
+        this.calendarContainer = calendarContainer;
+        resourceSelectionPresenter.setCalendarPlacePresenter(this);
+        calendarContainer.setCalendarPlacePresenter(this);
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsView.getConflictsView());
@@ -75,33 +80,7 @@ import com.google.web.bindery.event.shared.EventBus;
         view.addCalendarView(calendarContainer.provideContent());
 
         updateOwnReservationsSelected();
-        calendarContainer.addChangeListener((context) ->
-        {
-            if (listenersDisabled)
-            {
-                return;
-            }
-            try
-            {
-                resourceSelectionPresenter.updateMenu();
-            }
-            catch (RaplaException e1)
-            {
-                logger.error(e1.getMessage(), e1);
-            }
-        });
 
-        resourceSelectionPresenter.addChangeListener((context) ->
-        {
-            if (listenersDisabled)
-            {
-                return;
-            }
-            conflictsView.clearSelection();
-        });
-        this.savedViews = savedViews;
-        this.conflictsView = conflictsView;
-        this.calendarContainer = calendarContainer;
         try
         {
             calendarContainer.init(true);
@@ -290,6 +269,34 @@ import com.google.web.bindery.event.shared.EventBus;
         calendarContainer.closeFilterButton();
 
         // BJO 00000139
+    }
+
+
+    public void calendarUpdated()
+    {
+        if (listenersDisabled)
+        {
+            return;
+        }
+        try
+        {
+            resourceSelectionPresenter.updateMenu();
+        }
+        catch (RaplaException e1)
+        {
+            logger.error(e1.getMessage(), e1);
+        }
+    }
+
+
+    public void resourceSelectionChanged()
+    {
+        if (listenersDisabled)
+        {
+            return;
+        }
+        conflictsView.clearSelection();
+        
     }
 
 }

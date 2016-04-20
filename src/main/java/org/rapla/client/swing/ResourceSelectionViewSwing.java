@@ -48,7 +48,6 @@ import javax.swing.tree.TreePath;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.ResourceSelectionView;
@@ -69,6 +68,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -87,7 +87,6 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
     TableLayout tableLayout;
     protected JPanel buttonsPanel = new JPanel();
 
-    protected final CalendarSelectionModel model;
     Listener listener = new Listener();
 
     protected FilterEditButton filterEdit;
@@ -97,21 +96,22 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
     private final Logger logger;
     private final RaplaResources i18n;
     private final DialogUiFactoryInterface dialogUiFactory;
+    private final FilterEditButtonFactory filterEditButtonFactory;
+    private boolean selectionFromProgram = false;
 
     @Inject
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            CalendarSelectionModel model, TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, EventBus eventBus)
-                    throws RaplaInitializationException
+            TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages,
+            DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, EventBus eventBus) throws RaplaInitializationException
     {
 
         this.i18n = i18n;
-        this.model = model;
         this.logger = logger;
         this.treeFactory = treeFactory;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.filterEditButtonFactory = filterEditButtonFactory;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -123,8 +123,6 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
         content.add(buttonsPanel, BorderLayout.NORTH);
 
         buttonsPanel.setLayout(new BorderLayout());
-        filterEdit = filterEditButtonFactory.create(model, true, listener);
-        buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
 
         treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
         treeSelection.setMultiSelect(true);
@@ -136,6 +134,14 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
         treeSelection.addPopupListener(listener);
         treeSelection.addDoubleclickListeners(listener);
         treeSelection.getTree().addFocusListener(listener);
+        treeSelection.addChangeListener((evt) ->
+        {
+            if(selectionFromProgram)
+            {
+                return;
+            }
+            getPresenter().treeSelectionChanged();
+        });
         javax.swing.ToolTipManager.sharedInstance().registerComponent(treeSelection.getTree());
     }
     
@@ -146,12 +152,14 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
     }
     
     @Override
-    public void update()
+    public void update(ClassificationFilter[] filter, ClassifiableFilter model, Collection<Object> selectedObjects)
     {
         try
         {
-            updateTree();
-            updateSelection();
+            filterEdit = filterEditButtonFactory.create(model, true, listener);
+            buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
+            updateTree(filter, selectedObjects);
+            updateSelection(selectedObjects);
         }
         catch (RaplaException e)
         {
@@ -170,11 +178,6 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
         return treeSelection;
     }
 
-    public CalendarSelectionModel getModel()
-    {
-        return model;
-    }
-
     final protected TreeFactory getTreeFactory()
     {
         return treeFactory;
@@ -187,7 +190,7 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
      * 
      * @see org.rapla.client.swing.gui.internal.view.ITreeFactory#createClassifiableModel(org.rapla.entities.dynamictype.Classifiable[], org.rapla.entities.dynamictype.DynamicType[])
      */
-    protected void updateTree() throws RaplaException
+    protected void updateTree(final ClassificationFilter[] filter, final Collection<Object> selectedObjects) throws RaplaException
     {
 
         treeSelection.getTree().setRootVisible(false);
@@ -270,7 +273,7 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
                         final Category targetCategory = (Category) targetParentNode.getUserObject();
                         boolean successful = getPresenter().moveCategory(categoryToMove, targetCategory);
                         dtde.dropComplete(successful);
-                        updateTree();
+                        updateTree(filter, selectedObjects);
                     }
                     else
                     {
@@ -302,12 +305,12 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
             }
 
         }));
-        DefaultTreeModel treeModel = generateTree();
+        DefaultTreeModel treeModel = generateTree(filter);
         try
         {
             treeListenersEnabled = false;
             treeSelection.exchangeTreeModel(treeModel);
-            updateSelection();
+            updateSelection(selectedObjects);
         }
         catch (Exception ex)
         {
@@ -319,19 +322,27 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
         }
 
     }
+    
+    
 
-    protected DefaultTreeModel generateTree() throws RaplaException
+    protected DefaultTreeModel generateTree(ClassificationFilter[] filter) throws RaplaException
     {
-        ClassificationFilter[] filter = getModel().getAllocatableFilter();
         final TreeFactoryImpl treeFactoryImpl = (TreeFactoryImpl) getTreeFactory();
         DefaultTreeModel treeModel = treeFactoryImpl.createModel(filter);
         return treeModel;
     }
 
-    protected void updateSelection()
+    protected void updateSelection(Collection<Object> selectedObjects)
     {
-        Collection<Object> selectedObjects = new ArrayList<Object>(getModel().getSelectedObjects());
-        treeSelection.select(selectedObjects);
+        try
+        {
+            selectionFromProgram = true;
+            treeSelection.select(selectedObjects);
+        }
+        finally
+        {
+            selectionFromProgram = false;
+        }
     }
 
     public JComponent getComponent()
@@ -345,16 +356,6 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
         JComponent component = swingMenuContext.getComponent();
         final Point p = swingMenuContext.getPoint();
         menu.show(component, p.x, p.y);
-    }
-    
-    @Override
-    public void addChangeListener(final RaplaChangeListener changeListener)
-    {
-        getTreeSelection().addChangeListener((evt) ->
-        {
-            final SwingPopupContext context = new SwingPopupContext((Component) evt.getSource(), null);
-            changeListener.onChange(context);
-        });
     }
     
     @Override
@@ -401,9 +402,7 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
                 if (filterUI != null && source == filterUI)
                 {
                     final ClassificationFilter[] filters = filterUI.getFilters();
-                    model.setAllocatableFilter(filters);
-                    updateTree();
-                    getPresenter().applyFilter();
+                    getPresenter().updateFilters(filters);
                 }
                 else if (source == treeSelection)
                 {

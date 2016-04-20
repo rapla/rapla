@@ -3,7 +3,6 @@ package org.rapla.client.internal;
 import java.util.Collection;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.facade.Conflict;
 
@@ -16,6 +15,10 @@ public interface ConflictSelectionView<T> extends RaplaWidget<T>
         void showTreePopup(PopupContext context);
 
         void showConflicts(PopupContext context);
+        
+        void enableConflicts(PopupContext context);
+        
+        void disableConflicts(PopupContext context);
         
     }
     
@@ -31,6 +34,6 @@ public interface ConflictSelectionView<T> extends RaplaWidget<T>
 
     void clearSelection();
 
-    void showMenuPopup(PopupContext context, RaplaChangeListener enabledChangeListener, RaplaChangeListener disabledChangeListener);
+    void showMenuPopup(PopupContext context, boolean enabledButtonEnabled, boolean disableButtonEnabled);
     
 }

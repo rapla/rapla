@@ -28,8 +28,8 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarView.Presenter;
 import org.rapla.client.swing.SwingCalendarView;
@@ -71,6 +71,7 @@ public class MultiCalendarPresenter implements Presenter, Disposable
     boolean editable = true;
     boolean listenersEnabled = true;
     private SwingCalendarView currentView;
+    private CalendarPlacePresenter calendarPlacePresenter;
     
     @Inject
     public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
@@ -117,6 +118,11 @@ public class MultiCalendarPresenter implements Presenter, Disposable
         this.view.setSelectableViews(ids);
     }
     
+    public void setCalendarPlacePresenter(CalendarPlacePresenter calendarPlacePresenter)
+    {
+        this.calendarPlacePresenter = calendarPlacePresenter;
+    }
+    
     @Override
     public void onViewSelectionChange(PopupContext context)
     {
@@ -147,13 +153,6 @@ public class MultiCalendarPresenter implements Presenter, Disposable
         update(null);
     }
     
-    private final Collection<RaplaChangeListener> listeners = new ArrayList<>();
-	
-	public void addChangeListener(final RaplaChangeListener raplaChangeListener)
-	{
-	    listeners.add(raplaChangeListener);
-	}
-	
     private SwingViewFactory findFactory(String id) {
         for (Iterator<SwingViewFactory> it = factoryList.iterator();it.hasNext();) {
             SwingViewFactory factory =  it.next();
@@ -178,11 +177,7 @@ public class MultiCalendarPresenter implements Presenter, Disposable
                 RaplaMenuItem item = viewMenuItems.get( viewId );
                 item.setIcon( raplaImages.getIconFromKey("icon.radio"));
             }
-        	for(RaplaChangeListener listener:listeners)
-        	{
-        		PopupContext context = null;
-                listener.onChange(context);
-        	}
+        	calendarPlacePresenter.calendarUpdated();
         	view.setSelectedViewId(viewId);
         } finally {
         	listenersEnabled = true;

@@ -4,11 +4,12 @@ import java.util.Collection;
 
 import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Category;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.facade.ClassifiableFilter;
 
 public interface ResourceSelectionView<T> extends RaplaWidget<T>
 {
@@ -26,16 +27,18 @@ public interface ResourceSelectionView<T> extends RaplaWidget<T>
         void showTreePopup(PopupContext popupContext, Object selectedObject, MenuContext menuContext);
 
         void applyFilter();
+
+        void treeSelectionChanged();
+
+        void updateFilters(ClassificationFilter[] filters);
         
     }
 
-    void update();
+    void update(ClassificationFilter[] filter, ClassifiableFilter model, Collection<Object> selectedObjects);
 
     boolean hasFocus();
 
     void showMenu(RaplaPopupMenu menu, SwingMenuContext swingMenuContext);
-
-    void addChangeListener(RaplaChangeListener changeListener);
 
     void closeFilterButton();
     

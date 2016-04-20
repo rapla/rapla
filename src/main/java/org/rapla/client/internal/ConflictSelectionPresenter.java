@@ -12,7 +12,6 @@
 
 package org.rapla.client.internal;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,16 +24,11 @@ import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ConflictSelectionView.Presenter;
-import org.rapla.client.swing.toolkit.PopupEvent;
-import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -102,59 +96,65 @@ public class ConflictSelectionPresenter implements Presenter
         try
         {
             // Object obj = evt.getSelectedObject();
-            Collection<?> list = view.getSelectedElements(true);
-            final List<Conflict> enabledConflicts = new ArrayList<Conflict>();
-            final List<Conflict> disabledConflicts = new ArrayList<Conflict>();
-            for (Object selected : list)
-            {
-                if (selected instanceof Conflict)
-                {
-                    Conflict conflict = (Conflict) selected;
-                    if (conflict.checkEnabled())
-                    {
-                        enabledConflicts.add(conflict);
-                    }
-                    else
-                    {
-                        disabledConflicts.add(conflict);
-                    }
-                }
-            }
-
-            final RaplaChangeListener enabledChangeListener = !disabledConflicts.isEmpty() ? (context) ->
-            {
-                try
-                {
-                    CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
-                    CommandHistory commanHistory = getCommandHistory();
-                    commanHistory.storeAndExecute(command);
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, context);
-                }
-
-            } : null;
-            final RaplaChangeListener disabledChangeListener = !enabledConflicts.isEmpty() ? (context) ->
-            {
-                try
-                {
-                    CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
-                    CommandHistory commanHistory = getCommandHistory();
-                    commanHistory.storeAndExecute(command);
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, context);
-                }
-            } : null;
-            view.showMenuPopup(c, enabledChangeListener, disabledChangeListener);
-
+            final List<Conflict> enabledConflicts = getConflicts(true);
+            final List<Conflict> disabledConflicts = getConflicts(false);
+            view.showMenuPopup(c, !disabledConflicts.isEmpty(), !enabledConflicts.isEmpty());
         }
         catch (Exception ex)
         {
             dialogUiFactory.showException(ex, null);
         }
+    }
+    
+    private List<Conflict> getConflicts(boolean enabled)
+    {
+        Collection<?> list = view.getSelectedElements(true);
+        final List<Conflict> result = new ArrayList<Conflict>();
+        for (Object selected : list)
+        {
+            if (selected instanceof Conflict)
+            {
+                Conflict conflict = (Conflict) selected;
+                if (conflict.checkEnabled() == enabled)
+                {
+                    result.add(conflict);
+                }
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public void enableConflicts(PopupContext context)
+    {
+        try
+        {
+            final List<Conflict> disabledConflicts = getConflicts(false);
+            CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
+            CommandHistory commanHistory = getCommandHistory();
+            commanHistory.storeAndExecute(command);
+        }
+        catch (RaplaException ex)
+        {
+            dialogUiFactory.showException(ex, context);
+        }
+    }
+    
+    @Override
+    public void disableConflicts(PopupContext context)
+    {
+        try
+        {
+            List<Conflict> enabledConflicts = getConflicts(true);
+            CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
+            CommandHistory commanHistory = getCommandHistory();
+            commanHistory.storeAndExecute(command);
+        }
+        catch (RaplaException ex)
+        {
+            dialogUiFactory.showException(ex, context);
+        }
+        
     }
 
     public CommandHistory getCommandHistory()

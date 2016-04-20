@@ -32,7 +32,6 @@ import javax.swing.tree.TreePath;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaChangeListener;
 import org.rapla.client.base.AbstractView;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.ConflictSelectionView;
@@ -86,41 +85,43 @@ public class ConflictSelectionViewSwing extends AbstractView<ConflictSelectionVi
     }
     
     @Override
-    public void showMenuPopup(PopupContext c, final RaplaChangeListener enabledChangeListener, final RaplaChangeListener disabledChangeListener)
+    public void showMenuPopup(PopupContext context, boolean enabledButtonEnabled, boolean disableButtonEnabled)
     {
-        
         RaplaPopupMenu menu = new RaplaPopupMenu();
         RaplaMenuItem disable = new RaplaMenuItem("disable");
         disable.setText(i18n.getString("disable_conflicts"));
-        disable.setEnabled( disabledChangeListener != null);
+        disable.setEnabled( disableButtonEnabled );
         RaplaMenuItem enable = new RaplaMenuItem("enable");
         enable.setText(i18n.getString("enable_conflicts"));
-        enable.setEnabled( enabledChangeListener != null );
-        
-        disable.addActionListener( new ActionListener() {
-            
+        enable.setEnabled( enabledButtonEnabled );
+
+        disable.addActionListener(new ActionListener()
+        {
+
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent e)
+            {
                 PopupContext context = new SwingPopupContext(disable, null);
-                disabledChangeListener.onChange(context);
+                getPresenter().disableConflicts(context);
             }
 
-
         });
-        
-        enable.addActionListener( new ActionListener() {
-            
+
+        enable.addActionListener(new ActionListener()
+        {
+
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent e)
+            {
                 PopupContext context = new SwingPopupContext(enable, null);
-                enabledChangeListener.onChange(context);
+                getPresenter().enableConflicts(context);
             }
         });
 
         menu.add(disable);
         menu.add(enable);
-        JComponent component = (JComponent) SwingPopupContext.extractParent(c);
-        final Point p = SwingPopupContext.extractPoint(c);
+        JComponent component = (JComponent) SwingPopupContext.extractParent(context);
+        final Point p = SwingPopupContext.extractPoint(context);
         menu.show(component, p.x, p.y);
     }
 
