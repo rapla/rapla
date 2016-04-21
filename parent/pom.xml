@@ -98,6 +98,7 @@
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
 			</plugin>
+			<!--
 			<plugin>
 				<groupId>org.bsc.maven</groupId>
 				<artifactId>maven-processor-plugin</artifactId>
@@ -119,6 +120,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			-->
 			<!--
 
 			<plugin>
@@ -162,13 +164,13 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
-					<!--
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 						<annotationProcessor>dagger.internal.codegen.ComponentProcessor</annotationProcessor>
 					</annotationProcessors>
-					-->
+					<!--
 					<proc>none</proc>
+					-->
 					<useIncrementalCompilation>false</useIncrementalCompilation>
 					<optimize>false</optimize>
 					<verbose>false</verbose>

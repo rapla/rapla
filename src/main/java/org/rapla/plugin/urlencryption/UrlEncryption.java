@@ -1,5 +1,6 @@
 package org.rapla.plugin.urlencryption;
 
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
 import org.rapla.framework.RaplaException;
@@ -27,6 +28,7 @@ public interface UrlEncryption
 	 * @return String Encrypted parameter string
 	 * @throws RaplaException In case the encryption fails
 	 */
+	@POST
     String encrypt(String plain) throws RaplaException;
     
 }

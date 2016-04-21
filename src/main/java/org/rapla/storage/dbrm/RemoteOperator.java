@@ -732,9 +732,8 @@ import org.rapla.storage.impl.EntityStore;
         RemoteStorage remoteMethod = getRemoteStorage();
         try
         {
-            String canChangePassword = remoteMethod.canChangePassword();
-            boolean result = canChangePassword != null && canChangePassword.equalsIgnoreCase("true");
-            return result;
+            boolean canChangePassword = remoteMethod.canChangePassword();
+            return canChangePassword;
         }
         catch (RaplaException ex)
         {

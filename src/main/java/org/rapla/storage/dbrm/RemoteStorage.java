@@ -39,7 +39,9 @@ public interface RemoteStorage
 {
     String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
 
-    String canChangePassword() throws RaplaException;
+    @GET
+    @Path("change/canchangepassword")
+    boolean canChangePassword() throws RaplaException;
 
     @POST
     @Path("change/password")

@@ -18,6 +18,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.merge.client.MergeController;
+import org.rapla.scheduler.Promise;
 
 @Singleton
 @Extension(id = MergeActivity.ID, provides = TaskPresenter.class)
@@ -39,7 +40,7 @@ public class MergeActivity implements TaskPresenter
         this.raplaFacade = raplaFacade;
     }
 
-    public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
+    public <T> Promise<RaplaWidget> startActivity(ApplicationEvent activity)
     {
         final String applicationEventId = activity.getApplicationEventId();
         if (ID.equals(applicationEventId))

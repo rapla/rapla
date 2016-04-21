@@ -29,6 +29,8 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
@@ -186,9 +188,9 @@ import com.google.web.bindery.event.shared.EventBus;
     //        }
     //    }
     //
-    @Override public <T> RaplaWidget<T> startActivity(ApplicationEvent activity)
+    @Override public <T> Promise<RaplaWidget> startActivity(ApplicationEvent activity)
     {
-        return view;
+        return new ResolvedPromise<RaplaWidget>(view);
     }
 
     public void updateView(ModificationEvent evt)
@@ -227,6 +229,7 @@ import com.google.web.bindery.event.shared.EventBus;
     {
         final CalendarSelectionModel model = resourceSelectionPresenter.getModel();
         boolean isSelected = model.isOnlyCurrentUserSelected();
+        //FIXME onlyOwnReservationSelected
     }
 
     @Override public void minmaxPressed()

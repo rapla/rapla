@@ -1,24 +1,6 @@
 package org.rapla.client.internal.edit;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
@@ -28,12 +10,15 @@ import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
-import org.rapla.client.internal.ReservationEditFactory;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -49,7 +34,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
@@ -59,14 +44,30 @@ import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
 import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-@Singleton
-@ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
+@Singleton @ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
         @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class),
-        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), })
-public class EditTaskPresenter implements TaskPresenter
+        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), }) public class EditTaskPresenter
+        implements TaskPresenter
 {
     Collection<ReservationEdit<?>> editReservationList = new ArrayList<ReservationEdit<?>>();
     Collection<EditDialogInterface<?>> editWindowList = new ArrayList<EditDialogInterface<?>>();
@@ -76,16 +77,15 @@ public class EditTaskPresenter implements TaskPresenter
     private final RaplaResources i18n;
     private final ClientFacade clientFacade;
     private final EventBus eventBus;
-    private final CalendarModel model;
+    private final CalendarSelectionModel model;
 
     public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
     final static public String EDIT_EVENTS_ID = "editEvents";
     final static public String EDIT_RESOURCES_ID = "editResources";
-    private final ReservationEditFactory editFactory;
+    private final Provider<ReservationEdit> reservationEditProvider;
 
-    @Inject
-    public EditTaskPresenter(ClientFacade clientFacade, Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory,
-            RaplaResources i18n, EventBus eventBus, CalendarModel model, ReservationEditFactory editFactory)
+    @Inject public EditTaskPresenter(ClientFacade clientFacade, Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory,
+            RaplaResources i18n, EventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider)
     {
         this.editUiProvider = editUiProvider;
         this.dialogUiFactory = dialogUiFactory;
@@ -93,56 +93,49 @@ public class EditTaskPresenter implements TaskPresenter
         this.clientFacade = clientFacade;
         this.eventBus = eventBus;
         this.model = model;
-        this.editFactory = editFactory;
+        this.reservationEditProvider = reservationEditProvider;
         this.raplaFacade = clientFacade.getRaplaFacade();
     }
 
-    @Override
-    public RaplaWidget startActivity(ApplicationEvent activity)
+    @Override public Promise<RaplaWidget> startActivity(ApplicationEvent application)
     {
-        final String activityId = activity.getApplicationEventId();
-        String info = activity.getInfo();
-        PopupContext popupContext = activity.getPopupContext();
-        if (activityId.equals(EDIT_RESOURCES_ID) || activityId.equals(EDIT_EVENTS_ID))
+        final String taskId = application.getApplicationEventId();
+        String info = application.getInfo();
+        PopupContext popupContext = application.getPopupContext();
+        try
         {
-            final ApplicationEventContext context = activity.getContext();
-            List<Entity> entities = new ArrayList<>();
-            if (context != null && context instanceof EditApplicationEventContext)
+
+            if (taskId.equals(EDIT_RESOURCES_ID) || taskId.equals(EDIT_EVENTS_ID))
             {
-                entities.addAll(((EditApplicationEventContext) context).getSelectedObjects());
-            }
-            else
-            {
-                String[] ids = ((String) info).split(",");
-                Class<? extends Entity> clazz = activityId.equals(EDIT_RESOURCES_ID) ? Allocatable.class : Reservation.class;
-                for (String id : ids)
+                final ApplicationEventContext context = application.getContext();
+                List<Entity> entities = new ArrayList<>();
+                if (context != null && context instanceof EditApplicationEventContext)
                 {
-                    Entity<?> resolve;
-                    try
-                    {
-                        resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
-                    }
-                    catch (EntityNotFoundException e)
-                    {
-                        return null;
-                    }
-                    entities.add(resolve);
+                    entities.addAll(((EditApplicationEventContext) context).getSelectedObjects());
                 }
+                else
+                {
+                    String[] ids = ((String) info).split(",");
+                    Class<? extends Entity> clazz = taskId.equals(EDIT_RESOURCES_ID) ? Allocatable.class : Reservation.class;
+                    for (String id : ids)
+                    {
+                        Entity<?> resolve;
+                        try
+                        {
+                            resolve = raplaFacade.resolve(new ReferenceInfo(id, clazz));
+                        }
+                        catch (EntityNotFoundException e)
+                        {
+                            return null;
+                        }
+                        entities.add(resolve);
+                    }
+                }
+                String title = null;
+                RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, application);
+                return new ResolvedPromise<RaplaWidget>(edit);
             }
-            String title = null;
-            try
-            {
-                RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, activity);
-                return edit;
-            }
-            catch (RaplaException e)
-            {
-                return null;
-            }
-        }
-        else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(activityId))
-        {
-            try
+            else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))
             {
                 final String dynamicTypeId = info;
                 final Entity resolve = raplaFacade.resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
@@ -155,18 +148,71 @@ public class EditTaskPresenter implements TaskPresenter
                 final List<Reservation> singletonList = Collections.singletonList(r);
                 List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, user);
                 String title = null;
-                final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, activity);
-                return editDialog;
+                final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, application);
+                return new ResolvedPromise<RaplaWidget>(editDialog);
             }
-            catch (RaplaException e)
+            else if (SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
+            {
+
+                final String templateId = info;
+                User user = clientFacade.getUser();
+                Allocatable template = findTemplate(templateId);
+                final Promise<Collection<Reservation>> templatePromise = raplaFacade.getTemplateReservations(template);
+                Promise<RaplaWidget> widgetPromise = templatePromise.thenApply((reservations) -> {
+                    if (reservations.size() == 0)
+                    {
+                        throw new EntityNotFoundException("Template " + template + " is empty. Please create events in template first.");
+                    }
+                    Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
+                    Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
+                    boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
+                    boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig);
+                    Date beginn = RaplaGUIComponent.getStartDate(model, raplaFacade, user);
+                    Collection<Reservation> newReservations = raplaFacade.copy(reservations, beginn, keepTime, user);
+                    if (markedIntervals.size() > 0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1
+                            && keepOrig == Boolean.FALSE)
+                    {
+                        Appointment app = newReservations.iterator().next().getAppointments()[0];
+                        TimeInterval first = markedIntervals.iterator().next();
+                        Date end = first.getEnd();
+                        if (!markedIntervalTimeEnabled)
+                        {
+                            end = DateTools.toDateTime(end, app.getEnd());
+                        }
+                        if (!beginn.before(end))
+                        {
+                            end = new Date(app.getStart().getTime() + DateTools.MILLISECONDS_PER_HOUR);
+                        }
+                        app.move(app.getStart(), end);
+                    }
+                    List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, user);
+                    String title = null;
+                    return createEditDialog(list, title, popupContext, application);
+                });
+                return widgetPromise;
+            }
+            else
             {
                 return null;
             }
         }
-        else
+        catch (RaplaException e)
         {
             return null;
         }
+    }
+
+    private Allocatable findTemplate(String templateId) throws RaplaException
+    {
+        final Collection<Allocatable> templates = raplaFacade.getTemplates();
+        for (Allocatable allocatable : templates)
+        {
+            if (allocatable.getId().equals(templateId))
+            {
+                return allocatable;
+            }
+        }
+        return null;
     }
 
     protected Appointment createAppointment() throws RaplaException
@@ -269,7 +315,7 @@ public class EditTaskPresenter implements TaskPresenter
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
         Collection<T> nonEditableObjects = new ArrayList<>(list);
         Collection<T> toEdit = new ArrayList<>();
-        for (Iterator<T> iterator = nonEditableObjects.iterator(); iterator.hasNext();)
+        for (Iterator<T> iterator = nonEditableObjects.iterator(); iterator.hasNext(); )
         {
             T t = iterator.next();
             if (!t.isReadOnly())
@@ -284,8 +330,7 @@ public class EditTaskPresenter implements TaskPresenter
         for (T entity : toEdit)
         {
 
-            @SuppressWarnings("unchecked")
-            Entity<T> mementable = persistant.get(entity);
+            @SuppressWarnings("unchecked") Entity<T> mementable = persistant.get(entity);
             if (mementable != null)
             {
                 if (originals == null)
@@ -314,8 +359,7 @@ public class EditTaskPresenter implements TaskPresenter
             JPanel buttonsPanel = new JPanel();
 
             RaplaButton saveButton = new RaplaButton(i18n.getString("save"), RaplaButton.DEFAULT);
-            saveButton.addActionListener((evt) ->
-            {
+            saveButton.addActionListener((evt) -> {
                 try
                 {
                     ui.mapToObjects();
@@ -336,12 +380,10 @@ public class EditTaskPresenter implements TaskPresenter
                     }
                     if (canUndo)
                     {
-                        @SuppressWarnings({ "unchecked", "rawtypes" })
-                        SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
+                        @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
                         CommandHistory commandHistory = clientFacade.getCommandHistory();
                         Promise promise = commandHistory.storeAndExecute(saveCommand);
-                        promise.thenRun(() ->
-                        {
+                        promise.thenRun(() -> {
                             //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
                             //                                    dlg.close();
                             //       FIXME callback;
@@ -366,8 +408,7 @@ public class EditTaskPresenter implements TaskPresenter
                 }
             });
             RaplaButton cancelButton = new RaplaButton(i18n.getString("cancel"), RaplaButton.DEFAULT);
-            cancelButton.addActionListener((evt) ->
-            {
+            cancelButton.addActionListener((evt) -> {
                 close(applicationEvent);
             });
 
@@ -389,14 +430,12 @@ public class EditTaskPresenter implements TaskPresenter
         eventBus.fireEvent(applicationEvent);
     }
 
-    @Override
-    public void updateView(ModificationEvent event)
+    @Override public void updateView(ModificationEvent event)
     {
         // FIXME
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T extends Entity> EditComponent<T, JComponent> createUI(T obj) throws RaplaException
+    @SuppressWarnings("unchecked") protected <T extends Entity> EditComponent<T, JComponent> createUI(T obj) throws RaplaException
     {
         final Class typeClass = obj.getTypeClass();
         final String id = typeClass.getName();
@@ -484,7 +523,8 @@ public class EditTaskPresenter implements TaskPresenter
         }
         else
         {
-            c = editFactory.create(reservation, appointmentBlock);
+            c = reservationEditProvider.get();
+            c.editReservation(reservation, appointmentBlock);
             editReservationList.add(c);
             // only is allowed to exchange allocations
         }

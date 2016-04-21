@@ -36,6 +36,7 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.rest.client.CustomConnector;
 import org.rapla.rest.client.EntryPointFactory;
 import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.scheduler.CommandScheduler;
@@ -240,7 +241,7 @@ public abstract class RaplaTestCase
                 connectionInfo.setServerURL(serverURL);
                 //final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
                 connectionInfo.setReconnectInfo(null);
-                BasicRaplaHTTPConnector.CustomConnector customConnector = new MyCustomConnector(connectionInfo, i18n, scheduler);
+                CustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler);
                 RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
                 RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,

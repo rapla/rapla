@@ -35,6 +35,7 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.scheduler.Promise;
 
 @Singleton
 public class Application implements ApplicationView.Presenter, ModificationListener
@@ -86,19 +87,21 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         {
             return false;
         }
-        final RaplaWidget objectRaplaWidget = taskPresenter.startActivity(activity);
+        final Promise<RaplaWidget> objectRaplaWidget = taskPresenter.startActivity(activity);
         if (objectRaplaWidget == null)
         {
             return false;
         }
-        if ( isPlace)
-        {
-            mainView.updateContent( objectRaplaWidget);
-        }
-        else
-        {
-            mainView.createPopup( objectRaplaWidget);
-        }
+        objectRaplaWidget.thenAccept( (widget)-> {
+            if (isPlace)
+            {
+                mainView.updateContent(widget);
+            }
+            else
+            {
+                mainView.createPopup(widget);
+            }
+        });
         return true;
     }
 

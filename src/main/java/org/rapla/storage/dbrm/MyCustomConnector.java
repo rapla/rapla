@@ -1,24 +1,23 @@
 package org.rapla.storage.dbrm;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.inject.Inject;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.rest.client.AuthenticationException;
+import org.rapla.rest.client.CustomConnector;
 import org.rapla.rest.client.SerializableExceptionInformation;
 import org.rapla.rest.client.gwt.MockProxy;
-import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.scheduler.CommandScheduler;
 
-@DefaultImplementation(of=BasicRaplaHTTPConnector.CustomConnector.class,context = InjectionContext.swing)
-public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnector
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.io.IOException;
+
+@DefaultImplementation(of=CustomConnector.class,context = InjectionContext.client)
+public class MyCustomConnector implements CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
 
@@ -33,21 +32,21 @@ public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnecto
     }
 
     private RemoteAuthentificationService authentificationService;
-    private final String errorString;
+    //private final String errorString;
     private final CommandScheduler commandQueue;
+    Provider<RaplaResources> i18n;
 
-    @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo,  RaplaResources i18n,
+    @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,
             CommandScheduler commandQueue)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
-        String server = remoteConnectionInfo.getServerURL();
-        this.errorString = i18n.format("error.connect", server) + " ";
         this.commandQueue = commandQueue;
+        this.i18n = i18n;
     }
 
-    @Override public String reauth(BasicRaplaHTTPConnector proxy) throws Exception
+    @Override public String reauth(Class proxy) throws Exception
     {
-        final boolean isAuthentificationService = proxy.getClass().getCanonicalName().contains(RemoteAuthentificationService.class.getCanonicalName());
+        final boolean isAuthentificationService = proxy.getCanonicalName().contains(RemoteAuthentificationService.class.getCanonicalName());
         // We dont reauth for authentification services
         if (isAuthentificationService || authentificationService == null)
         {
@@ -67,7 +66,7 @@ public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnecto
         final String message = exe.getMessage();
         if (message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
         {
-            return new BasicRaplaHTTPConnector.AuthenticationException(message);
+            return new AuthenticationException(message);
         }
         RaplaException ex = new RaplaExceptionDeserializer().deserializeException(exe);
         return ex;
@@ -80,6 +79,9 @@ public class MyCustomConnector implements BasicRaplaHTTPConnector.CustomConnecto
 
     @Override public Exception getConnectError(IOException ex)
     {
+        String server = remoteConnectionInfo.getServerURL();
+        final RaplaResources raplaResources = i18n.get();
+        String errorString = raplaResources.format("error.connect", server) + " ";
         return new RaplaConnectException(errorString + ex.getMessage());
     }
 

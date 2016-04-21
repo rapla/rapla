@@ -264,11 +264,11 @@ import org.rapla.storage.impl.EntityStore;
         return result;
     }
 
-    public String canChangePassword() throws RaplaException
+    public boolean canChangePassword() throws RaplaException
     {
         checkAuthentified();
-        Boolean result = operator.canChangePassword();
-        return result.toString();
+        boolean result = operator.canChangePassword();
+        return result;
     }
 
     public void changePassword(PasswordPost job) throws RaplaException
