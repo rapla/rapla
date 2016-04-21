@@ -73,8 +73,14 @@ import org.rapla.scheduler.ResolvedPromise;
         this.savedViews = savedViews;
         this.conflictsView = conflictsView;
         this.calendarContainer = calendarContainer;
-        resourceSelectionPresenter.setCalendarPlacePresenter(this);
-        calendarContainer.setCalendarPlacePresenter(this);
+        resourceSelectionPresenter.setCallback(() ->
+        {
+            resourceSelectionChanged();
+        });
+        calendarContainer.setCallback(() ->
+        {
+            calendarUpdated();
+        });
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsView.getConflictsView());
