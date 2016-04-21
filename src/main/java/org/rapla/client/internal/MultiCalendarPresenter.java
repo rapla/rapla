@@ -71,7 +71,7 @@ public class MultiCalendarPresenter implements Presenter, Disposable
     boolean editable = true;
     boolean listenersEnabled = true;
     private SwingCalendarView currentView;
-    private CalendarPlacePresenter calendarPlacePresenter;
+    private PresenterChangeCallback callback;
     
     @Inject
     public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
@@ -118,9 +118,9 @@ public class MultiCalendarPresenter implements Presenter, Disposable
         this.view.setSelectableViews(ids);
     }
     
-    public void setCalendarPlacePresenter(CalendarPlacePresenter calendarPlacePresenter)
+    public void setCallback(PresenterChangeCallback callback)
     {
-        this.calendarPlacePresenter = calendarPlacePresenter;
+        this.callback = callback;
     }
     
     @Override
@@ -177,7 +177,7 @@ public class MultiCalendarPresenter implements Presenter, Disposable
                 RaplaMenuItem item = viewMenuItems.get( viewId );
                 item.setIcon( raplaImages.getIconFromKey("icon.radio"));
             }
-        	calendarPlacePresenter.calendarUpdated();
+        	callback.onChange();
         	view.setSelectedViewId(viewId);
         } finally {
         	listenersEnabled = true;

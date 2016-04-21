@@ -57,7 +57,6 @@ import com.google.web.bindery.event.shared.EventBus;
 
 public class ResourceSelectionPresenter implements Presenter
 {
-
     protected final CalendarSelectionModel model;
 
     private final EditController editController;
@@ -70,7 +69,7 @@ public class ResourceSelectionPresenter implements Presenter
     private final RaplaResources i18n;
 
     private final MenuFactory menuFactory;
-    private CalendarPlacePresenter calendarPlacePresenter;
+    private PresenterChangeCallback callback;
 
     @Inject
     public ResourceSelectionPresenter(RaplaMenuBarContainer menuBar, ClientFacade facade, Logger logger, RaplaResources i18n, MenuFactory menuFactory,
@@ -110,9 +109,9 @@ public class ResourceSelectionPresenter implements Presenter
         applyFilter();
     }
     
-    public void setCalendarPlacePresenter(CalendarPlacePresenter calendarPlacePresenter)
+    public void setCallback(PresenterChangeCallback callback)
     {
-        this.calendarPlacePresenter = calendarPlacePresenter;
+        this.callback = callback;
     }
     
     private RaplaFacade getRaplaFacade()
@@ -320,7 +319,7 @@ public class ResourceSelectionPresenter implements Presenter
     @Override
     public void treeSelectionChanged()
     {
-        calendarPlacePresenter.resourceSelectionChanged();
+        callback.onChange();
     }
 
     public void closeFilterButton()
