@@ -43,6 +43,7 @@ import org.rapla.rest.server.RestApplication;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
+import org.rapla.server.internal.ShutdownService;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
@@ -160,8 +161,23 @@ public class MainServlet extends HttpServlet
     synchronized public void init() throws ServletException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
-        serverStarter = init(logger, getServletContext());
-        if(serverStarter != null)
+        serverStarter = init(logger, getServletContext(), (restart) ->
+        {
+            if (restart)
+            {
+                updateMembersInjectors();
+            }
+            else
+            {
+                this.membersInjector = null;
+            }
+        });
+        updateMembersInjectors();
+    }
+
+    private void updateMembersInjectors()
+    {
+        if (serverStarter != null)
         {
             final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
             membersInjector = server.getMembersInjector();
@@ -203,7 +219,7 @@ public class MainServlet extends HttpServlet
         super.init(config);
     }
     
-    public static ServerStarter init(Logger logger, ServletContext context) throws ServletException
+    public static ServerStarter init(Logger logger, ServletContext context, ShutdownService shutdownHook) throws ServletException
     {
         logger.info("Init RaplaServlet");
         String startupMode;
@@ -227,7 +243,7 @@ public class MainServlet extends HttpServlet
             // this is the default purpose of the servlet to start rapla server as http servlet
             if (startupMode.equals("server"))
             {
-                ServerStarter serverStarter = new ServerStarter(logger, backendContext);
+                ServerStarter serverStarter = new ServerStarter(logger, backendContext, shutdownHook);
                 serverStarter.startServer();
                 return serverStarter;
             }
