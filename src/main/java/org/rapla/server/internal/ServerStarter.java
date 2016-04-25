@@ -22,16 +22,18 @@ public class ServerStarter
     private ReadWriteLock restartLock = new ReentrantReadWriteLock();
     Collection<ServletRequestPreprocessor> processors;
     ServerContainerContext backendContext;
+    private final ShutdownService shutdownHook;
 
     private ServerServiceContainer create() throws Exception
     {
         return DaggerServerCreator.create(logger, backendContext);
     }
 
-    public ServerStarter(Logger logger, ServerContainerContext backendContext)
+    public ServerStarter(Logger logger, ServerContainerContext backendContext, ShutdownService shutdownHook)
     {
         this.logger = logger;
         this.backendContext =  backendContext;
+        this.shutdownHook = shutdownHook;
     }
 
     public ReadWriteLock getRestartLock()
@@ -128,6 +130,7 @@ public class ServerStarter
                 {
                     stopServer();
                 }
+                shutdownHook.shutdown(restart);
             }
             catch (Exception ex)
             {

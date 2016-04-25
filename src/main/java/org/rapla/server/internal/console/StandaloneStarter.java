@@ -31,7 +31,9 @@ public class StandaloneStarter extends GUIStarter
     public StandaloneStarter(Logger logger, ServerContainerContext backendContext, URL mockDownloadUrl, String startupUser)
     {
         super(logger, startupUser, backendContext.getShutdownCommand());
-        serverStarter  = new ServerStarter(logger, backendContext);
+        serverStarter  = new ServerStarter(logger, backendContext, (restart) -> {
+            // do nothing
+        });
         this.mockDownloadUrl = mockDownloadUrl;
     }
 
