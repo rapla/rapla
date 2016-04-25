@@ -68,6 +68,13 @@ public class MyCustomConnector implements CustomConnector
         {
             return new AuthenticationException(message);
         }
+        if ( exe.getExceptionClass().equals(org.rapla.rest.client.RaplaConnectException.class.getName()))
+        {
+            String server = remoteConnectionInfo.getServerURL();
+            final RaplaResources raplaResources = i18n.get();
+            String errorString = raplaResources.format("error.connect", server) + " ";
+            return new RaplaConnectException(errorString + exe.getMessage());
+        }
         RaplaException ex = new RaplaExceptionDeserializer().deserializeException(exe);
         return ex;
     }
@@ -77,7 +84,7 @@ public class MyCustomConnector implements CustomConnector
         return new Class[] { RaplaMapImpl.class };
     }
 
-    @Override public Exception getConnectError(IOException ex)
+    public Exception getConnectError(IOException ex)
     {
         String server = remoteConnectionInfo.getServerURL();
         final RaplaResources raplaResources = i18n.get();

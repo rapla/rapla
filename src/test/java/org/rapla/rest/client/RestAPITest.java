@@ -4,6 +4,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -11,9 +13,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.ServletTestBase;
+import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.rest.client.swing.HTTPConnector;
 import org.rapla.rest.client.swing.HTTPConnector.HttpCallResult;
+import org.rapla.rest.client.swing.JSONParserWrapper;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -33,6 +37,19 @@ public class RestAPITest  {
         server = ServletTestBase.createServer(servlet, port);
     }
 
+
+    @Test
+    public void testSerialize()
+    {
+        Map<String,String> constants = new HashMap<>();
+        constants.put("1","Hello");
+        RaplaMapImpl map = new RaplaMapImpl(constants);
+        final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(new Class[] { RaplaMapImpl.class });
+        final Gson gson = gsonBuilder.create();
+        final String s = gson.toJson(map);
+        final RaplaMapImpl deserialized = gson.fromJson(s, RaplaMapImpl.class);
+        TestCase.assertEquals( map, deserialized);
+    }
     @After
     public void tearDown() throws Exception
     {

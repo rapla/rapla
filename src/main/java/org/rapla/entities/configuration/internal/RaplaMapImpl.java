@@ -658,4 +658,35 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             next.replace(origId, newId);
         }
     }
+
+    @Override public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RaplaMapImpl raplaMap = (RaplaMapImpl) o;
+
+        if (constants != null ? !constants.equals(raplaMap.constants) : raplaMap.constants != null)
+            return false;
+        if (configurations != null ? !configurations.equals(raplaMap.configurations) : raplaMap.configurations != null)
+            return false;
+        if (maps != null ? !maps.equals(raplaMap.maps) : raplaMap.maps != null)
+            return false;
+        if (calendars != null ? !calendars.equals(raplaMap.calendars) : raplaMap.calendars != null)
+            return false;
+        return links != null ? links.equals(raplaMap.links) : raplaMap.links == null;
+
+    }
+
+    @Override public int hashCode()
+    {
+        int result = constants != null ? constants.hashCode() : 0;
+        result = 31 * result + (configurations != null ? configurations.hashCode() : 0);
+        result = 31 * result + (maps != null ? maps.hashCode() : 0);
+        result = 31 * result + (calendars != null ? calendars.hashCode() : 0);
+        result = 31 * result + (links != null ? links.hashCode() : 0);
+        return result;
+    }
 }
