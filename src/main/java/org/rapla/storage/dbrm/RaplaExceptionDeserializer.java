@@ -39,10 +39,6 @@ public class RaplaExceptionDeserializer implements ExceptionDeserializer {
             {
                 return new RaplaSynchronizationException( message);
             }
-            else if ( classname.equals( RaplaConnectException.class.getName()))
-            {
-                return new RaplaConnectException( message);
-            }
             else if ( classname.equals( EntityNotFoundException.class.getName()))
             {
 //                    if ( param != null)

@@ -2,7 +2,7 @@ package org.rapla.storage.dbrm;
 
 import org.rapla.framework.RaplaException;
 
-public class RaplaConnectException extends RaplaException {
+public class RaplaConnectException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 

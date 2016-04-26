@@ -13,27 +13,6 @@
 
 package org.rapla.storage.dbrm;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.Vector;
-import java.util.concurrent.locks.Lock;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -72,7 +51,6 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
-import org.rapla.rest.client.gwt.MockProxy;
 import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
@@ -91,6 +69,26 @@ import org.rapla.storage.dbrm.RemoteStorage.PasswordPost;
 import org.rapla.storage.dbrm.RemoteStorage.QueryAppointments;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Vector;
+import java.util.concurrent.locks.Lock;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService

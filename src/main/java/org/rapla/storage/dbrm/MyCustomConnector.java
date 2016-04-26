@@ -9,12 +9,10 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.rest.client.AuthenticationException;
 import org.rapla.rest.client.CustomConnector;
 import org.rapla.rest.client.SerializableExceptionInformation;
-import org.rapla.rest.client.gwt.MockProxy;
 import org.rapla.scheduler.CommandScheduler;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import java.io.IOException;
 
 @DefaultImplementation(of=CustomConnector.class,context = InjectionContext.client)
 public class MyCustomConnector implements CustomConnector
@@ -84,6 +82,7 @@ public class MyCustomConnector implements CustomConnector
         return new Class[] { RaplaMapImpl.class };
     }
 
+    /*
     public Exception getConnectError(IOException ex)
     {
         String server = remoteConnectionInfo.getServerURL();
@@ -91,6 +90,7 @@ public class MyCustomConnector implements CustomConnector
         String errorString = raplaResources.format("error.connect", server) + " ";
         return new RaplaConnectException(errorString + ex.getMessage());
     }
+    */
 
     @Override public String getAccessToken()
     {
