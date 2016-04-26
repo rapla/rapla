@@ -1,6 +1,6 @@
 package org.rapla.storage.dbrm;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
@@ -54,7 +54,7 @@ public class RaplaExceptionDeserializer implements ExceptionDeserializer {
             }
             else if ( classname.equals( DependencyException.class.getName()))
             {
-                final ArrayList<String> params = exeInfo.getMessages();
+                final List<String> params = exeInfo.getMessages();
                 if ( params != null)
                 {
                 	return new DependencyException( message,params);

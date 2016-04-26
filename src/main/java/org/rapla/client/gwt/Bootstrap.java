@@ -1,7 +1,11 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.user.client.Window;
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+
 import org.rapla.client.Application;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
@@ -11,11 +15,10 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.Arrays;
-import java.util.Collection;
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.user.client.Window;
 
 public class Bootstrap
 {
@@ -24,18 +27,22 @@ public class Bootstrap
     private final RaplaFacade facade;
     private final StorageOperator operator;
     private final Logger logger;
+    private final RemoteConnectionInfo remoteConnectionInfo;
 
     @Inject
-    public Bootstrap(RaplaFacade facade, StorageOperator operator,  Logger logger)
+    public Bootstrap(RaplaFacade facade, StorageOperator operator,  Logger logger, RemoteConnectionInfo remoteConnectionInfo)
     {
+        this.remoteConnectionInfo = remoteConnectionInfo;
         this.application = null;//FIXME add application;
         this.operator = operator;
         this.facade = facade;
         this.logger = logger;
+        this.remoteConnectionInfo.setServerURL(GWT.getModuleBaseURL() + "../rapla/");
     }
 
-    public void load()
+    public void load(String accessToken)
     {
+        remoteConnectionInfo.setAccessToken(accessToken);
         final FacadeImpl facadeImpl = (FacadeImpl) facade;
         ((FacadeImpl) facade).setOperator(operator);
         Promise<Void> load = facadeImpl.load();
@@ -60,7 +67,7 @@ public class Bootstrap
                 logger.error(e.getMessage(), e);
                 if (e instanceof RaplaSecurityException)
                 {
-                    Window.Location.replace("../rest/auth");
+                    Window.Location.replace("../rapla/auth");
                 }
 
             }
@@ -69,7 +76,7 @@ public class Bootstrap
             logger.error(e.getMessage(), e);
             if (e instanceof RaplaSecurityException)
             {
-                Window.Location.replace("../rest/auth");
+                Window.Location.replace("../rapla/auth");
             }
             return null;
         });

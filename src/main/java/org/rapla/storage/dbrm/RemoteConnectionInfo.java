@@ -4,7 +4,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.rapla.ConnectInfo;
-import org.rapla.rest.client.gwt.MockProxy;
 
 @Singleton
 public class RemoteConnectionInfo
@@ -13,7 +12,6 @@ public class RemoteConnectionInfo
     String serverURL;
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
-    static MockProxy mockProxy;
 
     @Inject
     public RemoteConnectionInfo()
@@ -42,16 +40,6 @@ public class RemoteConnectionInfo
 
     public String getAccessToken() {
         return accessToken;
-    }
-
-    public static void setMockProxy(MockProxy mockProxy)
-    {
-        RemoteConnectionInfo.mockProxy = mockProxy;
-    }
-
-    public MockProxy getMockProxy()
-    {
-        return mockProxy;
     }
 
     public String getServerURL() {

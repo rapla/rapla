@@ -15,6 +15,7 @@ package org.rapla.client.internal;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
+import java.net.URL;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
@@ -46,6 +47,7 @@ import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.DefaultScheduler;
@@ -55,14 +57,15 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 /** Implementation of the UserClientService.
 */
 @Singleton
-@DefaultImplementation(of=ClientService.class,context = InjectionContext.swing,export = true)
-public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener,Disposable,UserClientService
+@DefaultImplementation(of = ClientService.class, context = InjectionContext.swing, export = true)
+public class RaplaClientServiceImpl implements ClientService, UpdateErrorListener, Disposable, UserClientService
 {
-    
+
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
     RaplaResources i18n;
     boolean started;
@@ -70,7 +73,7 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     boolean defaultLanguageChosen;
     boolean logoutAvailable;
     ConnectInfo reconnectInfo;
-	final Logger logger;
+    final Logger logger;
     final StartupEnvironment env;
     final DialogUiFactoryInterface dialogUiFactory;
     final ClientFacade facade;
@@ -83,9 +86,10 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
     final private Provider<Application> application;
 
     @Inject
-	public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
+    public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
             RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
-            RaplaImages raplaImages, Provider<Application> application) {
+            RaplaImages raplaImages, Provider<Application> application, RemoteConnectionInfo connectionInfo)
+    {
         this.env = env;
         this.i18n = i18n;
         this.logger = logger;
@@ -95,128 +99,150 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
         this.application = application;
-        ((FacadeImpl)this.facade).setOperator( storageOperator);
+        ((FacadeImpl) this.facade).setOperator(storageOperator);
         this.raplaImages = raplaImages;
+        try
+        {
+            URL downloadURL = env.getDownloadURL();
+            connectionInfo.setServerURL(downloadURL.toExternalForm() + "rapla/");
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e.getMessage(), e);
+        }
         initialize();
     }
-
 
     public Logger getLogger()
     {
         return logger;
     }
 
-
-    protected void initialize() {
+    protected void initialize()
+    {
         advanceLoading(false);
-    	int startupMode = env.getStartupMode();
+        int startupMode = env.getStartupMode();
         final Logger logger = getLogger();
- 		if ( startupMode != StartupEnvironment.APPLET && startupMode != StartupEnvironment.WEBSTART)
-         {
- 			try
- 			{
- 	        	Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
- 	        		public void uncaughtException(Thread t, Throwable e) {
- 	        			logger.error("uncaught exception", e);
- 	        		}
- 	        	});
- 			}
- 			catch (Throwable ex)
- 			{
- 				logger.error("Can't set default exception handler-", ex);
- 			}
-         }
- 		
-    	ApplicationViewSwing.setLookandFeel();
-    	defaultLanguageChosen = true;
-    	getLogger().info("Starting gui ");
-		
+        if (startupMode != StartupEnvironment.APPLET && startupMode != StartupEnvironment.WEBSTART)
+        {
+            try
+            {
+                Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+                {
+                    public void uncaughtException(Thread t, Throwable e)
+                    {
+                        logger.error("uncaught exception", e);
+                    }
+                });
+            }
+            catch (Throwable ex)
+            {
+                logger.error("Can't set default exception handler-", ex);
+            }
+        }
+
+        ApplicationViewSwing.setLookandFeel();
+        defaultLanguageChosen = true;
+        getLogger().info("Starting gui ");
+
         //Add this service to the container
 
     }
 
-	public ClientFacade getClientFacade()  {
-        return  facade;
+    public ClientFacade getClientFacade()
+    {
+        return facade;
     }
 
-    public void start(ConnectInfo connectInfo) throws Exception {
+    public void start(ConnectInfo connectInfo) throws Exception
+    {
         if (started)
             return;
-        try {
-        	getLogger().debug("RaplaClient started");
+        try
+        {
+            getLogger().debug("RaplaClient started");
             ClientFacade facade = getClientFacade();
             facade.addUpdateErrorListener(this);
             // TODO Promise wait cursor
-//            StorageOperator operator = facade.getRaplaFacade().getOperator();
-//            if ( operator instanceof RemoteOperator)
-//            {
-//                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
-//                remoteConnection.setStatusUpdater( new StatusUpdater()
-//    	    		{
-//    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
-//    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
-//
-//    	            	public void setStatus(Status status) {
-//    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
-//    	    				frameControllerList.setCursor( cursor);
-//    	            	}
-//
-//    	    		}
-//    	    		);
-//            }
+            //            StorageOperator operator = facade.getRaplaFacade().getOperator();
+            //            if ( operator instanceof RemoteOperator)
+            //            {
+            //                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
+            //                remoteConnection.setStatusUpdater( new StatusUpdater()
+            //    	    		{
+            //    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
+            //    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
+            //
+            //    	            	public void setStatus(Status status) {
+            //    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
+            //    	    				frameControllerList.setCursor( cursor);
+            //    	            	}
+            //
+            //    	    		}
+            //    	    		);
+            //            }
             advanceLoading(true);
 
             logoutAvailable = true;
-            if ( connectInfo != null && connectInfo.getUsername() != null)
+            if (connectInfo != null && connectInfo.getUsername() != null)
             {
-                if (login( connectInfo))
+                if (login(connectInfo))
                 {
                     beginRaplaSession();
                     return;
                 }
             }
             startLogin();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             throw ex;
-        } finally {
+        }
+        finally
+        {
         }
     }
 
-	protected void advanceLoading(boolean finish) {
-		try
-		{
-	    	Class<?> LoadingProgressC= null;
-			Object progressBar = null;
-	        if ( env.getStartupMode() == StartupEnvironment.CONSOLE)
-			{
-				LoadingProgressC = getClass().getClassLoader().loadClass("org.rapla.bootstrap.LoadingProgress");
-				progressBar = LoadingProgressC.getMethod("inject").invoke(null);
-				if ( finish)
-				{
-					LoadingProgressC.getMethod("close").invoke( progressBar);
-				}
-				else
-				{
-					LoadingProgressC.getMethod("advance").invoke( progressBar);
-				}
-			}
-		} 
-		catch (Exception ex)
-		{
-			// Loading progress failure is not crucial to rapla excecution
-		}
-	}
-	
+    protected void advanceLoading(boolean finish)
+    {
+        try
+        {
+            Class<?> LoadingProgressC = null;
+            Object progressBar = null;
+            if (env.getStartupMode() == StartupEnvironment.CONSOLE)
+            {
+                LoadingProgressC = getClass().getClassLoader().loadClass("org.rapla.bootstrap.LoadingProgress");
+                progressBar = LoadingProgressC.getMethod("inject").invoke(null);
+                if (finish)
+                {
+                    LoadingProgressC.getMethod("close").invoke(progressBar);
+                }
+                else
+                {
+                    LoadingProgressC.getMethod("advance").invoke(progressBar);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Loading progress failure is not crucial to rapla excecution
+        }
+    }
 
     /**
      * @throws RaplaException
      *
      */
-    private void beginRaplaSession() throws Exception {
-        application.get().start(defaultLanguageChosen, () -> {
-            if ( !isRestartingGUI()) {
+    private void beginRaplaSession() throws Exception
+    {
+        application.get().start(defaultLanguageChosen, () ->
+        {
+            if (!isRestartingGUI())
+            {
                 stop();
-            } else {
+            }
+            else
+            {
                 restartingGUI = false;
             }
         });
@@ -239,143 +265,159 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
         return pluginNames;
     }
     */
-    
 
-
-    public boolean isRestartingGUI() 
+    public boolean isRestartingGUI()
     {
         return restartingGUI;
     }
 
-    public void addRaplaClientListener(RaplaClientListener listener) {
+    public void addRaplaClientListener(RaplaClientListener listener)
+    {
         listenerList.add(listener);
     }
 
-    public void removeRaplaClientListener(RaplaClientListener listener) {
+    public void removeRaplaClientListener(RaplaClientListener listener)
+    {
         listenerList.remove(listener);
     }
 
-    public RaplaClientListener[] getRaplaClientListeners() {
-        return listenerList.toArray(new RaplaClientListener[]{});
+    public RaplaClientListener[] getRaplaClientListeners()
+    {
+        return listenerList.toArray(new RaplaClientListener[] {});
     }
 
-    protected void fireClientClosed(ConnectInfo reconnect) {
+    protected void fireClientClosed(ConnectInfo reconnect)
+    {
         RaplaClientListener[] listeners = getRaplaClientListeners();
-        for (int i=0;i<listeners.length;i++)
+        for (int i = 0; i < listeners.length; i++)
             listeners[i].clientClosed(reconnect);
     }
 
-    protected void fireClientStarted() {
+    protected void fireClientStarted()
+    {
         RaplaClientListener[] listeners = getRaplaClientListeners();
-        for (int i=0;i<listeners.length;i++)
+        for (int i = 0; i < listeners.length; i++)
             listeners[i].clientStarted();
     }
-    
-    protected void fireClientAborted() {
+
+    protected void fireClientAborted()
+    {
         RaplaClientListener[] listeners = getRaplaClientListeners();
-        for (int i=0;i<listeners.length;i++)
+        for (int i = 0; i < listeners.length; i++)
             listeners[i].clientAborted();
     }
 
-    public boolean isRunning() {
+    public boolean isRunning()
+    {
         return started;
     }
 
-    public void switchTo(User user) throws RaplaException 
+    public void switchTo(User user) throws RaplaException
     {
         ClientFacade facade = getClientFacade();
-        if ( user == null)
+        if (user == null)
         {
-            if ( reconnectInfo == null || reconnectInfo.getConnectAs() == null)
+            if (reconnectInfo == null || reconnectInfo.getConnectAs() == null)
             {
-                throw new RaplaException( "Can't switch back because there were no previous logins.");
+                throw new RaplaException("Can't switch back because there were no previous logins.");
             }
             final String oldUser = facade.getUser().getUsername();
             String newUser = reconnectInfo.getUsername();
             char[] password = reconnectInfo.getPassword();
-            getLogger().info("Login From:" + oldUser  + " To:" + newUser); 
-            ConnectInfo reconnectInfo = new ConnectInfo( newUser, password);
-            stop( reconnectInfo);
+            getLogger().info("Login From:" + oldUser + " To:" + newUser);
+            ConnectInfo reconnectInfo = new ConnectInfo(newUser, password);
+            stop(reconnectInfo);
         }
         else
         {
-            if  ( reconnectInfo == null)
+            if (reconnectInfo == null)
             {
-                throw new RaplaException( "Can't switch to user, because admin login information not provided due missing login.");
-                          
+                throw new RaplaException("Can't switch to user, because admin login information not provided due missing login.");
+
             }
-            if ( reconnectInfo.getConnectAs() != null)
+            if (reconnectInfo.getConnectAs() != null)
             {
-                throw new RaplaException( "Can't switch to user, because already switched.");
+                throw new RaplaException("Can't switch to user, because already switched.");
             }
             final String oldUser = reconnectInfo.getUsername();
             final String newUser = user.getUsername();
-            getLogger().info("Login From:" + oldUser  + " To:" + newUser); 
-            ConnectInfo newInfo = new ConnectInfo( oldUser, reconnectInfo.getPassword(), newUser);
-            stop( newInfo);
+            getLogger().info("Login From:" + oldUser + " To:" + newUser);
+            ConnectInfo newInfo = new ConnectInfo(oldUser, reconnectInfo.getPassword(), newUser);
+            stop(newInfo);
         }
         // fireUpdateEvent(new ModificationEvent());
     }
 
-    public boolean canSwitchBack() {
+    public boolean canSwitchBack()
+    {
         return reconnectInfo != null && reconnectInfo.getConnectAs() != null;
     }
-    
-    private void stop() {
-        stop( null );
+
+    private void stop()
+    {
+        stop(null);
     }
 
-    private void stop(ConnectInfo reconnect) {
+    private void stop(ConnectInfo reconnect)
+    {
         if (!started)
             return;
 
-
-        RaplaGUIComponent.setMainComponent( null );
-        try {
+        RaplaGUIComponent.setMainComponent(null);
+        try
+        {
             ClientFacade facade = getClientFacade();
-            facade.removeUpdateErrorListener( this);
-            if ( facade.isSessionActive())
+            facade.removeUpdateErrorListener(this);
+            if (facade.isSessionActive())
             {
                 facade.logout();
             }
-        } catch (RaplaException ex) {
+        }
+        catch (RaplaException ex)
+        {
             getLogger().error("Clean logout failed. " + ex.getMessage());
         }
         started = false;
         fireClientClosed(reconnect);
     }
 
-    public void dispose() {
-        ((DefaultScheduler)commandScheduler).dispose();
+    public void dispose()
+    {
+        ((DefaultScheduler) commandScheduler).dispose();
         stop();
         getLogger().debug("RaplaClient disposed");
     }
 
-
-    private void startLogin()  throws Exception {
-    	Command comnmand = new Command()
-    	{
-			public void execute() throws Exception {
+    private void startLogin() throws Exception
+    {
+        Command comnmand = new Command()
+        {
+            public void execute() throws Exception
+            {
                 startLoginInThread();
-			}
-    	};
-		commandScheduler.schedule(comnmand, 0);
+            }
+        };
+        commandScheduler.schedule(comnmand, 0);
     }
 
-    private void startLoginInThread()  {
+    private void startLoginInThread()
+    {
         final Semaphore loginMutex = new Semaphore(1);
-        try {
-			final Logger logger = getLogger();
-			final LanguageChooser languageChooser = new LanguageChooser(logger,i18n,raplaLocale);
-            final DefaultBundleManager localeSelector = (DefaultBundleManager)bundleManager;
+        try
+        {
+            final Logger logger = getLogger();
+            final LanguageChooser languageChooser = new LanguageChooser(logger, i18n, raplaLocale);
+            final DefaultBundleManager localeSelector = (DefaultBundleManager) bundleManager;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent());
-            
+
             Action languageChanged = new AbstractAction()
             {
                 private static final long serialVersionUID = 1L;
 
-                public void actionPerformed(ActionEvent evt) {
-                    try {
+                public void actionPerformed(ActionEvent evt)
+                {
+                    try
+                    {
                         String lang = languageChooser.getSelectedLanguage();
                         if (lang == null)
                         {
@@ -386,146 +428,169 @@ public class RaplaClientServiceImpl implements ClientService,UpdateErrorListener
                             defaultLanguageChosen = false;
                             getLogger().debug("Language changing to " + lang);
                             localeSelector.setLanguage(lang);
-                            getLogger().info("Language changed " + localeSelector.getLocale().getLanguage() );
+                            getLogger().info("Language changed " + localeSelector.getLocale().getLanguage());
                         }
-                    } catch (Exception ex) {
-                        getLogger().error("Can't change language",ex);
+                    }
+                    catch (Exception ex)
+                    {
+                        getLogger().error("Can't change language", ex);
                     }
                 }
-                
+
             };
-            languageChooser.setChangeAction( languageChanged);
+            languageChooser.setChangeAction(languageChanged);
             //dlg.setIcon( i18n.getIcon("icon.rapla-small"));
-            Action loginAction = new AbstractAction() {
+            Action loginAction = new AbstractAction()
+            {
                 private static final long serialVersionUID = 1L;
 
-                public void actionPerformed(ActionEvent evt) {
+                public void actionPerformed(ActionEvent evt)
+                {
                     String username = dlg.getUsername();
                     char[] password = dlg.getPassword();
                     boolean success = false;
-                    try {
+                    try
+                    {
                         String connectAs = null;
                         reconnectInfo = new ConnectInfo(username, password, connectAs);
                         success = login(reconnectInfo);
-                        if ( !success )
+                        if (!success)
                         {
                             dlg.resetPassword();
                             dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
                         }
-                    } 
-                    catch (RaplaException ex) 
+                    }
+                    catch (RaplaException ex)
                     {
                         dlg.resetPassword();
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
                     }
-                    if ( success) {
+                    if (success)
+                    {
                         dlg.dispose();
                         loginMutex.release();
-                        try {
+                        try
+                        {
                             beginRaplaSession();
-                        } catch (Throwable ex) {
+                        }
+                        catch (Throwable ex)
+                        {
                             dialogUiFactory.showException(ex, null);
                             fireClientAborted();
                         }
                     } // end of else
                 }
-                
+
             };
-            Action exitAction = new AbstractAction() {
+            Action exitAction = new AbstractAction()
+            {
                 private static final long serialVersionUID = 1L;
-                public void actionPerformed(ActionEvent evt) {
+
+                public void actionPerformed(ActionEvent evt)
+                {
                     dlg.dispose();
                     loginMutex.release();
                     stop();
                     fireClientAborted();
                 }
             };
-            loginAction.putValue(Action.NAME,i18n.getString("login"));
+            loginAction.putValue(Action.NAME, i18n.getString("login"));
             exitAction.putValue(Action.NAME, i18n.getString("exit"));
             dlg.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
-            dlg.setLoginAction( loginAction);
-            dlg.setExitAction( exitAction );
+            dlg.setLoginAction(loginAction);
+            dlg.setExitAction(exitAction);
             //dlg.setSize( 480, 270);
-            FrameControllerList.centerWindowOnScreen( dlg) ;
-            dlg.setVisible( true );
+            FrameControllerList.centerWindowOnScreen(dlg);
+            dlg.setVisible(true);
 
             loginMutex.acquire();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             getLogger().error("Error during Login ", ex);
             stop();
             fireClientAborted();
-        } finally {
+        }
+        finally
+        {
             loginMutex.release();
         }
     }
 
-    public void updateError(RaplaException ex) {
+    public void updateError(RaplaException ex)
+    {
         getLogger().error("Error updating data", ex);
     }
 
-    public void disconnected(final String message) {
-        if ( started )
+    public void disconnected(final String message)
+    {
+        if (started)
         {
-        	SwingUtilities.invokeLater(new Runnable() {
-				
-				public void run() {
-					boolean modal = true;
-					String title = i18n.getString("restart_client");
-					try {
-					    Component owner = null;
-					    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), modal, title, message);
-						Runnable action = new Runnable() {
-							private static final long serialVersionUID = 1L;
+            SwingUtilities.invokeLater(new Runnable()
+            {
 
-							public void run() {
-								getLogger().warn("restart");
-								restart();
-							}
-						};
-						dialog.setAbortAction(action);
-						dialog.getAction(0).setRunnable( action);
-						dialog.start(true);
-					} catch (Throwable e) {
-						getLogger().error(e.getMessage(), e);
-					}
-			
-				}
-			});
+                public void run()
+                {
+                    boolean modal = true;
+                    String title = i18n.getString("restart_client");
+                    try
+                    {
+                        Component owner = null;
+                        DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), modal, title, message);
+                        Runnable action = new Runnable()
+                        {
+                            private static final long serialVersionUID = 1L;
+
+                            public void run()
+                            {
+                                getLogger().warn("restart");
+                                restart();
+                            }
+                        };
+                        dialog.setAbortAction(action);
+                        dialog.getAction(0).setRunnable(action);
+                        dialog.start(true);
+                    }
+                    catch (Throwable e)
+                    {
+                        getLogger().error(e.getMessage(), e);
+                    }
+
+                }
+            });
         }
     }
 
-
-
-
-    public void restart()  
+    public void restart()
     {
-        if ( reconnectInfo != null)
+        if (reconnectInfo != null)
         {
-            stop(reconnectInfo);    
+            stop(reconnectInfo);
         }
     }
-    
-    public void logout()  
+
+    public void logout()
     {
-        stop(new ConnectInfo(null, "".toCharArray()));    
+        stop(new ConnectInfo(null, "".toCharArray()));
     }
 
-    private boolean login(ConnectInfo connect) throws RaplaException 
+    private boolean login(ConnectInfo connect) throws RaplaException
     {
         ClientFacade facade = getClientFacade();
-        if (facade.login(connect)) {
+        if (facade.login(connect))
+        {
             this.reconnectInfo = connect;
             return true;
-        } else {
+        }
+        else
+        {
             return false;
         }
     }
-    
-	public boolean isLogoutAvailable() 
+
+    public boolean isLogoutAvailable()
     {
-  		return logoutAvailable;
-  	}
-
-
+        return logoutAvailable;
+    }
 
 }

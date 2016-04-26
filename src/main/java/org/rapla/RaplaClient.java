@@ -23,8 +23,6 @@ import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
 import org.rapla.inject.InjectionContext;
-import org.rapla.rest.client.EntryPointFactory;
-import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 /**
@@ -89,14 +87,7 @@ public class RaplaClient extends ContainerImpl
     {
         super(env.getBootstrapLogger());
         final URL downloadURL = env.getDownloadURL();
-        BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
-        {
-            @Override public String getEntryPoint(String interfaceName, String relativePath)
-            {
-                String url = downloadURL.toExternalForm()  + "rapla/json/" +((relativePath != null) ? relativePath: interfaceName);
-                return url;
-            }
-        });
+        remoteConnectionInfo.setServerURL(downloadURL.toExternalForm()  + "rapla/json/");
         addContainerProvidedComponentInstance(StartupEnvironment.class, env);
         loadFromServiceList();
 

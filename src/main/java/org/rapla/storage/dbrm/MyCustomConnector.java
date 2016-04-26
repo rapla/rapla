@@ -97,8 +97,9 @@ public class MyCustomConnector implements CustomConnector
         return remoteConnectionInfo.getAccessToken();
     }
 
-    @Override public MockProxy getMockProxy()
+    @Override
+    public String getFullQualifiedUrl(String relativePath)
     {
-        return remoteConnectionInfo.getMockProxy();
+        return remoteConnectionInfo.getServerURL() + "/" + relativePath;
     }
 }

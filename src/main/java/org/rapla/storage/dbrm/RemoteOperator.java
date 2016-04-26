@@ -419,8 +419,8 @@ import org.rapla.storage.impl.EntityStore;
     /** returns if the Facade is connected through a server (false if it has a local store)*/
     synchronized public boolean isRestartPossible()
     {
-        final MockProxy mockProxy = connectionInfo.getMockProxy();
-        return mockProxy == null;
+        final boolean isStandalone = connectionInfo.getServerURL().startsWith("file://");
+        return !isStandalone;
     }
 
     synchronized public void restartServer() throws RaplaException

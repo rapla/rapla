@@ -8,7 +8,6 @@ import javax.inject.Inject;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.rest.client.gwt.AbstractJsonProxy;
 import org.rapla.storage.dbrm.LoginTokens;
 
 import com.google.gwt.core.client.GWT;
@@ -54,17 +53,16 @@ public class RaplaGwtStarter implements GwtStarter
 
     public void startApplication()
     {
-        LoginTokens token = getValidToken();
+        final LoginTokens token = getValidToken();
         if (token != null)
         {
             RaplaPopups.getProgressBar().setPercent(20);
-            AbstractJsonProxy.setAuthThoken(token.getAccessToken());
             Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
             {
                 @Override
                 public boolean execute()
                 {
-                    bootstrapProvider.load();
+                    bootstrapProvider.load(token.getAccessToken());
                     return false;
                 }
             }, 100);
@@ -73,7 +71,7 @@ public class RaplaGwtStarter implements GwtStarter
         {
             final String historyToken = History.getToken();
             final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=rapla.html#" + historyToken : "";
-            Window.Location.replace(GWT.getModuleBaseURL() + "../rapla?page=auth" + appendig);
+            Window.Location.replace(GWT.getModuleBaseURL() + "../rapla/auth" + appendig);
         }
     }
 

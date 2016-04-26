@@ -11,12 +11,10 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.client.gwt.MockProxy;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 public class StandaloneStarter extends GUIStarter
 {
@@ -38,18 +36,10 @@ public class StandaloneStarter extends GUIStarter
     }
 
     ServerServiceContainer server;
-    public void startStandalone( ) throws Exception 
+    public void startStandalone() throws Exception 
     {
         server = serverStarter.startServer();
         ConnectInfo connectInfo = getStartupConnectInfo();
-        RemoteConnectionInfo.setMockProxy(new MockProxy()
-        {
-            @Override public <T> T create(Class<T> tClass, String accessToken)
-            {
-                return server.getMockService(tClass, accessToken);
-            }
-
-        });
         RaplaStartupEnvironment env = new RaplaStartupEnvironment();
         env.setStartupMode( StartupEnvironment.CONSOLE);
         env.setBootstrapLogger( logger);
@@ -111,5 +101,4 @@ public class StandaloneStarter extends GUIStarter
         super.exit();
        
     }
-
 }

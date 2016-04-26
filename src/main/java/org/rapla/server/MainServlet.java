@@ -215,7 +215,6 @@ public class MainServlet extends HttpServlet
                 return config.getInitParameterNames();
             }
         });
-        
         super.init(config);
     }
     
@@ -251,8 +250,8 @@ public class MainServlet extends HttpServlet
             {
                 String realPath = context.getRealPath("/WEB-INF");
                 URL downloadUrl = new File(realPath).toURI().toURL();
-                StandaloneStarter guiStarter = new StandaloneStarter(logger, backendContext, downloadUrl, startupUser);
-                guiStarter.startStandalone();
+                StandaloneStarter standaloneStarter = new StandaloneStarter(logger, backendContext, downloadUrl, startupUser);
+                standaloneStarter.startStandalone();
             }
             else if (startupMode.equals("client"))
             {
@@ -543,7 +542,7 @@ public class MainServlet extends HttpServlet
                 return null;
             }
         }
-
     }
+    
 }
 
