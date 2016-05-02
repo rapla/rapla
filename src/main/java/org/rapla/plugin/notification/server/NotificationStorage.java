@@ -18,17 +18,15 @@ import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.notification.server.NotificationService.AllocationMail;
-import org.rapla.rest.client.swing.JSONParserWrapper;
+import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
-
-import com.google.gson.Gson;
 
 @Singleton
 public class NotificationStorage
 {
     private final CachableStorageOperator operator;
     private final RaplaFacade facade;
-    private final Gson gson = JSONParserWrapper.defaultGsonBuilder(new Class[] { AllocationMail.class, NotificationContext.class }).create();
+    private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
     private final Map<String, ImportExportEntity> exportMails = new LinkedHashMap<>();
     private final Map<AllocationMail, String> mailToRaplaId = new LinkedHashMap<>();
 

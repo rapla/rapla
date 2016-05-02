@@ -28,7 +28,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
 
@@ -154,7 +154,7 @@ public class RaplaJNLPPageGenerator
         try
         {
             final Preferences systemPreferences = facade.getSystemPreferences();
-            menuName = systemPreferences.getEntryAsString(ContainerImpl.TITLE, defaultTitle);
+            menuName = systemPreferences.getEntryAsString(RaplaLocaleImpl.TITLE, defaultTitle);
             createShortcut = systemPreferences.getEntryAsBoolean(CREATE_SHORTCUT, true);
             vmXmsSize = systemPreferences.getEntryAsInteger(CLIENT_VM_MIN_SIZE, -1);
         }

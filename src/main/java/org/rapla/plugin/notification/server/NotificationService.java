@@ -44,7 +44,7 @@ import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.mail.server.MailToUserImpl;
@@ -269,7 +269,7 @@ public class NotificationService
             buf.append( eventBlock );
             buf.append("\n\n");
         }
-        String raplaTitle = raplaFacade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, raplaI18n.getString("rapla.title"));
+        String raplaTitle = raplaFacade.getSystemPreferences().getEntryAsString(RaplaLocaleImpl.TITLE, raplaI18n.getString("rapla.title"));
 		buf.append(notificationI18n.format("disclaimer_1", raplaTitle));
         StringBuffer allocatableNames = new StringBuffer();
         for (Allocatable alloc: changedAllocatables) {

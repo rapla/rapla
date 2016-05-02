@@ -27,10 +27,10 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.rest.client.swing.JSONParserWrapper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.rapla.rest.JsonParserWrapper;
 
 public class EntityHistory
 {
@@ -87,13 +87,11 @@ public class EntityHistory
     }
 
     private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<ReferenceInfo, List<EntityHistory.HistoryEntry>>();
-    private final Gson gson;
+    private final JsonParserWrapper.JsonParser gson;
 
     public EntityHistory()
     {
-        Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
-        final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
-        gson = gsonBuilder.create();
+        gson = JsonParserWrapper.defaultJson().get();
     }
 
     public HistoryEntry getLatest(ReferenceInfo id) throws RaplaException

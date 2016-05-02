@@ -12,7 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.rest.server.RestApplication;
+import org.rapla.server.internal.rest.RestApplication;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;

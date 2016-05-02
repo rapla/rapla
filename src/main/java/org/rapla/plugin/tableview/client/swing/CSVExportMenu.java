@@ -39,7 +39,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
@@ -155,7 +155,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             byte[] bytes = buf.toString().getBytes();
 
             DateFormat sdfyyyyMMdd = new SimpleDateFormat("yyyyMMdd");
-            final String calendarName = getQuery().getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, getString("rapla.title"));
+            final String calendarName = getQuery().getSystemPreferences().getEntryAsString(RaplaLocaleImpl.TITLE, getString("rapla.title"));
             String filename = calendarName + "-" + sdfyyyyMMdd.format(model.getStartDate()) + "-" + sdfyyyyMMdd.format(model.getEndDate()) + ".csv";
             if (saveFile(bytes, filename, "csv"))
             {

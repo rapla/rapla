@@ -12,15 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.test.util;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Provider;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.domain.permission.PermissionExtension;
@@ -36,9 +27,6 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.rest.client.CustomConnector;
-import org.rapla.rest.client.EntryPointFactory;
-import org.rapla.rest.client.swing.BasicRaplaHTTPConnector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
@@ -57,6 +45,14 @@ import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.xml.sax.InputSource;
+
+import javax.inject.Provider;
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class RaplaTestCase
 {
@@ -209,16 +205,8 @@ public abstract class RaplaTestCase
 
     public static Provider<ClientFacade> createFacadeWithRemote(final Logger logger, int port) throws RaplaException
     {
-        final String serverURL = "http://localhost:" + port + "/";
+        final String serverURL = "http://localhost:" + port + "/rapla";
 
-        BasicRaplaHTTPConnector.setServiceEntryPointFactory(new EntryPointFactory()
-        {
-            @Override public String getEntryPoint(String interfaceName, String relativePath)
-            {
-                String url = serverURL + "rest/" + ((relativePath != null) ? relativePath : interfaceName);
-                return url;
-            }
-        });
 
         final DefaultBundleManager bundleManager = new DefaultBundleManager();
         final RaplaResources i18n = new RaplaResources(bundleManager);
@@ -241,7 +229,7 @@ public abstract class RaplaTestCase
                 connectionInfo.setServerURL(serverURL);
                 //final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
                 connectionInfo.setReconnectInfo(null);
-                CustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler);
+                MyCustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler);
                 RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
                 RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,

@@ -29,7 +29,7 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
@@ -174,7 +174,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         //            addContainerProvidedComponent(DateRenderer.class, RaplaDateRenderer.class);
         //        }
         boolean showToolTips = raplaFacade.getPreferences( clientFacade.getUser() ).getEntryAsBoolean( RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
-        String title = raplaFacade.getSystemPreferences().getEntryAsString(ContainerImpl.TITLE, i18n.getString("rapla.title"));
+        String title = raplaFacade.getSystemPreferences().getEntryAsString(RaplaLocaleImpl.TITLE, i18n.getString("rapla.title"));
         mainView.init( showToolTips, title);
 
         try

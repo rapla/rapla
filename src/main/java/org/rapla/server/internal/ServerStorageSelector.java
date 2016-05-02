@@ -23,8 +23,6 @@ import org.rapla.storage.impl.server.ImportExportManagerImpl;
 
 
 @Singleton
-//@DefaultImplementation(of = StorageOperator.class,context = InjectionContext.server)
-//@DefaultImplementation(of = CachableStorageOperator.class,context = InjectionContext.server)
 public class ServerStorageSelector implements Provider<CachableStorageOperator>
 {
     final ServerContainerContext containerContext;

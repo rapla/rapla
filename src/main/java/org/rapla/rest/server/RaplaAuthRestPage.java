@@ -20,7 +20,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.ContainerImpl;
+import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.TokenHandler;
@@ -144,7 +144,7 @@ public class RaplaAuthRestPage
         try
         {
             final Preferences systemPreferences = facade.getSystemPreferences();
-            title = systemPreferences.getEntryAsString(ContainerImpl.TITLE, defaultTitle);
+            title = systemPreferences.getEntryAsString(RaplaLocaleImpl.TITLE, defaultTitle);
         }
         catch (RaplaException e)
         {

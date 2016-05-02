@@ -111,7 +111,7 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
-import org.rapla.rest.client.swing.JSONParserWrapper;
+import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
@@ -3016,9 +3016,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         if (reservations.size() != 0)
         {
-            Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
-            final GsonBuilder gsonBuilder = JSONParserWrapper.defaultGsonBuilder(additionalClasses);
-            Gson gson = gsonBuilder.create();
+            JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
             getLogger().error("The following events will be removed because they have no resources or appointments: \n" + gson.toJson(reservations));
         }
         return reservationRefs;

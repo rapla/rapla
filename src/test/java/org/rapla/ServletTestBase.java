@@ -24,9 +24,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
-import org.rapla.rest.server.RestApplication;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.rest.RestApplication;
 import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 
 import dagger.MembersInjector;

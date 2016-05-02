@@ -1,20 +1,17 @@
 package org.rapla.rest.client;
 
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.rapla.rest.client.swing.HTTPConnector.HttpCallResult;
-import org.rapla.rest.client.swing.HTTPJsonConnector;
-
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import org.rapla.jsonrpc.client.swing.HTTPJsonConnector;
+import org.rapla.rest.client.swing.HTTPJsonConnector;
+
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class RestAPIExample {
 
@@ -25,7 +22,7 @@ public class RestAPIExample {
             throw new IllegalStateException("Assertion failed");
         }
     }
-    
+
     protected void assertEquals( Object o1, Object o2)
     {
         if ( !o1.equals( o2))
@@ -33,11 +30,11 @@ public class RestAPIExample {
             throw new IllegalStateException("Assertion failed. Expected " + o1 + " but was " + o2);
         }
     }
-    
+
     public void testRestApi(URL baseUrl, String username,String password) throws Exception
     {
         HTTPJsonConnector connector = new HTTPJsonConnector();
-        
+
         // first we login using the auth method
         String authenticationToken = null;
         {
@@ -46,25 +43,23 @@ public class RestAPIExample {
             callObj.addProperty("username", username);
             callObj.addProperty("password", password);
             String emptyAuthenticationToken = null;
-            Map<String, String> additionalHeaders = new HashMap<>();
-            HttpCallResult resultBody = connector.sendPost(methodURL, callObj, emptyAuthenticationToken, additionalHeaders);
+            JsonObject resultBody = connector.sendPost(methodURL, callObj, emptyAuthenticationToken);
             assertNoError(resultBody);
-            JsonObject resultObject = resultBody.parseJson().getAsJsonObject();
+            JsonObject resultObject = resultBody.get("result").getAsJsonObject();
             authenticationToken = resultObject.get("accessToken").getAsString();
             String validity = resultObject.get("validUntil").getAsString();
             System.out.println("token valid until " + validity);
         }
-        //  we get all the different resource,person and event types 
+        //  we get all the different resource,person and event types
         String resourceType = null;
         @SuppressWarnings("unused")
         String personType =null;
         String eventType =null;
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=resource");
-            Map<String, String> additionalHeaders = new HashMap<>();
-            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
+            JsonArray resultList = resultBody.get("result").getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -74,10 +69,9 @@ public class RestAPIExample {
         }
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=person");
-            Map<String, String> additionalHeaders = new HashMap<>();
-            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
+            JsonArray resultList = resultBody.get("result").getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -87,10 +81,9 @@ public class RestAPIExample {
         }
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=reservation");
-            Map<String, String> additionalHeaders = new HashMap<>();
-            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
+            JsonArray resultList = resultBody.get("result").getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -114,17 +107,15 @@ public class RestAPIExample {
             eventObject.add("classification", classificationObj);
             {
                 URL methodURL =new URL(baseUrl,"resources");
-                Map<String, String> additionalHeaders = new HashMap<>();
-                HttpCallResult resultBody = connector.sendPost( methodURL, eventObject, authenticationToken, additionalHeaders);
+                JsonObject resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
                 // we test if the new resource has the name and extract the id for later testing
                 printAttributesAndAssertName(resultBody,  objectName);
-                resourceId = resultBody.parseJson().getAsJsonObject().get("id").getAsString();
+                resourceId = resultBody.get("result").getAsJsonObject().get("id").getAsString();
             }
             // now we test again if the new resource is created  by using the get method
             {
                 URL methodURL =new URL(baseUrl,"resources/"+resourceId);
-                Map<String, String> additionalHeaders = new HashMap<>();
-                HttpCallResult resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
+                JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
@@ -133,10 +124,9 @@ public class RestAPIExample {
             String attributeFilter = URLEncoder.encode("{'name' :'"+ resourceName +"'}","UTF-8");
             String resourceTypes =URLEncoder.encode("['"+ resourceType +"']","UTF-8");
             URL methodURL =new URL(baseUrl,"resources?resourceTypes="+ resourceTypes+  "&attributeFilter="+attributeFilter) ;
-            Map<String, String> additionalHeaders = new HashMap<>();
-            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
+            JsonArray resultList = resultBody.get("result").getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -147,7 +137,7 @@ public class RestAPIExample {
                 System.out.println("[" +id + "]" + name);
             }
         }
-        
+
         // we create a new event for the resource
         String eventId = null;
         String eventName = null;
@@ -164,7 +154,7 @@ public class RestAPIExample {
             eventObject.add("classification", classificationObj);
             // add appointments
             {
-                // IS0 8061 format is required. Always add the dates in UTC Timezone 
+                // IS0 8061 format is required. Always add the dates in UTC Timezone
                 // Rapla doesn't support multiple timezone. All internal dates are stored in UTC
                 // So store 10:00 local time as 10:00Z
                 JsonObject appointmentObj = createAppointment("2015-01-01T10:00Z","2015-01-01T12:00Z");
@@ -182,23 +172,21 @@ public class RestAPIExample {
             }
             {
                 URL methodURL =new URL(baseUrl,"events");
-                Map<String, String> additionalHeaders = new HashMap<>();
-                HttpCallResult resultBody = connector.sendPost( methodURL, eventObject, authenticationToken, additionalHeaders);
+                JsonObject resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
                 // we test if the new event has the name and extract the id for later testing
                 printAttributesAndAssertName(resultBody,  objectName);
-                eventId = resultBody.parseJson().getAsJsonObject().get("id").getAsString();
+                eventId = resultBody.get("result").getAsJsonObject().get("id").getAsString();
             }
             // now we test again if the new event is created  by using the get method
             {
                 URL methodURL =new URL(baseUrl,"events/"+eventId);
-                Map<String, String> additionalHeaders = new HashMap<>();
-                HttpCallResult resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
+                JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
         // now we query a list of events
         {
-            // we can use startDate without time 
+            // we can use startDate without time
             String start= URLEncoder.encode("2000-01-01","UTF-8");
             // or with time information.
             String end= URLEncoder.encode("2020-01-01T10:00Z","UTF-8");
@@ -206,10 +194,9 @@ public class RestAPIExample {
             String eventTypes = URLEncoder.encode("['"+ eventType +"']","UTF-8");
             String attributeFilter = URLEncoder.encode("{'name' :'"+ eventName +"'}","UTF-8");
             URL methodURL =new URL(baseUrl,"events?start="+start + "&end="+end + "&resources="+resources +"&eventTypes=" + eventTypes +"&attributeFilter="+attributeFilter) ;
-            Map<String, String> additionalHeaders = new HashMap<>();
-            HttpCallResult resultBody = connector.sendGet( methodURL,  authenticationToken, additionalHeaders);
+            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.parseJson().getAsJsonArray();
+            JsonArray resultList = resultBody.get("result").getAsJsonArray();
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -220,7 +207,7 @@ public class RestAPIExample {
                 System.out.println("[" +id + "]" + name);
             }
         }
-       
+
         // we test a patch
         {
             String newReservationName ="changed event name";
@@ -230,28 +217,26 @@ public class RestAPIExample {
             JsonObject classificationObj = new JsonObject();
             patchClassification(keyValue, classificationObj);
             patchObject.add("classification", classificationObj);
-           
+
             // you can also use the string syntax and parse to get the patch object
             //String patchString ="{'classification': { 'data':   {'"+ key + "' : ['"+value+"'] } } }";
             //JsonObject callObj = new JsonParser().parse(patchString).getAsJsonObject();
             URL methodURL =new URL(baseUrl, "events/"+eventId);
             {
-                Map<String, String> additionalHeaders = new HashMap<>();
-                HttpCallResult resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken, additionalHeaders);
+                JsonObject resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken);
                 // we test if the new event is in the patched result
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
             // now we test again if the new event has the new name by using the get method
             {
-                Map<String, String> additionalHeaders = new HashMap<>();
-                HttpCallResult resultBody = connector.sendGet( methodURL, authenticationToken, additionalHeaders);
+                JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
         }
-       
+
     }
 
-    private JsonObject createAppointment(String start, String end) 
+    private JsonObject createAppointment(String start, String end)
     {
         JsonObject app = new JsonObject();
         app.add("start", new JsonPrimitive(start));
@@ -259,7 +244,7 @@ public class RestAPIExample {
         return app;
     }
 
-   
+
     public void patchClassification(Map<String, String> keyValue,  JsonObject classificationObj) {
         JsonObject data = new JsonObject();
         classificationObj.add("data", data);
@@ -271,9 +256,9 @@ public class RestAPIExample {
         }
     }
 
-    private void printAttributesAndAssertName(HttpCallResult resultBody, String objectName) {
+    private void printAttributesAndAssertName(JsonObject resultBody, String objectName) {
         assertNoError(resultBody);
-        JsonObject event = resultBody.parseJson().getAsJsonObject();
+        JsonObject event = resultBody.get("result").getAsJsonObject();
         JsonObject classification = event.get("classification").getAsJsonObject().get("data").getAsJsonObject();
         System.out.println("Attributes for object id");
         for (Entry<String, JsonElement> entry:classification.entrySet())
@@ -283,24 +268,20 @@ public class RestAPIExample {
             System.out.println("  "  + key + "=" + value.toString());
             if ( key.equals("name"))
             {
-               assertEquals(objectName, value.get(0).getAsString()); 
+                assertEquals(objectName, value.get(0).getAsString());
             }
         }
     }
 
-    public void assertNoError(HttpCallResult resultBody) {
-        if(resultBody.getResponseCode() == 200)
-        {
-            return;
-        }
-        final JsonElement error = resultBody.parseJson();
+    public void assertNoError(JsonObject resultBody) {
+        JsonElement error = resultBody.get("error");
         if (error!= null)
         {
             System.err.println(error);
             assertTrue( error == null );
         }
     }
-    
+
     public static void main(String[] args) {
         try {
             // The base url points to the rapla servlet not the webcontext.
@@ -314,8 +295,8 @@ public class RestAPIExample {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
     }
-    
-   
+
+
 }

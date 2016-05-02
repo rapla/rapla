@@ -18,7 +18,6 @@ import org.rapla.scheduler.impl.UtilConcurrentCommandScheduler;
 @Singleton
 public class DefaultScheduler extends UtilConcurrentCommandScheduler implements Disposable
 {
-	private final ScheduledExecutorService executor;
 	Logger logger;
 	
 	protected Logger getLogger() 
@@ -32,28 +31,10 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 	}
 
 	public DefaultScheduler(Logger logger, int poolSize) {
-	    this.logger = logger;
-		final ScheduledExecutorService executor = Executors.newScheduledThreadPool(poolSize,new ThreadFactory() {
-			
-			public Thread newThread(Runnable r) {
-				Thread thread = new Thread(r);
-				String name = thread.getName();
-				if ( name == null)
-				{
-					name = "";
-				}
-				thread.setName("raplascheduler-" + name.toLowerCase().replaceAll("thread", "").replaceAll("-|\\[|\\]", ""));
-				thread.setDaemon(true);
-				return thread;
-			}
-		});
-		this.executor = executor;
+	    super(poolSize);
+		this.logger = logger;
 	}
 
-	public void execute(Runnable task)
-	{
-	   schedule(task, 0 );
-	}
 
 	@Override protected void error(String message, Exception ex)
 	{

@@ -14,16 +14,15 @@ package org.rapla;
 
 import java.net.URL;
 
+import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.inject.InjectionContext;
-import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.
@@ -52,9 +51,10 @@ The Main Container provides the following Services to all RaplaComponents
   @see RaplaLocale
   @see AppointmentFormater
  */
-public class RaplaClient extends ContainerImpl
+public class RaplaClient
 {
-    final RemoteConnectionInfo remoteConnectionInfo = new RemoteConnectionInfo();
+    private final ClientFacade facade;
+
     public RaplaClient(  final URL startupUrl) throws Exception
     {
         this(  new StartupEnvironment() {
@@ -77,25 +77,21 @@ public class RaplaClient extends ContainerImpl
         });
     }
 
-    @Override protected boolean isSupported(InjectionContext... contexts)
-    {
-        return InjectionContext.isInjectableOnClient(contexts);
-    }
 
 
     public RaplaClient(  StartupEnvironment env) throws Exception
     {
-        super(env.getBootstrapLogger());
-        final URL downloadURL = env.getDownloadURL();
-        remoteConnectionInfo.setServerURL(downloadURL.toExternalForm()  + "rapla/json/");
-        addContainerProvidedComponentInstance(StartupEnvironment.class, env);
-        loadFromServiceList();
-
-        remoteConnectionInfo.setServerURL(downloadURL.toURI().toString());
-     	addContainerProvidedComponentInstance(RemoteConnectionInfo.class, remoteConnectionInfo);
-        initialize();
+        facade = DaggerClientCreator.createFacade(env);
     }
 
+    public void dispose()
+    {
+        
+    }
 
- }
+    public ClientFacade getFacade()
+    {
+        return facade;
+    }
+}
 

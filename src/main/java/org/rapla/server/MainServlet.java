@@ -39,14 +39,15 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.rest.server.RestApplication;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.ShutdownService;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
+import org.rapla.server.internal.console.ImportExportManagerContainerImpl;
 import org.rapla.server.internal.console.StandaloneStarter;
+import org.rapla.server.internal.rest.RestApplication;
 import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
@@ -68,8 +69,6 @@ public class MainServlet extends HttpServlet
     
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) throws ServletException
     {
-        String env_raplafile;
-        DataSource env_rapladb = null;
         Object env_raplamail;
         String env_rapladatasource = jndi.lookupEnvString("rapladatasource", true);
         ServerContainerContext backendContext = new ServerContainerContext();
@@ -321,10 +320,11 @@ public class MainServlet extends HttpServlet
 
         if (startupMode.equals("import") || startupMode.equals("export"))
         {
+            ServerStarter serverStarter = new ServerStarter(logger, backendContext, shutdownHook);
             ImportExportManagerContainer manager = null;
             try
             {
-                manager = new ImportExportManagerContainer(logger, backendContext);
+                manager = serverStarter.createManager();
                 if (startupMode.equals("import"))
                 {
                     manager.doImport();
@@ -334,7 +334,7 @@ public class MainServlet extends HttpServlet
                     manager.doExport();
                 }
             }
-            catch (RaplaException ex)
+            catch (Exception ex)
             {
                 logger.error(ex.getMessage(), ex);
             }
@@ -392,7 +392,6 @@ public class MainServlet extends HttpServlet
                 return;
             }
             request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, membersInjector);
-//            serverStarter.getServer().service(request, response);
             dispatcher.service(request, response);
         }
 

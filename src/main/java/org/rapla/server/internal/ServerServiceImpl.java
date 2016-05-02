@@ -36,7 +36,6 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.ContainerImpl;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
@@ -56,15 +55,14 @@ import dagger.MembersInjector;
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 
-@DefaultImplementation(of = ServerServiceContainer.class, context = InjectionContext.server, export = true) public class ServerServiceImpl
-        implements ServerServiceContainer
+@DefaultImplementation(of = ServerServiceContainer.class, context = InjectionContext.server, export = true)
+public class ServerServiceImpl implements ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
     final protected RaplaFacade facade;
     final Logger logger;
 
     private boolean passwordCheckDisabled;
-//    private final RaplaRpcAndRestProcessor apiPage;
     private final RaplaLocale raplaLocale;
     private final CommandScheduler scheduler;
 
@@ -95,16 +93,10 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
             this.facade = facade;
             this.membersInjector = membersInjector;
             ((FacadeImpl) facade).setOperator(operator);
-//        this.apiPage = new RaplaRpcAndRestProcessor(logger, webservices.get());
-            //        if ( username != null  )
-            //            operator.connect( new ConnectInfo(username, password.toCharArray()));
-            //        else
-            
+
             // Start database or file connection and read data
             operator.connect();
             Preferences preferences = operator.getPreferences(null, true);
-            //RaplaConfiguration encryptionConfig = preferences.getEntry(EncryptionService.CONFIG);
-            //addRemoteMethodFactory( EncryptionService.class, EncryptionServiceFactory.class);
             String importExportTimeZone = TimeZone.getDefault().getID();
             // get old entries
             RaplaConfiguration entry = preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
@@ -120,7 +112,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
                     }
                 }
             }
-            String timezoneId = preferences.getEntryAsString(ContainerImpl.TIMEZONE, importExportTimeZone);
+            String timezoneId = preferences.getEntryAsString(RaplaLocaleImpl.TIMEZONE, importExportTimeZone);
             //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
             try
             {
@@ -153,29 +145,8 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
                 logger.error(
                         "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
             }
-            
-            /*
-        {// Rest Pages
-            @SuppressWarnings("rawtypes")
-            final Set<Entry<String, Factory>> restPageEntries = restPageFactories.entrySet();
-            for (Entry<String, Factory> restPage : restPageEntries)
-            {
-                final String restPagePath = restPage.getKey();
-                final Factory restPageFactory = restPage.getValue();
-                final Class<?> restPageClass = restPageFactory.get().getClass();
-                final RaplaRestApiWrapper restWrapper = new RaplaRestApiWrapper(logger, tokenHandler, raplaAuthentificationService, restPageClass, restPageFactory);
-                restPages.put(restPagePath, restWrapper);
-            }
-        }
-             */
-            
-            //User user = getFirstAdmin(operator);
-            //adminSession = new RemoteSessionImpl(getLogger().getChildLogger("session"), user);
-            //addContainerProvidedComponentInstance(RemoteSession.class, adminSession);
-            //initializePlugins(preferences, ServerServiceContainer.class);
-            // start server provides
             this.requestPreProcessors = requestPreProcessors.get();
-            
+
             final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
             for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
             {
@@ -192,7 +163,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
             throw new RaplaInitializationException(e);
         }
     }
-    
+
     public Map<String, MembersInjector> getMembersInjector()
     {
         return membersInjector;
@@ -245,117 +216,6 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
         return null;
     }
 
-    @Override public void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
-        String requestURI = request.getRequestURI();
-        String raplaPrefix = "rapla/";
-        String contextPath = request.getContextPath();
-        String toParse;
-        if (requestURI.startsWith(contextPath))
-        {
-            toParse = requestURI.substring(contextPath.length());
-        }
-        else
-        {
-            toParse = requestURI;
-        }
-        if (toParse.startsWith("/"))
-        {
-            toParse = toParse.substring(1);
-        }
-        while (toParse.toLowerCase().startsWith(raplaPrefix))
-        {
-            toParse = toParse.substring(raplaPrefix.length());
-        }
-        String path = toParse;
-        final String pagename;
-        final String appendix;
-        int firstSeparator = path.indexOf('/');
-        if (firstSeparator > 1)
-        {
-            pagename = path.substring(0, firstSeparator);
-            appendix = path.substring(firstSeparator + 1);
-        }
-        else
-        {
-            if (path.trim().isEmpty() || path.toLowerCase().equals("rapla"))
-            {
-                final String pageParam = request.getParameter("page");
-                if (pageParam != null && !pageParam.trim().isEmpty())
-                {
-                    pagename = pageParam;
-                }
-                else
-                {
-                    pagename = "index";
-                }
-            }
-            else
-            {
-                pagename = path;
-            }
-            appendix = null;
-        }
-        final ServletContext servletContext = request.getServletContext();
-
-//        final RaplaRpcAndRestProcessor.Path b = apiPage.find(pagename, appendix);
-//        if (b != null)
-//        {
-//            apiPage.generate(servletContext, request, response, b);
-//        }
-//        else
-//        {
-            print404Response(response, pagename);
-//        }
-
-    }
-
-    public <T> T getMockService(final Class<T> test, final String accessToken)
-    {
-        return null;
-//        InvocationHandler invocationHandler = new InvocationHandler()
-//        {
-//            @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
-//            {
-//                if (method.getName().equals("getParameter"))
-//                {
-//                    String key = (String) args[0];
-//                    if (key.equals("access_token"))
-//                    {
-//                        return accessToken;
-//                    }
-//                }
-//                return null;
-//            }
-//        };
-//        HttpServletRequest request = (HttpServletRequest) Proxy
-//                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletRequest.class }, invocationHandler);
-//        HttpServletResponse response = (HttpServletResponse) Proxy
-//                .newProxyInstance(getClass().getClassLoader(), new Class[] { HttpServletResponse.class }, invocationHandler);
-//        final T o = (T) apiPage.webserviceMap.get(test.getCanonicalName()).create(request, response);
-//        return o;
-    }
-
-    private void print404Response(HttpServletResponse response, String page) throws IOException
-    {
-        response.setStatus(404);
-        java.io.PrintWriter out = null;
-        try
-        {
-            out = response.getWriter();
-            String message = "404: Page " + page + " not found in Rapla context";
-            out.print(message);
-            logger.getChildLogger("server.html.404").warn(message);
-        }
-        finally
-        {
-            if (out != null)
-            {
-                out.close();
-            }
-        }
-    }
-
     private void stop()
     {
         ((DefaultScheduler) scheduler).dispose();
@@ -378,6 +238,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
         }
     }
 
+    @Override
     public void dispose()
     {
         stop();

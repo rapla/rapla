@@ -18,17 +18,6 @@ import javax.inject.Provider;
 public class MyCustomConnector implements CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
-
-    public RemoteAuthentificationService getAuthentificationService()
-    {
-        return authentificationService;
-    }
-
-    public void setAuthentificationService(RemoteAuthentificationService authentificationService)
-    {
-        this.authentificationService = authentificationService;
-    }
-
     private RemoteAuthentificationService authentificationService;
     //private final String errorString;
     private final CommandScheduler commandQueue;
@@ -59,28 +48,24 @@ public class MyCustomConnector implements CustomConnector
         return accessToken;
     }
 
-    @Override public Exception deserializeException(SerializableExceptionInformation exe)
+    @Override public Exception deserializeException(SerializableExceptionInformation exe, int statusCode)
     {
         final String message = exe.getMessage();
         if (message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
         {
             return new AuthenticationException(message);
         }
-        if ( exe.getExceptionClass().equals(org.rapla.rest.client.RaplaConnectException.class.getName()))
+        if ( exe.getExceptionClass().equals(org.rapla.rest.client.RemoteConnectException.class.getName()))
         {
             String server = remoteConnectionInfo.getServerURL();
             final RaplaResources raplaResources = i18n.get();
             String errorString = raplaResources.format("error.connect", server) + " ";
             return new RaplaConnectException(errorString + exe.getMessage());
         }
-        RaplaException ex = new RaplaExceptionDeserializer().deserializeException(exe);
+        RaplaException ex = new RaplaExceptionDeserializer().deserializeException(exe,statusCode);
         return ex;
     }
 
-    @Override public Class[] getNonPrimitiveClasses()
-    {
-        return new Class[] { RaplaMapImpl.class };
-    }
 
     /*
     public Exception getConnectError(IOException ex)

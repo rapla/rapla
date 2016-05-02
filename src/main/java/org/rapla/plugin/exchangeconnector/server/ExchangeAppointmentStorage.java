@@ -1,26 +1,5 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import static org.rapla.facade.RaplaComponent.unlock;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -37,11 +16,29 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
-import org.rapla.rest.client.swing.JSONParserWrapper;
+import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import com.google.gson.Gson;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.rapla.facade.RaplaComponent.unlock;
 
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
@@ -61,7 +58,7 @@ public class ExchangeAppointmentStorage
     private final Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<String, ImportExportEntity>();
     //CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
-    private final Gson gson = JSONParserWrapper.defaultGsonBuilder(new Class[]{SynchronizationTask.class}).create();
+    private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
     //private static String DEFAULT_STORAGE_FILE_PATH = "data/exchangeConnector.dat";
     //	private String storageFilePath = DEFAULT_STORAGE_FILE_PATH;
     protected ReadWriteLock lock = new ReentrantReadWriteLock();

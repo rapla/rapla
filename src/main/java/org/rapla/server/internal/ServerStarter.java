@@ -12,6 +12,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
+import org.rapla.server.internal.console.ImportExportManagerContainer;
+import org.rapla.server.internal.console.ImportExportManagerContainerImpl;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 public class ServerStarter
@@ -90,6 +92,11 @@ public class ServerStarter
         {
             shutdownCommand.run();
         }
+    }
+
+    public ImportExportManagerContainer createManager() throws Exception
+    {
+        return DaggerServerCreator.createImportExport(logger, backendContext);
     }
 
     private final class ShutdownServiceImpl implements ShutdownService {

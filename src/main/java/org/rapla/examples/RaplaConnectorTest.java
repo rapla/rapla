@@ -22,7 +22,7 @@ public class RaplaConnectorTest
             RaplaClient container = new RaplaClient( env);
 
             // get an interface to the facade and login
-            ClientFacade facade = container.lookupDeprecated(ClientFacade.class, null);
+            ClientFacade facade = container.getFacade();
 
             if ( !facade.login( "admin", "".toCharArray()) ) {
                 throw new RaplaException("Can't login");

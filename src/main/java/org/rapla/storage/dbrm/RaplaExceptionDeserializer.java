@@ -12,7 +12,7 @@ import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 
 public class RaplaExceptionDeserializer implements ExceptionDeserializer {
-	public RaplaException deserializeException(SerializableExceptionInformation exeInfo) 
+	public RaplaException deserializeException(SerializableExceptionInformation exeInfo, int statusCode)
     {
 	    final String message = exeInfo.getMessage();
 	    final String classname = exeInfo.getExceptionClass();

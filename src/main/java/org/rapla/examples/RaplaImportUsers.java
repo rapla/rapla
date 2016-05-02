@@ -62,7 +62,7 @@ public class RaplaImportUsers  {
         String adminPass = stdin.readLine();
 
         //      get an interface to the facade and login
-        ClientFacade facade = container.lookupDeprecated(ClientFacade.class, null);
+        ClientFacade facade = container.getFacade();
         if ( !facade.login("admin", adminPass.toCharArray() ) ) {
             throw new RaplaException("Can't login");
         }
