@@ -56,7 +56,7 @@ import org.rapla.storage.StorageOperator;
 
     @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") Date start,
             @QueryParam("end") Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") List<String> eventTypes,
-            Map<String, String> simpleFilter) throws Exception
+            @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         final User user = session.getUser(request);
         final StorageOperator operator = facade.getOperator();

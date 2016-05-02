@@ -110,7 +110,7 @@ public class RaplaResourcesRestPage  {
 
 	@GET
 	public List<AllocatableImpl> list( @QueryParam("resourceTypes") List<String> resourceTypes,
-			@WebParam(name = "attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
+			@QueryParam("attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
 	    final User user = session.getUser(request);
 		ClassificationFilter[] filters = getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);

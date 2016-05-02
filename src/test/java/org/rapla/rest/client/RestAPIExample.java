@@ -65,6 +65,7 @@ public class RestAPIExample {
             {
                 JsonObject casted = (JsonObject) obj;
                 resourceType =casted.get("key").getAsString();
+                break;
             }
         }
         {
@@ -122,7 +123,7 @@ public class RestAPIExample {
         // we use a get list on the resources
         {
             String attributeFilter = URLEncoder.encode("{'name' :'"+ resourceName +"'}","UTF-8");
-            String resourceTypes =URLEncoder.encode("['"+ resourceType +"']","UTF-8");
+            String resourceTypes =URLEncoder.encode(resourceType,"UTF-8");
             URL methodURL =new URL(baseUrl,"resources?resourceTypes="+ resourceTypes+  "&attributeFilter="+attributeFilter) ;
             JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
@@ -190,10 +191,8 @@ public class RestAPIExample {
             String start= URLEncoder.encode("2000-01-01","UTF-8");
             // or with time information.
             String end= URLEncoder.encode("2020-01-01T10:00Z","UTF-8");
-            String resources = URLEncoder.encode("['"+ resourceId +"']","UTF-8");
-            String eventTypes = URLEncoder.encode("['"+ eventType +"']","UTF-8");
             String attributeFilter = URLEncoder.encode("{'name' :'"+ eventName +"'}","UTF-8");
-            URL methodURL =new URL(baseUrl,"events?start="+start + "&end="+end + "&resources="+resources +"&eventTypes=" + eventTypes +"&attributeFilter="+attributeFilter) ;
+            URL methodURL =new URL(baseUrl,"events?start="+start + "&end="+end + "&resources="+resourceId +"&eventTypes=" + eventType +"&attributeFilter="+attributeFilter) ;
             JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
             JsonArray resultList = resultBody.get("result").getAsJsonArray();
