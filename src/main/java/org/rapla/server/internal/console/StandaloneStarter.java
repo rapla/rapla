@@ -1,7 +1,5 @@
 package org.rapla.server.internal.console;
 
-import java.net.URL;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
@@ -11,33 +9,40 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.logger.Logger;
+import org.rapla.rest.client.swing.JavaClientServerConnector;
 import org.rapla.server.ServerServiceContainer;
+import org.rapla.server.connector.StandaloneConnector;
 import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
+
+import java.net.URL;
 
 public class StandaloneStarter extends GUIStarter
 {
     ServerStarter serverStarter;
     URL mockDownloadUrl;
+    final StandaloneConnector jsonRemoteConnector ;
 
     private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
         return DaggerClientCreator.create(env);
     }
 
-    public StandaloneStarter(Logger logger, ServerContainerContext backendContext, URL mockDownloadUrl, String startupUser)
+    public StandaloneStarter(Logger logger, ServerContainerContext backendContext, URL mockDownloadUrl, String startupUser, Object localconnector)
     {
         super(logger, startupUser, backendContext.getShutdownCommand());
         serverStarter  = new ServerStarter(logger, backendContext, (restart) -> {
             // do nothing
         });
         this.mockDownloadUrl = mockDownloadUrl;
+        jsonRemoteConnector= new StandaloneConnector((org.eclipse.jetty.server.LocalConnector) localconnector);
     }
 
     ServerServiceContainer server;
     public void startStandalone() throws Exception 
     {
+        JavaClientServerConnector.setJsonRemoteConnector(jsonRemoteConnector);
         server = serverStarter.startServer();
         ConnectInfo connectInfo = getStartupConnectInfo();
         RaplaStartupEnvironment env = new RaplaStartupEnvironment();
@@ -100,5 +105,10 @@ public class StandaloneStarter extends GUIStarter
         }
         super.exit();
        
+    }
+
+    public void requestFinished()
+    {
+        jsonRemoteConnector.requestFinished();
     }
 }

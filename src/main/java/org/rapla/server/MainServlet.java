@@ -61,12 +61,13 @@ public class MainServlet extends HttpServlet
     ServerStarter serverStarter;
     private final HttpServletDispatcher dispatcher;
     private Map<String, MembersInjector> membersInjector;
+    private StandaloneStarter standaloneStarter = null;
 
     public MainServlet()
     {
         dispatcher = new HttpServletDispatcher();
     }
-    
+
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) throws ServletException
     {
         Object env_raplamail;
@@ -80,7 +81,7 @@ public class MainServlet extends HttpServlet
 
             if (key.startsWith("jdbc") || key.equals("rapladb"))
             {
-                if ( key.equals("rapladb"))
+                if (key.equals("rapladb"))
                 {
                     key = "jdbc/rapladb";
                 }
@@ -115,9 +116,9 @@ public class MainServlet extends HttpServlet
         if (split.length == 0)
         {
             final Object database = jndi.lookupResource("jdbc/rapladb", true);
-            if ( database != null)
+            if (database != null)
             {
-                backendContext.addDbDatasource("jdbc/rapladb",(DataSource)database);
+                backendContext.addDbDatasource("jdbc/rapladb", (DataSource) database);
             }
             else
             {
@@ -134,7 +135,7 @@ public class MainServlet extends HttpServlet
         }
         {
             String services = jndi.lookupEnvString("raplaservices", true);
-            if(services != null )
+            if (services != null)
             {
                 String[] splits = services.split(",");
                 for (String key : splits)
@@ -153,15 +154,14 @@ public class MainServlet extends HttpServlet
         }
         backendContext.setMailSession(env_raplamail);
         Runnable runnable = (Runnable) jndi.lookup("rapla_shutdown_command", false);
-        backendContext.setShutdownCommand( runnable);
+        backendContext.setShutdownCommand(runnable);
         return backendContext;
     }
 
     synchronized public void init() throws ServletException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
-        serverStarter = init(logger, getServletContext(), (restart) ->
-        {
+        serverStarter = init(logger, getServletContext(), (restart) -> {
             if (restart)
             {
                 updateMembersInjectors();
@@ -182,9 +182,8 @@ public class MainServlet extends HttpServlet
             membersInjector = server.getMembersInjector();
         }
     }
-    
-    @Override
-    public void init(ServletConfig config) throws ServletException
+
+    @Override public void init(ServletConfig config) throws ServletException
     {
         dispatcher.init(new ServletConfig()
         {
@@ -200,13 +199,16 @@ public class MainServlet extends HttpServlet
 
             @Override public String getInitParameter(String name)
             {
-                switch ( name)
+                switch (name)
                 {
-                    case "resteasy.servlet.mapping.prefix": return "rapla/";
-                    case "resteasy.use.builtin.providers": return  "false";
-                    case "javax.ws.rs.Application": return RestApplication.class.getCanonicalName();
+                    case "resteasy.servlet.mapping.prefix":
+                        return "rapla/";
+                    case "resteasy.use.builtin.providers":
+                        return "false";
+                    case "javax.ws.rs.Application":
+                        return RestApplication.class.getCanonicalName();
                 }
-                return config.getInitParameter( name);
+                return config.getInitParameter(name);
             }
 
             @Override public Enumeration<String> getInitParameterNames()
@@ -216,8 +218,8 @@ public class MainServlet extends HttpServlet
         });
         super.init(config);
     }
-    
-    public static ServerStarter init(Logger logger, ServletContext context, ShutdownService shutdownHook) throws ServletException
+
+    private ServerStarter init(Logger logger, ServletContext context, ShutdownService shutdownHook) throws ServletException
     {
         logger.info("Init RaplaServlet");
         String startupMode;
@@ -249,7 +251,16 @@ public class MainServlet extends HttpServlet
             {
                 String realPath = context.getRealPath("/WEB-INF");
                 URL downloadUrl = new File(realPath).toURI().toURL();
-                StandaloneStarter standaloneStarter = new StandaloneStarter(logger, backendContext, downloadUrl, startupUser);
+                final Object localConnector;
+                if (jndi.hasContext())
+                {
+                    localConnector = jndi.lookup("rapla_localconnector", true);
+                }
+                else
+                {
+                    throw new RaplaException("Localconnector not set! Can't start standalone");
+                }
+                standaloneStarter = new StandaloneStarter(logger, backendContext, downloadUrl, startupUser, localConnector);
                 standaloneStarter.startStandalone();
             }
             else if (startupMode.equals("client"))
@@ -394,9 +405,19 @@ public class MainServlet extends HttpServlet
             request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, membersInjector);
             dispatcher.service(request, response);
         }
-
         finally
         {
+            try
+            {
+                if (standaloneStarter != null)
+                {
+                    standaloneStarter.requestFinished();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
             try
             {
                 RaplaComponent.unlock(readLock);
@@ -542,6 +563,6 @@ public class MainServlet extends HttpServlet
             }
         }
     }
-    
+
 }
 

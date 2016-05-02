@@ -56,6 +56,7 @@ public class CustomJettyStarter
 	Class ConfigurationC;
     Class ConnectorC; 
     Class ServerConnectorC;
+	Class LocalConnectorC;
 	Class ResourceC; 
 	Class EnvEntryC; 
 	Class LifeCyleC; 
@@ -166,6 +167,7 @@ public class CustomJettyStarter
 
 		boolean isServer = startupMode.equals("server");
 		final boolean removeConnectors = !isServer;
+		final boolean isStandalone = "standalone".equals(startupMode);
 		if ( isServer)
 		{
 			System.setProperty( "java.awt.headless", "true" );
@@ -201,6 +203,7 @@ public class CustomJettyStarter
                     ConfigurationC =loader.loadClass("org.eclipse.jetty.xml.XmlConfiguration");
                     ConnectorC = loader.loadClass("org.eclipse.jetty.server.Connector");
                     ServerConnectorC = loader.loadClass("org.eclipse.jetty.server.ServerConnector");
+					LocalConnectorC = loader.loadClass("org.eclipse.jetty.server.LocalConnector");
                 	ResourceC = loader.loadClass("org.eclipse.jetty.util.resource.Resource");
                 	EnvEntryC = loader.loadClass("org.eclipse.jetty.plus.jndi.EnvEntry");
                 	LifeCyleC = loader.loadClass( "org.eclipse.jetty.util.component.LifeCycle");
@@ -254,6 +257,16 @@ public class CustomJettyStarter
                                     	ServerC.getMethod("removeConnector", ConnectorC).invoke(server, c);
                                     }
                             	}
+								Object localConnector;
+								if(isStandalone)
+								{
+									localConnector = LocalConnectorC.getConstructor(ServerC).newInstance(server);
+									ServerC.getMethod("addConnector", ConnectorC).invoke(server, localConnector);
+								}
+								else
+								{
+									localConnector = null;
+								}
 
                             	final Method shutdownMethod = ServerC.getMethod("stop");
                             	InvocationHandler proxy = new InvocationHandler() {
@@ -285,6 +298,7 @@ public class CustomJettyStarter
 									addBean.invoke(server, newJndi.newInstance("rapla_startup_user", startupUser));
 									addBean.invoke(server, newJndi.newInstance("rapla_startup_mode", startupMode));
 									addBean.invoke(server, newJndi.newInstance("rapla_download_url", downloadUrl));
+									addBean.invoke(server, newJndi.newInstance("rapla_localconnector", localConnector));
 									addBean.invoke(server, newJndi.newInstance("rapla_instance_counter", new ArrayList<String>()));
 									if ( contextPath != null)
 									{
