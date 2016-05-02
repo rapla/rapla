@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import org.rapla.jsonrpc.client.swing.HTTPJsonConnector;
-import org.rapla.rest.client.swing.HTTPJsonConnector;
+import org.rapla.rest.client.HTTPJsonConnector;
+
 
 import java.net.URL;
 import java.net.URLEncoder;
