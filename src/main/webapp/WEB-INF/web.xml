@@ -4,21 +4,6 @@
  -->
 <web-app>
   <!-- Servlet Configuration ========================================== -->
-  <filter>
-     <filter-name>RaplaFilter</filter-name>
-     <filter-class>org.rapla.server.HTTPMethodOverrideFilter</filter-class>
-  </filter>
-  
-  <filter-mapping>
-    <filter-name>RaplaFilter</filter-name>
-    <url-pattern>/rapla/*</url-pattern>
-  </filter-mapping>
-  
-  <filter-mapping>
-    <filter-name>RaplaFilter</filter-name>
-    <url-pattern>/rapla</url-pattern>
-  </filter-mapping>
-
   <listener>
     <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventor</listener-class>
   </listener>  

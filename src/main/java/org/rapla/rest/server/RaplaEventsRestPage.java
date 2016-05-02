@@ -34,6 +34,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.PATCH;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
@@ -55,7 +56,7 @@ import org.rapla.storage.StorageOperator;
     private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
     @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") Date start,
-            @QueryParam("end") Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") List<String> eventTypes,
+            @QueryParam("end") Date end, @QueryParam("resources") Collection<String> resources, @QueryParam("eventTypes") Collection<String> eventTypes,
             @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         final User user = session.getUser(request);
@@ -98,6 +99,21 @@ import org.rapla.storage.StorageOperator;
             throw new RaplaSecurityException("User " + user + " can't read event " + event);
         }
         return event;
+    }
+
+    @PATCH @Path("{id}") @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl patch(@PathParam("id") String id,ReservationImpl event) throws RaplaException
+    {
+        final User user = session.getUser(request);
+        final StorageOperator operator = facade.getOperator();
+        PermissionController permissionController = facade.getPermissionController();
+        if (!permissionController.canModify(event, user))
+        {
+            throw new RaplaSecurityException("User " + user + " can't modify event " + event);
+        }
+        event.setResolver(operator);
+        facade.store(event);
+        ReservationImpl result = facade.getPersistant(event);
+        return result;
     }
 
     @PUT @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl update(ReservationImpl event) throws RaplaException

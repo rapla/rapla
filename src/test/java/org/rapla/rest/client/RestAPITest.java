@@ -1,11 +1,6 @@
 package org.rapla.rest.client;
 
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -21,7 +16,9 @@ import org.rapla.rest.client.swing.JsonRemoteConnector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
-import junit.framework.TestCase;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 @RunWith(JUnit4.class)
 public class RestAPITest  {
