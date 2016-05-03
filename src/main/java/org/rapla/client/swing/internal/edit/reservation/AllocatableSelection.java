@@ -38,7 +38,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.treetable.AbstractTreeTableModel;
 import org.rapla.components.treetable.JTreeTable;

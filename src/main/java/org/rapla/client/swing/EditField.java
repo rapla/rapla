@@ -15,7 +15,7 @@ package org.rapla.client.swing;
 import javax.swing.JComponent;
 import javax.swing.event.ChangeListener;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 
 /** Base class for most rapla edit fields. Provides some mapping
     functionality such as reflection invocation of getters/setters.

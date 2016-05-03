@@ -28,7 +28,7 @@ import javax.swing.JTextPane;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.internal.ConfigTools;
 

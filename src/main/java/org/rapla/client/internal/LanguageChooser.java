@@ -24,9 +24,7 @@ import javax.swing.JComponent;
 import javax.swing.JList;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
+import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.logger.Logger;
 

@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.toolkit;
+package org.rapla.client;
 
 /** Should be implemented by all rapla-gui-components that have a view.*/
 @FunctionalInterface

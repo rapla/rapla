@@ -6,7 +6,7 @@ import javax.inject.Singleton;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;

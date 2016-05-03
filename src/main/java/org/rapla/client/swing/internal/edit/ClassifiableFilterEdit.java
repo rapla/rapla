@@ -66,7 +66,7 @@ import org.rapla.client.swing.internal.edit.fields.SetGetField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;

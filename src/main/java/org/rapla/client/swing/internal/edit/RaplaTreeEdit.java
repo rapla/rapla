@@ -27,7 +27,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
 

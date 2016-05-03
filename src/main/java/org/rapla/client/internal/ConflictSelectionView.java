@@ -3,7 +3,7 @@ package org.rapla.client.internal;
 import java.util.Collection;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.facade.Conflict;
 
 public interface ConflictSelectionView<T> extends RaplaWidget<T>

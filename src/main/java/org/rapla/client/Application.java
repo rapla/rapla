@@ -1,19 +1,13 @@
 package org.rapla.client;
 
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.User;
@@ -33,9 +27,14 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.framework.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
-
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.scheduler.Promise;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 @Singleton
 public class Application implements ApplicationView.Presenter, ModificationListener
@@ -55,15 +54,14 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final CommandScheduler scheduler;
     //final private ModifiableCalendarState calendarState;
     private TaskPresenter taskPresenter;
+    final private DialogUiFactoryInterface dialogUiFactory;
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Inject
     public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
             AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, TaskPresenter> activityPresenters,
-            Provider<Set<ClientExtension>> clientExtensions,
-            Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler
-    )
+            Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
+            DialogUiFactoryInterface dialogUiFactory)
     {
         this.mainView = mainView;
         this.abstractActivityController = abstractActivityController;
@@ -76,6 +74,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         this.clientExtensions = clientExtensions;
         this.calendarModelProvider = calendarModel;
         this.scheduler = scheduler;
+        this.dialogUiFactory = dialogUiFactory;
         mainView.setPresenter(this);
     }
 
@@ -99,10 +98,18 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             }
             else
             {
-                mainView.createPopup(widget);
+                boolean modal = false;
+                String[] options = new String[] {};
+                final DialogInterface dialog = dialogUiFactory.create(activity.getPopupContext(), modal, widget.getComponent(), options);
+                dialog.setSize(600, 600);
             }
-        });
+        }).exceptionally(ex->{showException(ex, activity.getPopupContext());return Promise.VOID;});
         return true;
+    }
+
+    private void showException(Throwable ex, PopupContext popupContext)
+    {
+        dialogUiFactory.showException( ex,popupContext);
     }
 
     private void initLanguage(boolean defaultLanguageChosen) throws RaplaException
@@ -236,5 +243,10 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     {
         mainView.updateView( evt);
         taskPresenter.updateView(evt);
+    }
+
+    public void stop()
+    {
+        mainView.close();
     }
 }

@@ -84,12 +84,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final RaplaImages raplaImages;
     //final Provider<RaplaFrame> raplaFrameProvider;
 
-    final private Provider<Application> application;
+    Application application;
+    final private Provider<Application> applicationProvider;
 
     @Inject
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
             RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
-            RaplaImages raplaImages, Provider<Application> application, RemoteConnectionInfo connectionInfo)
+            RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo)
     {
         this.env = env;
         this.i18n = i18n;
@@ -99,7 +100,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.raplaLocale = raplaLocale;
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
-        this.application = application;
+        this.applicationProvider = applicationProvider;
         ((FacadeImpl) this.facade).setOperator(storageOperator);
         this.raplaImages = raplaImages;
         try
@@ -236,7 +237,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      */
     private void beginRaplaSession() throws Exception
     {
-        application.get().start(defaultLanguageChosen, () ->
+        application = applicationProvider.get();
+        application.start(defaultLanguageChosen, () ->
         {
             if (!isRestartingGUI())
             {
@@ -364,6 +366,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         if (!started)
             return;
 
+        application.stop();
         RaplaGUIComponent.setMainComponent(null);
         try
         {

@@ -20,6 +20,7 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -147,7 +148,7 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     }
 
     /**
-     * @see org.rapla.client.swing.toolkit.RaplaWidget#getComponent()
+     * @see RaplaWidget#getComponent()
      */
     public JComponent getComponent() {
         return container;

@@ -21,7 +21,6 @@ import java.util.HashSet;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.EditController;
 import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
@@ -36,7 +35,7 @@ import org.rapla.client.swing.internal.MenuFactoryImpl;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;

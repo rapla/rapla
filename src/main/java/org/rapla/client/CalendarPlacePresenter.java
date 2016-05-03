@@ -13,7 +13,6 @@ import org.rapla.client.internal.ConflictSelectionPresenter;
 import org.rapla.client.internal.MultiCalendarPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarPresenter;
-import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;

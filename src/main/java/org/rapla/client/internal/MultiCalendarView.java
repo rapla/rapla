@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 

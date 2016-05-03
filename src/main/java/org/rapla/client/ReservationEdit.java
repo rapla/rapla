@@ -5,7 +5,6 @@ import java.util.Date;
 
 import javax.swing.event.ChangeListener;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;

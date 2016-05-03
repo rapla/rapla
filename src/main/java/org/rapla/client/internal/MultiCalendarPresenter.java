@@ -28,7 +28,6 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarView.Presenter;
@@ -38,7 +37,7 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;

@@ -61,7 +61,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.PeriodChooser;
 import org.rapla.client.swing.toolkit.MonthChooser;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.toolkit.WeekdayChooser;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;

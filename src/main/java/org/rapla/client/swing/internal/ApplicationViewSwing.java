@@ -6,11 +6,9 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.client.swing.toolkit.RaplaWidget;
-import org.rapla.entities.User;
+import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -236,20 +234,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         JComponent component = widget.getComponent();
         getContentPane().add(  component , BorderLayout.CENTER );
 
-    }
-
-    @Override public void createPopup(RaplaWidget<JComponent> w)
-    {
-        try
-        {
-            DialogInterface dialog = dialogUiFactory.create(null, true, w.getComponent(), new String[]{});
-            dialog.setSize(600, 600);
-            dialog.start(false);
-        }
-        catch (RaplaException e)
-        {
-            dialogUiFactory.showException(e, null);
-        }
     }
 
     protected void initComponent( RaplaWidget<Object> objectRaplaWidget)

@@ -15,7 +15,7 @@ import org.rapla.client.gwt.components.TreeComponent;
 import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
 import org.rapla.client.gwt.view.NavigatorView;
 import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.inject.DefaultImplementation;

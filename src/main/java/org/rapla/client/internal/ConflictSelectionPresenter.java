@@ -29,7 +29,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ConflictSelectionView.Presenter;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;

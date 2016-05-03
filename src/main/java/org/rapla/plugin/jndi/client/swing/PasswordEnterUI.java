@@ -21,7 +21,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 
 
 public class PasswordEnterUI 

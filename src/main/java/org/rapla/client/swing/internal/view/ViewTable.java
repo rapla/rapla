@@ -34,7 +34,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.HTMLView;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.RaplaObject;

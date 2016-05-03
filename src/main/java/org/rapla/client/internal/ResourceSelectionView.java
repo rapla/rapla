@@ -6,7 +6,7 @@ import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;

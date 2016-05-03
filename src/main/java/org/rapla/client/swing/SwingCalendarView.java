@@ -16,7 +16,7 @@ package org.rapla.client.swing;
 
 import javax.swing.JComponent;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.scheduler.Promise;
 
 public interface SwingCalendarView<T> extends RaplaWidget<T>

@@ -1,11 +1,12 @@
 package org.rapla.client;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 
 public interface ApplicationView<T>
 {
+    void close();
+
     interface Presenter
     {
         void menuClicked(String action);
@@ -24,8 +25,6 @@ public interface ApplicationView<T>
     void updateMenu();
 
     void updateContent(RaplaWidget<T> w);
-
-    void createPopup(RaplaWidget<T> w);
 
 
 }

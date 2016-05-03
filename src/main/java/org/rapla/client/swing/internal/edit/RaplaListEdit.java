@@ -43,7 +43,7 @@ import javax.swing.event.ListSelectionListener;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.components.calendar.NavButton;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;

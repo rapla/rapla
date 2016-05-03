@@ -12,9 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.client.RaplaWidget;
+
 import javax.swing.ActionMap;
 
-public interface WizardPanel extends RaplaWidget {
+public interface WizardPanel extends RaplaWidget
+{
     String NEXT = "next";
     String ABORT = "abort";
     String PREV = "prev";

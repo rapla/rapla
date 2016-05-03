@@ -10,7 +10,7 @@ import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ModificationEvent;

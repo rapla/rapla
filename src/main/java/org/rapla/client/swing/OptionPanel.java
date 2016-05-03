@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.entities.Named;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;

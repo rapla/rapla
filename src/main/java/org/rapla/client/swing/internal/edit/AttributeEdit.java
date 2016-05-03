@@ -32,7 +32,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
-import org.rapla.client.swing.toolkit.RaplaWidget;
+import org.rapla.client.RaplaWidget;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
