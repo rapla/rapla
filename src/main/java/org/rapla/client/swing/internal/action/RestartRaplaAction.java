@@ -39,15 +39,7 @@ public class RestartRaplaAction extends RaplaAction{
     }
 
     public void actionPerformed() {
-        boolean logoutAvailable = clientService.isLogoutAvailable();
-        if ( logoutAvailable)
-        {
-            clientService.logout();
-        }
-        else
-        {
-            clientService.restart();
-        }
+        clientService.restart();
     }
 
 

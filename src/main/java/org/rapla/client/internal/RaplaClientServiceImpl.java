@@ -58,6 +58,7 @@ import org.rapla.scheduler.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+import org.rapla.storage.dbrm.RemoteOperator;
 
 /** Implementation of the UserClientService.
 */
@@ -104,7 +105,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         try
         {
             URL downloadURL = env.getDownloadURL();
-            connectionInfo.setServerURL(downloadURL.toExternalForm() + "rapla/");
+            connectionInfo.setServerURL(downloadURL.toExternalForm() + "rapla");
         }
         catch (RaplaException e)
         {
@@ -368,10 +369,16 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             ClientFacade facade = getClientFacade();
             facade.removeUpdateErrorListener(this);
-            if (facade.isSessionActive())
+            if ( reconnect != null)
+            {
+                final RemoteOperator operator = (RemoteOperator)((facade).getRaplaFacade()).getOperator();
+                operator.restartServer();
+            }
+            else if (facade.isSessionActive())
             {
                 facade.logout();
             }
+
         }
         catch (RaplaException ex)
         {
@@ -385,6 +392,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         ((DefaultScheduler) commandScheduler).dispose();
         stop();
+
         getLogger().debug("RaplaClient disposed");
     }
 

@@ -24,18 +24,16 @@ public class ServerStarter
     private ReadWriteLock restartLock = new ReentrantReadWriteLock();
     Collection<ServletRequestPreprocessor> processors;
     ServerContainerContext backendContext;
-    private final ShutdownService shutdownHook;
 
     private ServerServiceContainer create() throws Exception
     {
         return DaggerServerCreator.create(logger, backendContext);
     }
 
-    public ServerStarter(Logger logger, ServerContainerContext backendContext, ShutdownService shutdownHook)
+    public ServerStarter(Logger logger, ServerContainerContext backendContext)
     {
         this.logger = logger;
         this.backendContext =  backendContext;
-        this.shutdownHook = shutdownHook;
     }
 
     public ReadWriteLock getRestartLock()
@@ -44,7 +42,7 @@ public class ServerStarter
     }
     
     //Logger logger;
-    public ServerServiceContainer startServer()    throws ServletException {
+    public void startServer()    throws ServletException {
 
         final Runnable shutdownCommand = backendContext.getShutdownCommand();
         try
@@ -57,7 +55,7 @@ public class ServerStarter
             logger.info("Rapla server started");
 
             processors = server.getServletRequestPreprocessors();
-            return server;
+            //return server;
         }
         catch( Exception e )
         {
@@ -137,7 +135,6 @@ public class ServerStarter
                 {
                     stopServer();
                 }
-                shutdownHook.shutdown(restart);
             }
             catch (Exception ex)
             {

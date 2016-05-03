@@ -12,15 +12,22 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
+import dagger.MembersInjector;
+import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
+import org.rapla.components.util.IOUtil;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.logger.Logger;
+import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.ServerStarter;
+import org.rapla.server.internal.console.ClientStarter;
+import org.rapla.server.internal.console.ImportExportManagerContainer;
+import org.rapla.server.internal.console.StandaloneStarter;
+import org.rapla.server.internal.rest.RestApplication;
+import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
+import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -32,26 +39,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
-
-import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
-import org.rapla.components.util.IOUtil;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
-import org.rapla.server.internal.ServerContainerContext;
-import org.rapla.server.internal.ServerServiceImpl;
-import org.rapla.server.internal.ServerStarter;
-import org.rapla.server.internal.ShutdownService;
-import org.rapla.server.internal.console.ClientStarter;
-import org.rapla.server.internal.console.ImportExportManagerContainer;
-import org.rapla.server.internal.console.ImportExportManagerContainerImpl;
-import org.rapla.server.internal.console.StandaloneStarter;
-import org.rapla.server.internal.rest.RestApplication;
-import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
-import org.rapla.server.servletpages.ServletRequestPreprocessor;
-
-import dagger.MembersInjector;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 public class MainServlet extends HttpServlet
 {
@@ -60,7 +55,6 @@ public class MainServlet extends HttpServlet
     private Logger logger = null;
     ServerStarter serverStarter;
     private final HttpServletDispatcher dispatcher;
-    private Map<String, MembersInjector> membersInjector;
     private StandaloneStarter standaloneStarter = null;
 
     public MainServlet()
@@ -161,25 +155,142 @@ public class MainServlet extends HttpServlet
     synchronized public void init() throws ServletException
     {
         logger = RaplaBootstrapLogger.createRaplaLogger();
-        serverStarter = init(logger, getServletContext(), (restart) -> {
-            if (restart)
-            {
-                updateMembersInjectors();
-            }
-            else
-            {
-                this.membersInjector = null;
-            }
-        });
-        updateMembersInjectors();
-    }
-
-    private void updateMembersInjectors()
-    {
-        if (serverStarter != null)
+        logger.info("Init RaplaServlet");
+        ServletContext context = getServletContext();
+        String startupMode;
+        RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters(context));
+        String startupUser = jndi.lookupEnvString("rapla_startup_user", false);
+        ServerContainerContext backendContext = createBackendContext(logger, jndi);
+        if (jndi.hasContext())
         {
-            final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
-            membersInjector = server.getMembersInjector();
+            startupMode = jndi.lookupEnvString("rapla_startup_mode", false);
+        }
+        else
+        {
+            startupMode = null;
+        }
+        if (startupMode == null)
+        {
+            startupMode = "server";
+        }
+        try
+        {
+            // this is the default purpose of the servlet to start rapla server as http servlet
+            if (startupMode.equals("server"))
+            {
+                serverStarter = new ServerStarter(logger, backendContext);
+                serverStarter.startServer();
+            }
+            else if (startupMode.equals("standalone"))
+            {
+                String realPath = context.getRealPath("/WEB-INF");
+                URL downloadUrl = new URL("http://localhost:8051/");//new File(realPath).toURI().toURL();
+                final Object localConnector;
+                if (jndi.hasContext())
+                {
+                    localConnector = jndi.lookup("rapla_localconnector", true);
+                }
+                else
+                {
+                    throw new RaplaException("Localconnector not set! Can't start standalone");
+                }
+                serverStarter = new ServerStarter(logger, backendContext);
+                standaloneStarter = new StandaloneStarter(logger, backendContext, serverStarter, downloadUrl, startupUser, localConnector);
+                serverStarter.startServer();
+                standaloneStarter.startClient();
+            }
+            else if (startupMode.equals("client"))
+            {
+                Collection<String> instanceCounter = null;
+                String selectedContextPath = null;
+                @SuppressWarnings("unchecked") Collection<String> instanceCounterLookup = (Collection<String>) jndi.lookup("rapla_instance_counter", false);
+                instanceCounter = instanceCounterLookup;
+                selectedContextPath = jndi.lookupEnvString("rapla_startup_context", false);
+                String contextPath = context.getContextPath();
+                if (!contextPath.startsWith("/"))
+                {
+                    contextPath = "/" + contextPath;
+                }
+                // don't startup server if contextPath is not selected
+                if (selectedContextPath != null)
+                {
+                    if (!contextPath.equals(selectedContextPath))
+                        return;
+                }
+                else if (instanceCounter != null)
+                {
+                    instanceCounter.add(contextPath);
+                    if (instanceCounter.size() > 1)
+                    {
+                        String msg = ("Ignoring webapp [" + contextPath + "]. Multiple context found in jetty container " + instanceCounter
+                                + " You can specify one via -Dorg.rapla.context=REPLACE_WITH_CONTEXT");
+                        logger.error(msg);
+                        return;
+                    }
+                }
+
+                Integer port = null;
+                String downloadUrl = null;
+                final URL downloadUrl_;
+                if (jndi.hasContext())
+                {
+                    port = (Integer) jndi.lookup("rapla_startup_port", false);
+                    downloadUrl = (String) jndi.lookup("rapla_download_url", false);
+                }
+                if (port == null && downloadUrl == null)
+                {
+                    throw new RaplaException("Neither port nor download url specified in enviroment! Can't start client");
+                }
+                if (downloadUrl == null)
+                {
+                    String url = "http://localhost:" + port + contextPath;
+                    if (!url.endsWith("/"))
+                    {
+                        url += "/";
+                    }
+                    downloadUrl_ = new URL(url);
+                }
+                else
+                {
+                    downloadUrl_ = new URL(downloadUrl);
+                }
+
+                ClientStarter guiStarter = new ClientStarter(logger, startupUser, backendContext.getShutdownCommand(), downloadUrl_);
+                guiStarter.startClient();
+            }
+            else if (startupMode.equals("import") || startupMode.equals("export"))
+            {
+                ServerStarter serverStarter = new ServerStarter(logger, backendContext);
+                ImportExportManagerContainer manager = null;
+                try
+                {
+                    manager = serverStarter.createManager();
+                    if (startupMode.equals("import"))
+                    {
+                        manager.doImport();
+                    }
+                    else
+                    {
+                        manager.doExport();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.error(ex.getMessage(), ex);
+                }
+                finally
+                {
+                    if (manager != null)
+                    {
+                        manager.dispose();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.error(ex.getMessage(), ex);
+            throw new ServletException(ex.getMessage(), ex);
         }
     }
 
@@ -217,147 +328,6 @@ public class MainServlet extends HttpServlet
             }
         });
         super.init(config);
-    }
-
-    private ServerStarter init(Logger logger, ServletContext context, ShutdownService shutdownHook) throws ServletException
-    {
-        logger.info("Init RaplaServlet");
-        String startupMode;
-        RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters(context));
-        String startupUser = jndi.lookupEnvString("rapla_startup_user", false);
-        ServerContainerContext backendContext = createBackendContext(logger, jndi);
-        if (jndi.hasContext())
-        {
-            startupMode = jndi.lookupEnvString("rapla_startup_mode", false);
-        }
-        else
-        {
-            startupMode = null;
-        }
-        if (startupMode == null)
-        {
-            startupMode = "server";
-        }
-        try
-        {
-            // this is the default purpose of the servlet to start rapla server as http servlet
-            if (startupMode.equals("server"))
-            {
-                ServerStarter serverStarter = new ServerStarter(logger, backendContext, shutdownHook);
-                serverStarter.startServer();
-                return serverStarter;
-            }
-            else if (startupMode.equals("standalone"))
-            {
-                String realPath = context.getRealPath("/WEB-INF");
-                URL downloadUrl = new File(realPath).toURI().toURL();
-                final Object localConnector;
-                if (jndi.hasContext())
-                {
-                    localConnector = jndi.lookup("rapla_localconnector", true);
-                }
-                else
-                {
-                    throw new RaplaException("Localconnector not set! Can't start standalone");
-                }
-                standaloneStarter = new StandaloneStarter(logger, backendContext, downloadUrl, startupUser, localConnector);
-                standaloneStarter.startStandalone();
-            }
-            else if (startupMode.equals("client"))
-            {
-                Collection<String> instanceCounter = null;
-                String selectedContextPath = null;
-                @SuppressWarnings("unchecked") Collection<String> instanceCounterLookup = (Collection<String>) jndi.lookup("rapla_instance_counter", false);
-                instanceCounter = instanceCounterLookup;
-                selectedContextPath = jndi.lookupEnvString("rapla_startup_context", false);
-                String contextPath = context.getContextPath();
-                if (!contextPath.startsWith("/"))
-                {
-                    contextPath = "/" + contextPath;
-                }
-                // don't startup server if contextPath is not selected
-                if (selectedContextPath != null)
-                {
-                    if (!contextPath.equals(selectedContextPath))
-                        return null;
-                }
-                else if (instanceCounter != null)
-                {
-                    instanceCounter.add(contextPath);
-                    if (instanceCounter.size() > 1)
-                    {
-                        String msg = ("Ignoring webapp [" + contextPath + "]. Multiple context found in jetty container " + instanceCounter
-                                + " You can specify one via -Dorg.rapla.context=REPLACE_WITH_CONTEXT");
-                        logger.error(msg);
-                        return null;
-                    }
-                }
-
-                Integer port = null;
-                String downloadUrl = null;
-                final URL downloadUrl_;
-                if (jndi.hasContext())
-                {
-                    port = (Integer) jndi.lookup("rapla_startup_port", false);
-                    downloadUrl = (String) jndi.lookup("rapla_download_url", false);
-                }
-                if (port == null && downloadUrl == null)
-                {
-                    throw new RaplaException("Neither port nor download url specified in enviroment! Can't start client");
-                }
-                if (downloadUrl == null)
-                {
-                    String url = "http://localhost:" + port + contextPath;
-                    if (!url.endsWith("/"))
-                    {
-                        url += "/";
-                    }
-                    downloadUrl_ = new URL(url);
-                }
-                else
-                {
-                    downloadUrl_ = new URL(downloadUrl);
-                }
-
-                ClientStarter guiStarter = new ClientStarter(logger, startupUser, backendContext.getShutdownCommand(), downloadUrl_);
-                guiStarter.startClient();
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.error(ex.getMessage(), ex);
-            throw new ServletException(ex.getMessage(), ex);
-        }
-
-        if (startupMode.equals("import") || startupMode.equals("export"))
-        {
-            ServerStarter serverStarter = new ServerStarter(logger, backendContext, shutdownHook);
-            ImportExportManagerContainer manager = null;
-            try
-            {
-                manager = serverStarter.createManager();
-                if (startupMode.equals("import"))
-                {
-                    manager.doImport();
-                }
-                else
-                {
-                    manager.doExport();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.error(ex.getMessage(), ex);
-            }
-            finally
-            {
-                if (manager != null)
-                {
-                    manager.dispose();
-                }
-            }
-        }
-        return null;
     }
 
     public void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -402,22 +372,13 @@ public class MainServlet extends HttpServlet
 
                 return;
             }
+            final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
+            Map<String, MembersInjector> membersInjector = server.getMembersInjector();
             request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, membersInjector);
             dispatcher.service(request, response);
         }
         finally
         {
-            try
-            {
-                if (standaloneStarter != null)
-                {
-                    standaloneStarter.requestFinished();
-                }
-            }
-            catch (Exception ex)
-            {
-
-            }
             try
             {
                 RaplaComponent.unlock(readLock);
@@ -430,6 +391,17 @@ public class MainServlet extends HttpServlet
             {
                 ServletOutputStream outputStream = response.getOutputStream();
                 outputStream.close();
+            }
+            catch (Exception ex)
+            {
+
+            }
+            try
+            {
+                if (standaloneStarter != null)
+                {
+                    standaloneStarter.requestFinished();
+                }
             }
             catch (Exception ex)
             {
