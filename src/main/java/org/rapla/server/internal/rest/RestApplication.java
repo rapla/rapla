@@ -76,12 +76,28 @@ public class RestApplication extends Application
 
     public RestApplication(@Context ServletContext context) throws IOException
     {
-        final HashSet<Class<?>> classes = new HashSet<>();
+//        final HashSet<Class<?>> classes = scanWithAnnotation(context);
+        final Set<Class<?>> classes = getFromMetaInf();
+        this.classes = Collections.unmodifiableSet(classes);
+    }
 
-        Collection<URL> urls = getScanningUrls(context);
-        for (URL u : urls)
+    public Set<Class<?>> getFromMetaInf() throws IOException
+    {
+        final HashSet<Class<?>> classes = new HashSet<>();
+        final ClassLoader classLoader = getClass().getClassLoader();
+        final ServiceInfLoader.LoadingResult loadingResult = ServiceInfLoader.loadClassesFromMetaInfo(classLoader, Provider.class.getCanonicalName(),Path.class.getCanonicalName());
+        classes.addAll(loadingResult.getClasses());
+        for (Throwable error : loadingResult.getErrors())
         {
+            throw new RuntimeException("Error loading Meta-INF" + error);
         }
+        return classes;
+    }
+
+    public HashSet<Class<?>> scanWithAnnotation(@Context ServletContext context) throws MalformedURLException
+    {
+        final HashSet<Class<?>> classes = new HashSet<>();
+        Collection<URL> urls = getScanningUrls(context);
         AnnotationDB db = new AnnotationDB();
         String[] ignoredPackages = {"org.jboss.resteasy.plugins", "org.jboss.resteasy.annotations", "org.jboss.resteasy.client", "org.jboss.resteasy.specimpl", "org.jboss.resteasy.core", "org.jboss.resteasy.spi", "org.jboss.resteasy.util", "org.jboss.resteasy.mock", "javax.ws.rs"};
         db.setIgnoredPackages(ignoredPackages);
@@ -114,16 +130,6 @@ public class RestApplication extends Application
         boolean scanResources= true;
         if (scanProviders) processScannedResources(db, classes, Provider.class.getName());
         if (scanResources) processScannedResources(db, classes, Path.class.getName());
-
-//            final ClassLoader classLoader = getClass().getClassLoader();
-//            final ServiceInfLoader.LoadingResult loadingResult = ServiceInfLoader.loadClassesFromMetaInfo(classLoader, Provider.class.getCanonicalName(),Path.class.getCanonicalName());
-//            classes.addAll(loadingResult.getClasses());
-//            for (Throwable error : loadingResult.getErrors())
-//            {
-//                throw new RuntimeException("Error loading Meta-INF" + error);
-//            }
-
-
         classes.add(RestExceptionMapper.class);
         classes.add(HttpMethodOverride.class);
         classes.add(JsonParamConverterProvider.class);
@@ -135,10 +141,8 @@ public class RestApplication extends Application
         classes.add(JsonStringWriter.class);
         classes.add(XmlWriter.class);
         classes.add(XmlReader.class);
-
-        this.classes = Collections.unmodifiableSet(classes);
+        return classes;
     }
-
 
     protected void processScannedResources(AnnotationDB db,  Set<Class<?>> classesToAdd,String name)
     {
