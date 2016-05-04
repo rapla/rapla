@@ -18,6 +18,7 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
+import org.rapla.client.PopupContext;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
@@ -171,4 +172,8 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
         RaplaPopups.getProgressBar().setPercent(100);
     }
 
+    @Override public PopupContext createPopupContext()
+    {
+        return new GwtPopupContext(null);
+    }
 }

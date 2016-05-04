@@ -108,8 +108,7 @@ import org.rapla.storage.dbrm.RemoteOperator;
  * </p>
  */
 @Singleton
-@DefaultImplementationRepeatable({ @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all),
-		@DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client, export = true) })
+@DefaultImplementationRepeatable({ @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all), @DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client) })
 public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListener {
 	protected CommandScheduler notifyQueue;
 	private String workingUserId = null;

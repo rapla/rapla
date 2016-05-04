@@ -4,19 +4,17 @@ import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.dialog.EditDialogInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingActivityController;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -69,8 +67,7 @@ import java.util.Set;
         @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), }) public class EditTaskPresenter
         implements TaskPresenter
 {
-    Collection<ReservationEdit<?>> editReservationList = new ArrayList<ReservationEdit<?>>();
-    Collection<EditDialogInterface<?>> editWindowList = new ArrayList<EditDialogInterface<?>>();
+    public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
     protected final Map<String, Provider<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade raplaFacade;
@@ -97,21 +94,29 @@ import java.util.Set;
         this.raplaFacade = clientFacade.getRaplaFacade();
     }
 
-    @Override public Promise<RaplaWidget> startActivity(ApplicationEvent application)
+    @Override public Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent)
     {
-        final String taskId = application.getApplicationEventId();
-        String info = application.getInfo();
-        PopupContext popupContext = application.getPopupContext();
+        final String taskId = applicationEvent.getApplicationEventId();
+        String info = applicationEvent.getInfo();
+        PopupContext popupContext = applicationEvent.getPopupContext();
         try
         {
-
             if (taskId.equals(EDIT_RESOURCES_ID) || taskId.equals(EDIT_EVENTS_ID))
             {
-                final ApplicationEventContext context = application.getContext();
+                final ApplicationEventContext context = applicationEvent.getContext();
                 List<Entity> entities = new ArrayList<>();
                 if (context != null && context instanceof EditApplicationEventContext)
                 {
-                    entities.addAll(((EditApplicationEventContext) context).getSelectedObjects());
+                    final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
+                    entities.addAll(editApplicationEventContext.getSelectedObjects());
+                    final AppointmentBlock appointmentBlock = editApplicationEventContext.getAppointmentBlock();
+                    if(appointmentBlock != null)
+                    {
+                        ReservationEdit<?> c = reservationEditProvider.get();
+                        final Reservation reservation = appointmentBlock.getAppointment().getReservation();
+                        c.editReservation(reservation, appointmentBlock, applicationEvent);
+                        return new ResolvedPromise<RaplaWidget>(c);
+                    }
                 }
                 else
                 {
@@ -126,13 +131,13 @@ import java.util.Set;
                         }
                         catch (EntityNotFoundException e)
                         {
-                            return null;
+                            return new ResolvedPromise<RaplaWidget>(e);
                         }
                         entities.add(resolve);
                     }
                 }
                 String title = null;
-                RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, application);
+                RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, applicationEvent);
                 return new ResolvedPromise<RaplaWidget>(edit);
             }
             else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))
@@ -148,10 +153,10 @@ import java.util.Set;
                 final List<Reservation> singletonList = Collections.singletonList(r);
                 List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, user);
                 String title = null;
-                final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, application);
+                final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, applicationEvent);
                 return new ResolvedPromise<RaplaWidget>(editDialog);
             }
-            else if (SwingActivityController.CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
+            else if (CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
             {
 
                 final String templateId = info;
@@ -187,18 +192,18 @@ import java.util.Set;
                     }
                     List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, user);
                     String title = null;
-                    return createEditDialog(list, title, popupContext, application);
+                    return createEditDialog(list, title, popupContext, applicationEvent);
                 });
                 return widgetPromise;
             }
             else
             {
-                return null;
+                return new ResolvedPromise<RaplaWidget>( new RaplaException("Unknow taskId" + taskId));
             }
         }
         catch (RaplaException e)
         {
-            return null;
+            return new ResolvedPromise<RaplaWidget>( e);
         }
     }
 
@@ -284,32 +289,9 @@ import java.util.Set;
             Entity<?> testObj = (Entity<?>) list.get(0);
             if (testObj instanceof Reservation)
             {
-                return startReservationEdit((Reservation) testObj, null);
-            }
-
-            // Lookup if the entity (not a reservation) is already beeing edited
-            EditDialogInterface c = null;
-            Iterator<EditDialogInterface<?>> it = editWindowList.iterator();
-            while (it.hasNext())
-            {
-                c = it.next();
-                List<?> editObj = c.getObjects();
-                if (editObj != null && editObj.size() == 1)
-                {
-                    Object first = editObj.get(0);
-                    if (first instanceof Entity && ((Entity<?>) first).isIdentical(testObj))
-                    {
-                        break;
-                    }
-                }
-                c = null;
-            }
-
-            if (c != null)
-            {
-                c.getDialog().requestFocus();
-                c.getDialog().toFront();
-                return null;
+                ReservationEdit<?> c = reservationEditProvider.get();
+                c.editReservation((Reservation) testObj, null, applicationEvent);
+                return c;
             }
         }
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
@@ -482,53 +464,7 @@ import java.util.Set;
         }
     }
 
-    void addEditDialog(EditDialogInterface editWindow)
-    {
-        editWindowList.add(editWindow);
-    }
 
-    void removeEditDialog(EditDialogInterface editWindow)
-    {
-        editWindowList.remove(editWindow);
-    }
 
-    public RaplaWidget edit(AppointmentBlock appointmentBlock) throws RaplaException
-    {
-        return startReservationEdit(appointmentBlock.getAppointment().getReservation(), appointmentBlock);
-    }
-
-    public ReservationEdit[] getEditWindows()
-    {
-        return editWindowList.toArray(new ReservationEdit[] {});
-    }
-
-    private RaplaWidget<?> startReservationEdit(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
-    {
-        // Lookup if the reservation is already beeing edited
-        ReservationEdit<?> c = null;
-        Iterator<ReservationEdit<?>> it = editReservationList.iterator();
-        while (it.hasNext())
-        {
-            c = it.next();
-            if (c.getReservation().isIdentical(reservation))
-                break;
-            else
-                c = null;
-        }
-
-        if (c != null)
-        {
-            // FIXME bring to front
-            // c.toFront();
-        }
-        else
-        {
-            c = reservationEditProvider.get();
-            c.editReservation(reservation, appointmentBlock);
-            editReservationList.add(c);
-            // only is allowed to exchange allocations
-        }
-        return c;
-    }
 
 }

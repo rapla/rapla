@@ -7,6 +7,8 @@ public interface ApplicationView<T>
 {
     void close();
 
+    PopupContext createPopupContext();
+
     interface Presenter
     {
         void menuClicked(String action);

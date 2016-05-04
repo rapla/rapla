@@ -32,12 +32,13 @@ import org.rapla.scheduler.Promise;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-@Singleton
-public class Application implements ApplicationView.Presenter, ModificationListener
+@Singleton public class Application implements ApplicationView.Presenter, ModificationListener
 {
 
     private final Logger logger;
@@ -48,18 +49,19 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final RaplaResources i18n;
 
     private final EventBus eventBus;
-    private final Map<String, TaskPresenter> activityPresenters;
+    private final Map<String, Provider<TaskPresenter>> activityPresenters;
     final private Provider<Set<ClientExtension>> clientExtensions;
     final Provider<CalendarSelectionModel> calendarModelProvider;
     private final CommandScheduler scheduler;
     //final private ModifiableCalendarState calendarState;
-    private TaskPresenter taskPresenter;
+    private TaskPresenter placeTaskPresenter;
     final private DialogUiFactoryInterface dialogUiFactory;
+    private final Map<ApplicationEvent, DialogInterface> openDialogs = new HashMap<>();
+    private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
 
-    @Inject
-    public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
-            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, TaskPresenter> activityPresenters,
+    @Inject public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
+            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
             Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
             DialogUiFactoryInterface dialogUiFactory)
     {
@@ -78,11 +80,32 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         mainView.setPresenter(this);
     }
 
-    public boolean startAction(ApplicationEvent activity, boolean isPlace)
+    public boolean stopAction(ApplicationEvent activity)
     {
         final String activityId = activity.getApplicationEventId();
-        taskPresenter = activityPresenters.get(activityId);
-        if ( taskPresenter == null)
+        final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
+        final DialogInterface dialogInterface = openDialogs.remove(activity);
+        if (dialogInterface != null)
+        {
+            dialogInterface.close();
+        }
+        openDialogsPresenter.remove(activity);
+        return true;
+    }
+    public boolean startAction(ApplicationEvent activity, boolean isPlace)
+    {
+        final DialogInterface dialogInterface = openDialogs.get(activity);
+        if(dialogInterface != null)
+        {
+            dialogInterface.toFront();
+            dialogInterface.requestFocus();
+            return false;
+        }
+        final String activityId = activity.getApplicationEventId();
+        final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
+
+        final TaskPresenter taskPresenter = activityPresenters.get(activityId).get();
+        if (taskPresenter == null)
         {
             return false;
         }
@@ -91,38 +114,45 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         {
             return false;
         }
-        objectRaplaWidget.thenAccept( (widget)-> {
+        objectRaplaWidget.thenAccept((widget) -> {
             if (isPlace)
             {
+                placeTaskPresenter = taskPresenter;
                 mainView.updateContent(widget);
             }
             else
             {
                 boolean modal = false;
                 String[] options = new String[] {};
-                final DialogInterface dialog = dialogUiFactory.create(activity.getPopupContext(), modal, widget.getComponent(), options);
+                final DialogInterface dialog = dialogUiFactory.create(popupContext, modal, widget.getComponent(), options);
                 dialog.setSize(600, 600);
+                openDialogs.put(activity, dialog);
+                openDialogsPresenter.put(activity, taskPresenter);
+                dialog.start(false);
             }
-        }).exceptionally(ex->{showException(ex, activity.getPopupContext());return Promise.VOID;});
+        }).exceptionally(ex -> {
+            showException(ex,popupContext );
+            return Promise.VOID;
+        });
         return true;
     }
 
     private void showException(Throwable ex, PopupContext popupContext)
     {
-        dialogUiFactory.showException( ex,popupContext);
+        dialogUiFactory.showException(ex, popupContext);
     }
 
     private void initLanguage(boolean defaultLanguageChosen) throws RaplaException
     {
         RaplaFacade facade = this.clientFacade.getRaplaFacade();
-        if ( !defaultLanguageChosen)
+        if (!defaultLanguageChosen)
         {
             Preferences prefs = facade.edit(facade.getSystemPreferences());
             String currentLanguage = i18n.getLocale().getLanguage();
-            prefs.putEntry( RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
+            prefs.putEntry(RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
             try
             {
-                facade.store( prefs);
+                facade.store(prefs);
             }
             catch (Exception e)
             {
@@ -131,20 +161,20 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         }
         else
         {
-            String language = facade.getSystemPreferences().getEntryAsString( RaplaLocale.LANGUAGE_ENTRY, null);
-            if ( language != null)
+            String language = facade.getSystemPreferences().getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+            if (language != null)
             {
-                DefaultBundleManager localeSelector =  (DefaultBundleManager)bundleManager;
-                localeSelector.setLanguage( language );
+                DefaultBundleManager localeSelector = (DefaultBundleManager) bundleManager;
+                localeSelector.setLanguage(language);
             }
         }
         AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
         AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
     }
 
-
     private Runnable closeCallback;
-    public void start(boolean defaultLanguageChosen,Runnable closeCallback) throws RaplaException
+
+    public void start(boolean defaultLanguageChosen, Runnable closeCallback) throws RaplaException
     {
         this.closeCallback = closeCallback;
         initLanguage(defaultLanguageChosen);
@@ -152,9 +182,11 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         ModifiableCalendarState calendarState = new ModifiableCalendarState(clientFacade, calendarModelProvider);
         //        StorageOperator operator = facade.getOperator();
 
-        ((FacadeImpl)clientFacade).addDirectModificationListener(new ModificationListener() {
+        ((FacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener()
+        {
 
-            public void dataChanged(ModificationEvent evt) throws RaplaException {
+            public void dataChanged(ModificationEvent evt) throws RaplaException
+            {
                 calendarState.dataChanged(evt);
             }
         });
@@ -169,7 +201,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         //addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
 
         // start client provides
-        for ( ClientExtension ext:clientExtensions.get())
+        for (ClientExtension ext : clientExtensions.get())
         {
             ext.start();
         }
@@ -180,9 +212,9 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         //        {
         //            addContainerProvidedComponent(DateRenderer.class, RaplaDateRenderer.class);
         //        }
-        boolean showToolTips = raplaFacade.getPreferences( clientFacade.getUser() ).getEntryAsBoolean( RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
+        boolean showToolTips = raplaFacade.getPreferences(clientFacade.getUser()).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
         String title = raplaFacade.getSystemPreferences().getEntryAsString(RaplaLocaleImpl.TITLE, i18n.getString("rapla.title"));
-        mainView.init( showToolTips, title);
+        mainView.init(showToolTips, title);
 
         try
         {
@@ -192,26 +224,26 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
             User user = clientFacade.getUser();
             final boolean admin = user.isAdmin();
-            String message =   i18n.getString("user") + " "+ user.toString();
+            String message = i18n.getString("user") + " " + user.toString();
             Allocatable template = clientFacade.getTemplate();
-            if ( template != null)
+            if (template != null)
             {
                 Locale locale = i18n.getLocale();
-                message = i18n.getString("edit-templates") + " [" +  template.getName(locale) + "] " + message;
+                message = i18n.getString("edit-templates") + " [" + template.getName(locale) + "] " + message;
             }
             mainView.setStatusMessage(message, user.isAdmin());
             mainView.updateMenu();
             // Test for the resources
             clientFacade.addModificationListener(this);
             final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
-            String statusMessage = i18n.format("rapla.welcome",name);
-            if ( admin)
+            String statusMessage = i18n.format("rapla.welcome", name);
+            if (admin)
             {
-                statusMessage+= " " + i18n.getString("admin.login");
+                statusMessage += " " + i18n.getString("admin.login");
             }
 
-            mainView.setStatusMessage(statusMessage,admin);
-            scheduler.schedule(() ->  {
+            mainView.setStatusMessage(statusMessage, admin);
+            scheduler.schedule(() -> {
                 mainView.setStatusMessage(name, false);
             }, 2000);
 
@@ -225,28 +257,39 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     @Override public void mainClosing()
     {
         clientFacade.removeModificationListener(this);
-        try {
+        try
+        {
 
             closeCallback.run();
 
-        } catch (Exception ex) {
-            logger.error(ex.getMessage(),ex);
+        }
+        catch (Exception ex)
+        {
+            logger.error(ex.getMessage(), ex);
         }
     }
 
-    @Override
-    public void menuClicked(String action)
+    @Override public void menuClicked(String action)
     {
     }
 
     @Override public void dataChanged(ModificationEvent evt) throws RaplaException
     {
-        mainView.updateView( evt);
-        taskPresenter.updateView(evt);
+        mainView.updateView(evt);
+        placeTaskPresenter.updateView(evt);
+        for (TaskPresenter p : openDialogsPresenter.values())
+        {
+            p.updateView(evt);
+        }
     }
 
     public void stop()
     {
         mainView.close();
+        final Collection<DialogInterface> openDialogs = this.openDialogs.values();
+        for (DialogInterface di : openDialogs)
+        {
+            di.close();
+        }
     }
 }

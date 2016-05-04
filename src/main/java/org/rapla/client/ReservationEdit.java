@@ -5,6 +5,7 @@ import java.util.Date;
 
 import javax.swing.event.ChangeListener;
 
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -25,7 +26,7 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
    
     Collection<Appointment> getSelectedAppointments();
 
-    void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException;
+    void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, ApplicationEvent event) throws RaplaException;
 
     Reservation getOriginal();
 

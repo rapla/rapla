@@ -43,12 +43,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.plaf.ActionMapUIResource;
 
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.internal.SaveUndo;
@@ -88,6 +90,7 @@ import org.rapla.storage.PermissionController;
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
 {
     ArrayList<ChangeListener> changeListenerList = new ArrayList<ChangeListener>();
+    ApplicationEvent applicationEvent;
     protected Reservation mutableReservation;
     private Reservation original;
 
@@ -155,18 +158,19 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     private final PermissionController permissionController;
     private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
     private final JPanel contentPane;
+    private final EventBus eventBus;
 
     @Inject public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            Set<AppointmentStatusFactory> appointmentStatusFactories,  InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
+            Set<AppointmentStatusFactory> appointmentStatusFactories, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
-            Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaInitializationException
+            Set<ReservationToolbarExtension> reservationToolbarExtensions, EventBus eventBus) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.reservationToolbarExtensions = reservationToolbarExtensions;
         this.appointmentStatusFactories = appointmentStatusFactories;
         this.infoFactory = infoFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.eventBus = eventBus;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         commandHistory = new CommandHistory();
         try
@@ -382,9 +386,11 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         }
     }
 
-    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock) throws RaplaException
+    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, ApplicationEvent event) throws RaplaException
     {
+        this.applicationEvent = event;
         RaplaFacade mod = getFacade();
+
         boolean bNew = false;
         if (reservation.isReadOnly())
         {
@@ -452,6 +458,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     public void closeWindow()
     {
         appointmentEdit.dispose();
+        applicationEvent.setStop( true);
+        eventBus.fireEvent( applicationEvent);
         // FIXME fire Close event
         //frame.dispose();
         getLogger().debug("Edit window closed.");

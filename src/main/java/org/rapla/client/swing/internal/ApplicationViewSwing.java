@@ -2,6 +2,7 @@ package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -334,5 +335,9 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         frame.close();
     }
 
+    @Override public PopupContext createPopupContext()
+    {
+        return new SwingPopupContext(frame, null);
+    }
 
 }

@@ -16,8 +16,7 @@ import com.google.web.bindery.event.shared.EventBus;
 @DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)
 public class SwingActivityController extends AbstractActivityController
 {
-    
-    public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
+
     public static final String MERGE_ALLOCATABLES = "merge";
 
 

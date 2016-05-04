@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.SwingActivityController;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaFacade;
 
 import javax.inject.Inject;
@@ -40,7 +42,14 @@ public class EditController
 
     public <T extends Entity> void edit( AppointmentBlock appointmentBlock, PopupContext popupContext)
     {
-        // FIXME either implement as RaplaType or as seperate edit window
+        String applicationEventId = EditTaskPresenter.EDIT_EVENTS_ID;
+        final Reservation reservation = appointmentBlock.getAppointment().getReservation();
+        String info = reservation.getId();
+        final List<Reservation> appointmentBlocks = Collections.singletonList(reservation);
+        EditApplicationEventContext context = new EditApplicationEventContext<Reservation>(appointmentBlocks);
+        context.setAppointmentBlock(appointmentBlock);
+        final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
+        eventBus.fireEvent(event);
     }
 
     public <T extends Entity> void edit( T obj, PopupContext popupContext )
