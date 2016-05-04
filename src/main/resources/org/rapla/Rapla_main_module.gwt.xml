@@ -73,8 +73,9 @@
 	<inherits name='org.gwtbootstrap3.extras.datetimepicker.DateTimePicker'/>
 	<inherits name='org.gwtbootstrap3.extras.datepicker.DatePicker'/>
 	<!-- Specify the paths for translatable code -->
-	<inherits name='org.rapla.jsonrpc.jsonrpc'/>
+	<inherits name='org.rapla.rest.rest'/>
 	<inherits name='org.rapla.inject.inject'/>
+	<inherits name='org.rapla.scheduler.scheduler'/>
 	<!--
 	<inherits name='org.rapla.Rapla_generated'/>
 	-->
