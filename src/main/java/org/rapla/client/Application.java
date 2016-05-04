@@ -125,7 +125,7 @@ import java.util.Set;
                 boolean modal = false;
                 String[] options = new String[] {};
                 final DialogInterface dialog = dialogUiFactory.create(popupContext, modal, widget.getComponent(), options);
-                dialog.setSize(600, 600);
+                dialog.setSize(1050, 700);
                 openDialogs.put(activity, dialog);
                 openDialogsPresenter.put(activity, taskPresenter);
                 dialog.start(false);
