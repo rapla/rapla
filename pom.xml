@@ -37,31 +37,6 @@
     </properties>
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>2.6</version>
-				<executions>
-					<execution>
-						<id>generatedResources</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<overwrite>true</overwrite>
-							<outputDirectory>${project.build.directory}/classes/META-INF</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${project.build.directory}/generated-sources/annotations/META-INF</directory>
-									<targetPath>${project.build.directory}/classes/META-INF</targetPath>
-									<filtering>false</filtering>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
