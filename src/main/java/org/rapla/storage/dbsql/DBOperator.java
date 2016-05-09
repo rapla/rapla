@@ -718,7 +718,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
                 }
             }
 
-            raplaSQLOutput.requestLocks(connection, connectionTimestamp, lockIds, null);
+            raplaSQLOutput.requestLocks(connection, connectionTimestamp, lockIds, null, !needsGlobalLock);
             for (ReferenceInfo id : removeObjects)
             {
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
@@ -762,7 +762,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         {
             try
             {
-                raplaSQLOutput.removeLocks(connection, lockIds, connectionTimestamp);
+                raplaSQLOutput.removeLocks(connection, lockIds, connectionTimestamp, !needsGlobalLock);
                 if (bSupportsTransactions)
                 {
                     connection.commit();
@@ -1028,7 +1028,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
             final Date databaseTimestamp = raplaSQL.getDatabaseTimestamp(con);
-            raplaSQL.requestLocks(con, databaseTimestamp, Collections.singletonList(id), validMilliseconds);
+            raplaSQL.requestLocks(con, databaseTimestamp, Collections.singletonList(id), validMilliseconds, false);
             final Date lastRequested = raplaSQL.getLastRequested(con, id);
             return lastRequested;
         }
@@ -1044,7 +1044,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            raplaSQL.removeLocks(con, Collections.singletonList(id), updatedUntil);
+            raplaSQL.removeLocks(con, Collections.singletonList(id), updatedUntil, false);
             con.commit();
         }
         catch (SQLException e)

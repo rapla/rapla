@@ -428,8 +428,8 @@ class RaplaSQL {
             lockStorage.removeConnection();
         }
     }
-
-    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException,RaplaException
+    
+    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds, boolean deleteLocksOnFailure) throws SQLException,RaplaException
     {
         try
         {
@@ -444,7 +444,7 @@ class RaplaSQL {
             }
             else
             {
-                lockStorage.getLocks(ids, validMilliseconds);
+                lockStorage.getLocks(ids, validMilliseconds, deleteLocksOnFailure);
             }
         }
         finally
@@ -466,12 +466,12 @@ class RaplaSQL {
         }
     }
 
-    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException, RaplaException
+    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil, boolean deleteLocks) throws SQLException, RaplaException
     {
         try
         {
             lockStorage.setConnection(connection, null);
-            lockStorage.removeLocks(ids, updatedUntil);
+            lockStorage.removeLocks(ids, updatedUntil, deleteLocks);
         }
         finally
         {
@@ -489,6 +489,7 @@ class LockStorage extends AbstractTableStorage
     private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP, VALID_UNTIL = ? WHERE LOCKID = ? AND ACTIVE <> 1";
     private final String deactivateWithLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = ? WHERE LOCKID = ?";
     private final String deactivateWithoutLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE LOCKID = ?";
+    private final String deleteLocksSql = "DELETE FROM WRITE_LOCK WHERE LOCKID = ?";
     private String readTimestampInclusiveLockedSql;
     private String requestTimestampSql;
     public LockStorage(Logger logger)
@@ -523,19 +524,19 @@ class LockStorage extends AbstractTableStorage
         readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ACTIVE = 1 UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
     }
 
-    public void removeLocks(Collection<String> ids, Date updatedUntil) throws RaplaException
+    public void removeLocks(Collection<String> ids, Date updatedUntil, boolean deleteLocks) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
             return;
         }
         boolean updateTimestamp = updatedUntil != null;
-        try(final PreparedStatement stmt = con.prepareStatement(updateTimestamp ? deactivateWithLastRequestedUpdateSql : deactivateWithoutLastRequestedUpdateSql))
+        try(final PreparedStatement stmt = con.prepareStatement(deleteLocks ? deleteLocksSql : updateTimestamp ? deactivateWithLastRequestedUpdateSql : deactivateWithoutLastRequestedUpdateSql))
         {
             for(String id : ids)
             {
                 int i = 1;
-                if(updateTimestamp)
+                if(!deleteLocks && updateTimestamp)
                 {
                     stmt.setTimestamp(i, new java.sql.Timestamp(updatedUntil.getTime()));
                     i++;
@@ -559,7 +560,7 @@ class LockStorage extends AbstractTableStorage
         {
             deleteStmt.setQueryTimeout(60);
             final int executeBatch = deleteStmt.executeUpdate();
-            logger.debug("deleted logs: " + executeBatch);
+            logger.debug("cleanuped logs: " + executeBatch);
         }
         catch(Exception e)
         {
@@ -704,7 +705,7 @@ class LockStorage extends AbstractTableStorage
         return validOffset;
     }
 
-    public void getLocks(Collection<String> ids, Long validMilliseconds) throws RaplaException
+    public void getLocks(Collection<String> ids, Long validMilliseconds, boolean deleteLocksOnFailure) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
@@ -718,7 +719,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch(RaplaException e)
         {
-            removeLocks(ids, null);
+            removeLocks(ids, null, deleteLocksOnFailure);
             try
             {
                 if(con.getMetaData().supportsTransactions())
@@ -752,7 +753,7 @@ class LockStorage extends AbstractTableStorage
             {
                 Thread.sleep(1);
                 // remove it so we can request a new
-                removeLocks(Collections.singleton(GLOBAL_LOCK), null);
+                removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
                 return requestLock(lockId, lastLocked);
             }
             else
@@ -768,7 +769,7 @@ class LockStorage extends AbstractTableStorage
                         final long actualTime = System.currentTimeMillis();
                         if((actualTime - startWaitingTime) > 30000l)
                         {
-                            removeLocks(Collections.singleton(GLOBAL_LOCK), null);
+                            removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
                             if(con.getMetaData().supportsTransactions())
                             {// Commit so others do not see the global lock any more
                                 con.commit();
