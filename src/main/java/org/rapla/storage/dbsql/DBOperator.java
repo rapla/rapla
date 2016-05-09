@@ -37,6 +37,7 @@ import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -118,26 +119,46 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
     private void scheduleCleanupAndRefresh()
     {
-        final int delay = 30000;
-        final int period = 15000;
-
-        scheduleConnectedTasks(new Command()
         {
-            @Override public void execute() throws Exception
+            final int delay = 30000;
+            final int period = 15000;
+            scheduleConnectedTasks(new Command()
             {
-                try (final Connection connection = createConnection())
+                @Override
+                public void execute() throws Exception
+                {
+                    try (final Connection connection = createConnection())
+                    {
+                        final RaplaDefaultXMLContext context = createOutputContext(cache);
+                        final RaplaSQL raplaSQL = new RaplaSQL(context);
+                        raplaSQL.cleanupOldLocks(connection);
+                        connection.commit();
+                    }
+                    catch (Throwable t)
+                    {
+                        DBOperator.this.logger.info("Could not release old locks");
+                    }
+                }
+            }, delay, period);
+        }
+        {
+            long delay = 100;//DateTools.MILLISECONDS_PER_DAY;
+            long period = DateTools.MILLISECONDS_PER_DAY;
+            scheduleConnectedTasks(() -> {
+                try(final Connection con = createConnection())
                 {
                     final RaplaDefaultXMLContext context = createOutputContext(cache);
                     final RaplaSQL raplaSQL = new RaplaSQL(context);
-                    raplaSQL.cleanupOldLocks(connection);
-                    connection.commit();
+                    final Date date = new Date(getLastRefreshed().getTime() - LocalAbstractCachableOperator.HISTORY_DURATION);
+                    raplaSQL.cleanupHistory(con, date);
+                    con.commit();
                 }
-                catch (Throwable t)
+                catch(Throwable t)
                 {
-                    DBOperator.this.logger.info("Could not release old locks");
+                    DBOperator.this.logger.info("could not clean up history: "+t.getMessage());
                 }
-            }
-        }, delay, period);
+            }, delay, period);
+        }
     }
 
     public boolean supportsActiveMonitoring()

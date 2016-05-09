@@ -93,6 +93,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -476,6 +477,19 @@ class RaplaSQL {
         finally
         {
             lockStorage.removeConnection();
+        }
+    }
+
+    public void cleanupHistory(Connection con, Date date) throws SQLException
+    {
+        try
+        {
+            history.setConnection(con, null);
+            history.cleanupHistory(date);
+        }
+        finally
+        {
+            history.removeConnection();
         }
     }
 }
@@ -2331,6 +2345,46 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         }
     }
     
+    public void cleanupHistory(Date date) throws SQLException
+    {
+        // first we collect all dates from entries
+        final LinkedHashMap<String, Date> idToTimestamp = new LinkedHashMap<>();
+        ResultSet result = null;
+        try (final PreparedStatement stmt = con.prepareStatement("SELECT ID, CHANGED_AT FROM CHANGES WHERE CHANGED_AT < ? ORDER BY CHANGED_AT DESC"))
+        {
+            stmt.setTimestamp(1, new java.sql.Timestamp(date.getTime()));
+            result = stmt.executeQuery();
+            while(result.next())
+            {
+                if (!idToTimestamp.containsKey(result.getString(1)))
+                {
+                    idToTimestamp.put(result.getString(1), new Date(result.getTimestamp(2).getTime()));
+                }
+            }
+        }
+        finally
+        {
+            if(result != null)
+            {
+                result.close();
+            }
+        }
+        // now we delete all older entries or those who have the same timestamp and are deleted
+        try(final PreparedStatement stmt = con.prepareStatement("DELETE FROM CHANGES WHERE (ID = ? AND CHANGED_AT < ?) OR (ID = ? AND CHANGED_AT = ? AND ISDELETE = 1)"))
+        {
+            for (Entry<String, Date> idAndTimestamp : idToTimestamp.entrySet())
+            {
+                stmt.setString(1, idAndTimestamp.getKey());
+                stmt.setTimestamp(2, new java.sql.Timestamp(idAndTimestamp.getValue().getTime()));
+                stmt.setString(3, idAndTimestamp.getKey());
+                stmt.setTimestamp(4, new java.sql.Timestamp(idAndTimestamp.getValue().getTime()));
+                stmt.addBatch();
+            }
+            final int[] executeBatch = stmt.executeBatch();
+            logger.info("Deleted " + Arrays.toString(executeBatch) + " history entries");
+        }
+    }
+
     @Override
     protected void createSQL(Collection<ColumnDef> entries)
     {
