@@ -26,6 +26,7 @@ import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.internal.rest.RestApplication;
+import org.rapla.server.internal.rest.validator.Injector;
 import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
@@ -373,7 +374,7 @@ public class MainServlet extends HttpServlet
                 return;
             }
             final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
-            Map<String, MembersInjector> membersInjector = server.getMembersInjector();
+            Injector membersInjector = server.getMembersInjector();
             request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, membersInjector);
             dispatcher.service(request, response);
         }

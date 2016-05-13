@@ -1,7 +1,6 @@
 package org.rapla.server.internal.rest.validator;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
@@ -30,21 +29,28 @@ public class RaplaRestDaggerContextProvider implements ContextResolver<GeneralVa
         public void validate(HttpRequest request, Object object, Class<?>... groups)
         {
             final Object context = request.getAttribute(RAPLA_CONTEXT);
-            if (context != null)
+            if (context != null )
             {
+                if ( !(context instanceof Injector))
+                {
+                    IllegalStateException newEx = new IllegalStateException("Request attribute in " + RAPLA_CONTEXT + " does not implement: " + Injector.class);
+                    throw newEx;
+                }
+                final Class<?> aClass = object.getClass();
+                final MembersInjector membersInjector = ((Injector) context).getMembersInjector(aClass);
+                if ( membersInjector == null)
+                {
+                    IllegalStateException newEx = new IllegalStateException("No members injector available for " + aClass);
+                    throw newEx;
+                }
                 try
                 {
-                    Map<String, MembersInjector> membersInjector = (Map<String, MembersInjector>) context;
-                    final MembersInjector memInj = membersInjector.get(object.getClass().getCanonicalName());
-                    memInj.injectMembers(object);
-                    //                final Method membersInjectMethod = context.getClass().getDeclaredMethod("");
-                    //                final Object membersInjector = membersInjectMethod.invoke(context);
-                    //                ((MembersInjector) membersInjector).injectMembers(object);
+                    membersInjector.injectMembers( object);
                 }
                 catch (Exception e)
                 {
                     IllegalStateException newEx = new IllegalStateException("Could not inject dependencies for " + object + ": " + e.getMessage(), e);
-                    newEx.printStackTrace();
+                    //newEx.printStackTrace();
                     throw newEx;
                 }
             }

@@ -76,8 +76,8 @@ public class RestApplication extends Application
 
     public RestApplication(@Context ServletContext context) throws IOException
     {
-//        final HashSet<Class<?>> classes = scanWithAnnotation(context);
-        final Set<Class<?>> classes = getFromMetaInf();
+        final Set<Class<?>> classes = scanWithAnnotation(context);
+//        final Set<Class<?>> classes = getFromMetaInf();
         this.classes = Collections.unmodifiableSet(classes);
     }
 

@@ -46,6 +46,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.server.internal.rest.validator.Injector;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
@@ -67,7 +68,7 @@ public class ServerServiceImpl implements ServerServiceContainer
     private final CommandScheduler scheduler;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
-    private Map<String, MembersInjector> membersInjector;
+    private Injector membersInjector;
 
     public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
     {
@@ -91,7 +92,14 @@ public class ServerServiceImpl implements ServerServiceContainer
             //        }
             this.operator = operator;
             this.facade = facade;
-            this.membersInjector = membersInjector;
+            this.membersInjector = new Injector()
+            {
+                @Override public <T> MembersInjector<T> getMembersInjector(Class<T> t)
+                {
+                    final String canonicalName = t.getCanonicalName();
+                    return membersInjector.get(canonicalName);
+                }
+            };
             ((FacadeImpl) facade).setOperator(operator);
 
             // Start database or file connection and read data
@@ -164,7 +172,7 @@ public class ServerServiceImpl implements ServerServiceContainer
         }
     }
 
-    public Map<String, MembersInjector> getMembersInjector()
+    public Injector getMembersInjector()
     {
         return membersInjector;
     }
