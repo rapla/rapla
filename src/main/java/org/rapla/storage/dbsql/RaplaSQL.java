@@ -93,6 +93,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -428,8 +429,8 @@ class RaplaSQL {
             lockStorage.removeConnection();
         }
     }
-
-    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds) throws SQLException,RaplaException
+    
+    public void requestLocks(Connection connection, Date connectionTimestamp, Collection<String> ids, Long validMilliseconds, boolean deleteLocksOnFailure) throws SQLException,RaplaException
     {
         try
         {
@@ -444,7 +445,7 @@ class RaplaSQL {
             }
             else
             {
-                lockStorage.getLocks(ids, validMilliseconds);
+                lockStorage.getLocks(ids, validMilliseconds, deleteLocksOnFailure);
             }
         }
         finally
@@ -466,16 +467,29 @@ class RaplaSQL {
         }
     }
 
-    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil) throws SQLException, RaplaException
+    public void removeLocks(Connection connection, Collection<String> ids, Date updatedUntil, boolean deleteLocks) throws SQLException, RaplaException
     {
         try
         {
             lockStorage.setConnection(connection, null);
-            lockStorage.removeLocks(ids, updatedUntil);
+            lockStorage.removeLocks(ids, updatedUntil, deleteLocks);
         }
         finally
         {
             lockStorage.removeConnection();
+        }
+    }
+
+    public void cleanupHistory(Connection con, Date date) throws SQLException
+    {
+        try
+        {
+            history.setConnection(con, null);
+            history.cleanupHistory(date);
+        }
+        finally
+        {
+            history.removeConnection();
         }
     }
 }
@@ -489,6 +503,7 @@ class LockStorage extends AbstractTableStorage
     private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP, VALID_UNTIL = ? WHERE LOCKID = ? AND ACTIVE <> 1";
     private final String deactivateWithLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = ? WHERE LOCKID = ?";
     private final String deactivateWithoutLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE LOCKID = ?";
+    private final String deleteLocksSql = "DELETE FROM WRITE_LOCK WHERE LOCKID = ?";
     private String readTimestampInclusiveLockedSql;
     private String requestTimestampSql;
     public LockStorage(Logger logger)
@@ -523,19 +538,19 @@ class LockStorage extends AbstractTableStorage
         readTimestampInclusiveLockedSql = "SELECT LAST_CHANGED FROM WRITE_LOCK WHERE ACTIVE = 1 UNION "+ requestTimestampSql + " ORDER BY LAST_CHANGED ASC LIMIT 1";
     }
 
-    public void removeLocks(Collection<String> ids, Date updatedUntil) throws RaplaException
+    public void removeLocks(Collection<String> ids, Date updatedUntil, boolean deleteLocks) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
             return;
         }
         boolean updateTimestamp = updatedUntil != null;
-        try(final PreparedStatement stmt = con.prepareStatement(updateTimestamp ? deactivateWithLastRequestedUpdateSql : deactivateWithoutLastRequestedUpdateSql))
+        try(final PreparedStatement stmt = con.prepareStatement(deleteLocks ? deleteLocksSql : updateTimestamp ? deactivateWithLastRequestedUpdateSql : deactivateWithoutLastRequestedUpdateSql))
         {
             for(String id : ids)
             {
                 int i = 1;
-                if(updateTimestamp)
+                if(!deleteLocks && updateTimestamp)
                 {
                     stmt.setTimestamp(i, new java.sql.Timestamp(updatedUntil.getTime()));
                     i++;
@@ -559,7 +574,7 @@ class LockStorage extends AbstractTableStorage
         {
             deleteStmt.setQueryTimeout(60);
             final int executeBatch = deleteStmt.executeUpdate();
-            logger.debug("deleted logs: " + executeBatch);
+            logger.debug("cleanuped logs: " + executeBatch);
         }
         catch(Exception e)
         {
@@ -704,7 +719,7 @@ class LockStorage extends AbstractTableStorage
         return validOffset;
     }
 
-    public void getLocks(Collection<String> ids, Long validMilliseconds) throws RaplaException
+    public void getLocks(Collection<String> ids, Long validMilliseconds, boolean deleteLocksOnFailure) throws RaplaException
     {
         if (ids == null || ids.isEmpty())
         {
@@ -718,7 +733,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch(RaplaException e)
         {
-            removeLocks(ids, null);
+            removeLocks(ids, null, deleteLocksOnFailure);
             try
             {
                 if(con.getMetaData().supportsTransactions())
@@ -752,7 +767,7 @@ class LockStorage extends AbstractTableStorage
             {
                 Thread.sleep(1);
                 // remove it so we can request a new
-                removeLocks(Collections.singleton(GLOBAL_LOCK), null);
+                removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
                 return requestLock(lockId, lastLocked);
             }
             else
@@ -768,7 +783,7 @@ class LockStorage extends AbstractTableStorage
                         final long actualTime = System.currentTimeMillis();
                         if((actualTime - startWaitingTime) > 30000l)
                         {
-                            removeLocks(Collections.singleton(GLOBAL_LOCK), null);
+                            removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
                             if(con.getMetaData().supportsTransactions())
                             {// Commit so others do not see the global lock any more
                                 con.commit();
@@ -2330,6 +2345,46 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         }
     }
     
+    public void cleanupHistory(Date date) throws SQLException
+    {
+        // first we collect all dates from entries
+        final LinkedHashMap<String, Date> idToTimestamp = new LinkedHashMap<>();
+        ResultSet result = null;
+        try (final PreparedStatement stmt = con.prepareStatement("SELECT ID, CHANGED_AT FROM CHANGES WHERE CHANGED_AT < ? ORDER BY CHANGED_AT DESC"))
+        {
+            stmt.setTimestamp(1, new java.sql.Timestamp(date.getTime()));
+            result = stmt.executeQuery();
+            while(result.next())
+            {
+                if (!idToTimestamp.containsKey(result.getString(1)))
+                {
+                    idToTimestamp.put(result.getString(1), new Date(result.getTimestamp(2).getTime()));
+                }
+            }
+        }
+        finally
+        {
+            if(result != null)
+            {
+                result.close();
+            }
+        }
+        // now we delete all older entries or those who have the same timestamp and are deleted
+        try(final PreparedStatement stmt = con.prepareStatement("DELETE FROM CHANGES WHERE (ID = ? AND CHANGED_AT < ?) OR (ID = ? AND CHANGED_AT = ? AND ISDELETE = 1)"))
+        {
+            for (Entry<String, Date> idAndTimestamp : idToTimestamp.entrySet())
+            {
+                stmt.setString(1, idAndTimestamp.getKey());
+                stmt.setTimestamp(2, new java.sql.Timestamp(idAndTimestamp.getValue().getTime()));
+                stmt.setString(3, idAndTimestamp.getKey());
+                stmt.setTimestamp(4, new java.sql.Timestamp(idAndTimestamp.getValue().getTime()));
+                stmt.addBatch();
+            }
+            final int[] executeBatch = stmt.executeBatch();
+            logger.info("Deleted " + Arrays.toString(executeBatch) + " history entries");
+        }
+    }
+
     @Override
     protected void createSQL(Collection<ColumnDef> entries)
     {
