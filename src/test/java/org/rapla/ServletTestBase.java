@@ -1,21 +1,5 @@
 package org.rapla;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.EnumSet;
-import java.util.Map;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -24,12 +8,24 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
+import org.rapla.rest.server.Injector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.rest.RestApplication;
-import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 
-import dagger.MembersInjector;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.EnumSet;
 
 @SuppressWarnings("restriction")
 public abstract class ServletTestBase
@@ -55,7 +51,7 @@ public abstract class ServletTestBase
             @Override
             public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
             {
-                request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, serverServiceImpl.getMembersInjector());
+                request.setAttribute(Injector.class.getCanonicalName(), serverServiceImpl.getMembersInjector());
                 chain.doFilter(request, response);
             }
 

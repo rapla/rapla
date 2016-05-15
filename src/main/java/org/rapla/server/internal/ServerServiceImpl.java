@@ -12,20 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server.internal;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import net.fortuna.ical4j.model.TimeZoneRegistry;
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -42,19 +30,24 @@ import org.rapla.framework.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.rest.server.Injector;
+import org.rapla.rest.server.ReflectionMembersInjector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.internal.rest.validator.Injector;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import dagger.MembersInjector;
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
 
 @DefaultImplementation(of = ServerServiceContainer.class, context = InjectionContext.server, export = true)
 public class ServerServiceImpl implements ServerServiceContainer
@@ -66,9 +59,9 @@ public class ServerServiceImpl implements ServerServiceContainer
     private boolean passwordCheckDisabled;
     private final RaplaLocale raplaLocale;
     private final CommandScheduler scheduler;
+    Injector membersInjector;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
-    private Injector membersInjector;
 
     public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
     {
@@ -77,7 +70,7 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            CommandScheduler scheduler, ServerContainerContext serverContainerContext, Map<String, MembersInjector> membersInjector) throws RaplaInitializationException
+            CommandScheduler scheduler, ServerContainerContext serverContainerContext) throws RaplaInitializationException
     {
         try
         {
@@ -92,14 +85,6 @@ public class ServerServiceImpl implements ServerServiceContainer
             //        }
             this.operator = operator;
             this.facade = facade;
-            this.membersInjector = new Injector()
-            {
-                @Override public <T> MembersInjector<T> getMembersInjector(Class<T> t)
-                {
-                    final String canonicalName = t.getCanonicalName();
-                    return membersInjector.get(canonicalName);
-                }
-            };
             ((FacadeImpl) facade).setOperator(operator);
 
             // Start database or file connection and read data
@@ -175,6 +160,11 @@ public class ServerServiceImpl implements ServerServiceContainer
     public Injector getMembersInjector()
     {
         return membersInjector;
+    }
+
+    public void setMembersInjector(ReflectionMembersInjector membersInjector)
+    {
+        this.membersInjector = membersInjector;
     }
 
     public RaplaLocale getRaplaLocale()
@@ -256,5 +246,6 @@ public class ServerServiceImpl implements ServerServiceContainer
     {
         return operator;
     }
+
 
 }

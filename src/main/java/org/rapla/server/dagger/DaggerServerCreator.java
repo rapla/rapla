@@ -2,10 +2,11 @@ package org.rapla.server.dagger;
 
 import org.rapla.framework.logger.Logger;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.rest.server.ReflectionMembersInjector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
-import org.rapla.server.internal.console.ImportExportManagerContainerImpl;
 
 public class DaggerServerCreator
 {
@@ -17,11 +18,15 @@ public class DaggerServerCreator
         if (useReflection)
         {
             String moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
-            server = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ServerServiceContainer.class, DaggerReflectionStarter.Scope.Server, startupModule);
+            final Object component = DaggerReflectionStarter.buildComponent(moduleId, DaggerReflectionStarter.Scope.Server, startupModule);
+            server = DaggerReflectionStarter.createObject( ServerServiceContainer.class,component);
+            final Class aClass = component.getClass();
+            final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(aClass, component);
+            ((ServerServiceImpl)server).setMembersInjector(reflectionMembersInjector);
         }
         else
         {
-            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
+            org.rapla.server.dagger.RaplaServerComponent component = null;//org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
             server = component.getServerServiceContainer();
         }
         return server;

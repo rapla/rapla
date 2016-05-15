@@ -12,13 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.server;
 
-import dagger.MembersInjector;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.logger.Logger;
 import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.rest.server.Injector;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
@@ -26,8 +26,6 @@ import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.internal.rest.RestApplication;
-import org.rapla.server.internal.rest.validator.Injector;
-import org.rapla.server.internal.rest.validator.RaplaRestDaggerContextProvider;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 import javax.naming.Context;
@@ -375,7 +373,7 @@ public class MainServlet extends HttpServlet
             }
             final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
             Injector membersInjector = server.getMembersInjector();
-            request.setAttribute(RaplaRestDaggerContextProvider.RAPLA_CONTEXT, membersInjector);
+            request.setAttribute(Injector.class.getCanonicalName(), membersInjector);
             dispatcher.service(request, response);
         }
         finally

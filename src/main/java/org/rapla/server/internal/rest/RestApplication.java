@@ -10,6 +10,7 @@ import org.rapla.rest.server.provider.json.JsonStringWriter;
 import org.rapla.rest.server.provider.json.JsonWriter;
 import org.rapla.rest.server.provider.json.OptionsAcceptHeader;
 import org.rapla.rest.server.provider.json.PatchReader;
+import org.rapla.rest.server.provider.resteasy.ResteasyMembersInjector;
 import org.rapla.rest.server.provider.xml.XmlReader;
 import org.rapla.rest.server.provider.xml.XmlWriter;
 import org.scannotation.AnnotationDB;
@@ -130,6 +131,7 @@ public class RestApplication extends Application
         boolean scanResources= true;
         if (scanProviders) processScannedResources(db, classes, Provider.class.getName());
         if (scanResources) processScannedResources(db, classes, Path.class.getName());
+        classes.add(ResteasyMembersInjector.class);
         classes.add(RestExceptionMapper.class);
         classes.add(HttpMethodOverride.class);
         classes.add(JsonParamConverterProvider.class);

@@ -51,7 +51,7 @@ public class MyCustomConnector implements CustomConnector
     @Override public Exception deserializeException(SerializableExceptionInformation exe, int statusCode)
     {
         final String message = exe.getMessage();
-        if (message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
+        if (message != null && message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
         {
             return new AuthenticationException(message);
         }
@@ -62,7 +62,8 @@ public class MyCustomConnector implements CustomConnector
             String errorString = raplaResources.format("error.connect", server) + " ";
             return new RaplaConnectException(errorString + exe.getMessage());
         }
-        RaplaException ex = new RaplaExceptionDeserializer().deserializeException(exe,statusCode);
+        final RaplaExceptionDeserializer raplaExceptionDeserializer = new RaplaExceptionDeserializer();
+        RaplaException ex = raplaExceptionDeserializer.deserializeException(exe,statusCode);
         return ex;
     }
 
