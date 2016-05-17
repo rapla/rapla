@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.rapla.RaplaMainContainer;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
+import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaContext;
@@ -130,7 +131,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
             final Preferences systemPreferences = getQuery().getSystemPreferences();
             final String unencodedString = systemPreferences.getEntryAsString(RaplaMainContainer.TITLE, defaultTitle);
             createShortcut = systemPreferences.getEntryAsBoolean(CREATE_SHORTCUT,true);
-            menuName= escapeXml(unencodedString);
+            menuName= XMLWriter.encode(unencodedString);
         }
         catch (RaplaException e) {
             menuName = defaultTitle;

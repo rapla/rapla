@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -196,7 +197,7 @@ public abstract class AbstractHTMLCalendarPage extends RaplaComponent implements
         out.println("<!DOCTYPE html>"); // we have HTML5 
 		out.println("<html>");
 		out.println("<head>");
-		out.println("  <title>" + getTitle() + "</title>");
+		out.println("  <title>" + XMLWriter.encode(getTitle()) + "</title>");
 		out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix + "calendar.css\" type=\"text/css\">");
 		out.println("  <link REL=\"stylesheet\" href=\"" + linkPrefix + "default.css\" type=\"text/css\">");
 		// tell the html page where its favourite icon is stored

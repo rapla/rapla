@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.rapla.RaplaMainContainer;
+import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Container;
 import org.rapla.framework.RaplaContext;
@@ -54,7 +55,7 @@ public class RaplaIndexPageGenerator extends RaplaComponent implements RaplaPage
 		 String title;
 		 final String defaultTitle = getI18n().getString("rapla.title");
 		 try {
-            title= escapeXml(getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle));
+            title= XMLWriter.encode(getQuery().getSystemPreferences().getEntryAsString(RaplaMainContainer.TITLE, defaultTitle));
         } catch (RaplaException e) {
             title = defaultTitle; 
         }
