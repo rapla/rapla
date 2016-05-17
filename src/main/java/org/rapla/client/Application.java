@@ -104,7 +104,8 @@ import java.util.Set;
         final String activityId = activity.getApplicationEventId();
         final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
 
-        final TaskPresenter taskPresenter = activityPresenters.get(activityId).get();
+        final Provider<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
+        final TaskPresenter taskPresenter = taskPresenterProvider.get();
         if (taskPresenter == null)
         {
             return false;

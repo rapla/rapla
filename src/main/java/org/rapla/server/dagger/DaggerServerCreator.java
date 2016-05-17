@@ -1,12 +1,19 @@
 package org.rapla.server.dagger;
 
+import org.rapla.inject.InjectionContext;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.inject.raplainject.SimpleRaplaInjector;
 import org.rapla.logger.Logger;
 import org.rapla.rest.server.Injector;
 import org.rapla.rest.server.ReflectionMembersInjector;
+import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.internal.ServerStorageSelector;
+import org.rapla.server.internal.ShutdownService;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageOperator;
 
 public class DaggerServerCreator
 {
@@ -25,18 +32,22 @@ public class DaggerServerCreator
             return membersInjector;
         }
     }
+
     public static ServerContext create(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         ServerContext result = new ServerContext();
-//        SimpleRaplaInjector injector = new SimpleRaplaInjector( logger);
-//        injector.addComponentInstance(Logger.class,logger);
-//        injector.addComponentInstance(ServerContainerContext.class, containerContext);
-//        injector.addComponentProvider(CachableStorageOperator.class, ServerStorageSelector.class);
-//        injector.addComponentProvider(StorageOperator.class, ServerStorageSelector.class);
-//        injector.initFromMetaInfService(InjectionContext.server);
-//        result.membersInjector =injector.getMembersInjector();
-//        result.serviceContainer = injector.inject(ServerServiceImpl.class);
-//        return result;
+        SimpleRaplaInjector injector = new SimpleRaplaInjector( logger);
+        injector.addComponentInstance(Logger.class,logger);
+        injector.addComponentInstance(ServerContainerContext.class, containerContext);
+        injector.addComponentProvider(CachableStorageOperator.class, ServerStorageSelector.class);
+        injector.addNamedComponentInstanceProvider(ServerService.ENV_RAPLAMAIL_ID,()->containerContext.getMailSession());
+        injector.addComponentInstanceProvider(ShutdownService.class,()->containerContext.getShutdownService());
+        injector.addComponentProvider(StorageOperator.class, ServerStorageSelector.class);
+        injector.initFromMetaInfService(InjectionContext.server);
+        result.membersInjector =injector.getMembersInjector();
+        result.serviceContainer = injector.getInstance(ServerServiceContainer.class);
+        if ( true)
+        return result;
 
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
         boolean useReflection = true;

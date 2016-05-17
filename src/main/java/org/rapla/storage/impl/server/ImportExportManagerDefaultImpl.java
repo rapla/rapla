@@ -16,7 +16,7 @@ public class ImportExportManagerDefaultImpl implements ImportExportManager
     private final ImportExportManager importExportManager;
 
     @Inject
-    ImportExportManagerDefaultImpl(ServerStorageSelector selector)
+    public ImportExportManagerDefaultImpl(ServerStorageSelector selector)
     {
         importExportManager = selector.getImportExportManager().get();
     }

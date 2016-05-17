@@ -371,7 +371,21 @@ public class MainServlet extends HttpServlet
                 return;
             }
             Injector membersInjector = serverStarter.getMembersInjector();
-            request.setAttribute(Injector.class.getCanonicalName(), membersInjector);
+            request.setAttribute(Injector.class.getCanonicalName(), new Injector()
+            {
+                @Override public void injectMembers(Object instance) throws Exception
+                {
+                    try
+                    {
+                        membersInjector.injectMembers( instance);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.error(ex.getMessage(),ex);
+                        throw  ex;
+                    }
+                }
+            });
             dispatcher.service(request, response);
         }
         finally

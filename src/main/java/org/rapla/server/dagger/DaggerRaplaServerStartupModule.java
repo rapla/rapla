@@ -34,7 +34,7 @@ import javax.inject.Named;
         return context;
     }
 
-    @Named(ServerService.ENV_RAPLAMAIL_ID) @Provides @Nullable Object mail()
+    @Named(ServerService.ENV_RAPLAMAIL_ID) @Provides Object mail()
     {
         return context.getMailSession();
     }

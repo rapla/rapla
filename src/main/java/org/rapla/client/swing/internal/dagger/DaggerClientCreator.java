@@ -3,9 +3,20 @@ package org.rapla.client.swing.internal.dagger;
 import org.rapla.client.ClientService;
 import org.rapla.client.UserClientService;
 import org.rapla.client.swing.dagger.DaggerRaplaJavaClientStartupModule;
+import org.rapla.components.iolayer.DefaultIO;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.inject.InjectionContext;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.inject.raplainject.SimpleRaplaInjector;
+import org.rapla.logger.Logger;
+import org.rapla.server.ServerService;
+import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.internal.ServerStorageSelector;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Provider;
 
@@ -37,6 +48,20 @@ public class DaggerClientCreator
 
         final ClientService client;
         UserServiceProvider userClientServiceProvider = new UserServiceProvider();
+        Logger logger = startupEnvironment.getBootstrapLogger();
+        SimpleRaplaInjector injector = new SimpleRaplaInjector( logger);
+        boolean webstartEnabled = startupEnvironment.getStartupMode() == StartupEnvironment.WEBSTART;
+        injector.addComponentInstance(Logger.class,logger);
+        injector.addComponentInstanceProvider(IOInterface.class, () -> webstartEnabled ? new WebstartIO(logger): new DefaultIO(logger));
+        injector.addComponentInstanceProvider(UserClientService.class, userClientServiceProvider);
+        injector.addComponentInstance(StartupEnvironment.class, startupEnvironment);
+        injector.initFromMetaInfService(InjectionContext.swing);
+        if (true)
+        {
+            client = injector.getInstance( ClientService.class);
+            userClientServiceProvider.setClient( (UserClientService) client );
+            return client;
+        }
         final DaggerRaplaJavaClientStartupModule startupModule = new DaggerRaplaJavaClientStartupModule(startupEnvironment,userClientServiceProvider);
         boolean useReflection = true;
         if (useReflection)
