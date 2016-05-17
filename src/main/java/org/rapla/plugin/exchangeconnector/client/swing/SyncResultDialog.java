@@ -13,7 +13,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 
 public class SyncResultDialog extends RaplaGUIComponent

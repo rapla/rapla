@@ -7,7 +7,7 @@ import java.util.Set;
 import org.rapla.client.Application;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 import com.google.web.bindery.event.shared.EventBus;
 

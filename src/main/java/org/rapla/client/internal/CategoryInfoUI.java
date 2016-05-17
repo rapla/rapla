@@ -18,7 +18,7 @@ import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class CategoryInfoUI extends HTMLInfo<Category> {
     public CategoryInfoUI(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger){

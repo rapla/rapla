@@ -21,8 +21,8 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.logger.Logger;
+import org.rapla.logger.RaplaBootstrapLogger;
 
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.

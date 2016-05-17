@@ -21,7 +21,7 @@ import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class ErrorDialogTest extends GUITestCase {
 

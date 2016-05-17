@@ -37,7 +37,7 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 

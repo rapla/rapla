@@ -13,7 +13,7 @@
 package org.rapla.components.util.xml;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /** Reads the data in xml format from an InputSource into the
     LocalCache and converts it to a newer version if necessary.

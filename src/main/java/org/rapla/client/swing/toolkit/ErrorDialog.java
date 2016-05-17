@@ -33,7 +33,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 final public class ErrorDialog {
     RaplaImages images;

@@ -48,7 +48,7 @@ import javax.print.attribute.standard.OrientationRequested;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 @Singleton
 public class DefaultIO  implements IOInterface{

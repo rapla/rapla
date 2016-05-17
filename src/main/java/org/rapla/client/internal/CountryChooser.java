@@ -30,7 +30,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.storage.RemoteLocaleService;
 
 final public class CountryChooser implements RaplaWidget

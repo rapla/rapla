@@ -24,7 +24,7 @@ import org.rapla.components.util.xml.RaplaErrorHandler;
 import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;

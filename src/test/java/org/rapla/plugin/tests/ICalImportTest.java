@@ -22,7 +22,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;

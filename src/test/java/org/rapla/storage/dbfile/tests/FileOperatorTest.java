@@ -36,7 +36,7 @@ import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.tests.AbstractOperatorTest;

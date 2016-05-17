@@ -21,7 +21,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 /** Provides AppointmentListener handling.*/
 public class AbstractAppointmentEditor extends RaplaGUIComponent {
     ArrayList<AppointmentListener> listenerList = new ArrayList<AppointmentListener>();

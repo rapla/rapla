@@ -32,7 +32,7 @@ import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class LongField extends AbstractEditField implements ChangeListener, FocusListener, MultiEditField, SetGetField<Long>{
 	JPanel panel;

@@ -26,7 +26,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.ConsoleLogger;
+import org.rapla.logger.ConsoleLogger;
 
 
 /**Demonstration for connecting your app and importing some users */

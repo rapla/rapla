@@ -15,7 +15,7 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 import org.rapla.scheduler.Promise;

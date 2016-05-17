@@ -17,8 +17,8 @@ import java.net.URL;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.ConsoleLogger;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.ConsoleLogger;
+import org.rapla.logger.Logger;
 
 final public class RaplaStartupEnvironment implements StartupEnvironment
 {

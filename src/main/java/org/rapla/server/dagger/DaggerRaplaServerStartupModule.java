@@ -3,7 +3,7 @@ package org.rapla.server.dagger;
 import dagger.Module;
 import dagger.Provides;
 import org.jetbrains.annotations.Nullable;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.ServerService;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStorageSelector;

@@ -47,7 +47,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidget
 {

@@ -47,7 +47,7 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class DateChooserPanel extends RaplaGUIComponent
     implements

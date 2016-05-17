@@ -7,13 +7,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.ServletTestBase;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.rest.client.swing.HTTPConnector;
 import org.rapla.rest.client.swing.JsonRemoteConnector;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.net.URL;
@@ -30,8 +28,7 @@ public class RestAPITest  {
     public void setUp() throws Exception
     {
         Logger logger = RaplaTestCase.initLoger();
-        final ServerServiceContainer servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
-        server = ServletTestBase.createServer(servlet, port);
+        server = RaplaTestCase.createServerContext(logger, "testdefaujlt.xml", port).getServer();
     }
 
 

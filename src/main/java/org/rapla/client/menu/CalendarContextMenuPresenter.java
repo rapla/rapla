@@ -23,7 +23,6 @@ import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.menu.data.MenuCallback;
 import org.rapla.client.menu.data.MenuEntry;
 import org.rapla.client.menu.data.Point;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -36,7 +35,7 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.storage.PermissionController;
 

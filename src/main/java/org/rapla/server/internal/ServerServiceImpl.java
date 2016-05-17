@@ -14,9 +14,11 @@ package org.rapla.server.internal;
 
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
+import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
@@ -26,12 +28,10 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
-import org.rapla.rest.server.Injector;
-import org.rapla.rest.server.ReflectionMembersInjector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
@@ -59,7 +59,6 @@ public class ServerServiceImpl implements ServerServiceContainer
     private boolean passwordCheckDisabled;
     private final RaplaLocale raplaLocale;
     private final CommandScheduler scheduler;
-    Injector membersInjector;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
 
@@ -70,8 +69,21 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            CommandScheduler scheduler, ServerContainerContext serverContainerContext) throws RaplaInitializationException
+            CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n) throws RaplaInitializationException
     {
+        String version = i18n.getString("rapla.version");
+        logger.info("Rapla.Version=" + version);
+        version = i18n.getString("rapla.build");
+        logger.info("Rapla.Build=" + version);
+        try
+        {
+            String javaversion = System.getProperty("java.version");
+            logger.info("Java.Version=" + javaversion);
+        }
+        catch (SecurityException ex)
+        {
+            logger.warn("Permission to system property java.version is denied!");
+        }
         try
         {
             this.scheduler = scheduler;
@@ -89,6 +101,8 @@ public class ServerServiceImpl implements ServerServiceContainer
 
             // Start database or file connection and read data
             operator.connect();
+            AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
+            AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
             Preferences preferences = operator.getPreferences(null, true);
             String importExportTimeZone = TimeZone.getDefault().getID();
             // get old entries
@@ -155,16 +169,6 @@ public class ServerServiceImpl implements ServerServiceContainer
         {
             throw new RaplaInitializationException(e);
         }
-    }
-
-    public Injector getMembersInjector()
-    {
-        return membersInjector;
-    }
-
-    public void setMembersInjector(ReflectionMembersInjector membersInjector)
-    {
-        this.membersInjector = membersInjector;
     }
 
     public RaplaLocale getRaplaLocale()

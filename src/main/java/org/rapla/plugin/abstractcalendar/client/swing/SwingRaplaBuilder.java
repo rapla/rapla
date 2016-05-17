@@ -22,7 +22,7 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 public class SwingRaplaBuilder extends RaplaBuilder

@@ -2,7 +2,7 @@ package org.rapla.framework;
 
 import java.net.URL;
 
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public interface StartupEnvironment
 {

@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.RaplaResources;
-import org.rapla.ServletTestBase;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
@@ -36,7 +35,7 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -55,11 +54,8 @@ public class TestRemoteStorageImpl
     {
         Logger logger = RaplaTestCase.initLoger();
         int port = 8052;
-        ServerContainerContext container = new ServerContainerContext();
-        String xmlFile = "testdefault.xml";
-        container.addFileDatasource("raplafile",RaplaTestCase.getTestDataFile(xmlFile));
-        ServerServiceImpl serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, container);
-        server = ServletTestBase.createServer(serverService, port);
+        final RaplaTestCase.ServerContext serverContext = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
+        this.server = serverContext.getServer();
         Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
         clientFacade = clientFacadeProvider.get();
         clientFacade.login("homer", "duffs".toCharArray());

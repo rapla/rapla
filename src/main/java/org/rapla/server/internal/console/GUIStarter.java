@@ -6,7 +6,7 @@ import org.rapla.ConnectInfo;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListenerAdapter;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 class GUIStarter
 {

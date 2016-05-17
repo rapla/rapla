@@ -2,10 +2,10 @@ package org.rapla.storage.dbrm;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
-import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.rest.client.AuthenticationException;
 import org.rapla.rest.client.CustomConnector;
 import org.rapla.rest.client.SerializableExceptionInformation;
@@ -22,13 +22,15 @@ public class MyCustomConnector implements CustomConnector
     //private final String errorString;
     private final CommandScheduler commandQueue;
     Provider<RaplaResources> i18n;
+    Logger logger;
 
     @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,
-            CommandScheduler commandQueue)
+            CommandScheduler commandQueue, Logger logger)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
         this.commandQueue = commandQueue;
         this.i18n = i18n;
+        this.logger = logger.getChildLogger("connector");
     }
 
     @Override public String reauth(Class proxy) throws Exception
@@ -87,5 +89,10 @@ public class MyCustomConnector implements CustomConnector
     public String getFullQualifiedUrl(String relativePath)
     {
         return remoteConnectionInfo.getServerURL() + "/" + relativePath;
+    }
+
+    @Override public Logger getLogger()
+    {
+        return logger;
     }
 }

@@ -25,7 +25,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 import javax.inject.Provider;
 import java.awt.Component;
@@ -90,7 +90,7 @@ public class CalendarAction extends RaplaAction {
             MultiCalendarPresenter cal = multiCalendarViewFactory.get();
             cal.init( false);
             frame.setContentPane((Container) cal.provideContent().getComponent());
-            frame.addWindowListener(new DisposingTool(cal));
+            //frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;
             frame.place( true, packFrame );
             frame.setVisible(true);

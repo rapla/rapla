@@ -17,7 +17,7 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class DeleteInfoUI extends HTMLInfo<Object[]> {
     public DeleteInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger) {

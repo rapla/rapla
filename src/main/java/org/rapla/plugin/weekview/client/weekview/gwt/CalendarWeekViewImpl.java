@@ -11,7 +11,7 @@ import org.rapla.client.gwt.view.WeekviewGWT.Callback;
 import org.rapla.client.menu.gwt.ContextCreator;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;

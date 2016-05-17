@@ -39,7 +39,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;

@@ -6,8 +6,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.logger.Logger;
+import org.rapla.logger.RaplaBootstrapLogger;
 
 import java.sql.Connection;
 import java.sql.Date;

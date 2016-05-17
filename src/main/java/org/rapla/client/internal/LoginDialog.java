@@ -14,7 +14,6 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -24,7 +23,7 @@ import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 import javax.swing.Action;
 import javax.swing.BorderFactory;

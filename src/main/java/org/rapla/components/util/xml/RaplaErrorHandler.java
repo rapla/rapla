@@ -1,6 +1,6 @@
 package org.rapla.components.util.xml;
 
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;

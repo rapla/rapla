@@ -38,7 +38,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /**
     Base class for most components. Eases

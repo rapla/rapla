@@ -28,7 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 final public class WebstartIO extends DefaultIO {
     Method lookup;

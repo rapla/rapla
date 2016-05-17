@@ -34,7 +34,7 @@ import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 final public class LicenseInfoUI
     extends

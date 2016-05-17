@@ -47,10 +47,10 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 
-public class MultiCalendarPresenter implements Presenter, Disposable
+public class MultiCalendarPresenter implements Presenter
 {
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";
     
@@ -308,12 +308,7 @@ public class MultiCalendarPresenter implements Presenter, Disposable
         }
     }
 
-    @Override
-    public void dispose()
-    {
-        // TODO Auto-generated method stub
-        
-    }
+
 
 
 }

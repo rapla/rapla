@@ -21,7 +21,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.Category;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 
 public class CategorySelectField extends AbstractSelectField<Category>

@@ -3,23 +3,18 @@ package org.rapla.server.internal.console;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
-import org.rapla.client.internal.RaplaClientServiceImpl;
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.rest.client.swing.JavaClientServerConnector;
 import org.rapla.rest.client.swing.JsonRemoteConnector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.RemoteAuthentificationServiceImpl;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
-import org.rapla.storage.StorageOperator;
-import org.rapla.storage.dbrm.RemoteOperator;
 
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -142,7 +137,7 @@ public class StandaloneStarter extends GUIStarter
     protected void exit()
     {
         final ServerServiceContainer server = serverStarter.getServer();
-        if (server != null && server instanceof Disposable)
+        if (server != null)
         {
             server.dispose();
         }

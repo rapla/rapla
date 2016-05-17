@@ -21,7 +21,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.TokenHandler;
 import org.rapla.storage.RaplaSecurityException;

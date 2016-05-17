@@ -21,9 +21,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.PromiseSynchroniser;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
@@ -43,8 +42,8 @@ public class CommunicatorTest
     {
         logger = RaplaTestCase.initLoger();
         int port = 8052;
-        final ServerServiceContainer servlet = RaplaTestCase.createServer(logger, "testdefault.xml");
-        this.server = ServletTestBase.createServer(servlet, port);
+        RaplaTestCase.ServerContext context = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
+        this.server = context.getServer();
         clientFacadeProvider = RaplaTestCase.createFacadeWithRemote( logger, port);
     }
 

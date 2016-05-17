@@ -1,9 +1,9 @@
-package org.rapla.framework.logger;
+package org.rapla.logger;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.rapla.framework.logger.internal.RaplaJDKLoggingAdapter;
+import org.rapla.logger.internal.RaplaJDKLoggingAdapter;
 
 @Singleton
 public class RaplaBootstrapLogger implements Provider<Logger> {
@@ -20,7 +20,7 @@ public class RaplaBootstrapLogger implements Provider<Logger> {
             ClassLoader classLoader = RaplaJDKLoggingAdapter.class.getClassLoader();
             classLoader.loadClass("org.slf4j.Logger");
             @SuppressWarnings("unchecked")
-            Provider<Logger> logManager = (Provider<Logger>) classLoader.loadClass("org.rapla.framework.logger.internal.Slf4jAdapter").newInstance(); 
+            Provider<Logger> logManager = (Provider<Logger>) classLoader.loadClass("Slf4jAdapter").newInstance();
             logger = logManager.get();
             logger.info("Logging via SLF4J API.");
         } catch (Throwable e1) {

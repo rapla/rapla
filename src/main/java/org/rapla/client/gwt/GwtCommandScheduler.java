@@ -4,7 +4,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.rapla.framework.Disposable;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.CommandScheduler;
@@ -13,12 +13,11 @@ import org.rapla.scheduler.CommandScheduler;
 @Singleton
 public final class GwtCommandScheduler extends org.rapla.scheduler.client.gwt.GwtCommandScheduler implements Disposable
 {
-    private final Logger gwtLogger;
 
     @Inject
-    public GwtCommandScheduler(Logger gwtLogger)
+    public GwtCommandScheduler(Logger logger)
     {
-        this.gwtLogger = gwtLogger;
+        super(logger);
     }
 
 
@@ -28,9 +27,4 @@ public final class GwtCommandScheduler extends org.rapla.scheduler.client.gwt.Gw
     }
 
 
-    @Override
-    protected void warn(String message, Exception e)
-    {
-        gwtLogger.warn(message, e);
-    }
 }

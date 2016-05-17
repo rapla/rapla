@@ -16,12 +16,10 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
-import org.rapla.plugin.jndi.JNDIPlugin;
+import org.rapla.logger.Logger;
 import org.rapla.storage.xml.RaplaXMLContextException;
 
 public class JNDIServerPlugin  {

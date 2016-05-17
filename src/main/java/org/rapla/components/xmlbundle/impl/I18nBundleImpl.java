@@ -25,7 +25,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /** The default implementation of the xmlbundle component allows reading from
  a compiled ResourceBundle as well as directly from the source-xml-file.

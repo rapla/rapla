@@ -18,7 +18,7 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 
 @Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_EMAIL)

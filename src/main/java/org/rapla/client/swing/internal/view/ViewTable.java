@@ -41,7 +41,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /**Information of the entity-classes displayed in an HTML-ServerComponent */
 public class ViewTable<T> extends RaplaGUIComponent

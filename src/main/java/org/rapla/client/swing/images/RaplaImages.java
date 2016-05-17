@@ -36,7 +36,7 @@ import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
 import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
 import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /**
  * Offers direct access to the images. 

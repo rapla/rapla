@@ -9,7 +9,7 @@ import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
 import org.rapla.test.util.RaplaTestCase;

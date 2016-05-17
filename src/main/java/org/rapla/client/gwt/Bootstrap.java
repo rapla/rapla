@@ -11,7 +11,7 @@ import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;

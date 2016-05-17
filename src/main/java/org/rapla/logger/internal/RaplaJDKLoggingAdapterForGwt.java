@@ -10,7 +10,7 @@
 | program with every library, which license fulfills the Open Source       |
 | Definition as published by the Open Source Initiative (OSI).             |
 *--------------------------------------------------------------------------*/
-package org.rapla.framework.logger.internal;
+package org.rapla.logger.internal;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,8 +22,9 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 @Singleton
-@DefaultImplementation(of = org.rapla.framework.logger.Logger.class,context = InjectionContext.gwt)
-public class RaplaJDKLoggingAdapterForGwt implements org.rapla.framework.logger.Logger {
+@DefaultImplementation(of = org.rapla.logger.Logger.class,context = InjectionContext.gwt)
+public class RaplaJDKLoggingAdapterForGwt implements org.rapla.logger.Logger
+{
     Logger logger;
     String id;
 
@@ -85,7 +86,7 @@ public class RaplaJDKLoggingAdapterForGwt implements org.rapla.framework.logger.
     }
 
 
-    public org.rapla.framework.logger.Logger getChildLogger(String childLoggerName)
+    public org.rapla.logger.Logger getChildLogger(String childLoggerName)
     {
         String childId = id+ "." + childLoggerName;
         Logger childLogger = getLogger( childId);

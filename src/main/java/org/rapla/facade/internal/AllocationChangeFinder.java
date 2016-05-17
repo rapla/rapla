@@ -33,7 +33,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.AllocationChangeEvent;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
 

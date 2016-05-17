@@ -10,7 +10,7 @@
 | program with every library, which license fulfills the Open Source       |
 | Definition as published by the Open Source Initiative (OSI).             |
 *--------------------------------------------------------------------------*/
-package org.rapla.framework.logger.internal;
+package org.rapla.logger.internal;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,10 +18,10 @@ import java.util.logging.Logger;
 import javax.inject.Provider;
 
 
-public class RaplaJDKLoggingAdapterWithoutClassnameSupport implements Provider<org.rapla.framework.logger.Logger> {
+public class RaplaJDKLoggingAdapterWithoutClassnameSupport implements Provider<org.rapla.logger.Logger> {
     Wrapper wrapper;
     
-    public org.rapla.framework.logger.Logger get() {
+    public org.rapla.logger.Logger get() {
         if ( wrapper == null)
         {
             synchronized ( this) {
@@ -41,7 +41,8 @@ public class RaplaJDKLoggingAdapterWithoutClassnameSupport implements Provider<o
 		return logger;
 	}
 
-    class Wrapper implements org.rapla.framework.logger.Logger{
+    class Wrapper implements org.rapla.logger.Logger
+    {
         java.util.logging.Logger logger;
         String id;
 
@@ -87,7 +88,7 @@ public class RaplaJDKLoggingAdapterWithoutClassnameSupport implements Provider<o
 		}
 
        
-        public org.rapla.framework.logger.Logger getChildLogger(String childLoggerName) 
+        public org.rapla.logger.Logger getChildLogger(String childLoggerName)
         {
             String childId = id+ "." + childLoggerName;
             Logger childLogger = getLogger( childId);

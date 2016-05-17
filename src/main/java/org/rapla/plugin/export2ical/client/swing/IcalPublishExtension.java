@@ -22,7 +22,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 
 class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension

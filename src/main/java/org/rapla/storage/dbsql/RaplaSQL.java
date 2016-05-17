@@ -57,7 +57,7 @@ import org.rapla.entities.storage.internal.ImportExportEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.impl.server.EntityHistory;

@@ -27,7 +27,7 @@ import javax.inject.Singleton;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /**All rapla-windows are registered on the FrameControllerList.
    The FrameControllerList is responsible for positioning the windows

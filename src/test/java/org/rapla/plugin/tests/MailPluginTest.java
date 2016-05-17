@@ -19,7 +19,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
@@ -37,7 +37,7 @@ public class MailPluginTest {
     @Before
     public void setUp() throws Exception {
         Logger logger = RaplaTestCase.initLoger();
-        raplaServer = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
+        raplaServer = (ServerServiceImpl) RaplaTestCase.createServiceContainer(logger, "testdefault.xml");
         // start the server
         // start the client service
         facade1 =  raplaServer.getFacade();

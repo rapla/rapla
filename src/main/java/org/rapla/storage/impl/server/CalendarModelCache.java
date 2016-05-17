@@ -26,7 +26,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.CachableStorageOperator;

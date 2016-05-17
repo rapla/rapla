@@ -14,7 +14,7 @@ import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.util.DateTools;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 public class HTMLWeekViewPresenter extends AbstractHTMLView

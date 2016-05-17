@@ -51,7 +51,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.DefaultScheduler;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Command;
@@ -94,6 +94,19 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         this.env = env;
         this.i18n = i18n;
+        String version = i18n.getString("rapla.version");
+        logger.info("Rapla.Version=" + version);
+        version = i18n.getString("rapla.build");
+        logger.info("Rapla.Build=" + version);
+        try
+        {
+            String javaversion = System.getProperty("java.version");
+            logger.info("Java.Version=" + javaversion);
+        }
+        catch (SecurityException ex)
+        {
+            logger.warn("Permission to system property java.version is denied!");
+        }
         this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.facade = facade;

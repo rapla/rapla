@@ -20,8 +20,8 @@ import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.logger.Logger;
+import org.rapla.logger.RaplaBootstrapLogger;
 
 
 public class MainWebclient  

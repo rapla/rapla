@@ -45,7 +45,7 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class MultiLanguageField extends AbstractEditField implements ChangeListener, ActionListener, CellEditorListener, SetGetField<MultiLanguageName>
 {

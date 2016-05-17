@@ -20,8 +20,8 @@ import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.impl.I18nBundleImpl;
-import org.rapla.framework.logger.ConsoleLogger;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.ConsoleLogger;
+import org.rapla.logger.Logger;
 
 import java.util.Locale;
 

@@ -10,10 +10,11 @@
 | program with every library, which license fulfills the Open Source       |
 | Definition as published by the Open Source Initiative (OSI).             |
 *--------------------------------------------------------------------------*/
-package org.rapla.framework.logger.internal;
+package org.rapla.logger.internal;
 
 import javax.inject.Provider;
 
+import org.rapla.logger.Logger;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
@@ -21,7 +22,7 @@ import org.slf4j.spi.LocationAwareLogger;
 
 @SuppressWarnings("restriction")
 
-public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger> {
+public class Slf4jAdapter implements Provider<Logger> {
     static final public int TRACE_INT = 00;
     static final public int DEBUG_INT = 10;
     static final public int INFO_INT = 20;
@@ -30,7 +31,7 @@ public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger>
     static final public int ERROR_INT = 40;
     static ILoggerFactory iLoggerFactory;
     
-    static public org.rapla.framework.logger.Logger getLoggerForCategory(String categoryName) {
+    static public Logger getLoggerForCategory(String categoryName) {
         
         if (iLoggerFactory == null)
         {
@@ -58,11 +59,12 @@ public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger>
         return iLoggerFactory;
     }
 
-    public org.rapla.framework.logger.Logger get() {
+    public Logger get() {
         return getLoggerForCategory( "rapla");
     }
     
-    static class Wrapper implements org.rapla.framework.logger.Logger{
+    static class Wrapper implements Logger
+    {
         LocationAwareLogger logger;
         String id;
 
@@ -110,7 +112,7 @@ public class Slf4jAdapter implements Provider<org.rapla.framework.logger.Logger>
         	log( ERROR_INT, message, cause);
         }
 
-        public org.rapla.framework.logger.Logger getChildLogger(String childLoggerName) 
+        public Logger getChildLogger(String childLoggerName)
         {
             String childId = id + "." + childLoggerName;
             return getLoggerForCategory( childId);

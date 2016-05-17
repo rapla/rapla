@@ -40,7 +40,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;

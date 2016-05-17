@@ -41,7 +41,7 @@ import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public class TextField extends AbstractEditField implements ActionListener, FocusListener, KeyListener, MultiEditField, SetGetField<String>
 {

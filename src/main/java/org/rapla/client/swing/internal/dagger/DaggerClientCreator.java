@@ -45,8 +45,9 @@ public class DaggerClientCreator
         }
         else
         {
-            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
-            client = component.getClientService();
+            //org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
+            //client = component.getClientService();
+            client = null;
         }
         userClientServiceProvider.setClient( (UserClientService) client );
         return client;
@@ -65,7 +66,7 @@ public class DaggerClientCreator
         }
         else
         {
-            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
+            //org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
             client = null;//component.getClientFacade();
         }
         userClientServiceProvider.setClient( (UserClientService) client );

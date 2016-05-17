@@ -26,7 +26,7 @@ import javax.swing.JList;
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 final public class LanguageChooser implements RaplaWidget
 {

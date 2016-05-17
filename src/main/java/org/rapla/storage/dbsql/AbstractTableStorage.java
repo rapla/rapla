@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 
 public class AbstractTableStorage implements TableStorage

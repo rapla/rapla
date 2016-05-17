@@ -15,7 +15,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.merge.client.MergeController;
 import org.rapla.scheduler.Promise;

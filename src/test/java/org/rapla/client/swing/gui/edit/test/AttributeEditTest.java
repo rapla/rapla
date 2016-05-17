@@ -26,7 +26,7 @@ import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public final class AttributeEditTest extends GUITestCase
 {

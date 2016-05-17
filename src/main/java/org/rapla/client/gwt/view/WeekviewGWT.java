@@ -12,7 +12,7 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.PopupContext;
 import org.rapla.client.menu.gwt.ContextCreator;
 import org.rapla.components.calendarview.Block;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
 import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.RowSlot;

@@ -19,14 +19,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.ServletTestBase;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.server.ServerServiceContainer;
+import org.rapla.logger.Logger;
 import org.rapla.test.util.RaplaTestCase;
 
 import javax.inject.Provider;
@@ -44,8 +42,7 @@ public class UserTest  {
     public void setUp() throws Exception {
         int port = 8052;
         final Logger raplaLogger = RaplaTestCase.initLoger();
-        final ServerServiceContainer servlet = RaplaTestCase.createServer(raplaLogger, "testdefault.xml");
-        server = ServletTestBase.createServer(servlet, port);
+        server = RaplaTestCase.createServerContext(raplaLogger, "testdefault.xml", port).getServer();
         // start the client service
         final Provider<ClientFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
         adminFacade = facadeWithRemote.get();

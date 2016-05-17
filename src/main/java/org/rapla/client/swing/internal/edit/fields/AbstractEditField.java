@@ -23,7 +23,7 @@ import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /** Base class for most rapla edit fields. Provides some mapping
     functionality such as reflection invocation of getters/setters.

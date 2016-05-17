@@ -9,26 +9,22 @@ import javax.servlet.ServletException;
 
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
+import org.rapla.rest.server.Injector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
-import org.rapla.server.internal.console.ImportExportManagerContainerImpl;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
 
 public class ServerStarter
 {
 
     private ServerServiceContainer server;
-    Logger logger;
+    private Injector membersInjector;
+    private Logger logger;
     private ReadWriteLock restartLock = new ReentrantReadWriteLock();
-    Collection<ServletRequestPreprocessor> processors;
-    ServerContainerContext backendContext;
-
-    private ServerServiceContainer create() throws Exception
-    {
-        return DaggerServerCreator.create(logger, backendContext);
-    }
+    private Collection<ServletRequestPreprocessor> processors;
+    private ServerContainerContext backendContext;
 
     public ServerStarter(Logger logger, ServerContainerContext backendContext)
     {
@@ -51,9 +47,10 @@ public class ServerStarter
             {
                 backendContext.setShutdownService(new ShutdownServiceImpl());
             }
-            server = create();
+            final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, backendContext);
+            server = serverContext.getServiceContainer();
+            membersInjector = serverContext.getMembersInjector();
             logger.info("Rapla server started");
-
             processors = server.getServletRequestPreprocessors();
             //return server;
         }
@@ -74,6 +71,10 @@ public class ServerStarter
         }
     }
 
+    public Injector getMembersInjector()
+    {
+        return membersInjector;
+    }
 
     public ServerServiceContainer getServer()
     {

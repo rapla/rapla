@@ -13,7 +13,7 @@ import org.rapla.RaplaResources;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;

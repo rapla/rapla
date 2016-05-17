@@ -41,7 +41,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 abstract public class RaplaXMLWriter extends XMLWriter

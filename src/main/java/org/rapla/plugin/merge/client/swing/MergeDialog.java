@@ -14,7 +14,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.merge.client.MergeController;
 
 import javax.inject.Inject;

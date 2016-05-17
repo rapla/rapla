@@ -16,11 +16,10 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.rapla.components.util.IOUtil;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.logger.Logger;
+import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.rest.server.Injector;
 import org.rapla.server.internal.ServerContainerContext;
-import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
@@ -371,8 +370,7 @@ public class MainServlet extends HttpServlet
 
                 return;
             }
-            final ServerServiceImpl server = (ServerServiceImpl) serverStarter.getServer();
-            Injector membersInjector = server.getMembersInjector();
+            Injector membersInjector = serverStarter.getMembersInjector();
             request.setAttribute(Injector.class.getCanonicalName(), membersInjector);
             dispatcher.service(request, response);
         }

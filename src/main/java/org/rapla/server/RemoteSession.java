@@ -15,7 +15,7 @@ package org.rapla.server;
 import javax.servlet.http.HttpServletRequest;
 
 import org.rapla.entities.User;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.storage.RaplaSecurityException;
 
 /** An interface to access the SessionInformation. An implementation of

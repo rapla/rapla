@@ -1,4 +1,4 @@
-package org.rapla.framework.logger;
+package org.rapla.logger;
 
 
 public interface Logger {

@@ -37,10 +37,9 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 /**
  */

@@ -22,7 +22,7 @@ import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 import javax.swing.JComponent;
 import java.awt.BorderLayout;

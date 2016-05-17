@@ -12,6 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.test.util;
 
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
+import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.domain.permission.PermissionExtension;
@@ -25,12 +34,15 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.framework.logger.Logger;
-import org.rapla.framework.logger.RaplaBootstrapLogger;
+import org.rapla.logger.Logger;
+import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.rest.server.Injector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.internal.ServerServiceImpl;
+import org.rapla.server.internal.rest.RestApplication;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
@@ -47,8 +59,20 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.xml.sax.InputSource;
 
 import javax.inject.Provider;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -62,20 +86,115 @@ public abstract class RaplaTestCase
         return RaplaBootstrapLogger.createRaplaLogger();
     }
 
-    public static ServerServiceContainer createServer( Logger logger, String xmlFile) throws Exception
+    public static class ServerContext
+    {
+        ServerServiceContainer container;
+        Server server;
+
+        public Server getServer()
+        {
+            return server;
+        }
+
+        public ServerServiceContainer getServiceContainer()
+        {
+            return container;
+        }
+    }
+
+    public static ServerContext createServerContext( Logger logger, String xmlFile, int port) throws Exception
     {
         ServerContainerContext containerContext = new ServerContainerContext();
         containerContext.addFileDatasource("raplafile",getTestDataFile(xmlFile));
-        return createServer(logger, containerContext);
+        FileOperator.setDefaultFileIO( new VoidFileIO());
+        return createServerContext(logger, containerContext, port);
     }
 
-    public static ServerServiceContainer createServer(Logger logger, ServerContainerContext containerContext) throws Exception
+    @NotNull public static ServerContext createServerContext(Logger logger, ServerContainerContext containerContext, int port) throws Exception
     {
-        FileOperator.setDefaultFileIO( new VoidFileIO());
+        final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, containerContext);
+        final ServerServiceContainer serviceContainer = serverContext.getServiceContainer();
+        Injector injector = serverContext.getMembersInjector();
+        createServer(  serviceContainer, injector, port);
+        ServerContext result = new ServerContext();
+        return result;
+    }
 
-        final ServerServiceContainer serverServiceContainer = DaggerServerCreator.create(logger, containerContext);
+    static protected Server createServer(final ServerServiceContainer serverService,Injector membersInjector,int port) throws Exception
+    {
+        final ServerServiceImpl serverServiceImpl = (ServerServiceImpl) serverService;
+        File webappFolder = new File("test");
+        Server jettyServer = new Server(port);
+        String contextPath = "rapla";
+        WebAppContext context = new WebAppContext(jettyServer, contextPath, "/");
+        //        context.addFilter(org.rapla.server.HTTPMethodOverrideFilter.class, "/rapla/*", null);
+        context.addEventListener(new ResteasyBootstrap());
+        final Filter filter = new Filter()
+        {
+            @Override
+            public void init(FilterConfig filterConfig) throws ServletException
+            {
+                // do not init context as given from outside
+            }
+
+            @Override
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+            {
+                request.setAttribute(Injector.class.getCanonicalName(), membersInjector);
+                chain.doFilter(request, response);
+            }
+
+            @Override
+            public void destroy()
+            {
+
+            }
+        };
+        final FilterHolder holder = new FilterHolder(filter);
+        context.addFilter(holder, "/*", EnumSet.allOf(DispatcherType.class));
+        context.setInitParameter("resteasy.servlet.mapping.prefix", "/rapla");
+        context.setInitParameter("resteasy.use.builtin.providers", "false");
+        context.setInitParameter("javax.ws.rs.Application", RestApplication.class.getCanonicalName());
+        context.setResourceBase(webappFolder.getAbsolutePath());
+        context.setMaxFormContentSize(64000000);
+
+        final ServletHolder servletHolder = new ServletHolder(HttpServletDispatcher.class);
+        servletHolder.setServlet(new HttpServletDispatcher());
+        context.addServlet(servletHolder, "/rapla/*");
+        jettyServer.start();
+        Handler[] childHandlers = context.getChildHandlersByClass(ServletHandler.class);
+        final ServletHandler childHandler = (ServletHandler) childHandlers[0];
+        final ServletHolder[] servlets = childHandler.getServlets();
+        ServletHolder servlet = servlets[0];
+
+        URL server = new URL("http://127.0.0.1:"+port+"/rapla/auth");
+        HttpURLConnection connection = (HttpURLConnection)server.openConnection();
+        int timeout = 10000;
+        int interval = 200;
+        for ( int i=0;i<timeout / interval;i++)
+        {
+            try
+            {
+                connection.connect();
+            }
+            catch (ConnectException ex) {
+                Thread.sleep(interval);
+            }
+        }
+
+        return jettyServer;
+    }
+
+    public static ServerServiceContainer createServiceContainer( Logger logger, String xmlFile) throws Exception
+    {
+        ServerContainerContext containerContext = new ServerContainerContext();
+        containerContext.addFileDatasource("raplafile",getTestDataFile(xmlFile));
+        FileOperator.setDefaultFileIO( new VoidFileIO());
+        final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, containerContext);
+        final ServerServiceContainer serverServiceContainer = serverContext.getServiceContainer();
         return serverServiceContainer;
     }
+
 
     public static String getTestDataFile(String xmlFile)
     {
@@ -153,6 +272,8 @@ public abstract class RaplaTestCase
 
     }
 
+
+
     static class MyImportExportManagerProvider implements Provider<ImportExportManager>
     {
 
@@ -229,7 +350,7 @@ public abstract class RaplaTestCase
                 connectionInfo.setServerURL(serverURL);
                 //final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
                 connectionInfo.setReconnectInfo(null);
-                MyCustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler);
+                MyCustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler, logger);
                 RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
                 RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,

@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.ServletTestBase;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -20,7 +19,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.RaplaTestCase;
@@ -45,8 +44,9 @@ public class SecurityManagerTest  {
 	{
 		logger = RaplaTestCase.initLoger();
 		int port = 8052;
-		serverService = (ServerServiceImpl) RaplaTestCase.createServer(logger, "testdefault.xml");
-		server = ServletTestBase.createServer( serverService, port);
+		final RaplaTestCase.ServerContext serverContext = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
+		server = serverContext.getServer();
+		serverService = (ServerServiceImpl) serverContext.getServiceContainer();
 		Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
 		clientFacade1 = clientFacadeProvider.get();
 		facade1 = clientFacade1.getRaplaFacade();

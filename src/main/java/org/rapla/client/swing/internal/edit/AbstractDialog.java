@@ -24,7 +24,6 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -40,7 +39,7 @@ import org.rapla.facade.ModificationListener;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.logger.Logger;
+import org.rapla.logger.Logger;
 
 public abstract class AbstractDialog<T extends Entity> extends RaplaGUIComponent implements ModificationListener, Disposable, EditDialogInterface<T>
 {
