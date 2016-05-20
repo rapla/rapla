@@ -41,7 +41,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -339,7 +339,7 @@ import org.rapla.storage.impl.EntityStore;
             String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n" + getString(
                     "security_code") + Math.abs(user.getEmail().hashCode()) + "\n\n" + getString("send_code_mail_body_3") + "\n\n"
                     + "-----------------------------------------------------------------------------------" + "\n\n" + getString("send_code_mail_body_4")
-                    + prefs.getEntryAsString(RaplaLocaleImpl.TITLE, getString("rapla.title")) + " " + getString("send_code_mail_body_5");
+                    + prefs.getEntryAsString(AbstractRaplaLocale.TITLE, getString("rapla.title")) + " " + getString("send_code_mail_body_5");
 
             final MailInterface mail = mailInterface.get();
             final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");

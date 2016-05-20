@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,6 +73,20 @@ public class RestApplication extends Application
         }
         final URL e = new File("target/classes").getAbsoluteFile().toURI().toURL();
         result.add(e);
+        return result;
+    }
+
+    public Collection<URL> getScanningUrlsDevMode() {
+        Collection<URL> result = new ArrayList<> ();
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        while (cl != null) {
+            if (cl instanceof URLClassLoader) {
+                URL[] urls = ((URLClassLoader) cl).getURLs();
+                result.addAll (Arrays.asList (urls));
+            }
+            cl = cl.getParent();
+        }
         return result;
     }
 

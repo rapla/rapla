@@ -51,7 +51,7 @@ import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
@@ -141,7 +141,7 @@ public class CalendarPageGenerator
             SortedSet<User> sortedUsers = new TreeSet<User>(User.USER_COMPARATOR);
             sortedUsers.addAll(Arrays.asList(users));
 
-            String calendarName = facade.getSystemPreferences().getEntryAsString(RaplaLocaleImpl.TITLE, i18n.getString("rapla.title"));
+            String calendarName = facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, i18n.getString("rapla.title"));
             out.println("<html>");
             out.println("<head>");
             out.println("<title>" + calendarName + "</title>");

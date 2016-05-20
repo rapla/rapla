@@ -40,7 +40,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.export2ical.ICalTimezones;
@@ -139,14 +139,14 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     }
 
     public void show() throws RaplaException {
-        String name = preferences.getEntryAsString( RaplaLocaleImpl.TITLE,"");
+        String name = preferences.getEntryAsString( AbstractRaplaLocale.TITLE,"");
         calendarName.setText(name);
         
     	try {
-    		String timezoneId = preferences.getEntryAsString( RaplaLocaleImpl.TIMEZONE,timezoneService.getDefaultTimezone());
+    		String timezoneId = preferences.getEntryAsString( AbstractRaplaLocale.TIMEZONE,timezoneService.getDefaultTimezone());
 			cboTimezone.setSelectedItem(timezoneId);
 
-            String localeId = preferences.getEntryAsString( RaplaLocaleImpl.LOCALE,null);
+            String localeId = preferences.getEntryAsString( AbstractRaplaLocale.LOCALE,null);
             if ( localeId != null) {
                 Locale locale = LocaleTools.getLocale(localeId);
                 languageChooser.setSelectedLanguage(locale.getLanguage());
@@ -176,24 +176,24 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         String title = calendarName.getText();
         if ( title.trim().length() > 0)
         {
-            preferences.putEntry( RaplaLocaleImpl.TITLE,title );
+            preferences.putEntry( AbstractRaplaLocale.TITLE,title );
         }
         else
         {
-            preferences.putEntry( RaplaLocaleImpl.TITLE, null);
+            preferences.putEntry( AbstractRaplaLocale.TITLE, null);
         }
         
     	String timeZoneId = String.valueOf(cboTimezone.getSelectedItem());
-    	preferences.putEntry( RaplaLocaleImpl.TIMEZONE, timeZoneId);
+    	preferences.putEntry( AbstractRaplaLocale.TIMEZONE, timeZoneId);
 
         String lang = languageChooser.getSelectedLanguage();
         if ( lang == null)
         {
-            preferences.putEntry( RaplaLocaleImpl.LOCALE, null);
+            preferences.putEntry( AbstractRaplaLocale.LOCALE, null);
         }
         else {
             String localeId = lang + "_" + countryChooser.getSelectedCountry();
-            preferences.putEntry( RaplaLocaleImpl.LOCALE, localeId);
+            preferences.putEntry( AbstractRaplaLocale.LOCALE, localeId);
         }
         boolean selected= ownReservations.isSelected();
     	preferences.putEntry( CalendarModel.ONLY_MY_EVENTS_DEFAULT, selected); 

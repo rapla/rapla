@@ -24,7 +24,7 @@ import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 
@@ -70,7 +70,7 @@ public class RaplaIndexPageGenerator
 		 String title;
 		 final String defaultTitle = i18n.getString("rapla.title");
 		 try {
-            title= Tools.createXssSafeString(facade.getSystemPreferences().getEntryAsString(RaplaLocaleImpl.TITLE, defaultTitle));
+            title= Tools.createXssSafeString(facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, defaultTitle));
         } catch (RaplaException e) {
             title = defaultTitle; 
         }

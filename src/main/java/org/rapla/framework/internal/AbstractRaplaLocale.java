@@ -10,9 +10,13 @@ import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
 
 public abstract class AbstractRaplaLocale implements RaplaLocale {
 
+    public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
+    public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<String>("org.rapla.locale");
+    public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
     protected final BundleManager bundleManager;
 
     protected AbstractRaplaLocale(BundleManager bundleManager){

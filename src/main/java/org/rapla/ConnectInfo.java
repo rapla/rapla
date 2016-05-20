@@ -2,8 +2,7 @@ package org.rapla;
 
 import java.util.Arrays;
 /** Object that encapsulates the login information. 
- *  For admin users it is possible to connect as an other user. 
- */
+ *  For admin users it is possible to connect as an other user.  */
 public class ConnectInfo {
     String username;
     char[] password;

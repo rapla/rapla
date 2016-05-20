@@ -70,6 +70,12 @@ public class GwtBundleManager implements BundleManager
         return result;
     }
 
+    public void setLanguage(String language)
+    {
+        // language change currently no supported in gwt
+    }
+
+
     @Override
     public Locale getLocale()
     {

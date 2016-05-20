@@ -26,6 +26,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
@@ -119,7 +120,7 @@ public class ServerServiceImpl implements ServerServiceContainer
                     }
                 }
             }
-            String timezoneId = preferences.getEntryAsString(RaplaLocaleImpl.TIMEZONE, importExportTimeZone);
+            String timezoneId = preferences.getEntryAsString(AbstractRaplaLocale.TIMEZONE, importExportTimeZone);
             //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
             try
             {

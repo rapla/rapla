@@ -42,7 +42,7 @@
     </rollingPolicy>
 
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %class{0}.%method %logger{35} - %msg%n</pattern>
     </encoder>
     
     <!-- If you want to exclude or filter certain messages with a java expression you need to download janino and place janino.jar and compiler-commons.jar into the lib/logging folder  -->
@@ -66,7 +66,7 @@
     </rollingPolicy>
 
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-4relative [%thread] %-5level %class{0}.%method %logger{35} - %msg%n</pattern>
     </encoder>
   </appender>
   

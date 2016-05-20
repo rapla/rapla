@@ -32,9 +32,6 @@ import org.rapla.inject.InjectionContext;
 @Singleton
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
-    public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
-    public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<String>("org.rapla.locale");
-    public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
     String COUNTRY = "country";
     String LANGUAGES = "languages";
     String LANGUAGE = "language";

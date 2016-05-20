@@ -43,10 +43,10 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
-import org.rapla.rest.JsonParserWrapper;
+import org.rapla.rest.GenericObjectSerializable;
 
 /** Maps can only support one type value at a time. Especially  a mixture out of references and other values is not supported*/
-public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap, JsonParserWrapper.GenericObjectSerializable
+public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap, GenericObjectSerializable
 {
     //this map stores all objects in the map
     private Map<String, String> constants;

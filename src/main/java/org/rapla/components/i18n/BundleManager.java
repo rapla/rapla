@@ -21,5 +21,5 @@ public interface BundleManager {
 
     Collection<String> getAvailableLanguages();
 
-
+    void setLanguage(String language);
 }

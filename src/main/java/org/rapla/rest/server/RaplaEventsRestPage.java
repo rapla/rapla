@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -129,6 +130,24 @@ import org.rapla.storage.StorageOperator;
         facade.store(event);
         ReservationImpl result = facade.getPersistant(event);
         return result;
+    }
+
+    @DELETE @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public boolean delete(@PathParam("id") String id) throws RaplaException
+    {
+        final User user = session.getUser(request);
+        final StorageOperator operator = facade.getOperator();
+        PermissionController permissionController = facade.getPermissionController();
+        final Reservation event = operator.tryResolve(id, Reservation.class);
+        if ( event == null)
+        {
+            return false;
+        }
+        if (!permissionController.canAdmin(event, user))
+        {
+            throw new RaplaSecurityException("User " + user + " can't modify event " + event);
+        }
+        facade.remove(event);
+        return true;
     }
 
     @POST @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl create(ReservationImpl event) throws RaplaException
