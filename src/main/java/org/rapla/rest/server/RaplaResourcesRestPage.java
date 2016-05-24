@@ -3,12 +3,14 @@ package org.rapla.rest.server;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 import javax.jws.WebParam;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -30,6 +32,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.internal.SecurityManager;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -46,6 +49,8 @@ public class RaplaResourcesRestPage  {
 	StorageOperator operator;
 	@Inject
 	RemoteSession session;
+	@Inject
+	SecurityManager securityManager;
 
     private final HttpServletRequest request;
 
@@ -129,21 +134,31 @@ public class RaplaResourcesRestPage  {
 	public AllocatableImpl get( @PathParam("id") String id) throws RaplaException {
         final User user = session.getUser(request);
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
-		PermissionController permissionController = facade.getPermissionController();
-		if (!permissionController.canRead(resource, user)) {
-			throw new RaplaSecurityException("User " + user + " can't read  " + resource);
-		}
+		securityManager.checkRead( user, resource);
 		return resource;
+	}
+
+	@DELETE
+	@Path("{id}")
+	public void delete( @PathParam("id") String id) throws RaplaException {
+		final User user = session.getUser(request);
+		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
+		securityManager.checkDeletePermissions(user, resource);
+		Collection<ReferenceInfo<Allocatable>> removeObjects = Collections.singleton(resource.getReference());
+		List<Allocatable> storeObjects = Collections.emptyList();
+		operator.storeAndRemove(storeObjects, removeObjects, user);
 	}
 
 	@PUT
 	public AllocatableImpl update( AllocatableImpl resource) throws RaplaException {
         final User user = session.getUser(request);
+		securityManager.checkWritePermissions(user, resource);
 		PermissionController permissionController = facade.getPermissionController();
 		if (!permissionController.canModify(resource, user)) {
 			throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
 		}
 		resource.setResolver(operator);
+		securityManager.checkWritePermissions( user, resource);
 		facade.store(resource);
 		AllocatableImpl result = facade.getPersistant(resource);
 		return result;

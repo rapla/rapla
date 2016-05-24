@@ -66,12 +66,12 @@ import org.rapla.storage.StorageOperator;
         permissionController = facade.getPermissionController();
     }
 
-    void checkDeletePermissions(User user, Entity entity) throws RaplaSecurityException
+    public void checkDeletePermissions(User user, Entity entity) throws RaplaSecurityException
     {
         checkModifyPermissions(user, entity, true);
     }
 
-    void checkWritePermissions(User user, Entity entity) throws RaplaSecurityException
+    public void checkWritePermissions(User user, Entity entity) throws RaplaSecurityException
     {
         checkModifyPermissions(user, entity, false);
     }

@@ -39,6 +39,7 @@ import org.rapla.rest.PATCH;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.internal.SecurityManager;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -47,6 +48,7 @@ import org.rapla.storage.StorageOperator;
 {
     @Inject RaplaFacade facade;
     @Inject RemoteSession session;
+    @Inject SecurityManager securityManager;
     private final HttpServletRequest request;
 
     @Inject public RaplaEventsRestPage(@Context HttpServletRequest request)
@@ -94,11 +96,7 @@ import org.rapla.storage.StorageOperator;
         final User user = session.getUser(request);
         final StorageOperator operator = facade.getOperator();
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
-        PermissionController permissionController = facade.getPermissionController();
-        if (!permissionController.canRead(event, user))
-        {
-            throw new RaplaSecurityException("User " + user + " can't read event " + event);
-        }
+        securityManager.checkRead(user, event);
         return event;
     }
 
@@ -106,12 +104,8 @@ import org.rapla.storage.StorageOperator;
     {
         final User user = session.getUser(request);
         final StorageOperator operator = facade.getOperator();
-        PermissionController permissionController = facade.getPermissionController();
-        if (!permissionController.canModify(event, user))
-        {
-            throw new RaplaSecurityException("User " + user + " can't modify event " + event);
-        }
         event.setResolver(operator);
+        securityManager.checkWritePermissions(user, event);
         facade.store(event);
         ReservationImpl result = facade.getPersistant(event);
         return result;
@@ -121,12 +115,8 @@ import org.rapla.storage.StorageOperator;
     {
         final User user = session.getUser(request);
         final StorageOperator operator = facade.getOperator();
-        PermissionController permissionController = facade.getPermissionController();
-        if (!permissionController.canModify(event, user))
-        {
-            throw new RaplaSecurityException("User " + user + " can't modify event " + event);
-        }
         event.setResolver(operator);
+        securityManager.checkWritePermissions(user, event);
         facade.store(event);
         ReservationImpl result = facade.getPersistant(event);
         return result;
@@ -136,16 +126,12 @@ import org.rapla.storage.StorageOperator;
     {
         final User user = session.getUser(request);
         final StorageOperator operator = facade.getOperator();
-        PermissionController permissionController = facade.getPermissionController();
         final Reservation event = operator.tryResolve(id, Reservation.class);
         if ( event == null)
         {
             return false;
         }
-        if (!permissionController.canAdmin(event, user))
-        {
-            throw new RaplaSecurityException("User " + user + " can't modify event " + event);
-        }
+        securityManager.checkDeletePermissions(user, event);
         facade.remove(event);
         return true;
     }
