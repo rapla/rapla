@@ -225,7 +225,7 @@ public class JsonServlet {
         try {
             try {
                 String httpMethod = call.httpRequest.getMethod();
-                if ("GET".equals(httpMethod) || "PATCH".equals(httpMethod)) {
+                if ("GET".equals(httpMethod) || "PATCH".equals(httpMethod) || "DELETE".equals(httpMethod)) {
                     parseGetRequest(call);
                 } else if ("POST".equals(httpMethod)) {
                     parsePostRequest(call);

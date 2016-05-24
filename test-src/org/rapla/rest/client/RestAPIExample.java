@@ -6,8 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.rapla.rest.client.HTTPJsonConnector;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -231,6 +229,19 @@ public class RestAPIExample {
             {
                 JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
                 printAttributesAndAssertName(resultBody,  newReservationName);
+            }
+        }
+        {
+    		URL methodURL =new URL(baseUrl, "events/"+eventId);
+        	{
+                JsonObject resultBody = connector.sendDelete( methodURL, authenticationToken);
+                // we test if the new event is in the patched result
+                assertNoError( resultBody);
+            }
+            {
+                JsonObject resultBody = connector.sendGet(methodURL, authenticationToken);
+                JsonElement error = resultBody.get("error");             
+                assertTrue(error != null);
             }
         }
        

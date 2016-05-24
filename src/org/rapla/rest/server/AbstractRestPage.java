@@ -35,6 +35,7 @@ public class AbstractRestPage extends RaplaComponent implements RaplaPageGenerat
     protected JsonServlet servlet;
     protected final ServerServiceContainer serverContainer;
     String getMethod = null;
+    String deleteMethod = null;
     String updatetMethod = null;
     String listMethod = null;
     String createMethod = null;
@@ -63,6 +64,10 @@ public class AbstractRestPage extends RaplaComponent implements RaplaPageGenerat
         {
             listMethod = "list";
         }
+        if ( publicMethodNames.contains("delete"))
+        {
+            deleteMethod = "delete";
+        }
     }
 
     @Override
@@ -87,6 +92,12 @@ public class AbstractRestPage extends RaplaComponent implements RaplaPageGenerat
                     String id = pathInfo.substring(appendix+1);
                     request.setAttribute("id", id);
                     request.setAttribute("method", getMethod);
+                }
+                else if ( method.equals("DELETE") && deleteMethod != null )
+                {
+                    String id = pathInfo.substring(appendix+1);
+                    request.setAttribute("id", id);
+                    request.setAttribute("method", deleteMethod);
                 }
                 else if ( method.equals("PATCH") && getMethod != null && updatetMethod != null)
                 {

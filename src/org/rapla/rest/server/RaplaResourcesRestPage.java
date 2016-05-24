@@ -3,12 +3,14 @@ package org.rapla.rest.server;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
@@ -55,6 +57,18 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
             throw new RaplaSecurityException("User " + user + " can't read  " + resource);
         }
         return resource;
+    }
+    
+    public void delete(@WebParam(name="user") User user, @WebParam(name="id")String id) throws RaplaException
+    {
+        AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
+        if (!canAdmin(resource, user, getEntityResolver()))
+        {
+            throw new RaplaSecurityException("User " + user + " can't read  " + resource);
+        }
+        Collection<Entity> removeObjects= Collections.singleton( resource);
+		List<Entity> storeObjects = Collections.emptyList();
+		operator.storeAndRemove(storeObjects, removeObjects, user);
     }
     
     public AllocatableImpl update(@WebParam(name="user") User user, AllocatableImpl resource) throws RaplaException
