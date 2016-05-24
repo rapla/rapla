@@ -22,9 +22,15 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaContext;
 import org.rapla.framework.RaplaException;
 import org.rapla.gui.EventCheck;
@@ -43,7 +49,9 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
     public boolean check(Collection<Reservation> reservations, Component sourceComponent) throws RaplaException {
         try
         {
-            
+            User user = getUser();
+			Preferences preferences = getClientFacade().getPreferences( user);
+			final boolean showNotInCalendar = preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING,true);
             JPanel warningPanel = new JPanel();
             for (Reservation reservation:reservations)
             {
@@ -72,7 +80,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                     warningPanel.add( warningLabel);
                 }
 
-                if (!model.isMatchingSelectionAndFilter(reservation, null))
+                if (!model.isMatchingSelectionAndFilter(reservation, null) && showNotInCalendar)
                 {
                     JLabel warningLabel = new JLabel();
                     warningLabel.setForeground(java.awt.Color.red);
