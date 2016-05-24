@@ -137,7 +137,7 @@ public class AttributeEdit extends RaplaGUIComponent
                     updateModel(null);
                 }
 
-            } catch (RaplaException ex) {
+            } catch (Exception ex) {
                 showException(ex, getComponent());
             }
         }
@@ -454,8 +454,7 @@ class DefaultConstraints extends AbstractEditField
 	}
 
     public void mapFrom(Attribute attribute) throws RaplaException  {
-    	clearValues();
-        try {
+    	try {
             mapping = true;
             this.attribute = attribute;
             clearValues();
