@@ -33,6 +33,7 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -239,6 +240,11 @@ public class NotificationService
             AllocationChangeEvent event = changeEvents.get(i);
             Reservation reservation = event.getNewReservation();
             Allocatable allocatable = event.getAllocatable();
+            final String templateId = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+            if ( templateId != null)
+            {
+                continue;
+            }
             // Did the user opt in for the resource?
 			if (!allocatablesTheUsersListensTo.contains(allocatable))
                 continue;

@@ -91,11 +91,11 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
             throw new RaplaException(i18n.getString("error.no_appointment") + " " + name + " [" + reservation.getId() + "]");
         }
-        final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+        final String templateId = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
         Allocatable template;
-        if ( annotation != null)
+        if ( templateId != null)
         {
-            template = resolver.tryResolve( annotation, Allocatable.class );
+            template = resolver.tryResolve( templateId, Allocatable.class );
         }
         else
         {
