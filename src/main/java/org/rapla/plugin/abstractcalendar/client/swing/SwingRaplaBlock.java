@@ -101,11 +101,6 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
         return m_view;
     }
 
-    public boolean isException()
-    {
-        Repeating repeating = getAppointment().getRepeating();
-        return repeating != null && repeating.isException( getStart().getTime() );
-    }
 
     static Color TRANS = new Color( 100, 100, 100, 100 );
 

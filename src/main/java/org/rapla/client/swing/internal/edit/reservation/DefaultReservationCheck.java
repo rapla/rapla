@@ -28,6 +28,8 @@ import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -36,6 +38,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -62,7 +65,12 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent) {
         try
         {
-            
+
+            final ClientFacade clientFacade = getClientFacade();
+            User user = clientFacade.getUser();
+            Preferences preferences = clientFacade.getRaplaFacade().getPreferences( user);
+            final boolean showNotInCalendar = preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING,true);
+
             JPanel warningPanel = new JPanel();
             for (Reservation reservation:reservations)
             {
@@ -91,7 +99,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                     warningPanel.add( warningLabel);
                 }
 
-                if (!model.isMatchingSelectionAndFilter(reservation, null) && getClientFacade().getTemplate() == null)
+                if (!model.isMatchingSelectionAndFilter(reservation, null) && clientFacade.getTemplate() == null && showNotInCalendar)
                 {
                     JLabel warningLabel = new JLabel();
                     warningLabel.setForeground(java.awt.Color.red);

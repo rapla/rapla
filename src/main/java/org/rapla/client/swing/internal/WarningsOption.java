@@ -38,18 +38,22 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     JPanel panel = new JPanel();
     Preferences preferences;
     JCheckBox showConflictWarningsField = new JCheckBox();
+    JCheckBox showNotInCalendarWarningsField = new JCheckBox();
 
     @Inject
     public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
         showConflictWarningsField.setText("");        
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre}}));
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre,5,pre}}));
         panel.add( new JLabel(getString("warning.conflict")),"0,0");
         panel.add( showConflictWarningsField,"2,0");
+        panel.add( new JLabel(getString("warning.not_in_calendar_option")),"0,2");
+        panel.add( showNotInCalendarWarningsField,"2,2");
 
     }
-    
+
+
     @Override
     public boolean isEnabled()
     {
@@ -68,17 +72,29 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     }
 
     public void show() throws RaplaException {
-    	// get the options 
-        boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
-        showConflictWarningsField.setSelected( config);
+        // get the options
+        {
+            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
+            showConflictWarningsField.setSelected( config);
+        }
+        {
+            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true);
+            showNotInCalendarWarningsField.setSelected( config);
+        }
     }
 
     public void commit() {
-    	// Save the options
-        
-        boolean selected = showConflictWarningsField.isSelected();
-        preferences.putEntry( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, selected);
-	}
+        // Save the options
+
+        {
+            boolean selected = showConflictWarningsField.isSelected();
+            preferences.putEntry( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, selected);
+        }
+        {
+            boolean selected = showNotInCalendarWarningsField.isSelected();
+            preferences.putEntry( CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, selected);
+        }
+    }
 
 
 }

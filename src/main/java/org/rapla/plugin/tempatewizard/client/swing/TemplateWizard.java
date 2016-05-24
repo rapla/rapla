@@ -132,7 +132,7 @@ import com.google.web.bindery.event.shared.EventBus;
         return templates;
     }
 
-    class TemplateMenuItem extends RaplaMenuItem
+    public class TemplateMenuItem extends RaplaMenuItem
     {
         private static final long serialVersionUID = 1L;
         Allocatable template;
