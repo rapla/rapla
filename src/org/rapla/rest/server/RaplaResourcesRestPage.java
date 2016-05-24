@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jws.WebParam;
 import javax.jws.WebService;
@@ -66,7 +67,8 @@ public class RaplaResourcesRestPage extends AbstractRestPage implements RaplaPag
         {
             throw new RaplaSecurityException("User " + user + " can't read  " + resource);
         }
-        Collection<Entity> removeObjects= Collections.singleton( resource);
+        Set<Entity> singleton = Collections.singleton( (Entity)resource);
+		Collection<Entity> removeObjects= singleton;
 		List<Entity> storeObjects = Collections.emptyList();
 		operator.storeAndRemove(storeObjects, removeObjects, user);
     }

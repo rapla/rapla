@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jws.WebParam;
 import javax.jws.WebService;
@@ -75,7 +76,8 @@ public class RaplaEventsRestPage extends AbstractRestPage implements RaplaPageGe
 		if (!canAdmin(event, user, getEntityResolver())) {
 			throw new RaplaSecurityException("User " + user + " can't read  " + event);
 		}
-		Collection<Entity> removeObjects = Collections.singleton(event);
+		Set<Entity> singleton = Collections.singleton((Entity)event);
+		Collection<Entity> removeObjects = singleton;
 		List<Entity> storeObjects = Collections.emptyList();
 		operator.storeAndRemove(storeObjects, removeObjects, user);
 	}
