@@ -42,7 +42,6 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.SwingBlock;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaContextException;
 import org.rapla.gui.InfoFactory;
@@ -90,11 +89,7 @@ public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
         return m_view;
     }
 
-    public boolean isException()
-    {
-        Repeating repeating = getAppointment().getRepeating();
-        return repeating != null && repeating.isException( getStart().getTime() );
-    }
+    
 
     static Color TRANS = new Color( 100, 100, 100, 100 );
 

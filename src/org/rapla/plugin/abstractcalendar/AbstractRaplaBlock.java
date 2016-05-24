@@ -25,6 +25,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.NameFormatUtil;
+import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.BuildContext;
@@ -55,6 +56,8 @@ public abstract class AbstractRaplaBlock implements Block
     {
         return getReservationName();
     }
+    
+    
     
     public String getReservationName()
     {
@@ -177,9 +180,11 @@ public abstract class AbstractRaplaBlock implements Block
         }
         return timeString;
     }
-
+    
     public boolean isException() {
-        return getAppointment().getRepeating() != null && getAppointment().getRepeating().isException(getStart().getTime());
+        final long time = getAppointmentBlock().getStart();
+        Repeating repeating = getAppointment().getRepeating();
+		return repeating != null && repeating.isException(time);
     }
 
     public boolean isStartResizable() {
