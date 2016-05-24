@@ -209,7 +209,7 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
 		        reservationsToRemove.add( reservation);
 		        for (Appointment appointment:appointments)
 		        {
-		            appointmentsRemoved.remove(appointment);
+		            appointmentsToRemove.remove( appointment);
 		        }
 		    }
 		}
@@ -241,11 +241,11 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
     	    for (Appointment appointment:appointmentsToRemove)
     	    {
     	        Reservation reservation = appointment.getReservation();
+    	        parentReservations.put(appointment, reservation);
     	        if ( reservationsToRemove.contains( reservation))
     	        {
     	            continue;
     	        }
-    	        parentReservations.put(appointment, reservation);
     	        Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
                 {
@@ -298,6 +298,10 @@ public class ReservationControllerImpl extends RaplaGUIComponent implements Modi
             for (Appointment appointment:appointmentsToRemove)
             {
                 Reservation reservation = parentReservations.get(appointment);
+                if ( reservationsToRemove.contains( reservation))
+    	        {
+    	            continue;
+    	        }
                 Reservation mutableReservation=  toUpdate.get(reservation);
                 if ( mutableReservation == null)
                 {
