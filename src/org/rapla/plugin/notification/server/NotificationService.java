@@ -29,10 +29,12 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.RaplaAnnotation;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.facade.AllocationChangeListener;
 import org.rapla.facade.ClientFacade;
@@ -115,10 +117,16 @@ public class NotificationService extends RaplaComponent
         HashMap<Reservation,List<AllocationChangeEvent>> reservationMap = null;
         HashSet<Allocatable> changedAllocatables = null;
         for ( int i = 0; i< changeEvents.length; i++) {
-            if (reservationMap == null)
-                reservationMap = new HashMap<Reservation,List<AllocationChangeEvent>>(4);
+        
             AllocationChangeEvent event = changeEvents[i];
             Reservation reservation = event.getNewReservation();
+            String template = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+			if ( template != null)
+			{
+				continue;
+			}
+		    if (reservationMap == null)
+                reservationMap = new HashMap<Reservation,List<AllocationChangeEvent>>(4);
             Allocatable allocatable = event.getAllocatable();
 			if (!allocatables.contains(allocatable))
                 continue;
