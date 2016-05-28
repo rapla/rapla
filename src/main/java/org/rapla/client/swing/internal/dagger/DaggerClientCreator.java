@@ -12,11 +12,6 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.inject.raplainject.SimpleRaplaInjector;
 import org.rapla.logger.Logger;
-import org.rapla.server.ServerService;
-import org.rapla.server.internal.ServerContainerContext;
-import org.rapla.server.internal.ServerStorageSelector;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.StorageOperator;
 
 import javax.inject.Provider;
 
@@ -56,25 +51,25 @@ public class DaggerClientCreator
         injector.addComponentInstanceProvider(UserClientService.class, userClientServiceProvider);
         injector.addComponentInstance(StartupEnvironment.class, startupEnvironment);
         injector.initFromMetaInfService(InjectionContext.swing);
-        if (true)
+        //if (true)
         {
             client = injector.getInstance( ClientService.class);
             userClientServiceProvider.setClient( (UserClientService) client );
             return client;
         }
-        final DaggerRaplaJavaClientStartupModule startupModule = new DaggerRaplaJavaClientStartupModule(startupEnvironment,userClientServiceProvider);
-        boolean useReflection = true;
-        if (useReflection)
-        {
-            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
-        }
-        else
-        {
-            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
-            client = component.getClientService();
-        }
-        userClientServiceProvider.setClient( (UserClientService) client );
-        return client;
+//        final DaggerRaplaJavaClientStartupModule startupModule = new DaggerRaplaJavaClientStartupModule(startupEnvironment,userClientServiceProvider);
+//        boolean useReflection = true;
+//        if (useReflection)
+//        {
+//            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
+//        }
+//        else
+//        {
+//            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
+//            client = component.getClientService();
+//        }
+//        userClientServiceProvider.setClient( (UserClientService) client );
+//        return client;
     }
 
     public static ClientFacade createFacade(StartupEnvironment startupEnvironment) throws Exception

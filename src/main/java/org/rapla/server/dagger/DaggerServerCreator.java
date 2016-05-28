@@ -46,9 +46,9 @@ public class DaggerServerCreator
         injector.initFromMetaInfService(InjectionContext.server);
         result.membersInjector =injector.getMembersInjector();
         result.serviceContainer = injector.getInstance(ServerServiceContainer.class);
-        if ( true)
         return result;
 
+        /*
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
         boolean useReflection = true;
         if (useReflection)
@@ -63,12 +63,13 @@ public class DaggerServerCreator
         }
         else
         {
-            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
+            //org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
             final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
             result.membersInjector = reflectionMembersInjector;
             result.serviceContainer = component.getServerServiceContainer();
         }
         return result;
+        */
     }
 
     public static ImportExportManagerContainer createImportExport(Logger logger, ServerContainerContext containerContext) throws Exception
