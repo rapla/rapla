@@ -671,7 +671,7 @@ class LockStorage extends AbstractTableStorage
                 else
                 {// insert
                     insertStmt.setString(1, id);
-                    insertStmt.setTimestamp(2, new java.sql.Timestamp(0l));
+                    insertStmt.setTimestamp(2, new java.sql.Timestamp(databaseTimestamp.getTime() - (4*DateTools.MILLISECONDS_PER_WEEK)));
                     insertStmt.setTimestamp(3, validUntil);
                     insertStmt.addBatch();
                     executeInsert = true;
