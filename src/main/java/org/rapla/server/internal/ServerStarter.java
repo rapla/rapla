@@ -1,20 +1,19 @@
 package org.rapla.server.internal;
 
-import java.util.Collection;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import javax.servlet.ServletException;
-
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
-import org.rapla.rest.server.Injector;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
+
+import javax.servlet.ServletException;
+import java.util.Collection;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerStarter
 {

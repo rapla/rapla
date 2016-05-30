@@ -11,9 +11,12 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.inject.raplainject.SimpleRaplaInjector;
+import org.rapla.inject.scanning.ScanningClassLoader;
+import org.rapla.inject.scanning.ServiceInfLoader;
 import org.rapla.logger.Logger;
 
 import javax.inject.Provider;
+import java.util.Collection;
 
 public class DaggerClientCreator
 {
@@ -40,7 +43,6 @@ public class DaggerClientCreator
 
     public static ClientService create(StartupEnvironment startupEnvironment, String moduleId) throws Exception
     {
-
         final ClientService client;
         UserServiceProvider userClientServiceProvider = new UserServiceProvider();
         Logger logger = startupEnvironment.getBootstrapLogger();
@@ -50,7 +52,13 @@ public class DaggerClientCreator
         injector.addComponentInstanceProvider(IOInterface.class, () -> webstartEnabled ? new WebstartIO(logger): new DefaultIO(logger));
         injector.addComponentInstanceProvider(UserClientService.class, userClientServiceProvider);
         injector.addComponentInstance(StartupEnvironment.class, startupEnvironment);
-        injector.initFromMetaInfService(InjectionContext.swing);
+        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFrom(InjectionContext.MODULE_LIST);
+        Collection<? extends Class> classes = loadingResult.getClasses();
+        for ( Throwable error:loadingResult.getErrors())
+        {
+            logger.error( error.getMessage(), error);
+        }
+        injector.initFromClasses(InjectionContext.swing, classes);
         //if (true)
         {
             client = injector.getInstance( ClientService.class);

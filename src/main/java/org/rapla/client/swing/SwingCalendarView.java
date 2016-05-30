@@ -17,10 +17,14 @@ package org.rapla.client.swing;
 import javax.swing.JComponent;
 
 import org.rapla.client.RaplaWidget;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Promise;
 
+@ExtensionPoint(context = InjectionContext.swing, id=SwingCalendarView.ID)
 public interface SwingCalendarView<T> extends RaplaWidget<T>
 {
+    String ID = "org.rapla.client.swing.calendarview";
     Promise<Void> update();
     /** you can provide a DateSelection component if you want */
     JComponent getDateSelection();
