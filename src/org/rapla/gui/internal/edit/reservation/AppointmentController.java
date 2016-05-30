@@ -240,7 +240,7 @@ public class AppointmentController extends RaplaGUIComponent
 	}
 
 	public Date getSelectedEditDate() {
-        return selectedEditDate;
+        return selectedEditDate; 
     }
 	
 	public void dispose() {
@@ -1237,16 +1237,40 @@ public class AppointmentController extends RaplaGUIComponent
 
 		@SuppressWarnings("unchecked")
 		public void mapFromAppointment() {
-			if (appointment.getRepeating() == null)
-				specialExceptions.setListData(new Object[0]);
-			else
-				specialExceptions.setListData(appointment.getRepeating().getExceptions());
-			// exceptionDate.setDate( appointment.getStart());
 			Date exceptDate = getSelectedEditDate();
 			if (exceptDate == null)
+			{
 				exceptionDate.setDate(appointment.getStart());
+			}
 			else
+			{
+				exceptDate = DateTools.cutDate( exceptDate);
 				exceptionDate.setDate(exceptDate);
+			}
+			if (repeating == null)
+			{
+				specialExceptions.setListData(new Object[0]);
+			} 
+			else 
+			{
+				Date[] specialExceptionDates = repeating.getExceptions();
+				specialExceptions.setListData(specialExceptionDates);
+				for( int i = 0;i<specialExceptionDates.length;i++) {
+					Date specialExceptionDate = specialExceptionDates[i];
+					if(specialExceptionDate.equals(exceptDate)){
+						specialExceptions.setSelectedIndex(i);
+						try
+						{
+							specialExceptions.ensureIndexIsVisible(i);
+						}
+						catch (Exception ex)
+						{
+							// not sure if exception is thrown if special exceptions dialog not visible
+						}
+						break;
+					}
+				}
+			}
 		}
 
 		public void actionPerformed(ActionEvent evt) {
