@@ -46,7 +46,8 @@ public class DaggerServerCreator
         injector.addNamedComponentInstanceProvider(ServerService.ENV_RAPLAMAIL_ID,()->containerContext.getMailSession());
         injector.addComponentInstanceProvider(ShutdownService.class,()->containerContext.getShutdownService());
         injector.addComponentProvider(StorageOperator.class, ServerStorageSelector.class);
-        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFrom(InjectionContext.MODULE_LIST);
+        ScanningClassLoader.LoadingFilter filter = null;
+        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST);
         Collection<? extends Class> classes = loadingResult.getClasses();
         for ( Throwable error:loadingResult.getErrors())
         {

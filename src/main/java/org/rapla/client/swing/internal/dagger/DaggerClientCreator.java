@@ -52,7 +52,19 @@ public class DaggerClientCreator
         injector.addComponentInstanceProvider(IOInterface.class, () -> webstartEnabled ? new WebstartIO(logger): new DefaultIO(logger));
         injector.addComponentInstanceProvider(UserClientService.class, userClientServiceProvider);
         injector.addComponentInstance(StartupEnvironment.class, startupEnvironment);
-        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFrom(InjectionContext.MODULE_LIST);
+        ServiceInfLoader.LoadingFilter filter = new ServiceInfLoader.LoadingFilter()
+        {
+            @Override public boolean classNameShouldBeIgnored(String classname)
+            {
+                return classname.contains(".server.") || classname.contains(".storage.dbfile.") || classname.contains(".storage.dbsql.");
+            }
+
+            @Override public String[] getIgnoredPackages()
+            {
+                return new String[0];
+            }
+        };
+        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST);
         Collection<? extends Class> classes = loadingResult.getClasses();
         for ( Throwable error:loadingResult.getErrors())
         {

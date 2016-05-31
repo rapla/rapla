@@ -114,7 +114,6 @@
                                 <exclude>**/storage/xml/**</exclude>
                                 <exclude>**/storage/dbfile/**</exclude>
                                 <exclude>**/storage/dbsql/**</exclude>
-                                <exclude>**/servletpages/**</exclude>
                                 <exclude>se/**</exclude>
                                 <exclude>**/${rapla.module}</exclude>
                             </excludes>
