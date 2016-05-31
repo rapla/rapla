@@ -395,7 +395,11 @@
 			<artifactId>scannotation</artifactId>
 			<version>${scannotation.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
 		<dependency>
 			<groupId>org.rapla</groupId>
 			<artifactId>restinject</artifactId>

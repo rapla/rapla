@@ -313,7 +313,7 @@ public class MainServlet extends HttpServlet
                     case "resteasy.servlet.mapping.prefix":
                         return "rapla/";
                     case "resteasy.use.builtin.providers":
-                        return "false";
+                        return "true";
                     case "javax.ws.rs.Application":
                         return RestApplication.class.getCanonicalName();
                 }
