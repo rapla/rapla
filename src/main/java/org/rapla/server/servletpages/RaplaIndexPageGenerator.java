@@ -3,11 +3,13 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.Tools;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.server.extensionpoints.HtmlMainMenu;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -19,34 +21,26 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.Tools;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
-import org.rapla.server.extensionpoints.HtmlMainMenu;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.Set;
 
 @Path("index")
 @Singleton
 public class RaplaIndexPageGenerator
 {
-	Set<RaplaMenuGenerator> entries;
+    @Inject
+    Set<HtmlMainMenu> entries;
 	@Inject
 	RaplaResources i18n;
 	
 	@Inject
 	RaplaFacade facade;
+
 	@Inject
     public RaplaIndexPageGenerator( )
     {
-    }
-	
-	@Inject
-	void setEntries(Set<HtmlMainMenu> entries)
-    {
-        this.entries = new LinkedHashSet<RaplaMenuGenerator>(entries);
     }
 
     @GET
@@ -100,7 +94,7 @@ public class RaplaIndexPageGenerator
      // there is an ArraList of entries that wants to be part of the HTML
         // menu we go through this ArraList,
         
-        for (Iterator<RaplaMenuGenerator> it = entries.iterator();it.hasNext();)
+        for (Iterator<HtmlMainMenu> it = entries.iterator();it.hasNext();)
         {
         	RaplaMenuGenerator entry = it.next();
             out.println("<div class=\"menuEntry\">");
