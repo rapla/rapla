@@ -181,7 +181,6 @@
 					<target>${maven.compiler.target}</target>
 					<!--
 					<proc>none</proc>
-					-->
 					<annotationProcessorPaths>
 						<annotationProcessorPath>
 							<groupId>org.rapla</groupId>
@@ -199,7 +198,10 @@
 							<version>${dagger.version}</version>
 						</annotationProcessorPath>
 					</annotationProcessorPaths>
+										-->
+
 				</configuration>
+				<!--
 				<dependencies>
 					<dependency>
 						<groupId>com.google.guava</groupId>
@@ -211,14 +213,14 @@
 						<artifactId>dagger-compiler</artifactId>
 						<version>${dagger.version}</version>
 					</dependency>
-					<!--
 					<dependency>
 						<groupId>com.google.gwt</groupId>
 						<artifactId>gwt-user</artifactId>
 						<version>${gwt.version}</version>
 					</dependency>
-					-->
 				</dependencies>
+				-->
+
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
