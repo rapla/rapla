@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import javax.inject.Inject;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -28,7 +29,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 
-@Path("auth")
+@Path("login")
 public class RaplaAuthRestPage
 {
 
@@ -86,8 +87,8 @@ public class RaplaAuthRestPage
 
     @POST
     @Produces(MediaType.TEXT_HTML)
-    public void create_(@QueryParam("url") String url, @QueryParam("username") String user, String password,
-            @QueryParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
+    public void create_(@QueryParam("url") String url, @FormParam("username") String user, String password,
+            @FormParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
         final String targetUrl = Tools.createXssSafeString(url);
         final String errorMessage;

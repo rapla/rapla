@@ -56,8 +56,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
         return auth(loginCredentials);
     }
 
-    @Override
-    public LoginTokens auth(LoginCredentials credentials) throws RaplaException
+    private LoginTokens auth(LoginCredentials credentials) throws RaplaException
     {
         User user = getUserFromCredentials(credentials);
         LoginTokens generateAccessToken = tokenHandler.generateAccessToken(user);

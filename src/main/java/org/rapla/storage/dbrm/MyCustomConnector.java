@@ -45,6 +45,7 @@ public class MyCustomConnector implements CustomConnector
         final String username = connectInfo.getUsername();
         final String password = new String(connectInfo.getPassword());
         final String connectAs = connectInfo.getConnectAs();
+        LoginCredentials credentials = new LoginCredentials(username,password, connectAs);
         final LoginTokens loginTokens = authentificationService.login(username, password, connectAs);
         final String accessToken = loginTokens.getAccessToken();
         return accessToken;

@@ -21,17 +21,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-@Path("authentification")
+@Path("authentication")
 public interface RemoteAuthentificationService
 {
     @POST
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     LoginTokens login(@QueryParam("username") String username, String password, @QueryParam("connectAs") String connectAs) throws RaplaException;
-
-    /** same as login but passes the login info into a LoginCredentials Object*/
-    @POST
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    LoginTokens auth(LoginCredentials credentials) throws RaplaException;
 
     @GET
     @Path("destroy")

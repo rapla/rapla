@@ -354,11 +354,6 @@
 	<dependencies>
 		<!-- Code generation -->
 		<dependency>
-		<groupId>de.juplo</groupId>
-		<artifactId>scannotation</artifactId>
-		<version>1.0.4</version>
-		</dependency>
-		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jaxrs</artifactId>
 			<version>${resteasy.version}</version>
