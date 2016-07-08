@@ -199,6 +199,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         view.rebuild( builder);
 
         printPage(request, out, calendarview);
+        out.close();
 	}
 
     /**

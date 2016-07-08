@@ -70,7 +70,6 @@ public class Export2iCalServlet
 	private int lastModifiedIntervall;
 	@Inject
 	Export2iCalConverter converter;
-	TimeZoneConverter timeZoneConverter;
 	RaplaFacade facade;
 	Logger logger;
 	@Inject
@@ -139,6 +138,7 @@ public class Export2iCalServlet
             catch (EntityNotFoundException ex)
             {
             	response.getWriter().println(message);
+				response.getWriter().close();
     			getLogger().getChildLogger("404").warn(message);
                 response.setStatus( 404);
                 return;
@@ -149,6 +149,7 @@ public class Export2iCalServlet
 
             if (calModel == null) {
                 response.getWriter().println(message);
+				response.getWriter().close();
     		    response.setStatus( 404);
     			getLogger().getChildLogger("404").warn(message);
                 return;
@@ -160,6 +161,7 @@ public class Export2iCalServlet
 			if((isSet == null || isSet.equals("false")))
 			{
 				response.getWriter().println(message);
+				response.getWriter().close();
     			getLogger().getChildLogger("404").warn(message);
                 response.setStatus( 404);
 				return;
@@ -175,6 +177,7 @@ public class Export2iCalServlet
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
 			e.printStackTrace(response.getWriter());
+			response.getWriter().close();
 			getLogger().error( e.getMessage(), e);
 		}
 	}
