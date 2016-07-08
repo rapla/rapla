@@ -385,12 +385,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             ClientFacade facade = getClientFacade();
             facade.removeUpdateErrorListener(this);
-            if ( reconnect != null)
-            {
-                final RemoteOperator operator = (RemoteOperator)((facade).getRaplaFacade()).getOperator();
-                operator.restartServer();
-            }
-            else if (facade.isSessionActive())
+            if (facade.isSessionActive())
             {
                 facade.logout();
             }
