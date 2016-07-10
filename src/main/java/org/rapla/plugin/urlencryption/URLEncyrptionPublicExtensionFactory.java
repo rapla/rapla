@@ -138,13 +138,13 @@ public class URLEncyrptionPublicExtensionFactory  implements PublishExtensionFac
 	            if(encryptionEnabled)
 	            {
 					String encryptedParamters = webservice.encrypt(pageParameters);
-					urlExtension = UrlEncryption.ENCRYPTED_PARAMETER_NAME+"="+encryptedParamters;
+					urlExtension = "?"+UrlEncryption.ENCRYPTED_PARAMETER_NAME+"="+encryptedParamters;
 	            }
 	            else
 	            {
-	                urlExtension = pageParameters;
+	                urlExtension = "/"+pageParameters;
 	            }
-	            return new URL( codeBase,"rapla/" + urlExtension).toExternalForm();
+	            return new URL( codeBase,"rapla" + urlExtension).toExternalForm();
 	        } 
 	        catch (RaplaException ex)
 	        {
