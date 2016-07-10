@@ -1,1 +1,1 @@
-${groupId}.${artifactId}
+${project.groupId}.${project.artifactId}

@@ -5,6 +5,12 @@
   "http://google-web-toolkit.googlecode.com/svn/tags/2.5.1/distro-source/core/src/gwt-module.dtd">
 <module rename-to='Rapla_main_module'>
 	<!-- Specify the paths for translatable code -->
+	<source path=''>
+		<include name='**/client/gwt/**'/>
+		<include name='**/client/**/'/>
+		<include name='**/common/**'/>
+		<exclude name='**/swing/**/'/>
+	</source>
 	<source path='components/util' />
 	<source path='entities'>
 	    <exclude name='**/server/**' />

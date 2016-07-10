@@ -172,7 +172,7 @@
 						<annotationProcessor>dagger.internal.codegen.ComponentProcessor</annotationProcessor>
 					</annotationProcessors>
 					<compilerArguments>
-					<AmoduleName>${groupId}.${artifactId}</AmoduleName>
+					<AmoduleName>${project.groupId}.${project.artifactId}</AmoduleName>
 					</compilerArguments>
 					<!--
 					<proc>none</proc>
