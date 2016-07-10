@@ -29,12 +29,12 @@ public class MailapiClient implements MailInterface
     String username;
     String password;
     RaplaFacade facade;
-    Object externalMailSession;
+    Provider<Object> externalMailSessionProvider;
 
     @Inject
-    public MailapiClient( RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSession)  {
+    public MailapiClient( RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSessionProvider)  {
     	this.facade = facade;
-    	this.externalMailSession =  externalMailSession.get();
+    	this.externalMailSessionProvider = externalMailSessionProvider;
     }
 
     public MailapiClient()
@@ -43,6 +43,7 @@ public class MailapiClient implements MailInterface
 
     public void sendMail( String senderMail, String recipient, String subject, String mailBody ) throws MailException
     {
+        final Object externalMailSession = externalMailSessionProvider.get();
         if ( externalMailSession != null)
         {
             send(senderMail, recipient, subject, mailBody, externalMailSession);

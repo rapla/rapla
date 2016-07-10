@@ -2,6 +2,7 @@ package org.rapla.server.dagger;
 
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.Injector;
+import org.rapla.inject.ReflectionMembersInjector;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.inject.raplainject.SimpleRaplaInjector;
 import org.rapla.inject.scanning.ScanningClassLoader;
@@ -39,26 +40,28 @@ public class DaggerServerCreator
     public static ServerContext create(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         ServerContext result = new ServerContext();
-        SimpleRaplaInjector injector = new SimpleRaplaInjector( logger);
-        injector.addComponentInstance(Logger.class,logger);
-        injector.addComponentInstance(ServerContainerContext.class, containerContext);
-        injector.addComponentProvider(CachableStorageOperator.class, ServerStorageSelector.class);
-        injector.addNamedComponentInstanceProvider(ServerService.ENV_RAPLAMAIL_ID,()->containerContext.getMailSession());
-        injector.addComponentInstanceProvider(ShutdownService.class,()->containerContext.getShutdownService());
-        injector.addComponentProvider(StorageOperator.class, ServerStorageSelector.class);
-        ScanningClassLoader.LoadingFilter filter = null;
-        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST);
-        Collection<? extends Class> classes = loadingResult.getClasses();
-        for ( Throwable error:loadingResult.getErrors())
+        if ( false)
         {
-            logger.error( error.getMessage(), error);
+            SimpleRaplaInjector injector = new SimpleRaplaInjector(logger);
+            injector.addComponentInstance(Logger.class, logger);
+            injector.addComponentInstance(ServerContainerContext.class, containerContext);
+            injector.addComponentProvider(CachableStorageOperator.class, ServerStorageSelector.class);
+            injector.addNamedComponentInstanceProvider(ServerService.ENV_RAPLAMAIL_ID, () -> containerContext.getMailSession());
+            injector.addComponentInstanceProvider(ShutdownService.class, () -> containerContext.getShutdownService());
+            injector.addComponentProvider(StorageOperator.class, ServerStorageSelector.class);
+            ScanningClassLoader.LoadingFilter filter = null;
+            final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter, InjectionContext.MODULE_LIST);
+            Collection<? extends Class> classes = loadingResult.getClasses();
+            for (Throwable error : loadingResult.getErrors())
+            {
+                logger.error(error.getMessage(), error);
+            }
+            injector.initFromClasses(InjectionContext.server, classes);
+            result.membersInjector = injector.getMembersInjector();
+            result.serviceContainer = injector.getInstance(ServerServiceContainer.class);
+            return result;
         }
-        injector.initFromClasses(InjectionContext.server, classes);
-        result.membersInjector =injector.getMembersInjector();
-        result.serviceContainer = injector.getInstance(ServerServiceContainer.class);
-        return result;
 
-        /*
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
         boolean useReflection = true;
         if (useReflection)
@@ -73,13 +76,12 @@ public class DaggerServerCreator
         }
         else
         {
-            //org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
+            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
             final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
             result.membersInjector = reflectionMembersInjector;
             result.serviceContainer = component.getServerServiceContainer();
         }
         return result;
-        */
     }
 
     public static ImportExportManagerContainer createImportExport(Logger logger, ServerContainerContext containerContext) throws Exception
