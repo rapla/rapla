@@ -12,6 +12,7 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 
 @DefaultImplementation(of=RaplaClipboard.class,context = InjectionContext.swing)
 @Singleton
@@ -20,9 +21,9 @@ public class RaplaSwingClipboard extends RaplaClipboard
 
     Provider<IOInterface> serviceProvider;
     @Inject
-    public RaplaSwingClipboard(ClientFacade facade, Provider<IOInterface> serviceProvider)
+    public RaplaSwingClipboard(ClientFacade facade, Provider<IOInterface> serviceProvider, Logger logger)
     {
-        super(facade);
+        super(facade, logger);
         this.serviceProvider = serviceProvider;
     }
 
