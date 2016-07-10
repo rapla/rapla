@@ -176,7 +176,7 @@
 					<!--
 					<proc>none</proc>
 					-->
-					<useIncrementalCompilation>false</useIncrementalCompilation>
+					<useIncrementalCompilation>true</useIncrementalCompilation>
 					<optimize>false</optimize>
 					<verbose>false</verbose>
 					<source>${maven.compiler.source}</source>
