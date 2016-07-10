@@ -37,6 +37,7 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.rest.client.CustomConnector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
@@ -48,11 +49,9 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbrm.MyCustomConnector;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
-import org.rapla.storage.dbrm.RemoteAuthentificationService_JavaJsonProxy;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteStorage;
-import org.rapla.storage.dbrm.RemoteStorage_JavaJsonProxy;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
@@ -115,8 +114,10 @@ public abstract class RaplaTestCase
         final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, containerContext);
         final ServerServiceContainer serviceContainer = serverContext.getServiceContainer();
         Injector injector = serverContext.getMembersInjector();
-        createServer(  serviceContainer, injector, port);
+        final Server server = createServer(serviceContainer, injector, port);
         ServerContext result = new ServerContext();
+        result.server =  server;
+        result.container = serviceContainer;
         return result;
     }
 
@@ -351,8 +352,8 @@ public abstract class RaplaTestCase
                 //final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
                 connectionInfo.setReconnectInfo(null);
                 MyCustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler, logger);
-                RemoteAuthentificationService remoteAuthentificationService = new RemoteAuthentificationService_JavaJsonProxy(customConnector);
-                RemoteStorage remoteStorage = new RemoteStorage_JavaJsonProxy(customConnector);
+                RemoteAuthentificationService remoteAuthentificationService = getRemotService(RemoteAuthentificationService.class,customConnector);
+                RemoteStorage remoteStorage = getRemotService( RemoteStorage.class, customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,
                         remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getPermissionExtensions());
                 FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
@@ -361,6 +362,21 @@ public abstract class RaplaTestCase
             }
         };
         return clientFacadeProvider;
+    }
+
+    public  static <T> T getRemotService(Class<T> interfaceClass,CustomConnector customConnector)
+    {
+        try
+        {
+            final String className = interfaceClass.getCanonicalName() + "_JavaJsonProxy";
+            Object remoteService = Class.forName(className).getConstructor(CustomConnector.class).newInstance(customConnector);
+            return interfaceClass.cast( remoteService);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+
     }
 
     public static class VoidFileIO extends FileOperator.DefaultFileIO

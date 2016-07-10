@@ -85,13 +85,13 @@ public class ServerTest
         logger = RaplaTestCase.initLoger();
         int port = 8052;
         ServerContainerContext container = createContext();
-        raplaLocale = serverService.getRaplaLocale();
         final RaplaTestCase.ServerContext server = RaplaTestCase.createServerContext(logger, container, port);
-        serverService = (ServerServiceImpl) server.getServiceContainer();
         this.server = server.getServer();
+        serverService = (ServerServiceImpl) server.getServiceContainer();
         clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
         clientFacade1 = clientFacadeProvider.get();
         clientFacade2 = clientFacadeProvider.get();
+        raplaLocale = serverService.getRaplaLocale();
         clientFacade1.login("homer", "duffs".toCharArray());
 
         clientFacade2.login("homer", "duffs".toCharArray());
