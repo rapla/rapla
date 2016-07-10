@@ -170,6 +170,9 @@
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 					</annotationProcessors>
+					<compilerArguments>
+					<AmoduleName>${groupId}.${artifactId}</AmoduleName>
+					</compilerArguments>
 					<!--
 					<proc>none</proc>
 					-->
