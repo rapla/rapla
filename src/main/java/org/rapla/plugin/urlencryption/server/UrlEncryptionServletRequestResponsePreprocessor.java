@@ -80,21 +80,9 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
             return null;
         }
 
-        // TODO rethink url encryption of path. Till then, this will check double parts (encrypted path and in the URL)
-        final int parameterPathIndex = parameters.indexOf("?");
-        if(parameterPathIndex > 0){
-            String parameterPath = parameters.substring(0 , parameterPathIndex);
-            final String requestURI = request.getRequestURI();
-            if(requestURI.endsWith(parameterPath)){
-                parameters = parameters.substring(parameterPathIndex);
-            }
-        }
         final String requestUrl = request.getRequestURL().toString();
-        String newRequestUri = requestUrl + "/" + parameters;
+        String newRequestUri = requestUrl + (requestUrl.contains("?") ? "&" : "?") + parameters;
         Map<String, String[]> parameterMap = new TreeMap<String, String[]>();
-        final int indexOf = parameters.indexOf("?");
-        if( indexOf >= 0)
-            parameters = parameters.substring(indexOf + 1);
         StringTokenizer valuePairs = new StringTokenizer(parameters, "&");
         // parse the key - value pairs from the encrypted parameter
         while (valuePairs.hasMoreTokens()) {
