@@ -16,8 +16,8 @@ import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
@@ -29,13 +29,13 @@ import org.rapla.server.servletpages.ServletRequestPreprocessor;
  */
 @Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionPlugin.PLUGIN_ID)
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
-    private UrlEncryptionService urlEncryptionService;
+    private UrlEncryptor urlEncryptor;
     private RaplaFacade facade;
     private Logger logger;
     @Inject
-    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryption service, RaplaFacade facade, Logger logger)
+    public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryptor urlEncryptor, RaplaFacade facade, Logger logger)
     {
-    	this.urlEncryptionService =  (UrlEncryptionService) service;
+    	this.urlEncryptor =  urlEncryptor;
     	this.facade = facade;
     	this.logger = logger;
     }
@@ -75,7 +75,8 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
         if (parameters == null)
             return request;
         try {
-            parameters = urlEncryptionService.decrypt(parameters);
+            final String salt = request.getParameter(UrlEncryption.ENCRYPTED_SALT_PARAMETER_NAME);
+            parameters = urlEncryptor.decrypt(parameters, salt);
         } catch (Exception e) {
             return null;
         }

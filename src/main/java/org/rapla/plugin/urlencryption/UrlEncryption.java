@@ -19,6 +19,7 @@ public interface UrlEncryption
 	 *  Parameter in the URL which contains the encrypted parameters
 	 */
 	String ENCRYPTED_PARAMETER_NAME = "key";
+	String ENCRYPTED_SALT_PARAMETER_NAME = "salt";
 
 
     /**
