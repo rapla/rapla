@@ -18,10 +18,12 @@ import javax.servlet.http.HttpServletRequestWrapper;
 public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 {
 	private Map<String, String[]> parameters;
-	
-	public EncryptedHttpServletRequest(HttpServletRequest originalRequest, Map<String, String[]> plainParameters)
+	private final String newRequestUri;
+
+	public EncryptedHttpServletRequest(HttpServletRequest originalRequest, Map<String, String[]> plainParameters, String newRequestUri)
 	{
 		super(originalRequest);
+		this.newRequestUri = newRequestUri;
 		this.parameters = new TreeMap<String, String[]>();
         Map<String, String[]> parameterMap = super.getParameterMap();
         this.parameters.putAll(parameterMap);
@@ -53,7 +55,35 @@ public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 	{
 		return Collections.enumeration(getParameterMap().keySet());
 	}
-	
+
+	@Override public StringBuffer getRequestURL()
+	{
+		return new StringBuffer(newRequestUri);
+	}
+
+	@Override public String getQueryString()
+	{
+		final StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (Map.Entry<String, String[]> entry : parameters.entrySet())
+		{
+			if(first)
+				first=false;
+			else
+			sb.append("&");
+			sb.append(entry.getKey());
+			sb.append("=");
+			sb.append(entry.getValue()[0]);
+
+		}
+		return sb.toString();
+	}
+
+	@Override public String getRequestURI()
+	{
+		return newRequestUri;
+	}
+
 	@Override
 	public String[] getParameterValues(String name)
 	{

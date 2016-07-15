@@ -28,6 +28,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.framework.RaplaException;
+import org.rapla.logger.Logger;
 
 @Singleton
 public class RaplaClipboard implements ModificationListener
@@ -48,7 +49,7 @@ public class RaplaClipboard implements ModificationListener
 	CopyType copyType;
 	
 	@Inject
-    public RaplaClipboard( ClientFacade facade )
+    public RaplaClipboard( ClientFacade facade, Logger logger )
     {
         facade.addModificationListener( this );
     }

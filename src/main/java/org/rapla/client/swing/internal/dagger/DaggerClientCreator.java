@@ -45,51 +45,51 @@ public class DaggerClientCreator
     {
         final ClientService client;
         UserServiceProvider userClientServiceProvider = new UserServiceProvider();
-        Logger logger = startupEnvironment.getBootstrapLogger();
-        SimpleRaplaInjector injector = new SimpleRaplaInjector( logger);
-        boolean webstartEnabled = startupEnvironment.getStartupMode() == StartupEnvironment.WEBSTART;
-        injector.addComponentInstance(Logger.class,logger);
-        injector.addComponentInstanceProvider(IOInterface.class, () -> webstartEnabled ? new WebstartIO(logger): new DefaultIO(logger));
-        injector.addComponentInstanceProvider(UserClientService.class, userClientServiceProvider);
-        injector.addComponentInstance(StartupEnvironment.class, startupEnvironment);
-        ServiceInfLoader.LoadingFilter filter = new ServiceInfLoader.LoadingFilter()
+        if (false)
         {
-            @Override public boolean classNameShouldBeIgnored(String classname)
+            Logger logger = startupEnvironment.getBootstrapLogger();
+            boolean webstartEnabled = startupEnvironment.getStartupMode() == StartupEnvironment.WEBSTART;
+            SimpleRaplaInjector injector = new SimpleRaplaInjector( logger);
+            injector.addComponentInstance(Logger.class,logger);
+            injector.addComponentInstanceProvider(IOInterface.class, () -> webstartEnabled ? new WebstartIO(logger): new DefaultIO(logger));
+            injector.addComponentInstanceProvider(UserClientService.class, userClientServiceProvider);
+            injector.addComponentInstance(StartupEnvironment.class, startupEnvironment);
+            ServiceInfLoader.LoadingFilter filter = new ServiceInfLoader.LoadingFilter()
             {
-                return classname.contains(".server.") || classname.contains(".storage.dbfile.") || classname.contains(".storage.dbsql.");
-            }
+                @Override public boolean classNameShouldBeIgnored(String classname)
+                {
+                    return classname.contains(".server.") || classname.contains(".storage.dbfile.") || classname.contains(".storage.dbsql.");
+                }
 
-            @Override public String[] getIgnoredPackages()
+                @Override public String[] getIgnoredPackages()
+                {
+                    return new String[0];
+                }
+            };
+            final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST);
+            Collection<? extends Class> classes = loadingResult.getClasses();
+            for ( Throwable error:loadingResult.getErrors())
             {
-                return new String[0];
+                logger.error( error.getMessage(), error);
             }
-        };
-        final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST);
-        Collection<? extends Class> classes = loadingResult.getClasses();
-        for ( Throwable error:loadingResult.getErrors())
-        {
-            logger.error( error.getMessage(), error);
-        }
-        injector.initFromClasses(InjectionContext.swing, classes);
-        //if (true)
-        {
+            injector.initFromClasses(InjectionContext.swing, classes);
             client = injector.getInstance( ClientService.class);
             userClientServiceProvider.setClient( (UserClientService) client );
             return client;
         }
-//        final DaggerRaplaJavaClientStartupModule startupModule = new DaggerRaplaJavaClientStartupModule(startupEnvironment,userClientServiceProvider);
-//        boolean useReflection = true;
-//        if (useReflection)
-//        {
-//            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
-//        }
-//        else
-//        {
-//            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
-//            client = component.getClientService();
-//        }
-//        userClientServiceProvider.setClient( (UserClientService) client );
-//        return client;
+        final DaggerRaplaJavaClientStartupModule startupModule = new DaggerRaplaJavaClientStartupModule(startupEnvironment,userClientServiceProvider);
+        boolean useReflection = true;
+        if (useReflection)
+        {
+            client = DaggerReflectionStarter.startWithReflectionAndStartupModule(moduleId,ClientService.class, DaggerReflectionStarter.Scope.JavaClient, startupModule);
+        }
+        else
+        {
+            org.rapla.client.swing.dagger.RaplaJavaClientComponent component= org.rapla.client.swing.dagger.DaggerRaplaJavaClientComponent.builder().daggerRaplaJavaClientStartupModule(startupModule).build();
+            client = component.getClientService();
+        }
+        userClientServiceProvider.setClient( (UserClientService) client );
+        return client;
     }
 
     public static ClientFacade createFacade(StartupEnvironment startupEnvironment) throws Exception
