@@ -45,7 +45,7 @@ import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
 @Singleton
-@Extension(provides = SwingCalendarView.class, id = TimeslotPlugin.DAY_TIMESLOT)
+@Extension(provides = SwingViewFactory.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class CompactDayViewFactory implements SwingViewFactory
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
