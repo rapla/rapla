@@ -19,9 +19,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.server.extensionpoints.HTMLViewPage;
 
-abstract public class TableViewPage<T, C> implements HTMLViewPage
+abstract public class TableViewPage<T, C> 
 {
 
 	protected CalendarModel model;

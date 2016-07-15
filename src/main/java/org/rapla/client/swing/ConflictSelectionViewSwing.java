@@ -32,9 +32,9 @@ import javax.swing.tree.TreePath;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.ConflictSelectionView;
+import org.rapla.client.internal.MultiCalendarView.Presenter;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.PopupEvent;
@@ -51,7 +51,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ConflictSelectionView.class)
-public class ConflictSelectionViewSwing extends AbstractView<ConflictSelectionView.Presenter> implements ConflictSelectionView<Component>
+public class ConflictSelectionViewSwing implements ConflictSelectionView<Component>
 {
     public RaplaTree treeSelection = new RaplaTree();
     protected JPanel content = new JPanel();
@@ -61,6 +61,7 @@ public class ConflictSelectionViewSwing extends AbstractView<ConflictSelectionVi
     private final TreeFactory treeFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
+    private Presenter presenter;
 
     @Inject
     public ConflictSelectionViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
@@ -83,6 +84,16 @@ public class ConflictSelectionViewSwing extends AbstractView<ConflictSelectionVi
         treeSelection.addPopupListener(listener);
         navTree.addTreeSelectionListener(listener);
     }
+
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
+    }
+    
     
     @Override
     public void showMenuPopup(PopupContext context, boolean enabledButtonEnabled, boolean disableButtonEnabled)

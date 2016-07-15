@@ -12,10 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -33,7 +30,7 @@ import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
-public class ReservationTableViewPage extends TableViewPage<Reservation, TableColumn>
+public class ReservationTableViewPage extends TableViewPage<Reservation, TableColumn> implements HTMLViewPage
 {
     private final TableConfig.TableConfigLoader tableConfigLoader;
 

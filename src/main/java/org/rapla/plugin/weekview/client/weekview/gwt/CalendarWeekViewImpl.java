@@ -5,15 +5,14 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.gwt.view.WeekviewGWT;
 import org.rapla.client.gwt.view.WeekviewGWT.Callback;
 import org.rapla.client.menu.gwt.ContextCreator;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.weekview.client.weekview.CalendarWeekView;
 import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
@@ -23,12 +22,12 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 
 @DefaultImplementation(of = CalendarWeekView.class, context = InjectionContext.gwt)
-public class CalendarWeekViewImpl extends AbstractView<org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter>
-        implements CalendarWeekView<IsWidget>, Callback
+public class CalendarWeekViewImpl implements CalendarWeekView<IsWidget>, Callback
 {
 
     private final WeekviewGWT calendar;
     Logger logger;
+    private org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter presenter;
 
     @Inject
     public CalendarWeekViewImpl(Logger logger, ContextCreator contextCreator, BundleManager bundleManager)
@@ -36,6 +35,16 @@ public class CalendarWeekViewImpl extends AbstractView<org.rapla.plugin.weekview
         calendar = new WeekviewGWT("week", logger, this, contextCreator);
         this.logger = logger;
     }
+    
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
+    }
+
 
     @Override
     public IsWidget provideContent()

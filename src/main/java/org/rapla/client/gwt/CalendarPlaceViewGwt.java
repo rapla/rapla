@@ -1,33 +1,33 @@
 package org.rapla.client.gwt;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
+
+import javax.inject.Inject;
+
+import org.gwtbootstrap3.client.ui.constants.DeviceSize;
+import org.gwtbootstrap3.client.ui.html.Div;
+import org.rapla.client.CalendarPlaceView;
+import org.rapla.client.RaplaWidget;
+import org.rapla.client.gwt.components.TreeComponent;
+import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
+import org.rapla.client.gwt.view.NavigatorView;
+import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
+import org.rapla.components.i18n.BundleManager;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.logical.shared.ResizeEvent;
 import com.google.gwt.event.logical.shared.ResizeHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.IsWidget;
-import org.gwtbootstrap3.client.ui.constants.DeviceSize;
-import org.gwtbootstrap3.client.ui.html.Div;
-import org.rapla.client.CalendarPlaceView;
-import org.rapla.client.CalendarPlaceView.Presenter;
-import org.rapla.client.base.AbstractView;
-import org.rapla.client.gwt.components.TreeComponent;
-import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
-import org.rapla.client.gwt.view.NavigatorView;
-import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
-import org.rapla.client.RaplaWidget;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
 
 @DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
-public class CalendarPlaceViewGwt extends AbstractView<Presenter>implements CalendarPlaceView<IsWidget>, NavigatorAction
+public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, NavigatorAction
 {
     private static final int OFFSET_NAVIGATION = 50;
     private final TreeComponent treeComponent;
@@ -42,6 +42,7 @@ public class CalendarPlaceViewGwt extends AbstractView<Presenter>implements Cale
     private final Div drawingContent = new Div();
     private final Div calendarSelection = new Div();
     private final NavigatorView navigatorView;
+    private org.rapla.client.CalendarPlaceView.Presenter presenter;
 
     @Inject
     public CalendarPlaceViewGwt(BundleManager bundleManager)
@@ -88,6 +89,15 @@ public class CalendarPlaceViewGwt extends AbstractView<Presenter>implements Cale
             }
         }
         containerDiv.add(drawingContent);
+    }
+    
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
     }
 
     private void updateHeights(final int height)

@@ -3,15 +3,13 @@ package org.rapla.client.edit.reservation.sample;
 import java.util.Collection;
 import java.util.Date;
 
-import org.rapla.client.base.View;
-import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 
-public interface ReservationView extends View<Presenter> {
+public interface ReservationView {
 
 	interface Presenter {
 		void onSaveButtonClicked();
@@ -42,6 +40,8 @@ public interface ReservationView extends View<Presenter> {
 
         void convertAppointment();
 	}
+	
+	void setPresenter(Presenter p);
 
 	void show(Reservation event);
 	

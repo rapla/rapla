@@ -5,7 +5,6 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.gwt.components.MenuPopup;
 import org.rapla.client.menu.MenuView;
@@ -21,12 +20,23 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.PopupPanel;
 
 @DefaultImplementation(of =MenuView.class, context = InjectionContext.gwt)
-public class MenuViewImpl extends AbstractView<MenuView.Presenter> implements MenuView<IsWidget>
+public class MenuViewImpl  implements MenuView<IsWidget>
 {
     
+    private Presenter presenter;
+
     @Inject
     public MenuViewImpl()
     {
+    }
+    
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
     }
 
     @Override

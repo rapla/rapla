@@ -29,7 +29,7 @@ import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
-        extends TableViewPage<AppointmentBlock, TableColumn>
+        extends TableViewPage<AppointmentBlock, TableColumn> implements HTMLViewPage
 {
     private final TableConfig.TableConfigLoader tableConfigLoader;
 

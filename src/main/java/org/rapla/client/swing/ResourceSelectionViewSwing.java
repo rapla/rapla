@@ -47,7 +47,6 @@ import javax.swing.tree.TreePath;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.ResourceSelectionView;
 import org.rapla.client.internal.ResourceSelectionView.Presenter;
@@ -78,7 +77,7 @@ import org.rapla.inject.InjectionContext;
 import com.google.web.bindery.event.shared.EventBus;
 
 @DefaultImplementation(context=InjectionContext.swing, of=ResourceSelectionView.class)
-public class ResourceSelectionViewSwing extends AbstractView<Presenter> implements ResourceSelectionView<Component>
+public class ResourceSelectionViewSwing implements ResourceSelectionView<Component>
 {
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
@@ -96,6 +95,7 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
     private final DialogUiFactoryInterface dialogUiFactory;
     private final FilterEditButtonFactory filterEditButtonFactory;
     private boolean selectionFromProgram = false;
+    private Presenter presenter;
 
     @Inject
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
@@ -141,6 +141,16 @@ public class ResourceSelectionViewSwing extends AbstractView<Presenter> implemen
             getPresenter().treeSelectionChanged();
         });
         javax.swing.ToolTipManager.sharedInstance().registerComponent(treeSelection.getTree());
+    }
+    
+
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
     }
     
     @Override

@@ -11,7 +11,6 @@ import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
@@ -38,7 +37,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.web.bindery.event.shared.EventBus;
 
 @DefaultImplementation(of = CalendarTableView.class, context = InjectionContext.gwt)
-public class CalendarListViewImpl extends AbstractView<CalendarTableView.Presenter>implements CalendarTableView<IsWidget>
+public class CalendarListViewImpl implements CalendarTableView<IsWidget>
 {
     private static final String ELEMENT_ID = "raplaId";
     private static final String HIDE_CSS_STYLES = Responsiveness.VISIBLE_MD.getCssName() + " " + Responsiveness.VISIBLE_LG.getCssName();
@@ -78,6 +77,16 @@ public class CalendarListViewImpl extends AbstractView<CalendarTableView.Present
         }, ClickEvent.getType());
         table.setClassName("table table-striped table-hover table-selectable");
     }
+    
+
+    private Presenter presenter;
+
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+   
+    
 
     @Override
     public void update(Collection<Reservation> result)

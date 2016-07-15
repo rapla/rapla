@@ -11,14 +11,13 @@ import org.gwtbootstrap3.client.ui.constants.IconSize;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.edit.reservation.sample.ReservationView;
-import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.InfoView;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.ResourceDatesView;
 import org.rapla.client.edit.reservation.sample.gwt.subviews.RightsView;
 import org.rapla.client.gwt.components.InputUtils;
 import org.rapla.client.gwt.view.RaplaPopups;
+import org.rapla.client.internal.ResourceSelectionView.Presenter;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
@@ -38,7 +37,7 @@ import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.PopupPanel.AnimationType;
 
 @DefaultImplementation(of = ReservationView.class, context = InjectionContext.client)
-public class ReservationViewImpl extends AbstractView<Presenter>implements ReservationView
+public class ReservationViewImpl implements ReservationView
 {
 
     public static class Dual
@@ -84,6 +83,7 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
     private PopupPanel popup;
     private ReservationViewPart selectedView;
     private Reservation reservation;
+    private Presenter presenter;
 
     @Inject
     public ReservationViewImpl(RaplaResources i18n, BundleManager bundleManager, RaplaLocale raplaLocale)
@@ -91,6 +91,15 @@ public class ReservationViewImpl extends AbstractView<Presenter>implements Reser
         this.i18n = i18n;
         this.bundleManager = bundleManager;
         this.raplaLocale = raplaLocale;
+    }
+    
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
     }
     
     @Override

@@ -33,10 +33,8 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.base.AbstractView;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarView;
-import org.rapla.client.internal.MultiCalendarView.Presenter;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
@@ -48,12 +46,12 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 
 @DefaultImplementation(context = InjectionContext.swing, of = MultiCalendarView.class)
-public class MultiCalendarViewSwing extends AbstractView<Presenter> implements MultiCalendarView<Component>
+public class MultiCalendarViewSwing implements MultiCalendarView<Component>
 {
     private final JPanel page = new JPanel();
     private final JPanel header = new JPanel();
@@ -95,6 +93,18 @@ public class MultiCalendarViewSwing extends AbstractView<Presenter> implements M
         page.setLayout(new TableLayout(new double[][] { { TableLayout.PREFERRED, TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.FILL } }));
 
     }
+    
+    private Presenter presenter;
+
+    @Override
+    public void setPresenter(Presenter presenter) {
+        this.presenter = presenter;
+    }
+    
+    protected Presenter getPresenter() {
+        return presenter;
+    }
+    
 
     @Override
     public void setFilterModel(ClassifiableFilter model)
