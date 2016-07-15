@@ -12,13 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import java.io.IOException;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 
 import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -29,28 +35,38 @@ import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
-        extends TableViewPage<AppointmentBlock, TableColumn> implements HTMLViewPage
+        implements HTMLViewPage
 {
-    private final TableConfig.TableConfigLoader tableConfigLoader;
+    private TableViewPage<AppointmentBlock, TableColumn> tableViewPage; 
 
-    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
+    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
-        super(raplaLocale);
-        this.tableConfigLoader = tableConfigLoader;
-    }
+        tableViewPage = new TableViewPage<AppointmentBlock, TableColumn>(raplaLocale) {
 
-    public String getCalendarHTML() throws RaplaException
-    {
-        User user = model.getUser();
-        List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments", user);
-        final List<AppointmentBlock> blocks = PromiseSynchroniser.waitForWithRaplaException(model.getBlocks(), 10000);
-        return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
-    }
+            @Override
+            public String getCalendarHTML() throws RaplaException
+            {
+                User user = model.getUser();
+                List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments", user);
+                final List<AppointmentBlock> blocks = PromiseSynchroniser.waitForWithRaplaException(model.getBlocks(), 10000);
+                return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
+            }
 
-    int compareTo(AppointmentBlock object1, AppointmentBlock object2)
-    {
-        return object1.compareTo(object2);
+            @Override
+            public int compareTo(AppointmentBlock object1, AppointmentBlock object2)
+            {
+                return object1.compareTo(object2);
+            }
+            
+        };
     }
+    
+    @Override
+    public void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response, CalendarModel model ) throws IOException, ServletException
+    {
+        tableViewPage.generatePage(context, request, response, model);
+    }
+    
 
 }
 

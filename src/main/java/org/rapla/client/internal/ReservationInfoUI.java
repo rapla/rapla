@@ -15,8 +15,6 @@ package org.rapla.client.internal;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -36,7 +34,6 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     private final PermissionController permissionController;
     AppointmentFormater appointmentFormater;
 
-    @Inject
     public ReservationInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(i18n, raplaLocale, facade, logger);

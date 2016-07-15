@@ -26,22 +26,22 @@ import dagger.Provides;
         this.userClientServiceProvider = userClientServiceProvider;
     }
 
-    @Provides UserClientService provideService()
+    @Provides @Singleton public UserClientService provideService()
     {
         return userClientServiceProvider.get();
     }
 
-    @Provides public Logger provideLogger()
+    @Provides @Singleton public Logger provideLogger()
     {
         return logger;
     }
 
-    @Provides StartupEnvironment provideContext()
+    @Provides @Singleton public StartupEnvironment provideContext()
     {
         return context;
     }
 
-    @Provides @Singleton IOInterface provideIOContext()
+    @Provides @Singleton public IOInterface provideIOContext()
     {
         boolean webstartEnabled = context.getStartupMode() == StartupEnvironment.WEBSTART;
         if (webstartEnabled)
