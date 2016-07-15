@@ -243,7 +243,12 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 				if (keyParamter != null)
 				{
 					out.println(getHiddenField("key", keyParamter));
-				}
+                    final String salt = request.getParameter("salt");
+                    if (salt != null)
+                    {
+                        out.println(getHiddenField("salt", salt));
+                    }
+                }
 				else
 				{
 					out.println(getHiddenField("page", "calendar"));
