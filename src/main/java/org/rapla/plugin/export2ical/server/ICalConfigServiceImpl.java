@@ -46,6 +46,7 @@ public class ICalConfigServiceImpl implements ICalConfigService {
         return config;
     }
 
+    @Override
     public DefaultConfiguration getUserDefaultConfig() throws RaplaException {
         if ( !remoteSession.isAuthentified(request))
         {
@@ -59,6 +60,8 @@ public class ICalConfigServiceImpl implements ICalConfigService {
         }
         return config;
     }
+    
+    
 
 
 }
