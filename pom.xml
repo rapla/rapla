@@ -34,6 +34,7 @@
     </organization>
     <properties>
 		<parent-process-activate>true</parent-process-activate>
+		<org.rapla.parentModules></org.rapla.parentModules>
     </properties>
 	<build>
 		<plugins>

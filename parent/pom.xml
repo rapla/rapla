@@ -173,6 +173,7 @@
 					</annotationProcessors>
 					<compilerArguments>
 					<AmoduleName>${project.groupId}.${project.artifactId}</AmoduleName>
+					<AparentModules>${org.rapla.parentModules}</AparentModules>
 					</compilerArguments>
 					<!--
 					<proc>none</proc>
