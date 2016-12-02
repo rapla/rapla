@@ -38,7 +38,7 @@ import org.rapla.inject.Extension;
     
     public String formatTime(String timeFormat, Object... obj)
     {
-        return bundleManager.format(timeFormat, obj);
+        return format(timeFormat, obj);
     }
 
 }

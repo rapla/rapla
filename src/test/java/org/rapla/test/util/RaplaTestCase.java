@@ -265,9 +265,9 @@ public abstract class RaplaTestCase
             {
                 ((DefaultScheduler)scheduler).dispose();
             }
-            if ( scheduler instanceof org.rapla.client.gwt.GwtCommandScheduler)
+            if ( scheduler instanceof org.rapla.scheduler.client.gwt.GwtCommandScheduler)
             {
-                ((org.rapla.client.gwt.GwtCommandScheduler)scheduler).dispose();
+                //((org.rapla.scheduler.client.gwt.GwtCommandScheduler)scheduler).dispose();
             }
         }
 

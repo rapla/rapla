@@ -2,6 +2,7 @@ package org.rapla.rest.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLEncoder;
 
 import javax.inject.Inject;
 import javax.servlet.http.Cookie;
@@ -90,17 +91,30 @@ public class RaplaAuthRestPage
     public void create_(@QueryParam("url") String url, @FormParam("username") String user, String password,
             @FormParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
-        final String targetUrl = Tools.createXssSafeString(url);
+        final String targetUrl = url !=null ? Tools.createXssSafeString(url): "../rapla.html";
         final String errorMessage;
         if (user != null)
         {
             try
             {
                 final LoginTokens token = create(new LoginCredentials(user, password, connectAs));
+                final int i = targetUrl.indexOf("#");
+                String newUrl;
                 final String accessToken = token.getAccessToken();
-                final Cookie cookie = new Cookie(LOGIN_COOKIE, token.toString());
-                response.addCookie(cookie);
-                response.sendRedirect(targetUrl != null ? targetUrl : "rapla.html");
+                if (i >=0)
+                {
+                    boolean last = i == targetUrl.length() -1;
+                    newUrl = targetUrl + (last? "" : "&")+LOGIN_COOKIE + "=" + accessToken;
+                }
+                else
+                {
+                    newUrl = targetUrl + "#"+LOGIN_COOKIE + "=" + accessToken;
+                }
+                newUrl+="&valid_until="+token.getValidUntil().getTime();
+                //final Cookie cookie = new Cookie(LOGIN_COOKIE, token.toString());
+                //cookie.setPath("");
+                //response.addCookie(cookie);
+                response.sendRedirect(newUrl);
                 final PrintWriter writer = response.getWriter();
                 writer.println(accessToken);
                 writer.close();

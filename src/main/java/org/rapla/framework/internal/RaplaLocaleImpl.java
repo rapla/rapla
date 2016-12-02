@@ -12,36 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework.internal;
 
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.text.NumberFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 @DefaultImplementation(of= RaplaLocale.class, context = {InjectionContext.swing,InjectionContext.server} )
 @Singleton
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
-    String COUNTRY = "country";
-    String LANGUAGES = "languages";
-    String LANGUAGE = "language";
-    String CHARSET = "charset";
     String charsetForHtml;
     private TimeZone importExportTimeZone;
     @Inject
     public RaplaLocaleImpl(BundleManager bundleManager)
     {
-         super(bundleManager);
+        super(bundleManager);
         importExportTimeZone = TimeZone.getDefault();
         charsetForHtml = "ISO-8859-1";
     }
@@ -63,20 +56,9 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     }
 
 
-    /* (non-Javadoc)
-     * @see org.rapla.common.IRaplaLocale#formatNumber(long)
-     */
     public String formatNumber( long number ) {
         Locale locale = getLocale();
 		return NumberFormat.getInstance( locale).format(number );
-    }
-
-    protected String _format(Date date, final String pattern)
-    {
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
-        simpleDateFormat.setTimeZone( DateTools.getTimeZone());
-        final String format = simpleDateFormat.format(date);
-        return format;
     }
 
     public String getCharsetNonUtf()

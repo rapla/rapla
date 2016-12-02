@@ -46,16 +46,6 @@ public class GwtBundleManager implements BundleManager
     }
 
     @Override
-    public String format(String string, Object[] obj)
-    {
-        // TODO
-        //        final MessageFormat messageFormat = new MessageFormat(string);
-        //        final String format = messageFormat.format(obj);
-        //        return format;
-        return MessageFormat.format(string, obj);
-    }
-
-    @Override
     public String getString(String packageId, String key, Locale locale)
     {
         return getString(packageId, key);

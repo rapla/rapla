@@ -3,8 +3,6 @@ package org.rapla.client;
 import java.util.Collection;
 import java.util.Date;
 
-import javax.swing.event.ChangeListener;
-
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
@@ -35,10 +33,6 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
     void deleteReservation() throws RaplaException;
 
     void save() throws RaplaException;
-
-    void addReservationChangeListener(ChangeListener listener);
-
-    void removeReservationChangeListener(ChangeListener listener);
 
     CommandHistory getCommandHistory();
 

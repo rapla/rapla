@@ -3,7 +3,7 @@ package org.rapla.components.i18n;
 public class I18nLocaleFormats
 {
     private boolean isAmPm;
-    private String amPm;
+    private String[] amPm;
     private String formatDateShort;
     private String formatDateLong;
     private String[] weekdays;
@@ -18,7 +18,7 @@ public class I18nLocaleFormats
     {
     }
 
-    public I18nLocaleFormats(boolean isAmPm, String amPm, String formatDateShort, String formatDateLong, String[] weekdays, String[] shortWeekdays, String[] months, String[] shortMonths, String formatHour,
+    public I18nLocaleFormats(boolean isAmPm, String[] amPm, String formatDateShort, String formatDateLong, String[] weekdays, String[] shortWeekdays, String[] months, String[] shortMonths, String formatHour,
             String formatMonthYear, String formatTime)
     {
         super();
@@ -70,9 +70,14 @@ public class I18nLocaleFormats
         return isAmPm;
     }
 
-    public String getAmPmFormat()
+    public String getAmFormat()
     {
-        return amPm;
+        return amPm[0];
+    }
+
+    public String getPmFormat()
+    {
+        return amPm[1];
     }
 
     public String getFormatTime()

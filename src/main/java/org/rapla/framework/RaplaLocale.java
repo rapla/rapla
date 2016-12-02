@@ -107,12 +107,13 @@ public interface RaplaLocale
 
     String formatDayOfWeekDateMonth(Date date);
 
+    int getWeekInYear(Date date);
+
     boolean isAmPmFormat();
 
     String getWeekdayName(int weekday);
 
     String formatTime( int minuteOfDay );
-
     
     String formatMonthYear(Date startDate);
 

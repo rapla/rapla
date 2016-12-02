@@ -1,5 +1,6 @@
 package org.rapla.client.gwt;
 
+import org.rapla.client.gwt.dagger.DaggerRaplaGwtComponent;
 import org.rapla.client.gwt.view.RaplaPopups;
 
 import com.google.gwt.core.client.EntryPoint;
@@ -11,7 +12,7 @@ public class Rapla implements EntryPoint
     public void onModuleLoad()
     {
         RaplaPopups.getProgressBar().setPercent(10);
-        GwtStarter starter = GWT.create(GwtStarter.class);
+        GwtStarter starter = DaggerRaplaGwtComponent.create().getGwtStarter();//GWT.create(GwtStarter.class);
         starter.startApplication();
     }
 

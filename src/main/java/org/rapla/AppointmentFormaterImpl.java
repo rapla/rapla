@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.Appointment;
@@ -28,6 +21,12 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 /** default implementation of appointment formater */
 @DefaultImplementation(of = AppointmentFormater.class, context = InjectionContext.all)

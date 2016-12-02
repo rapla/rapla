@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -29,9 +23,12 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -40,11 +37,19 @@ import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
 /**
     Base class for most components. Eases
     access to frequently used services, e.g. {@link I18nBundle}.
  */
-public class RaplaComponent 
+public class RaplaComponent
 {
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
     private Logger logger;
@@ -57,6 +62,47 @@ public class RaplaComponent
         this.i18n = i18n;
         this.logger = logger;
         this.raplaLocale = raplaLocale;
+    }
+
+    public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
+    {
+        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+        if (markedAllocatables == null || markedAllocatables.size() == 0)
+        {
+            Collection<Allocatable> allocatables = model.getSelectedAllocatablesAsList();
+            if (allocatables.size() == 1)
+            {
+                addAlloctables(newReservations, allocatables);
+            }
+        }
+        else
+        {
+            Collection<Allocatable> allocatables = markedAllocatables;
+            addAlloctables(newReservations, allocatables);
+        }
+        List<Reservation> list = new ArrayList<Reservation>();
+        for (Reservation reservation : newReservations)
+        {
+            Reservation cast = reservation;
+            ReferenceInfo<User> lastChangedBy = cast.getLastChangedBy();
+            if (lastChangedBy != null && !lastChangedBy.equals(user.getReference()))
+            {
+                throw new RaplaException("Reservation " + cast + " has wrong user " + lastChangedBy);
+            }
+            list.add(cast);
+        }
+        return list;
+    }
+
+    static private void addAlloctables(Collection<Reservation> events, Collection<Allocatable> allocatables)
+    {
+        for (Reservation event : events)
+        {
+            for (Allocatable alloc : allocatables)
+            {
+                event.addAllocatable(alloc);
+            }
+        }
     }
 
     protected void setLogger(Logger logger) 

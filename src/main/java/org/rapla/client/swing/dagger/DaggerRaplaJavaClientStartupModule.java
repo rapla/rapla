@@ -20,14 +20,12 @@ import dagger.Provides;
     private final StartupEnvironment context;
     private final Logger logger;
     private final Provider<UserClientService> userClientServiceProvider;
-    private final EventBus eventBus;
 
     public DaggerRaplaJavaClientStartupModule(StartupEnvironment context,Provider<UserClientService> userClientServiceProvider)
     {
         this.context = context;
         this.logger = context.getBootstrapLogger();
         this.userClientServiceProvider = userClientServiceProvider;
-        this.eventBus = new SimpleEventBus();
     }
 
     @Provides @Singleton public UserClientService provideService()
@@ -38,11 +36,6 @@ import dagger.Provides;
     @Provides @Singleton public Logger provideLogger()
     {
         return logger;
-    }
-
-    @Provides @Singleton public EventBus provideEventBus()
-    {
-        return eventBus;
     }
 
     @Provides @Singleton public StartupEnvironment provideContext()

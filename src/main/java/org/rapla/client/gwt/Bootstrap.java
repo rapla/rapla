@@ -23,28 +23,30 @@ import com.google.gwt.user.client.Window;
 public class Bootstrap
 {
 
-    private final Provider<Application> application;
-    private final RaplaFacade facade;
-    private final StorageOperator operator;
+    //private final Provider<Application> application;
+    private final Provider<RaplaFacade> facade;
+    private final Provider<StorageOperator> operator;
     private final Logger logger;
     private final RemoteConnectionInfo remoteConnectionInfo;
 
     @Inject
-    public Bootstrap(RaplaFacade facade, StorageOperator operator,  Logger logger, RemoteConnectionInfo remoteConnectionInfo)
+    public Bootstrap(Provider<RaplaFacade> facade, Provider<StorageOperator> operator,  Logger logger, RemoteConnectionInfo remoteConnectionInfo /*,Provider<Application> application*/)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
-        this.application = null;//FIXME add application;
+      //  this.application = null;
         this.operator = operator;
         this.facade = facade;
         this.logger = logger;
-        this.remoteConnectionInfo.setServerURL(GWT.getModuleBaseURL() + "../rapla/");
+        final String moduleBaseURL = GWT.getModuleBaseURL();
+        this.remoteConnectionInfo.setServerURL(moduleBaseURL + "../rapla/");
     }
 
     public void load(String accessToken)
     {
         remoteConnectionInfo.setAccessToken(accessToken);
-        final FacadeImpl facadeImpl = (FacadeImpl) facade;
-        ((FacadeImpl) facade).setOperator(operator);
+        final FacadeImpl facadeImpl = (FacadeImpl) facade.get();
+        final StorageOperator operator = this.operator.get();
+        facadeImpl.setOperator(operator);
         Promise<Void> load = facadeImpl.load();
         logger.info("Loading resources");
         RaplaPopups.getProgressBar().setPercent(40);
@@ -56,18 +58,19 @@ public class Bootstrap
                 Collection<Allocatable> allocatables = Arrays.asList(facadeImpl.getAllocatables());
                 logger.info("loaded " + allocatables.size() + " resources. Starting application");
                 boolean defaultLanguageChosen = false;
-                application.get().start(defaultLanguageChosen, () -> {
-                    logger.info("Restarting.");
-                    Window.Location.reload();
-                }
-                );
+//                final Application application = this.application.get();
+//                application.start(defaultLanguageChosen, () -> {
+//                    logger.info("Restarting.");
+//                    Window.Location.reload();
+//                }
+//                );
             }
             catch (Exception e)
             {
                 logger.error(e.getMessage(), e);
                 if (e instanceof RaplaSecurityException)
                 {
-                    Window.Location.replace("../rapla/auth");
+                    RaplaGwtStarter.redirectToStart();
                 }
 
             }
@@ -76,7 +79,7 @@ public class Bootstrap
             logger.error(e.getMessage(), e);
             if (e instanceof RaplaSecurityException)
             {
-                Window.Location.replace("../rapla/auth");
+                RaplaGwtStarter.redirectToStart();
             }
             return null;
         });

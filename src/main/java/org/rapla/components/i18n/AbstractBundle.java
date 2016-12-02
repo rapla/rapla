@@ -37,8 +37,25 @@ public class AbstractBundle implements I18nBundle
     }
     public String format( String key, Object... obj )
     {
-        return bundleManager.format(getString(key), obj);
+        return format_(getString(key), obj);
     }
+
+
+    protected String format_(String string, Object[] args)
+    {
+        String msg = string;
+        if (args != null)
+        {
+            for (int i = 0; i < args.length; i++)
+            {
+                final String argString = "\\{" + (i ) + "\\}";
+                final Object arg = args[i];
+                msg = msg.replaceAll(argString, arg != null ? arg.toString() : "null");
+            }
+        }
+        return msg;
+    }
+
 
     public Locale getLocale()
     {

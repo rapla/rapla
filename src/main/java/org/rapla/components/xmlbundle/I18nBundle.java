@@ -33,7 +33,6 @@ public interface I18nBundle {
         <code>
         (new MessageFormat(getString(key))).format(obj);
         </code>
-        @see java.text.MessageFormat
     */
     String format(String key,Object... obj) throws MissingResourceException;
 

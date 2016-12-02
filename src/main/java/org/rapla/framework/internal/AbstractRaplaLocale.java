@@ -1,16 +1,16 @@
 package org.rapla.framework.internal;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public abstract class AbstractRaplaLocale implements RaplaLocale {
 
@@ -172,6 +172,14 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     }
 
     @Override
+    public int getWeekInYear(Date date)
+    {
+        final Locale locale = getLocale();
+        final int weekInYear = DateTools.getWeekInYear(date, locale);
+        return weekInYear;
+    }
+
+    @Override
     public String getWeekdayName(int weekday)
     {
         final String[] weekdays = getFormats().getWeekdays();
@@ -200,12 +208,6 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     public String formatTime( Date date ) {
         String formatHour = getFormats().getFormatHour();
         return _format(date, formatHour);
-//        Locale locale = getLocale();
-//        TimeZone timezone = getTimeZone();
-//      DateFormat format = DateFormat.getTimeInstance( DateFormat.SHORT, locale );
-//      format.setTimeZone( timezone );
-//      String formatTime = format.format( date );
-//      return formatTime;
     }
     
     /* (non-Javadoc)
@@ -311,8 +313,137 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 //        return (amPmPos.getEndIndex()>0);
     }
 
-    
-    protected abstract String _format(Date date, final String pattern);
+
+    protected String _format(Date date, final String pattern)
+    {
+        final I18nLocaleFormats formats = bundleManager.getFormats();
+        StringBuilder builder = new StringBuilder();
+        long millis = date.getTime();
+
+        final char[] chars = pattern.toCharArray();
+        final int length = chars.length;
+        for (int i = 0; i< length; i++)
+        {
+            char c = chars[i];
+            String toInsert;
+            switch (c)
+            {
+                case 'M':
+                    final int month = DateTools.getMonth(date);
+                    if ( i==length-1 || chars[i+1]!= 'M' )
+                    {
+                        toInsert = Integer.toString(month);
+                    }
+                    else if (i == length - 2 || chars[i+2]!= 'M')
+                    {
+                        toInsert = fillFirstDigit( month);
+                        i+=1;
+                    }
+                    else if (i == length - 3 || chars[i+3]!= 'M')
+                    {
+                        toInsert = formats.getShortMonths()[month - 1];
+                        i+=2;
+                    }
+                    else
+                    {
+                        toInsert = formats.getMonths()[month - 1];
+                        i+=3;
+                    }
+                    break;
+                case 'y':
+                    int year = DateTools.getYear( date);
+                    if ( i==length-1 || chars[i+1]!= 'y' )
+                    {
+                        toInsert = Integer.toString(year);
+                    }
+                    else
+                    {
+                        toInsert = fillFirstDigit(year%100);
+                        i+=1;
+                    }
+                    break;
+                case 'd':
+                    int day = DateTools.getDayOfMonth( date);
+                    if ( i==length-1 || chars[i+1]!= 'd' )
+                    {
+                        toInsert = Integer.toString( day);
+                    }
+                    else
+                    {
+                        toInsert = fillFirstDigit(day);
+                        i+=1;
+                    }
+                    break;
+                case 'h':
+                    int hourAmPm = DateTools.getHourOfDay( millis) % 12;
+                    if ( i==length-1 || chars[i+1]!= 'h' )
+                    {
+                        toInsert = Integer.toString( hourAmPm);
+                    }
+                    else
+                    {
+                        toInsert = fillFirstDigit(hourAmPm);
+                        i+=1;
+                    }
+                    break;
+                case 'H':
+                    int hour = DateTools.getHourOfDay( millis);
+                    if ( i==length-1 || chars[i+1]!= 'H' )
+                    {
+                        toInsert = Integer.toString( hour);
+                    }
+                    else
+                    {
+                        toInsert = fillFirstDigit(hour);
+                        i+=1;
+                    }
+                    break;
+                case 'm':
+                    final int minuteOfHour = DateTools.getMinuteOfHour(millis);
+                    if ( i==length-1 || chars[i+1]!= 'm' )
+                    {
+                        toInsert = Integer.toString(minuteOfHour);
+                    }
+                    else
+                    {
+                        toInsert = fillFirstDigit(minuteOfHour);
+                        i+=1;
+                    }
+                    break;
+                case 's':
+                    final int secondOfMinute = DateTools.getSecondOfMinute(millis);
+                    if ( i==length-1 || chars[i+1]!= 's' )
+                    {
+                        toInsert = Integer.toString(secondOfMinute);
+                    }
+                    else
+                    {
+                        toInsert = fillFirstDigit( secondOfMinute);
+                        i+=1;
+                    }
+                    break;
+                case 'a':
+                    boolean isAm = DateTools.getHourOfDay( millis) <12;
+                    toInsert = isAm ? formats.getAmFormat() : formats.getPmFormat();
+                    break;
+                default: toInsert = "" + c;
+            }
+            builder.append(toInsert);
+        }
+        return builder.toString();
+    }
+
+    private String fillFirstDigit(int number)
+    {
+        if ( number <10)
+        {
+            return "0" + Integer.toString( number);
+        }
+        else
+        {
+            return Integer.toString( number );
+        }
+    }
 
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getLocale()

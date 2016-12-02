@@ -14,7 +14,6 @@ package org.rapla.client.swing.internal.common;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.text.MessageFormat;
 import java.util.Locale;
 
 import javax.swing.DefaultListCellRenderer;
@@ -27,17 +26,11 @@ public class NamedListCellRenderer extends DefaultListCellRenderer {
     private static final long serialVersionUID = 1L;
     
     Locale locale;
-    MessageFormat format = null;
     private final JPanel wrapper = new JPanel(new BorderLayout());
 
     public NamedListCellRenderer(Locale locale) {
         this.locale = locale;
         wrapper.add(this);
-    }
-
-    public NamedListCellRenderer(Locale locale,String formatString) {
-        this(locale);
-        this.format = new MessageFormat(formatString);
     }
 
 
@@ -55,8 +48,6 @@ public class NamedListCellRenderer extends DefaultListCellRenderer {
         {
             newValue = value;
         }
-        if (format != null)
-            newValue = format.format(new Object[] {newValue});
         final Component comp = super.getListCellRendererComponent(list,newValue,index,isSelected,cellHasFocus);
         return wrapper;
     }

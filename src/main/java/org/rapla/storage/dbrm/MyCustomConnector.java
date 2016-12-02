@@ -6,9 +6,9 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.AuthenticationException;
 import org.rapla.rest.client.CustomConnector;
-import org.rapla.rest.client.SerializableExceptionInformation;
 import org.rapla.scheduler.CommandScheduler;
 
 import javax.inject.Inject;

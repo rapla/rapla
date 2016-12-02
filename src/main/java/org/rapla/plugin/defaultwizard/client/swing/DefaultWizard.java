@@ -172,46 +172,6 @@ import com.google.web.bindery.event.shared.EventBus;
         eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext, context));
     }
 
-    public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
-    {
-        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-        if (markedAllocatables == null || markedAllocatables.size() == 0)
-        {
-            Collection<Allocatable> allocatables = model.getSelectedAllocatablesAsList();
-            if (allocatables.size() == 1)
-            {
-                addAlloctables(newReservations, allocatables);
-            }
-        }
-        else
-        {
-            Collection<Allocatable> allocatables = markedAllocatables;
-            addAlloctables(newReservations, allocatables);
-        }
-        List<Reservation> list = new ArrayList<Reservation>();
-        for (Reservation reservation : newReservations)
-        {
-            Reservation cast = reservation;
-            ReferenceInfo<User> lastChangedBy = cast.getLastChangedBy();
-            if (lastChangedBy != null && !lastChangedBy.equals(user.getReference()))
-            {
-                throw new RaplaException("Reservation " + cast + " has wrong user " + lastChangedBy);
-            }
-            list.add(cast);
-        }
-        return list;
-    }
-
-    static private void addAlloctables(Collection<Reservation> events, Collection<Allocatable> allocatables)
-    {
-        for (Reservation event : events)
-        {
-            for (Allocatable alloc : allocatables)
-            {
-                event.addAllocatable(alloc);
-            }
-        }
-    }
 
     //	/**
     //	 * @param model

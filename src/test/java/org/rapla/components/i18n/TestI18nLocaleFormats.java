@@ -39,7 +39,8 @@ public class TestI18nLocaleFormats
                     final I18nLocaleFormats format = bundleManager.getFormats(locale);
                     Assert.assertNotNull(format.getFormatDateLong());
                     Assert.assertNotNull(format.isAmPmFormat());
-                    Assert.assertNotNull(format.getAmPmFormat());
+                    Assert.assertNotNull(format.getAmFormat());
+                    Assert.assertNotNull(format.getPmFormat());
                     Assert.assertNotNull(format.getFormatDateShort());
                     Assert.assertNotNull(format.getFormatHour());
                     Assert.assertNotNull(format.getFormatMonthYear());

@@ -1,15 +1,15 @@
 package org.rapla.storage.dbrm;
 
-import java.util.List;
-
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
+import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.ExceptionDeserializer;
-import org.rapla.rest.client.SerializableExceptionInformation;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
+
+import java.util.List;
 
 public class RaplaExceptionDeserializer implements ExceptionDeserializer {
 	public RaplaException deserializeException(SerializableExceptionInformation exeInfo, int statusCode)

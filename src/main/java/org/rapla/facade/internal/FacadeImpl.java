@@ -892,7 +892,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
    
    public Promise<Void> load()
    {
-	   if (( operator instanceof RemoteOperator))
+	   if (!( operator instanceof RemoteOperator))
 	   {
 		   throw new IllegalStateException("Only RemoteOperator supports async loading");
 	   }

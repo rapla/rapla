@@ -13,12 +13,14 @@
 package org.rapla;
 
 import java.util.Calendar;
+import java.util.Date;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -27,25 +29,63 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 public class RaplaLocaleTest 
 {
     @Test
-    public void testDateFormat3() throws Exception
+    public void testDateFormatDe() throws Exception
     {
-        RaplaLocale raplaLocale = new RaplaLocaleImpl(new DefaultBundleManager());
-        String s = raplaLocale.formatDate(new SerializableDateTimeFormat().parseDate("2001-01-12", false));
-        Assert.assertEquals("12.01.01", s);
+        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        bundleManager.setCountry("de");
+        bundleManager.setLanguage("DE");
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        final Date date = new SerializableDateTimeFormat().parseDate("2001-01-12", false);
+        {
+            String s = raplaLocale.formatDate(date);
+            Assert.assertEquals("12.01.01", s);
+        }
+        {
+            String s = raplaLocale.formatDateLong(date);
+            Assert.assertEquals("12.01.2001", s);
+        }
     }
 
     @Test
-    public void testTimeFormat4()
+    public void testDateFormatUs() throws Exception
+    {
+        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        bundleManager.setCountry("US");
+        bundleManager.setLanguage("en");
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        final Date date = new SerializableDateTimeFormat().parseDate("2001-01-12", false);
+        {
+            String s = raplaLocale.formatDate(date);
+            Assert.assertEquals("1/12/01", s);
+        }
+        {
+            String s = raplaLocale.formatDateLong(date);
+            Assert.assertEquals("Jan 12, 2001", s);
+        }
+    }
+
+    @Test
+    public void testTimeFormatUs() throws ParseDateException
     {
         final DefaultBundleManager bundleManager = new DefaultBundleManager();
         bundleManager.setCountry("us");
         bundleManager.setLanguage("en");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        Calendar cal = Calendar.getInstance(raplaLocale.getTimeZone(), raplaLocale.getLocale());
-        cal.set(Calendar.HOUR_OF_DAY, 21);
-        cal.set(Calendar.MINUTE, 0);
-        String s = raplaLocale.formatTime(cal.getTime());
+        final Date time = new SerializableDateTimeFormat().parseTime("21:00:00");
+        String s = raplaLocale.formatTime(time);
         Assert.assertEquals("9:00 PM", s);
+    }
+
+    @Test
+    public void testTimeFormatDe() throws ParseDateException
+    {
+        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        bundleManager.setCountry("DE");
+        bundleManager.setLanguage("de");
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        final Date time = new SerializableDateTimeFormat().parseTime("21:00:00");
+        String s = raplaLocale.formatTime(time);
+        Assert.assertEquals("21:00", s);
     }
 
 }

@@ -57,6 +57,10 @@ public abstract class DateTools
     public static int getMinuteOfHour(long date) {
         return (int) ((date % MILLISECONDS_PER_HOUR)/ MILLISECONDS_PER_MINUTE);
     }
+
+    public static int getSecondOfMinute(long date) {
+        return (int) ((date % MILLISECONDS_PER_MINUTE)/ 1000);
+    }
     
 	public static int getMinuteOfDay(long date) {
 	     return (int) ((date % MILLISECONDS_PER_DAY)/ MILLISECONDS_PER_MINUTE);

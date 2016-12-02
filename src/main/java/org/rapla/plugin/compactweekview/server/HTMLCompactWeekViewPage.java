@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.compactweekview.server;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -57,7 +56,7 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
         {
         	@Override
         	public void rebuild(Builder b) {
-        		 String weeknumberString = MessageFormat.format(getI18n().getString("calendarweek.abbreviation"), getStartDate());
+        		 String weeknumberString = getI18n().calendarweek( getStartDate());
         		 setWeeknumber(weeknumberString);
         		 super.rebuild(b);
         	}

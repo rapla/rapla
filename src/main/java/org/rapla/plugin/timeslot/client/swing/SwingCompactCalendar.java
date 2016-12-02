@@ -14,18 +14,6 @@
 
 package org.rapla.plugin.timeslot.client.swing;
 
-import java.awt.Font;
-import java.awt.Point;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Provider;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
@@ -61,6 +49,16 @@ import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.scheduler.Promise;
+
+import javax.inject.Provider;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import java.awt.Font;
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 {
@@ -103,7 +101,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
                    }
                    else 
                    {
-                	   String calendarWeek = MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate());
+                	   String calendarWeek = getI18n().calendarweek( getStartDate());
                 	   component.setText( calendarWeek);
                    }
          

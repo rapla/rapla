@@ -17,13 +17,13 @@
 	</licenses>
 	<packaging>pom</packaging>
 	<properties>
-		<resteasy.version>3.0.4.Final</resteasy.version>
+		<resteasy.version>3.1.0.CR3</resteasy.version>
 		<slf4j.version>1.7.21</slf4j.version>
 		<logback.version>1.1.7</logback.version>
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<jetty.version>9.3.7.v20160115</jetty.version>
 		<maven.install.skip>false</maven.install.skip>
-		<dagger.version>2.5</dagger.version>
+		<dagger.version>2.8</dagger.version>
 		<guava.version>19.0</guava.version>
 		<gwt.version>2.8.0</gwt.version>
 		<gwt.plugin.version>2.8.0</gwt.plugin.version>
@@ -80,10 +80,12 @@
 					<exclude>**/*.xml</exclude>
 					<exclude>**/*.txt</exclude>
 					<exclude>**/*.properties</exclude>
+					<exclude>**/moduleDescription</exclude>
 				</excludes>
 			</resource>
 			<resource>
 				<directory>${basedir}/src/main/gwt-jre</directory>
+				<filtering>false</filtering>
 				<excludes>
 					<exclude>jre</exclude>
 				</excludes>
@@ -165,7 +167,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.6.0</version>
 				<configuration>
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
@@ -418,6 +420,12 @@
 			<artifactId>restinject</artifactId>
 			<version>${restinject.version}</version>
 			<classifier>sources</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.dagger</groupId>
+			<artifactId>dagger</artifactId>
+			<version>${dagger.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

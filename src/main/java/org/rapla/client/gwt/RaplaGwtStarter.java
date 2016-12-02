@@ -1,20 +1,18 @@
 package org.rapla.client.gwt;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.http.client.URL;
+import com.google.gwt.user.client.Cookies;
+import com.google.gwt.user.client.History;
+import com.google.gwt.user.client.Window;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.dbrm.LoginTokens;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.user.client.Cookies;
-import com.google.gwt.user.client.History;
-import com.google.gwt.user.client.Window;
+import javax.inject.Inject;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 @DefaultImplementation(of=GwtStarter.class,context = InjectionContext.gwt, export = true)
@@ -31,11 +29,25 @@ public class RaplaGwtStarter implements GwtStarter
     }
 
 
-
     private LoginTokens getValidToken()
     {
         final Logger logger = Logger.getLogger("componentClass");
-        String tokenString = Cookies.getCookie(LOGIN_COOKIE);
+        logger.log(Level.INFO,Cookies.getCookieNames().toString());
+        String hashToken = Window.Location.getHash();
+        String tokenString = null;
+        if (hashToken != null && !hashToken.isEmpty()) {
+            final int indexOf = hashToken.indexOf(LOGIN_COOKIE);
+            if ( indexOf >= 0)
+            {
+                final String encodedToken = hashToken.substring(indexOf + LOGIN_COOKIE.length() + 1);
+                tokenString = encodedToken.replaceAll("&valid_until=","#");
+            }
+            Cookies.setCookie(LOGIN_COOKIE, tokenString);
+        }
+        if ( tokenString == null)
+        {
+            tokenString = Cookies.getCookie(LOGIN_COOKIE);
+        }
         if (tokenString != null)
         {
             // re request the server for refresh token
@@ -46,8 +58,12 @@ public class RaplaGwtStarter implements GwtStarter
                 logger.log(Level.INFO, "found valid cookie: " + tokenString);
                 return token;
             }
+            logger.log(Level.INFO, "No valid login token found");
         }
-        logger.log(Level.INFO, "No valid login token found");
+        else
+        {
+            logger.log(Level.INFO, "No login token found");
+        }
         return null;
     }
 
@@ -57,6 +73,7 @@ public class RaplaGwtStarter implements GwtStarter
         if (token != null)
         {
             RaplaPopups.getProgressBar().setPercent(20);
+            //bootstrapProvider.load(token.getAccessToken());
             Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
             {
                 @Override
@@ -69,10 +86,15 @@ public class RaplaGwtStarter implements GwtStarter
         }
         else
         {
-            final String historyToken = History.getToken();
-            final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=rapla.html#" + historyToken : "";
-            Window.Location.replace(GWT.getModuleBaseURL() + "../rapla/auth" + appendig);
+            redirectToStart();
         }
+    }
+
+    static public void redirectToStart()
+    {
+        final String historyToken = History.getToken();
+        final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=rapla.html#" + historyToken : "";
+        Window.Location.replace(/*GWT.getModuleBaseURL*/ "../rapla/login" + appendig);
     }
 
 }

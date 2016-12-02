@@ -29,14 +29,6 @@ import org.apache.commons.codec.binary.Base64;
 /**
  * Utility function to compute and verify XSRF tokens.
  * <p>
- * {@link JsonServlet} uses this class to verify tokens appearing in the custom
- * <code>xsrfKey</code> JSON request property. The tokens protect against
- * cross-site request forgery by depending upon the browser's security model.
- * The classic browser security model prohibits a script from site A from
- * reading any data received from site B. By sending unforgeable tokens from the
- * server and asking the client to return them to us, the client script must
- * have had read access to the token at some point and is therefore also from
- * our server.
  */
 public class SignedToken {
   private static final int INT_SZ = 4;

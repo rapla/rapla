@@ -12,7 +12,6 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.util.DateTools;
@@ -172,7 +171,7 @@ import java.util.Set;
                     Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
                     boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                     boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig);
-                    Date beginn = RaplaGUIComponent.getStartDate(model, raplaFacade, user);
+                    Date beginn = RaplaComponent.getStartDate(model, raplaFacade, user);
                     Collection<Reservation> newReservations = raplaFacade.copy(reservations, beginn, keepTime, user);
                     if (markedIntervals.size() > 0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1
                             && keepOrig == Boolean.FALSE)

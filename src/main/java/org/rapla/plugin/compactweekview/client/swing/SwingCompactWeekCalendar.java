@@ -16,7 +16,6 @@ package org.rapla.plugin.compactweekview.client.swing;
 
 import java.awt.Font;
 import java.awt.Point;
-import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -107,7 +106,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
                 } 
                 else 
                 {
-                	String calendarWeek = MessageFormat.format(getString("calendarweek.abbreviation"), getStartDate());
+                	String calendarWeek = getI18n().calendarweek( getStartDate());
                 	component.setText( calendarWeek);
                 }
                 return component;
