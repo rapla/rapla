@@ -13,36 +13,19 @@
 
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-
-import javax.inject.Inject;
-
-import org.rapla.RaplaResources;
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.EditController;
-import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ResourceSelectionView.Presenter;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.SwingMenuContext;
-import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.MenuFactoryImpl;
-import org.rapla.client.swing.internal.RaplaMenuBarContainer;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.RaplaWidget;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -52,7 +35,11 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 
 public class ResourceSelectionPresenter implements Presenter
 {
@@ -60,28 +47,21 @@ public class ResourceSelectionPresenter implements Presenter
 
     private final EditController editController;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final RaplaMenuBarContainer menuBar;
     private final EventBus eventBus;
     private final ResourceSelectionView view;
     private final ClientFacade facade;
     private final Logger logger;
-    private final RaplaResources i18n;
-
-    private final MenuFactory menuFactory;
     private PresenterChangeCallback callback;
 
     @Inject
-    public ResourceSelectionPresenter(RaplaMenuBarContainer menuBar, ClientFacade facade, Logger logger, RaplaResources i18n, MenuFactory menuFactory,
-            CalendarSelectionModel model, EditController editController, InfoFactory infoFactory, DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,
+    public ResourceSelectionPresenter( ClientFacade facade, Logger logger,
+            CalendarSelectionModel model, EditController editController, DialogUiFactoryInterface dialogUiFactory,
             EventBus eventBus, ResourceSelectionView view)
                     throws RaplaInitializationException
     {
         this.facade = facade;
         this.logger = logger;
-        this.i18n = i18n;
-        this.menuFactory = menuFactory;
         this.view = view;
-        this.menuBar = menuBar;
         this.model = model;
         this.eventBus = eventBus;
         this.editController = editController;
@@ -176,7 +156,7 @@ public class ResourceSelectionPresenter implements Presenter
         }
         catch (Exception ex)
         {
-            PopupContext popupContext = null; // new SwingPopupContext(getComponent(), null)
+            PopupContext popupContext =  dialogUiFactory.createPopupContext( view );
             dialogUiFactory.showException(ex, popupContext);
         }
     }
@@ -192,8 +172,7 @@ public class ResourceSelectionPresenter implements Presenter
         {
             Entity entity = (Entity) focusedObject;
 
-            // FIXME get informations
-            PopupContext popupContext = null;//new SwingPopupContext(getComponent(), null)
+            PopupContext popupContext =  dialogUiFactory.createPopupContext( view );
             PermissionController permissionController = getRaplaFacade().getPermissionController();
             try
             {
@@ -228,33 +207,6 @@ public class ResourceSelectionPresenter implements Presenter
     }
 
     boolean treeListenersEnabled = true;
-
-
-    @Override
-    public void showTreePopup(PopupContext popupContext, Object selectedObject, MenuContext menuContext)
-    {
-        try
-        {
-            RaplaPopupMenu menu = new RaplaPopupMenu();
-
-            RaplaMenu newMenu = new RaplaMenu("new");
-            newMenu.setText(i18n.getString("new"));
-            // TODO extract interface
-            SwingMenuContext swingMenuContext = ((SwingMenuContext) menuContext);
-            boolean addNewReservationMenu = selectedObject instanceof Allocatable || selectedObject instanceof DynamicType;
-            ((MenuFactoryImpl) getMenuFactory()).addNew(newMenu, swingMenuContext, null, addNewReservationMenu);
-
-            getMenuFactory().addObjectMenu(menu, swingMenuContext, "EDIT_BEGIN");
-            newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
-            menu.insertAfterId(newMenu, "EDIT_BEGIN");
-            view.showMenu(menu, swingMenuContext);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, popupContext);
-        }
-    }
-
     
     @Override
     public void updateSelectedObjects(Collection<Object> elements)
@@ -268,7 +220,7 @@ public class ResourceSelectionPresenter implements Presenter
         }
         catch(RaplaException ex)
         {
-            PopupContext popupContext = null;
+            PopupContext popupContext = dialogUiFactory.createPopupContext( view);
             dialogUiFactory.showException(ex, popupContext);
         }
     }
@@ -277,38 +229,19 @@ public class ResourceSelectionPresenter implements Presenter
     public void applyFilter()
     {
         eventBus.fireEvent(new CalendarRefreshEvent());
-
     }
 
     public void updateMenu() throws RaplaException
     {
-        RaplaMenu editMenu = menuBar.getEditMenu();
-        RaplaMenu newMenu = menuBar.getNewMenu();
-
-        editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
-        newMenu.removeAll();
-
         Collection<?> list = getModel().getSelectedObjects();
         Object focusedObject = null;
         if (list.size() == 1)
         {
             focusedObject = list.iterator().next();
         }
-
-        SwingMenuContext menuContext = new SwingMenuContext(focusedObject);
-        menuContext.setSelectedObjects(list);
-        if (view.hasFocus())
-        {
-            getMenuFactory().addObjectMenu(editMenu, menuContext, "EDIT_BEGIN");
-        }
-        ((MenuFactoryImpl) getMenuFactory()).addNew(newMenu, menuContext, null, true);
-        newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
+        view.updateMenu(list, focusedObject);
     }
 
-    public MenuFactory getMenuFactory()
-    {
-        return menuFactory;
-    }
 
     public RaplaWidget provideContent()
     {

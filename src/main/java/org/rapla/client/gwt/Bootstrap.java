@@ -1,11 +1,7 @@
 package org.rapla.client.gwt;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.user.client.Window;
 import org.rapla.client.Application;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
@@ -17,23 +13,25 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.user.client.Window;
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.Arrays;
+import java.util.Collection;
 
 public class Bootstrap
 {
 
-    //private final Provider<Application> application;
+    private final Provider<Application> application;
     private final Provider<RaplaFacade> facade;
     private final Provider<StorageOperator> operator;
     private final Logger logger;
     private final RemoteConnectionInfo remoteConnectionInfo;
 
     @Inject
-    public Bootstrap(Provider<RaplaFacade> facade, Provider<StorageOperator> operator,  Logger logger, RemoteConnectionInfo remoteConnectionInfo /*,Provider<Application> application*/)
+    public Bootstrap(Provider<RaplaFacade> facade, Provider<StorageOperator> operator,  Logger logger, RemoteConnectionInfo remoteConnectionInfo ,Provider<Application> application)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
-      //  this.application = null;
+        this.application = application;
         this.operator = operator;
         this.facade = facade;
         this.logger = logger;
@@ -58,12 +56,12 @@ public class Bootstrap
                 Collection<Allocatable> allocatables = Arrays.asList(facadeImpl.getAllocatables());
                 logger.info("loaded " + allocatables.size() + " resources. Starting application");
                 boolean defaultLanguageChosen = false;
-//                final Application application = this.application.get();
-//                application.start(defaultLanguageChosen, () -> {
-//                    logger.info("Restarting.");
-//                    Window.Location.reload();
-//                }
-//                );
+                final Application application = this.application.get();
+                application.start(defaultLanguageChosen, () -> {
+                    logger.info("Restarting.");
+                    Window.Location.reload();
+                }
+                );
             }
             catch (Exception e)
             {

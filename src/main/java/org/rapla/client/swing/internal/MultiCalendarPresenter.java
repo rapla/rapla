@@ -12,8 +12,35 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 
-package org.rapla.client.internal;
+package org.rapla.client.swing.internal;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.CalendarContainer;
+import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.MultiCalendarView;
+import org.rapla.client.internal.MultiCalendarView.Presenter;
+import org.rapla.client.internal.PresenterChangeCallback;
+import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.VisibleTimeInterval;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
+import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,32 +52,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.PopupContext;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.MultiCalendarView.Presenter;
-import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.VisibleTimeInterval;
-import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.RaplaWidget;
-import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
-
-
-public class MultiCalendarPresenter implements Presenter
+@DefaultImplementation(of=CalendarContainer.class,context = InjectionContext.swing)
+public class MultiCalendarPresenter implements CalendarContainer,Presenter
 {
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";
     
@@ -117,11 +121,6 @@ public class MultiCalendarPresenter implements Presenter
         this.view.setSelectableViews(ids);
     }
     
-    public void setCallback(PresenterChangeCallback callback)
-    {
-        this.callback = callback;
-    }
-    
     @Override
     public void onViewSelectionChange(PopupContext context)
     {
@@ -146,12 +145,13 @@ public class MultiCalendarPresenter implements Presenter
         update();
     }
 
-    public void init(boolean editable) throws RaplaException
+    public void init(boolean editable, PresenterChangeCallback callback) throws RaplaException
     {
         this.editable = editable;
+        this.callback = callback;
         update(null);
     }
-    
+
     private SwingViewFactory findFactory(String id) {
         for (Iterator<SwingViewFactory> it = factoryList.iterator();it.hasNext();) {
             SwingViewFactory factory =  it.next();

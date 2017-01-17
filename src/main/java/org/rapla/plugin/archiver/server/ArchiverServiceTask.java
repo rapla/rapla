@@ -10,7 +10,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.archiver.ArchiverService;
-import org.rapla.scheduler.Command;
+import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.ImportExportManager;

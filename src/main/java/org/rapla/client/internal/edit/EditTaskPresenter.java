@@ -11,16 +11,12 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.SaveUndo;
-import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -37,20 +33,15 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.function.Consumer;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
-import org.rapla.plugin.defaultwizard.client.swing.DefaultWizard;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,13 +52,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Singleton @ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
+@Singleton
+@ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
         @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class),
-        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), }) public class EditTaskPresenter
-        implements TaskPresenter
+        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), })
+public class EditTaskPresenter implements TaskPresenter
 {
     public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
-    protected final Map<String, Provider<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade raplaFacade;
     private final RaplaResources i18n;
@@ -79,11 +70,23 @@ import java.util.Set;
     final static public String EDIT_EVENTS_ID = "editEvents";
     final static public String EDIT_RESOURCES_ID = "editResources";
     private final Provider<ReservationEdit> reservationEditProvider;
+    private final EditTaskView editTaskView;
 
-    @Inject public EditTaskPresenter(ClientFacade clientFacade, Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory,
+    public interface EditTaskView
+    {
+//        interface Presenter<T>
+//        {
+//            void save(List<T> saveObjects);
+//            void close();
+//        }
+        <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String title,Consumer<Collection<T>> save, Runnable close) throws RaplaException;
+    }
+
+    @Inject
+    public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory,
             RaplaResources i18n, EventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider)
     {
-        this.editUiProvider = editUiProvider;
+        this.editTaskView = editTaskView;
         this.dialogUiFactory = dialogUiFactory;
         this.i18n = i18n;
         this.clientFacade = clientFacade;
@@ -93,7 +96,8 @@ import java.util.Set;
         this.raplaFacade = clientFacade.getRaplaFacade();
     }
 
-    @Override public Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent)
+    @Override
+    public Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent)
     {
         final String taskId = applicationEvent.getApplicationEventId();
         String info = applicationEvent.getInfo();
@@ -109,7 +113,7 @@ import java.util.Set;
                     final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
                     entities.addAll(editApplicationEventContext.getSelectedObjects());
                     final AppointmentBlock appointmentBlock = editApplicationEventContext.getAppointmentBlock();
-                    if(appointmentBlock != null)
+                    if (appointmentBlock != null)
                     {
                         ReservationEdit<?> c = reservationEditProvider.get();
                         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
@@ -150,7 +154,7 @@ import java.util.Set;
                 Appointment appointment = createAppointment();
                 r.addAppointment(appointment);
                 final List<Reservation> singletonList = Collections.singletonList(r);
-                List<Reservation> list = DefaultWizard.addAllocatables(model, singletonList, user);
+                List<Reservation> list = RaplaComponent.addAllocatables(model, singletonList, user);
                 String title = null;
                 final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, applicationEvent);
                 return new ResolvedPromise<RaplaWidget>(editDialog);
@@ -162,7 +166,8 @@ import java.util.Set;
                 User user = clientFacade.getUser();
                 Allocatable template = findTemplate(templateId);
                 final Promise<Collection<Reservation>> templatePromise = raplaFacade.getTemplateReservations(template);
-                Promise<RaplaWidget> widgetPromise = templatePromise.thenApply((reservations) -> {
+                Promise<RaplaWidget> widgetPromise = templatePromise.thenApply((reservations) ->
+                {
                     if (reservations.size() == 0)
                     {
                         throw new EntityNotFoundException("Template " + template + " is empty. Please create events in template first.");
@@ -189,7 +194,7 @@ import java.util.Set;
                         }
                         app.move(app.getStart(), end);
                     }
-                    List<Reservation> list = DefaultWizard.addAllocatables(model, newReservations, user);
+                    List<Reservation> list = RaplaComponent.addAllocatables(model, newReservations, user);
                     String title = null;
                     return createEditDialog(list, title, popupContext, applicationEvent);
                 });
@@ -197,12 +202,12 @@ import java.util.Set;
             }
             else
             {
-                return new ResolvedPromise<RaplaWidget>( new RaplaException("Unknow taskId" + taskId));
+                return new ResolvedPromise<RaplaWidget>(new RaplaException("Unknow taskId" + taskId));
             }
         }
         catch (RaplaException e)
         {
-            return new ResolvedPromise<RaplaWidget>( e);
+            return new ResolvedPromise<RaplaWidget>(e);
         }
     }
 
@@ -332,105 +337,58 @@ import java.util.Set;
         final List<T> origs = originals;
         if (toEdit.size() > 0)
         {
-            final EditComponent<T, JComponent> ui = createUI(toEdit.iterator().next());
-            ui.setObjects(new ArrayList<T>(toEdit));
-            JPanel jPanel = new JPanel();
-            jPanel.setLayout(new BorderLayout());
-            jPanel.add(ui.getComponent(), BorderLayout.CENTER);
-            JPanel buttonsPanel = new JPanel();
-
-            RaplaButton saveButton = new RaplaButton(i18n.getString("save"), RaplaButton.DEFAULT);
-            saveButton.addActionListener((evt) -> {
-                try
+            org.rapla.function.Consumer<Collection<T>> saveCmd =  (saveObjects) ->
+            {
+                Collection<T> entities = new ArrayList<T>();
+                entities.addAll(saveObjects);
+                boolean canUndo = true;
+                for (T obj : saveObjects)
                 {
-                    ui.mapToObjects();
-                    // FIXME handle save
-                    //bSaving = true;
-
-                    // object which is processed by EditComponent
-                    List<T> saveObjects = ui.getObjects();
-                    Collection<T> entities = new ArrayList<T>();
-                    entities.addAll(saveObjects);
-                    boolean canUndo = true;
-                    for (T obj : saveObjects)
+                    if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
                     {
-                        if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
-                        {
-                            canUndo = false;
-                        }
+                        canUndo = false;
                     }
-                    if (canUndo)
-                    {
-                        @SuppressWarnings({ "unchecked", "rawtypes" }) SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
-                        CommandHistory commandHistory = clientFacade.getCommandHistory();
-                        Promise promise = commandHistory.storeAndExecute(saveCommand);
-                        promise.thenRun(() -> {
-                            //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
-                            //                                    dlg.close();
-                            //       FIXME callback;
-                        });
-                    }
-                    else
-                    {
-                        raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
-                    }
-                    //getPrivateEditDialog().removeEditDialog(EditDialog.this);
-                    close(applicationEvent);
-
                 }
-                catch (IllegalAnnotationException ex)
+                if (canUndo)
                 {
-                    dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component) jPanel, null));
-
+                    @SuppressWarnings({ "unchecked", "rawtypes" })
+                    SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
+                    CommandHistory commandHistory = clientFacade.getCommandHistory();
+                    Promise promise = commandHistory.storeAndExecute(saveCommand);
+                    promise.thenRun(() ->
+                    {
+                        //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
+                        //                                    dlg.close();
+                        //       FIXME callback;
+                    });
                 }
-                catch (RaplaException ex)
+                else
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext((Component) jPanel, null));
+                    raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
                 }
-            });
-            RaplaButton cancelButton = new RaplaButton(i18n.getString("cancel"), RaplaButton.DEFAULT);
-            cancelButton.addActionListener((evt) -> {
+                //getPrivateEditDialog().removeEditDialog(EditDialog.this);
                 close(applicationEvent);
-            });
+            };
 
-            saveButton.setDefaultCapable(true);
-            buttonsPanel.add(saveButton);
-            buttonsPanel.add(cancelButton);
-            jPanel.add(buttonsPanel, BorderLayout.SOUTH);
-            JLabel header = new JLabel();
-            jPanel.add(header, BorderLayout.NORTH);
-            header.setText(i18n.format("edit.format", title));
-            return () -> jPanel;
+            Runnable closeCmd = () -> close(applicationEvent);
+            return editTaskView.doSomething(toEdit,title,saveCmd,closeCmd);
         }
         return null;
     }
 
-    private void close(ApplicationEvent applicationEvent)
+    public void close(ApplicationEvent applicationEvent)
     {
         applicationEvent.setStop(true);
         eventBus.fireEvent(applicationEvent);
     }
 
-    @Override public void updateView(ModificationEvent event)
+    @Override
+    public void updateView(ModificationEvent event)
     {
         // FIXME
     }
 
-    @SuppressWarnings("unchecked") protected <T extends Entity> EditComponent<T, JComponent> createUI(T obj) throws RaplaException
-    {
-        final Class typeClass = obj.getTypeClass();
-        final String id = typeClass.getName();
-        final Provider<EditComponent> editComponentProvider = editUiProvider.get(id);
-        if (editComponentProvider != null)
-        {
-            EditComponent<T, JComponent> ui = (EditComponent<T, JComponent>) editComponentProvider.get();
-            return ui;
-        }
-        else
-        {
-            throw new RuntimeException("Can't edit objects of type " + typeClass.toString());
-        }
-    }
+
 
     //    public void dataChanged(ModificationEvent evt) throws RaplaException
     //    {
@@ -462,7 +420,6 @@ import java.util.Set;
 
         }
     }
-
 
 
 

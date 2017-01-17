@@ -112,7 +112,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.Cancelable;
-import org.rapla.scheduler.Command;
+import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.internal.TimeZoneConverterImpl;

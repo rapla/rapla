@@ -13,22 +13,40 @@
 
 package org.rapla.client.swing;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetAdapter;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.util.Collection;
+import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
+import org.rapla.client.MenuContext;
+import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.ResourceSelectionView;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.internal.FilterEditButton;
+import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
+import org.rapla.client.swing.internal.MenuFactoryImpl;
+import org.rapla.client.swing.internal.RaplaMenuBarContainer;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.toolkit.PopupEvent;
+import org.rapla.client.swing.toolkit.PopupListener;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.client.swing.toolkit.RaplaPopupMenu;
+import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.components.calendar.RaplaArrowButton;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Category;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.facade.ClassifiableFilter;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
@@ -43,41 +61,24 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.EditController;
-import org.rapla.client.PopupContext;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.ResourceSelectionView;
-import org.rapla.client.internal.ResourceSelectionView.Presenter;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.FilterEditButton;
-import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.RaplaMenuBarContainer;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.PopupEvent;
-import org.rapla.client.swing.toolkit.PopupListener;
-import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.Category;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.facade.ClassifiableFilter;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-
-import com.google.web.bindery.event.shared.EventBus;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.Collection;
 
 @DefaultImplementation(context=InjectionContext.swing, of=ResourceSelectionView.class)
-public class ResourceSelectionViewSwing implements ResourceSelectionView<Component>
+public class ResourceSelectionViewSwing implements ResourceSelectionView
 {
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
@@ -92,10 +93,12 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView<Compone
     private final RaplaImages raplaImages;
     private final Logger logger;
     private final RaplaResources i18n;
+    private final RaplaMenuBarContainer menuBar;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final FilterEditButtonFactory filterEditButtonFactory;
     private boolean selectionFromProgram = false;
     private Presenter presenter;
+    private final MenuFactory menuFactory;
 
     @Inject
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
@@ -103,11 +106,13 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView<Compone
             DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, EventBus eventBus) throws RaplaInitializationException
     {
 
+        this.menuBar = menuBar;
         this.i18n = i18n;
         this.logger = logger;
         this.treeFactory = treeFactory;
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
+        this.menuFactory = menuFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
@@ -358,7 +363,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView<Compone
         return content;
     }
 
-    @Override
     public void showMenu(RaplaPopupMenu menu, SwingMenuContext swingMenuContext)
     {
         JComponent component = swingMenuContext.getComponent();
@@ -388,8 +392,32 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView<Compone
             final SwingMenuContext menuContext = new SwingMenuContext(selectedObject, popupContext, component, p);
             menuContext.setSelectedObjects(selectedElements);
 
-            getPresenter().showTreePopup(popupContext, selectedObject, menuContext);
+            showTreePopup(popupContext, selectedObject, menuContext);
         }
+
+        public void showTreePopup(PopupContext popupContext, Object selectedObject, MenuContext menuContext)
+        {
+            try
+            {
+                boolean addNewReservationMenu = selectedObject instanceof Allocatable || selectedObject instanceof DynamicType;
+                RaplaPopupMenu menu = new RaplaPopupMenu();
+                RaplaMenu newMenu = new RaplaMenu("new");
+                newMenu.setText(i18n.getString("new"));
+                // TODO extract interface
+                SwingMenuContext swingMenuContext = ((SwingMenuContext) menuContext);
+                ((MenuFactoryImpl) menuFactory).addNew(newMenu, swingMenuContext, null, addNewReservationMenu);
+                menuFactory.addObjectMenu(menu, swingMenuContext, "EDIT_BEGIN");
+                newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
+                menu.insertAfterId(newMenu, "EDIT_BEGIN");
+                showMenu(menu, swingMenuContext);
+            }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, popupContext);
+            }
+        }
+
+
 
         public void actionPerformed(ActionEvent evt)
         {
@@ -434,6 +462,21 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView<Compone
 
     }
 
+    @Override public void updateMenu(Collection<?> list, Object focusedObject) throws RaplaException
+    {
+        RaplaMenu editMenu = menuBar.getEditMenu();
+        RaplaMenu newMenu = menuBar.getNewMenu();
+        editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
+        newMenu.removeAll();
+        SwingMenuContext menuContext = new SwingMenuContext(focusedObject);
+        menuContext.setSelectedObjects(list);
+        if (hasFocus())
+        {
+            menuFactory.addObjectMenu(editMenu, menuContext, "EDIT_BEGIN");
+        }
+        ((MenuFactoryImpl) menuFactory).addNew(newMenu, menuContext, null, true);
+        newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
+    }
 
     public void updateChange() throws RaplaException
     {

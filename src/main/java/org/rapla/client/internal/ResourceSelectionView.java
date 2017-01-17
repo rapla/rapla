@@ -1,18 +1,18 @@
 package org.rapla.client.internal;
 
-import java.util.Collection;
-
-import org.rapla.client.MenuContext;
-import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.RaplaWidget;
 import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
+import org.rapla.framework.RaplaException;
 
-public interface ResourceSelectionView<T> extends RaplaWidget<T>
+import java.util.Collection;
+
+public interface ResourceSelectionView extends RaplaWidget
 {
+
     public interface Presenter
     {
 
@@ -24,8 +24,6 @@ public interface ResourceSelectionView<T> extends RaplaWidget<T>
 
         void mouseOverResourceSelection();
 
-        void showTreePopup(PopupContext popupContext, Object selectedObject, MenuContext menuContext);
-
         void applyFilter();
 
         void treeSelectionChanged();
@@ -34,11 +32,12 @@ public interface ResourceSelectionView<T> extends RaplaWidget<T>
         
     }
 
+
     void update(ClassificationFilter[] filter, ClassifiableFilter model, Collection<Object> selectedObjects);
 
-    boolean hasFocus();
+    void updateMenu(Collection<?> list, Object focusedObject) throws RaplaException;
 
-    void showMenu(RaplaPopupMenu menu, SwingMenuContext swingMenuContext);
+    boolean hasFocus();
 
     void closeFilterButton();
     

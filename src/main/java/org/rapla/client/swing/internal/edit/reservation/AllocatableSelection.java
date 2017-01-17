@@ -15,7 +15,7 @@ package org.rapla.client.swing.internal.edit.reservation;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.MultiCalendarPresenter;
+import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;

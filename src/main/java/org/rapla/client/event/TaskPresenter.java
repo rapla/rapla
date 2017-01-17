@@ -6,7 +6,7 @@ import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Promise;
 
-@ExtensionPoint(context={ InjectionContext.swing},id = "activity")
+@ExtensionPoint(context={ InjectionContext.client},id = "activity")
 public interface TaskPresenter
 {
     <T> Promise<RaplaWidget> startActivity(ApplicationEvent activity);

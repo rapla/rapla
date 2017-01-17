@@ -1,7 +1,6 @@
 package org.rapla.client;
 
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -10,9 +9,9 @@ import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.ConflictSelectionPresenter;
-import org.rapla.client.internal.MultiCalendarPresenter;
+import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
-import org.rapla.client.internal.SavedCalendarPresenter;
+import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -24,12 +23,12 @@ import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
-
-import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+
+import javax.inject.Inject;
 
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
@@ -50,15 +49,15 @@ import org.rapla.scheduler.ResolvedPromise;
     private Logger logger;
 
     final private ResourceSelectionPresenter resourceSelectionPresenter;
-    final private SavedCalendarPresenter savedViews;
+    final private SavedCalendarInterface savedViews;
     final private ConflictSelectionPresenter conflictsView;
-    final private MultiCalendarPresenter calendarContainer;
+    final private CalendarContainer calendarContainer;
     final ClientFacade clientFacade;
 
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
             final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final EventBus eventBus,/*, Map<String, CalendarPlugin> views*/
-            ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarPresenter savedViews, ConflictSelectionPresenter conflictsView,
-            MultiCalendarPresenter calendarContainer, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+            ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsView,
+            CalendarContainer calendarContainer, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.view = view;
         this.dialogUiFactory = dialogUiFactory;
@@ -76,10 +75,6 @@ import org.rapla.scheduler.ResolvedPromise;
         {
             resourceSelectionChanged();
         });
-        calendarContainer.setCallback(() ->
-        {
-            calendarUpdated();
-        });
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsView.getConflictsView());
@@ -90,7 +85,10 @@ import org.rapla.scheduler.ResolvedPromise;
 
         try
         {
-            calendarContainer.init(true);
+            calendarContainer.init(true, () ->
+            {
+                calendarUpdated();
+            });
         }
         catch (RaplaException e)
         {
@@ -223,8 +221,9 @@ import org.rapla.scheduler.ResolvedPromise;
 
     private void updateViews() throws RaplaException
     {
-        boolean showConflicts = facade.getPreferences().getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
-        boolean showSelection = facade.getPreferences().getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
+        User user = clientFacade.getUser();
+        boolean showConflicts = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
+        boolean showSelection = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
         boolean templateMode = clientFacade.getTemplate() != null;
 
         view.updateView(showConflicts, showSelection, templateMode);
@@ -249,8 +248,9 @@ import org.rapla.scheduler.ResolvedPromise;
             boolean newSelected = !oldEntry;
             prefs.putEntry(configEntry, newSelected);
             facade.store(prefs);
-            // show Tooltip only when selection pane is visible
-            javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
+            // show Tooltip only when selection pane is visible.
+            // note christopher Disabled is this correct?
+            //javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
         }
         catch (RaplaException e)
         {

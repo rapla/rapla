@@ -14,11 +14,10 @@ package org.rapla.client.swing.internal.common;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.MultiCalendarPresenter;
+import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DisposingTool;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.CalendarModel;
@@ -88,7 +87,7 @@ public class CalendarAction extends RaplaAction {
             frame.setTitle("Rapla "  + getString("calendar"));
 
             MultiCalendarPresenter cal = multiCalendarViewFactory.get();
-            cal.init( false);
+            cal.init( false,()->{ getLogger().debug("CalendarChangeCallback");});
             frame.setContentPane((Container) cal.provideContent().getComponent());
             //frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;

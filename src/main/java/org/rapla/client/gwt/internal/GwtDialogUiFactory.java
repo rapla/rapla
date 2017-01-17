@@ -12,6 +12,7 @@ import org.gwtbootstrap3.client.ui.Label;
 import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogInterface.DialogAction;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -392,6 +393,13 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     public void showWarning(String warning, PopupContext popupContext)
     {
 
+    }
+
+    @Override public PopupContext createPopupContext(RaplaWidget widget)
+    {
+        final Object component = widget.getComponent();
+        // todo maybe add component here
+        return new GwtPopupContext(null);
     }
 
 }

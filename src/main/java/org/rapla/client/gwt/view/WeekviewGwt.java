@@ -54,7 +54,7 @@ import com.google.gwt.user.client.ui.HasVerticalAlignment;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.Widget;
 
-public class WeekviewGWT extends FlexTable
+public class WeekviewGwt extends FlexTable
 {
 
     public interface Callback
@@ -76,7 +76,7 @@ public class WeekviewGWT extends FlexTable
     List<HandlerRegistration> currentDomHandlers = new ArrayList<HandlerRegistration>();
     private final ContextCreator contextCreator;
 
-    public WeekviewGWT(String tableStylePrefix, Logger logger, Callback callback, ContextCreator contextCreator)
+    public WeekviewGwt(String tableStylePrefix, Logger logger, Callback callback, ContextCreator contextCreator)
     {
         super();
         this.logger = logger;
@@ -92,7 +92,7 @@ public class WeekviewGWT extends FlexTable
             {
                 event.preventDefault();
                 event.stopPropagation();
-                final Element tc = WeekviewGWT.this.getEventTargetCell((com.google.gwt.user.client.Event) event.getNativeEvent());
+                final Element tc = WeekviewGwt.this.getEventTargetCell((com.google.gwt.user.client.Event) event.getNativeEvent());
                 final Event myEvent = events.get(tc.getFirstChildElement());
                 final StringBuilder sb = new StringBuilder();
                 sb.append("This could be the context Menut :-)");
@@ -348,7 +348,7 @@ public class WeekviewGWT extends FlexTable
         @Override
         public void onClick(ClickEvent event)
         {
-            final Element tc = WeekviewGWT.this.getEventTargetCell((com.google.gwt.user.client.Event) event.getNativeEvent());
+            final Element tc = WeekviewGwt.this.getEventTargetCell((com.google.gwt.user.client.Event) event.getNativeEvent());
             if (tc != null && tc.hasChildNodes() && events.containsKey(tc.getFirstChildElement()))
             {
                 final HTMLRaplaBlock htmlBlock = events.get(tc.getFirstChildElement()).getHtmlBlock();
@@ -363,7 +363,7 @@ public class WeekviewGWT extends FlexTable
         {
             event.stopPropagation();
             com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
-            final Element tc = WeekviewGWT.this.getEventTargetCell(event2);
+            final Element tc = WeekviewGwt.this.getEventTargetCell(event2);
             if (tc != null)
             {
                 if (originSupport.event != null)
@@ -470,7 +470,7 @@ public class WeekviewGWT extends FlexTable
                 else
                 {
                     com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
-                    final Element tc = WeekviewGWT.this.getEventTargetCell(event2);
+                    final Element tc = WeekviewGwt.this.getEventTargetCell(event2);
                     if (tc != null)
                     {
                         final Position position = calcPosition(tc);
@@ -490,7 +490,7 @@ public class WeekviewGWT extends FlexTable
         @Override
         public void onDragEnd(DragEndEvent event)
         {
-            WeekviewGWT.this.removeStyleName("dragging");
+            WeekviewGwt.this.removeStyleName("dragging");
         }
 
         @Override
@@ -498,11 +498,11 @@ public class WeekviewGWT extends FlexTable
         {
             com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
             boolean isResizer = DOM.eventGetTarget(event2).hasClassName("resizerIcon");
-            final Element tc = WeekviewGWT.this.getEventTargetCell(event2);
+            final Element tc = WeekviewGwt.this.getEventTargetCell(event2);
             final Event myEvent = events.get(tc.getFirstChildElement());
             if (myEvent != null)
             {
-                WeekviewGWT.this.addStyleName("dragging");
+                WeekviewGwt.this.addStyleName("dragging");
                 logger.info("event drag");
                 originSupport.resizer = isResizer;
                 originSupport.event = myEvent;
@@ -545,7 +545,7 @@ public class WeekviewGWT extends FlexTable
             if (originSupport.event != null)
             {
                 com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
-                final Element targetCell = WeekviewGWT.this.getEventTargetCell(event2);
+                final Element targetCell = WeekviewGwt.this.getEventTargetCell(event2);
                 if (!isDroppedOnStart(targetCell))
                 {
                     Position p = calcPosition(targetCell);
@@ -572,7 +572,7 @@ public class WeekviewGWT extends FlexTable
             {
                 clearAllDayMarks(spanCells, originSupport.point);
                 com.google.gwt.user.client.Event event2 = (com.google.gwt.user.client.Event) event.getNativeEvent();
-                final Element targetCell = WeekviewGWT.this.getEventTargetCell(event2);
+                final Element targetCell = WeekviewGwt.this.getEventTargetCell(event2);
                 logger.info("dropping on " + targetCell);
                 Position p = calcPosition(targetCell);
                 final int column = normalize(spanCells, originSupport.point.row, originSupport.point.column);

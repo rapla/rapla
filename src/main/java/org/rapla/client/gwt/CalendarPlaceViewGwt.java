@@ -1,11 +1,11 @@
 package org.rapla.client.gwt;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.inject.Inject;
-
+import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.logical.shared.ResizeEvent;
+import com.google.gwt.event.logical.shared.ResizeHandler;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.IsWidget;
 import org.gwtbootstrap3.client.ui.constants.DeviceSize;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.CalendarPlaceView;
@@ -19,12 +19,10 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.event.logical.shared.ResizeEvent;
-import com.google.gwt.event.logical.shared.ResizeHandler;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.IsWidget;
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
 
 @DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
 public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, NavigatorAction

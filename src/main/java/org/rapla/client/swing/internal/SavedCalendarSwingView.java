@@ -1,16 +1,39 @@
-package org.rapla.client.internal;
+package org.rapla.client.swing.internal;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import com.google.web.bindery.event.shared.EventBus;
+import org.rapla.RaplaResources;
+import org.rapla.client.CalendarPlacePresenter;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.internal.SavedCalendarInterface;
+import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.ActionWrapper;
+import org.rapla.client.swing.toolkit.RaplaMenu;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
+import org.rapla.plugin.autoexport.AutoExportPlugin;
+import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
+import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
@@ -29,45 +52,20 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.CalendarPlacePresenter;
-import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.extensionpoints.PublishExtensionFactory;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.PublishDialog;
-import org.rapla.client.swing.internal.RaplaMenuBarContainer;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.RaplaWidget;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.CalendarModelConfiguration;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.internal.CalendarModelImpl;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.Logger;
-import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
-import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
-
-import com.google.web.bindery.event.shared.EventBus;
-
-public class SavedCalendarPresenter extends RaplaGUIComponent implements ActionListener, RaplaWidget<Component>
+@DefaultImplementation(of=SavedCalendarInterface.class,context = InjectionContext.swing)
+public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCalendarInterface,ActionListener
 {
 
     JComboBox selectionBox;
@@ -221,13 +219,13 @@ public class SavedCalendarPresenter extends RaplaGUIComponent implements ActionL
             return true;
         }
         
-		private SavedCalendarPresenter getOuterType() {
-            return SavedCalendarPresenter.this;
+		private SavedCalendarSwingView getOuterType() {
+            return SavedCalendarSwingView.this;
         }
     }
 
     @Inject
-    public SavedCalendarPresenter(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
+    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.eventBus = eventBus;
@@ -340,8 +338,7 @@ public class SavedCalendarPresenter extends RaplaGUIComponent implements ActionL
         eventBus.fireEvent( new ApplicationEvent( CalendarPlacePresenter.PLACE_ID, place, null, null));
     }
 
-
-   
+    @Override
     public void update() throws RaplaException
     {
         updateActions();

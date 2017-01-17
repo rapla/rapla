@@ -1,6 +1,7 @@
 package org.rapla.client.dialog;
 
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
@@ -39,4 +40,6 @@ public interface DialogUiFactoryInterface
             return new String[] { "OK" };
         }
     }
+
+    PopupContext createPopupContext(RaplaWidget widget);
 }

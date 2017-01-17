@@ -42,6 +42,7 @@ import javax.swing.LayoutFocusTraversalPolicy;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
@@ -611,6 +612,13 @@ public class DialogUI extends JDialog
         public void showWarning(String warning, PopupContext popupContext)
         {
             showWarning(warning, popupContext, i18n, getImages(), logger);
+        }
+
+        @Override public PopupContext createPopupContext(RaplaWidget widget)
+        {
+            final Object componentObj = widget.getComponent();
+            final Component component = (componentObj instanceof Component) ? (Component) componentObj: null;
+            return new SwingPopupContext(component,null);
         }
 
         private void showWarning(String warning, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)

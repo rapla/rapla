@@ -64,7 +64,7 @@ public class DaggerServerCreator
 
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
         boolean useReflection = true;
-        if (useReflection)
+        //if (useReflection)
         {
 
             String moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
@@ -74,13 +74,13 @@ public class DaggerServerCreator
             result.membersInjector = reflectionMembersInjector;
             result.serviceContainer = DaggerReflectionStarter.createObject( ServerServiceContainer.class,component);
         }
-        else
-        {
-            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
-            final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
-            result.membersInjector = reflectionMembersInjector;
-            result.serviceContainer = component.getServerServiceContainer();
-        }
+//        else
+//        {
+//            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
+//            final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
+//            result.membersInjector = reflectionMembersInjector;
+//            result.serviceContainer = component.getServerServiceContainer();
+//        }
         return result;
     }
 

@@ -11,7 +11,7 @@ main.raplaContainer.dispose();
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.internal;
+package org.rapla.client.swing.internal;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -34,6 +34,8 @@ import org.rapla.client.RaplaClientListener;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.LanguageChooser;
+import org.rapla.client.internal.LoginDialog;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.ApplicationViewSwing;
@@ -54,7 +56,7 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.scheduler.Command;
+import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;

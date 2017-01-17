@@ -8,7 +8,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.merge.client.extensionpoints.MergeCheckExtension;
-import org.rapla.plugin.merge.client.swing.MergeDialog;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -19,16 +18,16 @@ import java.util.Set;
 public class MergeController
 {
 
-    private final MergeDialog.MergeDialogFactory mergeDialogFactory;
+    //private final MergeDialog.MergeDialogFactory mergeDialogFactory;
     private final ClientFacade clientFacade;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final Set<MergeCheckExtension> checkers;
 
     @Inject
-    public MergeController(MergeDialog.MergeDialogFactory mergeDialogFactory, final ClientFacade clientFacade, final DialogUiFactoryInterface dialogUiFactory,
+    public MergeController( final ClientFacade clientFacade, final DialogUiFactoryInterface dialogUiFactory,
             final Set<MergeCheckExtension> checkers)
     {
-        this.mergeDialogFactory = mergeDialogFactory;
+      //  this.mergeDialogFactory = mergeDialogFactory;
         this.clientFacade = clientFacade;
         this.dialogUiFactory = dialogUiFactory;
         this.checkers = checkers;
