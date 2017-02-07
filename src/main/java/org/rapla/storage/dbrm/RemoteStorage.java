@@ -154,7 +154,7 @@ public interface RemoteStorage
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
 
-    @GET
+    @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     UpdateEvent refresh(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
@@ -171,7 +171,7 @@ public interface RemoteStorage
     //	@ResultType(value=String.class,container=List.class)
     //	FutureResult<List<String>> getTemplateNames();
 
-    @GET
+    @POST
     @Path("identifier")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     List<String> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count) throws RaplaException;

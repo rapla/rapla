@@ -155,6 +155,7 @@ public class MainServlet extends HttpServlet
         logger = RaplaBootstrapLogger.createRaplaLogger();
         logger.info("Init RaplaServlet");
         ServletContext context = getServletContext();
+        context.setAttribute(Logger.class.getCanonicalName(), logger);
         String startupMode;
         RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters(context));
         String startupUser = jndi.lookupEnvString("rapla_startup_user", false);

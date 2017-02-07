@@ -12,36 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.JMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
-import javax.swing.MenuElement;
-import javax.swing.SwingUtilities;
-
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.EditController;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
@@ -70,7 +46,6 @@ import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.entities.User;
@@ -89,6 +64,31 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.dbrm.RestartServer;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Set;
+
 @Singleton
 public class RaplaMenuBar extends RaplaGUIComponent
 {
@@ -104,9 +104,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
     Provider<LicenseInfoUI> licenseInfoUIProvider;
     final private EventBus eventBus;
     RaplaMenuItem ownReservationsMenu;
+    private final RaplaSystemInfo systemInfo;
 
 
-    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade facade, RaplaSystemInfo systemInfo,RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt,
             Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt, MenuFactory menuFactory,
             EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
@@ -114,6 +115,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController, EventBus eventBus)            throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.systemInfo = systemInfo;
         this.model = model;
         this.licenseInfoUIProvider = licenseInfoUIProvider;
         this.editController = editController;
@@ -479,7 +481,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                         getLogger().warn("Permission to system properties denied!");
                     }
 
-                    String mainText = getI18n().infoText(javaversion);
+                    String mainText = systemInfo.infoText(javaversion);
                     StringBuffer completeText = new StringBuffer();
                     completeText.append(mainText);
                     URL librariesURL = null;
@@ -565,7 +567,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
      */
     private Action createLicenseAction()
     {
-        final String name = getString("licensedialog.title");
+        final String name = systemInfo.getString("licensedialog.title");
         final Icon icon = raplaImages.getIconFromKey("icon.info_small");
 
         // overwrite the cass AbstractAction to design our own

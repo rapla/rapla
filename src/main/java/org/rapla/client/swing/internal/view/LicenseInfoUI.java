@@ -23,23 +23,18 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.client.RaplaWidget;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 
 final public class LicenseInfoUI
-    extends
-        RaplaGUIComponent
-    implements
+   implements
         HyperlinkListener
         ,RaplaWidget
         ,LocaleChangeListener
@@ -48,12 +43,15 @@ final public class LicenseInfoUI
     HTMLView license;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final Provider<LicenseUI> licenseUiProvider;
+    private final RaplaSystemInfo systemInfoI18n;
+    private final RaplaResources i18n;
 
     @Inject
-    public LicenseInfoUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaInitializationException{
-        super(facade, i18n, raplaLocale, logger);
+    public LicenseInfoUI(RaplaResources i18n,RaplaSystemInfo systemInfoI18n,  DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaInitializationException{
         this.dialogUiFactory = dialogUiFactory;
         this.licenseUiProvider = licenseUiProvider;
+        this.systemInfoI18n = systemInfoI18n;
+        this.i18n = i18n;
         license = new HTMLView();
         license.addHyperlinkListener(this);
         scrollPane= new JScrollPane(license);
@@ -70,7 +68,7 @@ final public class LicenseInfoUI
     }
 
     private void setLocale() {
-        license.setBody(getString("license.text"));
+        license.setBody(systemInfoI18n.getString("license.text"));
     }
 
     public void hyperlinkUpdate(HyperlinkEvent e) {
@@ -87,8 +85,8 @@ final public class LicenseInfoUI
     public void viewLicense(Component owner,boolean modal,String link) {
         try {
             LicenseUI license =  licenseUiProvider.get();
-            DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null),modal,license.getComponent(), new String[] {getString("ok")} );
-            dialog.setTitle(getString("licensedialog.title"));
+            DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null),modal,license.getComponent(), new String[] {i18n.getString("ok")} );
+            dialog.setTitle(systemInfoI18n.getString("licensedialog.title"));
             dialog.setSize(600,400);
             if (link.equals("warranty")) {
                 dialog.start(true);

@@ -12,7 +12,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
 
 @Singleton
-@Extension(provides = I18nBundle.class, id = EventTimeCalculatorPlugin.PLUGIN_ID) public class EventTimeCalculatorResources extends AbstractBundle
+@Extension(provides = I18nBundle.class, id = EventTimeCalculatorResources.BUNDLENAME) public class EventTimeCalculatorResources extends AbstractBundle
 {
     public static final String BUNDLENAME = EventTimeCalculatorPlugin.PLUGIN_ID + ".EventTimeCalculatorResources";
 
@@ -38,7 +38,7 @@ import org.rapla.inject.Extension;
     
     public String formatTime(String timeFormat, Object... obj)
     {
-        return format(timeFormat, obj);
+        return replaceArgs(timeFormat, obj);
     }
 
 }

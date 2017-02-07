@@ -37,11 +37,11 @@ public class AbstractBundle implements I18nBundle
     }
     public String format( String key, Object... obj )
     {
-        return format_(getString(key), obj);
+        return replaceArgs(getString(key), obj);
     }
 
 
-    protected String format_(String string, Object[] args)
+    protected String replaceArgs(String string, Object[] args)
     {
         String msg = string;
         if (args != null)

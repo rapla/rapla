@@ -43,7 +43,7 @@
 		<doc.version>${project.version}</doc.version>
 		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
 		<doc.revision></doc.revision>
-		<doc.year>2000-2016</doc.year>
+		<doc.year>2000-2017</doc.year>
 		<doc.copyright>Rapla Team</doc.copyright>
 		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
@@ -62,35 +62,6 @@
 	</distributionManagement>
 	<build>
 		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
-		<resources>
-			<resource>
-				<directory>${basedir}/src/main/resources</directory>
-				<filtering>true</filtering>
-				<includes>
-					<include>**/*.xml</include>
-					<include>**/*.txt</include>
-					<include>**/*.properties</include>
-					<include>**/moduleDescription</include>
-				</includes>
-			</resource>
-			<resource>
-				<directory>${basedir}/src/main/resources</directory>
-				<filtering>false</filtering>
-				<excludes>
-					<exclude>**/*.xml</exclude>
-					<exclude>**/*.txt</exclude>
-					<exclude>**/*.properties</exclude>
-					<exclude>**/moduleDescription</exclude>
-				</excludes>
-			</resource>
-			<resource>
-				<directory>${basedir}/src/main/gwt-jre</directory>
-				<filtering>false</filtering>
-				<excludes>
-					<exclude>jre</exclude>
-				</excludes>
-			</resource>
-		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
@@ -244,8 +215,14 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
-				<version>2.7</version>
+				<version>3.0.2</version>
 				<executions>
+					<execution>
+						<phase>compile</phase>
+						<goals>
+							<goal>resources</goal>
+						</goals>
+					</execution>
 					<execution>
 						<id>copyLegalToMetaInf</id>
 						<phase>prepare-package</phase>

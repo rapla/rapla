@@ -15,6 +15,7 @@ package org.rapla.server.internal;
 import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -70,11 +71,11 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n) throws RaplaInitializationException
+            CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n, RaplaSystemInfo systemInfo) throws RaplaInitializationException
     {
-        String version = i18n.getString("rapla.version");
+        String version = systemInfo.getString("rapla.version");
         logger.info("Rapla.Version=" + version);
-        version = i18n.getString("rapla.build");
+        version = systemInfo.getString("rapla.build");
         logger.info("Rapla.Build=" + version);
         try
         {

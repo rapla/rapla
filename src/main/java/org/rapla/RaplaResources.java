@@ -13,11 +13,10 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
 
-@Extension(provides = I18nBundle.class, id = RaplaResources.ID)
+@Extension(provides = I18nBundle.class, id = RaplaResources.BUNDLENAME)
 @Singleton
 public class RaplaResources extends AbstractBundle {
-    public static final String ID = "org.rapla";
-    public static final String BUNDLENAME = ID + ".RaplaResources";
+    public static final String BUNDLENAME = "org.rapla.RaplaResources";
 
     @Inject
     public RaplaResources(BundleManager bundleManager)
@@ -60,10 +59,6 @@ public class RaplaResources extends AbstractBundle {
         return format("period.format.week", weeknumber, periodName);
     }
 
-    // custom format for info text
-    public String infoText(String javaversion) {
-        String signed = getString("yes");
-        return format("info.text",signed,javaversion );
-    }
+
 
 }

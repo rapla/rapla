@@ -28,6 +28,7 @@ import javax.swing.SwingUtilities;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
 import org.rapla.client.Application;
 import org.rapla.client.ClientService;
 import org.rapla.client.RaplaClientListener;
@@ -90,15 +91,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final private Provider<Application> applicationProvider;
 
     @Inject
-    public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,
+    public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,RaplaSystemInfo systemInfo,
             RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
             RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo)
     {
         this.env = env;
         this.i18n = i18n;
-        String version = i18n.getString("rapla.version");
+        String version = systemInfo.getString("rapla.version");
         logger.info("Rapla.Version=" + version);
-        version = i18n.getString("rapla.build");
+        version = systemInfo.getString("rapla.build");
         logger.info("Rapla.Build=" + version);
         try
         {

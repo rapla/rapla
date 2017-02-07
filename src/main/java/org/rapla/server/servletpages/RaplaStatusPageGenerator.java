@@ -16,12 +16,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
 
 @Singleton
 @Path("server")
 public class RaplaStatusPageGenerator  {
-    @Inject
-    RaplaResources m_i18n;
+    @Inject RaplaSystemInfo m_i18n;
     @Inject
     public RaplaStatusPageGenerator()
     {

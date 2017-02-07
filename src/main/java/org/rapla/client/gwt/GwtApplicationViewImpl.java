@@ -2,6 +2,7 @@ package org.rapla.client.gwt;
 
 import javax.inject.Inject;
 
+import com.google.gwt.user.client.DOM;
 import org.gwtbootstrap3.client.ui.AnchorListItem;
 import org.gwtbootstrap3.client.ui.Navbar;
 import org.gwtbootstrap3.client.ui.NavbarCollapse;

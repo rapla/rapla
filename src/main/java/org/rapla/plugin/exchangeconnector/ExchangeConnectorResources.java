@@ -12,7 +12,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.inject.Extension;
 
-@Extension(provides = I18nBundle.class, id = RaplaResources.ID)
+@Extension(provides = I18nBundle.class, id = ExchangeConnectorResources.BUNDLENAME)
 @Singleton
 public class ExchangeConnectorResources extends AbstractBundle
 {
