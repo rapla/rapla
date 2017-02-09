@@ -30,8 +30,6 @@ import javax.swing.event.PopupMenuListener;
  * at a time is 15, and the default scrolling interval is 125 milliseconds.
  * <P>
  *
- * @version 1.5.0 04/05/12
- * @author Darryl Burke
  */
 public class MenuScroller {
 

@@ -115,6 +115,7 @@ import org.rapla.gui.internal.MenuFactoryImpl;
 import org.rapla.gui.internal.common.CalendarAction;
 import org.rapla.gui.internal.edit.ClassifiableFilterEdit;
 import org.rapla.gui.toolkit.AWTColorUtil;
+import org.rapla.gui.toolkit.MenuScroller;
 import org.rapla.gui.toolkit.PopupEvent;
 import org.rapla.gui.toolkit.PopupListener;
 import org.rapla.gui.toolkit.RaplaButton;
@@ -1570,6 +1571,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 			Point location = editingComponent.getLocationOnScreen();
 			int diffx = Math.min(0, screenSize.width - (location.x + menuSize.width));
 			int diffy = Math.min(0, screenSize.height - (location.y + menuSize.height));
+			int maxItems = 25;
+			if ( appointments.length >= maxItems -3)
+			{
+				int millisToScroll = 40;
+				MenuScroller.setScrollerFor( menu, maxItems , millisToScroll);
+			}
 			menu.show(editingComponent, diffx, diffy);
 		}
 		
