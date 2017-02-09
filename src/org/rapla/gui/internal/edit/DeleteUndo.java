@@ -21,22 +21,22 @@ import org.rapla.framework.RaplaException;
 public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements CommandUndo<RaplaException> {
 	// FIXME Delete of categories in multiple levels can cause the lower levels not to be deleted if it contains categories higher in rank but same hierarchy that are also deleted
 	// FIXME Needs a check last changed
-	private List<T> entities;
+	private List<T> removedEntities;
 	Map<Category,Category> removedCategories = new LinkedHashMap<Category, Category>();
 	public DeleteUndo(RaplaContext context,Collection<T> entities)  
 	{
 	    super(context);
-		this.entities = new ArrayList<T>();
+		this.removedEntities = new ArrayList<T>();
 		for ( T entity: entities)
 		{
 			// Hack for 1.6 compiler compatibility
 			if ( ((Object)entity.getRaplaType()) == Category.TYPE)
 	    	{
-				this.entities.add(entity);
+				this.removedEntities.add(entity);
 	    	}
 			else
 			{
-				this.entities.add(entity.clone());
+				this.removedEntities.add(entity.clone());
 			}
 		}
 	}
@@ -45,7 +45,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 	{
 	    Collection<Category> toStore = new ArrayList<Category>();
 	    List<T> toRemove = new ArrayList<T>();
-	    for ( T entity: entities)
+	    for ( T entity: removedEntities)
 		{
 	    	// Hack for 1.6 compiler compatibility
 			if ( ((Object)entity.getRaplaType()) == Category.TYPE)
@@ -91,7 +91,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 	public boolean undo() throws RaplaException 
 	{
 		List<Entity<T>> toStore = new ArrayList<Entity<T>>();
-		for ( T entity: entities)
+		for ( T entity: removedEntities)
 		{
 		    if ( entity instanceof Category)
 		    {
@@ -146,7 +146,7 @@ public class DeleteUndo<T extends Entity<T>> extends RaplaComponent implements C
 	
 	 public String getCommandoName() 
      {
-	     Iterator<T> iterator = entities.iterator();
+	     Iterator<T> iterator = removedEntities.iterator();
 	     StringBuffer buf = new StringBuffer();
 	     buf.append(getString("delete") );
 	     if ( iterator.hasNext())
