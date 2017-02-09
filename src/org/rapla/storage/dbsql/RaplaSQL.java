@@ -921,7 +921,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
       		setString( stmt,5, repeating.getType().toString());
       	    int number = repeating.getNumber();
       	    setInt(stmt, 6, number >= 0 ? number : null);
-      	    setDate(stmt, 7, repeating.getEnd());
+      	    setDate(stmt, 7,number >=0 ?  null: repeating.getEnd());
       	    setInt(stmt,8, repeating.getInterval());
       	}
       	stmt.addBatch();
