@@ -20,7 +20,11 @@ public class MailapiClient implements MailInterface
 {
     String mailhost = "localhost";
     int port = 25;
-    boolean ssl =false;
+    enum SecurityProtocol {
+    	NONE,
+    	SSL,
+    	STARTTLS
+    };
     String username;
     String password;
     RaplaContext context;
@@ -36,15 +40,6 @@ public class MailapiClient implements MailInterface
     public MailapiClient()
     {
     }
-    
-    public boolean isSsl() {
-		return ssl;
-	}
-
-	public void setSsl(boolean ssl) {
-		this.ssl = ssl;
-	}
-
 
     public void sendMail( String senderMail, String recipient, String subject, String mailBody ) throws MailException
     {
@@ -80,17 +75,17 @@ public class MailapiClient implements MailInterface
             String mailhost = config.getChild("smtp-host").getValue("localhost");
             String username= config.getChild("username").getValue("");
             String password= config.getChild("password").getValue("");
-            boolean ssl = config.getChild("ssl").getValueAsBoolean(false);
-            session = createSessionFromProperties(mailhost,port,ssl, username, password);
+            SecurityProtocol protocol = this.readSecurityProtocol(config);
+            session = createSessionFromProperties(mailhost, port, protocol, username, password);
         } 
         else
         {
-            session = createSessionFromProperties(mailhost,port,ssl, username, password);
+            session = createSessionFromProperties(mailhost,port, SecurityProtocol.NONE, username, password);
         }
         send(senderMail, recipient, subject, mailBody,  session);
     }
 
-    private Object createSessionFromProperties(String mailhost, int port, boolean ssl, String username, String password) throws MailException {
+    private Object createSessionFromProperties(String mailhost, int port, SecurityProtocol protocol, String username, String password) throws MailException {
         Properties props = new Properties();
     	props.put("mail.smtp.host", mailhost);
         props.put("mail.smtp.port", new Integer(port));
@@ -99,7 +94,7 @@ public class MailapiClient implements MailInterface
         if ( usernameSet)
         {
     	    props.put("username", username);
-    		props.put("mail.smtp.auth","true");
+    		props.put("mail.smtp.auth", "true");
         }
         if ( password != null)
         {
@@ -108,10 +103,12 @@ public class MailapiClient implements MailInterface
                 props.put("password", password);
             }
         }
-        if (ssl)
+        if (protocol == SecurityProtocol.SSL)
         {
-        	props.put("mail.smtp.socketFactory.class","javax.net.ssl.SSLSocketFactory");	
+        	props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");	
         	props.put("mail.smtp.socketFactory.port",  new Integer(port));
+        } else if (protocol == SecurityProtocol.STARTTLS) {
+        	props.put("mail.smtp.starttls.enable", "true");
         }
         Object session;
 		try {
@@ -231,6 +228,15 @@ public class MailapiClient implements MailInterface
 		}
 	}
 
+	private SecurityProtocol readSecurityProtocol(Configuration config) {
+		if (config.getChild("ssl").getValueAsBoolean(false)) {
+			return SecurityProtocol.SSL;
+		} else if (config.getChild("startTls").getValueAsBoolean(false)) {
+			return SecurityProtocol.STARTTLS;
+		} else {
+			return SecurityProtocol.NONE;
+		}
+	}
 
 
     public String getSmtpHost()
