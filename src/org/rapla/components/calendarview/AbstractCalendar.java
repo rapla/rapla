@@ -145,7 +145,7 @@ public abstract class  AbstractCalendar {
         blockCalendar.set(Calendar.MINUTE,0);
         blockCalendar.set(Calendar.SECOND,0);
         blockCalendar.set(Calendar.MILLISECOND,0);
-        this.daysInMonth = blockCalendar.getActualMaximum( Calendar.DAY_OF_MONTH ) ; 
+        this.daysInMonth = blockCalendar.getActualMaximum( Calendar.DAY_OF_MONTH ) ;
     	if ( daysInView > 14)
     	{
     		 blockCalendar.set(Calendar.DAY_OF_MONTH, 1);

@@ -79,7 +79,7 @@ public class CalendarOption extends RaplaGUIComponent implements OptionPanel, Da
 
     public CalendarOption(RaplaContext sm) {
         super( sm);
-        daysInWeekview = new RaplaNumber(7, 3, 35, false);
+        daysInWeekview = new RaplaNumber(7, 3, 14, false);
         mapper = new WeekdayMapper(getLocale());
         worktimeStart = createRaplaTime();
         worktimeStart.setRowsPerHour( 1 );

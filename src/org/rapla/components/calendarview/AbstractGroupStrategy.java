@@ -90,7 +90,8 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
 	}
 
 	protected void insertDay(CalendarView wv, int column,List<Block> blockList) {
-		Iterator<List<Block>> it = getSortedSlots(blockList).iterator();
+        final List<List<Block>> sortedSlots = getSortedSlots(blockList);
+        Iterator<List<Block>> it = sortedSlots.iterator();
         int slotCount= 0;
         while (it.hasNext()) {
         	List<Block> slot =  it.next();
