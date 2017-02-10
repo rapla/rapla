@@ -61,6 +61,7 @@
 	</source>
 	<source path='storage' />
 	<source path='' includes="RaplaResources*" />
+	<source path='' includes="RaplaSystemInfo.java" />
 	<source path='' includes="ConnectInfo.java" />
 	<source path='' includes="AppointmentFormaterImpl*" />
 
