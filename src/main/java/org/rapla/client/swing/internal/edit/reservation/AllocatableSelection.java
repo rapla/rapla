@@ -14,17 +14,18 @@ package org.rapla.client.swing.internal.edit.reservation;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MenuFactoryImpl;
+import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.CalendarAction;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
@@ -32,13 +33,13 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
-import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.treetable.AbstractTreeTableModel;
 import org.rapla.components.treetable.JTreeTable;
@@ -1840,6 +1841,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             Point location = editingComponent.getLocationOnScreen();
             int diffx = Math.min(0, screenSize.width - (location.x + menuSize.width));
             int diffy = Math.min(0, screenSize.height - (location.y + menuSize.height));
+            int maxItems = 25;
+            if ( appointments.length >= maxItems -3)
+            {
+                int millisToScroll = 40;
+                MenuScroller.setScrollerFor( menu, maxItems , millisToScroll);
+            }
             menu.show(editingComponent, diffx, diffy);
         }
 
