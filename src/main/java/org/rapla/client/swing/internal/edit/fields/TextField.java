@@ -134,6 +134,16 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         });
     }
 
+    public void setEditable(boolean editable)
+    {
+        field.setEditable( editable);
+    }
+
+    public boolean isEditable()
+    {
+        return field.isEditable();
+    }
+
     public String getValue()
     {
         return field.getText().trim();

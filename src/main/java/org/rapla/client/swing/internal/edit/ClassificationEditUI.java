@@ -52,6 +52,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
+import javax.swing.JComponent;
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
@@ -172,6 +173,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     }
 
 	private SetGetField<?> createField(Attribute attribute) throws RaplaException {
+
 		AttributeType type = attribute.getType();
 		String label = getAttName(attribute.getKey());
 		SetGetField<?> field = null;
@@ -242,7 +244,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
             }
 		}
 		Assert.notNull(field, "Unknown AttributeType");
-		final User user = getUser();
+        final User user = getUser();
         boolean canRead = true;
         boolean canWrite = true;
         for ( Classification object: objectList)
@@ -261,12 +263,20 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
                 break;
             }
         }
-        field.getComponent().setVisible(canRead);
-        field.getComponent().setEnabled(canWrite);
+        final JComponent component = field.getComponent();
+        component.setVisible(canRead);
+        if ( field instanceof TextField)
+        {
+            ((TextField)field).setEditable( canWrite);
+        }
+        else
+        {
+            component.setEnabled(canWrite);
+        }
         if(!canWrite)
         {
-            field.getComponent().setBackground(getMainComponent().getBackground());
-            field.getComponent().setForeground(getMainComponent().getForeground());
+            component.setBackground(getMainComponent().getBackground());
+            component.setForeground(getMainComponent().getForeground());
         }
 		return field;
 	}
