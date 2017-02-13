@@ -12,20 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.client.swing;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
@@ -45,15 +31,34 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
+
+import javax.inject.Inject;
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Locale;
 
 
 @Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)
 public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
-   
+
+	private static int NO_AUTH_DEFAULT_PORT = 25;
+	private static int SSL_DEFAULT_PORT = 465;
+	private static int STARTTLS_DEFAULT_PORT = 587;
+
     TextField mailServer;
     RaplaNumber smtpPortField ;
     JTextField defaultSender;
@@ -61,8 +66,10 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
     JPasswordField password;
     RaplaButton send ;
 	JPanel content;
-    
-    JCheckBox useSsl = new JCheckBox();
+
+	JRadioButton useSsl = new JRadioButton("SSL");
+	JRadioButton useStartTls = new JRadioButton("STARTTLS");
+	JRadioButton useNoSecurityProtocol = new JRadioButton("None", true);
     private boolean listenersEnabled;
 	private boolean externalConfigEnabled;
 
@@ -91,93 +98,114 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 	{
 		return content;
 	}
-    
-    protected void createPanel() throws RaplaException {
 
+	protected void createPanel() throws RaplaException {
 		externalConfigEnabled = configService.isExternalConfigEnabled();
-        mailServer = textFieldFactory.create();
-    	smtpPortField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
-    	defaultSender = new JTextField();
-    	username = new JTextField();
-    	password = new JPasswordField();
-    	send = new RaplaButton();
-    	password.setEchoChar('*');
-        
-    	
-    	content = new JPanel();
-    	//addCopyPaste( mailServer);
-        addCopyPaste( defaultSender, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-        addCopyPaste(username, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-        addCopyPaste(password, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-        double[][] sizes = new double[][] {
-            {5,TableLayout.PREFERRED, 5,TableLayout.FILL,5}
-            ,{TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED}
-        };
-        TableLayout tableLayout = new TableLayout(sizes);
-        content.setLayout(tableLayout);
-        if (externalConfigEnabled)
-    	{
-    		JLabel info = new JLabel("Mail config is provided by servlet container.");
-            content.add(info, "3,0");
-    	}
-        else
-        {
-	        content.add(new JLabel("Mail Server"), "1,0");
-	        content.add( mailServer.getComponent(), "3,0");
-	        content.add(new JLabel("Use SSL*"), "1,2");
-	        content.add(useSsl,"3,2");
-	        content.add(new JLabel("Mail Port"), "1,4");
-	        content.add( smtpPortField, "3,4");
-	        content.add(new JLabel("Username"), "1,6");
-	        content.add( username, "3,6");
-	        content.add(new JLabel("Password"), "1,8");
-	        JPanel passwordPanel = new JPanel();
-	        passwordPanel.setLayout( new BorderLayout());
-	        content.add( passwordPanel, "3,8");
-	        passwordPanel.add( password, BorderLayout.CENTER);
-	        final JCheckBox showPassword = new JCheckBox("show password");
+		mailServer = textFieldFactory.create();
+		smtpPortField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
+		defaultSender = new JTextField();
+		username = new JTextField();
+		password = new JPasswordField();
+		send = new RaplaButton();
+		password.setEchoChar('*');
+
+
+		JPanel content = new JPanel();
+		//addCopyPaste( mailServer);
+		addCopyPaste( defaultSender, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+		addCopyPaste(username, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+		addCopyPaste(password, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+
+		double[][] sizes = new double[][] {
+				{5,TableLayout.PREFERRED, 5,TableLayout.FILL,5}
+				,{TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED}
+		};
+		TableLayout tableLayout = new TableLayout(sizes);
+		content.setLayout(tableLayout);
+		if (externalConfigEnabled)
+		{
+			JLabel info = new JLabel("Mail config is provided by servlet container.");
+			content.add(info, "3,0");
+		}
+		else
+		{
+			content.add(new JLabel("Mail Server"), "1,0");
+			content.add( mailServer.getComponent(), "3,0");
+			ButtonGroup radioButtonGroup = new ButtonGroup();
+			content.add(new JLabel("Autentication Method*"), "1,2");
+			radioButtonGroup.add(useNoSecurityProtocol);
+			content.add(useNoSecurityProtocol, "3,2");
+			radioButtonGroup.add(useSsl);
+			content.add(useSsl, "3,4");
+			radioButtonGroup.add(useStartTls);
+			content.add(useStartTls, "3,6");
+			content.add(new JLabel("Mail Port"), "1,8");
+			content.add( smtpPortField, "3,8");
+			content.add(new JLabel("Username"), "1,10");
+			content.add( username, "3,10");
+			content.add(new JLabel("Password"), "1,12");
+			JPanel passwordPanel = new JPanel();
+			passwordPanel.setLayout( new BorderLayout());
+			content.add( passwordPanel, "3,12");
+			passwordPanel.add( password, BorderLayout.CENTER);
+			final JCheckBox showPassword = new JCheckBox("show password");
 			passwordPanel.add( showPassword, BorderLayout.EAST);
 			showPassword.addActionListener(new ActionListener() {
-				
+
 				public void actionPerformed(ActionEvent e) {
 					boolean show = showPassword.isSelected();
 					password.setEchoChar( show ? ((char) 0): '*');
 				}
 			});
-			content.add(new JLabel("Default Sender"), "1,10");
-	        content.add( defaultSender, "3,10");
-        }
-        
-        content.add(new JLabel("Test Mail"), "1,12");
-        content.add( send, "3,12");
-        String  mailid = getUser().getEmail();
-        if(mailid.length() == 0) {
-        	send.setText("Send to " +  getUser()+ " : Provide email in user profile");
-        	send.setEnabled(false);
-        	//java.awt.Font font = send.getFont();
-        	//send.setFont( font.deriveFont( Font.BOLD));
-			
-        }
-        else {
-        	send.setText("Send to " +  getUser()+ " : " + mailid);
-        	send.setEnabled(true);
-			//send.setBackground(Color.GREEN);
-        }
-        useSsl.addActionListener( new ActionListener() {
-			
+			content.add(new JLabel("Default Sender"), "1,14");
+			content.add( defaultSender, "3,14");
+		}
 
+		content.add(new JLabel("Test Mail"), "1,16");
+		content.add( send, "3,16");
+		String  mailid = getUser().getEmail();
+		if(mailid.length() == 0) {
+			send.setText("Send to " +  getUser()+ " : Provide email in user profile");
+			send.setEnabled(false);
+			//java.awt.Font font = send.getFont();
+			//send.setFont( font.deriveFont( Font.BOLD));
+
+		}
+		else {
+			send.setText("Send to " +  getUser()+ " : " + mailid);
+			send.setEnabled(true);
+			//send.setBackground(Color.GREEN);
+		}
+
+		useNoSecurityProtocol.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if ( listenersEnabled)
 				{
-					int port = useSsl.isSelected() ? 465 : 25;
-					smtpPortField.setNumber( new Integer(port));
+					smtpPortField.setNumber( new Integer(NO_AUTH_DEFAULT_PORT));
 				}
-				
 			}
-			
 		});
-        send.addActionListener( new ActionListener() {
-			
+		useSsl.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if ( listenersEnabled)
+				{
+					smtpPortField.setNumber( new Integer(SSL_DEFAULT_PORT));
+				}
+
+			}
+
+		});
+		useStartTls.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if ( listenersEnabled)
+				{
+					smtpPortField.setNumber( new Integer(STARTTLS_DEFAULT_PORT));
+				}
+			}
+		});
+
+		send.addActionListener( new ActionListener() {
+
 			public void actionPerformed(ActionEvent e) {
 				try
 				{
@@ -187,19 +215,19 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 					{
 						newConfig.removeChild(child);
 					}
-//					if ( !activate.isSelected())
-//					{
-//						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options")); 
-//					}
+					//					if ( !activate.isSelected())
+					//					{
+					//						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options"));
+					//					}
 					if  (!externalConfigEnabled)
 					{
 						addChildren( newConfig);
-//						if ( !newConfig.equals( config))
-//						{
-//							getLogger().info("old config" + config );
-//							getLogger().info("new config" + newConfig);
-//							throw new RaplaException(getString("restart_options"));
-//						}
+						//						if ( !newConfig.equals( config))
+						//						{
+						//							getLogger().info("old config" + config );
+						//							getLogger().info("new config" + newConfig);
+						//							throw new RaplaException(getString("restart_options"));
+						//						}
 					}
 					else
 					{
@@ -215,30 +243,30 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 					{
 						throw new RaplaException("You need to set an email address in your user settings.");
 					}
-		
+
 					try
 					{
 						send.setBackground(new Color(255,100,100, 255));
 						configService.testMail( newConfig, defaultSender.getText());
-    					send.setBackground(Color.GREEN);
-    		        	send.setText("Please check your mailbox.");
+						send.setBackground(Color.GREEN);
+						send.setText("Please check your mailbox.");
 					}
 					catch (UnsupportedOperationException ex)
 					{
 				          JComponent component = getComponent();
 				          dialogUiFactory.showException( new RaplaException(getString("restart_options")), new SwingPopupContext(component, null));
 					}
-    			}
+				}
 				catch (RaplaException ex )
 				{
 					JComponent component = getComponent();
 					dialogUiFactory.showException( ex, new SwingPopupContext(component, null));
-				
-				
+
+
 //				} catch (ConfigurationException ex) {
 //					JComponent component = getComponent();
 //					showException( ex, component);
-				} 
+				}
 			}
 		});
     }
@@ -250,13 +278,16 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 	        DefaultConfiguration smtpPort = new DefaultConfiguration("smtp-port");
 	        DefaultConfiguration smtpServer = new DefaultConfiguration("smtp-host");
 	        DefaultConfiguration ssl = new DefaultConfiguration("ssl");
+			DefaultConfiguration startTls = new DefaultConfiguration("startTls");
 	         
 	        smtpPort.setValue(smtpPortField.getNumber().intValue() );
 	        smtpServer.setValue( mailServer.getValue());
 	        ssl.setValue( useSsl.isSelected() );
+			startTls.setValue( useStartTls.isSelected() );
 	        newConfig.addChild( smtpPort );
 	        newConfig.addChild( smtpServer );
 	        newConfig.addChild( ssl );
+			newConfig.addChild( startTls );
 	        DefaultConfiguration username = new DefaultConfiguration("username");
 	        DefaultConfiguration password = new DefaultConfiguration("password");
 	        String usernameValue = this.username.getText();
@@ -279,7 +310,8 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
     	listenersEnabled = false;
         try
     	{
-	        useSsl.setSelected( config.getChild("ssl").getValueAsBoolean( false));
+			useSsl.setSelected( config.getChild("ssl").getValueAsBoolean( false ));
+			useStartTls.setSelected( config.getChild("startTls").getValueAsBoolean( false ) );
 	        mailServer.setValue( config.getChild("smtp-host").getValue("localhost"));
 	        smtpPortField.setNumber( new Integer(config.getChild("smtp-port").getValueAsInteger(25)));
 	        username.setText( config.getChild("username").getValue(""));
