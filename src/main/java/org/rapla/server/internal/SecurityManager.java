@@ -15,6 +15,7 @@ package org.rapla.server.internal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -361,7 +362,8 @@ import org.rapla.storage.StorageOperator;
         //return true;
     }
 
-    private void checkConflictsAllowed(User user, Allocatable allocatable, Conflict[] conflictsBefore, Conflict[] conflictsAfter) throws RaplaSecurityException
+    private void checkConflictsAllowed(User user, Allocatable allocatable, Collection<Conflict> conflictsBefore, Collection<Conflict> conflictsAfter)
+            throws RaplaSecurityException
     {
         int nConflictsBefore = 0;
         int nConflictsAfter = 0;
@@ -369,20 +371,16 @@ import org.rapla.storage.StorageOperator;
         {
             return;
         }
-        if (conflictsBefore != null)
+        for (Conflict conflict : conflictsBefore)
         {
-            for (int i = 0; i < conflictsBefore.length; i++)
+            if (conflict.getAllocatable().equals(allocatable))
             {
-                if (conflictsBefore[i].getAllocatable().equals(allocatable))
-                {
-                    nConflictsBefore++;
-                }
+                nConflictsBefore++;
             }
         }
-
-        for (int i = 0; i < conflictsAfter.length; i++)
+        for (Conflict conflict : conflictsAfter)
         {
-            if (conflictsAfter[i].getAllocatable().equals(allocatable))
+            if (conflict.getAllocatable().equals(allocatable))
             {
                 nConflictsAfter++;
             }
@@ -394,17 +392,18 @@ import org.rapla.storage.StorageOperator;
         }
     }
 
+    // check if conflict creation is allowed and the user has the right to allocate  the resources
     private void checkPermissions(User user, Reservation r, Reservation original, Allocatable[] allocatables) throws RaplaSecurityException
     {
-        Collection<Conflict> conflictsBefore = null;
-        Collection<Conflict> conflictsAfter = null;
+        final Collection<Conflict> conflictsBefore = new ArrayList<>();
+        final Collection<Conflict> conflictsAfter = new ArrayList<>();
         try
         {
-            conflictsAfter = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r), 10000);
-            if (original != null)
+            PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r).thenAcceptBoth(facade.getConflicts(original), (beforeConfl, afterConf) ->
             {
-                conflictsBefore = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(original), 10000);
-            }
+                conflictsBefore.addAll(beforeConfl);
+                conflictsAfter.addAll(afterConf);
+            }), 10000);
         }
         catch (RaplaException ex)
         {
@@ -416,7 +415,7 @@ import org.rapla.storage.StorageOperator;
         for (int i = 0; i < allocatables.length; i++)
         {
             Allocatable allocatable = allocatables[i];
-            checkConflictsAllowed(user, allocatable, conflictsBefore.toArray(Conflict.CONFLICT_ARRAY), conflictsAfter.toArray(Conflict.CONFLICT_ARRAY));
+            checkConflictsAllowed(user, allocatable, conflictsBefore, conflictsAfter);
             for (int j = 0; j < appointments.length; j++)
             {
                 Appointment appointment = appointments[j];
