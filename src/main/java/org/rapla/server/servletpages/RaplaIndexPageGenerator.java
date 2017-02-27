@@ -23,86 +23,91 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 @Path("index")
 @Singleton
 public class RaplaIndexPageGenerator
 {
     @Inject
-    Set<HtmlMainMenu> entries;
-	@Inject
-	RaplaResources i18n;
-	
-	@Inject
-	RaplaFacade facade;
+    Map<String, HtmlMainMenu> entries;
+    @Inject
+    RaplaResources i18n;
 
-	@Inject
-    public RaplaIndexPageGenerator( )
+    @Inject
+    RaplaFacade facade;
+
+    @Inject
+    public RaplaIndexPageGenerator()
     {
     }
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response )
-            throws IOException, ServletException
+    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
     {
-        if ( request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/index/"))
+        if (request.getParameter("page") == null && request.getRequestURI().endsWith("/rapla/index/"))
         {
             response.sendRedirect("../index");
         }
-		response.setContentType("text/html; charset=ISO-8859-1");
-		java.io.PrintWriter out = response.getWriter();
-		out.println("<html>");
-		out.println("  <head>");
-		// add the link to the stylesheet for this page within the <head> tag
-		out.println("    " + AbstractHTMLCalendarPage.getCssLine(request,"default.css"));
-		// tell the html page where its favourite icon is stored
-		out.println("    " + AbstractHTMLCalendarPage.getFavIconLine(request));
-		out.println("    <title>");
-		 String title;
-		 final String defaultTitle = i18n.getString("rapla.title");
-		 try {
-            title= Tools.createXssSafeString(facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, defaultTitle));
-        } catch (RaplaException e) {
-            title = defaultTitle; 
+        response.setContentType("text/html; charset=ISO-8859-1");
+        java.io.PrintWriter out = response.getWriter();
+        out.println("<html>");
+        out.println("  <head>");
+        // add the link to the stylesheet for this page within the <head> tag
+        out.println("    " + AbstractHTMLCalendarPage.getCssLine(request, "default.css"));
+        // tell the html page where its favourite icon is stored
+        out.println("    " + AbstractHTMLCalendarPage.getFavIconLine(request));
+        out.println("    <title>");
+        String title;
+        final String defaultTitle = i18n.getString("rapla.title");
+        try
+        {
+            title = Tools.createXssSafeString(facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, defaultTitle));
         }
-	       
-		out.println(title);
-		out.println("    </title>");
-		out.println("  </head>");
-		out.println("  <body>");
-		out.println("    <h3>");
-		out.println(title);
-		out.println("    </h3>");
-		generateMenu( request, out);
-		out.println(i18n.getString("webinfo.text"));
-		out.println("  </body>");
-		out.println("</html>");
-		out.close();
+        catch (RaplaException e)
+        {
+            title = defaultTitle;
+        }
+
+        out.println(title);
+        out.println("    </title>");
+        out.println("  </head>");
+        out.println("  <body>");
+        out.println("    <h3>");
+        out.println(title);
+        out.println("    </h3>");
+        generateMenu(request, out);
+        out.println(i18n.getString("webinfo.text"));
+        out.println("  </body>");
+        out.println("</html>");
+        out.close();
     }
-    
-    public void generateMenu( HttpServletRequest request, PrintWriter out ) 
+
+    public void generateMenu(HttpServletRequest request, PrintWriter out)
     {
-        if ( entries.size() == 0)
+        if (entries.size() == 0)
         {
             return;
         }
-//        out.println("<ul>");
-        
-     // there is an ArraList of entries that wants to be part of the HTML
+        //        out.println("<ul>");
+
+        // there is an ArraList of entries that wants to be part of the HTML
         // menu we go through this ArraList,
-        
-        for (Iterator<HtmlMainMenu> it = entries.iterator();it.hasNext();)
+        Collection<HtmlMainMenu> list= new TreeMap<>(entries).values();
+        for (RaplaMenuGenerator entry :list )
         {
-        	RaplaMenuGenerator entry = it.next();
             out.println("<div class=\"menuEntry\">");
-            entry.generatePage(   request, out );
+            entry.generatePage(request, out);
             out.println("</div>");
         }
-//        out.println("</ul>");
+        //        out.println("</ul>");
     }
-
 
 }
