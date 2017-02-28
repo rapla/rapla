@@ -75,12 +75,12 @@ public final class RaplaTime extends RaplaComboBox {
     
 	/** Create a new TimeBox with the default locale. */
     public RaplaTime() {
-        this(Locale.getDefault(),TimeZone.getDefault(),true, true);
+        this(Locale.getDefault(),TimeZone.getDefault(),true, false);
     }
 
     /** Create a new TimeBox with the specified locale and timeZone. */
     public RaplaTime(Locale locale,TimeZone timeZone) {
-        this(locale,timeZone,true, true);
+        this(locale,timeZone,true, false);
     }
 
     /** Create a new TimeBox with the specified locale and timeZone.  The

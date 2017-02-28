@@ -55,7 +55,9 @@ import java.util.Set;
 @Singleton
 @ExtensionRepeatable({ @Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class),
         @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class),
-        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class), })
+        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class),
+        @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, provides = TaskPresenter.class),
+})
 public class EditTaskPresenter implements TaskPresenter
 {
     public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";

@@ -52,10 +52,11 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
-public class TemplateEdit extends RaplaGUIComponent 
+public class TemplateEdit extends RaplaGUIComponent
 {
     RaplaListEdit<Allocatable> templateList;
     DefaultListModel model = new DefaultListModel();
@@ -66,8 +67,12 @@ public class TemplateEdit extends RaplaGUIComponent
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
-    
-    private TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaException {
+
+    private TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
+            RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory,
+            PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory)
+            throws RaplaException
+    {
         super(facade, i18n, raplaLocale, logger);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
@@ -75,97 +80,115 @@ public class TemplateEdit extends RaplaGUIComponent
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
         {
-            protected void mapFromObjects() throws RaplaException {
+            protected void mapFromObjects() throws RaplaException
+            {
                 super.mapFromObjects();
-                permissionListField.setPermissionLevels(  Permission.READ,  Permission.EDIT);
-                classificationField.setScrollingAlwaysEnabled( false);
+                permissionListField.setPermissionLevels(Permission.READ, Permission.EDIT);
+                classificationField.setScrollingAlwaysEnabled(false);
             }
-            
+
             @Override
-            public void stateChanged(ChangeEvent evt) {
-                try {
+            public void stateChanged(ChangeEvent evt)
+            {
+                try
+                {
                     allocatableEdit.mapToObjects();
                     List<Allocatable> objects = allocatableEdit.getObjects();
-                    toStore.addAll( objects);
-                } catch (RaplaException e) {
-                    getLogger().error( e.getMessage(), e);
+                    toStore.addAll(objects);
                 }
-          }  
+                catch (RaplaException e)
+                {
+                    getLogger().error(e.getMessage(), e);
+                }
+            }
         };
-        
-        
-        ActionListener callback = new ActionListener() {
-            
+
+        ActionListener callback = new ActionListener()
+        {
+
             @Override
-            public void actionPerformed(ActionEvent evt) {
+            public void actionPerformed(ActionEvent evt)
+            {
                 //int index = getSelectedIndex();
-                try {
-                    if (evt.getActionCommand().equals("remove")) {
+                try
+                {
+                    if (evt.getActionCommand().equals("remove"))
+                    {
                         removeTemplate();
-                    } else if (evt.getActionCommand().equals("new")) {
+                    }
+                    else if (evt.getActionCommand().equals("new"))
+                    {
                         createTemplate();
-                    } else if (evt.getActionCommand().equals("edit")) {
+                    }
+                    else if (evt.getActionCommand().equals("edit"))
+                    {
                         Allocatable template = templateList.getSelectedValue();
                         List<Allocatable> list;
                         if (template != null)
                         {
-                            list= Collections.singletonList( template);
-                        } else {
+                            list = Collections.singletonList(template);
+                        }
+                        else
+                        {
                             list = Collections.emptyList();
                         }
-                        allocatableEdit.setObjects( list);
+                        allocatableEdit.setObjects(list);
                         allocatableEdit.mapFromObjects();
                     }
 
-                } catch (RaplaException ex) {
+                }
+                catch (RaplaException ex)
+                {
                     dialogUiFactory.showException(ex, new SwingPopupContext(templateList.getComponent(), null));
                 }
             }
         };
         final ReferenceInfo<User> userReference = getUser().getReference();
         templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback);
-        templateList.setNameProvider( new NameProvider<Allocatable>()
-                {
+        templateList.setNameProvider(new NameProvider<Allocatable>()
+        {
 
-                    @Override
-                    public String getName(Allocatable object) {
-                        return object.getName(getLocale());
-                    }
-                }
-                );
-        templateList.getList().setSelectionMode( ListSelectionModel.SINGLE_SELECTION);
+            @Override
+            public String getName(Allocatable object)
+            {
+                return object.getName(getLocale());
+            }
+        });
+        templateList.getList().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         templateList.getList().setCellRenderer(new DefaultListCellRenderer()
         {
-            @Override public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+            @Override
+            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
             {
-                if (value instanceof  Allocatable)
+                if (value instanceof Allocatable)
                 {
                     final Allocatable value1 = (Allocatable) value;
                     final ReferenceInfo<User> ownerRef = value1.getOwnerRef();
                     value = value1.getName(getRaplaLocale().getLocale());
-                    if ( ownerRef!= null && !ownerRef.equals(userReference))
+                    if (ownerRef != null && !ownerRef.equals(userReference))
                     {
-                        String username = getUsername( ownerRef);
-                        value = username + ": " + value ;
+                        String username = getUsername(ownerRef);
+                        value = username + ": " + value;
                     }
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             }
         });
-        templateList.setMoveButtonVisible( false );
-        templateList.getComponent().setPreferredSize( new Dimension(1000, 500));
+        templateList.setMoveButtonVisible(false);
+        templateList.getComponent().setPreferredSize(new Dimension(1000, 500));
     }
 
-    Map<ReferenceInfo<User>,String> usernameMap = new HashMap<ReferenceInfo<User>,String>();
+    Map<ReferenceInfo<User>, String> usernameMap = new HashMap<ReferenceInfo<User>, String>();
+
     private String getUsername(ReferenceInfo<User> user)
     {
         String username = usernameMap.get(user);
-        if ( username == null)
+        if (username == null)
         {
             try
             {
                 username = getFacade().getOperator().getUsername(user);
-                usernameMap.put( user, username);
+                usernameMap.put(user, username);
             }
             catch (RaplaException e)
             {
@@ -176,26 +199,27 @@ public class TemplateEdit extends RaplaGUIComponent
 
     }
 
-    public String getNewTemplateName() throws RaplaException {
+    public String getNewTemplateName() throws RaplaException
+    {
         Collection<Allocatable> templates = new LinkedHashSet<Allocatable>(getQuery().getTemplates());
-        Collection<String> templateNames= new LinkedHashSet<String>();
+        Collection<String> templateNames = new LinkedHashSet<String>();
         Locale locale = getLocale();
-        for ( Allocatable template:templates)
+        for (Allocatable template : templates)
         {
-            templateNames.add( template.getName(locale));
+            templateNames.add(template.getName(locale));
         }
-        for ( int i= 0;i<model.size();i++)
+        for (int i = 0; i < model.size(); i++)
         {
-            Allocatable template = (Allocatable) model.get( i);
-            templateNames.add( template.getName(locale));
+            Allocatable template = (Allocatable) model.get(i);
+            templateNames.add(template.getName(locale));
         }
         int index = 0;
         String username = getUser().getUsername();
-        while ( true)
+        while (true)
         {
-            String indexStr = username + (index == 0 ? "" : " "+ index);
+            String indexStr = username + (index == 0 ? "" : " " + index);
             String newEvent = getI18n().format("new_reservation.format", indexStr);
-            if ( !templateNames.contains( newEvent))
+            if (!templateNames.contains(newEvent))
             {
                 return newEvent;
             }
@@ -203,65 +227,69 @@ public class TemplateEdit extends RaplaGUIComponent
         }
     }
 
-    private void removeTemplate() 
+    private void removeTemplate()
     {
-        Allocatable template =  templateList.getSelectedValue();
-        if ( template != null)
+        Allocatable template = templateList.getSelectedValue();
+        if (template != null)
         {
-            toRemove.add( template);
-            model.removeElement( template);
-        }        
+            toRemove.add(template);
+            model.removeElement(template);
+        }
     }
-    
+
     @SuppressWarnings("unchecked")
-    private void createTemplate() throws RaplaException {
+    private void createTemplate() throws RaplaException
+    {
         String name = getNewTemplateName();
-        DynamicType dynamicType = getQuery().getDynamicType( StorageOperator.RAPLA_TEMPLATE);
+        DynamicType dynamicType = getQuery().getDynamicType(StorageOperator.RAPLA_TEMPLATE);
         Classification newClassification = dynamicType.newClassification();
         newClassification.setValue("name", name);
         final User user = getUser();
-        Allocatable template = getFacade().newAllocatable( newClassification, user);
+        Allocatable template = getFacade().newAllocatable(newClassification, user);
         Collection<Permission> permissionList = new ArrayList<Permission>(template.getPermissionList());
-        for ( Permission permission: permissionList)
+        for (Permission permission : permissionList)
         {
             template.removePermission(permission);
         }
-        toStore.add( template);
-        model.addElement( template);
+        toStore.add(template);
+        model.addElement(template);
         boolean shouldScroll = true;
         templateList.getList().clearSelection();
-        templateList.getList().setSelectedValue(  template ,shouldScroll );
+        templateList.getList().setSelectedValue(template, shouldScroll);
     }
 
-    public void startTemplateEdit() {
+    public void startTemplateEdit()
+    {
         final Component parentComponent = getMainComponent();
-        try {
-            
+        try
+        {
+
             Collection<Allocatable> originals = getQuery().getTemplates();
             List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
-            for ( Allocatable template:originals)
+            for (Allocatable template : originals)
             {
-                if ( permissionController.canModify( template, getUser()))
+                if (permissionController.canModify(template, getUser()))
                 {
-                    editableTemplates.add( template);
+                    editableTemplates.add(template);
                 }
             }
-            Collection<Allocatable> copies = getFacade().edit( editableTemplates);
+            Collection<Allocatable> copies = getFacade().edit(editableTemplates);
             fillModel(copies);
-            
+
             Collection<String> options = new ArrayList<String>();
-            options.add( getString("apply") );
+            options.add(getString("apply"));
             options.add(getString("cancel"));
-            final DialogInterface dlg = dialogUiFactory.create(
-                    new SwingPopupContext(parentComponent, null),true,templateList.getComponent(),
-                    options.toArray(new String[] {}));
+            final DialogInterface dlg = dialogUiFactory
+                    .create(new SwingPopupContext(parentComponent, null), true, templateList.getComponent(), options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
             dlg.getAction(options.size() - 1).setIcon("icon.cancel");
 
-            final Runnable action = new Runnable() {
+            final Runnable action = new Runnable()
+            {
                 private static final long serialVersionUID = 1L;
-    
-                public void run() {
+
+                public void run()
+                {
                     Collection<ReferenceInfo<Entity>> toRemoveObj = Collections.synchronizedSet(new LinkedHashSet<>());
                     for (Entity toRem : toRemove)
                     {
@@ -269,7 +297,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
                     Collection<Entity> toStoreObj = Collections.synchronizedSet(new LinkedHashSet<>());
                     toStoreObj.addAll(toStore);
-                    Promise<Void> p = null;
+                    Promise<Void> p = ResolvedPromise.VOID_PROMISE;
                     for (Allocatable template : toRemove)
                     {
                         Promise<Collection<Reservation>> reservationsPromise = getQuery().getTemplateReservations(template);
@@ -280,17 +308,10 @@ public class TemplateEdit extends RaplaGUIComponent
                                 toRemoveObj.add(((Entity) reservation).getReference());
                             }
                         });
-                        if (p == null)
+                        p = p.thenCombine(voidPromise, (a, b) ->
                         {
-                            p = voidPromise;
-                        }
-                        else
-                        {
-                            p = p.thenCombine(voidPromise, (a, b) ->
-                            {
-                                return null;
-                            });
-                        }
+                            return null;
+                        });
                     }
                     p = p.thenCompose((a) ->
                     {
@@ -336,34 +357,38 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
             };
             final JList list = templateList.getList();
-            list.addMouseListener( new MouseAdapter() {
-                public void mouseClicked(MouseEvent e) {
-                    if ( e.getClickCount() >=2)
+            list.addMouseListener(new MouseAdapter()
+            {
+                public void mouseClicked(MouseEvent e)
+                {
+                    if (e.getClickCount() >= 2)
                     {
                         action.run();//actionPerformed( new ActionEvent( list, ActionEvent.ACTION_PERFORMED, "save"));
                     }
                 }
             });
-            dlg.getAction(0).setRunnable( action);
+            dlg.getAction(0).setRunnable(action);
             dlg.getAction(0).setIcon("icon.confirm");
             dlg.start(true);
-        } catch (RaplaException ex) {
-            dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
+        }
+        catch (RaplaException ex)
+        {
+            dialogUiFactory.showException(ex, new SwingPopupContext(parentComponent, null));
         }
     }
-
 
     @SuppressWarnings("unchecked")
-    public void fillModel(Collection<Allocatable> templates) {
-        for ( Allocatable template:templates)
+    public void fillModel(Collection<Allocatable> templates)
+    {
+        for (Allocatable template : templates)
         {
-            model.addElement( template);
+            model.addElement(template);
         }
         Comparator comp = new NamedComparator(getLocale());
-        SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
-        templateList.getList().setModel( sortedModel );
+        SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING, comp);
+        templateList.getList().setModel(sortedModel);
     }
-    
+
     @Singleton
     public static class TemplateEditFactory
     {
