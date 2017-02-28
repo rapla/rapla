@@ -110,7 +110,7 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 		password.setEchoChar('*');
 
 
-		JPanel content = new JPanel();
+		content = new JPanel();
 		//addCopyPaste( mailServer);
 		addCopyPaste( defaultSender, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		addCopyPaste(username, getI18n(), getRaplaLocale(), ioInterface, getLogger());

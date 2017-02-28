@@ -33,36 +33,46 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
-@DefaultImplementation(context=InjectionContext.server, of=MailConfigService.class)
+@DefaultImplementation(context = InjectionContext.server, of = MailConfigService.class)
 public class RaplaConfigServiceImpl implements MailConfigService
 {
     @Inject
     RaplaKeyStorage keyStore;
     @Inject
     RemoteSession remoteSession;
-    @Inject 
-    @Named(ServerService.ENV_RAPLAMAIL_ID) 
+    @Inject
+    @Named(ServerService.ENV_RAPLAMAIL_ID)
     Provider<Object> externalMailSession;
-    
+
     @Inject
     RaplaFacade facade;
     @Inject
     MailInterface mailInterface;
     private final HttpServletRequest request;
 
-
     @Inject
-    public RaplaConfigServiceImpl(@Context HttpServletRequest request )
+    public RaplaConfigServiceImpl(@Context HttpServletRequest request)
     {
         this.request = request;
     }
 
-    @Override public boolean isExternalConfigEnabled()
+    @Override
+    public boolean isExternalConfigEnabled()
     {
-        return externalMailSession.get() != null;
+        try
+        {
+            final Object o = externalMailSession.get();
+            return o != null;
+        }
+        catch (NullPointerException ex)
+        {
+            return false;
+        }
     }
 
-    @SuppressWarnings("deprecation") @Override public DefaultConfiguration getConfig() throws RaplaException
+    @SuppressWarnings("deprecation")
+    @Override
+    public DefaultConfiguration getConfig() throws RaplaException
     {
         User user = remoteSession.getUser(request);
         if (!user.isAdmin())
@@ -78,7 +88,8 @@ public class RaplaConfigServiceImpl implements MailConfigService
         return config;
     }
 
-    @Override public void testMail(DefaultConfiguration config, String defaultSender) throws RaplaException
+    @Override
+    public void testMail(DefaultConfiguration config, String defaultSender) throws RaplaException
     {
 
         User user = remoteSession.getUser(request);
