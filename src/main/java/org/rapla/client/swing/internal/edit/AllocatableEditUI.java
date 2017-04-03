@@ -108,6 +108,14 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
                 AllocatableEditUI.this.stateChanged(e);
             }
         });
+        permissionListField.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                AllocatableEditUI.this.stateChanged(e);
+            }
+        });
         editPanel.setPreferredSize( new Dimension(800,600));
     }
 

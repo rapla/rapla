@@ -23,7 +23,7 @@
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<jetty.version>9.3.7.v20160115</jetty.version>
 		<maven.install.skip>false</maven.install.skip>
-		<dagger.version>2.9</dagger.version>
+		<dagger.version>2.10</dagger.version>
 		<guava.version>19.0</guava.version>
 		<gwt.version>2.8.0</gwt.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
