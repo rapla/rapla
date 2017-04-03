@@ -395,20 +395,39 @@ import org.rapla.storage.StorageOperator;
     // check if conflict creation is allowed and the user has the right to allocate  the resources
     private void checkPermissions(User user, Reservation r, Reservation original, Allocatable[] allocatables) throws RaplaSecurityException
     {
-        final Collection<Conflict> conflictsBefore = new ArrayList<>();
-        final Collection<Conflict> conflictsAfter = new ArrayList<>();
+        final Collection<Conflict> conflictsBefore;
+        final Collection<Conflict> conflictsAfter ;
         try
         {
-            PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r).thenAcceptBoth(facade.getConflicts(original), (beforeConfl, afterConf) ->
+            if (original != null)
             {
-                conflictsBefore.addAll(beforeConfl);
-                conflictsAfter.addAll(afterConf);
-            }), 10000);
+                conflictsBefore = new ArrayList<>();
+                conflictsAfter = new ArrayList<>();
+                try
+                {
+                    PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r).thenAcceptBoth(facade.getConflicts(original), (beforeConfl, afterConf) ->
+                    {
+                        conflictsBefore.addAll(beforeConfl);
+                        conflictsAfter.addAll(afterConf);
+                    }), 10000);
+                }
+                catch (RaplaException ex)
+                {
+                    throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
+                }
+            }
+            else
+            {
+                conflictsAfter = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r), 10000);
+                conflictsBefore = new ArrayList<>();
+            }
         }
         catch (RaplaException ex)
         {
             throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
         }
+
+
 
         Appointment[] appointments = r.getAppointments();
         // ceck if the user has the permisson to add allocations in the given time
