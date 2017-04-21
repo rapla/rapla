@@ -59,6 +59,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
     	public Date createTime;
     	public Date changeTime;
+    	public String lastChangedBy;
     }
 
     public Date getReadTimestamp()
@@ -98,6 +99,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
 	    String createdAt = atts.getValue( "", "created-at");
 	    String lastChanged = atts.getValue( "", "last-changed");
+        String lastChangedBy = atts.getValue( "", "last-changed-by");
 	    Date createTime = null;
 	    Date changeTime = createTime;
 	    if (createdAt != null)
@@ -129,6 +131,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	    TimestampDates result = new TimestampDates();
         result.createTime = createTime;
         result.changeTime = changeTime;
+        result.lastChangedBy = lastChangedBy;
         return result;
     }
     
