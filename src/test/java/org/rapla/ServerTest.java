@@ -128,20 +128,20 @@ public class ServerTest
         server.stop();
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testLogin() throws Exception {
         clientFacade1.logout();
         Assert.assertEquals(false, clientFacade1.login("non_existant_user", "".toCharArray()));
         Assert.assertEquals(false, clientFacade1.login("non_existant_user", "fake".toCharArray()));
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testLoad() throws Exception
     {
         getRaplaFacade1().getAllocatables();
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testChangeReservation() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
@@ -178,7 +178,7 @@ public class ServerTest
         return clientFacade2.getRaplaFacade();
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testChangeDynamicType() throws Exception
     {
         {
@@ -293,7 +293,7 @@ public class ServerTest
             return null;
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testChangeDynamicType2() throws Exception
     {
         {
@@ -313,7 +313,7 @@ public class ServerTest
         }
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testRemoveCategory() throws Exception
     {
         Category department = getRaplaFacade1().edit(getRaplaFacade1().getSuperCategory().getCategory("department"));
@@ -329,7 +329,7 @@ public class ServerTest
         }
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testChangeLogin() throws RaplaException
     {
         clientFacade2.logout();
@@ -341,7 +341,7 @@ public class ServerTest
         clientFacade2.logout();
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testRemoveCategoryBug5() throws Exception
     {
         DynamicType type = getRaplaFacade1().newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
@@ -384,7 +384,7 @@ public class ServerTest
         return false;
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testStoreFilter() throws Exception
     {
         // select from event where name contains 'planting' or name contains
@@ -436,7 +436,7 @@ public class ServerTest
         Assert.assertTrue("Dependency Exception should have been thrown!", thrown);
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testCalendarStore() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
@@ -462,7 +462,7 @@ public class ServerTest
         }
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testReservationWithExceptionDoesntShow() throws Exception
     {
         {
@@ -496,7 +496,7 @@ public class ServerTest
 
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testChangeGroup() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
@@ -527,7 +527,7 @@ public class ServerTest
         return clientFacade1.getRaplaFacade();
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testRemoveAppointment() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
@@ -547,7 +547,7 @@ public class ServerTest
         Assert.assertEquals(0, allRes.size());
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testRestrictionsBug7() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
@@ -584,7 +584,7 @@ public class ServerTest
 
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testMultilineTextField() throws Exception
     {
 
@@ -616,7 +616,7 @@ public class ServerTest
         return description;
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testRefresh() throws Exception {
         changeInSecondFacade(clientFacade2,"bowling");
         getRaplaFacade1().refresh();
@@ -631,7 +631,7 @@ public class ServerTest
         Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
     }
 
-    @Test
+    @Test(timeout=30000)
     public void testSavePreferences() throws Exception {
         clientFacade2.logout();
          Assert.assertTrue(clientFacade2.login("monty", "burns".toCharArray()));

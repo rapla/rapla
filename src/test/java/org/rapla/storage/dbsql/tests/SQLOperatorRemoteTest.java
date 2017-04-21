@@ -37,11 +37,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-@RunWith(JUnit4.class) public class SQLOperatorRemoteTest extends ServerTest
+@RunWith(JUnit4.class)
+public class SQLOperatorRemoteTest extends ServerTest
 {
 
     /*
-   public static Test suite() throws Exception {
+    public static Test suite() throws Exception {
        TestSuite suite = new TestSuite("SQLOperatorRemoteTest");
        suite.addTest( new SQLOperatorRemoteTest("testExport"));
        suite.addTest( new SQLOperatorRemoteTest("testNewAttribute"));
@@ -50,9 +51,8 @@ import java.sql.Statement;
        suite.addTest( new SQLOperatorRemoteTest("testChangeGroup"));
        suite.addTest( new SQLOperatorRemoteTest("testCreateResourceAndRemoveAttribute"));
        return suite;
-   }
-   */
-
+    }
+    */
 
     protected ServerContainerContext createContext() throws Exception
     {
@@ -66,21 +66,21 @@ import java.sql.Statement;
             connection.createStatement().execute("DROP SCHEMA PUBLIC CASCADE;");
             connection.commit();
         }
-        container.addDbDatasource("jdbc/rapladb",datasource);
+        container.addDbDatasource("jdbc/rapladb", datasource);
 
         String xmlFile = "testdefault.xml";
-        container.addFileDatasource("raplafile",RaplaTestCase.getTestDataFile(xmlFile));
+        container.addFileDatasource("raplafile", RaplaTestCase.getTestDataFile(xmlFile));
         return container;
     }
 
     private CachableStorageOperator getRapladb()
     {
-        return (CachableStorageOperator)getServerOperator();
+        return (CachableStorageOperator) getServerOperator();
     }
 
-
     /** exposes a bug in the 0.12.1 Version of Rapla */
-    @Test public void testAttributeChange() throws Exception
+    @Test(timeout = 30000)
+    public void testAttributeChange() throws Exception
     {
         RaplaFacade facade = getServerFacade();
         // change Type
@@ -134,7 +134,8 @@ import java.sql.Statement;
         }
     }
 
-    @Test public void testNewAttribute() throws Exception
+    @Test(timeout = 30000)
+    public void testNewAttribute() throws Exception
     {
         RaplaFacade facade = getServerFacade();
         // change Type
@@ -165,7 +166,7 @@ import java.sql.Statement;
         Assert.assertEquals(name, allocatable.getClassification().getValue("name"));
     }
 
-    @org.junit.Test
+    @Test(timeout = 30000)
     public void testCreateResourceAndRemoveAttribute() throws RaplaException
     {
         final RaplaFacade clientFacade = getRaplaFacade1();
@@ -198,8 +199,3 @@ import java.sql.Statement;
     }
 
 }
-
-
-
-
-
