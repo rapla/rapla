@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -57,27 +58,35 @@ public class ParsedTextTest
         c1.setKey("c1");
         c1.getName().setName("de", "Hallo");
         c1.setId("c1");
+        c1.setResolver( cache);
         
         c2 = new CategoryImpl();
         c2.setKey("c2");
         c2.setId("c2");
         c2.getName().setName("de", "Welt");
+        c2.setResolver( cache);
         c1.addCategory(c2);
-        
+
         c3 = new CategoryImpl();
         c3.setKey("c3");
         c3.setId("c3");
         c3.getName().setName("de", "Welten");
+        c3.setResolver( cache);
         c1.addCategory(c3);
         
         c4 = new CategoryImpl();
         c4.setKey("c4");
         c4.setId("c4");
         c4.getName().setName("de", "Rapla");
+        c4.setResolver( cache);
         c1.addCategory(c4);
 
+
         cache.put(c1);
-        
+        cache.put( c2);
+        cache.put( c3);
+        cache.put( c4);
+
         type = new DynamicTypeImpl();
         type.setResolver(cache);
         type.setOperator(operator);
@@ -88,13 +97,16 @@ public class ParsedTextTest
         attribute = new AttributeImpl();
         attribute.setKey("a1");
         attribute.setId("a1");
-        attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, c1);
         attribute.setType(AttributeType.CATEGORY);
         attribute.setResolver(cache);
+        attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, c1);
         type.addAttribute(attribute);
-        
-        type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{a1}");
         cache.put(type);
+
+        Category constraint = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+        Assert.assertEquals(c1,constraint);
+        type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{a1}");
+
     }
 
     private Map<String, FunctionFactory> createFactoryMap()
@@ -123,7 +135,40 @@ public class ParsedTextTest
         Assert.assertEquals("Welt", formatName);
         Assert.assertEquals(annotationContent, type.getAnnotation(annoName));
     }
-    
+
+    @Test
+    public void testList() throws IllegalAnnotationException
+    {
+        final String annoName = "myanno";
+        final String annotationContent = "{p->name(p)}";
+        type.setAnnotation(annoName, annotationContent);
+        type.setReadOnly();
+        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
+        final String externalRepresentation = type.getAnnotation(annoName);
+        Assert.assertEquals(annotationContent, externalRepresentation);
+        Locale locale = Locale.GERMANY;
+        List<Classification>classifications= new ArrayList<Classification>();
+        {
+            Classification classification = type.newClassification();
+            classification.setValue(attribute, c2);
+            classifications.add(classification);
+        }
+        {
+            Classification classification = type.newClassification();
+            classification.setValue(attribute, c3);
+            classifications.add(classification);
+        }
+        {
+            Classification classification = type.newClassification();
+            classification.setValue(attribute, c4);
+            classifications.add(classification);
+        }
+        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,user,Collections.singletonList(classifications));
+        final String formatName = parsedAnnotation.formatName(evalContext);
+        Assert.assertEquals("Welt, Welten, Rapla", formatName);
+    }
+
+
     @Test
     public void testBoundAnnotation() throws IllegalAnnotationException
     {
@@ -248,7 +293,8 @@ public class ParsedTextTest
         final String formatName = parsedAnnotation.formatName(evalContext);
         Assert.assertEquals("Welten", formatName);
     }
-    
+
+
     @Test
     public void testSortAnnotation() throws IllegalAnnotationException
     {

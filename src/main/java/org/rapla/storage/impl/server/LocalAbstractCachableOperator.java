@@ -2188,6 +2188,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Contextualizing " + entity);
             ((EntityReferencer) entity).setResolver(store);
+            if (entity instanceof DynamicType)
+            {
+                ((DynamicTypeImpl) entity).setOperator(this);
+            }
             // add all child categories to store
         }
         //        Collection<Entity>removeObjects = evt.getRemoveIds();

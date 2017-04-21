@@ -441,7 +441,9 @@ public class ParsedText implements Serializable
                 {
                     buf.append(",");
                 }
-                buf.append(args.get(i).getRepresentation(context));
+                final Function function = args.get(i);
+                final String representation = function.getRepresentation(context);
+                buf.append(representation);
             }
             return buf.toString();
         }
