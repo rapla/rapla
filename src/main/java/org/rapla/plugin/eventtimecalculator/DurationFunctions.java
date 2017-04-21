@@ -6,6 +6,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -40,17 +41,15 @@ public class DurationFunctions implements FunctionFactory
     {
         static public final String name = "duration";
         Function arg;
-        final EventTimeModel eventTimeModel;
 
         public DurationFunction( List<Function> args) throws IllegalAnnotationException
         {
-            super(name, args);
+            super(NAMESPACE,name, args);
             assertArgs(0,1);
             if ( args.size() > 0)
             {
                 arg = args.get( 0);
             }
-            eventTimeModel = factory.getEventTimeModel();
 
         }
 
@@ -65,12 +64,14 @@ public class DurationFunctions implements FunctionFactory
             {
                 obj = context.getFirstContextObject();
             }
-            final long l = calcDuration(obj);
+            User user =context.getUser();
+            EventTimeModel eventTimeModel = factory.getEventTimeModel(user);
+            final long l = calcDuration(eventTimeModel,obj);
             String result = eventTimeModel.format( l);
             return result;
         }
 
-        private long calcDuration(Object obj)
+        private long calcDuration(EventTimeModel eventTimeModel, Object obj)
         {
             final long l;
 
@@ -91,7 +92,7 @@ public class DurationFunctions implements FunctionFactory
                 long sum= 0;
                 for (Object item:((Collection)obj))
                 {
-                    sum += calcDuration( item);
+                    sum += calcDuration(eventTimeModel, item);
                 }
                 if ( sum<0)
                 {

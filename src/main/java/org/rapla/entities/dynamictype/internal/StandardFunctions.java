@@ -45,7 +45,7 @@ import org.rapla.rest.GwtIncompatible;
 public class StandardFunctions implements FunctionFactory
 {
     public static final String NAMESPACE = "org.rapla";
-    
+
     private RaplaLocale raplaLocale;
 
     @Inject
@@ -98,7 +98,7 @@ public class StandardFunctions implements FunctionFactory
 
         public IsPerson(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             if (args.size() > 0)
             {
@@ -142,7 +142,7 @@ public class StandardFunctions implements FunctionFactory
 
         public NotFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }
@@ -162,7 +162,7 @@ public class StandardFunctions implements FunctionFactory
 
         public AndFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2, Integer.MAX_VALUE);
             subFunctions = args;
         }
@@ -189,7 +189,7 @@ public class StandardFunctions implements FunctionFactory
 
         public OrFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2, Integer.MAX_VALUE);
             subFunctions = args;
         }
@@ -215,7 +215,7 @@ public class StandardFunctions implements FunctionFactory
 
         AppointmentBlockFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }
@@ -267,7 +267,7 @@ public class StandardFunctions implements FunctionFactory
 
         AppointmentBlocksFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(0, 3);
             if (args.size() > 0)
             {
@@ -365,7 +365,7 @@ public class StandardFunctions implements FunctionFactory
 
         AppointmentEndFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }
@@ -410,7 +410,7 @@ public class StandardFunctions implements FunctionFactory
 
         AppointmentsFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(0, 1);
             if (args.size() > 0)
             {
@@ -473,7 +473,7 @@ public class StandardFunctions implements FunctionFactory
 
         AppointmentStartFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super("start", args);
+            super(NAMESPACE,ID, args);
             if (args.size() != 1)
             {
                 throw new IllegalAnnotationException("appointment function expects 1 argument!");
@@ -522,7 +522,7 @@ public class StandardFunctions implements FunctionFactory
 
         public AttributeFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2);
             objectFunction = args.get(0);
             keyFunction = args.get(1);
@@ -566,7 +566,7 @@ public class StandardFunctions implements FunctionFactory
 
         public KeyFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             arg = args.get(0);
         }
@@ -630,7 +630,7 @@ public class StandardFunctions implements FunctionFactory
 
         public NameFunction(List<Function> args, final RaplaLocale raplaLocale) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             this.raplaLocale = raplaLocale;
             assertArgs(0, 2);
             if (args.size() > 0)
@@ -721,7 +721,7 @@ public class StandardFunctions implements FunctionFactory
 
         public ConcatFunction(List<Function> args)
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             this.args = args;
         }
 
@@ -746,7 +746,7 @@ public class StandardFunctions implements FunctionFactory
 
         public EqualsFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2);
             arg1 = args.get(0);
             arg2 = args.get(1);
@@ -779,7 +779,7 @@ public class StandardFunctions implements FunctionFactory
 
         public FilterFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2);
             arg1 = args.get(0);
             arg2 = args.get(1);
@@ -828,7 +828,7 @@ public class StandardFunctions implements FunctionFactory
 
         DateFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }
@@ -873,7 +873,7 @@ public class StandardFunctions implements FunctionFactory
 
         IntervallFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }
@@ -920,7 +920,7 @@ public class StandardFunctions implements FunctionFactory
 
         public IfFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(3);
             condition = args.get(0);
             conditionTrue = args.get(1);
@@ -953,7 +953,7 @@ public class StandardFunctions implements FunctionFactory
 
         public SortFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2);
             arg1 = args.get(0);
             arg2 = args.get(1);
@@ -1008,7 +1008,7 @@ public class StandardFunctions implements FunctionFactory
 
         public IndexFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2);
 
             list = args.get(0);
@@ -1059,7 +1059,7 @@ public class StandardFunctions implements FunctionFactory
 
         public SubstringFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(3);
 
             content = args.get(0);
@@ -1141,7 +1141,7 @@ public class StandardFunctions implements FunctionFactory
 
         public ReverseFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             this.innerFunction = args.get(0);
         }
@@ -1174,7 +1174,7 @@ public class StandardFunctions implements FunctionFactory
 
         public StringComparatorFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(2);
             a = args.get(0);
             b = args.get(1);
@@ -1207,7 +1207,7 @@ public class StandardFunctions implements FunctionFactory
 
         LastChangedFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }
@@ -1242,7 +1242,7 @@ public class StandardFunctions implements FunctionFactory
 
         EventsFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(0, 1);
             if (args.size() > 0)
             {
@@ -1294,7 +1294,7 @@ public class StandardFunctions implements FunctionFactory
 
         ResourcesFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(0, 1);
             if (args.size() > 0)
             {
@@ -1356,7 +1356,7 @@ public class StandardFunctions implements FunctionFactory
 
         public ParentFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             arg = args.get(0);
             //testMethod();
@@ -1412,7 +1412,7 @@ public class StandardFunctions implements FunctionFactory
 
         TypeFunction(List<Function> args) throws IllegalAnnotationException
         {
-            super(ID, args);
+            super(NAMESPACE,ID, args);
             assertArgs(1);
             subFunction = args.get(0);
         }

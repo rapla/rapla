@@ -16,9 +16,13 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.eventtimecalculator.DurationFunctions;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
@@ -26,6 +30,7 @@ import org.rapla.storage.dbfile.tests.FileOperatorTest.MyFileIO;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
+import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +55,8 @@ public class ParsedTextTest
         Logger logger = RaplaTestCase.initLoger();
         String file = "testdefault.xml";
         String resolvedPath = RaplaTestCase.getTestDataFile(file);
-        StorageOperator operator = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath,logger)).getOperator();
+        final RaplaFacade facadeWithFile = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath, logger));
+        StorageOperator operator = facadeWithFile.getOperator();
         permissionController = DefaultPermissionControllerSupport.getController(operator);
         this.user = null;
         LocalCache cache = new LocalCache(permissionController);
@@ -109,13 +115,24 @@ public class ParsedTextTest
 
     }
 
-    private Map<String, FunctionFactory> createFactoryMap()
+
+
+    @Test
+    public void testDurationAnnotation() throws IllegalAnnotationException
     {
-        Map<String,FunctionFactory> map = new HashMap<String,FunctionFactory>();
-        BundleManager manager = new DefaultBundleManager();
-        RaplaLocale raplaLocale = new RaplaLocaleImpl(manager);
-        map.put(StandardFunctions.NAMESPACE,new StandardFunctions(raplaLocale));
-        return map;
+        final String annoName = "myanno";
+        final String annotationContent = "{name(a1,\"de\")}";
+        type.setAnnotation(annoName, annotationContent);
+        type.setReadOnly();
+        Locale locale = Locale.GERMANY;
+        Classification classification = type.newClassification();
+        classification.setValue(attribute, c2);
+        final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
+        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
+        final String formatName = parsedAnnotation.formatName(evalContext);
+
+        Assert.assertEquals("Welt", formatName);
+        Assert.assertEquals(annotationContent, type.getAnnotation(annoName));
     }
 
     @Test
@@ -168,6 +185,25 @@ public class ParsedTextTest
         Assert.assertEquals("Welt, Welten, Rapla", formatName);
     }
 
+    @Test
+    public void testMissingNamespace() throws IllegalAnnotationException
+    {
+        final String annoName = "myanno";
+        try
+        {
+            final String annotationContent = "{p->duration(p)}";
+            type.setAnnotation(annoName, annotationContent);
+            Assert.fail("Unknown namespace error expected");
+        }
+        catch (IllegalAnnotationException ex)
+        {
+        }
+        final String annotationContent = "{p->" + DurationFunctions.NAMESPACE + ":duration(p)}";
+        type.setAnnotation(annoName, annotationContent);
+        type.setReadOnly();
+        final String externalRepresentation = type.getAnnotation(annoName);
+        Assert.assertEquals(annotationContent, externalRepresentation);
+    }
 
     @Test
     public void testBoundAnnotation() throws IllegalAnnotationException

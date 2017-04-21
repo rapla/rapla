@@ -1685,7 +1685,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		for (T toStore : storedObjects) {
 			storeList.add( toStore);
 		}
-		dispatch( storeList, removeList, user);
+		dispatch(storeList, removeList, user);
 	}
 
 	private <T extends  Entity> void addTransientCategories(List<T> storeList, CategoryImpl toStore, int depth)
