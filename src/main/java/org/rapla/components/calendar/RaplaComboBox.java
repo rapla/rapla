@@ -43,7 +43,7 @@ import javax.swing.event.PopupMenuListener;
 public abstract class RaplaComboBox extends JPanel {
    
    private static final long serialVersionUID = 1L;
-   private JPopupMenu m_popup;
+   protected JPopupMenu m_popup;
    private boolean m_popupVisible = false;
    private boolean m_isDropDown = true;
    protected RaplaArrowButton m_popupButton;
@@ -212,25 +212,26 @@ public abstract class RaplaComboBox extends JPanel {
        if (m_popup != null && m_popup.isVisible()) {
            // #Workaround for JMenuPopup-Bug in JDK 1.4
            // intended behaviour: m_popup.setVisible(false);
-
-           javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                   public void run() {
-               // Show JMenuItem and fire a mouse-click
-           cardLayout.last(m_popup);
-           menuItem.menuSelectionChanged(true);
-           menuItem.dispatchEvent(new MouseEvent(m_popup
-                                                 ,MouseEvent.MOUSE_RELEASED
-                                                 ,System.currentTimeMillis()
-                                                 ,0
-                                                 ,0
-                                                 ,0
-                                                 ,1
-                                                 ,false));
-           // show original popup again
-           cardLayout.first(m_popup);
-           m_popupButton.requestFocus();
+           if ( getPopupComponent() != null)
+           {
+               javax.swing.SwingUtilities.invokeLater(new Runnable()
+               {
+                   public void run()
+                   {
+                       // Show JMenuItem and fire a mouse-click
+                       cardLayout.last(m_popup);
+                       menuItem.menuSelectionChanged(true);
+                       menuItem.dispatchEvent(new MouseEvent(m_popup, MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, 0, 0, 1, false));
+                       // show original popup again
+                       cardLayout.first(m_popup);
+                       m_popupButton.requestFocus();
                    }
                });
+           }
+           else
+           {
+               m_popup.setVisible( false);
+           }
        }
        m_popupVisible = false;
    }
@@ -257,18 +258,34 @@ public abstract class RaplaComboBox extends JPanel {
            m_popup.setLightWeightPopupEnabled(true);
            }*/
        m_popup.setBorder(null);
-       cardLayout = new CardLayout();
-       m_popup.setLayout(cardLayout);
        m_popup.setInvoker(this);
-       m_popup.add(getPopupComponent(),"0");
-       menuItem = new JMenuItem("");
-       m_popup.add(menuItem,"1");
+       final JComponent popupComponent = getPopupComponent();
+       if ( popupComponent != null)
+       {
+           cardLayout = new CardLayout();
+           m_popup.setLayout(cardLayout);
+           m_popup.add(popupComponent, "0");
+           menuItem = new JMenuItem("");
+           m_popup.add(menuItem,"1");
+       }
+
+
+       final JMenuItem[] popupMenuItems = createMenuItems();
+       for ( JMenuItem item: popupMenuItems)
+       {
+           m_popup.add( item);
+       }
        m_popup.setBorderPainted(true);
        m_popup.addPopupMenuListener(m_listener);
    }
 
    /** the component that should apear in the popup menu */
    protected abstract JComponent getPopupComponent();
+
+   protected JMenuItem[] createMenuItems()
+   {
+       return new JMenuItem[] {};
+   }
 }
 
 

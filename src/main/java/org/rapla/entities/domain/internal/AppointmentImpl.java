@@ -350,18 +350,13 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");
         Assert.notNull(end, "You must set an endDate");
-        processBlocks(start.getTime(), end.getTime(), blocks, excludeExceptions, null);
+        processBlocks(start.getTime(), end.getTime(), blocks, excludeExceptions);
     }
     
-    public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, Collection<AppointmentBlock> additionalSet) {
-        Assert.notNull(blocks);
-        Assert.notNull(start,"You must set a startDate");
-        Assert.notNull(end, "You must set an endDate");
-        processBlocks(start.getTime(), end.getTime(), blocks, true, additionalSet);
-    }
+
     /* returns true if there is at least one block in an array. If the passed blocks array is not null it will contain all blocks
      * that overlap the start,end period after a call.*/
-    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions, Collection<AppointmentBlock> additionalSet) {
+    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
         long c1 = start;
         long c2 = end;
         long s = this.start.getTime();
@@ -379,10 +374,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
                 {
                     AppointmentBlock block = new AppointmentBlock(s,e,this, false);
                     blocks.add(block);
-                    if ( additionalSet != null)
-                    {
-                        additionalSet.add( block );
-                    }
                 }
             } 
             return false;
@@ -400,10 +391,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             {
                 AppointmentBlock block = new AppointmentBlock(s,e,this, repeating.isException(s));
                 blocks.add(block);
-                if ( additionalSet != null)
-                {
-                    additionalSet.add( block );
-                }
             }
         }
         
@@ -442,10 +429,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
                     {
                         AppointmentBlock block = new AppointmentBlock(currentPos,currentPos + blockLength,this, isException);
                         blocks.add( block);
-                        if ( additionalSet != null)
-                        {
-                            additionalSet.add( block );
-                        }
                     }
                 }
             }
@@ -495,7 +478,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (!this.start.before(end2))
             return false;
 
-        boolean overlaps  = processBlocks( start2.getTime(), end2.getTime(), null,  excludeExceptions, null );
+        boolean overlaps  = processBlocks( start2.getTime(), end2.getTime(), null,  excludeExceptions );
         return overlaps;
     }
     
@@ -506,7 +489,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (this.start.getTime() > end)
             return false;
 
-        boolean overlaps  = processBlocks( start, end, null,  excludeExceptions, null );
+        boolean overlaps  = processBlocks( start, end, null,  excludeExceptions );
         return overlaps;
     }
 
@@ -624,6 +607,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return overlaps;
     }
 
+    // check every block in the appointment
     private boolean overlapsHard( AppointmentImpl a2 )
     {
         Repeating r2 = a2.getRepeating();

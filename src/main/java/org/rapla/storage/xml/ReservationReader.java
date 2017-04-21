@@ -13,7 +13,11 @@
 
 package org.rapla.storage.xml;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
@@ -129,6 +133,7 @@ public class ReservationReader extends RaplaXMLReader {
             String interval =atts.getValue("interval");
             String enddate =atts.getValue("end-date");
             String number =atts.getValue("number");
+            String weekdays =atts.getValue("weekdays");
             appointment.setRepeatingEnabled(true);
             repeating = appointment.getRepeating();
             repeating.setType( RepeatingType.findForString( type));
@@ -148,6 +153,18 @@ public class ReservationReader extends RaplaXMLReader {
             {
                 repeating.setEnd(null);
             }
+            if (weekdays != null)
+            {
+                String[] days =weekdays.split(",");
+                Set<Integer> weekdaySet = new TreeSet();
+                for ( String dayAsString: days)
+                {
+                    Integer day = Integer.parseInt( dayAsString);
+                    weekdaySet.add(day);
+                }
+                repeating.setWeekdays( weekdaySet);
+            }
+
             /*
             if (getLogger().enabled(6))
                 getLogger().log(6, "Repeating " + repeating.toString() );

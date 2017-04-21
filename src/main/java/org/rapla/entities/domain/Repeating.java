@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 import java.util.Date;
+import java.util.Set;
 
 /** Encapsulates the repeating rule for an appointment.
     @see Appointment*/
@@ -72,6 +73,15 @@ public interface Repeating {
     boolean isDaily();
     boolean isMonthly();
     boolean isYearly();
+
+    /**  returns the weekdays of weekly repeating, e.g. sunday = 1, saturday = 7
+     * */
+    Set<Integer> getWeekdays();
+
+    boolean hasDifferentWeekdaySelectedInRepeating();
+
+    void setWeekdays(Set<Integer> weekdays);
+
     void addException(Date date);
     void removeException(Date date);
     void clearExceptions();

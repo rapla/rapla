@@ -15,11 +15,14 @@ package org.rapla.storage.xml;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Set;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaException;
 
@@ -120,7 +123,24 @@ public class ReservationWriter extends ClassifiableWriter {
         openTag("rapla:repeating");
         if (r.getInterval()!=1)
             att("interval",String.valueOf(r.getInterval()));
-        att("type",r.getType().toString());
+        final RepeatingType repeatingType = r.getType();
+
+        att("type", repeatingType.toString());
+
+        if ( repeatingType == RepeatingType.WEEKLY && r.hasDifferentWeekdaySelectedInRepeating())
+        {
+            final Set<Integer> weekdays = r.getWeekdays();
+            StringBuilder builder = new StringBuilder();
+            for ( Integer weekday:weekdays)
+            {
+                if ( builder.length() > 0)
+                {
+                    builder.append(',');
+                }
+                builder.append( weekday);
+            }
+            att("weekdays", builder.toString());
+        }
         if (r.isFixedNumber()) {
             att("number",String.valueOf(r.getNumber()));
         } else {

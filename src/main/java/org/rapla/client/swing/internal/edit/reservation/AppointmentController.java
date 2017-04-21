@@ -12,47 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.ListCellRenderer;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-import javax.swing.border.Border;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -61,12 +22,13 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.PeriodChooser;
 import org.rapla.client.swing.toolkit.MonthChooser;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.toolkit.WeekdayChooser;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.calendar.RaplaCalendar;
+import org.rapla.components.calendar.RaplaComboBox;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.iolayer.IOInterface;
@@ -90,6 +52,50 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+
+import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JCheckBox;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /** GUI for editing a single Appointment. */
 public class AppointmentController extends RaplaGUIComponent
@@ -698,6 +704,9 @@ public class AppointmentController extends RaplaGUIComponent
 			dayInMonth.addChangeListener(this);
 			weekdayChooser.setLocale(getLocale());
 			weekdayChooser.addActionListener(this);
+
+
+
 			monthChooser.setLocale(getLocale());
 			monthChooser.addActionListener(this);
 			dayLabel.setText(getString("day") + " ");
@@ -872,9 +881,12 @@ public class AppointmentController extends RaplaGUIComponent
 							endDate.setDate(slotDate);
 					}
 				} else if (evt.getSource() == weekdayChooser) {
-					int weekday = weekdayChooser.getSelectedWeekday();
-					final Date date = DateTools.setWeekday(startDate.getDate(), weekday);
-					startDate.setDate(date);
+					int selectedWeekday= weekdayChooser.getSelectedWeekday();
+					if ( selectedWeekday == 1)
+					{
+						final Date date = DateTools.setWeekday(startDate.getDate(), selectedWeekday);
+						startDate.setDate(date);
+					}
 				} else if (evt.getSource() == monthChooser) {
 					int year = DateTools.getYear( startDate.getDate());
 					final long l = DateTools.toDate(year, monthChooser.getSelectedMonth(), dayInMonth.getNumber().intValue());
@@ -886,12 +898,18 @@ public class AppointmentController extends RaplaGUIComponent
 							getLogger().debug("endtime adjusted");
 						}
 					}
+
 				} else if (evt.getSource() == startDatePeriod && startDatePeriod.getPeriod() != null) {
 					Date date = startDatePeriod.getPeriod().getStart();
 					if (repeating.isWeekly() || repeating.isMonthly()) {
-						date = DateTools.setWeekday( date, weekdayChooser.getSelectedWeekday());
-						if (date.before( startDatePeriod.getPeriod().getStart())) {
-							date = DateTools.addWeeks( date, 1);
+						int selectedWeekday= weekdayChooser.getSelectedWeekday();
+						if ( selectedWeekday == 1 )
+						{
+							date = DateTools.setWeekday(date, selectedWeekday);
+							if (date.before(startDatePeriod.getPeriod().getStart()))
+							{
+								date = DateTools.addWeeks(date, 1);
+							}
 						}
 					}
 					getLogger().debug("startdate adjusted to period");
@@ -977,7 +995,8 @@ public class AppointmentController extends RaplaGUIComponent
 			{
 				repeating.setInterval(1);
 			}
-			
+
+
 			if (index == REPEAT_UNTIL) {
 				if (DateTools.countDays(startDate.getDate(), endDate.getDate()) < 0)
 				{
@@ -1088,6 +1107,8 @@ public class AppointmentController extends RaplaGUIComponent
 					weekdayChooser.setVisible(true);
 					monthChooser.setVisible(false);
 					weekdayChooser.selectWeekday(DateTools.getWeekday(start));
+					//final Set<Integer> weekdays = repeating.getWeekdays();
+					//weekdayChooser.selectWeekdays(weekdays);
 				}
 
 				if (repeating.isYearly()) {

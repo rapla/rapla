@@ -232,7 +232,7 @@ class ConflictFinder {
     
     private  Map<ReferenceInfo<Conflict>,Conflict>  updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments) {
         Collection<AppointmentBlock> allAppointmentBlocks =new LinkedList<AppointmentBlock>(); 
-        createBlocks(today,allAppointments,allAppointmentBlocks, null);
+        createBlocks(today,allAppointments,allAppointmentBlocks);
 //        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
 //        createBlocks(today,changedAppointments,appointmentBlocks, null);
 //        long startTime = 0;
@@ -413,7 +413,7 @@ class ConflictFinder {
 //        return( idList.contains( appointment1) || idList.contains( appointment2));
 //	}
 	
-    private void createBlocks(Date today, Collection<Appointment> appointmentSet,  Collection<AppointmentBlock> allAppointmentBlocks, Set<AppointmentBlock> additionalSet) {
+    private void createBlocks(Date today, Collection<Appointment> appointmentSet,  Collection<AppointmentBlock> allAppointmentBlocks) {
         // overlaps will be checked  260 weeks (5 years) from now on
 		long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 260;
 		//Appointment last = appointmentSet.last();
@@ -456,7 +456,7 @@ class ConflictFinder {
 			{
 			    start = today;
 			}
-            ((AppointmentImpl)appointment).createBlocks(start, DateTools.fillDate(maxEnd), allAppointmentBlocks,additionalSet);
+            ((AppointmentImpl)appointment).createBlocks(start, DateTools.fillDate(maxEnd), allAppointmentBlocks);
 		}
     }
 

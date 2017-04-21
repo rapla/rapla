@@ -96,6 +96,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 class RaplaSQL {
     private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
@@ -1554,6 +1555,12 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
         addSubStorage(allocationStorage);
     }
 
+    @Override
+    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary(schema);
+    }
+
     void deleteAppointments(Collection<String> reservationIds)
             throws SQLException, RaplaException {
         // look for all appointment ids, as the sub storages must be deleted with appointment id
@@ -1603,7 +1610,23 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
 			setDate( stmt,7, null);
 			setInt( stmt,8, null);
       	} else {
-      		setString( stmt,5, repeating.getType().toString());
+            final RepeatingType repeatingType = repeating.getType();
+            String repeatingTypeAsString = repeatingType.toString();
+            if ( repeatingType == RepeatingType.WEEKLY && repeating.hasDifferentWeekdaySelectedInRepeating())
+            {
+                final Set<Integer> weekdays = repeating.getWeekdays();
+                StringBuilder builder = new StringBuilder();
+                for ( Integer weekday:weekdays)
+                {
+                    if ( builder.length() > 0)
+                    {
+                        builder.append(",");
+                    }
+                    builder.append(weekday);
+                }
+                repeatingTypeAsString += ":" + builder.toString();
+            }
+            setString( stmt,5, repeatingTypeAsString);
       	    int number = repeating.getNumber();
       	    setInt(stmt, 6, number >= 0 ? number : null);
             setDate(stmt, 7,number >=0 ?  null: repeating.getEnd());
@@ -1628,11 +1651,37 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment> {
     	appointment.setId(id);
     	appointment.setWholeDays(wholeDayAppointment);
     	reservation.addAppointment(appointment);
-    	String repeatingType = getString( rset,5, null);
-    	if ( repeatingType != null ) {
+    	String repeatingTypeAsString = getString( rset,5, null);
+    	if ( repeatingTypeAsString != null ) {
     	    appointment.setRepeatingEnabled( true );
     	    Repeating repeating = appointment.getRepeating();
-    	    repeating.setType( RepeatingType.findForString( repeatingType ) );
+    	    final String prefix = "weekly:";
+            if ( repeatingTypeAsString.startsWith(prefix))
+            {
+                Set<Integer> weekdays;
+                repeatingTypeAsString = "weekly";
+                String[] weekdayStrings = repeatingTypeAsString.substring( prefix.length()).split(",");
+                weekdays = new TreeSet<Integer>();
+                for ( String weekday:weekdayStrings)
+                {
+                    try
+                    {
+                        weekdays.add( Integer.parseInt(weekday));
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new RaplaException("Can't parse " + weekday + " for appointment with id " + id);
+                    }
+                }
+                repeating.setWeekdays(weekdays);
+            }
+            final RepeatingType repeatingType = RepeatingType.findForString(repeatingTypeAsString);
+            if ( repeatingType== null)
+            {
+                throw new RaplaException("Unknown repeatingType " + repeatingType + " for appointment with id " + id);
+            }
+
+            repeating.setType(repeatingType);
     	    Date repeatingEnd = getDate(rset, 7);
 	        if ( repeatingEnd != null ) {
 	            repeating.setEnd( repeatingEnd);

@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Set;
-import java.util.TreeSet;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
@@ -24,6 +19,13 @@ import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Set;
+import java.util.TreeSet;
 
 final class RepeatingImpl implements Repeating,java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
@@ -37,6 +39,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     private Date end;
     private RepeatingType repeatingType;
     private Set<Date> exceptions;
+    private Set<Integer> weekdays;
     transient private Date[] exceptionArray;
     transient private boolean arrayUpToDate = false;
     transient private Appointment appointment;
@@ -67,20 +70,25 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         this.repeatingType = repeatingType;
         monthly = false;
         yearly = false;
-        if (repeatingType.equals( RepeatingType.WEEKLY ))
+        if (repeatingType!=RepeatingType.WEEKLY )
+        {
+            weekdays = null;
+        }
+
+        if (repeatingType== RepeatingType.WEEKLY )
         {
             frequency = 7 ;
         }
-        else if (repeatingType.equals( RepeatingType.MONTHLY))
+        else if (repeatingType== RepeatingType.MONTHLY)
         {
             frequency = 7;
             monthly = true;
         } 
-        else if (repeatingType.equals( RepeatingType.DAILY))
+        else if (repeatingType == RepeatingType.DAILY)
         {    
             frequency = 1;
         }
-        else if (repeatingType.equals( RepeatingType.YEARLY))
+        else if (repeatingType ==RepeatingType.YEARLY)
         {    
             frequency = 1;
             yearly = true;
@@ -133,11 +141,11 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     }
     
     public boolean isWeekly() {
-        return RepeatingType.WEEKLY.equals( getType());
+        return RepeatingType.WEEKLY == getType();
     }
     
     public boolean isDaily() {
-        return RepeatingType.DAILY.equals( getType());
+        return RepeatingType.DAILY == getType();
     }
     
     public boolean isMonthly() {
@@ -146,6 +154,58 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
     public boolean isYearly() {
         return yearly;
+    }
+
+    public Set<Integer> getWeekdays()
+    {
+        if (! isWeekly() )
+        {
+            return Collections.emptySet();
+        }
+        if ( weekdays != null && !weekdays.isEmpty())
+        {
+            return weekdays;
+        }
+        else
+        {
+            final int weekday = DateTools.getWeekday(getAppointment().getStart());
+            return Collections.singleton( weekday);
+        }
+    }
+
+    @Override
+    public boolean hasDifferentWeekdaySelectedInRepeating()
+    {
+        if ( !isWeekly())
+        {
+            return false;
+        }
+        if ( weekdays == null || weekdays.isEmpty())
+        {
+            return false;
+        }
+        if ( weekdays.size() >= 2)
+        {
+            return true;
+        }
+        final int startingWeekday = DateTools.getWeekday(getAppointment().getStart());
+        final Integer first = weekdays.iterator().next();
+        boolean differentWeekday = ( first != startingWeekday);
+        return differentWeekday;
+    }
+
+    public void setWeekdays(Set<Integer> weekdays)
+    {
+        if ( readOnly )
+            throw new ReadOnlyException( this );
+        if ( weekdays !=null)
+        {
+            this.weekdays = new TreeSet<>(weekdays);
+        }
+        else
+        {
+            this.weekdays = null;
+        }
     }
 
     public void setEnd(Date end) {
@@ -171,15 +231,15 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
             return null;
         }
+        final Date appointmentStart = appointment.getStart();
         if ( number == 0 )
         {
-            return getAppointment().getStart();
+            return appointmentStart;
         }
         
         if ( !isFixedIntervalLength())
         {
             int counts =  ((number -1) * interval) ;
-            Date appointmentStart = appointment.getStart();
             Date newDate = appointmentStart;
             for ( int i=0;i< counts;i++)
             {
@@ -199,7 +259,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         else
         {
             long intervalLength = getFixedIntervalLength();
-            endTime.setTime(DateTools.fillDate( this.appointment.getStart().getTime()
+            endTime.setTime(DateTools.fillDate(appointmentStart .getTime()
                                            + (this.number -1)* intervalLength
                                            ));
         }
@@ -375,6 +435,16 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         dest.isFixedNumber = source.isFixedNumber;
         dest.number = source.number;
         dest.end = source.end;
+        if ( source.weekdays != null)
+        {
+            dest.weekdays = new TreeSet<Integer>();
+            dest.weekdays.addAll( source.weekdays);
+        }
+        else
+        {
+            dest.weekdays = null;
+        }
+
         dest.interval = source.interval;
         if (source.exceptions != null)
         { 
