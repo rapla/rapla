@@ -60,6 +60,7 @@ public class StandaloneConnector extends AbstractLocalJsonConnector
 //        {
 //            throw new IllegalStateException("Server did not answer within 60 sec: " + e.getMessage(), e);
 //        }
+        waitForSemarphore.drainPermits();
         LocalEndPoint endpoint = connector.executeRequest(rawHttpRequest);
         try
         {
