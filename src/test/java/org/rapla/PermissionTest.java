@@ -134,6 +134,17 @@ public class PermissionTest  {
         permission.setAccessLevel( Permission.ALLOCATE );
         allocatable.addPermission( permission );
         adminFacade.store( allocatable );
+        Allocatable allocatable3 = adminFacade.newResource();
+        {
+            allocatable3.getClassification().setValue("name","test-allocatable2");
+            //remove default permission.
+            allocatable3.removePermission( allocatable3.getPermissionList().iterator().next() );
+            Permission permission2 = allocatable3.newPermission();
+            permission2.setGroup ( testGroup );
+            permission2.setAccessLevel( Permission.ALLOCATE );
+            allocatable3.addPermission( permission2 );
+            adminFacade.store( allocatable3 );
+        }
         // Wait for update
         testFacade.refresh();
 
@@ -151,6 +162,7 @@ public class PermissionTest  {
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         evt =  testFacade.edit( evt );
+        evt.addAllocatable(allocatable3);
         evt.removeAllocatable( allocatable );
         testFacade.store( evt );
 
