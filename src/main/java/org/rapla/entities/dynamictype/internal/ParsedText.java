@@ -129,7 +129,8 @@ public class ParsedText implements Serializable
         StringBuffer buf = new StringBuffer();
         for (int i = 0; i < nonVariablesList.size(); i++)
         {
-            buf.append(nonVariablesList.get(i));
+            final String str = nonVariablesList.get(i);
+            buf.append(str);
             if (i < variablesList.size())
             {
                 Function variable = variablesList.get(i);
@@ -337,7 +338,7 @@ public class ParsedText implements Serializable
 
             private BoundParameterFunction(String variableName, int indexOf)
             {
-                super(variableName, emptyList());
+                super(StandardFunctions.NAMESPACE,variableName, emptyList());
                 this.variableName = variableName;
                 this.indexOf = indexOf;
             }
@@ -361,7 +362,7 @@ public class ParsedText implements Serializable
 
             private ParentParameterFunction(Function parentFunction, String variableName)
             {
-                super(variableName, emptyList());
+                super(StandardFunctions.NAMESPACE,variableName, emptyList());
                 this.parentFunction = parentFunction;
                 this.variableName = variableName;
 
@@ -426,7 +427,7 @@ public class ParsedText implements Serializable
 
         public BoundFunction(ArrayList<String> boundParameters, Function next)
         {
-            super(createString(boundParameters), Collections.singletonList(next));
+            super(StandardFunctions.NAMESPACE,createString(boundParameters), Collections.singletonList(next));
             this.next = next;
         }
 
@@ -529,7 +530,12 @@ public class ParsedText implements Serializable
         final FunctionFactory functionFactory = context.getFunctionFactory(namespace);
         if (functionFactory != null)
         {
-            return functionFactory.createFunction(name, args);
+            final Function function = functionFactory.createFunction(name, args);
+            if ( function == null)
+            {
+                throw new IllegalAnnotationException("Unknown function '" + name + "' in namespace " + namespace);
+            }
+            return function;
         }
         else
         {
@@ -546,7 +552,7 @@ public class ParsedText implements Serializable
     {
         public Variable(String string)
         {
-            super(string, emptyList());
+            super(StandardFunctions.NAMESPACE,string, emptyList());
         }
 
         @Override public String getRepresentation(ParseContext context)

@@ -10,8 +10,10 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
 
 import org.rapla.components.tablesorter.TableSorter;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
@@ -29,12 +31,13 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
 {
     EventTimeCalculatorFactory factory;
     protected final EventTimeCalculatorResources i18n;
-
+    ClientFacade clientFacade;
 
     @Inject
-    public DurationCounter(EventTimeCalculatorFactory factory,EventTimeCalculatorResources i18n)  {
+    public DurationCounter(EventTimeCalculatorFactory factory,EventTimeCalculatorResources i18n,ClientFacade clientFacade)  {
         this.i18n = i18n;
         this.factory = factory;
+        this.clientFacade = clientFacade;
     }
 
     public void init(final JTable table, JPanel summaryRow) {
@@ -46,7 +49,16 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
 
              public void valueChanged(ListSelectionEvent arg0)
              {
-            	 EventTimeModel eventTimeModel = factory.getEventTimeModel();
+                 final User user;
+                 try
+                 {
+                     user = clientFacade.getUser();
+                 }
+                 catch (RaplaException e)
+                 {
+                     return;
+                 }
+                 EventTimeModel eventTimeModel = factory.getEventTimeModel(user);
             	 int[] selectedRows = table.getSelectedRows();
                  TableModel model = table.getModel();
                  TableSorter sorterModel = null;

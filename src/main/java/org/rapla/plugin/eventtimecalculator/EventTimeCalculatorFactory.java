@@ -4,6 +4,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
@@ -25,7 +26,7 @@ public class EventTimeCalculatorFactory
         this.eventTimeI18n = eventTimeI18n;
 	}
 
-    public  EventTimeModel getEventTimeModel ()
+    public  EventTimeModel getEventTimeModel (User user)
 	{
 		Configuration configuration = null;
 		final RaplaFacade facade = facadeProvider.get();
@@ -38,11 +39,11 @@ public class EventTimeCalculatorFactory
 			throw new IllegalStateException("Can't find prefences");
 		}
 		boolean isUserPrefAllowed = configuration.getChild(EventTimeCalculatorPlugin.USER_PREFS).getValueAsBoolean(EventTimeCalculatorPlugin.DEFAULT_userPrefs);
-        if ( isUserPrefAllowed)
+        if ( isUserPrefAllowed && user != null)
         {
         	RaplaConfiguration raplaConfig;
 			try {
-				raplaConfig = facade.getPreferences().getEntry(EventTimeCalculatorPlugin.USER_CONFIG);
+				raplaConfig = facade.getPreferences(user).getEntry(EventTimeCalculatorPlugin.USER_CONFIG);
 				if ( raplaConfig != null)
 	        	{
 	        		configuration = raplaConfig;

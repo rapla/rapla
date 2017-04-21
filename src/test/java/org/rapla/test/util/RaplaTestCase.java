@@ -22,6 +22,7 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
@@ -37,6 +38,9 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.plugin.eventtimecalculator.DurationFunctions;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.rest.client.CustomConnector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
@@ -76,6 +80,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class RaplaTestCase
 {
@@ -228,10 +233,16 @@ public abstract class RaplaTestCase
 
         final DefaultScheduler scheduler = new DefaultScheduler(logger);
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-
-        Map<String, FunctionFactory> functionFactoryMap = new HashMap<String, FunctionFactory>();
-        StandardFunctions functions = new StandardFunctions(raplaLocale);
-        functionFactoryMap.put(StandardFunctions.NAMESPACE, functions);
+        AtomicReference<RaplaFacade> facadeReference = new AtomicReference<RaplaFacade>();
+        Provider<RaplaFacade> facadeProvider = new Provider<RaplaFacade>()
+        {
+            @Override
+            public RaplaFacade get()
+            {
+                return facadeReference.get();
+            }
+        };
+        Map<String, FunctionFactory> functionFactoryMap = createFactoryMap( facadeProvider,bundleManager,logger);
 
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
@@ -239,10 +250,24 @@ public abstract class RaplaTestCase
         FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
                 permissionExtensions);
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
+        facadeReference.set( facade);
         facade.setOperator(operator);
         operator.setFileIO(fileIO);
         operator.connect();
         return facade;
+    }
+
+    static private Map<String, FunctionFactory> createFactoryMap(Provider<RaplaFacade> facadeProvider,BundleManager bundleManager,Logger logger)
+    {
+        Map<String,FunctionFactory> map = new HashMap<String,FunctionFactory>();
+        RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
+        map.put(StandardFunctions.NAMESPACE,new StandardFunctions(raplaLocale));
+
+        EventTimeCalculatorResources resources = new EventTimeCalculatorResources(new DefaultBundleManager());
+
+        EventTimeCalculatorFactory eventTimeCalculatorFactory = new EventTimeCalculatorFactory(facadeProvider, logger, resources);
+        map.put(DurationFunctions.NAMESPACE,new DurationFunctions(eventTimeCalculatorFactory));
+        return map;
     }
 
     static public  void dispose(RaplaFacade facade) throws RaplaException

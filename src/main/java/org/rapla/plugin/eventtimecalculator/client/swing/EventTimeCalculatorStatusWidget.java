@@ -13,6 +13,7 @@ import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ClientFacade;
@@ -94,7 +95,16 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
             return;
         }
 
-        final EventTimeModel eventTimeModel = factory.getEventTimeModel();
+        final User user;
+        try
+        {
+            user = getClientFacade().getUser();
+        }
+        catch (RaplaException e)
+        {
+            return;
+        }
+        final EventTimeModel eventTimeModel = factory.getEventTimeModel(user);
         boolean totalDurationVisible = eventTimeModel.hasEnd(event.getAppointments());
 
         if (totalDurationVisible) {

@@ -11,10 +11,13 @@ import org.rapla.entities.dynamictype.internal.ParseContext;
 public abstract class Function
 {
     protected final String name;
+    protected final String namespace;
     protected final List<Function> args;
 
-    public Function(String name, List<Function> args)
+
+    public Function(String namespace,String name, List<Function> args)
     {
+        this.namespace = namespace;
         this.name = name;
         this.args = Collections.unmodifiableList(args);
     }
@@ -22,6 +25,11 @@ public abstract class Function
     protected void assertArgs(int size) throws IllegalAnnotationException
     {
         assertArgs(size, size);
+    }
+
+    public String getNamespace()
+    {
+        return namespace;
     }
 
     protected void assertArgs(int minSize, int maxSize) throws IllegalAnnotationException
@@ -59,7 +67,11 @@ public abstract class Function
     public String getRepresentation(ParseContext context)
     {
         StringBuffer buf = new StringBuffer();
-
+        if ( namespace != null && namespace!="org.rapla")
+        {
+            buf.append( namespace);
+            buf.append(":");
+        }
         buf.append(getName());
         buf.append("(");
         for (int i = 0; i < args.size(); i++)
