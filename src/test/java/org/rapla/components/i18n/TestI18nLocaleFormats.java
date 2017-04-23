@@ -10,9 +10,11 @@ import java.util.Locale;
 public class TestI18nLocaleFormats
 {
     DefaultBundleManager bundleManager;
+
     @Before
-    public void setUp        (){
-        this.bundleManager = bundleManager;
+    public void setUp()
+    {
+        this.bundleManager = new DefaultBundleManager();
     }
 
     @Test
@@ -20,7 +22,7 @@ public class TestI18nLocaleFormats
     {
         final I18nLocaleFormats formats = bundleManager.getFormats(Locale.GERMANY);
         final String month = formats.getMonths()[2];
-        Assert.assertEquals("M�rz", month);
+        Assert.assertEquals("März", month);
     }
 
 

@@ -18,9 +18,11 @@ import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 public class AllocatableReader extends RaplaXMLReader
@@ -85,6 +87,10 @@ public class AllocatableReader extends RaplaXMLReader
         {
         	TimestampDates ts = readTimestamps( atts);
             allocatable = new AllocatableImpl(ts.createTime, ts.changeTime);
+            if (ts.lastChangedBy != null)
+            {
+                allocatable.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
+            }
             allocatable.setResolver( store );
             currentAnnotatable = allocatable;
             setId( allocatable, atts );

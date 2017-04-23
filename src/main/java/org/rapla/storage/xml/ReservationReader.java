@@ -25,6 +25,7 @@ import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
@@ -84,6 +85,10 @@ public class ReservationReader extends RaplaXMLReader {
         {
             TimestampDates ts = readTimestamps( atts);
             reservation = new ReservationImpl( ts.createTime, ts.changeTime );
+            if (ts.lastChangedBy != null)
+            {
+                reservation.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
+            }
 			reservation.setResolver( store );
             currentAnnotatable = reservation;
             setId(reservation, atts);

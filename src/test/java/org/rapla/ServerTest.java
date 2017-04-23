@@ -312,7 +312,7 @@ public class ServerTest
             Allocatable[] allocatables = getRaplaFacade1().getAllocatables();
             Allocatable resource1 = allocatables[0];
             Assert.assertEquals("erwin", resource1.getName(locale));
-            Assert.assertEquals(2, resource1.getClassification().getAttributes().length);
+            Assert.assertEquals(3, resource1.getClassification().getAttributes().length);
         }
     }
 

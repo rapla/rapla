@@ -54,6 +54,10 @@ public class PreferenceReader extends RaplaXMLReader {
         if (localName.equals("preferences")) {
         	TimestampDates ts = readTimestamps(atts);
             preferences = new PreferencesImpl(ts.createTime, ts.changeTime);
+            if (ts.lastChangedBy != null)
+            {
+                preferences.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
+            }
             preferences.setResolver( store);
             String ownerId = owner != null ? owner.getId() :null;
             ReferenceInfo<Preferences> ref = PreferencesImpl.getPreferenceIdFromUser( ownerId);

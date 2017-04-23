@@ -22,6 +22,7 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.User;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
@@ -66,6 +67,10 @@ public class CategoryReader extends RaplaXMLReader
             Assert.notNull( key );
             TimestampDates ts = readTimestamps( atts);
             CategoryImpl category = new CategoryImpl(ts.createTime, ts.changeTime );
+            if (ts.lastChangedBy != null)
+            {
+                category.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
+            }
             category.setKey( key );
             currentName = category.getName();
             currentAnnotatable = category;

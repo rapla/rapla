@@ -26,6 +26,7 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.dynamictype.Attribute;
@@ -81,7 +82,11 @@ public class DynamicTypeReader extends RaplaXMLReader
                 typeAnnotations.clear();
                 TimestampDates ts = readTimestamps( atts);
                 dynamicType = new DynamicTypeImpl(ts.createTime, ts.changeTime);
-                 if (atts.getValue( "id" )!=null)
+                if (ts.lastChangedBy != null)
+                {
+                    dynamicType.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
+                }
+                if (atts.getValue( "id" )!=null)
                 {
                     setId( dynamicType, atts );
                 }

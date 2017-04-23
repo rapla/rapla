@@ -6,7 +6,7 @@
  xmlns:doc="http://rapla.sourceforge.net/annotation"
  version="1.2">
    <rapla:categories>
-      <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2016-07-10T13:03:35.0327Z" id="c46c87a7-2700-4065-8fed-0a5f0f52a4df" key="department">
+      <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c46c87a7-2700-4065-8fed-0a5f0f52a4df" key="department">
          <doc:name lang="de">Abteilung</doc:name>
          <doc:name lang="en">department</doc:name>
          <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c25d8971-2936-4ea9-b2d9-af63802155cc" key="channel-6">
@@ -14,6 +14,9 @@
          </rapla:category>
          <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c215928e-b195-4e61-8cd4-1d69c3b43d35" key="elementary-springfield">
             <doc:name lang="en">elementary-springfield</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c7fd0cd1-c698-431f-abab-82cf684cb309" key="springfield-powerplant">
+            <doc:name lang="en">springfield powerplant</doc:name>
          </rapla:category>
          <rapla:category created-at="2014-08-15T15:37:58.0120Z" last-changed="2014-08-15T15:37:58.0120Z" id="c468f8a2-aa73-47aa-8597-91eda93941f8" key="testdepartment">
             <doc:name lang="en">test department</doc:name>
@@ -58,7 +61,7 @@
 
    <relax:grammar>
       <relax:define name="room">
-         <relax:element name="dynatt:room" id="d5557636-7c52-4e19-b9b5-3161b0dfc233" created-at="2014-08-15T15:37:58.0123Z" last-changed="2016-07-10T13:02:51.0811Z">
+         <relax:element name="dynatt:room" id="d5557636-7c52-4e19-b9b5-3161b0dfc233" created-at="2014-08-15T15:37:58.0123Z" last-changed="2014-08-15T15:37:58.0123Z">
             <doc:name lang="de">Raum</doc:name>
             <doc:name lang="en">room</doc:name>
             <doc:annotations>
@@ -77,6 +80,15 @@
                   <doc:name lang="de">Anzahl der Plätze</doc:name>
                   <doc:name lang="en">number of seats</doc:name>
                   <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
                </relax:element>
             </relax:optional>
             <rapla:permission access="read_type"/>
@@ -160,7 +172,7 @@
       </relax:define>
 
       <relax:define name="resource1">
-         <relax:element name="dynatt:resource1" id="d2889899-fc5b-47bc-aa25-cb84a2415c4b" created-at="2016-03-08T11:18:45.0661Z" last-changed="2016-03-08T11:18:45.0661Z">
+         <relax:element name="dynatt:resource1" id="d2889899-fc5b-47bc-aa25-cb84a2415c4b" created-at="2016-03-08T11:18:45.0661Z" last-changed="2016-03-08T11:18:45.0661Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
             <doc:name lang="de">Teilraum</doc:name>
             <doc:annotations>
                <rapla:annotation key="nameformat">{name}</rapla:annotation>
@@ -178,6 +190,7 @@
                <relax:element name="a1">
                   <doc:name lang="de">Ist Teil von</doc:name>
                   <relax:data type="rapla:allocatable"/>
+                  <rapla:constraint name="dynamic-type">room</rapla:constraint>
                   <rapla:constraint name="multi-select">false</rapla:constraint>
                   <rapla:constraint name="belongsTo">true</rapla:constraint>
                   <rapla:constraint name="package">false</rapla:constraint>
@@ -189,7 +202,7 @@
       </relax:define>
 
       <relax:define name="resource2">
-         <relax:element name="dynatt:resource2" id="d010d3a1-e864-4767-a220-8d0f236adad0" created-at="2016-03-08T11:20:03.0190Z" last-changed="2016-03-08T11:20:03.0190Z">
+         <relax:element name="dynatt:resource2" id="d010d3a1-e864-4767-a220-8d0f236adad0" created-at="2016-03-08T11:20:03.0190Z" last-changed="2016-03-08T11:20:03.0190Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
             <doc:name lang="de">Dozentengruppe</doc:name>
             <doc:annotations>
                <rapla:annotation key="nameformat">{name}</rapla:annotation>
@@ -208,6 +221,7 @@
                <relax:element name="a1">
                   <doc:name lang="de">Teile</doc:name>
                   <relax:data type="rapla:allocatable"/>
+                  <rapla:constraint name="dynamic-type">lecturer</rapla:constraint>
                   <rapla:constraint name="multi-select">true</rapla:constraint>
                   <rapla:constraint name="belongsTo">false</rapla:constraint>
                   <rapla:constraint name="package">true</rapla:constraint>
@@ -217,7 +231,6 @@
             <rapla:permission access="allocate_conflicts"/>
          </relax:element>
       </relax:define>
-
       <relax:define name="resource3">
          <relax:element name="dynatt:resource3" id="d44fd301-7290-41b2-9ecc-5499fa2ad91e" created-at="2016-07-10T13:03:29.0325Z" last-changed="2016-07-10T13:03:29.0325Z">
             <doc:name lang="en">TestType</doc:name>
@@ -317,7 +330,8 @@
             </rapla:entry>
          </rapla:preferences>
       </rapla:user>
-      <rapla:user id="15e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2014-08-15T15:37:58.0125Z" last-changed="2016-07-10T13:03:44.0938Z" last-changed-by="15e1576a-bc70-4ddf-9943-8e6ad1c86100" username="monty" password="sha-1:283d47a9338ed1100b5fe2a5aff2d1f7c799bfd0" name="" email="monty@rapla.dummy.rapla" isAdmin="false">
+      <rapla:user id="15e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2014-08-15T15:37:58.0125Z" last-changed="2014-08-15T15:37:58.0125Z" username="monty" password="burns" name="" email="monty@rapla.dummy.rapla" isAdmin="false">
+         <rapla:group key="category[key='my-group']"/>
          <rapla:group key="category[key='powerplant']"/>
          <rapla:group key="category[key='powerplant']/category[key='powerplant-admins']"/>
       </rapla:user>
@@ -349,17 +363,19 @@
          </ext:period>
          <rapla:permission access="read"/>
       </rapla:extension>
-      <rapla:resource id="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d" created-at="2014-08-15T15:37:58.0131Z" last-changed="2016-07-10T13:02:51.0811Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+      <rapla:resource id="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:room>
             <dynatt:name>erwin</dynatt:name>
             <dynatt:seats>10</dynatt:seats>
+            <dynatt:belongsto>category[key='elementary-springfield']</dynatt:belongsto>
          </dynatt:room>
          <rapla:permission access="allocate"/>
       </rapla:resource>
-      <rapla:resource id="c24ce517-4697-4e52-9917-ec000c84563c" created-at="2014-08-15T15:37:58.0131Z" last-changed="2016-07-10T13:02:51.0811Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
+      <rapla:resource id="c24ce517-4697-4e52-9917-ec000c84563c" created-at="2014-08-15T15:37:58.0131Z" last-changed="2014-08-15T15:37:58.0131Z">
          <dynatt:room>
             <dynatt:name>Room A66</dynatt:name>
             <dynatt:seats>30</dynatt:seats>
+            <dynatt:belongsto>category[key='springfield-powerplant']</dynatt:belongsto>
          </dynatt:room>
          <rapla:permission access="allocate_conflicts"/>
       </rapla:resource>
@@ -396,6 +412,51 @@
    </rapla:resources>
 
    <rapla:reservations>
+      <rapla:reservation id="0fad6a46-9bc6-4f2b-8f01-dfa88065f90e" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.0000Z" last-changed="2003-11-21T00:00:00.0000Z">
+         <dynatt:event>
+            <dynatt:name>bowling</dynatt:name>
+            <dynatt:description>with all my friends
+and all the rest</dynatt:description>
+         </dynatt:event>
+         <rapla:appointment id="a644e379-344e-4e1f-9ea3-2ed22ee12e94" start-date="2001-10-15" start-time="17:00:00" end-date="2001-10-15" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+         </rapla:appointment>
+         <rapla:appointment id="a20a4b9e-0362-47ab-9f5e-807a5459a4cf" start-date="2001-10-20" start-time="17:00:00" end-date="2001-10-20" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+            <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
+         </rapla:appointment>
+         <rapla:allocate idref="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="02c84e71-5d80-458a-97ad-86822780dc09" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.0000Z" last-changed="2003-11-21T00:00:00.0000Z">
+         <dynatt:event>
+            <dynatt:name>Reservation 2</dynatt:name>
+         </dynatt:event>
+         <rapla:appointment id="aa4b5e33-3b97-4acc-9d21-6c8800518f09" start-date="2001-10-16" start-time="12:00:00" end-date="2001-10-16" end-time="19:00:00"/>
+         <rapla:appointment id="a792160c-3f7d-4b10-b45d-d99d6141d8d4" start-date="2006-09-04" start-time="13:00:00" end-date="2006-09-04" end-time="14:00:00">
+            <rapla:repeating type="monthly" end-date="2010-09-04"/>
+         </rapla:appointment>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
+         <rapla:allocate idref="f92e9a11-c342-4413-a924-81eee17ccf92"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="b44f10ee-a5c1-403f-b26f-fca25f9d0846" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2003-11-21T00:00:00.0000Z" last-changed="2003-11-21T00:00:00.0000Z">
+         <dynatt:event>
+            <dynatt:name>power planting</dynatt:name>
+            <dynatt:description>new demands for energy</dynatt:description>
+         </dynatt:event>
+         <rapla:appointment id="a8edbf51-a374-4450-800c-2907bb519af2" start-date="2002-04-10" start-time="10:00:00" end-date="2002-04-10" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+            <rapla:allocate idref="c24ce517-4697-4e52-9917-ec000c84563c"/>
+         </rapla:appointment>
+         <rapla:appointment id="a543f612-c97d-4b95-a0b8-2342f0cd2c2d" start-date="2002-04-12" start-time="10:00:00" end-date="2002-04-12" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2002-07-10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="5521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:allocate idref="d26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
       <rapla:reservation id="eb1f500c-1354-420d-99c0-551cced25edf" owner="3f49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2016-07-10T13:02:59.0276Z" last-changed="2016-07-10T13:02:59.0276Z" last-changed-by="3f49044c-1469-4699-8a66-5f46ec6c0a41">
          <dynatt:event>
             <dynatt:name>test-reservation</dynatt:name>
