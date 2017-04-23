@@ -123,6 +123,7 @@ public class ServerTest
 
     @After public void tearDown() throws Exception
     {
+        RaplaTestCase.dispose(clientFacade1.getRaplaFacade());
         clientFacade1.logout();
         clientFacade2.logout();
         server.stop();
