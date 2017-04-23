@@ -14,6 +14,7 @@ package org.rapla.storage.dbfile;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -118,7 +119,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     {
         public InputSource getInputSource(URI storageURL) throws IOException
         {
-            return new InputSource(storageURL.toURL().toExternalForm().toString());
+            return new InputSource(new FileInputStream(new File(storageURL)));
         }
 
         public void write(RaplaWriter writer, URI storageURL) throws IOException
@@ -163,7 +164,6 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             storageURL = new File(resolvedPath).getCanonicalFile().toURI();
-            logger.info("Storage URL: "+storageURL+" exists:" + new File(storageURL).exists());
         }
         catch (Exception e)
         {
