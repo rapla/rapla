@@ -53,7 +53,7 @@ public class FileOperatorTest extends AbstractOperatorTest {
     public void setUp() throws Exception
     {
         logger = RaplaTestCase.initLoger();
-        String file = "testdefault.xml";
+        String file = "/testdefault.xml";
         String resolvedPath = RaplaTestCase.getTestDataFile(file);
         facade = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath,logger));
     }

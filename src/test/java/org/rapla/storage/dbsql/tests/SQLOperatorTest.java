@@ -82,7 +82,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         logger = RaplaTestCase.initLoger();
         org.hsqldb.jdbc.JDBCDataSource datasource = createDatasource();
-        String xmlFile = "testdefault.xml";
+        String xmlFile = "/testdefault.xml";
         facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
     }
 

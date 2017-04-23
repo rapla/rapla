@@ -53,7 +53,7 @@ public class ParsedTextTest
     public void setUp() throws Exception
     {
         Logger logger = RaplaTestCase.initLoger();
-        String file = "testdefault.xml";
+        String file = "/testdefault.xml";
         String resolvedPath = RaplaTestCase.getTestDataFile(file);
         final RaplaFacade facadeWithFile = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, new MyFileIO(resolvedPath, logger));
         StorageOperator operator = facadeWithFile.getOperator();

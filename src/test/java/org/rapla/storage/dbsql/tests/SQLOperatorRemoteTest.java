@@ -68,7 +68,7 @@ public class SQLOperatorRemoteTest extends ServerTest
         }
         container.addDbDatasource("jdbc/rapladb", datasource);
 
-        String xmlFile = "testdefault.xml";
+        String xmlFile = "/testdefault.xml";
         container.addFileDatasource("raplafile", RaplaTestCase.getTestDataFile(xmlFile));
         return container;
     }

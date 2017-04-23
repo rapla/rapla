@@ -94,7 +94,7 @@ public class FileOperatorDiffTest
     public void setUp() throws Exception
     {
         Logger logger = RaplaTestCase.initLoger();
-        String file = "testdefault.xml";
+        String file = "/testdefault.xml";
         resolvedPath = RaplaTestCase.getTestDataFile(file);
         fileIO = new MyFileIO(resolvedPath, logger);
         RaplaFacade facade = RaplaTestCase.createFacadeWithFile(logger, resolvedPath, fileIO);

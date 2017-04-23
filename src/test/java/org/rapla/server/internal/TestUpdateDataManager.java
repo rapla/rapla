@@ -51,7 +51,7 @@ public class TestUpdateDataManager
         datasource.setUrl("jdbc:hsqldb:target/test/rapla-hsqldb");
         datasource.setUser("db_user");
         datasource.setPassword("your_pwd");
-        String xmlFile = "testdefault.xml";
+        String xmlFile = "/testdefault.xml";
                 facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
 //        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         operator = (CachableStorageOperator) facade.getOperator();
