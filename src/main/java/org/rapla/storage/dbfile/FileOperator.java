@@ -163,6 +163,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             storageURL = new File(resolvedPath).getCanonicalFile().toURI();
+            logger.info("Storage URL: "+storageURL+" exists:" + new File(storageURL).exists());
         }
         catch (Exception e)
         {
