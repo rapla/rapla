@@ -204,12 +204,12 @@ public abstract class RaplaTestCase
 
     public static String getTestDataFile(String xmlFile)
     {
-        return "src/test/resources/" + xmlFile;
+        return RaplaTestCase.class.getResource(xmlFile).getFile();
     }
 
     public static ClientFacade createSimpleSimpsonsWithHomer() throws RaplaException
     {
-        ClientFacade facade = (ClientFacade)RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"testdefault.xml");
+        ClientFacade facade = (ClientFacade)RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"/testdefault.xml");
         facade.login("homer","duffs".toCharArray());
         return facade;
     }

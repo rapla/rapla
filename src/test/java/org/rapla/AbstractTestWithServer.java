@@ -32,7 +32,7 @@ public abstract class AbstractTestWithServer
     {
         createdClientFacades = new ArrayList<>();
         logger = RaplaTestCase.initLoger();
-        RaplaTestCase.ServerContext context = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
+        RaplaTestCase.ServerContext context = RaplaTestCase.createServerContext(logger, "/testdefault.xml", port);
         serviceContainer = (ServerServiceImpl) context.getServiceContainer();
         this.server = context.getServer();
         clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);

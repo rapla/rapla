@@ -54,7 +54,7 @@ public class NotificationPluginTest
     {
         // start the server
         logger = RaplaTestCase.initLoger();
-        raplaServer = (ServerServiceImpl)RaplaTestCase.createServiceContainer(logger,"testdefault.xml");
+        raplaServer = (ServerServiceImpl)RaplaTestCase.createServiceContainer(logger,"/testdefault.xml");
 
         // start the client service
         facade1 = raplaServer.getFacade();

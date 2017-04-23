@@ -116,7 +116,7 @@ public class ServerTest
     protected ServerContainerContext createContext() throws Exception
     {
         ServerContainerContext container = new ServerContainerContext();
-        String xmlFile = "testdefault.xml";
+        String xmlFile = "/testdefault.xml";
         container.addFileDatasource("raplafile", RaplaTestCase.getTestDataFile(xmlFile));
         return container;
     }
