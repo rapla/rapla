@@ -18,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.AbstractTestWithServer;
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.components.util.DateTools;
@@ -42,29 +43,16 @@ import org.rapla.test.util.RaplaTestCase;
 import junit.framework.TestCase;
 
 @RunWith(JUnit4.class)
-public class TestRemoteStorageImpl
+public class TestRemoteStorageImpl extends AbstractTestWithServer
 {
-
-    private Server server;
 
     private ClientFacade clientFacade;
 
     @Before
     public void setUp() throws Exception
     {
-        Logger logger = RaplaTestCase.initLoger();
-        int port = 8052;
-        final RaplaTestCase.ServerContext serverContext = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
-        this.server = serverContext.getServer();
-        Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
-        clientFacade = clientFacadeProvider.get();
+        clientFacade = createClientFacade();
         clientFacade.login("homer", "duffs".toCharArray());
-    }
-
-    @After
-    public void cleanup() throws Exception
-    {
-        server.stop();
     }
 
     @Test

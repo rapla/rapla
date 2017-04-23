@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.AbstractTestWithServer;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
@@ -19,18 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(JUnit4.class)
-public class RestAPITest  {
-
-
-    int port = 8052;
-    Server server;
-    @Before
-    public void setUp() throws Exception
-    {
-        Logger logger = RaplaTestCase.initLoger();
-        server = RaplaTestCase.createServerContext(logger, "testdefaujlt.xml", port).getServer();
-    }
-
+public class RestAPITest extends AbstractTestWithServer {
 
     @Test
     public void testSerialize()
@@ -42,11 +32,6 @@ public class RestAPITest  {
         final String s = gson.toJson(map);
         final RaplaMapImpl deserialized = gson.fromJson(s, RaplaMapImpl.class);
         TestCase.assertEquals( map, deserialized);
-    }
-    @After
-    public void tearDown() throws Exception
-    {
-        server.stop();
     }
 
     @Test
@@ -64,7 +49,7 @@ public class RestAPITest  {
                 TestCase.assertEquals(o1, o2);
             }
         };
-        URL baseUrl = new URL("http://localhost:"+port+"/rapla/");
+        URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/");
         example.testRestApi(baseUrl,"homer","duffs");
     }
 
@@ -77,25 +62,25 @@ public class RestAPITest  {
         String authenticationToken = null;
         Map<String, String> additionalHeaders = new HashMap<>();
         {
-            URL baseUrl = new URL("http://localhost:"+port+"/rapla/server");
+            URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/server");
             final JsonRemoteConnector.CallResult result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
             TestCase.assertTrue( result.getResult().contains("Server running"));
         }
         {
-            URL baseUrl = new URL("http://localhost:"+port+"/rapla/calendar");
+            URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/calendar");
             final JsonRemoteConnector.CallResult  result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
             TestCase.assertNotNull(result);
             TestCase.assertTrue( result.getResult().contains("<title>Rapla"));
         }
         {
-            URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth");
+            URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/auth");
             final JsonRemoteConnector.CallResult  result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
 
             TestCase.assertNotNull(result);
         }
         {
-            URL baseUrl = new URL("http://localhost:"+port+"/rapla/auth?username=homer&password=duffs");
+            URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/auth?username=homer&password=duffs");
             final JsonRemoteConnector.CallResult  result = connector.sendCallWithString("POST", baseUrl, body, authenticationToken, "application/json", additionalHeaders);
             TestCase.assertNotNull(result);
         }

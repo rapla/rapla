@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.AbstractTestWithServer;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
@@ -31,21 +32,15 @@ import javax.inject.Provider;
 import java.util.Locale;
 
 @RunWith(JUnit4.class)
-public class UserTest  {
+public class UserTest extends AbstractTestWithServer {
     
     ClientFacade adminFacade;
     ClientFacade testFacade;
     Locale locale;
-    Server server;
 
     @Before
     public void setUp() throws Exception {
-        int port = 8052;
-        final Logger raplaLogger = RaplaTestCase.initLoger();
-        server = RaplaTestCase.createServerContext(raplaLogger, "testdefault.xml", port).getServer();
-        // start the client service
-        final Provider<ClientFacade> facadeWithRemote = RaplaTestCase.createFacadeWithRemote(raplaLogger, port);
-        adminFacade = facadeWithRemote.get();
+        adminFacade = createClientFacade();
         adminFacade.login("homer","duffs".toCharArray());
         locale = Locale.getDefault();
 
@@ -62,7 +57,7 @@ public class UserTest  {
             throw ex;
             
         }
-        testFacade = facadeWithRemote.get();
+        testFacade = createClientFacade();
         boolean canLogin = testFacade.login("homer","duffs".toCharArray());
         Assert.assertTrue("Can't login", canLogin);
     }
@@ -71,7 +66,6 @@ public class UserTest  {
     public void tearDown() throws Exception {
         adminFacade.logout();
         testFacade.logout();
-        server.stop();
     }
 
     @Test

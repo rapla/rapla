@@ -44,28 +44,19 @@ import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
-public class PermissionTest  {
+public class PermissionTest extends AbstractTestWithServer {
     
     RaplaFacade adminFacade;
     ClientFacade adminFacadeClient;
     RaplaFacade testFacade;
     ClientFacade testFacadeClient;
     Locale locale;
-    private Server applicationServer;
-    ServerServiceContainer serverContainer;
 
     @Before
     public void setUp() throws Exception
     {
-        locale = Locale.getDefault();
-        Logger logger = RaplaTestCase.initLoger();
-        int port = 8052;
-        final RaplaTestCase.ServerContext server = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
-        serverContainer = server.getServiceContainer();
-        applicationServer = server.getServer();
-        Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
-        adminFacadeClient = clientFacadeProvider.get();
-        testFacadeClient = clientFacadeProvider.get();
+        adminFacadeClient = createClientFacade();
+        testFacadeClient = createClientFacade();
         adminFacade = adminFacadeClient.getRaplaFacade();
         testFacade = testFacadeClient.getRaplaFacade();
         adminFacadeClient.login("homer","duffs".toCharArray());
@@ -91,12 +82,6 @@ public class PermissionTest  {
         catch (Exception ex) {
             throw ex;
         }
-    }
-
-    @After
-    public void tearDown() throws  Exception
-    {
-        applicationServer.stop();
     }
 
     @Test

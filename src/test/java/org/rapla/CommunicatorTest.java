@@ -3,12 +3,7 @@ package org.rapla;
 import java.util.Collection;
 import java.util.Date;
 
-import javax.inject.Provider;
-
-import org.eclipse.jetty.server.Server;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -21,43 +16,16 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.server.PromiseSynchroniser;
-import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
-public class CommunicatorTest
+public class CommunicatorTest extends AbstractTestWithServer
 {
-    private Server server;
-    Logger logger;
-    Provider<ClientFacade> clientFacadeProvider;
-
-    ClientFacade createFacade()
-    {
-        return clientFacadeProvider.get();
-    }
-
-    @Before
-    public void setUp() throws Exception
-    {
-        logger = RaplaTestCase.initLoger();
-        int port = 8052;
-        RaplaTestCase.ServerContext context = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
-        this.server = context.getServer();
-        clientFacadeProvider = RaplaTestCase.createFacadeWithRemote( logger, port);
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        server.stop();
-    }
-
 
     @Test
     public void testLargeform() throws Exception
     {
-        ClientFacade clientFacade = createFacade();
+        ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
         clientFacade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
@@ -76,7 +44,7 @@ public class CommunicatorTest
     @Test
     public void testClient() throws Exception
     {
-        ClientFacade clientFacade = createFacade();
+        ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
        boolean success = clientFacade.login("admin","test".toCharArray());
        Assert.assertFalse("Login should fail", success);
@@ -121,7 +89,7 @@ public class CommunicatorTest
     @Test
     public void testUmlaute() throws Exception
     {
-        ClientFacade clientFacade = createFacade();
+        ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
         clientFacade.login("homer","duffs".toCharArray());
         Allocatable alloc = facade.newResource();
@@ -158,7 +126,7 @@ public class CommunicatorTest
 
         for ( int i=0;i<clientNum;i++)
         {
-            ClientFacade clientFacade = createFacade();
+            ClientFacade clientFacade = createClientFacade();
             clientFacade.login("homer","duffs".toCharArray());
             opts[i] = clientFacade;
             System.out.println("JavaClient " + i + " successfully subscribed");

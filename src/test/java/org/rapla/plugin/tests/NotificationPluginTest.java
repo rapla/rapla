@@ -19,12 +19,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.MockMailer;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
@@ -77,7 +79,7 @@ public class NotificationPluginTest
         RaplaMap<Allocatable> newRaplaMap = facade1.newRaplaMap( list );
 		copy.putEntry( NotificationPlugin.ALLOCATIONLISTENERS_CONFIG, newRaplaMap );
         copy.putEntry( NotificationPlugin.NOTIFY_IF_OWNER_CONFIG,  true  );
-        facade1.store( copy );
+        facade1.storeAndRemove( new Entity[]{copy}, Entity.ENTITY_ARRAY, facade1.getUser("homer") );
     }
 
     @Test
@@ -86,11 +88,12 @@ public class NotificationPluginTest
         Allocatable allocatable = facade1.getAllocatables()[0];
         Allocatable allocatable2 = facade1.getAllocatables()[1];
 
-        add( allocatable, facade1.getPreferences() );
+        final User user1 = facade1.getUser("homer");
+        add( allocatable, facade1.getPreferences(user1) );
         User user2 = facade1.getUser("monty");
 		add(allocatable2, facade1.getPreferences(user2));
 
-        Reservation r = facade1.newReservation();
+        Reservation r = facade1.newReservation(facade1.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user1);
         String reservationName = "New Reservation";
         r.getClassification().setValue("name", reservationName);
         Appointment appointment = facade1.newAppointment( new Date(), new Date( new Date().getTime()
@@ -144,9 +147,10 @@ public class NotificationPluginTest
     {
         Allocatable allocatable = facade1.getAllocatables()[0];
 
-        add( allocatable, facade1.getPreferences() );
+        final User user1 = facade1.getUser("homer");
+        add( allocatable, facade1.getPreferences(user1) );
 
-        Reservation r = facade1.newReservation();
+        Reservation r = facade1.newReservation(facade1.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user1);
         String reservationName = "New Reservation";
         r.getClassification().setValue( "name", reservationName );
         Appointment appointment = facade1.newAppointment( new Date(), new Date( new Date().getTime()

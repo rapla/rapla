@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.AbstractTestWithServer;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -29,36 +30,21 @@ import java.util.Date;
 import java.util.Locale;
 
 @RunWith(JUnit4.class)
-public class SecurityManagerTest  {
+public class SecurityManagerTest extends AbstractTestWithServer {
 
 
 	protected ClientFacade clientFacade1;
 	protected RaplaFacade facade1;
 	
 	Locale locale;
-	private Logger logger;
-	private ServerServiceImpl serverService;
-	private Server server;
 
 	@Before public void setUp() throws Exception
 	{
-		logger = RaplaTestCase.initLoger();
-		int port = 8052;
-		final RaplaTestCase.ServerContext serverContext = RaplaTestCase.createServerContext(logger, "testdefault.xml", port);
-		server = serverContext.getServer();
-		serverService = (ServerServiceImpl) serverContext.getServiceContainer();
-		Provider<ClientFacade> clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
-		clientFacade1 = clientFacadeProvider.get();
+		clientFacade1 = createClientFacade();
 		facade1 = clientFacade1.getRaplaFacade();
 		//facade2 = clientFacadeProvider.get();
 		//facade2.login("homer", "duffs".toCharArray());
 		locale = Locale.getDefault();
-	}
-
-	@After
-	public void tearDown() throws Exception
-	{
-		server.stop();
 	}
 
 	@Test
@@ -172,9 +158,9 @@ public class SecurityManagerTest  {
 		{
 			newNonAdminableUserGroup.getName().setName("en", "new catgory");
             newNonAdminableUserGroup.setKey("newNonAdminableUserGroup");
-			final Category edit = serverService.getFacade().edit(userGroupsCategory);
+			final Category edit = getServerRaplaFacade().edit(userGroupsCategory);
 			edit.addCategory( newNonAdminableUserGroup );
-			serverService.getFacade().store(edit);
+			getServerRaplaFacade().store(edit);
 		}
 		raplaFacade.refresh();
 		final User newUser;
