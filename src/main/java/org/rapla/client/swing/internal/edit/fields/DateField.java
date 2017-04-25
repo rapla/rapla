@@ -85,6 +85,10 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
     }
 
     public void dateChanged(DateChangeEvent evt) {
+        if ( !listenersEnabled )
+        {
+            return;
+        }
 //		Eingabe wurde getaetigt: einheitlicher Werte wurde gesetzt => Flag aendern, da kein Platzhalter mehr angezeigt wird
     	if(multipleValues){
     		multipleValues = false;
@@ -103,6 +107,8 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
 			((JPanel)parent).scrollRectToVisible(focusedComponent.getBounds(null)); 
 		}
     }
+
+    private boolean listenersEnabled = true;
     
     public void focusLost(FocusEvent evt) {
 
@@ -118,7 +124,16 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
 		multipleValues = true;
 		multipleValuesLabel.setText(TextField.getOutputForMultipleValues());
         multipleValuesLabel.setFont(multipleValuesLabel.getFont().deriveFont(Font.ITALIC));
-        field.setDate( null);
+        try
+        {
+            listenersEnabled = false;
+            field.setDate( null);
+        }
+        finally
+        {
+            listenersEnabled = true;
+        }
+
 	}
 	
 	@Singleton

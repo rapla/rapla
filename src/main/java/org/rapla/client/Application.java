@@ -55,7 +55,6 @@ import java.util.Set;
     //final private ModifiableCalendarState calendarState;
     private TaskPresenter placeTaskPresenter;
     final private DialogUiFactoryInterface dialogUiFactory;
-    private final Map<ApplicationEvent, DialogInterface> openDialogs = new HashMap<>();
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
 
@@ -83,24 +82,19 @@ import java.util.Set;
     {
         final String activityId = activity.getApplicationEventId();
         final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
-        final DialogInterface dialogInterface = openDialogs.remove(activity);
-        if (dialogInterface != null)
-        {
-            dialogInterface.close();
-        }
+        mainView.removeWindow( activity);
         openDialogsPresenter.remove(activity);
         return true;
     }
     public boolean startAction(ApplicationEvent activity, boolean isPlace)
     {
-        final DialogInterface dialogInterface = openDialogs.get(activity);
-        if(dialogInterface != null)
+        final String activityId = activity.getApplicationEventId();
+        if (mainView.hasWindow( activity))
         {
-            dialogInterface.toFront();
-            dialogInterface.requestFocus();
+            mainView.requestFocus(activity);
             return false;
         }
-        final String activityId = activity.getApplicationEventId();
+
         final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
 
         final Provider<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
@@ -126,13 +120,8 @@ import java.util.Set;
             }
             else
             {
-                boolean modal = false;
-                String[] options = new String[] {};
-                final DialogInterface dialog = dialogUiFactory.create(popupContext, modal, widget.getComponent(), options);
-                dialog.setSize(1050, 700);
-                openDialogs.put(activity, dialog);
+                mainView.openWindow( activity,popupContext, widget );
                 openDialogsPresenter.put(activity, taskPresenter);
-                dialog.start(false);
             }
         }).exceptionally(ex -> {
             showException(ex,popupContext );
@@ -290,10 +279,5 @@ import java.util.Set;
     public void stop()
     {
         mainView.close();
-        final Collection<DialogInterface> openDialogs = this.openDialogs.values();
-        for (DialogInterface di : openDialogs)
-        {
-            di.close();
-        }
     }
 }

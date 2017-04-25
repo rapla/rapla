@@ -1,10 +1,6 @@
 package org.rapla.client.gwt;
 
-import java.util.Date;
-import java.util.Locale;
-
-import javax.inject.Inject;
-
+import com.google.gwt.i18n.client.NumberFormat;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.client.GwtBundleManager;
 import org.rapla.framework.RaplaLocale;
@@ -12,8 +8,9 @@ import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.i18n.client.NumberFormat;
+import javax.inject.Inject;
+import java.util.Date;
+import java.util.Locale;
 
 @DefaultImplementation(of = RaplaLocale.class, context = InjectionContext.gwt)
 public class GwtRaplaLocale extends AbstractRaplaLocale {
@@ -27,19 +24,9 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
 		super(bundleManager);
 	}
 
-	public String formatTime(Date date) {
-		DateTimeFormat format = DateTimeFormat.getFormat(DateTimeFormat.PredefinedFormat.TIME_SHORT);
-	    return format.format(date, timezoneG);
-	}
-
 	public String formatNumber(long number) {
 		String result = NumberFormat.getDecimalFormat().format( number);
 		return result;
-	}
-
-	public String getWeekday(Date date) {
-		DateTimeFormat format = DateTimeFormat.getFormat("EE");
-	    return format.format( date, timezoneG );
 	}
 
 	public String getCharsetNonUtf() 
@@ -52,14 +39,6 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
        throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected String _format(Date date, String pattern)
-    {
-        final DateTimeFormat formatter = DateTimeFormat.getFormat(pattern);
-        final String format = formatter.format(date, timezoneG);
-        return format;
-    }
-    
     @Override
     public Locale newLocale(String language, String country)
     {

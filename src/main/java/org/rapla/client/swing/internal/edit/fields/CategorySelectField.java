@@ -18,6 +18,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
@@ -35,6 +36,7 @@ public class CategorySelectField extends AbstractSelectField<Category>
     public CategorySelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Category rootCategory, Category defaultCategory)
     {
         super( facade, i18n, raplaLocale, logger, treeFactory,raplaImages, dialogUiFactory, defaultCategory);
+        Assert.notNull( rootCategory);
         this.rootCategory = rootCategory;
     }
     

@@ -111,6 +111,8 @@ public interface RaplaLocale
 
     boolean isAmPmFormat();
 
+    String getWeekdayNameShort(int weekday);
+
     String getWeekdayName(int weekday);
 
     String formatTime( int minuteOfDay );
@@ -120,5 +122,6 @@ public interface RaplaLocale
     String formatHour(int i);
 
     Locale newLocale(String language, String country);
+
 
 }

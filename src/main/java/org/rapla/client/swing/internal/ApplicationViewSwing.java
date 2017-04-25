@@ -5,6 +5,7 @@ import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.FrameControllerList;
@@ -30,6 +31,7 @@ import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -40,8 +42,11 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-@DefaultImplementation(of =ApplicationView.class,context= InjectionContext.swing)
+@DefaultImplementation(of = ApplicationView.class, context = InjectionContext.swing)
 @Singleton
 public class ApplicationViewSwing implements ApplicationView<JComponent>
 {
@@ -51,7 +56,8 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
 
     private final Logger logger;
     RaplaMenuBar menuBar;
-    private final RaplaFrame frame ;
+    private final RaplaFrame frame;
+    private final Map<ApplicationEvent, RaplaFrame> childFrames = new HashMap<ApplicationEvent, RaplaFrame>();
     Listener listener = new Listener();
     //CalendarPlaceViewSwing cal;
     JLabel statusBar = new JLabel("");
@@ -60,59 +66,59 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
-             RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException {
+    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
+            RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+    {
         this.i18n = i18n;
         this.logger = logger;
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
         this.frameControllerList = frameControllerList;
         this.dialogUiFactory = dialogUiFactory;
-        frame =  new RaplaFrame(frameControllerList);
+        this.frame = frame;
         // CKO TODO Title should be set in config along with the facade used
-
-
 
         JMenuBar menuBar = menuBarContainer.getMenubar();
         menuBar.add(Box.createHorizontalGlue());
         menuBar.add(statusBar);
         menuBar.add(Box.createHorizontalStrut(5));
-        frame.setJMenuBar( menuBar );
+        frame.setJMenuBar(menuBar);
 
-        getContentPane().setLayout( new BorderLayout() );
+        getContentPane().setLayout(new BorderLayout());
         //  getContentPane().add ( statusBar, BorderLayout.SOUTH);
 
     }
 
     // FIXME should be moved to Presenter
-    public void updateView( ModificationEvent event) throws RaplaException
+    public void updateView(ModificationEvent event) throws RaplaException
     {
-        menuBar.updateView( event);
+        menuBar.updateView(event);
     }
 
     @Override
     public void init(boolean showTooltips, String windowTitle)
     {
-        frame.setTitle(windowTitle );
+        frame.setTitle(windowTitle);
         javax.swing.ToolTipManager.sharedInstance().setEnabled(showTooltips);
         //javax.swing.ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
-        javax.swing.ToolTipManager.sharedInstance().setInitialDelay( 1000 );
-        javax.swing.ToolTipManager.sharedInstance().setDismissDelay( 10000 );
-        javax.swing.ToolTipManager.sharedInstance().setReshowDelay( 0 );
+        javax.swing.ToolTipManager.sharedInstance().setInitialDelay(1000);
+        javax.swing.ToolTipManager.sharedInstance().setDismissDelay(10000);
+        javax.swing.ToolTipManager.sharedInstance().setReshowDelay(0);
 
-        RaplaGUIComponent.setMainComponent( frame);
-        frame.addWindowListener(new WindowAdapter() {
-            public void windowClosed(WindowEvent e) {
-                presenter.mainClosing();
-            }
-
+        RaplaGUIComponent.setMainComponent(frame);
+        frame.addVetoableChangeListener(evt ->
+        {
+            presenter.mainClosing();
         });
-        frame.setPreferredSize(new Dimension(1280, 1000));
+        frameControllerList.setMainWindow(frame);
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        frame.setPreferredSize(new Dimension(Math.min(dimension.width, 1200), Math.min(dimension.height - 20, 900)));
+        //frame.setPreferredSize(new Dimension(1280, 1000));
         frame.pack();
         frame.requestFocus();
         frame.setVisible(true);
+        frame.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
     }
-
 
     public void setPresenter(Presenter presenter)
     {
@@ -156,10 +162,10 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         }
     }
 
-
-    @Override public void setStatusMessage(String message, boolean highlight)
+    @Override
+    public void setStatusMessage(String message, boolean highlight)
     {
-        fadeOut( statusBar);
+        fadeOut(statusBar);
         try
         {
             Thread.sleep(200);
@@ -168,18 +174,18 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         {
             logger.info(e.getMessage());
         }
-        statusBar.setText( message);
+        statusBar.setText(message);
         final Font boldFont = statusBar.getFont().deriveFont(Font.BOLD);
-        statusBar.setFont( boldFont);
-        if ( highlight)
+        statusBar.setFont(boldFont);
+        if (highlight)
         {
-            statusBar.setForeground( new Color(220,30,30));
+            statusBar.setForeground(new Color(220, 30, 30));
         }
         else
         {
-            statusBar.setForeground( new Color(30,30,30) );
+            statusBar.setForeground(new Color(30, 30, 30));
         }
-        fadeIn( statusBar );
+        fadeIn(statusBar);
         try
         {
             Thread.sleep(200);
@@ -190,27 +196,29 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         }
     }
 
-    @Override public void updateMenu()
+    @Override
+    public void updateMenu()
     {
 
     }
 
     static boolean lookAndFeelSet;
 
-    public static void setLookandFeel() {
-        if ( lookAndFeelSet )
+    public static void setLookandFeel()
+    {
+        if (lookAndFeelSet)
         {
             return;
         }
         UIDefaults defaults = UIManager.getDefaults();
         Font textFont = defaults.getFont("Label.font");
-        if ( textFont == null)
+        if (textFont == null)
         {
             textFont = new Font("SansSerif", Font.PLAIN, 12);
         }
         else
         {
-            textFont = textFont.deriveFont( Font.PLAIN );
+            textFont = textFont.deriveFont(Font.PLAIN);
         }
         defaults.put("Label.font", textFont);
         defaults.put("Button.font", textFont);
@@ -220,124 +228,135 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         defaults.put("CheckBoxMenuItem.font", textFont);
         defaults.put("CheckBox.font", textFont);
         defaults.put("ComboBox.font", textFont);
-        defaults.put("Tree.expandedIcon",RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_minus.gif"));
-        defaults.put("Tree.collapsedIcon",RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_plus.gif"));
-        defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN,(float)10.));
+        defaults.put("Tree.expandedIcon", RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_minus.gif"));
+        defaults.put("Tree.collapsedIcon", RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_plus.gif"));
+        defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN, (float) 10.));
         lookAndFeelSet = true;
 
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
     }
 
-
     @Override
     public void updateContent(RaplaWidget<JComponent> widget)
     {
         JComponent component = widget.getComponent();
-        getContentPane().add(  component , BorderLayout.CENTER );
-
+        getContentPane().add(component, BorderLayout.CENTER);
     }
 
-    protected void initComponent( RaplaWidget<Object> objectRaplaWidget)
+    private JPanel getContentPane()
     {
-        RaplaFrame frame = new RaplaFrame(frameControllerList);
-        final Container component = (Container)objectRaplaWidget.getComponent();
-        frame.setContentPane(component);
-        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
-        frame.setSize(new Dimension(
-                        Math.min(dimension.width,990)
-                        // BJO 00000032 temp fix for filter out of frame bounds
-                        ,Math.min(dimension.height-10,720)
-                        //,Math.min(dimension.height-10,1000)
-                )
-        );
-        frame.addVetoableChangeListener(evt ->  {
-            presenter.mainClosing();
-        });
-        frame.setIconImage( raplaImages.getIconFromKey("icon.edit_window_small").getImage());
-    }
-
-
-
-
-
-    public void show()  {
-        logger.debug("Creating Main-Frame");
-        createFrame();
-        //dataChanged(null);
-        //setStatus();
-        frame.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
-        frame.setVisible(true);
-        frameControllerList.setMainWindow(frame);
-    }
-
-    private JPanel getContentPane() {
         return (JPanel) frame.getContentPane();
     }
 
-    private void createFrame() {
-        Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
-        frame.setSize(new Dimension(
-                        Math.min(dimension.width,1200)
-                        ,Math.min(dimension.height-20,900)
-                )
-        );
-
-        frame.addVetoableChangeListener(listener);
-        //statusBar.setBorder( BorderFactory.createEtchedBorder());
-    }
-
-
     class Listener implements VetoableChangeListener
     {
-        public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException {
+        public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
+        {
             if (shouldExit())
                 close();
             else
-                throw new PropertyVetoException("Don't close",evt);
+                throw new PropertyVetoException("Don't close", evt);
         }
 
     }
 
-    public Window getFrame() {
+    public Window getFrame()
+    {
         return frame;
     }
 
-    public JComponent getComponent() {
+    public JComponent getComponent()
+    {
         return (JComponent) frame.getContentPane();
     }
 
-    protected boolean shouldExit() {
-        try {
-            DialogInterface dlg = dialogUiFactory.create(
-                    new SwingPopupContext(frame.getRootPane(), null)
-                    ,true
-                    ,i18n.getString("exit.title")
-                    ,i18n.getString("exit.question")
-                    ,new String[] {
-                            i18n.getString("exit.ok")
-                            ,i18n.getString("exit.abort")
-                    }
-            );
+    protected boolean shouldExit()
+    {
+        try
+        {
+            DialogInterface dlg = dialogUiFactory
+                    .create(new SwingPopupContext(frame.getRootPane(), null), true, i18n.getString("exit.title"), i18n.getString("exit.question"),
+                            new String[] { i18n.getString("exit.ok"), i18n.getString("exit.abort") });
             dlg.setIcon("icon.question");
             //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
             dlg.getAction(0).setIcon("icon.abort");
             dlg.setDefault(1);
             dlg.start(true);
             return (dlg.getSelectedIndex() == 0);
-        } catch (RaplaException e) {
-            logger.error( e.getMessage(), e);
+        }
+        catch (RaplaException e)
+        {
+            logger.error(e.getMessage(), e);
             return true;
         }
 
     }
 
-    public void close() {
+    public void close()
+    {
         frame.close();
+        final Collection<RaplaFrame> openDialogs = this.childFrames.values();
+        for (RaplaFrame di : openDialogs)
+        {
+            di.close();
+        }
     }
 
-    @Override public PopupContext createPopupContext()
+    @Override
+    public PopupContext createPopupContext()
     {
         return new SwingPopupContext(frame, null);
+    }
+
+    @Override
+    public void removeWindow(ApplicationEvent windowId)
+    {
+        final RaplaFrame dialogInterface = childFrames.remove(windowId);
+        if (dialogInterface != null)
+        {
+            dialogInterface.close();
+        }
+    }
+
+    @Override
+    public boolean hasWindow(ApplicationEvent windowId)
+    {
+        final boolean result = childFrames.containsKey(windowId);
+        return result;
+    }
+
+    @Override
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget)
+    {
+        final RaplaFrame dialog = new RaplaFrame(frameControllerList);
+        final Container component = (Container) objectRaplaWidget.getComponent();
+        dialog.setContentPane(component);
+        dialog.setIconImage(raplaImages.getIconFromKey("icon.edit_window_small").getImage());
+        dialog.setSize(1050,700);
+        childFrames.put(windowId,dialog);
+        dialog.addVetoableChangeListener(new VetoableChangeListener()
+        {
+            @Override
+            public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
+            {
+                logger.debug("Closing");
+                dialog.dispose();
+            }
+        });
+        dialog.setVisible( true);
+    }
+
+
+    @Override
+    public void requestFocus(ApplicationEvent windowId)
+    {
+        final RaplaFrame dialogInterface = childFrames.get(windowId);
+        if (dialogInterface != null)
+        {
+            dialogInterface.toFront();
+            dialogInterface.requestFocus();
+        }
+
     }
 
 }

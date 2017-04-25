@@ -210,9 +210,8 @@ abstract public class RaplaXMLWriter extends XMLWriter
             Category categoryValue = (Category)value;
             if (rootCategory == null)
             {
-                getLogger().error("root category missing for attriubte " + attribute);
+                rootCategory = (CategoryImpl)getSuperCategory();
             }
-            else
             {
                 String keyPathString = getKeyPath(rootCategory, categoryValue);
                 print( keyPathString);

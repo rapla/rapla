@@ -141,10 +141,6 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         return PermissionContainer.Util.getInterval(permissions,user, today, Permission.ALLOCATE);
     }
 
-   
-    
-   
-    
     @Deprecated
     public boolean isHoldBackConflicts()
     {

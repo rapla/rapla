@@ -12,20 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 import org.rapla.components.util.Assert;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.internal.PeriodImpl;
+import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -37,13 +32,24 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 
 class PeriodModelImpl implements PeriodModel,ModificationListener
 {
     TreeSet<PeriodImpl> m_periods = new TreeSet<PeriodImpl>(new Comparator<PeriodImpl>() {
             public int compare(PeriodImpl o1, PeriodImpl o2) {
 				int compareTo = o1.compareTo(o2);
-				return -compareTo;
+				return -1 * compareTo;
             }
         }
                                   );
@@ -60,13 +66,15 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         DynamicType type = facade.getDynamicType(StorageOperator.PERIOD_TYPE);
         ClassificationFilter[] filters = type.newClassificationFilter().toArray();
         Collection<Allocatable> allocatables = facade.getOperator().getAllocatables( filters);
+        final Attribute categoryAtt = type.getAttribute("category");
         for ( Allocatable alloc:allocatables)
         {
         	Classification classification = alloc.getClassification();
         	String name = (String)classification.getValue("name");
 			Date start = (Date) classification.getValue("start");
 			Date end = (Date) classification.getValue("end");
-			PeriodImpl period = new PeriodImpl(name,start,end, alloc.getId());
+            final Collection<Category> categories = (Collection)classification.getValues(categoryAtt);
+            PeriodImpl period = new PeriodImpl(name,start, DateTools.fillDate(end), alloc.getId(), new LinkedHashSet<>(categories));
         	m_periods.add(period);
         }
     }
@@ -128,13 +136,11 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     public Period getPeriodFor(Date date) {
         if (date == null)
             return null;
-        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date, "DUMMY");
-        Iterator<PeriodImpl> it = m_periods.tailSet(comparePeriod).iterator();
-        while (it.hasNext()) {
-            Period period = it.next();
-            if (period.contains(date)) {
-                return period;
-            }
+
+        final Period nearestPeriodForDate = getNearestPeriodForDate(date);
+        if ( nearestPeriodForDate.contains( date))
+        {
+            return  nearestPeriodForDate;
         }
         return null;
     }
@@ -151,10 +157,13 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     }
 
     public Period getNearestPeriodForStartDate(Date date) {
-        return getNearestPeriodForStartDate( date, null);
+        return getNearestPeriodForStartDate( new TimeInterval(date, null));
     }
 
-    public Period getNearestPeriodForStartDate(Date date, Date endDate) {
+    public Period getNearestPeriodForStartDate(TimeInterval interval)
+    {
+        Date date = interval.getStart();
+        Date endDate = interval.getEnd();
         return getNearestPeriodForStartDate( getPeriodsFor( date ), date, endDate);
     }
 
@@ -226,14 +235,24 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         if (date == null)
             return list;
 
-        PeriodImpl comparePeriod = new PeriodImpl("DUMMY",date,date,"DUMMY");
-        SortedSet<PeriodImpl> set = m_periods.tailSet(comparePeriod);
-        Iterator<PeriodImpl> it = set.iterator();
-        while (it.hasNext()) {
-            Period period = it.next();
-            //System.out.println(m_periods[i].getStart() + " - " + m_periods[i].getEnd());
-            if (period.contains(date)) {
-                list.add( period );
+        for ( Period period:m_periods)
+        {
+            if ( period.contains( date))
+            {
+                list.add( period);
+            }
+        }
+        return list;
+    }
+
+    public List<Period> getPeriodsFor(TimeInterval interval) {
+        ArrayList<Period> list = new ArrayList<Period>();
+
+        for ( Period period:m_periods)
+        {
+            if ( period.getInterval().overlaps( interval))
+            {
+                list.add( period);
             }
         }
         return list;
@@ -249,18 +268,6 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
         return sortedPriods;
     }
 
-    public Object getElementAt(int index) {
-        Assert.notNull(m_periods,"Componenet not setup!");
-        Iterator<PeriodImpl> it = m_periods.iterator();
-        for (int i=0;it.hasNext();i++) {
-            Object obj = it.next();
-            if (i == index)
-                return obj;
-        }
-        return null;
-    }
-
-	
 
 }
 

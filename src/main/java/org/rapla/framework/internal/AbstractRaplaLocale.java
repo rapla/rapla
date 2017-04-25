@@ -1,5 +1,6 @@
 package org.rapla.framework.internal;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
@@ -156,7 +157,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     public String formatDayOfWeekDateMonth(Date date)
     {
         int weekday = DateTools.getWeekday( date);
-        String datePart = getFormats().getWeekdays()[weekday].substring(0,2);
+        String datePart = getWeekdayNameShort(weekday);
         String dateOfMonthPart = formatDateMonth( date  );
         return datePart + " " + dateOfMonthPart ;
     }
@@ -167,8 +168,14 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      */
     public String getWeekday( Date date ) {
         int weekday = DateTools.getWeekday(date);
-        String datePart = getFormats().getWeekdays()[weekday].substring(0,2);
+        String datePart = getWeekdayNameShort(weekday);
         return datePart;
+    }
+
+    @Override
+    public String getWeekdayNameShort(int weekday)
+    {
+        return getFormats().getShortWeekdays()[weekday].substring(0,2);
     }
 
     @Override

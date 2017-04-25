@@ -14,13 +14,19 @@
 package org.rapla.client.swing.internal;
 
 import java.awt.Color;
+import java.util.Date;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.internal.RaplaColors;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
+import org.rapla.entities.Category;
+import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
@@ -46,15 +52,38 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     
     public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year)
     {
-        Period period = periodModel.getPeriodFor(getRaplaLocale().toRaplaDate(year,month,day));
+        final Date date = getRaplaLocale().toRaplaDate(year, month, day);
+        Period period = periodModel.getPeriodFor(date);
+        final RenderingInfo renderingInfo = renderer.getRenderingInfo(dayOfWeek, day, month, year);
         if (period != null)
         {
-            Color backgroundColor = periodColor;
-            Color foregroundColor = Color.BLACK;
-            String tooltipText = "<html>" + getString("period") + ":<br>" + period.getName(getI18n().getLocale()) + "</html>";
+            Color foregroundColor =  renderingInfo.getForegroundColor();
+            Color backgroundColor = null;
+
+            final Set<Category> categories = period.getCategories();
+            if ( categories.size() > 0)
+            {
+                final Category first = categories.iterator().next();
+                final String color = first.getAnnotation(CategoryAnnotations.KEY_NAME_COLOR);
+                if ( color != null && color.length() > 1)
+                {
+                    final Color colorForHex = AWTColorUtil.getColorForHex(color);
+                    backgroundColor = colorForHex;
+                }
+            }
+
+            if ( backgroundColor == null)
+            {
+                backgroundColor = periodColor;
+            }
+            else
+            {
+
+            }
+            String tooltipText = "<html>" +  period.getName(getI18n().getLocale()) + "</html>";
             return new RenderingInfo(backgroundColor, foregroundColor, tooltipText);
         }
-        return renderer.getRenderingInfo(dayOfWeek,day,month,year);
+        return renderingInfo;
     }
 
 }

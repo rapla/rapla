@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.RaplaWidget;
@@ -135,12 +136,15 @@ import java.util.EventObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * <p>
@@ -1556,6 +1560,23 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             menu.add(selectedMenu);
 
             menu.add(new JSeparator());
+            Map<String,Integer> summaries = new HashMap<>();
+            boolean[] addStartDate = new boolean[appointments.length];
+            for (int i = 0; i < appointments.length; i++)
+            {
+                final Appointment appointment = appointments[i];
+                String appointmentSummary = appointmentFormater.getShortSummary(appointment);
+                if ( appointment.getRepeating() != null)
+                {
+                    final Integer existingIndex = summaries.get(appointmentSummary);
+                    if ( existingIndex != null)
+                    {
+                        addStartDate[i] = true;
+                        addStartDate[existingIndex] = true;
+                    }
+                    summaries.put(appointmentSummary, i);
+                }
+            }
             for (int i = 0; i < appointments.length; i++)
             {
                 JMenuItem item = new JCheckBoxMenuItem();
@@ -1564,7 +1585,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 item.setUI(new StayOpenCheckBoxMenuItemUI());
 
                 // set conflicting icon if appointment causes conflicts
-                String appointmentSummary = appointmentFormater.getShortSummary(appointments[i]);
+                final Appointment appointment = appointments[i];
+                String appointmentSummary = appointmentFormater.getShortSummary(appointment);
+                if ( addStartDate[i] )
+                {
+                    appointmentSummary += " " + getString("repeating.start_date") + " "  + getRaplaLocale().formatDateShort(appointment.getStart());
+                    // we check if another appointment summary has the same name, then we add the start date to the existing appointment
+                }
                 if (allocBinding != null && allocBinding.conflictingAppointments[i])
                 {
                     item.setText((i + 1) + ": " + appointmentSummary);
@@ -1603,6 +1630,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             int diffy = Math.min(0, screenSize.height - (location.y + menuSize.height));
             menu.show(editingComponent, diffx, diffy);
         }
+
 
         private void setRestriction(Appointment[] restriction)
         {

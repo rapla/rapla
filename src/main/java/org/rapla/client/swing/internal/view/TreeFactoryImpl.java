@@ -62,6 +62,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -69,6 +70,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
@@ -613,7 +615,26 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
             
             Allocatable[] periodList = getQuery().getAllocatables(periodType.newClassificationFilter().toArray());
-            for (final Allocatable period: sorted(Arrays.asList(periodList))) {
+            Comparator<Classifiable> comp = new Comparator<Classifiable>()
+            {
+                @Override
+                public int compare(Classifiable o1, Classifiable o2)
+                {
+                    final Object start1 = o1.getClassification().getValue("start");
+                    final Object start2 = o2.getClassification().getValue("start");
+                    if ( start1 != null && start2 != null && start1 instanceof  Comparable)
+                    {
+                        int result = ((Comparable)start1).compareTo( start2);
+                        if ( result != 0)
+                        {
+                            return  result;
+                        }
+                    }
+
+                    return ((Entity) o1).getId().compareTo(((Entity)o2).getId());
+                }
+            };
+            for (final Allocatable period: sorted(Arrays.asList(periodList), comp)) {
                 NamedNode node = new NamedNode(period);
                 periodRoot.add(node);
             }
@@ -1142,11 +1163,19 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 //            buf.append( getAppointmentFormater().getSummary(conflict.getAppointment1()));
             buf.append( "<br>" );
             buf.append( conflict.getReservation1Name() );
+            if ( conflict.getRepeatingType1() != null)
+            {
+                buf.append(getRepeatingType(conflict.getRepeatingType1()));
+            }
             buf.append( ' ' );
             buf.append( getString("with"));
             buf.append( '\n' );
             buf.append( "<br>" );
             buf.append( conflict.getReservation2Name() );
+            if ( conflict.getRepeatingType2() != null)
+            {
+                buf.append(getRepeatingType(conflict.getRepeatingType2()));
+            }
             // TOD add the rest of conflict
 //            buf.append( ": " );
 //            buf.append( " " );
@@ -1160,7 +1189,14 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             String result = buf.toString();
             return result;
         }
-        
+
+        private String getRepeatingType(RepeatingType repeatingType)
+        {
+            final String keyName = repeatingType.name().toLowerCase();
+            final String reslt = getI18n().getString(keyName);
+            return " [" + reslt + "]";
+        }
+
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
             if (value != null && value instanceof TypeNode) {
                 TypeNode typeNode = (TypeNode) value;

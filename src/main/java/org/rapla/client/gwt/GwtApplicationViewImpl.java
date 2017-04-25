@@ -20,6 +20,7 @@ import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
@@ -177,4 +178,29 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
     {
         return new GwtPopupContext(null);
     }
+
+    @Override
+    public void removeWindow(ApplicationEvent windowId)
+    {
+
+    }
+
+    @Override
+    public boolean hasWindow(ApplicationEvent windowId)
+    {
+        return false;
+    }
+
+    @Override
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component)
+    {
+
+    }
+
+    @Override
+    public void requestFocus(ApplicationEvent windowId)
+    {
+
+    }
+
 }

@@ -15,11 +15,14 @@ package org.rapla.entities.domain.internal;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.ReadOnlyException;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -345,7 +348,6 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             while ( newDate.before( end));
             return number;
         }            
-            
     }
 
     public void addException(Date date) {
@@ -357,6 +359,21 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         if (exceptions == null)
             exceptions = new TreeSet<Date>();
         exceptions.add(DateTools.cutDate(date));
+        arrayUpToDate = false;
+    }
+
+    public void addExceptions(TimeInterval interval) {
+        checkWritable();
+        if (exceptions == null)
+            exceptions = new TreeSet<Date>();
+        final AppointmentImpl appointment = (AppointmentImpl)getAppointment();
+        Collection<AppointmentBlock> blocks = new ArrayList<>();
+        appointment.createBlocks(interval.getStart(),interval.getEnd(), blocks);
+        for (AppointmentBlock appointmentBlock:blocks)
+        {
+            final long l = DateTools.cutDate(appointmentBlock.getStart());
+            exceptions.add(new Date(l));
+        }
         arrayUpToDate = false;
     }
 
@@ -497,15 +514,16 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
             newTime = gotoNextMonth(  appointmentStart,startDate);
         }
-        else
+        else //if ( yearly)
         {
             newTime = gotoNextYear(  appointmentStart,startDate);
         }
-//        Date newDate = cal.getTime();
-//        long newTime = newDate.getTime(); 
+//        else
+//        {
+//            newTime = gotoNextWeekday(  appointmentStart,startDate);
+//        }
         Assert.isTrue( newTime > s );
         return  newTime- s;
-        
         // yearly
         
     }
@@ -518,6 +536,25 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
         	newDate = DateTools.addWeeks( newDate, 1);
         }
+        return newDate.getTime();
+    }
+
+    private long gotoNextWeekday(  Date start,Date beginDate )
+    {
+        if ( weekdays.size() > 1)
+        {
+            Date newDate = beginDate;
+            for (int i = 0; i < 7; i++)
+            {
+                newDate = DateTools.addDay(newDate);
+                Integer weekday = DateTools.getWeekday(newDate);
+                if (weekdays.contains(weekday))
+                {
+                    return newDate.getTime();
+                }
+            }
+        }
+        Date newDate = DateTools.addDays(beginDate,7);
         return newDate.getTime();
     }
 
@@ -554,7 +591,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
     final public boolean isFixedIntervalLength()
     {
-        return !monthly &&!yearly;
+        return !monthly &&!yearly;// && !(weekdays != null && weekdays.size() >1);
     }
 
     

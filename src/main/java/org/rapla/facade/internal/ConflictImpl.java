@@ -29,6 +29,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -58,6 +60,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     private Date lastChanged;
     private String reservation1Name;
     private String reservation2Name;
+    private RepeatingType repeatingType1;
+    private RepeatingType repeatingType2;
     private boolean appointment1Enabled = true;
     private boolean appointment2Enabled = true;
     private boolean appointment1Editable = true;
@@ -115,16 +119,27 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         putEntity("reservation1", reservation1);
         putEntity("reservation2", reservation2);
         final ReferenceInfo<User> ownerRef1 = reservation1.getOwnerRef();
-        putId("owner1", ownerRef1 != null ? ownerRef1.getId(): null);
+        putId("owner1", ownerRef1 != null ? ownerRef1.getId() : null);
         final ReferenceInfo<User> ownerRef2 = reservation2.getOwnerRef();
-        putId("owner2", ownerRef2 != null ? ownerRef2.getId(): null);
-        this.reservation1Name = reservation1.getName(Locale.getDefault());
-        this.reservation2Name = reservation2.getName(Locale.getDefault());
+        putId("owner2", ownerRef2 != null ? ownerRef2.getId() : null);
+        this.reservation1Name = getReservationName(reservation1, app1);
+        final Repeating repeating1 = app1.getRepeating();
+        this.repeatingType1 = repeating1 != null ? repeating1.getType() : null;
+        final Repeating repeating2 = app2.getRepeating();
+        this.repeatingType2 = repeating2 != null ? repeating2.getType() : null;
+        this.reservation2Name = getReservationName(reservation2, app2);
         setResolver(((AllocatableImpl) allocatable).getResolver());
         setId(id);
     }
 
-    @Override public void setResolver(EntityResolver resolver)
+    private String getReservationName(Reservation reservation, Appointment appointment)
+    {
+        final String name = reservation.getName(Locale.getDefault());
+        return name;
+    }
+
+    @Override
+    public void setResolver(EntityResolver resolver)
     {
         super.setResolver(resolver);
 
@@ -134,7 +149,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             {
                 Reservation reservation = appointment.getReservation();
                 putId("reservation1", reservation.getId());
-                reservation1Name = reservation.getName(Locale.getDefault());
+                reservation1Name = getReservationName(reservation, appointment);
+                final Repeating repeating = appointment.getRepeating();
+                this.repeatingType1 = repeating != null ? repeating.getType() : null;
             }
         }
         {
@@ -143,7 +160,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             {
                 Reservation reservation = appointment.getReservation();
                 putId("reservation2", reservation.getId());
-                reservation2Name = reservation.getName(Locale.getDefault());
+                reservation2Name = getReservationName(reservation, appointment);
+                final Repeating repeating = appointment.getRepeating();
+                this.repeatingType2 = repeating != null ? repeating.getType() : null;
             }
         }
     }
@@ -186,22 +205,38 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         lastChanged = date;
     }
 
-    @Override public void setCreateDate(Date date)
+    @Override
+    public void setCreateDate(Date date)
     {
         checkWritable();
         this.lastChanged = date;
     }
 
+    @Override
     public String getReservation1Name()
     {
         return reservation1Name;
     }
 
+    @Override
+    public RepeatingType getRepeatingType1()
+    {
+        return repeatingType1;
+    }
+
+    @Override
+    public RepeatingType getRepeatingType2()
+    {
+        return repeatingType2;
+    }
+
+    @Override
     public String getReservation2Name()
     {
         return reservation2Name;
     }
 
+    @Override
     public Date getStartDate()
     {
         return startDate;
@@ -676,6 +711,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         clone.reservation1Name = reservation1Name;
         clone.reservation2Name = reservation2Name;
         clone.startDate = startDate;
+        clone.repeatingType1 = repeatingType1;
+        clone.repeatingType2 = repeatingType2;
         clone.lastChanged = lastChanged;
         return clone;
     }
@@ -740,6 +777,10 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     private static void add(Map<Appointment, Set<Appointment>> result, Appointment app1, Appointment app2)
     {
+        if ( app1 == null || app2 == null)
+        {
+            return;
+        }
         Set<Appointment> set = result.get(app1);
         if (set == null)
         {

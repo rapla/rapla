@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal;
 
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -95,7 +96,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
     public CalendarOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface) {
         super(facade, i18n, raplaLocale, logger);
         daysInWeekview = new RaplaNumber(7, 3, 35, false);
-        mapper = new WeekdayMapper(getLocale());
+        mapper = new WeekdayMapper(raplaLocale, DateTools.MONDAY);
         worktimeStart = createRaplaTime(ioInterface);
         worktimeStart.setRowsPerHour( 1 );
         worktimeEnd = createRaplaTime(ioInterface);

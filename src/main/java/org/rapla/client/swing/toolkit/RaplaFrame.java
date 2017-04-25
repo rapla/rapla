@@ -61,8 +61,10 @@ public class RaplaFrame extends JFrame
         rootPane2.setGlassPane(new DisabledGlassPane());
     }
 
+    @Override
     protected void processWindowEvent(WindowEvent e) {
-        if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+        final int id = e.getID();
+        if (id == WindowEvent.WINDOW_CLOSING) {
             try {
                 fireFrameClosing();
                 close();

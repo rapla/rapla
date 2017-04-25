@@ -13,7 +13,10 @@
 package org.rapla.entities.domain;
 
 import java.util.Date;
+import java.util.Set;
 
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 /**
@@ -24,10 +27,13 @@ public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
     
     Date getStart();
     Date getEnd();
+    TimeInterval getInterval();
     int getWeeks();
     String getName();
+    Set<Category> getCategories();
 
     boolean contains(Date date);
+
     String toString();
     Period[] PERIOD_ARRAY = new Period[0];
 }

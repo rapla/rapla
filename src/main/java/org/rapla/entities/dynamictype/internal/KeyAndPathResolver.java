@@ -41,12 +41,6 @@ public class KeyAndPathResolver
         }
     }
 
-    public String getPath(ReferenceInfo<Category> category)
-    {
-        final String id = category.getId();
-        return categoryPath.get(id);
-    }
-
     public void addCategory(Category category) throws EntityNotFoundException
     {
         //final ReferenceInfo<Category> parentRef = category.getParentRef();
@@ -114,8 +108,18 @@ public class KeyAndPathResolver
 
     public ReferenceInfo<Category> getIdForCategory(ReferenceInfo<Category> parentCategory,String keyref)
     {
-        String path = getPath(parentCategory);
-        String completePath = path + "/" + keyref;
+        StringBuilder builder = new StringBuilder();
+        if ( !parentCategory.equals( Category.SUPER_CATEGORY_REF))
+        {
+            final String id = parentCategory.getId();
+            builder.append(id);
+        }
+        if ( builder.length() >0)
+        {
+            builder.append("/");
+        }
+        builder.append(keyref);
+        String completePath = builder.toString();
         final Category category = getCategory(completePath);
         if ( category == null)
         {

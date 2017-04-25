@@ -16,6 +16,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -79,7 +80,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     JList  selectedReservations = new JList();
     BooleanField singleChooser;
     static final String CustomPeriodId = "CUSTOMPERIOD";
-    PeriodImpl customPeriod = new PeriodImpl("", null, null,CustomPeriodId);
+    PeriodImpl customPeriod = new PeriodImpl("", null, null,CustomPeriodId, Collections.emptySet());
 
     JPanel customSourcePanel = new JPanel();
     JPanel customDestPanel = new JPanel();
@@ -122,11 +123,11 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
        
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
 		Date today = getQuery().today();
-        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today, today,CustomPeriodId);
+        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today, today,CustomPeriodId,Collections.emptySet());
         sourceModel.insertElementAt(customSource, 0);
         
 		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
-        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today, null,CustomPeriodId);
+        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today, null,CustomPeriodId,Collections.emptySet());
         {
 	        destModel.insertElementAt(customDest, 0);
         }

@@ -211,7 +211,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setId(key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{p->type(p)}");
             final MultiLanguageName name = type.getName();
-
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
             type.setResolver(this);
             for (String lang : raplaLocale.getAvailableLanguages())
@@ -278,6 +277,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addAttributeWithInternalId(type, "name", AttributeType.STRING);
             addAttributeWithInternalId(type, "start", AttributeType.DATE);
             addAttributeWithInternalId(type, "end", AttributeType.DATE);
+            final Attribute categoryAtt = addAttributeWithInternalId(type, "category", AttributeType.CATEGORY);
+            categoryAtt.setConstraint( ConstraintIds.KEY_MULTI_SELECT,Boolean.TRUE);
+            //categoryAtt.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, cache.getSuperCategory());
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{name}");
             type.setResolver(this);
             {

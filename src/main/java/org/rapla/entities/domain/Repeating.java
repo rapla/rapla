@@ -11,6 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+import org.rapla.components.util.TimeInterval;
+
 import java.util.Date;
 import java.util.Set;
 
@@ -97,5 +99,7 @@ public interface Repeating {
     /** tests if an exception is added for the given date */
     boolean isException(long date);
     Object clone();
+
+    void addExceptions(TimeInterval interval);
 }
 

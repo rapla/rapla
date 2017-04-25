@@ -12,12 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.util.Locale;
+import org.rapla.components.calendarview.WeekdayMapper;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
-
-import org.rapla.components.calendarview.WeekdayMapper;
+import java.util.Locale;
 
 /** ComboBox that displays the weekdays in long format 
     @see WeekdayMapper
@@ -26,22 +25,14 @@ public final class WeekdayChooser extends JComboBox {
     private static final long serialVersionUID = 1L;
     
     WeekdayMapper mapper;
-    public WeekdayChooser() {
-        this( Locale.getDefault() );
+    public WeekdayChooser(WeekdayMapper mapper) {
+        this.mapper = mapper;
+        DefaultComboBoxModel aModel = new DefaultComboBoxModel(mapper.getNames());
+        setModel(aModel);
     }
 
     public WeekdayChooser(Locale locale) {
         setLocale(locale);
-    }
-
-    @SuppressWarnings("unchecked")
-	public void setLocale(Locale locale) {
-        super.setLocale(locale);
-        if (locale == null)
-            return;
-        mapper = new WeekdayMapper(locale);
-		DefaultComboBoxModel aModel = new DefaultComboBoxModel(mapper.getNames());
-		setModel(aModel);
     }
 
     public void selectWeekday(int weekday) {

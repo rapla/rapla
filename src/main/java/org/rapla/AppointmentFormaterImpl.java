@@ -27,6 +27,7 @@ import javax.inject.Singleton;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /** default implementation of appointment formater */
 @DefaultImplementation(of = AppointmentFormater.class, context = InjectionContext.all)
@@ -57,33 +58,105 @@ public class AppointmentFormaterImpl
         return i18n.getString(key);
     }
 
-
     public String getShortSummary(Appointment appointment) {
         String time = loc.formatTime(appointment.getStart());
         Repeating repeating = appointment.getRepeating();
         final boolean wholeDaysSet = appointment.isWholeDaysSet();
         final String timeString = wholeDaysSet ? "" :" " + time;
-        String weekday = loc.getWeekday(appointment.getStart());
         if (repeating != null) {
 			if (repeating.isWeekly()) {
-                return weekday + timeString;
+			    StringBuffer buf = new StringBuffer();
+                appendShortWeekdays(appointment, buf);
+                buf.append( timeString);
+                //String weekday = loc.getWeekday(appointment.getStart());
+			    return buf.toString();
             }
             if (repeating.isDaily())
                 return getString("daily") + " " + time;
             if (repeating.isMonthly())
-                return getWeekdayOfMonth( appointment.getStart() )  +  weekday + timeString;
+            {
+                String weekday = loc.getWeekday(appointment.getStart());
+                return getWeekdayOfMonth(appointment.getStart()) + weekday + timeString;
+            }
             if (repeating.isYearly())
-                return getDayOfMonth( appointment.getStart() )  +  loc.formatMonth(appointment.getStart()) +" " + timeString;
+            {
+                return getDayOfMonth(appointment.getStart()) + loc.formatMonth(appointment.getStart()) + " " + timeString;
+            }
         }
         String date = loc.formatDate(appointment.getStart());
+        String weekday = loc.getWeekday(appointment.getStart());
         return weekday + " " +date + " " + timeString;
+    }
+
+    private void appendShortWeekdays(Appointment appointment, StringBuffer buf)
+    {
+        Repeating repeating = appointment.getRepeating();
+        final int startWeekday = DateTools.getWeekday(appointment.getStart());
+        Set<Integer> weekdays = repeating.getWeekdays();
+        Integer lastWeekday= null;
+        boolean needToPrintLast = false;
+        int weekday = startWeekday;
+        for ( int i=0;i<7;i++)
+        {
+            if (!weekdays.contains(weekday))
+            {
+                weekday++;
+                if ( weekday > DateTools.SATURDAY)
+                {
+                    weekday = DateTools.SUNDAY;
+                }
+                continue;
+            }
+            if ( lastWeekday!= null)
+            {
+                //
+                if ( Math.abs(weekday-lastWeekday) > 1 && !(lastWeekday== DateTools.SATURDAY && weekday == DateTools.SUNDAY ))
+                {
+                    if ( needToPrintLast )
+                    {
+                        buf.append("-");
+                        final String weekdayString = loc.getWeekdayNameShort(lastWeekday);
+                        buf.append(weekdayString);
+                    }
+                    needToPrintLast = false;
+                    buf.append(",");
+                    final String weekdayString = loc.getWeekdayNameShort(weekday);
+                    buf.append(weekdayString);
+                }
+                else
+                {
+                    needToPrintLast = true;
+                }
+            }
+            else
+            {
+                final String weekdayString = loc.getWeekdayNameShort(weekday);
+                buf.append(weekdayString);
+            }
+            lastWeekday = weekday;
+            weekday++;
+            if ( weekday > DateTools.SATURDAY)
+            {
+                weekday = DateTools.SUNDAY;
+            }
+        }
+        if ( needToPrintLast )
+        {
+            buf.append("-");
+            final String weekdayString = loc.getWeekdayNameShort(lastWeekday);
+            buf.append(weekdayString);
+        }
     }
 
     public String getVeryShortSummary(Appointment appointment) {
         Repeating repeating = appointment.getRepeating();
         if (repeating != null) {
             if (repeating.isWeekly())
-                return getRaplaLocale().getWeekday(appointment.getStart());
+            {
+                StringBuffer buf = new StringBuffer();
+                appendShortWeekdays(appointment,buf);
+                return buf.toString();
+            }
             if (repeating.isDaily()) {
                 String time = getRaplaLocale().formatTime(appointment.getStart());
                 return time;
@@ -148,7 +221,8 @@ public class AppointmentFormaterImpl
             }
             else
             {
-                buf.append( loc.getWeekday( start ) );
+                appendShortWeekdays(a, buf);
+                //buf.append(loc.getWeekday(start));
             }
             if (wholeDaysSet)
             {

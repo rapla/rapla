@@ -15,6 +15,7 @@ package org.rapla.facade;
 import java.util.Date;
 import java.util.List;
 
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Period;
 
 /** ListModel that contains all periods. Updates the list automatically if a period is added, changed or deleted.
@@ -25,13 +26,16 @@ public interface PeriodModel
     Period getPeriodFor(Date date);
     Period getNearestPeriodForDate(Date date);
     Period getNearestPeriodForStartDate(Date date);
-    Period getNearestPeriodForStartDate(Date date, Date endDate);
+    Period getNearestPeriodForStartDate(TimeInterval interval);
     Period getNearestPeriodForEndDate(Date date);
 
     /** return all matching periods.*/
     List<Period> getPeriodsFor(Date date);
+    List<Period> getPeriodsFor(TimeInterval interval);
+
     int getSize();
     Period[] getAllPeriods();
+
 
 }
 

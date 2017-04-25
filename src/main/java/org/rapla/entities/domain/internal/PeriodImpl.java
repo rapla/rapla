@@ -12,28 +12,29 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
-import java.util.Date;
-import java.util.Locale;
-
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.domain.Period;
+
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public class PeriodImpl implements Period
 {
     private final static long WEEK_MILLIS= DateTools.MILLISECONDS_PER_WEEK;
     String name;
-    Date start;
-    Date end;
+    TimeInterval interval;
     String id;
+    Set<Category> categories;
 
-    public PeriodImpl() {
-    }
-
-    public PeriodImpl(String name,Date start, Date end, String id) {
+    public PeriodImpl(String name,Date start, Date end, String id,Set<Category> categories) {
         this.name = name;
-    	this.start = start;
-        this.end = end;
+    	this.interval = new TimeInterval( start, end);
         this.id = id;
+        this.categories = categories;
     }
 
     @Override
@@ -43,20 +44,34 @@ public class PeriodImpl implements Period
     }
 
     public Date getStart() {
-        return start;
+        return interval.getStart();
     }
 
     public Date getEnd() {
-        return end;
+        return interval.getEnd();
+    }
+
+    @Override
+    public TimeInterval getInterval()
+    {
+        return interval;
+    }
+
+    @Override
+    public Set<Category> getCategories()
+    {
+        return categories;
     }
 
     public int getWeeks()
     {
-    	if ( end == null || start == null)
+        final Date start = getStart();
+        final Date end = getEnd();
+        if ( end == null || start == null)
     	{
     		return -1;
     	}
-    	long diff= end.getTime()-start.getTime();
+        long diff= end.getTime()- start.getTime();
         return (int)(((diff-1)/WEEK_MILLIS )+ 1);
     }
 
@@ -69,11 +84,14 @@ public class PeriodImpl implements Period
     }
 
     public boolean contains(Date date) {
-        if ( date == null)
+        if ( date == null )
         {
             return false;
         }
-        return ((end == null || date.before(end))&& (start == null || !date.before(start)));
+        final Date start = getStart();
+        final Date end = getEnd();
+        final boolean result = (end == null || date.before(end)) && (start == null || !date.before(start));
+        return result;
     }
 
     public String toString() {
@@ -126,21 +144,21 @@ public class PeriodImpl implements Period
         if (equals(period))
             return 0;
 
-        return (hashCode() < period.hashCode()) ? -1 : 1;
+        return (id.compareTo(((PeriodImpl)period).id));
     }
 
 
     public PeriodImpl clone()
     {
-    	return new PeriodImpl(name, start, end, id);
+    	return new PeriodImpl(name, interval.getStart(),interval.getEnd(), id, new LinkedHashSet<>(categories));
     }
 
 	public void setStart(Date start) {
-		this.start = start;
+		this.interval = new TimeInterval(start, getEnd());
 	}
 
 	public void setEnd(Date end) {
-		this.end = end;
+		this.interval = new TimeInterval( getStart(), end);
 	}
 
     public String getId()

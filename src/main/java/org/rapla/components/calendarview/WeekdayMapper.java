@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
-import java.text.SimpleDateFormat;
+import org.rapla.framework.RaplaLocale;
+
 import java.util.Calendar;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
 
@@ -41,27 +41,26 @@ public class WeekdayMapper {
     int[] index2weekday;
     Map<Integer,String>  map = new LinkedHashMap<Integer,String>();
 
-    public WeekdayMapper() {
-        this(Locale.getDefault());
-    }
 
-    public WeekdayMapper(Locale locale) 
+    public WeekdayMapper(RaplaLocale raplaLocale, int firstDayInWeek)
     {
     	int days = 7;
         weekdayNames = new String[days];
         weekday2index = new int[days+1];
         index2weekday = new int[days+1];
-        SimpleDateFormat format = new SimpleDateFormat("EEEEEE",locale);
-        Calendar calendar = Calendar.getInstance(locale);
-        calendar.set(Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek());
-        for (int i=0;i<days;i++) {
-            int weekday = calendar.get(Calendar.DAY_OF_WEEK);
-			weekday2index[weekday] = i;
+        final String[] weekdays = raplaLocale.getFormats().getWeekdays();
+        int weekday = firstDayInWeek;
+        for (int i=0;i<7;i++) {
+            weekday2index[weekday] = i;
             index2weekday[i] = weekday;
-            String weekdayName = format.format(calendar.getTime());
+            String weekdayName = weekdays[weekday];
 			weekdayNames[i] = weekdayName;
-            calendar.add(Calendar.DATE,1);
             map.put(weekday, weekdayName);
+            weekday++;
+            if ( weekday > 7)
+            {
+                weekday = 1;
+            }
         }
     }
     

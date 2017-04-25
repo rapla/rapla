@@ -23,6 +23,7 @@ import javax.swing.JList;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.PeriodModel;
@@ -200,7 +201,7 @@ public class PeriodChooser extends JComboBox implements Disposable
         if ( visiblePeriods == END_ONLY) {
             return periodModel.getNearestPeriodForEndDate(date);
         } else {
-            return periodModel.getNearestPeriodForStartDate(date, endDate);
+            return periodModel.getNearestPeriodForStartDate(new TimeInterval(date, endDate));
         }
     }
 

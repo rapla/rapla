@@ -231,6 +231,10 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		} else if (type.equals(AttributeType.CATEGORY)) {
 			Category defaultCategory = (Category) attribute.defaultValue();
 			Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
+			if ( rootCategory == null)
+            {
+                rootCategory = getQuery().getSuperCategory();
+            }
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
             if ((rootCategory != null && rootCategory.getDepth() > 2) || multipleSelectionPossible) {
                 CategorySelectField catField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);

@@ -22,6 +22,7 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 
@@ -47,12 +48,16 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp
     ReferenceInfo<Appointment> getAppointment2();
     ReferenceInfo<Reservation> getReservation1();
     ReferenceInfo<Reservation> getReservation2();
-    
+    RepeatingType getRepeatingType1();
+    RepeatingType getRepeatingType2();
+
     ReferenceInfo<Allocatable> getAllocatableId();
     
     String getReservation1Name();
 	
     String getReservation2Name();
+
+
 
     
     ///** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
