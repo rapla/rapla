@@ -5,10 +5,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
-import org.rapla.entities.tests.Day;
 
+import java.util.Calendar;
 import java.util.Date;
-
+import java.util.TimeZone;
 
 @RunWith(JUnit4.class)
 public class DateToolsTest
@@ -167,4 +167,103 @@ public class DateToolsTest
         final String format = DateTools.formatDateTime( dateTime);
         org.junit.Assert.assertEquals("2000-01-01 12:30:00", format);
     }
+
+    public final class Day implements Comparable<Day>
+    {
+        int date = 0;
+        int month = 0;
+        int year = 0;
+
+        public Day(int year,int month,int date) {
+            this.year = year;
+            this.month = month;
+            this.date = date;
+        }
+
+        public int getDate() {
+            return date;
+        }
+
+        public int getMonth() {
+            return month;
+        }
+
+        public int getYear() {
+            return year;
+        }
+
+        public String toString() {
+            return getYear() + "-" + getMonth() + "-" + getDate();
+        }
+
+        public Date toDate(TimeZone zone) {
+            Calendar cal = Calendar.getInstance(zone);
+            cal.setTime(new Date(0));
+            cal.set(Calendar.YEAR,getYear());
+            cal.set(Calendar.MONTH,getMonth() - 1);
+            cal.set(Calendar.DATE,getDate());
+            cal.set(Calendar.HOUR_OF_DAY,0);
+            cal.set(Calendar.MINUTE,0);
+            cal.set(Calendar.SECOND,0);
+            cal.set(Calendar.MILLISECOND,0);
+            return cal.getTime();
+        }
+
+        public Date toGMTDate() {
+            TimeZone zone = TimeZone.getTimeZone("GMT+0");
+            Calendar cal = Calendar.getInstance(zone);
+            cal.setTime(new Date(0));
+            cal.set(Calendar.YEAR,getYear());
+            cal.set(Calendar.MONTH,getMonth() - 1);
+            cal.set(Calendar.DATE,getDate());
+            cal.set(Calendar.HOUR_OF_DAY,0);
+            cal.set(Calendar.MINUTE,0);
+            cal.set(Calendar.SECOND,0);
+            cal.set(Calendar.MILLISECOND,0);
+            return cal.getTime();
+        }
+
+        public int compareTo(Day day) {
+            if (getYear() < day.getYear())
+                return -1;
+            if (getYear() > day.getYear())
+                return 1;
+            if (getMonth() < day.getMonth())
+                return -1;
+            if (getMonth() > day.getMonth())
+                return 1;
+            if (getDate() < day.getDate())
+                return -1;
+            if (getDate() > day.getDate())
+                return 1;
+            return 0;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + date;
+            result = prime * result + month;
+            result = prime * result + year;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Day other = (Day) obj;
+            if (date != other.date)
+                return false;
+            if (month != other.month)
+                return false;
+            return year == other.year;
+        }
+    }
+
 }

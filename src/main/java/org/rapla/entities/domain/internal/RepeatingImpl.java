@@ -246,15 +246,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             Date newDate = appointmentStart;
             for ( int i=0;i< counts;i++)
             {
-                long newTime;
-            	if ( monthly)
-                {
-                    newTime = gotoNextMonth( appointmentStart,newDate);
-                }
-                else
-                {
-                    newTime = gotoNextYear( appointmentStart,newDate);
-                }
+                long newTime = gotoNextStep(appointmentStart, newDate);
             	newDate = new Date( newTime);
             }
             return newDate;
@@ -334,15 +326,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             do 
             {
                 number ++;
-                long newTime;
-                if ( monthly)
-                {
-                    newTime = gotoNextMonth(  appointmentStart,newDate);
-                }
-                else
-                {
-                    newTime = gotoNextYear(  appointmentStart, newDate);
-                }
+                long newTime = gotoNextStep(appointmentStart, newDate);
                 newDate  = new Date( newTime);
             }
             while ( newDate.before( end));
@@ -508,24 +492,30 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             return getFixedIntervalLength();
         }
         Date appointmentStart = appointment.getStart();
-        Date startDate = new Date(s);
+        Date newDate = new Date(s);
+        long newTime = gotoNextStep(appointmentStart, newDate);
+        Assert.isTrue( newTime > s );
+        return  newTime- s;
+        // yearly
+        
+    }
+
+    private long gotoNextStep(Date appointmentStart, Date startDate)
+    {
         long newTime;
         if ( monthly)
         {
             newTime = gotoNextMonth(  appointmentStart,startDate);
         }
-        else //if ( yearly)
+        else if ( yearly)
         {
             newTime = gotoNextYear(  appointmentStart,startDate);
         }
-//        else
-//        {
-//            newTime = gotoNextWeekday(  appointmentStart,startDate);
-//        }
-        Assert.isTrue( newTime > s );
-        return  newTime- s;
-        // yearly
-        
+        else
+        {
+            newTime = gotoNextWeekday(  appointmentStart,startDate);
+        }
+        return newTime;
     }
 
     private long gotoNextMonth(  Date start,Date beginDate )
@@ -591,7 +581,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
     final public boolean isFixedIntervalLength()
     {
-        return !monthly &&!yearly;// && !(weekdays != null && weekdays.size() >1);
+        return !monthly &&!yearly && !(weekdays != null && weekdays.size() >1);
     }
 
     

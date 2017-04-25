@@ -23,15 +23,20 @@ import org.rapla.entities.domain.AppointmentStartComparator;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
+import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,27 +47,27 @@ public class AppointmentTest {
     TimeZone zone = DateTools.getTimeZone(); //this is GMT
     Locale locale = Locale.getDefault();
 
-    Appointment createAppointment(Day day,Time start,Time end) {
-        Calendar cal = Calendar.getInstance(zone,locale);
-        cal.set(Calendar.YEAR,day.getYear());
-        cal.set(Calendar.MONTH,day.getMonth() - 1);
-        cal.set(Calendar.DATE,day.getDate());
-        cal.set(Calendar.HOUR_OF_DAY,start.getHour());
-        cal.set(Calendar.MINUTE,start.getMinute());
-        cal.set(Calendar.SECOND,0);
-        cal.set(Calendar.MILLISECOND,0);
-        Date startTime = cal.getTime();
-        cal.set(Calendar.HOUR_OF_DAY,end.getHour());
-        cal.set(Calendar.MINUTE,end.getMinute());
-        Date endTime = cal.getTime();
+    Appointment createAppointment(String date,String start,String end) {
+        final ISODateTimeFormat isoDateTimeFormat = new ISODateTimeFormat();
+        final Date startTime = isoDateTimeFormat.parseTimestamp(date + "T" + start);
+        final Date endTime = isoDateTimeFormat.parseTimestamp(date + "T" + end);
         return new AppointmentImpl(startTime,endTime);
     }
 
+    Date createDate(String date)
+    {
+        final ISODateTimeFormat isoDateTimeFormat = new ISODateTimeFormat();
+        return isoDateTimeFormat.parseTimestamp( date);
+    }
+
+
     @Test
     public void testOverlapAndCompareTo()  {
-        Appointment a1 = createAppointment(new Day(2002,5,25),new Time(12,15),new Time(14,15));
-        Appointment a2 = createAppointment(new Day(2002,5,26),new Time(13,0),new Time(15,0));
-        Appointment a3 = createAppointment(new Day(2002,5,25),new Time(13,0),new Time(15,0));
+        Appointment a1 = createAppointment("2002-5-25","12:15","14:15");
+        Appointment a2 = createAppointment("2002-5-26","13:00","15:00");
+        Appointment a3 = createAppointment("2002-5-25","13:00","15:00");
+        //Appointment a2 = createAppointment(new Day(2002,5,26),new Time(13,0),new Time(15,0));
+        //Appointment a3 = createAppointment(new Day(2002,5,25),new Time(13,0),new Time(15,0));
 
         Comparator<Appointment> comp = new AppointmentStartComparator();
         // First the single Appointments
@@ -85,7 +90,7 @@ public class AppointmentTest {
 
         // Weekly repeating until 2002-6-2
         Repeating repeating1 = a1.getRepeating();
-        repeating1.setEnd(new Day(2002,6,2).toDate(zone));
+        repeating1.setEnd(createDate("2002-06-02"));
 
         // daily repeating 8x
         Repeating repeating2 = a2.getRepeating();
@@ -97,8 +102,8 @@ public class AppointmentTest {
         repeating3.setNumber(1);
 
         assertTrue(a1.overlaps(
-                               new Day(2002,5,26).toDate(zone)
-                               ,new Day(2002,6,2).toDate(zone)
+                               createDate("2002-05-26")
+                               ,createDate("2002-06-2")
                                )
                    );
 
@@ -112,20 +117,65 @@ public class AppointmentTest {
         assertTrue("overlap is not symetric",!a3.overlaps(a2));
 
         // No appointment in first week of repeating
-        repeating1.addException(new Day(2002,5,25).toDate(zone));
+        repeating1.addException(createDate("2002-05-025"));
 
         assertTrue("appointments should not overlap, because of exception", !a1.overlaps(a3));
         assertTrue("overlap is not symetric",!a3.overlaps(a1));
     }
 
     @Test
+    public void testWeeklyWith2Weekdays()
+    {
+        Appointment a1 = createAppointment("2017-04-26","10:00","12:0");
+        a1.setRepeatingEnabled( true);
+        final Repeating repeating = a1.getRepeating();
+        repeating.setNumber(5);
+        repeating.setType(RepeatingType.WEEKLY);
+        Set<Integer> weekdays = new TreeSet<Integer>();
+        weekdays.add(DateTools.WEDNESDAY);
+        weekdays.add(DateTools.THURSDAY);
+        repeating.setWeekdays(weekdays);
+
+        Collection<AppointmentBlock> blocks = new ArrayList<>();
+        Date start = a1.getStart();
+        Date end = a1.getEnd();
+        a1.createBlocks(start, createDate("2020-01-01"), blocks);
+        assertEquals(5, blocks.size());
+        final Iterator<AppointmentBlock> iterator = blocks.iterator();
+        AppointmentBlock block = iterator.next();
+        assertBlock( start, end, block);
+        start = DateTools.addDay( start);
+        end = DateTools.addDay( end);
+        block = iterator.next();
+        assertBlock( start, end, block);
+        start = DateTools.addDays( start,6);
+        end = DateTools.addDays( end, 6);
+        block = iterator.next();
+        assertBlock( start, end, block);
+        start = DateTools.addDay( start);
+        end = DateTools.addDay( end);
+        block = iterator.next();
+        assertBlock( start, end, block);
+        start = DateTools.addDays( start,6);
+        end = DateTools.addDays( end, 6);
+        block = iterator.next();
+        assertBlock( start, end, block);
+    }
+
+    private void assertBlock(Date start, Date end, AppointmentBlock block)
+    {
+        assertEquals( "Wrong block-start",start,new Date(block.getStart()));
+        assertEquals( "Wrong block-end", end,new Date(block.getEnd()));
+    }
+
+    @Test
     public void testOverlap1()  {
-        Appointment a1 = createAppointment(new Day(2002,4,15),new Time(10,0),new Time(12,0));
-        Appointment a2 = createAppointment(new Day(2002,4,15),new Time(9,0),new Time(11,0));
+        Appointment a1 = createAppointment("2002-04-15","10:00","12:0");
+        Appointment a2 = createAppointment("2002-04-15","9:00","11:0");
 
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
-        repeating1.setEnd(new Day(2002,7,11).toDate(zone));
+        repeating1.setEnd(createDate("2002-07-11"));
 
         a2.setRepeatingEnabled(true);
         Repeating repeating2 = a2.getRepeating();
@@ -138,31 +188,31 @@ public class AppointmentTest {
 
     @Test
     public void testOverlap2() {
-        Appointment a1 = createAppointment(new Day(2002,4,12),new Time(12,0),new Time(14,0));
+        Appointment a1 = createAppointment("2002-4-12","12:00","14:00");
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
-        repeating1.setEnd(new Day(2002,7,11).toDate(zone));
-        assertTrue(a1.overlaps(new Day(2002,4,15).toDate(zone)
-                                          , new Day(2002,4,22).toDate(zone)));
+        repeating1.setEnd(createDate("2002-07-11"));
+        assertTrue(a1.overlaps(createDate("2002-04-15")
+                                          , createDate("2002-04-22")));
     }
     
     @Test
     public void testOverlap3() {
     	final Appointment a1,a2;
     	{
-    		final Appointment a = createAppointment(new Day(2012,3,9),new Time(9,0),new Time(11,0));
+    		final Appointment a = createAppointment("2012-03-09","9:00","11:00");
 	        a.setRepeatingEnabled(true);
 	        Repeating repeating = a.getRepeating();
-	        repeating.setEnd(new Day(2012,4,15).toDate(zone));
-	        repeating.addException(new Day(2012,4,6).toDate(zone));
+	        repeating.setEnd(createDate("2012-04-15"));
+	        repeating.addException(createDate("2012-04-06"));
 	        a1 = a;
     	}
     	{
-	    	final Appointment a = createAppointment(new Day(2012,3,2),new Time(9,0),new Time(11,0));
+	    	final Appointment a = createAppointment("2012-03-02","9:00","11:00");
 	        a.setRepeatingEnabled(true);
 	        Repeating repeating = a.getRepeating();
-	        repeating.setEnd(new Day(2012,4,1).toDate(zone));
-	        repeating.addException(new Day(2012,3,16).toDate(zone));
+	        repeating.setEnd(createDate("2012-04-01"));
+	        repeating.addException(createDate("2012-03-16"));
 	        a2 = a;
     	}
     	boolean overlap1 = a1.overlaps(a2);
@@ -174,21 +224,21 @@ public class AppointmentTest {
 
     @Test
     public void testBlocks() {
-        Appointment a1 = createAppointment(new Day(2002,4,12),new Time(12,0),new Time(14,0));
+        Appointment a1 = createAppointment("2002-04-12","12:00","14:00");
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
-        repeating1.setEnd(new Day(2002,2,11).toDate(zone));
+        repeating1.setEnd(createDate("2002-02-11"));
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        a1.createBlocks( new Day(2002,4,5).toDate(zone)
-                                , new Day(2002,5,5).toDate(zone)
+        a1.createBlocks( createDate("2002-04-05")
+                                , createDate("2002-05-05")
                                 , blocks );
         assertEquals( "Repeating end is in the past: createBlocks should only return one block", 1, blocks.size() );
     }
 
     @Test
     public void testMatchNeverEnding()  {
-        Appointment a1 = createAppointment(new Day(2002,5,25),new Time(11,15),new Time(13,15));
-        Appointment a2 = createAppointment(new Day(2002,5,25),new Time(11,15),new Time(13,15));
+        Appointment a1 = createAppointment("2002-05-25","11:15","13:15");
+        Appointment a2 = createAppointment("2002-05-25","11:15","13:15");
 
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
@@ -198,7 +248,7 @@ public class AppointmentTest {
         Repeating repeating2 = a2.getRepeating();
         repeating2.setType(Repeating.WEEKLY);
 
-        repeating1.addException(new Day(2002,4,10).toDate( zone ));
+        repeating1.addException(createDate("2002-04-10"));
         assertTrue( !a1.matches( a2 ) );
         assertTrue( !a2.matches( a1 ) );
     }
@@ -206,14 +256,14 @@ public class AppointmentTest {
     @Test
     public void testMonthly()
     {
-        Appointment a1 = createAppointment(new Day(2006,8,17),new Time(10,30),new Time(12,0));
+        Appointment a1 = createAppointment("2006-08-17","10:30","12:0");
         Date start = a1.getStart();
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
         repeating1.setType( RepeatingType.MONTHLY);
         repeating1.setNumber( 4);
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        a1.createBlocks( new Day(2006,8,17).toGMTDate(), new Day( 2007, 3, 30).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-08-17"), createDate(" 2007-03-30"), blocks);
         assertEquals( 4, blocks.size());
         Collections.sort(blocks);
         assertEquals( start, new Date(blocks.get( 0).getStart()));
@@ -221,9 +271,9 @@ public class AppointmentTest {
         cal.setTime( start );
         int weekday = cal.get( Calendar.DAY_OF_WEEK);
         int dayofweekinmonth = cal.get( Calendar.DAY_OF_WEEK_IN_MONTH);
-        assertEquals( Calendar.THURSDAY,weekday );
-        assertEquals( 3, dayofweekinmonth );
-        assertEquals( Calendar.AUGUST, cal.get( Calendar.MONTH));
+        assertEquals( DateTools.THURSDAY,DateTools.getWeekday( start) );
+        assertEquals( 3, DateTools.getDayOfWeekInMonth(start) );
+        assertEquals( 8, DateTools.getMonth(start));
         // we expect the second wednesday in april
         cal.add( Calendar.MONTH, 1 );
         cal.set( Calendar.DAY_OF_WEEK , weekday );
@@ -246,25 +296,25 @@ public class AppointmentTest {
         assertEquals( start, a1.getMaxEnd() );
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,1,1).toGMTDate(), new Day( 2007, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-01-01"), createDate("2007-10-20"), blocks);
         assertEquals( 4, blocks.size());
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,10,19).toGMTDate(), new Day( 2006, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-10-19"), createDate("2006-10-20"), blocks);
         assertEquals( 1, blocks.size());        
     }
 
     @Test
     public void testMonthly5ft()
     {
-        Appointment a1 = createAppointment(new Day(2006,8,31),new Time(10,30),new Time(12,0));
+        Appointment a1 = createAppointment("2006-08-31","10:30","12:00");
         Date start = a1.getStart();
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
         repeating1.setType( RepeatingType.MONTHLY);
         repeating1.setNumber( 4);
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        a1.createBlocks( new Day(2006,8,1).toGMTDate(), new Day( 2008, 8, 1).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-08-01"), createDate("2008-08-01"), blocks);
         assertEquals( 4, blocks.size());
         Collections.sort( blocks);
         assertEquals( start, new Date(blocks.get(0).getStart()));
@@ -300,25 +350,25 @@ public class AppointmentTest {
         assertEquals( start, a1.getMaxEnd() );
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,1,1).toGMTDate(), new Day( 2007, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-01-01"), createDate("2007-10-20"), blocks);
         assertEquals( 4, blocks.size());
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,10,19).toGMTDate(), new Day( 2006, 11, 31).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-10-19"), createDate("2006-11-31"), blocks);
         assertEquals( 1, blocks.size());        
     }
 
     @Test
     public void testMonthlyNeverending()
     {
-        Appointment a1 = createAppointment(new Day(2006,8,31),new Time(10,30),new Time(12,0));
+        Appointment a1 = createAppointment("2006-08-31","10:30","12:00");
         Date start = a1.getStart();
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
         repeating1.setType( RepeatingType.MONTHLY);
         repeating1.setEnd( null );
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        a1.createBlocks( new Day(2006,8,1).toGMTDate(), new Day( 2008, 8, 1).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-08-01"), createDate("2008-08-01"), blocks);
         assertEquals( 9, blocks.size());
         assertEquals( start, new Date(blocks.get(0).getStart()));
         Calendar cal = createGMTCalendar();
@@ -351,21 +401,21 @@ public class AppointmentTest {
 
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,1,1).toGMTDate(), new Day( 2007, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-01-01"), createDate("2007-10-20"), blocks);
         assertEquals( 5, blocks.size());
     }
 
     @Test
     public void testYearly29February()
     {
-        Appointment a1 = createAppointment(new Day(2004,2,29),new Time(10,30),new Time(12,0));
+        Appointment a1 = createAppointment("2004-02-29","10:30","12:00");
         Date start = a1.getStart();
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
         repeating1.setType( RepeatingType.YEARLY);
         repeating1.setNumber( 4);
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        a1.createBlocks( new Day(2004,1,1).toGMTDate(), new Day( 2020, 1, 1).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2004-01-01"), createDate("2020-01-01"), blocks);
         assertEquals( 4, blocks.size());
         assertEquals( start, new Date(blocks.get(0).getStart()));
         Calendar cal = createGMTCalendar();
@@ -399,18 +449,18 @@ public class AppointmentTest {
         assertEquals( start, a1.getMaxEnd() );
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,1,1).toGMTDate(), new Day( 2012, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-01-01"), createDate("2012-10-20"), blocks);
         assertEquals( 2, blocks.size());
         
         blocks.clear();
-        a1.createBlocks( new Day(2008,1,1).toGMTDate(), new Day( 2008, 11, 31).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2008-01-01"), createDate("2008-11-31"), blocks);
         assertEquals( 1, blocks.size());        
     }
 
     @Test
     public void testYearly()
     {
-        Appointment a1 = createAppointment(new Day(2006,8,17),new Time(10,30),new Time(12,0));
+        Appointment a1 = createAppointment("2006-08-17","10:30","12:00");
         Date start = a1.getStart();
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
@@ -421,7 +471,7 @@ public class AppointmentTest {
         int dayInMonth = cal.get( Calendar.DAY_OF_MONTH);
         int month = cal.get( Calendar.MONTH);
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
-        a1.createBlocks( new Day(2006,8,17).toGMTDate(), new Day( 2010, 3, 30).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-08-17"), createDate("2010-03-30"), blocks);
         assertEquals( 4, blocks.size());
         assertEquals( start, new Date(blocks.get(0).getStart()));
         cal.add( Calendar.YEAR, 1 );
@@ -446,16 +496,16 @@ public class AppointmentTest {
     @Test
 	public void testMonthlySetEnd()
     {
-        Appointment a1 = createAppointment(new Day(2006,8,17),new Time(10,30),new Time(12,0));
+        Appointment a1 = createAppointment("2006-08-17","10:30","12:00");
         Date start = a1.getStart();
         a1.setRepeatingEnabled(true);
         Repeating repeating1 = a1.getRepeating();
         repeating1.setType( RepeatingType.MONTHLY);
-        repeating1.setEnd( new Day(2006,12,1).toGMTDate());
+        repeating1.setEnd( createDate("2006-12-01"));
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         {
-            Date s =  new Day(2006,8,17).toGMTDate();
-            Date e =  new Day( 2007, 3, 30).toGMTDate();
+            Date s =  createDate("2006-08-17");
+            Date e =  createDate("2007-03-30");
             a1.createBlocks( s,e , blocks);
         }
         assertEquals( 4, blocks.size());
@@ -484,15 +534,15 @@ public class AppointmentTest {
         start = cal.getTime();
         assertEquals( start, new Date(blocks.get(3).getStart()));
 
-        assertEquals( new Day(2006,12,1).toGMTDate(), repeating1.getEnd() );
-        assertEquals( new Day(2006,12,1).toGMTDate(), a1.getMaxEnd() );
+        assertEquals( createDate("2006-12-01"), repeating1.getEnd() );
+        assertEquals( createDate("2006-12-01"), a1.getMaxEnd() );
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,1,1).toGMTDate(), new Day( 2007, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-01-01"), createDate("2007-10-20"), blocks);
         assertEquals( 4, blocks.size());
         
         blocks.clear();
-        a1.createBlocks( new Day(2006,10,19).toGMTDate(), new Day( 2006, 10, 20).toGMTDate(), blocks);
+        a1.createBlocks( createDate("2006-10-19"), createDate("2006-10-20"), blocks);
         assertEquals( 1, blocks.size());        
     }
 
