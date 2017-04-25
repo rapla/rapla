@@ -1629,41 +1629,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		long time = System.currentTimeMillis();
 		try
 		{
-			if (storeList.size() == 0 && removeList.size() == 0)
-				return ResolvedPromise.VOID_PROMISE;
-
-
-			for (ReferenceInfo<?> removedObject:removeList) {
-				if (removedObject == null) {
-					throw new RaplaException("Removed Objects cant be null");
-				}
-			}
-			for (T toStore : storeList) {
-				if (toStore == null) {
-					throw new RaplaException("Stored Objects cant be null");
-				}
-				final Class typeClass = toStore.getTypeClass();
-				if (typeClass == Reservation.class) {
-					checkReservation((Reservation) toStore);
-				}
-			}
-			List<T> transientCategories = new ArrayList<>();
-			for (T toStore : storeList) {
-				final Class typeClass = toStore.getTypeClass();
-				if ( typeClass == Category.class)
-				{
-					// add non resolvable categories
-					addTransientCategories(transientCategories, (CategoryImpl) toStore,0);
-				}
-			}
-			if ( transientCategories.size() > 0)
-			{
-				storeList = new ArrayList<>(storeList);
-				storeList.addAll( transientCategories);
-			}
-
-			operator.storeAndRemove(storeList, removeList, user);
-
+			dispatchSynchronized(storeList, removeList, user);
 			if (getLogger().isDebugEnabled())
 				getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
 		}
@@ -1672,6 +1638,46 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			return new ResolvedPromise<Void>(ex);
 		}
 		return ResolvedPromise.VOID_PROMISE;
+	}
+
+	private <T extends Entity, S extends Entity> void dispatchSynchronized(Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user)
+			throws RaplaException
+	{
+		if (storeList.size() == 0 && removeList.size() == 0)
+		{
+			return;
+		}
+
+		for (ReferenceInfo<?> removedObject:removeList) {
+            if (removedObject == null) {
+                throw new RaplaException("Removed Objects cant be null");
+            }
+        }
+		for (T toStore : storeList) {
+            if (toStore == null) {
+                throw new RaplaException("Stored Objects cant be null");
+            }
+            final Class typeClass = toStore.getTypeClass();
+            if (typeClass == Reservation.class) {
+                checkReservation((Reservation) toStore);
+            }
+        }
+		List<T> transientCategories = new ArrayList<>();
+		for (T toStore : storeList) {
+            final Class typeClass = toStore.getTypeClass();
+            if ( typeClass == Category.class)
+            {
+                // add non resolvable categories
+                addTransientCategories(transientCategories, (CategoryImpl) toStore,0);
+            }
+        }
+		if ( transientCategories.size() > 0)
+        {
+            storeList = new ArrayList<>(storeList);
+            storeList.addAll( transientCategories);
+        }
+
+		operator.storeAndRemove(storeList, removeList, user);
 	}
 
 	@Override
@@ -1685,7 +1691,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		for (T toStore : storedObjects) {
 			storeList.add( toStore);
 		}
-		dispatch(storeList, removeList, user);
+		dispatchSynchronized(storeList, removeList, user);
 	}
 
 	private <T extends  Entity> void addTransientCategories(List<T> storeList, CategoryImpl toStore, int depth)

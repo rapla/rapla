@@ -2,9 +2,6 @@ package org.rapla.client.dialog;
 
 import org.rapla.framework.Disposable;
 
-/**
- * Created by Christopher on 05.11.2015.
- */
 public interface DialogInterface
 {
     void start(boolean pack);
