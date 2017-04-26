@@ -32,7 +32,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<restinject.version>1.0-alpha2</restinject.version>
+		<restinject.version>1.0-alpha3</restinject.version>
 		<scannotation.version>1.0.4</scannotation.version>
 		<gson.version>2.6.2</gson.version>
 		<javax.inject.version>1</javax.inject.version>

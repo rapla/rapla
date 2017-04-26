@@ -386,8 +386,18 @@ public abstract class RaplaTestCase
                 connectionInfo.setServerURL(serverURL);
                 //final ConnectInfo connectInfo = new ConnectInfo("homer", "duffs".toCharArray());
                 connectionInfo.setReconnectInfo(null);
-                MyCustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, scheduler, logger);
+                AtomicReference<RemoteAuthentificationService> serviceAtomicReference = new AtomicReference<>();
+                Provider<RemoteAuthentificationService> authenticationProvider = new Provider<RemoteAuthentificationService>()
+                {
+                    @Override
+                    public RemoteAuthentificationService get()
+                    {
+                        return serviceAtomicReference.get();
+                    }
+                };
+                MyCustomConnector customConnector = new MyCustomConnector(connectionInfo, () ->i18n, authenticationProvider,scheduler, logger);
                 RemoteAuthentificationService remoteAuthentificationService = getRemotService(RemoteAuthentificationService.class,customConnector);
+                serviceAtomicReference.set( remoteAuthentificationService);
                 RemoteStorage remoteStorage = getRemotService( RemoteStorage.class, customConnector);
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,
                         remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getPermissionExtensions());

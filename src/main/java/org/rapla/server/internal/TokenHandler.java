@@ -26,8 +26,8 @@ public class TokenHandler
     RaplaKeyStorage keyStore;
     StorageOperator operator;
 
-    // 5 Hours until the token expires
-    int accessTokenValiditySeconds = 300 * 60;
+    // 1 Hour until the token expires
+    int accessTokenValiditySeconds = 60 * 60;
 
     @Inject public TokenHandler(RaplaKeyStorage keyStorage, StorageOperator operator) throws RaplaInitializationException
     {

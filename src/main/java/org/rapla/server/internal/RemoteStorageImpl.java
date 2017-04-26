@@ -399,9 +399,9 @@ import org.rapla.storage.impl.EntityStore;
 
     private void checkAuthentified() throws RaplaSecurityException
     {
-        if (!session.isAuthentified(request))
+        boolean fail = false;
+        if (!session.isAuthentified(request) || fail)
         {
-
             throw new RaplaSecurityException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED);
         }
     }

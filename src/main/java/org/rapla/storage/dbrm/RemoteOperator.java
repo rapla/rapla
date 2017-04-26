@@ -636,8 +636,7 @@ import java.util.concurrent.locks.Lock;
     public void updateTimestamps(UpdateEvent evt) throws RaplaException
     {
         if (evt.getLastValidated() == null)
-        {
-            throw new RaplaException("Server sync time is missing");
+        {throw new RaplaException("Server sync time is missing");
         }
         lastSyncedTimeLocal = new Date(System.currentTimeMillis());
         lastSyncedTime = evt.getLastValidated();

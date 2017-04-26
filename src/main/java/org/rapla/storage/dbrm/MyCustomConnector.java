@@ -18,36 +18,45 @@ import javax.inject.Provider;
 public class MyCustomConnector implements CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
-    private RemoteAuthentificationService authentificationService;
+    private Provider<RemoteAuthentificationService> authentificationService;
     //private final String errorString;
     private final CommandScheduler commandQueue;
     Provider<RaplaResources> i18n;
     Logger logger;
 
-    @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,
+    @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,Provider<RemoteAuthentificationService> authentificationService,
             CommandScheduler commandQueue, Logger logger)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
+        this.authentificationService = authentificationService;
         this.commandQueue = commandQueue;
         this.i18n = i18n;
         this.logger = logger.getChildLogger("connector");
     }
 
+
     @Override public String reauth(Class proxy) throws Exception
     {
         final boolean isAuthentificationService = proxy.getCanonicalName().contains(RemoteAuthentificationService.class.getCanonicalName());
-        // We dont reauth for authentification services
-        if (isAuthentificationService || authentificationService == null)
+        if (isAuthentificationService )
         {
             return null;
+        }
+
+        // We dont reauth for authentification services
+        final RemoteAuthentificationService remoteAuthentificationService = authentificationService.get();
+        if ( remoteAuthentificationService == null)
+        {
+            return  null;
         }
         final ConnectInfo connectInfo = remoteConnectionInfo.connectInfo;
         final String username = connectInfo.getUsername();
         final String password = new String(connectInfo.getPassword());
         final String connectAs = connectInfo.getConnectAs();
         LoginCredentials credentials = new LoginCredentials(username,password, connectAs);
-        final LoginTokens loginTokens = authentificationService.login(username, password, connectAs);
+        final LoginTokens loginTokens = remoteAuthentificationService.login(username, password, connectAs);
         final String accessToken = loginTokens.getAccessToken();
+        remoteConnectionInfo.setAccessToken( accessToken);
         return accessToken;
     }
 
