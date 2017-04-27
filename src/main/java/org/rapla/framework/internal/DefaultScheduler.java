@@ -5,7 +5,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.impl.UtilConcurrentCommandScheduler;
+import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

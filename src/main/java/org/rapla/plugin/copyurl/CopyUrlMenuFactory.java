@@ -73,7 +73,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
             selectedObjects.add(focusedObject);
         }
 
-        URL link = null;
+        String link = null;
         for (Object obj : selectedObjects)
         {
             final Classifiable ownable;
@@ -120,7 +120,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
                             final Object value = classification.getValue( attribute );
                             if ( value != null)
                             {
-                                final URL url = Tools.getUrl( value.toString());
+                                final String url = Tools.getUrl( value.toString());
                                 if ( url != null)
                                 {
                                     link = url;
@@ -137,7 +137,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
         {
             return RaplaMenuItem.EMPTY_ARRAY;
         }
-        final String url = link.toExternalForm();
+        final String url = link;
         // create the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("copylink");
         setOwnerItem.setText("Copy Link");

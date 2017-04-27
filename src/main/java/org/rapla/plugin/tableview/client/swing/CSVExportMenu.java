@@ -35,6 +35,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.IOUtil;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -138,7 +139,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
                         if (isDate)
                         {
                             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                            format.setTimeZone(getRaplaLocale().getTimeZone());
+                            format.setTimeZone(IOUtil.getTimeZone());
                             String timestamp = format.format((java.util.Date) value);
                             formated = timestamp;
                         }

@@ -40,6 +40,7 @@ import org.rapla.components.calendarview.swing.SwingMonthView;
 import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
@@ -72,7 +73,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
         final DateRenderer dateRenderer;
     	final DateRendererAdapter dateRendererAdapter; 
         dateRenderer = dateRendererProvider.get();
-        dateRendererAdapter = new DateRendererAdapter(dateRenderer, getRaplaLocale().getTimeZone(), getRaplaLocale().getLocale());
+        dateRendererAdapter = new DateRendererAdapter(dateRenderer, IOUtil.getTimeZone(), getRaplaLocale().getLocale());
 
         final WeekendHighlightRenderer weekdayRenderer = new WeekendHighlightRenderer();
         /** renderer for weekdays in month-view */

@@ -33,7 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 import javax.inject.Named;
 
@@ -76,6 +75,7 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.StorageLockManager;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
@@ -440,8 +440,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public void dispatch(final UpdateEvent evt) throws RaplaException
     {
-
-        final Lock writeLock = writeLock();
+        final StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             preprocessEventStorage(evt);
@@ -481,7 +480,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
     }
 
@@ -603,14 +602,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     synchronized final public void saveData() throws RaplaException
     {
-        final Lock writeLock = writeLock();
+        final StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             saveData(cache, null, includeIds);
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
     }
 
@@ -742,7 +741,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
-        final Lock lock = readLock();
+        final StorageLockManager.ReadLock lock = lockManager.readLock();
         try
         {
             final Collection<ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));
@@ -753,7 +752,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
         return Collections.emptyList();
     }

@@ -144,6 +144,7 @@
                                 <exclude>**/storage/dbsql/**</exclude>
                                 <exclude>se/**</exclude>
                                 <exclude>**/${rapla.module}</exclude>
+                                <exclude>**/*.java</exclude>
                             </excludes>
                             <archive>
                             	<manifestEntries>
@@ -231,10 +232,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.0.0</version>
                 <configuration>
                     <archiveClasses>true</archiveClasses>
-                    <warSourceExcludes>Rapla/Rapla.nocache.js</warSourceExcludes>
+                    <warSourceExcludes>org.rapla.Rapla/Rapla.nocache.js</warSourceExcludes>
                     <packagingExcludes>**/*.java</packagingExcludes>
                     <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
                     <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
@@ -277,7 +278,6 @@
             </plugin>
         </plugins>
     </build>
-    
     <profiles>
         <profile>
             <id>deploy</id>
@@ -302,6 +302,7 @@
                     </plugin>
                 </plugins>
             </build>
+
         </profile>
     </profiles>
 

@@ -20,7 +20,7 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.server.internal.TimeZoneConverterImpl;
@@ -478,7 +478,7 @@ public class AbstractTableStorage implements TableStorage
         {
     		TimeZone systemTimeZone = getSystemTimeZone();
     		// same as TimeZoneConverterImpl.fromRaplaTime
-    		long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
+    		long offset = TimeZoneConverterImpl.getOffset( IOUtil.getTimeZone(), systemTimeZone, time.getTime());
             long timeInMillis = time.getTime() - offset;
 			stmt.setTimestamp( column, new java.sql.Timestamp( timeInMillis), datetimeCal);
         }
@@ -581,7 +581,7 @@ public class AbstractTableStorage implements TableStorage
 		}
 		long time = timestamp.getTime();
 		TimeZone systemTimeZone = getSystemTimeZone();
-		long offset = TimeZoneConverterImpl.getOffset(DateTools.getTimeZone(), systemTimeZone, time);
+		long offset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, time);
 		Date returned = new Date(time + offset);
 		return returned;
 	}

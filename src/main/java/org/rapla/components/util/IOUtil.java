@@ -30,6 +30,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
+import java.util.TimeZone;
 
 /** Some IOHelper methods. */
 abstract public class IOUtil {
@@ -276,8 +277,17 @@ abstract public class IOUtil {
             return bytes.toString();
         }
 
+    private static TimeZone timeZone =TimeZone.getTimeZone("GMT");
 
+    /**
+   This method always returns GMT+0. This is used for all internal calls. All dates and times are stored internaly with this Timezone.
+   Rapla can't work with timezones but to use the Date api it needs a timezone, so GMT+0 is used, because it doesn't have DaylightSavingTimes which would confuse the conflict detection. This timezone (GMT+0) is only used internaly and never shown in Rapla. Rapla only displays the time e.g. 10:00am without the timezone.
 
+     same as TimeZone.getTimeZone("GMT").
+     */
+  public static TimeZone getTimeZone() {
+      return timeZone;
+  }
 }
 
 

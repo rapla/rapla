@@ -172,11 +172,6 @@ public abstract class DateTools
 		return new Date(cutDate(time));
     }
 
-    private static TimeZone timeZone =TimeZone.getTimeZone("GMT");
-    /** same as TimeZone.getTimeZone("GMT"). */
-    public static TimeZone getTimeZone() {
-        return timeZone;
-    }
     /** sets time of day to 0:00 and increases day.
         @see #fillDate(Date)
      */

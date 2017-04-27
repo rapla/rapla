@@ -9,7 +9,6 @@ import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
@@ -17,6 +16,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.rest.JsonParserWrapper;
+import org.rapla.server.RaplaConcurrency;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
@@ -38,7 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static org.rapla.facade.RaplaComponent.unlock;
+import static org.rapla.server.RaplaConcurrency.unlock;
 
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
@@ -81,12 +81,12 @@ public class ExchangeAppointmentStorage
 
     protected Lock writeLock() throws RaplaException
     {
-        return RaplaComponent.lock(lock.writeLock(), 60);
+        return RaplaConcurrency.lock(lock.writeLock(), 60);
     }
 
     protected Lock readLock() throws RaplaException
     {
-        return RaplaComponent.lock(lock.readLock(), 10);
+        return RaplaConcurrency.lock(lock.readLock(), 10);
     }
 
     public Collection<SynchronizationTask> getAllTasks() throws RaplaException

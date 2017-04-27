@@ -13,22 +13,6 @@
 
 package org.rapla.storage.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -55,7 +39,6 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -67,6 +50,19 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * An abstract implementation of the StorageOperator-Interface. It operates on a
@@ -86,15 +82,16 @@ public abstract class AbstractCachableOperator implements StorageOperator
     final protected LocalCache cache;
     final protected RaplaResources i18n;
     final protected Logger logger;
-    final protected ReadWriteLock lock = new ReentrantReadWriteLock();
     final protected Map<String, FunctionFactory> functionFactoryMap;
     private volatile Date lastRefreshed;
     final protected PermissionController permissionController;
+    protected StorageLockManager lockManager;
 
     public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
-            Set<PermissionExtension> permissionExtensions)
+            Set<PermissionExtension> permissionExtensions, StorageLockManager lockManager)
     {
         this.logger = logger;
+        this.lockManager = lockManager;
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
         this.functionFactoryMap = functionFactoryMap;
@@ -232,7 +229,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public Collection<User> getUsers() throws RaplaException
     {
         checkLoaded();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<User> collection = cache.getUsers();
@@ -241,14 +238,14 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
     public Collection<DynamicType> getDynamicTypes() throws RaplaException
     {
         checkLoaded();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<DynamicType> collection = cache.getDynamicTypes();
@@ -257,7 +254,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -306,7 +303,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     {
         checkLoaded();
         Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<Allocatable> collection = cache.getAllocatables();
@@ -315,7 +312,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
         if (filters == null)
         {
@@ -361,14 +358,14 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public User getUser(final String username) throws RaplaException
     {
         checkLoaded();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             return cache.getUser(username);
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -430,56 +427,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return cache.getSuperCategory();
     }
 
-    protected Lock writeLock() throws RaplaException
-    {
-        final Lock lock = RaplaComponent.lock(this.lock.writeLock(), 60);
-        try
-        {
-            checkLoaded();
-        }
-        catch (Throwable ex)
-        {
-            unlock(lock);
-            if (ex instanceof RaplaException)
-            {
-                throw ex;
-            }
-            else
-            {
-                throw new RaplaException(ex);
-            }
-        }
-        return lock;
-    }
-
-    protected Lock readLock() throws RaplaException
-    {
-        final Lock lock = RaplaComponent.lock(this.lock.readLock(), 20);
-        /*
-        try
-		{
-			checkLoaded();
-		}
-		catch (Throwable ex)
-		{
-			unlock( lock);
-			if ( ex instanceof  RaplaException)
-			{
-				throw ex;
-			}
-			else
-			{
-				throw new RaplaException( ex);
-			}
-		}*/
-        return lock;
-    }
-
-    protected void unlock(Lock lock)
-    {
-        RaplaComponent.unlock(lock);
-    }
-
     protected RaplaResources getI18n()
     {
         return i18n;
@@ -508,7 +455,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             throws RaplaException
     {
         checkLoaded();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             Map<ReferenceInfo<T>, T> result = new LinkedHashMap();
@@ -524,8 +471,30 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
+    }
+
+    public StorageLockManager.WriteLock writeLockIfLoaded() throws RaplaException
+    {
+        final StorageLockManager.WriteLock lock = lockManager.longWriteLock();
+        try
+        {
+            checkLoaded();
+        }
+        catch (Throwable ex)
+        {
+            lockManager.unlock(lock);
+            if (ex instanceof RaplaException)
+            {
+                throw ex;
+            }
+            else
+            {
+                throw new RaplaException(ex);
+            }
+        }
+        return lock;
     }
 
     @Override public Map<Entity, Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException
@@ -643,10 +612,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             return null;
         }
-        Lock readLock = null;
+        StorageLockManager.ReadLock readLock = null;
         try
         {
-            readLock = readLock();
+            readLock = lockManager.readLock();
         }
         catch (RaplaException e)
         {
@@ -659,7 +628,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -677,10 +646,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
     {
-        Lock readLock = null;
+        StorageLockManager.ReadLock readLock = null;
         try
         {
-            readLock = readLock();
+            readLock = lockManager.readLock();
         }
         catch (RaplaException e)
         {
@@ -692,16 +661,16 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
     @Override public <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException
     {
-        Lock readLock;
+        StorageLockManager.ReadLock readLock;
         try
         {
-            readLock = readLock();
+            readLock = lockManager.readLock();
         }
         catch (RaplaException e)
         {
@@ -713,7 +682,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 

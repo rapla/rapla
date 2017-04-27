@@ -13,7 +13,7 @@
 package org.rapla.framework.internal;
 
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -52,7 +52,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     }
 
     public TimeZone getTimeZone() {
-        return DateTools.getTimeZone();
+        return IOUtil.getTimeZone();
     }
 
 

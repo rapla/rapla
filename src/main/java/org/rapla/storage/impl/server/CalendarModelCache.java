@@ -23,12 +23,12 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.server.PromiseSynchroniser;
+import org.rapla.server.RaplaConcurrency;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -58,7 +58,7 @@ public class CalendarModelCache
         }
         finally
         {
-            RaplaComponent.unlock(lock);
+            RaplaConcurrency.unlock(lock);
         }
     }
 
@@ -87,7 +87,7 @@ public class CalendarModelCache
             }
             finally
             {
-                RaplaComponent.unlock(lock);
+                RaplaConcurrency.unlock(lock);
             }
             return; //calendarModelList;
         }
@@ -102,7 +102,7 @@ public class CalendarModelCache
             }
             finally
             {
-                RaplaComponent.unlock(lock);
+                RaplaConcurrency.unlock(lock);
             }
             return;// calendarModelList;
         }
@@ -148,7 +148,7 @@ public class CalendarModelCache
         }
         finally
         {
-            RaplaComponent.unlock(lock);
+            RaplaConcurrency.unlock(lock);
         }
         //return calendarModelList;
     }
@@ -178,7 +178,7 @@ public class CalendarModelCache
         }
         finally
         {
-            RaplaComponent.unlock(lock);
+            RaplaConcurrency.unlock(lock);
         }
         return result;
     }
@@ -206,7 +206,7 @@ public class CalendarModelCache
         }
         finally
         {
-            RaplaComponent.unlock(lock);
+            RaplaConcurrency.unlock(lock);
         }
         return result;
     }
@@ -222,7 +222,7 @@ public class CalendarModelCache
         }
         finally
         {
-            RaplaComponent.unlock(lock);
+            RaplaConcurrency.unlock(lock);
         }
         if (calendarModelList == null || calendarModelList.isEmpty())
         {
@@ -293,11 +293,11 @@ public class CalendarModelCache
 
     protected Lock writeLock() throws RaplaException
     {
-        return RaplaComponent.lock(lock.writeLock(), 60);
+        return RaplaConcurrency.lock(lock.writeLock(), 60);
     }
 
     protected Lock readLock() throws RaplaException
     {
-        return RaplaComponent.lock(lock.readLock(), 10);
+        return RaplaConcurrency.lock(lock.readLock(), 10);
     }
 }

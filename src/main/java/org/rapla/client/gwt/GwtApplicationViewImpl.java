@@ -3,6 +3,7 @@ package org.rapla.client.gwt;
 import javax.inject.Inject;
 
 import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.ui.Widget;
 import org.gwtbootstrap3.client.ui.AnchorListItem;
 import org.gwtbootstrap3.client.ui.Navbar;
 import org.gwtbootstrap3.client.ui.NavbarCollapse;
@@ -100,6 +101,12 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
     @Override
     public void setStatusMessage(final String message, boolean highlight)
     {
+        final int widgetCount = menu.getWidgetCount();
+        final Widget widget = menu.getWidget(widgetCount - 1);
+        if ( widget instanceof  NavbarText)
+        {
+            menu.remove( widgetCount- 1);
+        }
         final NavbarText user = new NavbarText();
         user.setPull(Pull.RIGHT);
         user.setMarginRight(25);

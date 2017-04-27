@@ -17,7 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -48,7 +48,7 @@ public class ReservationTest {
         ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         facade = clientFacade.getRaplaFacade();
 
-        cal = Calendar.getInstance(DateTools.getTimeZone());
+        cal = Calendar.getInstance(IOUtil.getTimeZone());
 
         User user =clientFacade.getUser();
         reserv1 = facade.newReservation();
@@ -105,7 +105,7 @@ public class ReservationTest {
 	
 	        // Modify the cloned appointment
 	        Appointment clonedAppointment= clone.getAppointments()[0];
-	        cal = Calendar.getInstance(DateTools.getTimeZone());
+	        cal = Calendar.getInstance(IOUtil.getTimeZone());
 	        cal.setTime(clonedAppointment.getStart());
 	        cal.set(Calendar.HOUR_OF_DAY, 12);
 	        clonedAppointment.move(cal.getTime());

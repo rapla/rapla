@@ -1,6 +1,5 @@
 package org.rapla.framework.internal;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.DateTools;
@@ -11,7 +10,6 @@ import org.rapla.framework.TypedComponentRole;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
 public abstract class AbstractRaplaLocale implements RaplaLocale {
 
@@ -203,10 +201,6 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
         int year = DateTools.toDate( date.getTime()).year;
         String result = formatMonth( date ) + " " + year;
         return result;
-    }
-
-    public TimeZone getTimeZone() {
-        return DateTools.getTimeZone();
     }
 
     /* (non-Javadoc)

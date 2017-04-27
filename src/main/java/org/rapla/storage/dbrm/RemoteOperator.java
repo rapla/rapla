@@ -41,7 +41,6 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
@@ -69,6 +68,7 @@ import org.rapla.storage.dbrm.RemoteStorage.PasswordPost;
 import org.rapla.storage.dbrm.RemoteStorage.QueryAppointments;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.StorageLockManager;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -88,7 +88,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Vector;
-import java.util.concurrent.locks.Lock;
 
 /** This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -114,9 +113,9 @@ import java.util.concurrent.locks.Lock;
 
     @Inject public RemoteOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
-            RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions)
+            RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions, StorageLockManager lockManager)
     {
-        super(logger.getChildLogger("remote"), i18n, locale, functionFactoryMap, permissionExtensions);
+        super(logger.getChildLogger("remote"), i18n, locale, functionFactoryMap, permissionExtensions, lockManager);
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.remoteStorage = remoteStorage;
         commandQueue = scheduler;
@@ -191,7 +190,7 @@ import java.util.concurrent.locks.Lock;
     {
         RemoteStorage serv = getRemoteStorage();
         Promise<User> userPromise = getScheduler().supplyProxy(() -> serv.getResources()).thenApply((evt) -> {
-            Lock writeLock = RaplaComponent.lock(RemoteOperator.this.lock.writeLock(), 10);
+            StorageLockManager.WriteLock writeLock = lockManager.shortWriteLock();
             try
             {
                 User user = loadData(evt);
@@ -200,7 +199,7 @@ import java.util.concurrent.locks.Lock;
             }
             finally
             {
-                unlock(writeLock);
+                lockManager.unlock(writeLock);
             }
         });
         return userPromise;
@@ -278,13 +277,7 @@ import java.util.concurrent.locks.Lock;
             {
                 // test if the remote operator is writable
                 // if not we skip until the next update cycle
-                Lock writeLock = lock.writeLock();
-                boolean tryLock = writeLock.tryLock();
-                if (tryLock)
-                {
-                    writeLock.unlock();
-                }
-                if (isConnected() && tryLock)
+                if (lockManager.isWriteLocked() && isConnected() )
                 {
                     refreshAsync();
                 }
@@ -860,7 +853,7 @@ import java.util.concurrent.locks.Lock;
         {
             UpdateEvent entityList = serv.getEntityRecursive(array);
             Collection<Entity> list = entityList.getStoreObjects();
-            Lock lock = readLock();
+            StorageLockManager.ReadLock lock = lockManager.readLock();
             try
             {
                 testResolve(list);
@@ -868,7 +861,7 @@ import java.util.concurrent.locks.Lock;
             }
             finally
             {
-                unlock(lock);
+                lockManager.unlock(lock);
             }
             for (Entity entity : list)
             {
@@ -969,7 +962,7 @@ import java.util.concurrent.locks.Lock;
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
             throws RaplaException
     {
-        Lock lock = readLock();
+        StorageLockManager.ReadLock lock = lockManager.readLock();
         try
         {
             final RemoteOperator resolver = this;
@@ -978,7 +971,7 @@ import java.util.concurrent.locks.Lock;
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
     }
 
@@ -1034,7 +1027,7 @@ import java.util.concurrent.locks.Lock;
         if (bSessionActive && !evt.isEmpty())
         {
             getLogger().debug("Objects updated!");
-            Lock writeLock = writeLock();
+            StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
             try
             {
                 final Collection<Entity> storeObjects1 = evt.getStoreObjects();
@@ -1044,7 +1037,7 @@ import java.util.concurrent.locks.Lock;
             }
             finally
             {
-                unlock(writeLock);
+                lockManager.unlock(writeLock);
             }
         }
 
@@ -1058,7 +1051,7 @@ import java.util.concurrent.locks.Lock;
     {
         UpdateResult result;
         Collection<Entity> oldEntities;
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             User user = cache.resolve(userId, User.class);
@@ -1066,20 +1059,20 @@ import java.util.concurrent.locks.Lock;
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
-        Lock writeLock = writeLock();
+        StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             loadData();
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
 
         Collection<Entity> newEntities;
-        readLock = readLock();
+        readLock = lockManager.readLock();
         try
         {
             User user = cache.resolve(userId, User.class);
@@ -1087,7 +1080,7 @@ import java.util.concurrent.locks.Lock;
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
         HashSet<Entity> updated = new HashSet<Entity>(newEntities);
         Set<Entity> toRemove = new HashSet<Entity>(oldEntities);

@@ -1,10 +1,4 @@
-package org.rapla.server.connector;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+package org.rapla.bootstrap;
 
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -12,6 +6,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.rapla.rest.client.swing.AbstractLocalJsonConnector;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class StandaloneConnector extends AbstractLocalJsonConnector
 {

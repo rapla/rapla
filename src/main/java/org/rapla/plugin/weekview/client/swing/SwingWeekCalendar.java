@@ -41,6 +41,7 @@ import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.SwingWeekView;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
@@ -69,7 +70,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
     protected AbstractSwingCalendar createView(boolean showScrollPane) {
         final DateRendererAdapter dateRendererAdapter; 
         DateRenderer dateRenderer = dateRendererProvider.get();
-        dateRendererAdapter = new DateRendererAdapter(dateRenderer, getRaplaLocale().getTimeZone(), getRaplaLocale().getLocale());
+        dateRendererAdapter = new DateRendererAdapter(dateRenderer, IOUtil.getTimeZone(), getRaplaLocale().getLocale());
 
     	final SwingWeekView wv = new SwingWeekView( showScrollPane ) {
             

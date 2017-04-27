@@ -21,7 +21,7 @@ import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -129,7 +129,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         }
         UpdateEvent safeResultEvent = new UpdateEvent();
         TimeZone systemTimeZone = operator.getTimeZone();
-        int timezoneOffset = TimeZoneConverterImpl.getOffset(DateTools.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
+        int timezoneOffset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
         safeResultEvent.setTimezoneOffset(timezoneOffset);
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);

@@ -11,7 +11,6 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.SaveUndo;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -364,7 +363,7 @@ public class EditTaskPresenter implements TaskPresenter
                         //                                    dlg.close();
                         //       FIXME callback;
                     }).exceptionally((exception)->{
-                        dialogUiFactory.showException((Throwable)exception, new SwingPopupContext(null, null));
+                        dialogUiFactory.showException((Throwable)exception, popupContext);
                         //ex.printStackTrace();
                         return Promise.VOID;
                     });

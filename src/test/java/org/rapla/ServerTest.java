@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -625,7 +626,7 @@ public class ServerTest
         getRaplaFacade1().refresh();
         Reservation resAfter = findReservation(clientFacade1.getRaplaFacade(),"bowling");
         Appointment appointment = resAfter.getAppointments()[0];
-        Calendar cal = Calendar.getInstance(DateTools.getTimeZone());
+        Calendar cal = Calendar.getInstance(IOUtil.getTimeZone());
         cal.setTime(appointment.getStart());
         Assert.assertEquals(17, cal.get(Calendar.HOUR_OF_DAY));
         Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));

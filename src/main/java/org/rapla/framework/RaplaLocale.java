@@ -36,15 +36,6 @@ If languages default is not set, the system default wil be used.
 If country code is not set, the system default will be used.
 </p>
 
-<p>
-Rapla hasn't a support for different Timezones yet. 
-if you look into RaplaLocale you find
-3 timzones in Rapla:
-</p>
-
-<ul>
-<li>{@link RaplaLocale#getTimeZone}</li>
-</ul>
  */
 public interface RaplaLocale
 {
@@ -94,12 +85,6 @@ public interface RaplaLocale
     String formatMonth( Date date );
 
     String getCharsetNonUtf();
-
-    /**
-    This method always returns GMT+0. This is used for all internal calls. All dates and times are stored internaly with this Timezone.
-    Rapla can't work with timezones but to use the Date api it needs a timezone, so GMT+0 is used, because it doesn't have DaylightSavingTimes which would confuse the conflict detection. This timezone (GMT+0) is only used internaly and never shown in Rapla. Rapla only displays the time e.g. 10:00am without the timezone.
-     */
-    TimeZone getTimeZone();
 
     Locale getLocale();
 

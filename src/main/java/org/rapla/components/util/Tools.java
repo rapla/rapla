@@ -18,8 +18,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+ import java.util.TimeZone;
 
-import org.rapla.rest.GwtIncompatible;
+ import org.rapla.rest.GwtIncompatible;
 
 /** miscellaneous util methods.*/
 public abstract class Tools
@@ -242,17 +243,26 @@ public abstract class Tools
     }
 
     /** @returns null if no url */
-    public static URL getUrl(String value)
+    public static String getUrl(String value)
     {
-        try
+        int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
+        String url = value.substring(0,httpEnd);
+        if ( url.contains(":"))
         {
-            int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
-            URL url = new URL( value.substring(0,httpEnd));
             return url;
         }
-        catch (MalformedURLException ex)
-        {
-            return null;
-        }
+        return null;
+        //FIXME mit richtigem URL parsing ersetzen
+//
+//        try
+//        {
+//            int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
+//            URL url = new URL( );
+//            return url.toExternalForm();
+//        }
+//        catch (MalformedURLException ex)
+//        {
+//            return null;
+//        }
     }
 }

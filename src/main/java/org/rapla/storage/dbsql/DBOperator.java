@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -51,7 +50,6 @@ import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
@@ -66,6 +64,7 @@ import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.StorageLockManager;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
@@ -391,7 +390,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     {
 
         Connection c = null;
-        final Lock writeLock = RaplaComponent.lock(this.lock.writeLock(), 10);
+        final StorageLockManager.WriteLock writeLock = lockManager.shortWriteLock();
         try
         {
             c = createConnection();
@@ -423,7 +422,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
             close(c);
             c = null;
         }
@@ -660,7 +659,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
     public void dispatch(UpdateEvent evt) throws RaplaException
     {
-        Lock writeLock = writeLock();
+        StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             //Date since = lastUpdated;
@@ -692,7 +691,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
         // TODO check if still needed
         //fireStorageUpdated(result);

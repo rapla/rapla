@@ -80,6 +80,7 @@ import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.dbsql.DBOperator;
+import org.rapla.storage.impl.DefaultStorageLockManager;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.xml.sax.InputSource;
@@ -399,8 +400,10 @@ public abstract class RaplaTestCase
                 RemoteAuthentificationService remoteAuthentificationService = getRemotService(RemoteAuthentificationService.class,customConnector);
                 serviceAtomicReference.set( remoteAuthentificationService);
                 RemoteStorage remoteStorage = getRemotService( RemoteStorage.class, customConnector);
+                final DefaultStorageLockManager lockManager = new DefaultStorageLockManager();
+                final LinkedHashSet<PermissionExtension> permissionExtensionsList = DefaultPermissionControllerSupport.getPermissionExtensions();
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,
-                        remoteStorage, connectionInfo, DefaultPermissionControllerSupport.getPermissionExtensions());
+                        remoteStorage, connectionInfo, permissionExtensionsList, lockManager);
                 FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
                 facade.setOperator(remoteOperator);
                 return facade;

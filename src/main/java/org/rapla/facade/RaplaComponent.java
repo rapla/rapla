@@ -273,37 +273,6 @@ public class RaplaComponent
 		}
 		return false;
 	}
-	
-	public static void unlock(Lock lock)
-	{
-		if ( lock != null)
-		{
-			lock.unlock();
-		}
-	}
-
-	public static Lock lock(Lock lock, int seconds) throws RaplaException {
-		try
-		{
-			if ( lock.tryLock())
-			{
-				return lock;
-			}
-			if (lock.tryLock(seconds, TimeUnit.SECONDS))
-			{
-				return lock;
-			}
-			else
-			{
-				throw new RaplaSynchronizationException("Someone is currently writing. Please try again! Can't acquire lock " + lock );
-			}
-		}
-		catch (InterruptedException ex)
-		{
-			throw new RaplaSynchronizationException( ex);
-		}
-	}
-
 
     protected Date getStartDate(CalendarModel model, User user)
     {

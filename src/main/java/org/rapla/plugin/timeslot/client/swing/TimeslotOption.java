@@ -36,6 +36,7 @@ import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.ClientFacade;
@@ -72,7 +73,7 @@ public class TimeslotOption extends DefaultPluginOption
     		int hour = minuteOfDay /60;
 			int minute = minuteOfDay %60;
 			RaplaLocale raplaLocale = getRaplaLocale();
-			raplatime = new RaplaTime(raplaLocale.getLocale(),raplaLocale.getTimeZone());
+			raplatime = new RaplaTime(raplaLocale.getLocale(), IOUtil.getTimeZone());
 			raplatime.setTime(hour, minute);
 			delete.setIcon(raplaImages.getIconFromKey("icon.remove"));
 			delete.addActionListener(new ActionListener() {

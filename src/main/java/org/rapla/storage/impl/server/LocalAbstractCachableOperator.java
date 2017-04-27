@@ -13,32 +13,6 @@
 
 package org.rapla.storage.impl.server;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
@@ -46,6 +20,7 @@ import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
@@ -109,12 +84,13 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.function.Command;
 import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.Cancelable;
-import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.server.RaplaConcurrency;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -131,14 +107,44 @@ import org.rapla.storage.UpdateResult.Add;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 import org.rapla.storage.impl.AbstractCachableOperator;
+import org.rapla.storage.impl.DefaultStorageLockManager;
 import org.rapla.storage.impl.EntityStore;
+import org.rapla.storage.impl.StorageLockManager;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
+
     InitStatus connectStatus = InitStatus.Disconnected;
     // some indexMaps
     AppointmentMapClass appointmentBindings;
     private BidiMap<String, ReferenceInfo> externalIds;
+
 
     protected enum InitStatus
     {
@@ -189,7 +195,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions);
+        super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions, new DefaultStorageLockManager());
         this.scheduler = scheduler;
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
@@ -396,14 +402,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     public void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException
     {
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             cmd.execute(cache);
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -423,7 +429,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             boolean isResourceTemplate = allocs.size() == 1 && (allocs.iterator().next().getClassification().getType().getKey().equals(RAPLA_TEMPLATE));
             for (Allocatable allocatable : allocs)
             {
-                Lock readLock = readLock();
+                StorageLockManager.ReadLock readLock = lockManager.readLock();
                 SortedSet<Appointment> appointments;
                 try
                 {
@@ -431,7 +437,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 finally
                 {
-                    unlock(readLock);
+                    lockManager.unlock(readLock);
                 }
                 SortedSet<Appointment> appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
                 for (Appointment appointment : appointmentSet)
@@ -569,7 +575,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Date today()
     {
         long time = getCurrentTimestamp().getTime();
-        long offset = TimeZoneConverterImpl.getOffset(DateTools.getTimeZone(), systemTimeZone, time);
+        long offset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, time);
         Date raplaTime = new Date(time + offset);
         return DateTools.cutDate(raplaTime);
     }
@@ -593,7 +599,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public String authenticate(String username, String password) throws RaplaException
     {
         checkConnected();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             getLogger().debug("Check password for User " + username);
@@ -611,7 +617,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -627,14 +633,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         String password = new String(newPassword);
         if (encryption != null)
             password = encrypt(encryption, password);
-        Lock writeLock = writeLock();
+        StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             cache.putPassword(userId, password);
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
         User editObject = editObject(user, null);
         List<Entity> editList = new ArrayList<>(1);
@@ -843,7 +849,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Collection<Conflict> getConflicts(User user) throws RaplaException
     {
         checkConnected();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<Conflict> conflictList = new HashSet<Conflict>();
@@ -858,7 +864,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -896,7 +902,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             @Override public void execute() throws Exception
             {
-                final Lock lock = RaplaComponent.lock(disconnectLock.readLock(), 3);
+                final Lock lock = RaplaConcurrency.lock(disconnectLock.readLock(), 3);
                 try
                 {
                     if (isConnected())
@@ -906,7 +912,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 finally
                 {
-                    RaplaComponent.unlock(lock);
+                    RaplaConcurrency.unlock(lock);
                 }
             }
         };
@@ -1044,11 +1050,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 try
                 {
-                    Lock writeLock = lock.writeLock();
-                    // dispatch also does an refresh without lock so we get the new data each time a store is called
-                    boolean tryLock = writeLock.tryLock();
-                    // dispatch also does an refresh without lock so we get the new data each time a store is called
-                    if (tryLock)
+
+                    final StorageLockManager.WriteLock writeLock = lockManager.writeLockIfAvaliable();
+                    if (writeLock != null)
                     {
                         try
                         {
@@ -1056,7 +1060,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         }
                         finally
                         {
-                            RaplaComponent.unlock(writeLock);
+                            lockManager.unlock(writeLock);
                         }
                     }
                 }
@@ -1071,14 +1075,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @Override public void refresh() throws RaplaException
     {
-        final Lock lock = writeLock();
+        final StorageLockManager.WriteLock lock = writeLockIfLoaded();
         try
         {
             refreshWithoutLock();
         }
         finally
         {
-            RaplaComponent.unlock(lock);
+            lockManager.unlock(lock);
         }
     }
 
@@ -1088,10 +1092,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         if (!isConnected())
             return;
-        Lock writeLock = null;
+        StorageLockManager.WriteLock writeLock = null;
         try
         {
-            writeLock = writeLock();
+            writeLock = writeLockIfLoaded();
         }
         catch (Exception ex)
         {
@@ -1101,7 +1105,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Lock disconnectLock;
         try
         {
-            disconnectLock = RaplaComponent.lock(this.disconnectLock.writeLock(), 60);
+            disconnectLock = RaplaConcurrency.lock(this.disconnectLock.writeLock(), 60);
         }
         catch (Exception ex)
         {
@@ -1116,7 +1120,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            RaplaComponent.unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
 
         try
@@ -1128,7 +1132,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            RaplaComponent.unlock(disconnectLock);
+            RaplaConcurrency.unlock(disconnectLock);
         }
     }
 
@@ -1744,7 +1748,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), new Date(timestamp.getTime() + 1), isDelete);
         LinkedList<ReferenceInfo> result = new LinkedList<ReferenceInfo>();
 
-        Lock lock = readLock();
+        StorageLockManager.ReadLock lock = lockManager.readLock();
         final Collection<String> groupsIncludingParents = user != null ? UserImpl.getGroupsIncludingParents(user) : null;
         String userId = user != null ? user.getId() : null;
         try
@@ -1766,7 +1770,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
         return result;
     }
@@ -2069,7 +2073,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void removeOldHistory() throws RaplaException
     {
-        final Lock writeLock = writeLock();
+        final StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             Date lastUpdated = getLastRefreshed();
@@ -2078,7 +2082,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
     }
 
@@ -2087,7 +2091,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Date today = today();
         Set<ReferenceInfo<Conflict>> conflictsToDelete;
         {
-            Lock readLock = readLock();
+            StorageLockManager.ReadLock readLock = lockManager.readLock();
             try
             {
                 conflictsToDelete = new HashSet<ReferenceInfo<Conflict>>();
@@ -2096,7 +2100,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             finally
             {
-                unlock(readLock);
+                lockManager.unlock(readLock);
             }
         }
 
@@ -2112,7 +2116,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (conflictsToDelete.size() > 0)
         {
             getLogger().info("Removing old conflicts " + conflictsToDelete.size());
-            Lock writeLock = writeLock();
+            StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
             try
             {
                 //Order is important they can't be removed from database if they are not in cache
@@ -2121,7 +2125,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             finally
             {
-                unlock(writeLock);
+                lockManager.unlock(writeLock);
             }
         }
     }
@@ -3286,7 +3290,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private Map<Allocatable, Collection<Appointment>> getFirstAllocatableBindingsMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
             Collection<Reservation> ignoreList) throws RaplaException
     {
-        final Lock readLock = readLock();
+        final StorageLockManager.ReadLock readLock = lockManager.readLock();
         Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
         try
         {
@@ -3294,7 +3298,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
         Map<Allocatable, Collection<Appointment>> map = new HashMap<Allocatable, Collection<Appointment>>();
         for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : allocatableBindings.entrySet())
@@ -3311,7 +3315,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         return scheduler.supply(() ->
         {
-            Lock readLock = readLock();
+            StorageLockManager.ReadLock readLock = lockManager.readLock();
             try
             {
                 Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList,
@@ -3320,7 +3324,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             finally
             {
-                unlock(readLock);
+                lockManager.unlock(readLock);
             }
         });
     }
@@ -3369,7 +3373,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays, final Integer rowsPerHour)
     {
         Promise<Date> promise = scheduler.supply( () -> {
-            Lock readLock = readLock();
+            StorageLockManager.ReadLock readLock = lockManager.readLock();
             try
             {
                 Appointment newState = appointment;
@@ -3402,7 +3406,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             finally
             {
-                unlock(readLock);
+                lockManager.unlock(readLock);
             }
         });
         return promise;
@@ -3451,14 +3455,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Collection<Entity> getVisibleEntities(final User user) throws RaplaException
     {
         checkLoaded();
-        Lock readLock = readLock();
+        StorageLockManager.ReadLock readLock = lockManager.readLock();
         try
         {
             return cache.getVisibleEntities(user);
         }
         finally
         {
-            unlock(readLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -3811,7 +3815,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @Override public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
-        final Lock writeLock = writeLock();
+        final StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             // FIXME check write permissions
@@ -3854,7 +3858,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            unlock(writeLock);
+            lockManager.unlock(writeLock);
         }
     }
 

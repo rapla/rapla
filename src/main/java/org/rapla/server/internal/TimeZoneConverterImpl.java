@@ -6,7 +6,7 @@ import java.util.TimeZone;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.server.TimeZoneConverter;
@@ -21,7 +21,7 @@ public class TimeZoneConverterImpl implements TimeZoneConverter
     @Inject
     public TimeZoneConverterImpl()  
     {
-        zone = DateTools.getTimeZone();
+        zone = IOUtil.getTimeZone();
         TimeZone systemTimezone = TimeZone.getDefault();
         importExportTimeZone = systemTimezone;
     }

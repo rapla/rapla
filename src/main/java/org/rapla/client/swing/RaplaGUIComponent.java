@@ -47,6 +47,7 @@ import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
@@ -142,7 +143,7 @@ public class RaplaGUIComponent extends RaplaComponent
     }
 
     public RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer, IOInterface service) {
-        RaplaCalendar cal = new RaplaCalendar( getI18n().getLocale(),getRaplaLocale().getTimeZone());
+        RaplaCalendar cal = new RaplaCalendar( getI18n().getLocale(), IOUtil.getTimeZone());
         cal.setDateRenderer(dateRenderer);
         addCopyPaste(cal.getDateField(), getI18n(), getRaplaLocale(), service, getLogger());
         return cal;
@@ -223,7 +224,7 @@ public class RaplaGUIComponent extends RaplaComponent
 
 
     public RaplaTime createRaplaTime(IOInterface service) {
-        RaplaTime cal = new RaplaTime( getI18n().getLocale(), getRaplaLocale().getTimeZone());
+        RaplaTime cal = new RaplaTime( getI18n().getLocale(), IOUtil.getTimeZone());
         cal.setTimeRenderer( getTimeRenderer() );
         int rowsPerHour =getCalendarOptions().getRowsPerHour() ;
         cal.setRowsPerHour( rowsPerHour );
@@ -367,7 +368,7 @@ public class RaplaGUIComponent extends RaplaComponent
         		 if ( isDate)
         		 {
         			 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        			 format.setTimeZone( raplaLocale.getTimeZone());
+        			 format.setTimeZone( IOUtil.getTimeZone());
         			 if ( value instanceof java.util.Date)
         			 {
         				 String timestamp = format.format(   (java.util.Date)value);

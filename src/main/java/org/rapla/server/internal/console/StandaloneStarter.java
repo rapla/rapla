@@ -38,7 +38,7 @@ public class StandaloneStarter extends GUIStarter
         this.serverStarter = serverStarter;
         this.mockDownloadUrl = mockDownloadUrl;
         String LocalConnectorC = "org.eclipse.jetty.server.LocalConnector";
-        String StandaloneConnectorC = "org.rapla.server.connector.StandaloneConnector";
+        String StandaloneConnectorC = "org.rapla.bootstrap.StandaloneConnector";
         final ClassLoader classLoader = this.getClass().getClassLoader();
         try
         {

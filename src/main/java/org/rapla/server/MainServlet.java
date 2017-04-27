@@ -14,7 +14,6 @@ package org.rapla.server;
 
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.rapla.components.util.IOUtil;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
@@ -338,7 +337,7 @@ public class MainServlet extends HttpServlet
             {
                 // we need to get the restart look to avoid serving pages in a restart
                 ReadWriteLock restartLock = serverStarter.getRestartLock();
-                readLock = RaplaComponent.lock(restartLock.readLock(), 25);
+                readLock = RaplaConcurrency.lock(restartLock.readLock(), 25);
                 for (ServletRequestPreprocessor preprocessor : serverStarter.getServletRequestPreprocessors())
                 {
                     final HttpServletRequest newRequest = preprocessor.handleRequest(getServletContext(), request, response);
@@ -393,7 +392,7 @@ public class MainServlet extends HttpServlet
         {
             try
             {
-                RaplaComponent.unlock(readLock);
+                RaplaConcurrency.unlock(readLock);
             }
             catch (IllegalMonitorStateException ex)
             {

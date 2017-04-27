@@ -13,16 +13,15 @@
 
 package org.rapla.plugin.abstractcalendar;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
-
 import org.rapla.components.calendarview.html.HTMLBlock;
+import org.rapla.components.util.Tools;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.RaplaBlockContext;
+
+import java.util.List;
 
 
 public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
@@ -120,21 +119,13 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
         
         
         
-        URL url = null;
+        String url = null;
         Attribute[] attributes = getReservation().getClassification().getAttributes();
         for ( int i=0;i<attributes.length;i++) {
             String value = getReservation().getClassification().getValueAsString( attributes[i],getBuildContext().getRaplaLocale().getLocale());
             if ( value == null)
                 continue;
-            try{
-            	int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
-            	url = new URL( value.substring(0,httpEnd));
-            	break;
-            } 
-            catch (MalformedURLException ex)
-            {
-            	
-            }
+            url = Tools.getUrl(value);
         }
             buf.append( "<a href=\"");
             if ( url != null) {

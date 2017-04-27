@@ -1,9 +1,9 @@
 package org.rapla.server.internal;
 
-import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
+import org.rapla.server.RaplaConcurrency;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
@@ -104,13 +104,13 @@ public class ServerStarter
             {
                 try
                 {
-                    RaplaComponent.unlock( restartLock.readLock());
+                    RaplaConcurrency.unlock( restartLock.readLock());
                 }
                 catch (IllegalMonitorStateException ex)
                 {
                     logger.error("Error unlocking read for restart " + ex.getMessage());
                 }
-                writeLock = RaplaComponent.lock( restartLock.writeLock(), 60);
+                writeLock = RaplaConcurrency.lock( restartLock.writeLock(), 60);
             }
             catch (RaplaException ex)
             { 
@@ -142,7 +142,7 @@ public class ServerStarter
             }
             finally
             {
-                RaplaComponent.unlock(writeLock);
+                RaplaConcurrency.unlock(writeLock);
             }
         }
 

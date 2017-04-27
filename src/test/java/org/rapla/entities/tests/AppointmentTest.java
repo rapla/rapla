@@ -17,6 +17,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite.SuiteClasses;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 @SuiteClasses(value=AppointmentTest.class)
 public class AppointmentTest {
-    TimeZone zone = DateTools.getTimeZone(); //this is GMT
+    TimeZone zone = IOUtil.getTimeZone(); //this is GMT
     Locale locale = Locale.getDefault();
 
     Appointment createAppointment(String date,String start,String end) {
@@ -490,7 +491,7 @@ public class AppointmentTest {
     }
 
     private Calendar createGMTCalendar() {
-		return Calendar.getInstance( DateTools.getTimeZone());
+		return Calendar.getInstance( IOUtil.getTimeZone());
 	}
 
     @Test

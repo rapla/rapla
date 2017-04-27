@@ -34,6 +34,7 @@ import org.rapla.components.calendarview.swing.SwingCompactWeekView;
 import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarModel;
@@ -73,7 +74,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
     @Override
 	protected AbstractSwingCalendar createView(boolean showScrollPane)
 			throws RaplaException {
-    	   final DateRendererAdapter dateRenderer = new DateRendererAdapter(dateRendererProvider.get(), getRaplaLocale().getTimeZone(), getRaplaLocale().getLocale());
+    	   final DateRendererAdapter dateRenderer = new DateRendererAdapter(dateRendererProvider.get(), IOUtil.getTimeZone(), getRaplaLocale().getLocale());
            SwingCompactWeekView compactWeekView = new SwingCompactWeekView( showScrollPane ) {
                @Override
                protected JComponent createColumnHeader(Integer column) {
