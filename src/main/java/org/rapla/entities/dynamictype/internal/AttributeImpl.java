@@ -744,7 +744,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         throw new RaplaException("Unknown attribute type: " + type);
     }
 
-    public static ReferenceInfo parseRefType(Attribute attribute, String text, KeyAndPathResolver categoryFinder)
+    public static ReferenceInfo parseRefType(Attribute attribute, String text, KeyAndPathResolver categoryFinder) throws RaplaException
     {
         Class<? extends Entity> refType = attribute.getRefType();
         if (refType == Category.class)

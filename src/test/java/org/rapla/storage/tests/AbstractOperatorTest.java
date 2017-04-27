@@ -49,7 +49,7 @@ public abstract class AbstractOperatorTest  {
         // abspeichern
         {
 	        Reservation r = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
-	        r.getClassification().setValue("name","test");
+	        r.getClassification().setValue("name","myTest");
 	        Appointment app = facade.newAppointment( new Date(), new Date(), user);
 	        Appointment app2 = facade.newAppointment( new Date(), new Date(), user);
 	        Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
@@ -70,7 +70,7 @@ public abstract class AbstractOperatorTest  {
         {
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
-	        filter.addRule("name",new Object[][] { {"contains","test"}});
+	        filter.addRule("name",new Object[][] { {"contains","myTest"}});
 	        Reservation reservation = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
@@ -148,7 +148,7 @@ public abstract class AbstractOperatorTest  {
 
 	        r.setClassification( facade.getPersistant(type).newClassification() );
 
-	        r.getClassification().setValue("name","test");
+	        r.getClassification().setValue("name","myTest");
 	        r.getClassification().setValue("test-att","test-att-value");
 	        Appointment app = facade.newAppointment( new Date(), new Date(), user);
 	        Appointment app2 = facade.newAppointment( new Date(), new Date(), user);
@@ -169,7 +169,7 @@ public abstract class AbstractOperatorTest  {
 	        operator.connect();
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
-	        filter.addRule("name",new Object[][] { {"contains","test"}});
+	        filter.addRule("name",new Object[][] { {"contains","myTest"}});
 	        Reservation reservation = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];

@@ -281,6 +281,10 @@ public class DynamicTypeReader extends RaplaXMLReader
                     }
                     collection.put( attribute, constraintKey);
                 }
+                else
+                {
+                    attribute.setContraintRefId(constraintKey, idRef);
+                }
             }
             else if (attribute.getConstraintClass( constraintKey ) == Integer.class)
             {
