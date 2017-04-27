@@ -186,6 +186,7 @@ public class SQLOperatorRemoteTest extends ServerTest
     @After
     public void tearDown() throws Exception
     {
+        super.tearDown();
         // nochmal ueberpruefen ob die Daten auch wirklich eingelesen werden koennen. This could not be the case
         CachableStorageOperator operator = getRapladb();
         operator.disconnect();

@@ -40,7 +40,7 @@ public class DaggerServerCreator
     public static ServerContext create(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         ServerContext result = new ServerContext();
-        if ( true )
+        if ( false )
         {
             SimpleRaplaInjector injector = new SimpleRaplaInjector(logger);
             injector.addComponentInstance(Logger.class, logger);
@@ -50,7 +50,7 @@ public class DaggerServerCreator
             injector.addComponentInstanceProvider(ShutdownService.class, () -> containerContext.getShutdownService());
             injector.addComponentProvider(StorageOperator.class, ServerStorageSelector.class);
             ScanningClassLoader.LoadingFilter filter = null;
-            final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter, InjectionContext.MODULE_LIST);
+            final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter, InjectionContext.MODULE_LIST_LOCATION);
             Collection<? extends Class> classes = loadingResult.getClasses();
             for (Throwable error : loadingResult.getErrors())
             {

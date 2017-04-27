@@ -66,7 +66,7 @@ public class DaggerClientCreator
                     return new String[0];
                 }
             };
-            final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST);
+            final ScanningClassLoader.LoadingResult loadingResult = new ServiceInfLoader().loadClassesFromServiceInfFile(filter,InjectionContext.MODULE_LIST_LOCATION);
             Collection<? extends Class> classes = loadingResult.getClasses();
             for ( Throwable error:loadingResult.getErrors())
             {
