@@ -33,7 +33,6 @@
         <url>http://rapla.org</url>
     </organization>
     <properties>
-		<parent-process-activate>true</parent-process-activate>
 		<org.rapla.parentModules></org.rapla.parentModules>
     </properties>
 	<build>
@@ -100,7 +99,6 @@
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                 </artifactItem>
-                                <!-- 
                                 <artifactItem>
                                     <groupId>com.google.dagger</groupId>
                                     <artifactId>dagger</artifactId>
@@ -109,7 +107,6 @@
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                 </artifactItem>
-                                 -->
                             </artifactItems>
                             <outputDirectory>${project.build.directory}/wars</outputDirectory>
                             <overWriteReleases>false</overWriteReleases>

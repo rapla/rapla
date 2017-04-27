@@ -17,9 +17,10 @@
 	</licenses>
 	<packaging>pom</packaging>
 	<properties>
-		<resteasy.version>3.1.0.CR3</resteasy.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<logback.version>1.2.3</logback.version>
+		<intellijAnnotations.version>12.0</intellijAnnotations.version>
+		<ical4j.version>2.0.0</ical4j.version>
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<!--
 		<jetty.version>9.3.7.v20160115</jetty.version>
@@ -27,25 +28,34 @@
 		<!--
 		<jetty.version>9.2.14.v20151106</jetty.version>
 		-->
+		<exchange.webservice.api>2.0</exchange.webservice.api>
 		<jetty.version>9.4.4.v20170414</jetty.version>
-
+		<mail.version>1.4.7</mail.version>
 		<maven.install.skip>false</maven.install.skip>
 		<dagger.version>2.10</dagger.version>
 		<guava.version>21.0</guava.version>
 		<gwt.version>2.8.1</gwt.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
-		<gwt.plugin.version>2.8.0</gwt.plugin.version>
+		<gwt.plugin.version>1.0-rc-7</gwt.plugin.version>
+		<commons-codec.version>1.8</commons-codec.version>
+		<commons-lang.version>2.6</commons-lang.version>
+		<commons-collections.version>4.0</commons-collections.version>
+		<gson.version>2.6.2</gson.version>
+		<javax.inject.version>1</javax.inject.version>
+		<restinject.version>1.0-alpha6-SNAPSHOT</restinject.version>
+		<resteasy.version>3.1.2.Final</resteasy.version>
+		<javax.ws.rs.version>2.0.1</javax.ws.rs.version>
+		<hsqldb.version>2.4.0</hsqldb.version>
+		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
+		<mysql.version>5.1.41</mysql.version>
+		<!--
+        <restinject.version>1-SNAPSHOT</restinject.version>
+         -->
+
 		<gwt.plugin.productionmode>false</gwt.plugin.productionmode>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<restinject.version>1.0-alpha6-SNAPSHOT</restinject.version>
-		<!--
-        <restinject.version>1-SNAPSHOT</restinject.version>
-         -->
-		<scannotation.version>1.0.4</scannotation.version>
-		<gson.version>2.6.2</gson.version>
-		<javax.inject.version>1</javax.inject.version>
 		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
 		<rapla.distribution.directory>${basedir}/src/main/distribution</rapla.distribution.directory>
 		<!-- Text Properties -->
@@ -87,7 +97,7 @@
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.3</version>
+				<version>1.6.8</version>
 				<extensions>true</extensions>
 				<configuration>
 					<serverId>ossrh</serverId>
@@ -95,71 +105,10 @@
 					<autoReleaseAfterClose>true</autoReleaseAfterClose>
 				</configuration>
 			</plugin>
-			<!--
-			<plugin>
-				<groupId>org.bsc.maven</groupId>
-				<artifactId>maven-processor-plugin</artifactId>
-				<version>2.2.4</version>
-				<executions>
-					<execution>
-						<id>process</id>
-						<goals>
-							<goal>process</goal>
-						</goals>
-						<phase>generate-sources</phase>
-						<configuration>
-							<defaultOutputDirectory>${project.build.directory}/generated-sources/apt</defaultOutputDirectory>
-							<processors>
-								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
-								<processor>dagger.internal.codegen.ComponentProcessor</processor>
-							</processors>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			-->
-			<!--
-
-			<plugin>
-				<groupId>org.bsc.maven</groupId>
-				<artifactId>maven-processor-plugin</artifactId>
-				<version>2.2.4</version>
-				<executions>
-					<execution>
-						<id>process</id>
-						<goals>
-							<goal>process</goal>
-						</goals>
-						<phase>generate-sources</phase>
-						<configuration>
-							<defaultOutputDirectory>${project.build.directory}/generated-sources/apt</defaultOutputDirectory>
-							<processors>
-								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
-								<processor>dagger.internal.codegen.ComponentProcessor</processor>
-							</processors>
-						</configuration>
-					</execution>
-					<execution>
-						<id>process-test</id>
-						<goals>
-							<goal>process-test</goal>
-						</goals>
-						<phase>generate-test-sources</phase>
-						<configuration>
-							<defaultOutputDirectory>${project.build.directory}/generated-test-sources/apt</defaultOutputDirectory>
-							<processors>
-								<processor>org.rapla.inject.generator.AnnotationInjectionProcessor</processor>
-								<processor>dagger.internal.codegen.ComponentProcessor</processor>
-							</processors>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
--->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.6.0</version>
+				<version>3.6.1</version>
 				<configuration>
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
@@ -177,9 +126,6 @@
 					<verbose>false</verbose>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
-					<!--
-					<proc>none</proc>
-					-->
 					<annotationProcessorPaths>
 						<annotationProcessorPath>
 							<groupId>org.rapla</groupId>
@@ -189,7 +135,7 @@
 						<annotationProcessorPath>
 							<groupId>com.google.guava</groupId>
 							<artifactId>guava</artifactId>
-							<version>21.0</version>
+							<version>${guava.version}</version>
 						</annotationProcessorPath>
 						<annotationProcessorPath>
 							<groupId>com.google.dagger</groupId>
@@ -202,8 +148,6 @@
 							<version>${dagger.version}</version>
 						</annotationProcessorPath>
 					</annotationProcessorPaths>
-
-
 				</configuration>
 				<!--
 				<dependencies>
@@ -271,62 +215,15 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--
-			 plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>gwt-maven-plugin</artifactId>
-				<version>${gwt.plugin.version}</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<productionMode>${gwt.plugin.productionmode}</productionMode>
-					<runTarget>Rapla.html</runTarget>
-					<module>org.rapla.Rapla</module>
-					<gwtSdkFirstInClasspath>true</gwtSdkFirstInClasspath>
-					<sourceLevel>1.8</sourceLevel>
-					<logLevel>INFO</logLevel>
-					<gen>${project.build.directory}/generated-gwt-code</gen>
-					<detail>false</detail>
-				</configuration>
-			</plugin>
-			-->
 			<plugin>
 				<groupId>net.ltgt.gwt.maven</groupId>
 				<artifactId>gwt-maven-plugin</artifactId>
-				<version>1.0-rc-7</version>
+				<version>${gwt.plugin.version}</version>
 				<extensions>true</extensions>
 				<executions>
-					<!--
 					<execution>
-						<id>1</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>generate-module</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>2</id>
-						<phase>process-classes</phase>
-						<goals>
-							<goal>import-sources</goal>
-						</goals>
-						<configuration>
-
-						</configuration>
-					</execution>
-					-->
-					<execution>
-						<id>3</id>
 						<phase>prepare-package</phase>
 						<goals>
-							<!--
-							<goal>import-sources</goal>
-							-->
 							<goal>compile</goal>
 						</goals>
 					</execution>
@@ -356,7 +253,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>2.4</version>
+				<version>3.0.1</version>
 				<executions>
 					<execution>
 						<goals>
@@ -397,7 +294,6 @@
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
-
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
@@ -438,11 +334,13 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>de.juplo</groupId>
 			<artifactId>scannotation</artifactId>
 			<version>${scannotation.version}</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>javax.validation</groupId>
 			<artifactId>validation-api</artifactId>
@@ -454,14 +352,6 @@
 			<version>${restinject.version}</version>
 			<scope>compile</scope>
 		</dependency>
-		<!--
-		<dependency>
-			<groupId>com.google.dagger</groupId>
-			<artifactId>dagger-compiler</artifactId>
-			<version>${dagger.version}</version>
-			<scope>runtime</scope>
-		</dependency>
-		-->
 		<dependency>
 			<groupId>org.rapla</groupId>
 			<artifactId>restinject</artifactId>
@@ -491,13 +381,13 @@
 		<dependency>
 			<groupId>com.intellij</groupId>
 			<artifactId>annotations</artifactId>
-			<version>12.0</version>
+			<version>${intellijAnnotations.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.intellij</groupId>
 			<artifactId>annotations</artifactId>
-			<version>12.0</version>
+			<version>${intellijAnnotations.version}</version>
 			<classifier>sources</classifier>
 			<scope>provided</scope>
 		</dependency>
@@ -505,7 +395,7 @@
 		<dependency>
 			<groupId>javax.ws.rs</groupId>
 			<artifactId>javax.ws.rs-api</artifactId>
-			<version>2.0.1</version>
+			<version>${javax.ws.rs.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -515,7 +405,7 @@
 		<dependency>
 			<groupId>org.mnode.ical4j</groupId>
 			<artifactId>ical4j</artifactId>
-			<version>2.0-beta1</version>
+			<version>${ical4j.version}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>bndlib</artifactId>
@@ -530,22 +420,22 @@
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.8</version>
+			<version>${commons-codec.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
-			<version>2.6</version>
+			<version>${commons-lang.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
-			<version>4.0</version>
+			<version>${commons-collections.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.mail</groupId>
 			<artifactId>mailapi</artifactId>
-			<version>1.4.7</version>
+			<version>${mail.version}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>activation</artifactId>
@@ -556,7 +446,7 @@
 		<dependency>
 			<groupId>com.sun.mail</groupId>
 			<artifactId>smtp</artifactId>
-			<version>1.4.7</version>
+			<version>${mail.version}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>activation</artifactId>
@@ -587,12 +477,6 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.38</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -696,15 +580,25 @@
 		<dependency>
 			<groupId>org.hsqldb</groupId>
 			<artifactId>hsqldb</artifactId>
-			<version>2.3.3</version>
+			<version>${hsqldb.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>9.1-901-1.jdbc4</version>
-			<scope>provided</scope>
+			<version>${postgresql.version}</version>
+			<scope>test</scope>
+			<optional>true</optional>
 		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>${mysql.version}</version>
+			<scope>test</scope>
+			<optional>true</optional>
+		</dependency>
+		-->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -755,52 +649,6 @@
 			<version>${slf4j.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<!--
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-			<version>${jetty.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>javax.servlet</artifactId>
-					<groupId>org.eclipse.jetty.orbit</groupId>
-				</exclusion>
-			</exclusions>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-webapp</artifactId>
-			<version>${jetty.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-jndi</artifactId>
-			<version>${jetty.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>javax.mail.glassfish</artifactId>
-					<groupId>org.eclipse.jetty.orbit</groupId>
-				</exclusion>
-			</exclusions>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-plus</artifactId>
-			<version>${jetty.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-deploy</artifactId>
-			<version>${jetty.version}</version>
-			<scope>test</scope>
-		</dependency>
--->
-
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -900,7 +748,7 @@
 		<dependency>
 			<groupId>com.microsoft.ews-java-api</groupId>
 			<artifactId>ews-java-api</artifactId>
-			<version>2.0</version>
+			<version>${exchange.webservice.api}</version>
 		</dependency>
 	</dependencies>
 	<repositories>
