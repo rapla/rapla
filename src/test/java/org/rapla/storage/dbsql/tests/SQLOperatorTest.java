@@ -175,15 +175,18 @@ public class SQLOperatorTest extends AbstractOperatorTest
         operator.refresh();
 
         //Allocatable period1 = (Allocatable) operator.getPersistant( Collections.singleton( period )).get( period);
+        boolean periodFound = false;
         Period[] periods = facade.getPeriods();
         for (Period period1 : periods)
         {
             if (period1.getName(null).equals(name))
             {
+                periodFound = true;
                 Assert.assertEquals(start, period1.getStart());
-                Assert.assertEquals(end, period1.getEnd());
+                Assert.assertEquals(DateTools.fillDate(end), period1.getEnd());
             }
         }
+        Assert.assertTrue(periodFound);
     }
 
     @Test
