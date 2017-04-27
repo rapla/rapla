@@ -40,7 +40,7 @@ public class DaggerServerCreator
     public static ServerContext create(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         ServerContext result = new ServerContext();
-        if ( true)
+        if ( true )
         {
             SimpleRaplaInjector injector = new SimpleRaplaInjector(logger);
             injector.addComponentInstance(Logger.class, logger);
@@ -74,13 +74,13 @@ public class DaggerServerCreator
             result.membersInjector = reflectionMembersInjector;
             result.serviceContainer = DaggerReflectionStarter.createObject( ServerServiceContainer.class,component);
         }
-//        else
-//        {
+        else
+        {
 //            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
 //            final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
 //            result.membersInjector = reflectionMembersInjector;
 //            result.serviceContainer = component.getServerServiceContainer();
-//        }
+        }
         return result;
     }
 

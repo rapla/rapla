@@ -45,7 +45,7 @@ public class DaggerClientCreator
     {
         final ClientService client;
         UserServiceProvider userClientServiceProvider = new UserServiceProvider();
-        if (false)
+        if (true)
         {
             Logger logger = startupEnvironment.getBootstrapLogger();
             boolean webstartEnabled = startupEnvironment.getStartupMode() == StartupEnvironment.WEBSTART;

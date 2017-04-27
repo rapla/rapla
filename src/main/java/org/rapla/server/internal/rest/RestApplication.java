@@ -3,6 +3,7 @@ package org.rapla.server.internal.rest;
 import org.rapla.inject.scanning.RestEasyLoadingFilter;
 import org.rapla.inject.scanning.ScanningClassLoader;
 import org.rapla.inject.scanning.ScannotationLoader;
+import org.rapla.inject.scanning.ServiceInfLoader;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Path;
@@ -25,7 +26,7 @@ public class RestApplication extends Application
         Collection<Class<? extends Annotation>> classList = new ArrayList<>();
         classList.add(Path.class);
         classList.add(Provider.class);
-        ScanningClassLoader classLoader = new ScannotationLoader();
+        ScanningClassLoader classLoader = new ServiceInfLoader();
         final RestEasyLoadingFilter filter = new RestEasyLoadingFilter();
         final ScanningClassLoader.LoadingResult loadingResult = classLoader.loadClasses(filter, classList);
         this.classes = Collections.unmodifiableSet(loadingResult.getClasses());
