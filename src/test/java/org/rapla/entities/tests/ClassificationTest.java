@@ -66,7 +66,7 @@ public class ClassificationTest  {
     	c1a.setKey("c1a");
     	c1.addCategory( c1a );
     	Category c1b = facade.newCategory();
-    	c1a.setKey("c1b");
+    	c1b.setKey("c1b");
     	c1.addCategory( c1b );
     	Category c2 = facade.newCategory();
     	c2.setKey("c2");
