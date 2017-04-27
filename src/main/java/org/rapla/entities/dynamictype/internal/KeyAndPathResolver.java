@@ -9,6 +9,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.framework.RaplaException;
 import org.rapla.storage.impl.EntityStore;
 
 public class KeyAndPathResolver
@@ -106,16 +107,12 @@ public class KeyAndPathResolver
 
     }
 
-    public ReferenceInfo<Category> getIdForCategory(ReferenceInfo<Category> parentCategory,String keyref)
+    public ReferenceInfo<Category> getIdForCategory(ReferenceInfo<Category> parentCategory,String keyref)throws RaplaException
     {
         StringBuilder builder = new StringBuilder();
         if ( !parentCategory.equals( Category.SUPER_CATEGORY_REF))
         {
-            final String id = parentCategory.getId();
-            builder.append(id);
-        }
-        if ( builder.length() >0)
-        {
+            builder.append(CategoryImpl.getKeyPathString(getPathForCategory(store.resolve(parentCategory))));
             builder.append("/");
         }
         builder.append(keyref);

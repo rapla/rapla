@@ -144,8 +144,15 @@ class ClassificationFilterReader extends RaplaXMLReader {
             Object value;
             if ( attribute.getRefType() != null)
             {
-                final ReferenceInfo referenceInfo = AttributeImpl.parseRefType(attribute, trim, getKeyAndPathResolver());
-                value = referenceInfo;
+                try
+                {
+                    final ReferenceInfo referenceInfo = AttributeImpl.parseRefType(attribute, trim, getKeyAndPathResolver());
+                    value = referenceInfo;
+                }
+                catch(RaplaException ex)
+                {
+                    throw createSAXParseException(ex.getMessage(), ex);
+                }
             }
             else
             {

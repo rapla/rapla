@@ -231,6 +231,7 @@
             <rapla:permission access="allocate_conflicts"/>
          </relax:element>
       </relax:define>
+
       <relax:define name="resource3">
          <relax:element name="dynatt:resource3" id="d44fd301-7290-41b2-9ecc-5499fa2ad91e" created-at="2016-07-10T13:03:29.0325Z" last-changed="2016-07-10T13:03:29.0325Z">
             <doc:name lang="en">TestType</doc:name>
