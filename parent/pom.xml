@@ -75,6 +75,15 @@
 	<build>
 		<!-- <sourceDirectory>${basedir}/src</sourceDirectory> -->
 		<plugins>
+			<!-- temporary disable forking as this creates a classpath where dependencies seems to be missing -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.20</version>
+				<configuration>
+					<forkCount>0</forkCount>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
