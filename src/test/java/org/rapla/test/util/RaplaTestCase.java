@@ -113,12 +113,12 @@ public abstract class RaplaTestCase
     {
         ServerContainerContext containerContext = new ServerContainerContext();
         containerContext.addFileDatasource("raplafile",getTestDataFile(xmlFile));
-        FileOperator.setDefaultFileIO( new VoidFileIO());
         return createServerContext(logger, containerContext, port);
     }
 
     @NotNull public static ServerContext createServerContext(Logger logger, ServerContainerContext containerContext, int port) throws Exception
     {
+        FileOperator.setDefaultFileIO(new VoidFileIO());
         final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, containerContext);
         final ServerServiceContainer serviceContainer = serverContext.getServiceContainer();
         Injector injector = serverContext.getMembersInjector();
@@ -129,7 +129,7 @@ public abstract class RaplaTestCase
         return result;
     }
 
-    static protected Server createServer(final ServerServiceContainer serverService,Injector membersInjector,int port) throws Exception
+    private static Server createServer(final ServerServiceContainer serverService,Injector membersInjector,int port) throws Exception
     {
         final ServerServiceImpl serverServiceImpl = (ServerServiceImpl) serverService;
         File webappFolder = new File("test");
