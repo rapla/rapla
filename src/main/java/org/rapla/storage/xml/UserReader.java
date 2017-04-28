@@ -50,11 +50,8 @@ public class UserReader extends RaplaXMLReader
         {
             TimestampDates ts = readTimestamps( atts);
             user = new UserImpl(ts.createTime, ts.changeTime);
-            if (ts.lastChangedBy != null)
-            {
-                user.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
-            }
             setId( user, atts );
+            setLastChangedBy(user, atts);
 //            String idString = getString(atts, "person",null);
 //            if ( idString != null)
 //            {

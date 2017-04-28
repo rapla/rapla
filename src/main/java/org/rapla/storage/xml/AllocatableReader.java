@@ -87,10 +87,7 @@ public class AllocatableReader extends RaplaXMLReader
         {
         	TimestampDates ts = readTimestamps( atts);
             allocatable = new AllocatableImpl(ts.createTime, ts.changeTime);
-            if (ts.lastChangedBy != null)
-            {
-                allocatable.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
-            }
+            setLastChangedBy(allocatable, atts);
             allocatable.setResolver( store );
             currentAnnotatable = allocatable;
             setId( allocatable, atts );

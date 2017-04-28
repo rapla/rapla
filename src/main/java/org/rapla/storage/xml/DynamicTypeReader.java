@@ -82,10 +82,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 typeAnnotations.clear();
                 TimestampDates ts = readTimestamps( atts);
                 dynamicType = new DynamicTypeImpl(ts.createTime, ts.changeTime);
-                if (ts.lastChangedBy != null)
-                {
-                    dynamicType.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
-                }
+                setLastChangedBy(dynamicType, atts);
                 if (atts.getValue( "id" )!=null)
                 {
                     setId( dynamicType, atts );

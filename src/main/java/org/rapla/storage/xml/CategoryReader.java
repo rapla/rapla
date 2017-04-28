@@ -67,10 +67,7 @@ public class CategoryReader extends RaplaXMLReader
             Assert.notNull( key );
             TimestampDates ts = readTimestamps( atts);
             CategoryImpl category = new CategoryImpl(ts.createTime, ts.changeTime );
-            if (ts.lastChangedBy != null)
-            {
-                category.putId("last_changed_by", new ReferenceInfo<>(ts.lastChangedBy, User.class));
-            }
+            setLastChangedBy(category, atts);
             category.setKey( key );
             currentName = category.getName();
             currentAnnotatable = category;
