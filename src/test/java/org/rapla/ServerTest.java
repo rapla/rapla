@@ -158,7 +158,7 @@ public class ServerTest
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
         Reservation r1 = raplaFacade1.newReservation();
         String typeKey = r1.getClassification().getType().getKey();
-        r1.getClassification().setValue("name", "test-reservation");
+        r1.getClassification().setValue("name", "myGeneratedTestReservation");
         r1.addAppointment(raplaFacade1.newAppointment(raplaFacade1.today(), new Date()));
         r1.addAllocatable(raplaFacade1.getAllocatables()[0]);
         raplaFacade1.store(r1);
@@ -166,7 +166,7 @@ public class ServerTest
         final RaplaFacade raplaFacade2 = getRaplaFacade2();
         raplaFacade2.refresh();
 
-        Reservation r2 = findReservation(raplaFacade2, typeKey, "test-reservation");
+        Reservation r2 = findReservation(raplaFacade2, typeKey, "myGeneratedTestReservation");
         Assert.assertNotNull(r2);
         Assert.assertEquals(1, r2.getAppointments().length);
         Assert.assertEquals(1, r2.getAllocatables().length);
@@ -299,6 +299,7 @@ public class ServerTest
         filter.addRule("name", new Object[][] { { "contains", name } });
         Collection<Reservation> reservations = PromiseSynchroniser
                 .waitForWithRaplaException(facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
+        Assert.assertEquals("Only one Reservation should be found by name as otherwise the choose done by iterator.next can not guarantee the correct choosen one", 1, reservations.size()); 
         if (!reservations.isEmpty())
             return reservations.iterator().next();
         else
@@ -315,13 +316,14 @@ public class ServerTest
             Allocatable[] allocatables = getRaplaFacade1().getAllocatables();
             Allocatable resource1 = allocatables[0];
             Assert.assertEquals("erwin", resource1.getName(locale));
+            Assert.assertEquals(3, resource1.getClassification().getAttributes().length);
             getRaplaFacade1().store(typeEdit3);
         }
         {
             Allocatable[] allocatables = getRaplaFacade1().getAllocatables();
             Allocatable resource1 = allocatables[0];
             Assert.assertEquals("erwin", resource1.getName(locale));
-            Assert.assertEquals(3, resource1.getClassification().getAttributes().length);
+            Assert.assertEquals(2, resource1.getClassification().getAttributes().length);
         }
     }
 
