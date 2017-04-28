@@ -12,19 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql.tests;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.ServerTest;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.AttributeAnnotations;
-import org.rapla.entities.dynamictype.AttributeType;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.ConstraintIds;
-import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.internal.ServerContainerContext;
@@ -79,7 +73,7 @@ public class SQLOperatorRemoteTest extends ServerTest
     }
 
     /** exposes a bug in the 0.12.1 Version of Rapla */
-    @Test(timeout = 30000)
+    @Test
     public void testAttributeChange() throws Exception
     {
         RaplaFacade facade = getServerFacade();
@@ -134,7 +128,7 @@ public class SQLOperatorRemoteTest extends ServerTest
         }
     }
 
-    @Test(timeout = 30000)
+    @Test
     public void testNewAttribute() throws Exception
     {
         RaplaFacade facade = getServerFacade();
@@ -166,7 +160,7 @@ public class SQLOperatorRemoteTest extends ServerTest
         Assert.assertEquals(name, allocatable.getClassification().getValue("name"));
     }
 
-    @Test(timeout = 30000)
+    @Test
     public void testCreateResourceAndRemoveAttribute() throws RaplaException
     {
         final RaplaFacade clientFacade = getRaplaFacade1();
@@ -181,22 +175,6 @@ public class SQLOperatorRemoteTest extends ServerTest
         typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
         clientFacade.store(typeEdit3);
 
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        super.tearDown();
-        // nochmal ueberpruefen ob die Daten auch wirklich eingelesen werden koennen. This could not be the case
-        CachableStorageOperator operator = getRapladb();
-        operator.disconnect();
-        Thread.sleep(200);
-        operator.connect();
-        operator.getVisibleEntities(null);
-        //operator.disconnect();
-        Thread.sleep(100);
-        super.tearDown();
-        Thread.sleep(500);
     }
 
 }
