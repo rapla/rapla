@@ -16,8 +16,9 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.rest.JsonParserWrapper;
-import org.rapla.server.RaplaConcurrency;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.impl.DefaultRaplaLock;
+import org.rapla.storage.impl.RaplaLock;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import javax.inject.Inject;
@@ -34,11 +35,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.rapla.server.RaplaConcurrency.unlock;
 
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
@@ -61,10 +57,10 @@ public class ExchangeAppointmentStorage
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
     //private static String DEFAULT_STORAGE_FILE_PATH = "data/exchangeConnector.dat";
     //	private String storageFilePath = DEFAULT_STORAGE_FILE_PATH;
-    protected ReadWriteLock lock = new ReentrantReadWriteLock();
     final private Logger logger;
     final private RaplaFacade facade;
     private final CachableStorageOperator operator;
+    private final RaplaLock lockManager;
 
 
     /**
@@ -77,22 +73,13 @@ public class ExchangeAppointmentStorage
         this.facade = facade;
         this.logger = logger;
         this.operator = operator;
-    }
-
-    protected Lock writeLock() throws RaplaException
-    {
-        return RaplaConcurrency.lock(lock.writeLock(), 60);
-    }
-
-    protected Lock readLock() throws RaplaException
-    {
-        return RaplaConcurrency.lock(lock.readLock(), 10);
+        lockManager = new DefaultRaplaLock(logger);
     }
 
     public Collection<SynchronizationTask> getAllTasks() throws RaplaException
     {
         List<SynchronizationTask> result = new ArrayList<SynchronizationTask>();
-        Lock lock = readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
             for (Collection<SynchronizationTask> list : tasks.values())
@@ -107,7 +94,7 @@ public class ExchangeAppointmentStorage
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
     }
 
@@ -115,7 +102,7 @@ public class ExchangeAppointmentStorage
     {
         // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
         List<SynchronizationTask> result = new ArrayList<SynchronizationTask>();
-        Lock lock = readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
             for (Collection<SynchronizationTask> list : tasks.values())
@@ -135,7 +122,7 @@ public class ExchangeAppointmentStorage
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
     }
     
@@ -149,7 +136,7 @@ public class ExchangeAppointmentStorage
     synchronized public SynchronizationTask getTask(Appointment appointment, ReferenceInfo<User> userId) throws RaplaException
     {
         String appointmentId = appointment.getId();
-        Lock lock = readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
             Set<SynchronizationTask> set = tasks.get(appointmentId);
@@ -166,7 +153,7 @@ public class ExchangeAppointmentStorage
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
         return null;
     }
@@ -174,7 +161,7 @@ public class ExchangeAppointmentStorage
     public Collection<SynchronizationTask> getTasks(ReferenceInfo appointment) throws RaplaException
     {
         String appointmentId = appointment.getId();
-        Lock lock = readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
             Set<SynchronizationTask> set = tasks.get(appointmentId);
@@ -186,7 +173,7 @@ public class ExchangeAppointmentStorage
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
     }
 
@@ -224,7 +211,7 @@ public class ExchangeAppointmentStorage
     //	
     public void storeAndRemove(Collection<SynchronizationTask> toStore, Collection<SynchronizationTask> toRemove) throws RaplaException
     {
-        Lock lock = writeLock();
+        RaplaLock.WriteLock lock = lockManager.writeLock(60);
         try
         {
             for (SynchronizationTask task : toStore)
@@ -259,7 +246,7 @@ public class ExchangeAppointmentStorage
         }
         finally
         {
-            unlock(lock);
+            lockManager.unlock(lock);
         }
 
         Collection<Entity> storeObjects = new HashSet<>();
@@ -270,7 +257,7 @@ public class ExchangeAppointmentStorage
             String appointmentId = task.getAppointmentId();
             if (appointmentId != null)
             {
-                Lock writeLock = writeLock();
+                RaplaLock.WriteLock writeLock = lockManager.writeLock(60);
                 try
                 {
                     //remove tasks from appointmenttask 
@@ -280,7 +267,7 @@ public class ExchangeAppointmentStorage
                 }
                 finally
                 {
-                    unlock(writeLock);
+                    lockManager.unlock(writeLock);
                 }
             }
 

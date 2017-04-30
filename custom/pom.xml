@@ -13,7 +13,7 @@
     </parent>
     <packaging>pom</packaging>
     <properties>
-        <rapla.version>${project.parent.version}</rapla.version>
+        <rapla.version>2.0-SNAPSHOT</rapla.version>
     </properties>
     <dependencies>
         <dependency>

@@ -25,6 +25,7 @@ import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.internal.rest.RestApplication;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
+import org.rapla.storage.impl.RaplaLock;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -330,14 +331,13 @@ public class MainServlet extends HttpServlet
 
     public void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Lock readLock = null;
+        RaplaLock.ReadLock restartLock = null;
         try
         {
             try
             {
                 // we need to get the restart look to avoid serving pages in a restart
-                ReadWriteLock restartLock = serverStarter.getRestartLock();
-                readLock = RaplaConcurrency.lock(restartLock.readLock(), 25);
+                restartLock = serverStarter.getRestartLock();
                 for (ServletRequestPreprocessor preprocessor : serverStarter.getServletRequestPreprocessors())
                 {
                     final HttpServletRequest newRequest = preprocessor.handleRequest(getServletContext(), request, response);
@@ -392,7 +392,7 @@ public class MainServlet extends HttpServlet
         {
             try
             {
-                RaplaConcurrency.unlock(readLock);
+                serverStarter.freeRestartLock(restartLock);
             }
             catch (IllegalMonitorStateException ex)
             {

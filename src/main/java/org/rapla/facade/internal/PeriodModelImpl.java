@@ -138,7 +138,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
             return null;
 
         final Period nearestPeriodForDate = getNearestPeriodForDate(date);
-        if ( nearestPeriodForDate.contains( date))
+        if ( nearestPeriodForDate != null && nearestPeriodForDate.contains( date))
         {
             return  nearestPeriodForDate;
         }

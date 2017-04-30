@@ -64,7 +64,7 @@ import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.impl.StorageLockManager;
+import org.rapla.storage.impl.RaplaLock;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
@@ -390,7 +390,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     {
 
         Connection c = null;
-        final StorageLockManager.WriteLock writeLock = lockManager.shortWriteLock();
+        final RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
         try
         {
             c = createConnection();
@@ -659,7 +659,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
     public void dispatch(UpdateEvent evt) throws RaplaException
     {
-        StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             //Date since = lastUpdated;
@@ -700,6 +700,11 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects,
             Connection connection, String userId) throws RaplaException
     {
+        if (( storeObjects == null || storeObjects.size() == 0) && (preferencePatches == null || preferencePatches.size() == 0)
+                && (removeObjects == null || removeObjects.size() == 0))
+        {
+            return;
+        }
         final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<ReferenceInfo>();
         for (Entity entity : storeObjects)
         {
@@ -713,6 +718,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         {
             ids.add(patch.getReference());
         }
+
         final boolean needsGlobalLock = containsDynamicType(ids);
         Date connectionTimestamp = null;
         final Collection<String> lockIds = needsGlobalLock ? Collections.singletonList(LockStorage.GLOBAL_LOCK) : getLockIds(ids);

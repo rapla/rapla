@@ -68,7 +68,7 @@ import org.rapla.storage.dbrm.RemoteStorage.PasswordPost;
 import org.rapla.storage.dbrm.RemoteStorage.QueryAppointments;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.impl.StorageLockManager;
+import org.rapla.storage.impl.RaplaLock;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -113,7 +113,7 @@ import java.util.Vector;
 
     @Inject public RemoteOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
-            RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions, StorageLockManager lockManager)
+            RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions, RaplaLock lockManager)
     {
         super(logger.getChildLogger("remote"), i18n, locale, functionFactoryMap, permissionExtensions, lockManager);
         this.remoteAuthentificationService = remoteAuthentificationService;
@@ -190,7 +190,7 @@ import java.util.Vector;
     {
         RemoteStorage serv = getRemoteStorage();
         Promise<User> userPromise = getScheduler().supplyProxy(() -> serv.getResources()).thenApply((evt) -> {
-            StorageLockManager.WriteLock writeLock = lockManager.shortWriteLock();
+            RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
             try
             {
                 User user = loadData(evt);
@@ -853,7 +853,7 @@ import java.util.Vector;
         {
             UpdateEvent entityList = serv.getEntityRecursive(array);
             Collection<Entity> list = entityList.getStoreObjects();
-            StorageLockManager.ReadLock lock = lockManager.readLock();
+            RaplaLock.ReadLock lock = lockManager.readLock();
             try
             {
                 testResolve(list);
@@ -962,7 +962,7 @@ import java.util.Vector;
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
             throws RaplaException
     {
-        StorageLockManager.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
             final RemoteOperator resolver = this;
@@ -1027,7 +1027,7 @@ import java.util.Vector;
         if (bSessionActive && !evt.isEmpty())
         {
             getLogger().debug("Objects updated!");
-            StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
+            RaplaLock.WriteLock writeLock = writeLockIfLoaded();
             try
             {
                 final Collection<Entity> storeObjects1 = evt.getStoreObjects();
@@ -1051,7 +1051,7 @@ import java.util.Vector;
     {
         UpdateResult result;
         Collection<Entity> oldEntities;
-        StorageLockManager.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
             User user = cache.resolve(userId, User.class);
@@ -1061,7 +1061,7 @@ import java.util.Vector;
         {
             lockManager.unlock(readLock);
         }
-        StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             loadData();

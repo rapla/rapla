@@ -75,7 +75,7 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
-import org.rapla.storage.impl.StorageLockManager;
+import org.rapla.storage.impl.RaplaLock;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
@@ -440,7 +440,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public void dispatch(final UpdateEvent evt) throws RaplaException
     {
-        final StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
+        final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             preprocessEventStorage(evt);
@@ -602,7 +602,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     synchronized final public void saveData() throws RaplaException
     {
-        final StorageLockManager.WriteLock writeLock = writeLockIfLoaded();
+        final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try
         {
             saveData(cache, null, includeIds);
@@ -741,7 +741,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
-        final StorageLockManager.ReadLock lock = lockManager.readLock();
+        final RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
             final Collection<ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));

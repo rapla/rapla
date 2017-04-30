@@ -3,17 +3,15 @@ package org.rapla.server.internal;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
-import org.rapla.server.RaplaConcurrency;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.servletpages.ServletRequestPreprocessor;
+import org.rapla.storage.impl.DefaultRaplaLock;
+import org.rapla.storage.impl.RaplaLock;
 
 import javax.servlet.ServletException;
 import java.util.Collection;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerStarter
 {
@@ -21,21 +19,30 @@ public class ServerStarter
     private ServerServiceContainer server;
     private Injector membersInjector;
     private Logger logger;
-    private ReadWriteLock restartLock = new ReentrantReadWriteLock();
+    private RaplaLock restartLock;
     private Collection<ServletRequestPreprocessor> processors;
     private ServerContainerContext backendContext;
 
     public ServerStarter(Logger logger, ServerContainerContext backendContext)
     {
         this.logger = logger;
+        this.restartLock = new DefaultRaplaLock(logger);
         this.backendContext =  backendContext;
     }
 
-    public ReadWriteLock getRestartLock()
+    public RaplaLock.ReadLock getRestartLock() throws RaplaException
     {
-        return restartLock;
+        return restartLock.readLock( 25);
     }
-    
+
+
+
+    public void freeRestartLock(RaplaLock.ReadLock lock)
+    {
+        this.restartLock.unlock( lock);
+    }
+
+
     //Logger logger;
     public void startServer()    throws ServletException {
 
@@ -97,20 +104,13 @@ public class ServerStarter
         return DaggerServerCreator.createImportExport(logger, backendContext);
     }
 
+
     private final class ShutdownServiceImpl implements ShutdownService {
         public void shutdown(final boolean restart) {
-            Lock writeLock;
+            RaplaLock.WriteLock writeLock;
             try
             {
-                try
-                {
-                    RaplaConcurrency.unlock( restartLock.readLock());
-                }
-                catch (IllegalMonitorStateException ex)
-                {
-                    logger.error("Error unlocking read for restart " + ex.getMessage());
-                }
-                writeLock = RaplaConcurrency.lock( restartLock.writeLock(), 60);
+                writeLock = restartLock.writeLock();
             }
             catch (RaplaException ex)
             { 
@@ -142,7 +142,7 @@ public class ServerStarter
             }
             finally
             {
-                RaplaConcurrency.unlock(writeLock);
+                restartLock.unlock(writeLock);
             }
         }
 

@@ -85,10 +85,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
     final protected Map<String, FunctionFactory> functionFactoryMap;
     private volatile Date lastRefreshed;
     final protected PermissionController permissionController;
-    protected StorageLockManager lockManager;
+    protected RaplaLock lockManager;
 
     public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
-            Set<PermissionExtension> permissionExtensions, StorageLockManager lockManager)
+            Set<PermissionExtension> permissionExtensions, RaplaLock lockManager)
     {
         this.logger = logger;
         this.lockManager = lockManager;
@@ -229,7 +229,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public Collection<User> getUsers() throws RaplaException
     {
         checkLoaded();
-        StorageLockManager.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<User> collection = cache.getUsers();
@@ -245,7 +245,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public Collection<DynamicType> getDynamicTypes() throws RaplaException
     {
         checkLoaded();
-        StorageLockManager.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<DynamicType> collection = cache.getDynamicTypes();
@@ -303,7 +303,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     {
         checkLoaded();
         Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
-        StorageLockManager.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
             Collection<Allocatable> collection = cache.getAllocatables();
@@ -358,7 +358,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public User getUser(final String username) throws RaplaException
     {
         checkLoaded();
-        StorageLockManager.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
             return cache.getUser(username);
@@ -455,7 +455,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             throws RaplaException
     {
         checkLoaded();
-        StorageLockManager.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
             Map<ReferenceInfo<T>, T> result = new LinkedHashMap();
@@ -475,9 +475,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
-    public StorageLockManager.WriteLock writeLockIfLoaded() throws RaplaException
+    public RaplaLock.WriteLock writeLockIfLoaded() throws RaplaException
     {
-        final StorageLockManager.WriteLock lock = lockManager.longWriteLock();
+        final RaplaLock.WriteLock lock = lockManager.writeLock(60);
         try
         {
             checkLoaded();
@@ -612,7 +612,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             return null;
         }
-        StorageLockManager.ReadLock readLock = null;
+        RaplaLock.ReadLock readLock = null;
         try
         {
             readLock = lockManager.readLock();
@@ -646,7 +646,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
     {
-        StorageLockManager.ReadLock readLock = null;
+        RaplaLock.ReadLock readLock = null;
         try
         {
             readLock = lockManager.readLock();
@@ -667,7 +667,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     @Override public <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException
     {
-        StorageLockManager.ReadLock readLock;
+        RaplaLock.ReadLock readLock;
         try
         {
             readLock = lockManager.readLock();
