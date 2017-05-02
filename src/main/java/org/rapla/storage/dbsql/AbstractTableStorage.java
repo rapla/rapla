@@ -642,7 +642,7 @@ public class AbstractTableStorage implements TableStorage
 
 	protected void setText(PreparedStatement stmt, int columIndex, String xml)
             throws SQLException {
-        if (  isHsqldb() || isH2())
+        if (  isHsqldb() || isH2() )
         {
             if (xml != null)
             {

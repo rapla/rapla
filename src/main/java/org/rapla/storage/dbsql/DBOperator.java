@@ -749,6 +749,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
             {
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
             }
+            getLogger().debug("Locks requested storing");
             raplaSQLOutput.store(connection, storeObjects, connectionTimestamp);
             raplaSQLOutput.storePatches(connection, preferencePatches, connectionTimestamp);
             if (bSupportsTransactions)
@@ -796,7 +797,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
             }
             catch (Exception ex)
             {
-                getLogger().error("Could noe remove locks. They will be removed during next cleanup. ", ex);
+                getLogger().error("Could not remove locks. They will be removed during next cleanup. ", ex);
             }
         }
     }
@@ -979,12 +980,15 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         final Collection<ReferenceInfo> entitiesToRemove = removeInconsistentReservations(entityStore);
 
         Collection<Entity> list = entityStore.getList();
-        final HistoryEntry latest = history.getLatest(Category.SUPER_CATEGORY_REF);
-        if ( latest != null)
+        if (history.hasHistory(Category.SUPER_CATEGORY_REF))
         {
-            final Category historyCategory = (Category)history.getEntity(latest);
-            superCategory.setLastChanged( historyCategory.getLastChanged());
-            superCategory.setCreateDate(historyCategory.getCreateDate());
+            final HistoryEntry latest = history.getLatest(Category.SUPER_CATEGORY_REF);
+            if (latest != null)
+            {
+                final Category historyCategory = (Category) history.getEntity(latest);
+                superCategory.setLastChanged(historyCategory.getLastChanged());
+                superCategory.setCreateDate(historyCategory.getCreateDate());
+            }
         }
         cache.putAll(list);
         resolveInitial(list, this);
