@@ -132,7 +132,8 @@ public class ConflictSelectionPresenter implements Presenter
             final List<Conflict> disabledConflicts = getConflicts(false);
             CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
             CommandHistory commanHistory = getCommandHistory();
-            commanHistory.storeAndExecute(command);
+            final Promise promise = commanHistory.storeAndExecute(command);
+            handleException( promise,context);
         }
         catch (RaplaException ex)
         {
@@ -148,13 +149,24 @@ public class ConflictSelectionPresenter implements Presenter
             List<Conflict> enabledConflicts = getConflicts(true);
             CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
             CommandHistory commanHistory = getCommandHistory();
-            commanHistory.storeAndExecute(command);
+            final Promise promise = commanHistory.storeAndExecute(command);
+            handleException( promise,context);
         }
         catch (RaplaException ex)
         {
             dialogUiFactory.showException(ex, context);
         }
         
+    }
+
+    protected Promise handleException(Promise promise, PopupContext context)
+    {
+        return promise.exceptionally(ex->
+                {
+                    dialogUiFactory.showException((Throwable)ex, context);
+                    return Promise.VOID;
+                }
+        );
     }
 
     public CommandHistory getCommandHistory()

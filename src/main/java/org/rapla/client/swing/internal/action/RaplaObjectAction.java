@@ -37,6 +37,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import java.util.ArrayList;
@@ -370,13 +371,23 @@ public class RaplaObjectAction extends RaplaAction {
         DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getFacade(),getI18n(), entities, getUser());
 	    if ( undoable)
 	    {
-	    	getUpdateModule().getCommandHistory().storeAndExecute(deleteCommand);
+	    	handleException(getUpdateModule().getCommandHistory().storeAndExecute(deleteCommand));
 	    }
 	    else
 	    {
 	    	deleteCommand.execute();
 	    }	
 	}
+
+    protected Promise handleException(Promise promise)
+    {
+        return promise.exceptionally(ex->
+                {
+                    dialogUiFactory.showException((Throwable)ex,popupContext);
+                    return Promise.VOID;
+                }
+        );
+    }
 	
 
  // action which is executed by clicking on the edit button (after

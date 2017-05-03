@@ -11,6 +11,7 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.SaveUndo;
+import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -357,16 +358,12 @@ public class EditTaskPresenter implements TaskPresenter
                     SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
                     CommandHistory commandHistory = clientFacade.getCommandHistory();
                     Promise promise = commandHistory.storeAndExecute(saveCommand);
-                    promise.thenRun(() ->
+                    handleException(promise.thenRun(() ->
                     {
                         //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
                         //                                    dlg.close();
                         //       FIXME callback;
-                    }).exceptionally((exception)->{
-                        dialogUiFactory.showException((Throwable)exception, popupContext);
-                        //ex.printStackTrace();
-                        return Promise.VOID;
-                    });
+                    }), popupContext);
                 }
                 else
                 {
@@ -381,6 +378,17 @@ public class EditTaskPresenter implements TaskPresenter
         }
         return null;
     }
+
+    Promise handleException(Promise promise,PopupContext popupContext)
+    {
+        return promise.exceptionally(ex->
+                {
+                    dialogUiFactory.showException((Throwable)ex,popupContext);
+                    return Promise.VOID;
+                }
+        );
+    }
+
 
     public void close(ApplicationEvent applicationEvent)
     {

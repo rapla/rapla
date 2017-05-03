@@ -193,14 +193,15 @@ public abstract class ReservationControllerImpl implements ModificationListener,
 
         DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(),i18n,reservationsToRemove, appointmentsToRemove, exceptionsToAdd);
         CommandHistory commanHistory = getCommandHistory();
-        commanHistory.storeAndExecute(command);
+        final Promise promise = commanHistory.storeAndExecute(command);
+        handleException(promise, context);
     }
 
     abstract protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException;
 
     abstract protected PopupContext getPopupContext();
 
-    abstract protected void showException(Exception ex, PopupContext sourceComponent);
+    abstract protected void showException(Throwable ex, PopupContext sourceComponent);
 
     abstract protected int showDialog(String action, PopupContext context, List<String> optionList, List<String> iconList, String title, String content,
             String dialogIcon) throws RaplaException;
@@ -458,7 +459,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             }
         };
         CommandHistory commandHistory = getCommandHistory();
-        commandHistory.storeAndExecute(command);
+        final Promise promise = commandHistory.storeAndExecute(command);
+        handleException(promise, getPopupContext());
     }
 
     private boolean isNotEmptyWithExceptions(Appointment appointment, List<Date> exceptions)
@@ -625,7 +627,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             }
         };
         CommandHistory commandHistory = getCommandHistory();
-        commandHistory.storeAndExecute(command);
+        final Promise promise = commandHistory.storeAndExecute(command);
+        handleException(promise, getPopupContext());
     }
 
     private void copyCutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables, String action,
@@ -831,7 +834,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             pasteCommand = new AppointmentPaste(appointment, reservation, restrictedAllocatables, asNewReservation, copyWholeReservation, offset,
                     popupContext);
         }
-        getCommandHistory().storeAndExecute(pasteCommand);
+        final Promise promise = getCommandHistory().storeAndExecute(pasteCommand);
+        handleException(promise, popupContext);
     }
 
     public CommandHistory getCommandHistory()
@@ -848,7 +852,7 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
     }
 
-    public void resizeAppointment(AppointmentBlock appointmentBlock, Date newStart, Date newEnd, PopupContext context, boolean keepTime) throws RaplaException
+    public void resizeAppointment(AppointmentBlock appointmentBlock, Date newStart, Date newEnd,final PopupContext context, boolean keepTime) throws RaplaException
     {
         boolean includeEvent = newEnd == null;
         Appointment appointment = appointmentBlock.getAppointment();
@@ -867,7 +871,18 @@ public abstract class ReservationControllerImpl implements ModificationListener,
             newStart = new Date(oldStart.getTime() + getOffset(oldStart, newStart, keepTime));
         }
         AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart, newEnd, context, result, keepTime);
-        getCommandHistory().storeAndExecute(resizeCommand);
+        final Promise promise = getCommandHistory().storeAndExecute(resizeCommand);
+        handleException(promise, context);
+    }
+
+    protected Promise handleException(Promise promise, PopupContext context)
+    {
+        return promise.exceptionally(ex->
+        {
+            showException((Throwable)ex,context);
+            return Promise.VOID;
+        }
+        );
     }
 
     public long getOffset(Date appStart, Date newStart, boolean keepTime)
@@ -893,7 +908,8 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         if (command != null)
         {
             CommandHistory commandHistory = getCommandHistory();
-            commandHistory.storeAndExecute(command);
+            final Promise promise = commandHistory.storeAndExecute(command);
+            handleException(promise, context);
         }
     }
 

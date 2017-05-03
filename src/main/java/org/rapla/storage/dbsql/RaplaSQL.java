@@ -2754,7 +2754,8 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 }
                 load(rset);
                 // the select is ordered desc by last_changed, so if we get to early in time, we do not need to load it
-                if (supportTimestamp != null && getTimestamp(rset, 5).getTime() < supportTimestamp.getTime())
+                final Date timestamp = getTimestamp(rset, 5);
+                if (supportTimestamp != null && timestamp != null && timestamp.getTime() < supportTimestamp.getTime())
                 {
                     finishedIdsToLoad.add(id);
                 }

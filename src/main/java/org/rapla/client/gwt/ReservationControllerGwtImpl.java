@@ -41,7 +41,7 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
     }
 
     @Override
-    protected void showException(Exception ex, PopupContext sourceComponent)
+    protected void showException(Throwable ex, PopupContext sourceComponent)
     {
         getLogger().error(ex.getMessage(), ex);
     }

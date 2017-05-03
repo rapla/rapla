@@ -668,23 +668,30 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         try
         {
             bSaving = true;
-            PopupContext popupContext = createPopupContext(mainContent, null);
             final Set<Reservation> singleton = Collections.singleton(mutableReservation);
             final Set<Reservation> originals = original != null ? Collections.singleton(original) : null;
             SaveUndo<Reservation> saveCommand = new SaveUndo<Reservation>(getFacade(),getI18n(),singleton, originals/*, popupContext*/);
             final Promise<Void> promise = getUpdateModule().getCommandHistory().storeAndExecute(saveCommand);
-            promise.thenRun(() -> {
+            handleException(promise.thenRun(() -> {
                 setSaved(true);
                 closeWindow();
-            }).exceptionally((ex) -> {
-                dialogUiFactory.showException(ex, new SwingPopupContext(mainContent, null));
-                return null;
-            });
+            }));
         }
         finally
         {
             bSaving = false;
         }
+    }
+
+    Promise handleException(Promise promise)
+    {
+        return promise.exceptionally(ex->
+                {
+                    PopupContext context = new SwingPopupContext(mainContent, null);
+                    dialogUiFactory.showException((Throwable)ex,context);
+                    return Promise.VOID;
+                }
+        );
     }
 
     public CommandHistory getCommandHistory()
@@ -712,7 +719,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                         return getString("delete") + " " + getString("reservation");
                     }
                 };
-                getCommandHistory().storeAndExecute(deleteCommand);
+                handleException(getCommandHistory().storeAndExecute(deleteCommand));
                 closeWindow();
             }
         }

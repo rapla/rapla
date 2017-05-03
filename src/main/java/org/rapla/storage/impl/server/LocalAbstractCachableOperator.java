@@ -2709,10 +2709,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 Category[] categories = category.getCategories();
                 for (int i = 0; i < categories.length; i++)
                 {
-                    String key = categories[i].getKey();
+                    final Category category1 = categories[i];
+                    String key = category1.getKey();
                     for (int j = i + 1; j < categories.length; j++)
                     {
-                        String key2 = categories[j].getKey();
+                        final Category category2 = categories[j];
+                        String key2 = category2.getKey();
                         if (key == key2 || (key != null && key.equals(key2)))
                         {
                             throwNotUnique(key);

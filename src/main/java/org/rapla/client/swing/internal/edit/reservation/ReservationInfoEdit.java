@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal.edit.reservation;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -301,11 +302,22 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             Collection<Permission> newPermissions = permissionListField.getPermissionList();
             if ( PermissionContainer.Util.differs( oldPermissions, newPermissions)) {
                 UndoPermissionChange permissionChange = new UndoPermissionChange(oldPermissions, newPermissions);
-                commandHistory.storeAndExecute(permissionChange);   
+                handleException(commandHistory.storeAndExecute(permissionChange));
             }
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex, new SwingPopupContext(this.getComponent(), null));
         }
+    }
+
+    protected Promise handleException(Promise promise)
+    {
+        return promise.exceptionally(ex->
+                {
+                    PopupContext context = null;
+                    dialogUiFactory.showException((Throwable)ex,context);
+                    return Promise.VOID;
+                }
+        );
     }
 
     // The DynamicType has changed
@@ -322,7 +334,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     			Classification newClassification = ((ClassificationImpl) newDynamicType.newClassification(classification)).clone();
     	        
             	UndoReservationTypeChange command = new UndoReservationTypeChange(oldClassification, newClassification, oldDynamicType, newDynamicType);
-            	commandHistory.storeAndExecute(command);
+            	handleException(commandHistory.storeAndExecute(command));
             	
             	lastClassification = newClassification;
             }
@@ -526,7 +538,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 }
                 UndoClassificationChange classificationChange = new UndoClassificationChange(oldValue, newValue, keyName);
                 if (oldValue != newValue && (oldValue == null || newValue == null || !oldValue.equals(newValue))) {
-                    commandHistory.storeAndExecute(classificationChange);	
+                    handleException(commandHistory.storeAndExecute(classificationChange));
                 }
             } catch (RaplaException ex) {
                 dialogUiFactory.showException(ex, new SwingPopupContext(this.getComponent(), null));

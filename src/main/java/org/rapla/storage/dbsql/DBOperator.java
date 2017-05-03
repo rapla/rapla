@@ -259,7 +259,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
             {
                 connection.setAutoCommit(true);
             }
-            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             //connection.createStatement().execute( "ALTER TABLE RESOURCE RENAME TO RAPLA_RESOURCE");
             // 		     connection.commit();
             return connection;
