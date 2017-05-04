@@ -1042,7 +1042,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         calendarModelCache.initCalendarMap();
         scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
-        final int refreshPeriod = 1000 * 3;
+        final int refreshPeriod = 1000 * 9;
         scheduleConnectedTasks(new Command()
         {
             @Override public void execute() throws Exception

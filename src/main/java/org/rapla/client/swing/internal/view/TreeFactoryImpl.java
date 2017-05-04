@@ -217,7 +217,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         	categorization.put( type, new LinkedHashMap<Object, DefaultMutableTreeNode>());
         	uncategorized.put( type, new ArrayList<NamedNode>());
         }
-		for (Iterator<? extends Classifiable> it = classifiables.iterator(); it.hasNext();) {
+        for (Iterator<? extends Classifiable> it = classifiables.iterator(); it.hasNext();) {
             Classifiable classifiable =  it.next();
             Classification classification = classifiable.getClassification();
             Collection<NamedNode> childNodes = new ArrayList<NamedNode>();
@@ -495,14 +495,14 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         treeNode.setFiltered(resourcesFiltered);
 
         // adds elements to typ folders
-        Allocatable[] allocatables = getQuery().getAllocatables();
-        Collection<Allocatable> filtered = new ArrayList<Allocatable>();
-        for (Allocatable classifiable: allocatables) {
-            if (!isInFilter(filter, classifiable)) {
-                continue;
-            }
-            filtered.add( classifiable);
-        }
+        Allocatable[] filtered = getQuery().getAllocatables(filter);
+//        Collection<Allocatable> filtered = new ArrayList<Allocatable>();
+//        for (Allocatable classifiable: allocatables) {
+//            if (!isInFilter(filter, classifiable)) {
+//                continue;
+//            }
+//            filtered.add( classifiable);
+//        }
         Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));
 		addClassifiables(nodeMap, sorted, true);
 
@@ -520,15 +520,12 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     }
 
 
-    private <T extends Named> Collection<T> sorted(Collection<T> allocatables) {
-        TreeSet<T> sortedList = new TreeSet<T>(new NamedComparator<T>(getLocale()));
-        sortedList.addAll(allocatables);
-        return sortedList;
-    }
-    
-    private <T extends Classifiable> Collection<T> sorted(Collection<T> allocatables, Comparator<Classifiable> comp) {
-        TreeSet<T> sortedList = new TreeSet<T>(comp);
-        sortedList.addAll(allocatables);
+    private Collection<Allocatable> sorted(Allocatable[] allocatables, Comparator<Classifiable> comp) {
+        TreeSet<Allocatable> sortedList = new TreeSet<Allocatable>(comp);
+        for ( Allocatable alloc:allocatables)
+        {
+            sortedList.add(alloc);
+        }
         return sortedList;
     }
     
@@ -634,7 +631,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                     return ((Entity) o1).getId().compareTo(((Entity)o2).getId());
                 }
             };
-            for (final Allocatable period: sorted(Arrays.asList(periodList), comp)) {
+            for (final Allocatable period: sorted(periodList, comp)) {
                 NamedNode node = new NamedNode(period);
                 periodRoot.add(node);
             }
@@ -757,7 +754,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             Allocatable allocatable = conflict.getAllocatable();
             allocatables.add( allocatable );
         }
-        Collection<Allocatable> sorted = sorted(allocatables, new SortedClassifiableComparator(getLocale()));
+        Collection<Allocatable> sorted = sorted(allocatables.toArray(new Allocatable[] {}), new SortedClassifiableComparator(getLocale()));
         Map<Classifiable, Collection<NamedNode>> childMap = addClassifiables(nodeMap, sorted, true);
         for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
             Conflict conflict = it.next();

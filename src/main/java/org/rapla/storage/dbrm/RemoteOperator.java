@@ -646,6 +646,11 @@ import java.util.Vector;
         }
     }
 
+    public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
+    {
+        return getAllocatables(filters, 5000);
+    }
+
     public void dispatch(UpdateEvent evt) throws RaplaException
     {
         checkConnected();

@@ -299,7 +299,13 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
+
     public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
+    {
+        return getAllocatables(filters, -1);
+    }
+
+    protected Collection<Allocatable> getAllocatables(ClassificationFilter[] filters, int maxPerType) throws RaplaException
     {
         checkLoaded();
         Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
@@ -314,32 +320,37 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             lockManager.unlock(readLock);
         }
-        if (filters == null)
-        {
-            // remove internal types if not specified in filters to remain backwards compatibility
-            Iterator<? extends Classifiable> it = allocatables.iterator();
-            while (it.hasNext())
-            {
-                Classifiable classifiable = it.next();
-                if (Classifiable.ClassifiableUtil.isInternalType(classifiable))
-                {
-                    it.remove();
-                }
-            }
-        }
-        else
-        {
+        Map<DynamicType,Integer> typeCount = new LinkedHashMap<>();
 
             Iterator<? extends Classifiable> it = allocatables.iterator();
             while (it.hasNext())
             {
                 Classifiable classifiable = it.next();
-                if (!ClassificationFilter.Util.matches(filters, classifiable))
+                if ( maxPerType > 0)
+                {
+                    DynamicType type = classifiable.getClassification().getType();
+                    Integer integer = typeCount.get(type);
+                    if (integer == null)
+                    {
+                        integer = 1;
+                    }
+                    else
+                    {
+                        integer += 1;
+                    }
+                    if (integer > maxPerType)
+                    {
+                        it.remove();
+                        continue;
+                    }
+                    typeCount.put(type, integer);
+                }
+                // remove internal types if not specified in filters to remain backwards compatibility
+                if (filters != null &&!ClassificationFilter.Util.matches(filters, classifiable) || (filters == null && Classifiable.ClassifiableUtil.isInternalType(classifiable) ))
                 {
                     it.remove();
                 }
             }
-        }
         return allocatables;
     }
 

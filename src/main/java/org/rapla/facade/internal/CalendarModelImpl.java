@@ -692,9 +692,10 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     {
         Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
         // TODO should be replaced with getAllocatables(allocatableFilter.values();
-        for (Allocatable allocatable : operator.getAllocatables(null))
+        ClassificationFilter[] filters = allocatableFilter.values().toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
+        for (Allocatable allocatable : operator.getAllocatables(filters))
         {
-            if (isInFilterAndCanRead(allocatable))
+            if (canRead(allocatable))
             {
                 list.add(allocatable);
             }
@@ -704,8 +705,13 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     private boolean isInFilterAndCanRead(Allocatable allocatable)
     {
+        return isInFilter(allocatable) && canRead(allocatable);
+    }
+
+    private boolean canRead(Allocatable allocatable)
+    {
         final PermissionController permissionController = operator.getPermissionController();
-        return isInFilter(allocatable) && (user == null || permissionController.canRead(allocatable, user));
+        return user == null || permissionController.canRead(allocatable, user);
     }
 
     private boolean isInFilter(Allocatable classifiable)

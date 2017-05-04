@@ -15,13 +15,27 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.ImportExportManager;
 
-@Extension(provides = ServerExtension.class,id="archiver")
+@Extension(provides = ServerExtension.class,id="org.rapla.plugin.archiver.server")
 public class ArchiverServiceTask  implements ServerExtension
 {
+    final CommandScheduler timer;
+    final Logger logger;
+    final RaplaFacade facade;
+    final ImportExportManager importExportManager;
     @Inject
 	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final ImportExportManager importExportManager)
             throws RaplaInitializationException
     {
+
+        this.timer = timer;
+        this.logger = logger;
+        this.facade = facade;
+        this.importExportManager =importExportManager;
+    }
+
+    @Override public void start()
+    {
+
         final RaplaConfiguration config;
         try
         {
@@ -36,32 +50,27 @@ public class ArchiverServiceTask  implements ServerExtension
         if ( days != -20 || export)
         {
             Command removeTask = new Command() {
-            	public void execute() throws RaplaException {
+                public void execute() throws RaplaException {
 
 
-            		try 
-            		{
-            			if ( export && ArchiverServiceImpl.isExportEnabled(facade))
-            			{
-            				importExportManager.doExport();
-            			}
-            			if ( days != -20 )
+                    try
+                    {
+                        if ( export && ArchiverServiceImpl.isExportEnabled(facade))
+                        {
+                            importExportManager.doExport();
+                        }
+                        if ( days != -20 )
                         {
                             ArchiverServiceImpl.delete(days,facade,logger);
                         }
-					} 
-            		catch (RaplaException e) {
-			            logger.error("Could not execute archiver task ", e);
-			        }
-            	}
+                    }
+                    catch (RaplaException e) {
+                        logger.error("Could not execute archiver task ", e);
+                    }
+                }
             };
             // Call it each hour
-            timer.schedule(removeTask, 0, DateTools.MILLISECONDS_PER_HOUR); 
+            timer.schedule(removeTask, 0, DateTools.MILLISECONDS_PER_HOUR);
         }
-    }
-
-    @Override public void start()
-    {
-
     }
 }

@@ -1,14 +1,21 @@
 package org.rapla.plugin.mail.server;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Properties;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
@@ -18,6 +25,8 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
+import org.rapla.rest.client.swing.HTTPConnector;
+import org.rapla.rest.client.swing.HTTPWithJsonConnector;
 import org.rapla.server.ServerService;
 
 @DefaultImplementation(of=MailInterface.class,context= InjectionContext.server)
@@ -25,10 +34,13 @@ public class MailapiClient implements MailInterface
 {
     String mailhost = "localhost";
     int port = 25;
-    enum SecurityProtocol {
+    SecurityProtocol protocol;
+
+    public enum SecurityProtocol {
         NONE,
         SSL,
-        STARTTLS
+        STARTTLS,
+        MAILJET,
     };
     String username;
     String password;
@@ -47,7 +59,22 @@ public class MailapiClient implements MailInterface
 
     public void sendMail( String senderMail, String recipient, String subject, String mailBody ) throws MailException
     {
-        final Object externalMailSession = externalMailSessionProvider.get();
+        Object externalMailSession;
+        if ( externalMailSessionProvider != null)
+        {
+            try
+            {
+                externalMailSession = externalMailSessionProvider.get();
+            }
+            catch ( NullPointerException ex)
+            {
+                externalMailSession = null;
+            }
+        }
+        else
+        {
+            externalMailSession = null;
+        }
         if ( externalMailSession != null)
         {
             send(senderMail, recipient, subject, mailBody, externalMailSession);
@@ -59,7 +86,17 @@ public class MailapiClient implements MailInterface
         }
 
     }
- 
+
+    public void setProtocol(SecurityProtocol protocol)
+    {
+        this.protocol = protocol;
+    }
+
+    public SecurityProtocol getProtocol()
+    {
+        return protocol;
+    }
+
     public void sendMail( String senderMail, String recipient, String subject, String mailBody, Configuration config ) throws MailException
     {
         Object session;
@@ -86,7 +123,7 @@ public class MailapiClient implements MailInterface
         }
         else
         {
-            session = createSessionFromProperties(mailhost,port, SecurityProtocol.NONE, username, password);
+            session = createSessionFromProperties(mailhost,port, this.protocol, username, password);
         }
         send(senderMail, recipient, subject, mailBody,  session);
     }
@@ -116,19 +153,30 @@ public class MailapiClient implements MailInterface
         } else if (protocol == SecurityProtocol.STARTTLS) {
             props.put("mail.smtp.starttls.enable", "true");
         }
-        Object session;
-        try {
-            Class<?> MailLibsC = Class.forName("org.rapla.plugin.mail.server.RaplaMailLibs");
-            session = MailLibsC.getMethod("getSession", Properties.class).invoke( null, props);
-        } catch (Exception e) {
-            Throwable cause = e;
-            if ( e instanceof InvocationTargetException)
-            {
-                cause = e.getCause();
-            }
-            throw new MailException( cause.getMessage(), cause);
+        if ( mailhost.contains("https://api.mailjet.com/v3/send"))
+        //if ( protocol == SecurityProtocol.MAILJET)
+        {
+            return props;
         }
-        return session;
+        else
+        {
+            Object session;
+            try
+            {
+                Class<?> MailLibsC = Class.forName("org.rapla.plugin.mail.server.RaplaMailLibs");
+                session = MailLibsC.getMethod("getSession", Properties.class).invoke(null, props);
+            }
+            catch (Exception e)
+            {
+                Throwable cause = e;
+                if (e instanceof InvocationTargetException)
+                {
+                    cause = e.getCause();
+                }
+                throw new MailException(cause.getMessage(), cause);
+            }
+            return session;
+        }
     }
 
     private SecurityProtocol readSecurityProtocol(Configuration config) {
@@ -143,6 +191,43 @@ public class MailapiClient implements MailInterface
 
     private void send(String senderMail, String recipient, String subject,
 			String mailBody, Object uncastedSession) throws MailException {
+        if ( uncastedSession instanceof Properties)
+        {
+            Properties props = ((Properties)uncastedSession);
+            String username =(String) props.get("username");
+            String password =(String) props.get("password");
+            HTTPWithJsonMailConnector connector = new HTTPWithJsonMailConnector();
+            URL url;
+            try
+            {
+                url = new URL("https://api.mailjet.com/v3/send");
+            }
+            catch (MalformedURLException e)
+            {
+                throw new  MailException(e.getMessage());
+            }
+            JsonObject object = new JsonObject();
+            object.add("FromEmail", new JsonPrimitive(senderMail));
+            object.add("FromName", new JsonPrimitive("Rapla Admin"));
+            object.add("Subject", new JsonPrimitive(subject));
+            object.add("Text-part", new JsonPrimitive(mailBody));
+            JsonArray recipients = new JsonArray();
+            JsonObject recipientObj = new JsonObject();
+            recipientObj.add("Email", new JsonPrimitive(recipient));
+            recipients.add( recipientObj);
+            object.add("Recipients", recipients);
+            String token =username + ":"+ password;
+            try
+            {
+                final JsonObject object1 = connector.sendPost(url, object, token);
+                System.out.println( object1);
+            }
+            catch (IOException e)
+            {
+                throw new MailException(e.getMessage());
+            }
+            return;
+        }
 		ClassLoader classLoader = uncastedSession.getClass().getClassLoader();
 		try {
 			sendWithReflection(senderMail, recipient, subject, mailBody,  uncastedSession, classLoader);
