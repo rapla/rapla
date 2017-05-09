@@ -2,7 +2,6 @@ package org.rapla.client;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
@@ -32,7 +31,6 @@ import org.rapla.scheduler.Promise;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -54,7 +52,6 @@ import java.util.function.Function;
     final private Provider<Set<ClientExtension>> clientExtensions;
     final Provider<CalendarSelectionModel> calendarModelProvider;
     private final CommandScheduler scheduler;
-    //final private ModifiableCalendarState calendarState;
     private TaskPresenter placeTaskPresenter;
     final private DialogUiFactoryInterface dialogUiFactory;
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
@@ -197,7 +194,6 @@ import java.util.function.Function;
         initLanguage(defaultLanguageChosen);
 
         ModifiableCalendarState calendarState = new ModifiableCalendarState(clientFacade, calendarModelProvider);
-        //        StorageOperator operator = facade.getOperator();
 
         ((FacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener()
         {
@@ -206,16 +202,8 @@ import java.util.function.Function;
                 calendarState.dataChanged(evt);
             }
         });
-        //        if ( facade.isClientForServer() )
-        //        {
-        //            addContainerProvidedComponent (RaplaClientExtensionPoints.SYSTEM_OPTION_PANEL_EXTENSION , ConnectionOption.class);
-        //        }
 
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
-        //Preferences systemPreferences = raplaFacade.getSystemPreferences();
-        //List<PluginDescriptor<ClientServiceContainer>> pluginList = initializePlugins(systemPreferences, ClientServiceContainer.class);
-        //addContainerProvidedComponentInstance(ClientServiceContainer.CLIENT_PLUGIN_LIST, pluginList);
-
         // start client provides
         for (ClientExtension ext : clientExtensions.get())
         {
@@ -234,14 +222,6 @@ import java.util.function.Function;
 
             User user = clientFacade.getUser();
             final boolean admin = user.isAdmin();
-            String message = i18n.getString("user") + " " + user.toString();
-            Allocatable template = clientFacade.getTemplate();
-            if (template != null)
-            {
-                Locale locale = i18n.getLocale();
-                message = i18n.getString("edit-templates") + " [" + template.getName(locale) + "] " + message;
-            }
-            mainView.setStatusMessage(message, user.isAdmin());
             mainView.updateMenu();
             // Test for the resources
             clientFacade.addModificationListener(this);
@@ -251,10 +231,9 @@ import java.util.function.Function;
             {
                 statusMessage += " " + i18n.getString("admin.login");
             }
-
             mainView.setStatusMessage(statusMessage, admin);
             scheduler.schedule(() -> {
-                mainView.setStatusMessage(name, false);
+                mainView.setStatusMessage(name, admin);
             }, 2000);
 
         }
@@ -283,6 +262,19 @@ import java.util.function.Function;
 
     @Override public void dataChanged(ModificationEvent evt) throws RaplaException
     {
+        if ( evt.isSwitchTemplateMode())
+        {
+            User user = clientFacade.getUser();
+            String message = i18n.getString("user") + " " + user.toString();
+            Allocatable template = clientFacade.getTemplate();
+            final boolean admin = user.isAdmin();
+            if (template != null)
+            {
+                Locale locale = i18n.getLocale();
+                message = i18n.getString("edit-templates") + " [" + template.getName(locale) + "] " + message;
+            }
+            mainView.setStatusMessage(message, admin);
+        }
         mainView.updateView(evt);
         placeTaskPresenter.updateView(evt);
         for (TaskPresenter p : openDialogsPresenter.values())
