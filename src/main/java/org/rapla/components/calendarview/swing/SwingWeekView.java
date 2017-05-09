@@ -39,135 +39,138 @@ import org.rapla.framework.RaplaLocale;
  */
 public class SwingWeekView extends AbstractSwingCalendar
 {
-    public final static int SLOT_GAP= 5;
+    public final static int SLOT_GAP = 5;
     LargeDaySlot[] daySlots = new LargeDaySlot[] {};
-    private int startMinutes= 0;
-    private int endMinutes= 24 * 60;
-    BoxLayout        boxLayout2= new BoxLayout(jCenter, BoxLayout.X_AXIS);
-    TimeScale       timeScale = new TimeScale();
+    private int startMinutes = 0;
+    private int endMinutes = 24 * 60;
+    BoxLayout boxLayout2 = new BoxLayout(jCenter, BoxLayout.X_AXIS);
+    TimeScale timeScale = new TimeScale();
     IRowScale rowScale = new LinearRowScale();
-    
+
     protected JLabel weekTitle;
-    protected SelectionHandler selectionHandler ;
-    
-    public SwingWeekView() {
+    protected SelectionHandler selectionHandler;
+
+    public SwingWeekView()
+    {
         this(true);
     }
 
-    public SwingWeekView(boolean showScrollPane) {
+    public SwingWeekView(boolean showScrollPane)
+    {
         super(showScrollPane);
         weekTitle = new JLabel();
-        weekTitle.setHorizontalAlignment( JLabel.CENTER);
-        
-        weekTitle.setFont(weekTitle.getFont().deriveFont((float)11.));
+        weekTitle.setHorizontalAlignment(JLabel.CENTER);
+
+        weekTitle.setFont(weekTitle.getFont().deriveFont((float) 11.));
 
         jCenter.setLayout(boxLayout2);
         jCenter.setAlignmentY(JComponent.TOP_ALIGNMENT);
         jCenter.setAlignmentX(JComponent.LEFT_ALIGNMENT);
-        if ( showScrollPane ) {
+        if (showScrollPane)
+        {
             scrollPane.setRowHeaderView(timeScale);
-            scrollPane.setCorner( JScrollPane.UPPER_LEFT_CORNER, weekTitle);
-            
-        } else {
-            component.add(weekTitle,  "0,0");
-            component.add(timeScale,"0,1");
+            scrollPane.setCorner(JScrollPane.UPPER_LEFT_CORNER, weekTitle);
+
+        }
+        else
+        {
+            component.add(weekTitle, "0,0");
+            component.add(timeScale, "0,1");
         }
         selectionHandler = new SelectionHandler(this);
-       
+
     }
 
-   
-    
-    public void updateSize(int width) {
-		int slotCount = 0;
-		int columnCount = 0;
-		for (int i=0; i<daySlots.length; i++) {
-			LargeDaySlot largeDaySlot = daySlots[i];
-            if ( isExcluded(i) )  {
+    public void updateSize(int width)
+    {
+        int slotCount = 0;
+        int columnCount = 0;
+        for (int i = 0; i < daySlots.length; i++)
+        {
+            LargeDaySlot largeDaySlot = daySlots[i];
+            if (isExcluded(i))
+            {
                 continue;
             }
-            
-            if ( largeDaySlot != null)
-            {
-            	slotCount += largeDaySlot.getSlotCount();
-            	columnCount++;
-            }
-		}
-		int newWidth = Math.round(((width - timeScale.getWidth() - 10- columnCount* (16 + SLOT_GAP)) / (Math.max(1,slotCount)))-2);
-		newWidth = Math.max( newWidth , minBlockWidth);
-		for (LargeDaySlot slot: daySlots)
-		{
-    		if ( slot != null)
-    		{
-    			slot.updateSize(newWidth);
-    		}
-    	}
-		setSlotSize(newWidth);
-	}
 
-    public void setWorktime(int startHour, int endHour) 
-    {
-    	this.startMinutes = startHour * 60;
-    	this.endMinutes = endHour * 60;
+            if (largeDaySlot != null)
+            {
+                slotCount += largeDaySlot.getSlotCount();
+                columnCount++;
+            }
+        }
+        int newWidth = Math.round(((width - timeScale.getWidth() - 10 - columnCount * (16 + SLOT_GAP)) / (Math.max(1, slotCount))) - 2);
+        newWidth = Math.max(newWidth, minBlockWidth);
+        for (LargeDaySlot slot : daySlots)
+        {
+            if (slot != null)
+            {
+                slot.updateSize(newWidth);
+            }
+        }
+        setSlotSize(newWidth);
     }
-    
-    public void setWorktimeMinutes(int startMinutes, int endMinutes) {
+
+    public void setWorktime(int startHour, int endHour)
+    {
+        this.startMinutes = startHour * 60;
+        this.endMinutes = endHour * 60;
+    }
+
+    public void setWorktimeMinutes(int startMinutes, int endMinutes)
+    {
         this.startMinutes = startMinutes;
         this.endMinutes = endMinutes;
         if (getStartDate() != null)
-            calcMinMaxDates( getStartDate() );
+            calcMinMaxDates(getStartDate());
     }
 
-
-    public void setLocale(RaplaLocale locale) {
-        super.setLocale( locale );
-        if ( timeScale != null )
-            timeScale.setLocale( locale );
+    public void setLocale(RaplaLocale locale)
+    {
+        super.setLocale(locale);
+        if (timeScale != null)
+            timeScale.setLocale(locale);
     }
 
-
-    public void scrollDateVisible(Date date) {
+    public void scrollDateVisible(Date date)
+    {
         LargeDaySlot slot = getSlot(date);
-        if ( slot == null)
+        if (slot == null)
         {
-        	return;
+            return;
         }
-		if (!jCenter.isAncestorOf( slot) ) {
+        if (!jCenter.isAncestorOf(slot))
+        {
             return;
         }
         LargeDaySlot scrollSlot = slot;
         Rectangle viewRect = scrollPane.getViewport().getViewRect();
         Rectangle slotRect = scrollSlot.getBounds();
         // test if already visible
-        if (slotRect.x>=viewRect.x &&
-            (slotRect.x + slotRect.width)<
-            (viewRect.x + viewRect.width )
-            )
+        if (slotRect.x >= viewRect.x && (slotRect.x + slotRect.width) < (viewRect.x + viewRect.width))
         {
             return;
         }
 
-        scrollSlot.scrollRectToVisible(new Rectangle(0
-                                                     ,viewRect.y
-                                                     ,scrollSlot.getWidth()
-                                                     ,10));
+        scrollSlot.scrollRectToVisible(new Rectangle(0, viewRect.y, scrollSlot.getWidth(), 10));
     }
 
-    public void scrollToStart() {
+    public void scrollToStart()
+    {
         int y = rowScale.getStartWorktimePixel();
         int x = 0;
-        scrollPane.getViewport().setViewPosition(new Point(x,y));
+        scrollPane.getViewport().setViewPosition(new Point(x, y));
     }
 
-    public Collection<Block> getBlocks() {
+    public Collection<Block> getBlocks()
+    {
         ArrayList<Block> list = new ArrayList<Block>();
-        for (int i=0;i<getDaysInView();i++) {
+        for (int i = 0; i < getDaysInView(); i++)
+        {
             list.addAll(daySlots[i].getBlocks());
         }
-        return Collections.unmodifiableCollection( list );
+        return Collections.unmodifiableCollection(list);
     }
-
-
 
     /** The granularity of the selection rows.
      * <ul>
@@ -180,42 +183,50 @@ public class SwingWeekView extends AbstractSwingCalendar
      * </ul>
      * Default is 4.
      */
-    public void setRowsPerHour(int rowsPerHour) {
-        if ( rowScale instanceof LinearRowScale)
-            ((LinearRowScale)rowScale).setRowsPerHour(rowsPerHour);
+    public void setRowsPerHour(int rowsPerHour)
+    {
+        if (rowScale instanceof LinearRowScale)
+            ((LinearRowScale) rowScale).setRowsPerHour(rowsPerHour);
     }
 
     /** @see #setRowsPerHour */
-    public int getRowsPerHour() {
-        if ( rowScale instanceof LinearRowScale)
-            return ((LinearRowScale)rowScale).getRowsPerHour();
+    public int getRowsPerHour()
+    {
+        if (rowScale instanceof LinearRowScale)
+            return ((LinearRowScale) rowScale).getRowsPerHour();
         return 0;
     }
 
     /** The size of each row (in pixel). Default is 15.*/
-    public void setRowSize(int rowSize) {
-        if ( rowScale instanceof LinearRowScale)
-            ((LinearRowScale)rowScale).setRowSize(rowSize);
+    public void setRowSize(int rowSize)
+    {
+        if (rowScale instanceof LinearRowScale)
+            ((LinearRowScale) rowScale).setRowSize(rowSize);
     }
 
-    public int getRowSize() {
-        if ( rowScale instanceof LinearRowScale)
-            return ((LinearRowScale)rowScale).getRowSize();
+    public int getRowSize()
+    {
+        if (rowScale instanceof LinearRowScale)
+            return ((LinearRowScale) rowScale).getRowSize();
         return 0;
     }
 
-    public void setBackground(Color color) {
+    public void setBackground(Color color)
+    {
         super.setBackground(color);
         if (timeScale != null)
             timeScale.setBackground(color);
     }
 
-    public void setEditable(boolean b)  {
-        super.setEditable( b );
+    public void setEditable(boolean b)
+    {
+        super.setEditable(b);
         // Hide the rest
-        for (int i= 0;i<daySlots.length;i++) {
+        for (int i = 0; i < daySlots.length; i++)
+        {
             LargeDaySlot slot = daySlots[i];
-            if (slot == null) continue;
+            if (slot == null)
+                continue;
             slot.setEditable(b);
             slot.getHeader().setBorder(b ? SLOTHEADER_BORDER : null);
         }
@@ -227,68 +238,72 @@ public class SwingWeekView extends AbstractSwingCalendar
         return daySlots[column].isEmpty();
     }
 
-    public void rebuild(Builder b) {
-    	daySlots= new LargeDaySlot[getColumnCount()];
-    	selectionHandler.clearSelection();
-    	
+    public void rebuild(Builder b)
+    {
+        daySlots = new LargeDaySlot[getColumnCount()];
+        selectionHandler.clearSelection();
+
         // clear everything
         jHeader.removeAll();
         jCenter.removeAll();
 
-        
-        int start = startMinutes ;
-        int end = endMinutes ;
+        int start = startMinutes;
+        int end = endMinutes;
 
         // calculate the blocks
-        PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
-        if (! bEditable) {
-            start = Math.min(prep.getMinMinutes(),start);
-            end = Math.max(prep.getMaxMinutes(),end);
-            if (start<0)
+        PreperationResult prep = b.prepareBuild(getStartDate(), getEndDate());
+        if (!bEditable)
+        {
+            start = Math.min(prep.getMinMinutes(), start);
+            end = Math.max(prep.getMaxMinutes(), end);
+            if (start < 0)
                 throw new IllegalStateException("builder.getMin() is smaller than 0");
-            if (end>24*60)
+            if (end > 24 * 60)
                 throw new IllegalStateException("builder.getMax() is greater than 24");
         }
 
         //rowScale = new VariableRowScale();
-        if ( rowScale instanceof LinearRowScale)
+        if (rowScale instanceof LinearRowScale)
         {
             LinearRowScale linearScale = (LinearRowScale) rowScale;
             int pixelPerHour = linearScale.getRowsPerHour() * linearScale.getRowSize();
-            
+
             timeScale.setBackground(component.getBackground());
-            if ( isEditable())
+            if (isEditable())
             {
                 timeScale.setTimeIntervall(0, 24, pixelPerHour);
-                linearScale.setTimeIntervall( 0, 24 * 60);
+                linearScale.setTimeIntervall(0, 24 * 60);
             }
             else
             {
-                timeScale.setTimeIntervall(start / 60, Math.min( 24,(int)Math.ceil(end / 60.0)), pixelPerHour);
-                final int endMinute = Math.min( 24 * 60, ((end / 60) + ((end%60 != 0) ? 1 : 0)) * 60 );
-                linearScale.setTimeIntervall( (start /60) * 60, endMinute);
+                timeScale.setTimeIntervall(start / 60, Math.min(24, (int) Math.ceil(end / 60.0)), pixelPerHour);
+                final int endMinute = Math.min(24 * 60, ((end / 60) + ((end % 60 != 0) ? 1 : 0)) * 60);
+                linearScale.setTimeIntervall((start / 60) * 60, endMinute);
             }
-            linearScale.setWorktimeMinutes( this.startMinutes, this.endMinutes);
+            linearScale.setWorktimeMinutes(this.startMinutes, this.endMinutes);
         }
         else
         {
             timeScale.setBackground(component.getBackground());
             timeScale.setTimeIntervall(0, 24, 60);
         }
-        
+
         // create Slots
-        DraggingHandler draggingHandler = new DraggingHandler(this, rowScale,true);
-        
-        for (int i=0; i<getColumnCount(); i++) {
+        DraggingHandler draggingHandler = new DraggingHandler(this, rowScale, true);
+
+        for (int i = 0; i < getColumnCount(); i++)
+        {
             createMultiSlot(i, i, draggingHandler, selectionHandler);
         }
 
         // build Blocks
         b.build(this, prep.getBlocks());
-        
+
         // add Slots
-        for (int i=0; i<daySlots.length; i++) {
-            if ( isExcluded(i) )  {
+        for (int i = 0; i < daySlots.length; i++)
+        {
+            if (isExcluded(i))
+            {
                 continue;
             }
             addToWeekView(daySlots[i]);
@@ -296,31 +311,34 @@ public class SwingWeekView extends AbstractSwingCalendar
         jHeader.add(Box.createGlue());
         jHeader.validate();
         jCenter.validate();
-        if ( isEditable())
+        if (isEditable())
         {
-        	updateSize(component.getSize().width);
+            updateSize(component.getSize().width);
         }
         component.revalidate();
         component.repaint();
     }
 
-    private void createMultiSlot(int pos, int column, DraggingHandler draggingHandler, SelectionHandler selectionHandler)  {
+    private void createMultiSlot(int pos, int column, DraggingHandler draggingHandler, SelectionHandler selectionHandler)
+    {
         JComponent header = createSlotHeader(column);
-        LargeDaySlot c= new LargeDaySlot(slotSize,rowScale, header);
+        LargeDaySlot c = new LargeDaySlot(slotSize, rowScale, header);
         c.setEditable(isEditable());
         c.setTimeIntervall();
         c.setDraggingHandler(draggingHandler);
         c.addMouseListener(selectionHandler);
         c.addMouseMotionListener(selectionHandler);
-        daySlots[pos]= c;
+        daySlots[pos] = c;
     }
 
-   	protected Date getDateFromColumn(int column) {
-		return DateTools.addDays( getStartDate(), column);
-	}
+    protected Date getDateFromColumn(int column)
+    {
+        return DateTools.addDays(getStartDate(), column);
+    }
 
     /** override this method, if you want to create your own slot header. */
-    protected JComponent createSlotHeader(Integer column) {
+    protected JComponent createSlotHeader(Integer column)
+    {
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
         Date date = getDateFromColumn(column);
@@ -331,105 +349,112 @@ public class SwingWeekView extends AbstractSwingCalendar
         jLabel.setForeground(Color.black);
         return jLabel;
     }
-    
-	protected int getColumnCount() 
-	{
-		return getDaysInView();
-	}
 
-    public void addBlock(Block bl, int col,int slot) {
-        checkBlock( bl );
-        LargeDaySlot dslot =  daySlots[col];
-        dslot.putBlock((SwingBlock)bl, slot);
+    protected int getColumnCount()
+    {
+        return getDaysInView();
     }
 
-    private LargeDaySlot getSlot(Date start) {
-    	 long countDays = DateTools.countDays(DateTools.cutDate(getStartDate()), start);
-         int slotNr = (int) countDays;
-         if ( daySlots.length ==0)
-         {
-        	 return null;
-         }
-         int min = Math.min(daySlots.length-1,slotNr);
-		return daySlots[min];
-	}
+    public void addBlock(Block bl, int col, int slot)
+    {
+        checkBlock(bl);
+        LargeDaySlot dslot = daySlots[col];
+        dslot.putBlock((SwingBlock) bl, slot);
+    }
 
-	private void addToWeekView(LargeDaySlot slot) {
+    private LargeDaySlot getSlot(Date start)
+    {
+        long countDays = DateTools.countDays(DateTools.cutDate(getStartDate()), start);
+        int slotNr = (int) countDays;
+        if (daySlots.length == 0)
+        {
+            return null;
+        }
+        int min = Math.min(daySlots.length - 1, slotNr);
+        return daySlots[min];
+    }
+
+    private void addToWeekView(LargeDaySlot slot)
+    {
         jHeader.add(slot.getHeader());
         jHeader.add(Box.createHorizontalStrut(SLOT_GAP));
         jCenter.add(slot);
         jCenter.add(Box.createHorizontalStrut(SLOT_GAP));
     }
 
-    public int getSlotNr(DaySlot slot) {
-        for (int i=0;i<daySlots.length;i++) {
-            if (daySlots[i] == slot) {
+    public int getSlotNr(DaySlot slot)
+    {
+        for (int i = 0; i < daySlots.length; i++)
+        {
+            if (daySlots[i] == slot)
+            {
                 return i;
             }
         }
         throw new IllegalStateException("Slot not found in List");
     }
 
-    int getRowsPerDay() {
+    int getRowsPerDay()
+    {
         return rowScale.getRowsPerDay();
     }
 
-    LargeDaySlot getSlot( int nr ) {
-        if ( nr >=0 && nr< daySlots.length)
+    LargeDaySlot getSlot(int nr)
+    {
+        if (nr >= 0 && nr < daySlots.length)
             return daySlots[nr];
         else
             return null;
     }
-    
+
     public boolean isSelected(int slotNr)
     {
-    	LargeDaySlot slot = getSlot(slotNr);
-    	if ( slot == null)
-    	{
-    		return false;
-    	}
-    	return slot.isSelected();
+        LargeDaySlot slot = getSlot(slotNr);
+        if (slot == null)
+        {
+            return false;
+        }
+        return slot.isSelected();
     }
 
-    int getDayCount() {
+    int getDayCount()
+    {
         return daySlots.length;
     }
 
-    int calcSlotNr(int x, int y) {
-        for (int i=0;i<daySlots.length;i++) {
+    int calcSlotNr(int x, int y)
+    {
+        for (int i = 0; i < daySlots.length; i++)
+        {
             if (getSlot(i) == null)
                 continue;
             Point p = getSlot(i).getLocation();
-            if (p.x <= x
-                    && x <= p.x + daySlots[i].getWidth()
-                    && p.y <= y
-                    && y <= p.y + daySlots[i].getHeight()
-            )
+            if (p.x <= x && x <= p.x + daySlots[i].getWidth() && p.y <= y && y <= p.y + daySlots[i].getHeight())
                 return i;
         }
         return -1;
     }
 
-    public LargeDaySlot calcSlot(int x, int y) {
+    public LargeDaySlot calcSlot(int x, int y)
+    {
         int nr = calcSlotNr(x, y);
         if (nr == -1)
             return null;
         else
             return daySlots[nr];
     }
-    
 
-    protected Date createDate(DaySlot slot,int index, boolean startOfRow) {
+    protected Date createDate(DaySlot slot, int index, boolean startOfRow)
+    {
         Date startDate = DateTools.cutDate(getStartDate());
-        Date date = DateTools.getFirstWeekday(startDate,getFirstWeekday());
-        date = DateTools.addDays(date , getSlotNr( slot ) %getDaysInView());
+        Date date = DateTools.getFirstWeekday(startDate, getFirstWeekday());
+        date = DateTools.addDays(date, getSlotNr(slot) % getDaysInView());
         if (!startOfRow)
             index++;
         int calcHour = rowScale.calcHour(index);
         int calcMinute = rowScale.calcMinute(index);
-        date = new Date(date.getTime() +calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE );
+        date = new Date(date.getTime() + calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE);
         return date;
     }
-    
-  
+
 }

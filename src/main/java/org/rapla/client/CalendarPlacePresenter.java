@@ -24,6 +24,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
@@ -58,7 +59,7 @@ import javax.inject.Singleton;
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
             final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final EventBus eventBus,/*, Map<String, CalendarPlugin> views*/
             ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsView,
-            CalendarContainer calendarContainer, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+            CalendarContainer calendarContainer,final CommandScheduler scheduler, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.view = view;
         this.dialogUiFactory = dialogUiFactory;
@@ -89,6 +90,9 @@ import javax.inject.Singleton;
             calendarContainer.init(true, () ->
             {
                 calendarUpdated();
+                Runnable runnable = () ->start();
+                scheduler.scheduleSynchronized(this,runnable, 100);
+
             });
         }
         catch (RaplaException e)

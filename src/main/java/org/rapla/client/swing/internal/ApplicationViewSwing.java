@@ -59,7 +59,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     RaplaMenuBar menuBar;
     private final RaplaFrame frame;
     private final Map<ApplicationEvent, RaplaFrame> childFrames = new HashMap<ApplicationEvent, RaplaFrame>();
-    Listener listener = new Listener();
     //CalendarPlaceViewSwing cal;
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
@@ -109,7 +108,10 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         RaplaGUIComponent.setMainComponent(frame);
         frame.addVetoableChangeListener(evt ->
         {
-            presenter.mainClosing();
+            if (!presenter.mainClosing())
+            {
+                throw new PropertyVetoException("Should not close",evt);
+            }
         });
         frameControllerList.setMainWindow(frame);
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
@@ -258,18 +260,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         return (JPanel) frame.getContentPane();
     }
 
-    class Listener implements VetoableChangeListener
-    {
-        public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
-        {
-            if (shouldExit())
-                close();
-            else
-                throw new PropertyVetoException("Don't close", evt);
-        }
-
-    }
-
     public Window getFrame()
     {
         return frame;
@@ -280,27 +270,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         return (JComponent) frame.getContentPane();
     }
 
-    protected boolean shouldExit()
-    {
-        try
-        {
-            DialogInterface dlg = dialogUiFactory
-                    .create(new SwingPopupContext(frame.getRootPane(), null), true, i18n.getString("exit.title"), i18n.getString("exit.question"),
-                            new String[] { i18n.getString("exit.ok"), i18n.getString("exit.abort") });
-            dlg.setIcon("icon.question");
-            //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-            dlg.getAction(0).setIcon("icon.abort");
-            dlg.setDefault(1);
-            dlg.start(true);
-            return (dlg.getSelectedIndex() == 0);
-        }
-        catch (RaplaException e)
-        {
-            logger.error(e.getMessage(), e);
-            return true;
-        }
-
-    }
 
     public void close()
     {
@@ -349,8 +318,11 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
             @Override
             public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
             {
+
+                final ApplicationEvent applicationEvent = new ApplicationEvent(windowId.getApplicationEventId(), windowId.getInfo(),
+                        new SwingPopupContext(component, null), null);
                 logger.debug("Closing");
-                if ( windowClosing.apply( windowId))
+                if ( windowClosing.apply( applicationEvent))
                 {
                      dialog.dispose();
                 }

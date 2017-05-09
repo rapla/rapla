@@ -13,8 +13,10 @@
 package org.rapla.client.swing.internal;
 
 import com.google.web.bindery.event.shared.EventBus;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
+import org.rapla.client.Application;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.EditController;
 import org.rapla.client.RaplaWidget;
@@ -22,6 +24,7 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
@@ -375,8 +378,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Object source = e.getSource();
             if (source == exit)
             {
-                RaplaFrame mainComponent = (RaplaFrame) getMainComponent();
-                mainComponent.close();
+                eventBus.fireEvent( new ApplicationEvent(Application.CLOSE_ACTIVITY_ID,"", createPopupContext(),null));
             }
             else if (source == templateEdit)
             {
@@ -394,7 +396,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     }
                     catch (Exception ex)
                     {
-                        dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                        dialogUiFactory.showException(ex, createPopupContext());
                     }
                 }
             }
@@ -415,7 +417,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 promise.exceptionally( (ex) ->
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showException(ex, createPopupContext());
                     return null;
                 }
                 );
@@ -427,6 +429,12 @@ public class RaplaMenuBar extends RaplaGUIComponent
             updateTemplateText();
         }
 
+    }
+
+    @NotNull
+    private SwingPopupContext createPopupContext()
+    {
+        return new SwingPopupContext(getMainComponent(), null);
     }
 
     private void addPluginExtensions(Set<? extends IdentifiableMenuEntry> points, RaplaMenu menu)
@@ -533,7 +541,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     String body = completeText.toString();
                     infoText.setBody(body);
                     final JScrollPane content = new JScrollPane(infoText);
-                    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), false, content, new String[] { getString("ok") });
+                    DialogInterface dialog = dialogUiFactory.create(createPopupContext(), false, content, new String[] { getString("ok") });
                     dialog.setTitle(name);
                     dialog.setSize(780, 580);
                     dialog.start(false);
@@ -549,7 +557,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showException(ex, createPopupContext());
                 }
             }
 
@@ -591,7 +599,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     // the following creates the dialog that pops up, when we click
                     // on the license entry within the help section of the menu menubar
                     // we call the create Method of the DialogUI class and give it all necessary things
-                    DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), true, new JScrollPane((Component) welcomeField.getComponent()),
+                    DialogInterface dialog = dialogUiFactory.create(createPopupContext(), true, new JScrollPane((Component) welcomeField.getComponent()),
                             new String[] { getString("ok") });
                     // setting the dialog's title
                     dialog.setTitle(name);
@@ -602,7 +610,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 }
                 catch (RaplaException ex)
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showException(ex, createPopupContext());
                 }
             }
         };

@@ -28,7 +28,7 @@ public interface ResourceSelectionView extends RaplaWidget
 
         void treeSelectionChanged();
 
-        void updateFilters(ClassificationFilter[] filters);
+        void updateFilters(ClassificationFilter[] filters) throws RaplaException;
         
     }
 

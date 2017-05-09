@@ -13,13 +13,11 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.CommandAbortedException;
-import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -87,13 +85,7 @@ public class EditTaskPresenter implements TaskPresenter
 
     public interface EditTaskView
     {
-//        interface Presenter<T>
-//        {
-//            void save(List<T> saveObjects);
-//            void close();
-//        }
         <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String title,Consumer<Collection<T>> save, Runnable close) throws RaplaException;
-
         PopupContext createPopupContext(RaplaWidget c);
     }
 
@@ -364,9 +356,6 @@ public class EditTaskPresenter implements TaskPresenter
                     handleException(promise.thenRun(() ->
                     {
                         close(applicationEvent);
-                        //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
-                        //                                    dlg.close();
-                        //       FIXME callback;
                     }), popupContext);
                 }
                 else
@@ -374,8 +363,6 @@ public class EditTaskPresenter implements TaskPresenter
                     raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
                     close(applicationEvent);
                 }
-                //getPrivateEditDialog().removeEditDialog(EditDialog.this);
-
             };
 
             Runnable closeCmd = () -> close(applicationEvent);
@@ -393,12 +380,24 @@ public class EditTaskPresenter implements TaskPresenter
                         final Promise promise = reservationController
                                 .checkAndDistpatch((Collection<Reservation>) toEdit, Collections.EMPTY_LIST, firstTime, popupEditContext).thenRun(()->closeCmd.run());
 
-                        handleException( promise,popupEditContext).thenRun( ()->bSaving = false);
+                        handleException( promise,popupEditContext).whenComplete((t,ex)->bSaving = false);
                     };
                     Runnable deleteCmd = () -> {
-                        //delete();
+                        this.bDeleting = true;
+                        final Promise<Void> promise = reservationController.deleteReservation((Reservation)origs.get(0), popupContext);
+                        promise.thenRun( () ->closeCmd.run()).whenComplete((t,ex) ->  bDeleting = false);
                     };
-                    c.editReservation((Reservation) testObj, appointmentBlock, reservationSaveCmd, closeCmd, deleteCmd);
+                    Runnable closeCmd2 = () ->
+                    {
+                        ApplicationEvent event = new ApplicationEvent(applicationEvent.getApplicationEventId(), applicationEvent.getInfo(), popupEditContext, null);
+                        Promise<Void> pr = processStop(event).thenRun(() ->
+                        {
+                            event.setStop(true);
+                            eventBus.fireEvent(event);
+                        });
+                        handleException(pr, popupEditContext);
+                    };
+                    c.editReservation((Reservation) testObj, appointmentBlock, reservationSaveCmd, closeCmd2, deleteCmd);
                     //c.addAppointmentListener();
                     return c;
                 }
@@ -409,24 +408,16 @@ public class EditTaskPresenter implements TaskPresenter
         return null;
     }
 
-    public void save() throws RaplaException
-    {
-        try
-        {
-            bSaving = true;
-
-        }
-        finally
-        {
-            bSaving = false;
-        }
-    }
-
     @Override
     public Promise<Void> processStop(ApplicationEvent event)
     {
 
-        PopupContext popupContext = new SwingPopupContext(null, null);
+        PopupContext popupContext = event.getPopupContext();
+        return processStop(popupContext);
+    }
+
+    private Promise<Void> processStop(PopupContext popupContext)
+    {
         try
         {
             DialogInterface dlg = dialogUiFactory.create(popupContext, false, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
@@ -449,41 +440,15 @@ public class EditTaskPresenter implements TaskPresenter
         }
     }
 
-//    private void delete() throws RaplaException
-//    {
-//        try
-//        {
-//            DialogInterface dlg = infoFactory.createDeleteDialog(new Object[] { mutableReservation }, new SwingPopupContext(toolBar, null));
-//            dlg.start(true);
-//            if (dlg.getSelectedIndex() == 0)
-//            {
-//                bDeleting = true;
-//                Set<Reservation> reservationsToRemove = Collections.singleton(original);
-//                Set<Appointment> appointmentsToRemove = Collections.emptySet();
-//                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
-//                CommandUndo<RaplaException> deleteCommand = new ReservationControllerImpl.DeleteBlocksCommand(clientFacade,i18n,reservationsToRemove,
-//                        appointmentsToRemove, exceptionsToAdd)
-//                {
-//                    public String getCommandoName()
-//                    {
-//                        return i18n.getString("delete") + " " + i18n.getString("reservation");
-//                    }
-//                };
-//                handleException(getCommandHistory().storeAndExecute(deleteCommand));
-//                closeWindow();
-//            }
-//        }
-//        finally
-//        {
-//            bDeleting = false;
-//        }
-//    }
-
-
     Promise handleException(Promise promise,PopupContext popupContext)
     {
         return promise.exceptionally(ex->
                 {
+                    final Throwable cause = ((Throwable) ex).getCause();
+                    if ( cause != null)
+                    {
+                        ex = cause;
+                    }
                     if (!(ex instanceof CommandAbortedException))
                     {
                         dialogUiFactory.showException((Throwable) ex, popupContext);

@@ -2,6 +2,7 @@ package org.rapla.client;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
@@ -39,7 +40,7 @@ import java.util.function.Function;
 
 @Singleton public class Application implements ApplicationView.Presenter, ModificationListener
 {
-
+    public static final String CLOSE_ACTIVITY_ID = "close";
     private final Logger logger;
     private final BundleManager bundleManager;
     private final ClientFacade clientFacade;
@@ -79,16 +80,28 @@ import java.util.function.Function;
 
     public boolean stopAction(ApplicationEvent activity)
     {
-        final String activityId = activity.getApplicationEventId();
-        final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
         mainView.removeWindow( activity);
-
         openDialogsPresenter.remove(activity);
         return true;
     }
     public boolean startAction(ApplicationEvent activity, boolean isPlace)
     {
         final String activityId = activity.getApplicationEventId();
+        if ( activityId.equals( Application.CLOSE_ACTIVITY_ID))
+        {
+            mainView.close();
+            clientFacade.removeModificationListener(this);
+            try
+            {
+                closeCallback.run();
+            }
+            catch (Exception ex)
+            {
+                logger.error(ex.getMessage(), ex);
+            }
+            return false;
+        }
+
         if (mainView.hasWindow( activity))
         {
             mainView.requestFocus(activity);
@@ -112,12 +125,18 @@ import java.util.function.Function;
         {
             return false;
         }
-        final Promise<Void> editPromise = objectRaplaWidget.thenAccept((widget) ->
+        final Promise<Void> widgetPromise = objectRaplaWidget.thenAccept((widget) ->
         {
             if (isPlace)
             {
                 placeTaskPresenter = taskPresenter;
                 mainView.updateContent(widget);
+                if (taskPresenter instanceof  CalendarPlacePresenter)
+                {
+                    Runnable runnable = () ->((CalendarPlacePresenter) taskPresenter).start();
+                    scheduler.scheduleSynchronized(this,runnable,100);
+
+                }
             }
             else
             {
@@ -128,21 +147,26 @@ import java.util.function.Function;
                         event.setStop(true);
                         eventBus.fireEvent(event);
                     });
-                    handleExcepion(promise,popupContext);
-                    return true;
+                    handleException(promise,popupContext);
+                    return false;
                 };
                 mainView.openWindow(activity, popupContext, widget, windowClosingFunction);
                 openDialogsPresenter.put(activity, taskPresenter);
             }
         });
-        handleExcepion(editPromise,popupContext);
+        handleException(widgetPromise,popupContext);
         return true;
     }
 
-    private void handleExcepion(Promise<Void> promise,PopupContext popupContext)
+    private void handleException(Promise<Void> promise,PopupContext popupContext)
     {
         promise.exceptionally(ex->
         {
+            final Throwable cause = ex.getCause();
+            if (cause != null)
+            {
+                ex = cause;
+            }
             if (!(ex instanceof CommandAbortedException))
             {
                 showException(ex, popupContext);
@@ -243,17 +267,42 @@ import java.util.function.Function;
         }
     }
 
-    @Override public void mainClosing()
+    protected boolean shouldExit()
     {
-        clientFacade.removeModificationListener(this);
         try
         {
-            closeCallback.run();
+            PopupContext popupContext = mainView.createPopupContext();
+            DialogInterface dlg = dialogUiFactory
+                    .create(popupContext, true, i18n.getString("exit.title"), i18n.getString("exit.question"),
+                            new String[] { i18n.getString("exit.ok"), i18n.getString("exit.abort") });
+            dlg.setIcon("icon.question");
+            //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
+            dlg.getAction(0).setIcon("icon.abort");
+            dlg.setDefault(1);
+            dlg.start(true);
+            return (dlg.getSelectedIndex() == 0);
         }
-        catch (Exception ex)
+        catch (RaplaException e)
         {
-            logger.error(ex.getMessage(), ex);
+            logger.error(e.getMessage(), e);
+            return true;
         }
+
+    }
+
+
+    @Override public boolean mainClosing()
+    {
+        Runnable runnable = () ->
+        {
+            if ( !shouldExit())
+            {
+                return;
+            }
+            eventBus.fireEvent(new ApplicationEvent(CLOSE_ACTIVITY_ID,"",mainView.createPopupContext(), null));
+        };
+        scheduler.scheduleSynchronized( this,runnable, 0);
+        return  false;
     }
 
     @Override public void menuClicked(String action)

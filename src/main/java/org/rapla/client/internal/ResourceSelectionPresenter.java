@@ -82,9 +82,12 @@ public class ResourceSelectionPresenter implements Presenter
     }
     
     @Override
-    public void updateFilters(ClassificationFilter[] filters)
+    public void updateFilters(ClassificationFilter[] filters) throws RaplaException
     {
         model.setAllocatableFilter(filters);
+        ClassificationFilter[] filter = model.getAllocatableFilter();
+        Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
+        view.update(filter, model, selectedObjects);
         applyFilter();
     }
     

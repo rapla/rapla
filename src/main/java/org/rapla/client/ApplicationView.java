@@ -21,7 +21,7 @@ public interface ApplicationView<T>
     {
         void menuClicked(String action);
 
-        void mainClosing();
+        boolean mainClosing();
     }
 
     void setPresenter(Presenter presenter);

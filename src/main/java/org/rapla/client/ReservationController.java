@@ -65,5 +65,7 @@ public interface ReservationController
 	
 	void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException;
 
+	Promise<Void> deleteReservation(Reservation reservation,PopupContext context);
+
     Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime, PopupContext sourceComponent);
 }

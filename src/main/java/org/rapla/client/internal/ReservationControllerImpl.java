@@ -16,6 +16,8 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.HTMLInfo.Row;
 import org.rapla.client.internal.RaplaClipboard.CopyType;
@@ -123,6 +125,37 @@ public abstract class ReservationControllerImpl implements ReservationController
         editWindowList.remove(editWindow);
     }
 
+    @Override
+    public Promise<Void> deleteReservation(Reservation reservation, PopupContext context)
+    {
+        try
+        {
+            boolean deleted = showDeleteDialog(context, new Reservation[] { reservation });
+            if (deleted)
+            {
+                Set<Reservation> reservationsToRemove = Collections.singleton(reservation);
+                Set<Appointment> appointmentsToRemove = Collections.emptySet();
+                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
+                CommandUndo<RaplaException> command = new ReservationControllerImpl.DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove,
+                        appointmentsToRemove, exceptionsToAdd)
+                {
+                    public String getCommandoName()
+                    {
+                        return i18n.getString("delete") + " " + i18n.getString("reservation");
+                    }
+                };
+                CommandHistory commanHistory = getCommandHistory();
+                final Promise promise = commanHistory.storeAndExecute(command);
+                return promise;
+            }
+
+            return new ResolvedPromise<Void>(new CommandAbortedException("No delete"));
+        }
+        catch (RaplaException ex)
+        {
+            return  new ResolvedPromise<Void>(ex);
+        }
+    }
 
     public void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException
     {
