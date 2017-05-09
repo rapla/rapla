@@ -31,6 +31,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
+import org.rapla.scheduler.CommandScheduler;
 
 /** displays a wizard dialog with four buttons and a HTML help.
 
@@ -49,13 +50,13 @@ public class WizardDialog extends DialogUI {
     };
 
 
-    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Dialog owner) throws
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList, Dialog owner) throws
             RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, frameList,owner);
+        super(i18n, raplaImages, bundleManager, scheduler,frameList,owner);
     }
 
-    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList, Frame owner) throws RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, frameList,owner);
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList, Frame owner) throws RaplaInitializationException {
+        super(i18n, raplaImages, bundleManager, scheduler,frameList,owner);
     }
 
     private void init(boolean modal) {
@@ -140,14 +141,16 @@ public class WizardDialog extends DialogUI {
         private final RaplaImages raplaImages;
         private final BundleManager bundleManager;
         private final FrameControllerList frameList;
+        private final CommandScheduler scheduler;
 
         @Inject
-        public WizardDialogFactory(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager, FrameControllerList frameList)
+        public WizardDialogFactory(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList)
         {
             this.i18n = i18n;
             this.raplaImages = raplaImages;
             this.bundleManager = bundleManager;
             this.frameList = frameList;
+            this.scheduler = scheduler;
         }
 
         public WizardDialog createWizard(Component owner, boolean modal) throws RaplaException
@@ -155,9 +158,9 @@ public class WizardDialog extends DialogUI {
             WizardDialog dlg;
             Component topLevel = getOwnerWindow(owner);
             if (topLevel instanceof Dialog)
-                dlg = new WizardDialog(i18n, raplaImages, bundleManager, frameList, (Dialog) topLevel);
+                dlg = new WizardDialog(i18n, raplaImages, bundleManager,scheduler, frameList, (Dialog) topLevel);
             else
-                dlg = new WizardDialog(i18n, raplaImages, bundleManager, frameList, (Frame) topLevel);
+                dlg = new WizardDialog(i18n, raplaImages, bundleManager,scheduler, frameList, (Frame) topLevel);
             dlg.init(modal);
             return dlg;
         }

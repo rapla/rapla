@@ -162,9 +162,10 @@ class LargeDaySlot extends AbstractDaySlot
 
 	public void updateHeaderSize() {
 		Dimension size = header.getPreferredSize();
-        Dimension newSize = new Dimension(slotxsize  * slots.size() //Slotwidth and border
-                                          + slot_space * slots.size()  //Space between Slots
-                                          + left_gap + right_gap  // left and right gap
+		int width = slotxsize  * slots.size() //Slotwidth and border
+                + slot_space * slots.size()  //Space between Slots
+                + left_gap + right_gap;  // left and right gap
+        Dimension newSize = new Dimension(width
                                           , (int)size.getHeight());
         header.setPreferredSize(newSize);
         header.setMaximumSize(newSize);
@@ -176,8 +177,16 @@ class LargeDaySlot extends AbstractDaySlot
        (konflikte werden ignoriert).
     */
     public void putBlock(SwingBlock bl, int slotnr)  {
-        while (slotnr >= slots.size()) {
-            addSlot();
+        while (true) {
+            final int size = slots.size();
+            if (slotnr >= size)
+            {
+                addSlot();
+            }
+            else
+            {
+                break;
+            }
         }
         slots.get(slotnr).putBlock(bl);
         // The blockListener can be shared among all blocks,
@@ -361,6 +370,10 @@ class LargeDaySlot extends AbstractDaySlot
         }
 
 		public void updateBounds(SwingBlock b) {
+            if ( b == null)
+            {
+                return;
+            }
 			//update bounds
             int y1= rowScale.getYCoord(b.getStart());
             final int minimumSize = 15;

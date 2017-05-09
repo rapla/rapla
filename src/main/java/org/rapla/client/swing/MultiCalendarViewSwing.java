@@ -31,6 +31,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -109,10 +110,12 @@ public class MultiCalendarViewSwing implements MultiCalendarView<Component>
     @Override
     public void setFilterModel(ClassifiableFilter model)
     {
-        filter = filterEditButtonFactory.create(model, false, (evt) ->
+        ChangeListener listener = (evt) ->
         {
             getPresenter().onFilterChange();
-        });
+        };
+        final FilterEditButton filterEditButton = filterEditButtonFactory.create(model, false, listener);
+        filter = filterEditButton;
         filterContainer.add(filter.getButton(), BorderLayout.WEST);
     }
 

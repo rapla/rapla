@@ -127,7 +127,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
             lastSynced = currentTimestamp;
         }
-        UpdateEvent safeResultEvent = new UpdateEvent();
+        final UpdateEvent safeResultEvent = new UpdateEvent();
         TimeZone systemTimeZone = operator.getTimeZone();
         int timezoneOffset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
         safeResultEvent.setTimezoneOffset(timezoneOffset);

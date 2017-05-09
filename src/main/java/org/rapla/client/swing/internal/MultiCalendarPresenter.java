@@ -149,7 +149,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     {
         this.editable = editable;
         this.callback = callback;
-        update(null);
+        //update(null);
     }
 
     private SwingViewFactory findFactory(String id) {

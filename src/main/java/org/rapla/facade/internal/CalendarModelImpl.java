@@ -92,9 +92,9 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     Date selectedDate;
     Collection<RaplaObject> selectedObjects = new LinkedHashSet<RaplaObject>();
     String title;
-    StorageOperator operator;
+    final StorageOperator operator;
     String selectedView;
-    User user;
+    private User user;
     Map<String, String> optionMap = new HashMap<String, String>();
 
     boolean defaultEventTypes = true;
@@ -349,6 +349,11 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     public User getUser()
     {
         return user;
+    }
+
+    public void setUser(User user)
+    {
+        this.user = user;
     }
 
     public CalendarModelConfigurationImpl createConfiguration() throws RaplaException
@@ -978,6 +983,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         ClassificationFilter[] reservationFilters = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> reservationsAsync = operator
                 .queryAppointments(user, allocatables, start, end, reservationFilters, templateId);
+        
         return reservationsAsync.thenApply((map) -> {
             if (cachingEnabled)
             {

@@ -326,28 +326,29 @@ public abstract class AbstractCachableOperator implements StorageOperator
             while (it.hasNext())
             {
                 Classifiable classifiable = it.next();
-                if ( maxPerType > 0)
-                {
-                    DynamicType type = classifiable.getClassification().getType();
-                    Integer integer = typeCount.get(type);
-                    if (integer == null)
-                    {
-                        integer = 1;
-                    }
-                    else
-                    {
-                        integer += 1;
-                    }
-                    if (integer > maxPerType)
-                    {
-                        it.remove();
-                        continue;
-                    }
-                    typeCount.put(type, integer);
-                }
                 // remove internal types if not specified in filters to remain backwards compatibility
                 if (filters != null &&!ClassificationFilter.Util.matches(filters, classifiable) || (filters == null && Classifiable.ClassifiableUtil.isInternalType(classifiable) ))
                 {
+                    if ( maxPerType > 0)
+                    {
+                        DynamicType type = classifiable.getClassification().getType();
+                        Integer integer = typeCount.get(type);
+                        if (integer == null)
+                        {
+                            integer = 1;
+                        }
+                        else
+                        {
+                            integer += 1;
+                        }
+                        if (integer > maxPerType)
+                        {
+                            it.remove();
+                            continue;
+                        }
+                        typeCount.put(type, integer);
+                    }
+
                     it.remove();
                 }
             }

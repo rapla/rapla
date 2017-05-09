@@ -19,6 +19,7 @@ import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.merge.client.MergeController;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 @Singleton
 @Extension(id = MergeActivity.ID, provides = TaskPresenter.class)
@@ -90,5 +91,11 @@ public class MergeActivity implements TaskPresenter
     public void updateView(ModificationEvent event)
     {
 
+    }
+
+    @Override
+    public Promise<Void> processStop(ApplicationEvent event)
+    {
+        return new ResolvedPromise<Void>(Promise.VOID);
     }
 }

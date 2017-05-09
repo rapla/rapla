@@ -9,7 +9,6 @@ import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.ConflictSelectionPresenter;
-import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.Entity;
@@ -29,7 +28,9 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "cal";
@@ -193,7 +194,22 @@ import javax.inject.Inject;
     //
     @Override public <T> Promise<RaplaWidget> startActivity(ApplicationEvent activity)
     {
-        return new ResolvedPromise<RaplaWidget>(view);
+        String info = activity.getInfo();
+        try
+        {
+            if ( info != null && info.equalsIgnoreCase("Standard"))
+            {
+                info = null;
+            }
+            model.load(info);
+            updateView( null);
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+        final ResolvedPromise<RaplaWidget> raplaWidgetResolvedPromise = new ResolvedPromise<>(view);
+        return raplaWidgetResolvedPromise;
     }
 
     public void updateView(ModificationEvent evt)
@@ -225,7 +241,6 @@ import javax.inject.Inject;
         boolean showConflicts = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
         boolean showSelection = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
         boolean templateMode = clientFacade.getTemplate() != null;
-
         view.updateView(showConflicts, showSelection, templateMode);
     }
 
@@ -277,6 +292,12 @@ import javax.inject.Inject;
         calendarContainer.closeFilterButton();
 
         // BJO 00000139
+    }
+
+    @Override
+    public Promise<Void> processStop(ApplicationEvent event)
+    {
+        return new ResolvedPromise<Void>(Promise.VOID);
     }
 
 

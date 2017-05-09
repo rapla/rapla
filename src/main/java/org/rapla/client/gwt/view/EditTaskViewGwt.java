@@ -1,5 +1,6 @@
 package org.rapla.client.gwt.view;
 
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.entities.Entity;
@@ -24,5 +25,11 @@ public class EditTaskViewGwt implements EditTaskPresenter.EditTaskView
             throws RaplaException
     {
         return null;
+    }
+
+    @Override
+    public PopupContext createPopupContext(RaplaWidget c)
+    {
+        return  null;
     }
 }

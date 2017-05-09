@@ -648,7 +648,7 @@ import java.util.Vector;
 
     public Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException
     {
-        return getAllocatables(filters, 5000);
+        return getAllocatables(filters, -1);
     }
 
     public void dispatch(UpdateEvent evt) throws RaplaException
@@ -961,7 +961,7 @@ import java.util.Vector;
                 return filtered;
             });
         });
-        return result;
+        return scheduler.synchronizeTo(result);
     }
 
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)

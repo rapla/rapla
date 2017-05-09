@@ -31,6 +31,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
@@ -47,6 +48,15 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     public RaplaDateRenderer(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
         periodModel = getPeriodModel();
+    }
+
+    @Override
+    protected PeriodModel getPeriodModel() {
+        try {
+            return getQuery().getPeriodModel("feiertag");
+        } catch (RaplaException ex) {
+            throw new UnsupportedOperationException("Service not supported in this context: " );
+        }
     }
 
     

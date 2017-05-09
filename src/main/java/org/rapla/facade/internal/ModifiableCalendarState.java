@@ -22,9 +22,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 
-/**
- * Created by Christopher on 14.01.2016.
- */
 public class ModifiableCalendarState
 {
     CalendarModelConfigurationImpl beforeTemplateConf;
@@ -133,7 +130,7 @@ public class ModifiableCalendarState
             if (changed.size() > 0)
             {
                 User newUser = changed.iterator().next();
-                model.user = newUser;
+                model.setUser(newUser);
             }
         }
         for (RaplaObject obj : evt.getChanged())

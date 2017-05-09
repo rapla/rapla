@@ -110,6 +110,10 @@ public interface RaplaFacade
      * @throws RaplaException */
     PeriodModel getPeriodModel() throws RaplaException;
 
+    /** returns an Interface for accessing the periods
+     * @throws RaplaException */
+    PeriodModel getPeriodModel(String key) throws RaplaException;
+
     /** returns the current date in GMT+0 Timezone. If rapla operates
      in multi-user mode, the date should be calculated from the
      server date.

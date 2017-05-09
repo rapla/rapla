@@ -25,10 +25,6 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     {
     }
 
-    @Override public boolean isModifiedSinceLastChange()
-    {
-        return false;
-    }
 
     @Override public void addAppointment(Date start, Date end) throws RaplaException
     {
@@ -55,30 +51,19 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
         return null;
     }
 
-    @Override public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, ApplicationEvent event) throws RaplaException
+    @Override
+    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
+            throws RaplaException
     {
 
     }
+
 
     @Override public Reservation getOriginal()
     {
         return null;
     }
 
-    @Override public void updateReservation(Reservation persistant) throws RaplaException
-    {
-
-    }
-
-    @Override public void deleteReservation() throws RaplaException
-    {
-
-    }
-
-    @Override public void save() throws RaplaException
-    {
-
-    }
 
     @Override public CommandHistory getCommandHistory()
     {

@@ -7,7 +7,9 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 /** Use the ReservationController to modify or create a {@link Reservation}.
     This class handles all interactions with the user. Examples:
@@ -62,4 +64,6 @@ public interface ReservationController
 	boolean isAppointmentOnClipboard();
 	
 	void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException;
+
+    Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime, PopupContext sourceComponent);
 }

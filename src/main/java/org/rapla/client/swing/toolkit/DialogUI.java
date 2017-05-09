@@ -45,6 +45,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.BundleManager;
@@ -59,6 +60,9 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.CompletablePromise;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
@@ -77,12 +81,13 @@ public class DialogUI extends JDialog
     private boolean useDefaultOptions = false;
     private boolean bClosed = false;
     private Component parent;
-
+    CompletablePromise<Integer> completable;
     private int selectedIndex = -1;
     private FrameControllerList frameList = null;
     protected boolean packFrame = true;
     private DefaultBundleManager localeSelector;
     private RaplaResources i18n;
+    private CommandScheduler scheduler;
 
     private ButtonListener buttonListener = new ButtonListener();
     private boolean m_modal;
@@ -111,16 +116,18 @@ public class DialogUI extends JDialog
         return getOwnerWindow(owner);
     }
 
-    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Dialog parent) throws RaplaInitializationException {
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList, Dialog parent) throws RaplaInitializationException {
         super( parent );
+        this.scheduler = scheduler;
         this.images = images;
         service( i18n, images, bundleManager, frameList );
     }
 
-    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Frame parent) throws
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, CommandScheduler scheduler,FrameControllerList frameList, Frame parent) throws
             RaplaInitializationException {
         super( parent );
         this.images = images;
+        this.scheduler = scheduler;
         service( i18n, images, bundleManager, frameList );
     }
 
@@ -152,7 +159,9 @@ public class DialogUI extends JDialog
     }
 
     protected void init(boolean modal,JComponent content,String[] options) {
+
         super.setModal(modal);
+        completable = scheduler.createCompletable();
         m_modal = modal;
         this.setFocusTraversalPolicy( new LayoutFocusTraversalPolicy()
         {
@@ -260,10 +269,12 @@ public class DialogUI extends JDialog
             for (int i=0;i<buttons.length;i++) {
                 if (evt.getSource() == buttons[i]) {
                     selectedIndex = i;
+                    completable.complete( i);
                     return;
                 }
             }
             selectedIndex = -1;
+            completable.completeExceptionally( new CommandAbortedException("dlg"));
             abortAction.run();//actionPerformed(new ActionEvent(DialogUI.this, ActionEvent.ACTION_PERFORMED,""));
         }
     }
@@ -417,9 +428,12 @@ public class DialogUI extends JDialog
     }
 
     @Override
-    public void start(boolean pack) {
+    public Promise<Integer> start(boolean pack) {
         packFrame = pack;
         start(p);
+
+
+        return completable;
     }
 
     protected void processWindowEvent(WindowEvent e) {
@@ -453,12 +467,14 @@ public class DialogUI extends JDialog
         private final BundleManager bundleManager;
         private final FrameControllerList frameList;
         private final Logger logger;
+        private final CommandScheduler scheduler;
 
         @Inject
-        public DialogUiFactory(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList, Logger logger)
+        public DialogUiFactory(RaplaResources i18n, RaplaImages images, CommandScheduler scheduler,BundleManager bundleManager, FrameControllerList frameList, Logger logger)
         {
             this.i18n = i18n;
             this.images = images;
+            this.scheduler = scheduler;
             this.bundleManager = bundleManager;
             this.frameList = frameList;
             this.logger = logger;
@@ -479,9 +495,9 @@ public class DialogUI extends JDialog
             Component parent = SwingPopupContext.extractParent(popupContext);
             Component topLevel = getOwnerWindow(parent);
             if (topLevel instanceof Dialog)
-                dlg = new DialogUI(i18n, images, bundleManager, frameList, (Dialog) topLevel);
+                dlg = new DialogUI(i18n, images, bundleManager, scheduler,frameList, (Dialog) topLevel);
             else
-                dlg = new DialogUI(i18n, images, bundleManager, frameList, (Frame) topLevel);
+                dlg = new DialogUI(i18n, images, bundleManager, scheduler,frameList, (Frame) topLevel);
             
             dlg.parent = parent;
             dlg.init(modal, (JComponent)content, options);

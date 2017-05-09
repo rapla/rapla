@@ -118,6 +118,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
 	private RaplaResources i18n;
 	private PeriodModelImpl periodModel;
+	private PeriodModelImpl periodModelHoliday;
 //	private ConflictFinder conflictFinder;
 	private Vector<ModificationListener> directListenerList = new Vector<ModificationListener>();
 	public CommandHistory commandHistory = new CommandHistory();
@@ -268,7 +269,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		modificatonListenerList.add(listener);
 	}
 
-	public void addDirectModificationListener(ModificationListener listener) 
+	/**
+	 * This will directly call the modificationListener in the refresh thread.
+	 * You must take care of synchronization issues. It's recommended to use addModifictationListener instead
+	 */
+	public void addDirectModificationListener(ModificationListener listener)
 	{
 		if (!(operator instanceof RemoteOperator))
 		{
@@ -291,6 +296,9 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			Collection<ModificationListener> list = new ArrayList<ModificationListener>(3);
 			if (periodModel != null) {
 				list.add(periodModel);
+			}
+			if (periodModelHoliday != null) {
+				list.add(periodModelHoliday);
 			}
 			Iterator<ModificationListener> it = modificatonListenerList.iterator();
 			while (it.hasNext()) {
@@ -397,17 +405,13 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 //		}
 //	}
 	
-	final class UpdateCommandModification implements Runnable, Command {
+	final class UpdateCommandModification implements Runnable {
 		ModificationListener listenerList;
 		ModificationEvent modificationEvent;
 
 		public UpdateCommandModification(ModificationListener modificationListeners, ModificationEvent evt) {
 			this.listenerList = modificationListeners;
 			this.modificationEvent = evt;
-		}
-
-		public void execute() throws Exception {
-			run();
 		}
 
 		public void run() {
@@ -438,13 +442,19 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				getLogger().error("Can't update Period Model", e);
 			}
 		}
+		if (periodModelHoliday != null) {
+			try {
+				periodModelHoliday.update();
+			} catch (RaplaException e) {
+				getLogger().error("Can't update Period Model", e);
+			}
+		}
 		{
 			Collection<ModificationListener> modificationListeners = directListenerList;
 			for (ModificationListener mod:modificationListeners)
 			{
 			//if (modificationListeners.size() > 0 ) {
-			   
-				new UpdateCommandModification(mod,evt).run(); 
+				new UpdateCommandModification(mod,evt).run();
 			}
 		}
 		{
@@ -504,13 +514,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
             final Collection<Reservation> allReservations = CalendarModelImpl.getAllReservations(appointments);
             return allReservations;
         });
-        return promise;
+        return scheduler.synchronizeTo(promise);
 	}
 
 	public Allocatable[] getAllocatables() throws RaplaException {
 		return getAllocatables(null);
-		
-		
 	}
 
 	public Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException {
@@ -607,11 +615,24 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return result;
 	}
 
+	@Override
 	public PeriodModel getPeriodModel() throws RaplaException {
-		if (periodModel == null) {
-			periodModel = new PeriodModelImpl(this);
+		return  getPeriodModel( null);
+	}
+
+	@Override
+	public PeriodModel getPeriodModel(String key) throws RaplaException {
+		if ( key == null)
+		{
+			if (periodModel == null) {
+				periodModel = new PeriodModelImpl(this, null);
+			}
+			return periodModel;
 		}
-		return periodModel;
+		if (periodModelHoliday == null) {
+			periodModelHoliday = new PeriodModelImpl(this, key);
+		}
+		return periodModelHoliday;
 	}
 
 	public DynamicType[] getDynamicTypes(String classificationType)

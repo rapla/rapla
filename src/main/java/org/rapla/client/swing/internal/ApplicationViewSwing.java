@@ -45,6 +45,7 @@ import java.beans.VetoableChangeListener;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 @DefaultImplementation(of = ApplicationView.class, context = InjectionContext.swing)
 @Singleton
@@ -240,7 +241,16 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     public void updateContent(RaplaWidget<JComponent> widget)
     {
         JComponent component = widget.getComponent();
-        getContentPane().add(component, BorderLayout.CENTER);
+        final JPanel contentPane = getContentPane();
+        final Component[] components = contentPane.getComponents();
+        for (Component comp:components)
+        {
+            if ( comp == component)
+            {
+                return;
+            }
+        }
+        contentPane.add(component, BorderLayout.CENTER);
     }
 
     private JPanel getContentPane()
@@ -326,7 +336,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget,Function<ApplicationEvent,Boolean> windowClosing)
     {
         final RaplaFrame dialog = new RaplaFrame(frameControllerList);
         final Container component = (Container) objectRaplaWidget.getComponent();
@@ -340,7 +350,14 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
             public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
             {
                 logger.debug("Closing");
-                dialog.dispose();
+                if ( windowClosing.apply( windowId))
+                {
+                     dialog.dispose();
+                }
+                else
+                {
+                    throw new PropertyVetoException("close", evt);
+                }
             }
         });
         dialog.setVisible( true);

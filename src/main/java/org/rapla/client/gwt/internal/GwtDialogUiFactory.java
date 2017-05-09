@@ -24,6 +24,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.UnsynchronizedCompletablePromise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
@@ -95,6 +97,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
 
         private Runnable abortAction = null;
 
+
         public GwtDialog(boolean modal, String[] options)
         {
             super(true, modal);
@@ -120,7 +123,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         }
 
         @Override
-        public void start(boolean pack)
+        public Promise<Integer> start(boolean pack)
         {
             handlers.add(super.addCloseHandler(this));
             show();
@@ -129,7 +132,8 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             {
                 buttons[selectedIndex].setFocus(true);
             }
-
+            final UnsynchronizedCompletablePromise<Integer> integerUnsynchronizedCompletablePromise = new UnsynchronizedCompletablePromise<>();
+            return integerUnsynchronizedCompletablePromise;
         }
 
         @Override

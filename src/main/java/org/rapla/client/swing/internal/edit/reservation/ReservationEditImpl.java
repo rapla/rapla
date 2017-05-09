@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -46,14 +45,10 @@ import javax.swing.plaf.ActionMapUIResource;
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
-import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
-import org.rapla.client.internal.ReservationControllerImpl;
-import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.ReservationToolbarExtension;
 import org.rapla.client.swing.images.RaplaImages;
@@ -67,7 +62,6 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
-import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
@@ -80,17 +74,16 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.function.Consumer;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ReservationEdit.class)
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
 {
     ArrayList<ChangeListener> changeListenerList = new ArrayList<ChangeListener>();
-    ApplicationEvent applicationEvent;
     protected Reservation mutableReservation;
     private Reservation original;
 
@@ -141,8 +134,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     AppointmentListEdit appointmentEdit;
     AllocatableSelection allocatableEdit;
 
-    boolean bSaving = false;
-    boolean bDeleting = false;
     boolean bSaved;
     boolean bNew;
 
@@ -153,33 +144,35 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     List<AppointmentListener> appointmentListeners = new ArrayList<AppointmentListener>();
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
-    private final InfoFactory infoFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
     private final JPanel contentPane;
-    private final EventBus eventBus;
+    Runnable saveCmd;
+    Runnable closeCmd;
+    Runnable deleteCmd;
 
-    @Inject public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            Set<AppointmentStatusFactory> appointmentStatusFactories, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
+    @Inject
+    public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            Set<AppointmentStatusFactory> appointmentStatusFactories, RaplaImages raplaImages,
+            DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
-            Set<ReservationToolbarExtension> reservationToolbarExtensions, EventBus eventBus) throws RaplaInitializationException
+            Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.reservationToolbarExtensions = reservationToolbarExtensions;
         this.appointmentStatusFactories = appointmentStatusFactories;
-        this.infoFactory = infoFactory;
         this.dialogUiFactory = dialogUiFactory;
-        this.eventBus = eventBus;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         commandHistory = new CommandHistory();
         try
         {
             this.reservationInfo = reservationInfoEditFactory.create(commandHistory);
             this.appointmentEdit = appointmentListEditFactory.create(commandHistory);
-        } catch (RaplaException ex)
+        }
+        catch (RaplaException ex)
         {
-            throw new RaplaInitializationException( ex);
+            throw new RaplaInitializationException(ex);
         }
         allocatableEdit = allocatableSelectionFactory.create(true, commandHistory);
 
@@ -296,7 +289,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         back.setIcon(raplaImages.getIconFromKey("icon.undo"));
     }
 
-    @Override public Component getComponent()
+    @Override
+    public Component getComponent()
     {
         return contentPane;
     }
@@ -320,14 +314,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         saveButtonTop.setEnabled(!flag);
     }
 
-    /* (non-Javadoc)
-     * @see org.rapla.client.swing.gui.edit.reservation.IReservationEdit#isModifiedSinceLastChange()
-     */
-    public boolean isModifiedSinceLastChange()
-    {
-        return !bSaved;
-    }
-
     public void addAppointment(Date start, Date end) throws RaplaException
     {
         Appointment appointment = getFacade().newAppointment(start, end);
@@ -341,40 +327,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         appointmentEdit.addAppointment(appointment);
     }
 
-    public void deleteReservation() throws RaplaException
-    {
-        if (bDeleting)
-            return;
-        getLogger().debug("Reservation has been deleted.");
-        DialogInterface dlg = dialogUiFactory
-                .create(new SwingPopupContext(mainContent, null), true, getString("warning"), getString("warning.reservation.delete"));
-        dlg.setIcon("icon.warning");
-        dlg.start(true);
-        closeWindow();
-    }
-
-    public void updateReservation(Reservation newReservation) throws RaplaException
-    {
-        if (bSaving)
-            return;
-        getLogger().debug("Reservation has been changed.");
-        DialogInterface dlg = dialogUiFactory
-                .create(new SwingPopupContext(mainContent, null), true, getString("warning"), getString("warning.reservation.update"));
-        commandHistory.clear();
-        try
-        {
-            dlg.setIcon("icon.warning");
-            dlg.start(true);
-            this.original = newReservation;
-            setReservation(getFacade().edit(newReservation), null);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(mainContent, null));
-        }
-    }
-
-    @Override public void updateView(ModificationEvent evt)
+    @Override
+    public void updateView(ModificationEvent evt)
     {
         try
         {
@@ -386,30 +340,34 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         }
     }
 
-    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, ApplicationEvent event) throws RaplaException
+    @Override
+    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
+            throws RaplaException
     {
-        this.applicationEvent = event;
         RaplaFacade mod = getFacade();
-
+        this.saveCmd = saveCmd;
+        this.closeCmd = closeCmd;
+        this.deleteCmd = deleteCmd;
         boolean bNew = false;
-        if (reservation.isReadOnly())
-        {
-            mutableReservation = mod.edit(reservation);
-            original = reservation;
-        }
-        else
-        {
-            try
-            {
-                original = mod.getPersistant(reservation);
-            }
-            catch (EntityNotFoundException ex)
-            {
-                bNew = true;
-                original = null;
-            }
-            mutableReservation = reservation;
-        }
+        //        if (reservation.isReadOnly())
+        //        {
+        //            mutableReservation = mod.edit(reservation);
+        //            original = reservation;
+        //        }
+        //        else
+        //        {
+        //            try
+        //            {
+        //                original = mod.getPersistant(reservation);
+        //            }
+        //            catch (EntityNotFoundException ex)
+        //            {
+        //                bNew = true;
+        //                original = null;
+        //            }
+        //            mutableReservation = reservation;
+        //        }
+        mutableReservation = reservation;
         setSaved(!bNew);
         //printBlocks( appointment );
         this.bNew = bNew;
@@ -427,7 +385,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         setReservation(mutableReservation, mutableAppointment);
         appointmentEdit.getAppointmentController().setSelectedEditDate(selectedDate);
 
-        setTitle();
         boolean packFrame = false;
         // Insert into open ReservationEditWindows, so that
         // we can't edit the same Reservation in different windows
@@ -442,8 +399,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         }
     }
 
-//        frame.place(true, packFrame);
-//        frame.setVisible(true);
+    //        frame.place(true, packFrame);
+    //        frame.setVisible(true);
 
 
 
@@ -458,8 +415,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     public void closeWindow()
     {
         appointmentEdit.dispose();
-        applicationEvent.setStop( true);
-        eventBus.fireEvent( applicationEvent);
         // FIXME fire Close event
         //frame.dispose();
         getLogger().debug("Edit window closed.");
@@ -478,7 +433,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         }
     }
 
-    @Override public Reservation getReservation()
+    @Override
+    public Reservation getReservation()
     {
         return mutableReservation;
     }
@@ -488,7 +444,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         return original;
     }
 
-    @Override public Collection<Appointment> getSelectedAppointments()
+    @Override
+    public Collection<Appointment> getSelectedAppointments()
     {
         Collection<Appointment> appointments = new ArrayList<Appointment>();
         for (Appointment value : appointmentEdit.getListEdit().getSelectedValues())
@@ -496,13 +453,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
             appointments.add(value);
         }
         return appointments;
-    }
-
-    private void setTitle()
-    {
-        String title = getI18n().format((bNew) ? "new_reservation.format" : "edit_reservation.format", getName(mutableReservation));
-        // FIXME post new title to popup container
-        //frame.setTitle(title);
     }
 
     private void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException
@@ -542,8 +492,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         //        	fireAppointmentSelected(Collections.singleton(appointment));
     }
 
-
-
     class Listener extends AbstractAction implements AppointmentListener, ChangeListener, ReservationInfoEdit.DetailListener
     {
         private static final long serialVersionUID = 1L;
@@ -582,7 +530,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                 getLogger().debug("ReservationInfo changed");
                 //        		PermissionContainer.Util.processOldPermissionModify(mutableReservation, original);
                 setSaved(false);
-                setTitle();
             }
             if (evt.getSource() == allocatableEdit)
             {
@@ -617,116 +564,25 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
 
         public void actionPerformed(ActionEvent evt)
         {
-            try
+            if (evt.getSource() == saveButton || evt.getSource() == saveButtonTop)
             {
-                if (evt.getSource() == saveButton || evt.getSource() == saveButtonTop)
-                {
-                    save();
-                }
-                if (evt.getSource() == deleteButton)
-                {
-                    delete();
-                }
-                if (evt.getSource() == closeButton)
-                {
-                    if (canClose())
-                        closeWindow();
-                }
+                saveCmd.run();
             }
-            catch (RaplaException ex)
+            if (evt.getSource() == deleteButton)
             {
-                dialogUiFactory.showException(ex, new SwingPopupContext(null, null));
+                deleteCmd.run();
+            }
+            if (evt.getSource() == closeButton)
+            {
+                closeCmd.run();
             }
         }
 
-    }
-
-    protected boolean canClose()
-    {
-        if (!isModifiedSinceLastChange())
-            return true;
-
-        try
-        {
-            DialogInterface dlg = dialogUiFactory
-                    .create(new SwingPopupContext(mainContent, null), true, getString("confirm-close.title"), getString("confirm-close.question"),
-                            new String[] { getString("confirm-close.ok"), getString("back") });
-            dlg.setIcon("icon.question");
-            dlg.setDefault(1);
-            dlg.start(true);
-            return (dlg.getSelectedIndex() == 0);
-        }
-        catch (RaplaException e)
-        {
-            return true;
-        }
-
-    }
-
-    public void save() throws RaplaException
-    {
-        try
-        {
-            bSaving = true;
-            final Set<Reservation> singleton = Collections.singleton(mutableReservation);
-            final Set<Reservation> originals = original != null ? Collections.singleton(original) : null;
-            SaveUndo<Reservation> saveCommand = new SaveUndo<Reservation>(getFacade(),getI18n(),singleton, originals/*, popupContext*/);
-            final Promise<Void> promise = getUpdateModule().getCommandHistory().storeAndExecute(saveCommand);
-            handleException(promise.thenRun(() -> {
-                setSaved(true);
-                closeWindow();
-            }));
-        }
-        finally
-        {
-            bSaving = false;
-        }
-    }
-
-    Promise handleException(Promise promise)
-    {
-        return promise.exceptionally(ex->
-                {
-                    PopupContext context = new SwingPopupContext(mainContent, null);
-                    dialogUiFactory.showException((Throwable)ex,context);
-                    return Promise.VOID;
-                }
-        );
     }
 
     public CommandHistory getCommandHistory()
     {
         return getUpdateModule().getCommandHistory();
-    }
-
-    private void delete() throws RaplaException
-    {
-        try
-        {
-            DialogInterface dlg = infoFactory.createDeleteDialog(new Object[] { mutableReservation }, new SwingPopupContext(toolBar, null));
-            dlg.start(true);
-            if (dlg.getSelectedIndex() == 0)
-            {
-                bDeleting = true;
-                Set<Reservation> reservationsToRemove = Collections.singleton(original);
-                Set<Appointment> appointmentsToRemove = Collections.emptySet();
-                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
-                CommandUndo<RaplaException> deleteCommand = new ReservationControllerImpl.DeleteBlocksCommand(getClientFacade(),getI18n(),reservationsToRemove,
-                        appointmentsToRemove, exceptionsToAdd)
-                {
-                    public String getCommandoName()
-                    {
-                        return getString("delete") + " " + getString("reservation");
-                    }
-                };
-                handleException(getCommandHistory().storeAndExecute(deleteCommand));
-                closeWindow();
-            }
-        }
-        finally
-        {
-            bDeleting = false;
-        }
     }
 
     protected ChangeListener[] getReservationInfoListeners()

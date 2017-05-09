@@ -21,7 +21,9 @@ import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
 
 public class ErrorDialogTest extends GUITestCase {
 
@@ -33,7 +35,8 @@ public class ErrorDialogTest extends GUITestCase {
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaImages raplaImages = new RaplaImages(logger);
         RaplaResources raplaResources = new RaplaResources(bundleManager);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger );
+        CommandScheduler scheduler = new DefaultScheduler(logger);
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages,scheduler, bundleManager,frameList, logger );
         ErrorDialog dialog = new ErrorDialog(logger, raplaResources, raplaImages, dialogUiFactory);
         dialog.show("This is a very long sample error-text for our error-message-displaying-test"
                         + " it should be wrapped so that the whole text is diplayed.");

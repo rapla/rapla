@@ -5,16 +5,21 @@ import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
+import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.internal.CommandAbortedException;
+import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -49,6 +54,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,6 +80,10 @@ public class EditTaskPresenter implements TaskPresenter
     final static public String EDIT_RESOURCES_ID = "editResources";
     private final Provider<ReservationEdit> reservationEditProvider;
     private final EditTaskView editTaskView;
+    AppointmentBlock appointmentBlock= null;
+    boolean bSaving = false;
+    boolean bDeleting = false;
+    final ReservationController reservationController;
 
     public interface EditTaskView
     {
@@ -83,11 +93,13 @@ public class EditTaskPresenter implements TaskPresenter
 //            void close();
 //        }
         <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String title,Consumer<Collection<T>> save, Runnable close) throws RaplaException;
+
+        PopupContext createPopupContext(RaplaWidget c);
     }
 
     @Inject
-    public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory,
-            RaplaResources i18n, EventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider)
+    public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, EventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
+            ReservationController reservationController)
     {
         this.editTaskView = editTaskView;
         this.dialogUiFactory = dialogUiFactory;
@@ -97,11 +109,13 @@ public class EditTaskPresenter implements TaskPresenter
         this.model = model;
         this.reservationEditProvider = reservationEditProvider;
         this.raplaFacade = clientFacade.getRaplaFacade();
+        this.reservationController = reservationController;
     }
 
     @Override
     public Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent)
     {
+        appointmentBlock = null;
         final String taskId = applicationEvent.getApplicationEventId();
         String info = applicationEvent.getInfo();
         PopupContext popupContext = applicationEvent.getPopupContext();
@@ -110,18 +124,16 @@ public class EditTaskPresenter implements TaskPresenter
             if (taskId.equals(EDIT_RESOURCES_ID) || taskId.equals(EDIT_EVENTS_ID))
             {
                 final ApplicationEventContext context = applicationEvent.getContext();
-                List<Entity> entities = new ArrayList<>();
+                Collection<Entity> entities = new LinkedHashSet<>();
                 if (context != null && context instanceof EditApplicationEventContext)
                 {
                     final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
                     entities.addAll(editApplicationEventContext.getSelectedObjects());
-                    final AppointmentBlock appointmentBlock = editApplicationEventContext.getAppointmentBlock();
+                    appointmentBlock = editApplicationEventContext.getAppointmentBlock();
                     if (appointmentBlock != null)
                     {
-                        ReservationEdit<?> c = reservationEditProvider.get();
                         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
-                        c.editReservation(reservation, appointmentBlock, applicationEvent);
-                        return new ResolvedPromise<RaplaWidget>(c);
+                        entities.add( reservation);
                     }
                 }
                 else
@@ -273,7 +285,7 @@ public class EditTaskPresenter implements TaskPresenter
             return null;
     }
 
-    private <T extends Entity> RaplaWidget createEditDialog(List<T> list, String title, PopupContext popupContext, ApplicationEvent applicationEvent)
+    private <T extends Entity> RaplaWidget createEditDialog(Collection<T> list, String title, PopupContext popupContext, ApplicationEvent applicationEvent)
             throws RaplaException
     {
         if (list.size() == 0)
@@ -291,16 +303,7 @@ public class EditTaskPresenter implements TaskPresenter
             return null;
         }
 
-        if (list.size() == 1)
-        {
-            Entity<?> testObj = (Entity<?>) list.get(0);
-            if (testObj instanceof Reservation)
-            {
-                ReservationEdit<?> c = reservationEditProvider.get();
-                c.editReservation((Reservation) testObj, null, applicationEvent);
-                return c;
-            }
-        }
+
         //		gets for all objects in array a modifiable version and add it to a set to avoid duplication
         Collection<T> nonEditableObjects = new ArrayList<>(list);
         Collection<T> toEdit = new ArrayList<>();
@@ -360,6 +363,7 @@ public class EditTaskPresenter implements TaskPresenter
                     Promise promise = commandHistory.storeAndExecute(saveCommand);
                     handleException(promise.thenRun(() ->
                     {
+                        close(applicationEvent);
                         //                                    getPrivateEditDialog().removeEditDialog(EditDialog.this);
                         //                                    dlg.close();
                         //       FIXME callback;
@@ -368,22 +372,122 @@ public class EditTaskPresenter implements TaskPresenter
                 else
                 {
                     raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
+                    close(applicationEvent);
                 }
                 //getPrivateEditDialog().removeEditDialog(EditDialog.this);
-                close(applicationEvent);
+
             };
 
             Runnable closeCmd = () -> close(applicationEvent);
-            return editTaskView.doSomething(toEdit,title,saveCmd,closeCmd);
+
+            if (list.size() == 1)
+            {
+                final Entity<?> testObj = (Entity<?>) toEdit.iterator().next();
+                if (testObj instanceof Reservation)
+                {
+                    ReservationEdit<?> c = reservationEditProvider.get();
+                    PopupContext popupEditContext = editTaskView.createPopupContext( c);
+                    Runnable reservationSaveCmd = () -> {
+                        this.bSaving = true;
+                        boolean firstTime = true;
+                        final Promise promise = reservationController
+                                .checkAndDistpatch((Collection<Reservation>) toEdit, Collections.EMPTY_LIST, firstTime, popupEditContext).thenRun(()->closeCmd.run());
+
+                        handleException( promise,popupEditContext).thenRun( ()->bSaving = false);
+                    };
+                    Runnable deleteCmd = () -> {
+                        //delete();
+                    };
+                    c.editReservation((Reservation) testObj, appointmentBlock, reservationSaveCmd, closeCmd, deleteCmd);
+                    //c.addAppointmentListener();
+                    return c;
+                }
+            }
+            final RaplaWidget raplaWidget = editTaskView.doSomething(toEdit, title, saveCmd, closeCmd);
+            return raplaWidget;
         }
         return null;
     }
+
+    public void save() throws RaplaException
+    {
+        try
+        {
+            bSaving = true;
+
+        }
+        finally
+        {
+            bSaving = false;
+        }
+    }
+
+    @Override
+    public Promise<Void> processStop(ApplicationEvent event)
+    {
+
+        PopupContext popupContext = new SwingPopupContext(null, null);
+        try
+        {
+            DialogInterface dlg = dialogUiFactory.create(popupContext, false, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
+                    new String[] { i18n.getString("confirm-close.ok"), i18n.getString("back") });
+            dlg.setIcon("icon.question");
+            dlg.setDefault(1);
+            final Promise<Integer> start = dlg.start(true);
+            return start.thenAccept((integer)->
+                    {
+                        if (integer != 0)
+                        {
+                            throw new CommandAbortedException("test");
+                        }
+                    }
+            );
+        }
+        catch (RaplaException ex)
+        {
+            return new ResolvedPromise<Void>(ex);
+        }
+    }
+
+//    private void delete() throws RaplaException
+//    {
+//        try
+//        {
+//            DialogInterface dlg = infoFactory.createDeleteDialog(new Object[] { mutableReservation }, new SwingPopupContext(toolBar, null));
+//            dlg.start(true);
+//            if (dlg.getSelectedIndex() == 0)
+//            {
+//                bDeleting = true;
+//                Set<Reservation> reservationsToRemove = Collections.singleton(original);
+//                Set<Appointment> appointmentsToRemove = Collections.emptySet();
+//                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
+//                CommandUndo<RaplaException> deleteCommand = new ReservationControllerImpl.DeleteBlocksCommand(clientFacade,i18n,reservationsToRemove,
+//                        appointmentsToRemove, exceptionsToAdd)
+//                {
+//                    public String getCommandoName()
+//                    {
+//                        return i18n.getString("delete") + " " + i18n.getString("reservation");
+//                    }
+//                };
+//                handleException(getCommandHistory().storeAndExecute(deleteCommand));
+//                closeWindow();
+//            }
+//        }
+//        finally
+//        {
+//            bDeleting = false;
+//        }
+//    }
+
 
     Promise handleException(Promise promise,PopupContext popupContext)
     {
         return promise.exceptionally(ex->
                 {
-                    dialogUiFactory.showException((Throwable)ex,popupContext);
+                    if (!(ex instanceof CommandAbortedException))
+                    {
+                        dialogUiFactory.showException((Throwable) ex, popupContext);
+                    }
                     return Promise.VOID;
                 }
         );
@@ -400,7 +504,115 @@ public class EditTaskPresenter implements TaskPresenter
     public void updateView(ModificationEvent event)
     {
         // FIXME
+//
+//        ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
+//        for (ReservationEdit edit : clone)
+//        {
+//            ReservationEdit c = edit;
+//            c.updateView(evt);
+//            TimeInterval invalidateInterval = event.getInvalidateInterval();
+//            Reservation original = c.getOriginal();
+//            if (invalidateInterval != null && original != null)
+//            {
+//                boolean test = false;
+//                for (Appointment app : original.getAppointments())
+//                {
+//                    if (app.overlaps(invalidateInterval))
+//                    {
+//                        test = true;
+//                    }
+//
+//                }
+//                if (test)
+//                {
+//                    try
+//                    {
+//                        Reservation persistant = getFacade().getPersistant(original);
+//                        Date version = persistant.getLastChanged();
+//                        Date originalVersion = original.getLastChanged();
+//                        if (originalVersion != null && version != null && originalVersion.before(version))
+//                        {
+//                            c.updateReservation(persistant);
+//                        }
+//                    }
+//                    catch (EntityNotFoundException ex)
+//                    {
+//                        c.deleteReservation();
+//                    }
+//
+//                }
+//            }
+//
+//        }
     }
+
+//    public void deleteReservation() throws RaplaException
+//    {
+//        if (bDeleting)
+//            return;
+//        getLogger().debug("Reservation has been deleted.");
+//        DialogInterface dlg = dialogUiFactory
+//                .create(new SwingPopupContext(mainContent, null), true, getString("warning"), getString("warning.reservation.delete"));
+//        dlg.setIcon("icon.warning");
+//        dlg.start(true);
+//        closeWindow();
+//    }
+//
+//    public void updateReservation(Reservation newReservation) throws RaplaException
+//    {
+//        if (bSaving)
+//            return;
+//        getLogger().debug("Reservation has been changed.");
+//        DialogInterface dlg = dialogUiFactory
+//                .create(new SwingPopupContext(mainContent, null), true, getString("warning"), getString("warning.reservation.update"));
+//        commandHistory.clear();
+//        try
+//        {
+//            dlg.setIcon("icon.warning");
+//            dlg.start(true);
+//            this.original = newReservation;
+//            setReservation(getFacade().edit(newReservation), null);
+//        }
+//        catch (RaplaException ex)
+//        {
+//            dialogUiFactory.showException(ex, new SwingPopupContext(mainContent, null));
+//        }
+//    }
+//
+//    private void setTitle()
+//    {
+//        String title = getI18n().format((bNew) ? "new_reservation.format" : "edit_reservation.format", getName(mutableReservation));
+//        // FIXME post new title to popup container
+//        //frame.setTitle(title);
+//    }
+//
+//
+//    protected boolean canClose()
+//    {
+//        if (!isModifiedSinceLastChange())
+//            return true;
+//
+//        try
+//        {
+//            DialogInterface dlg = dialogUiFactory
+//                    .create(new SwingPopupContext(mainContent, null), true, getString("confirm-close.title"), getString("confirm-close.question"),
+//                            new String[] { getString("confirm-close.ok"), getString("back") });
+//            dlg.setIcon("icon.question");
+//            dlg.setDefault(1);
+//            dlg.start(true);
+//            return (dlg.getSelectedIndex() == 0);
+//        }
+//        catch (RaplaException e)
+//        {
+//            return true;
+//        }
+//
+//    }
+//
+//    public boolean isModifiedSinceLastChange()
+//    {
+//        return !bSaved;
+//    }
 
 
 
@@ -421,19 +633,7 @@ public class EditTaskPresenter implements TaskPresenter
     //        getPrivateEditDialog().removeEditDialog(EditDialog.this);
     //    }
 
-    class SaveAction<T> implements Runnable
-    {
-        private static final long serialVersionUID = 1L;
 
-        public SaveAction()
-        {
-        }
-
-        public void run()
-        {
-
-        }
-    }
 
 
 

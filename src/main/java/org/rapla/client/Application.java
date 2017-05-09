@@ -8,6 +8,7 @@ import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
+import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 @Singleton public class Application implements ApplicationView.Presenter, ModificationListener
 {
@@ -83,6 +85,7 @@ import java.util.Set;
         final String activityId = activity.getApplicationEventId();
         final PopupContext popupContext =  mainView.createPopupContext();//activity.getPopupContext();
         mainView.removeWindow( activity);
+
         openDialogsPresenter.remove(activity);
         return true;
     }
@@ -112,7 +115,8 @@ import java.util.Set;
         {
             return false;
         }
-        objectRaplaWidget.thenAccept((widget) -> {
+        final Promise<Void> editPromise = objectRaplaWidget.thenAccept((widget) ->
+        {
             if (isPlace)
             {
                 placeTaskPresenter = taskPresenter;
@@ -120,14 +124,34 @@ import java.util.Set;
             }
             else
             {
-                mainView.openWindow( activity,popupContext, widget );
+                Function<ApplicationEvent, Boolean> windowClosingFunction = (event) ->
+                {
+                    Promise<Void> promise = taskPresenter.processStop(event).thenRun(() ->
+                    {
+                        event.setStop(true);
+                        eventBus.fireEvent(event);
+                    });
+                    handleExcepion(promise,popupContext);
+                    return true;
+                };
+                mainView.openWindow(activity, popupContext, widget, windowClosingFunction);
                 openDialogsPresenter.put(activity, taskPresenter);
             }
-        }).exceptionally(ex -> {
-            showException(ex,popupContext );
+        });
+        handleExcepion(editPromise,popupContext);
+        return true;
+    }
+
+    private void handleExcepion(Promise<Void> promise,PopupContext popupContext)
+    {
+        promise.exceptionally(ex->
+        {
+            if (!(ex instanceof CommandAbortedException))
+            {
+                showException(ex, popupContext);
+            }
             return Promise.VOID;
         });
-        return true;
     }
 
     private void showException(Throwable ex, PopupContext popupContext)
@@ -177,7 +201,6 @@ import java.util.Set;
 
         ((FacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener()
         {
-
             public void dataChanged(ModificationEvent evt) throws RaplaException
             {
                 calendarState.dataChanged(evt);
@@ -199,12 +222,6 @@ import java.util.Set;
             ext.start();
         }
 
-        //FIXME add customizable DateRenderer
-        // Add daterender if not provided by the plugins
-        //        if ( !getContext().has( DateRenderer.class))
-        //        {
-        //            addContainerProvidedComponent(DateRenderer.class, RaplaDateRenderer.class);
-        //        }
         boolean showToolTips = raplaFacade.getPreferences(clientFacade.getUser()).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
         String title = raplaFacade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, i18n.getString("rapla.title"));
         mainView.init(showToolTips, title);
@@ -252,9 +269,7 @@ import java.util.Set;
         clientFacade.removeModificationListener(this);
         try
         {
-
             closeCallback.run();
-
         }
         catch (Exception ex)
         {

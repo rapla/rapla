@@ -178,13 +178,13 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     }
 
     public void dateChanged(DateChangeEvent evt) {
-        try {
-            // TODO think about asynchronous call
             final Promise<Void> update = update();
-            PromiseSynchroniser.waitForWithRaplaException(update, 10000);
-        } catch (RaplaException ex) {
-            dialogUiFactory.showException(ex, new SwingPopupContext(view.getComponent(), null));
-        }
+            update.exceptionally( (ex) ->
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(view.getComponent(), null));
+                return Promise.VOID;
+            });
+            
     }
 
     public Promise<Void> update() {

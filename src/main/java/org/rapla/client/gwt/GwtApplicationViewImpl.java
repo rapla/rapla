@@ -37,6 +37,8 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
 
+import java.util.function.Function;
+
 @DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
 public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
 {
@@ -199,7 +201,7 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, Function<ApplicationEvent,Boolean> windowClosingFunction)
     {
 
     }

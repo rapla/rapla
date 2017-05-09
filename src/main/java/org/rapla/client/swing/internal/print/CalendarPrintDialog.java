@@ -62,7 +62,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
-
+import org.rapla.scheduler.CommandScheduler;
 
 public class CalendarPrintDialog extends DialogUI
 {
@@ -172,9 +172,9 @@ public class CalendarPrintDialog extends DialogUI
     private final Logger logger;
 
     @Inject
-    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
             RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, frameList, owner);
+        super(i18n, raplaImages, bundleManager, scheduler,frameList, owner);
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.i18n = i18n;

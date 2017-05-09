@@ -1,10 +1,11 @@
 package org.rapla.client.dialog;
 
 import org.rapla.framework.Disposable;
+import org.rapla.scheduler.Promise;
 
 public interface DialogInterface
 {
-    void start(boolean pack);
+    Promise<Integer> start(boolean pack);
     int getSelectedIndex();
     void setTitle(String createTitle);
     void setIcon(String iconKey);

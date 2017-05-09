@@ -55,9 +55,11 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
                                   );
     RaplaFacade facade;
     Period defaultPeriod;
+    String key;
 
-    PeriodModelImpl( RaplaFacade query ) throws RaplaException {
+    PeriodModelImpl( RaplaFacade query,String key ) throws RaplaException {
         this.facade = query;
+        this.key = key;
         update();
     }
 
@@ -74,12 +76,34 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 			Date start = (Date) classification.getValue("start");
 			Date end = (Date) classification.getValue("end");
             final Collection<Category> categories = (Collection)classification.getValues(categoryAtt);
+            if ( !machtesKey(categories))
+            {
+                continue;
+            }
             PeriodImpl period = new PeriodImpl(name,start, DateTools.fillDate(end), alloc.getId(), new LinkedHashSet<>(categories));
         	m_periods.add(period);
         }
     }
 
-	public void dataChanged(ModificationEvent evt) throws RaplaException 
+    private boolean machtesKey(Collection<Category> categories)
+    {
+        if ( key == null)
+        {
+            return categories.size() == 0;
+        }
+        for (Category category:categories)
+        {
+            final String key = category.getKey();
+            if ( key != null  && this.key.equalsIgnoreCase(key))
+            {
+                return true;
+            }
+        }
+        return  false;
+
+    }
+
+    public void dataChanged(ModificationEvent evt) throws RaplaException
 	{
     	if (isPeriodModified(evt))
     	{

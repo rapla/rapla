@@ -120,7 +120,8 @@ public final class ReservationControllerTest extends GUITestCase {
 		ReservationEdit editor = c.getEditWindows()[0];
 		Date startDate = new Date();
 		editor.addAppointment(startDate, new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_DAY));
-		editor.save();
+		// FIXME 
+		//editor.save();
 		User user = facade.getUser();
 		Allocatable period = facade.getRaplaFacade().newPeriod(user);
 		Classification classification = period.getClassification();

@@ -1,6 +1,7 @@
 package org.rapla.client.internal.edit.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.edit.EditTaskPresenter;
@@ -103,5 +104,10 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
         header.setText(titleI18n);
         return () -> jPanel;
     }
-    
+
+    @Override
+    public SwingPopupContext createPopupContext(RaplaWidget c)
+    {
+        return new SwingPopupContext((Component)c.getComponent(), null);
+    }
 }

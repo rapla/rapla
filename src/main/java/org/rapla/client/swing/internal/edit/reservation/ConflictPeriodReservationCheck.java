@@ -39,6 +39,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -60,25 +61,27 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Extension(provides = EventCheck.class,id="conflictperiodcheck")
+@Singleton
 public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements EventCheck
 {
-
-    private final PermissionController permissionController;
-    private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public ConflictPeriodReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public ConflictPeriodReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
-        this.permissionController = facade.getRaplaFacade().getPermissionController();
-        this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
     }
 
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent) {
 
-        final PeriodModel periodModel = getPeriodModel();
+        final PeriodModel periodModel;
+        try
+        {
+            periodModel = getQuery().getPeriodModel("feiertag");
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<Boolean>(e);
+        }
         final Map<Appointment,Set<Period>> periodConflicts = new LinkedHashMap<>();
         for (Reservation reservation : reservations)
         {
@@ -117,7 +120,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         {
             AtomicBoolean atomicBoolean = new AtomicBoolean(false);
             JComponent content = getConflictPanel(periodConflicts, atomicBoolean);
-            DialogInterface dialog = dialogUiFactory.create(sourceComponent, true, content, new String[] { getString("continue"), getString("back") });
+            DialogInterface dialog = dialogUiFactory.create(sourceComponent, true, content, new String[] { getString("continue"), getString("cancel") });
             dialog.setDefault(1);
             dialog.setIcon("icon.big_folder_conflicts");
             dialog.getAction(0).setIcon("icon.save");

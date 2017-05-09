@@ -169,8 +169,11 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     {
         try
         {
-            filterEdit = filterEditButtonFactory.create(model, true, listener);
-            buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
+            if ( filterEdit == null)
+            {
+                filterEdit = filterEditButtonFactory.create(model, true, listener);
+                buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
+            }
             updateTree(filter, selectedObjects);
             updateSelection(selectedObjects);
         }

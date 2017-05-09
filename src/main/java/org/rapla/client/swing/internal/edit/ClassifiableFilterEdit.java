@@ -469,18 +469,16 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         attributeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()) {
             private static final long serialVersionUID = 1L;
 
-                
+
                 public Component getListCellRendererComponent(JList list,
                                                               Object value,
                                                               int index,
                                                               boolean isSelected,
                                                               boolean cellHasFocus) {
                     if (value == null) {
-                        setText(getString("new_rule"));
-                        return this;
-                    } else {
-                        return super.getListCellRendererComponent(list, value,index,isSelected,cellHasFocus);
+                        value = getString("new_rule");
                     }
+                    return super.getListCellRendererComponent(list, value,index,isSelected,cellHasFocus);
                 }
             });
 

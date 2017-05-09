@@ -11,4 +11,5 @@ public interface TaskPresenter
 {
     <T> Promise<RaplaWidget> startActivity(ApplicationEvent activity);
     void updateView(ModificationEvent event);
+    Promise<Void> processStop(ApplicationEvent event);
 }

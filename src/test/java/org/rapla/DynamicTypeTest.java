@@ -20,6 +20,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.swing.SwingScheduler;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
@@ -54,6 +55,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Date;
@@ -189,7 +191,8 @@ public class DynamicTypeTest  {
             IOInterface ioInterface = new DefaultIO(logger);
             final RaplaImages raplaImages = new RaplaImages(logger);
             FrameControllerList frameList = new FrameControllerList(logger);
-            DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, bundleManager, frameList, logger);
+			CommandScheduler scheduler = new SwingScheduler(logger);
+            DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger);
             InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory, raplaImages);
 	    	model.queryReservations(model.getTimeIntervall());

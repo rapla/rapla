@@ -521,10 +521,23 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
 
     private Collection<Allocatable> sorted(Allocatable[] allocatables, Comparator<Classifiable> comp) {
-        TreeSet<Allocatable> sortedList = new TreeSet<Allocatable>(comp);
+
+        Map<String,Set<Allocatable>> typeSet = new LinkedHashMap<>();
         for ( Allocatable alloc:allocatables)
         {
-            sortedList.add(alloc);
+            final String key = alloc.getClassification().getType().getKey();
+            Set<Allocatable> sortedSet = typeSet.get(key);
+            if ( sortedSet == null)
+            {
+                sortedSet = new TreeSet<>(comp);
+                typeSet.put(key, sortedSet);
+            }
+            sortedSet.add(alloc);
+        }
+        LinkedHashSet<Allocatable> sortedList = new LinkedHashSet<>();
+        for ( Set<Allocatable> sortedSubset: typeSet.values())
+        {
+            sortedList.addAll( sortedSubset);
         }
         return sortedList;
     }

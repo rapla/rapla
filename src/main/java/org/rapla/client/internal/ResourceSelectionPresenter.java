@@ -196,7 +196,7 @@ public class ResourceSelectionPresenter implements Presenter
 
     public void dataChanged(ModificationEvent evt) throws RaplaException
     {
-        if (evt != null && evt.isModified())
+        if (evt == null || evt.isModified())
         {
             ClassificationFilter[] filter = model.getAllocatableFilter();
             Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());

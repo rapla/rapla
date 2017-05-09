@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.swing.SwingScheduler;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -47,6 +48,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.plugin.periodcopy.client.swing.CopyDialog;
 import org.rapla.plugin.periodcopy.client.swing.CopyPluginMenu;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.PromiseSynchroniser;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -121,7 +123,8 @@ public class CopyPeriodPluginTest {
         final RaplaResources raplaResources = rr;
         final RaplaImages raplaImages = new RaplaImages(logger);
         final FrameControllerList frameList = new FrameControllerList(logger);
-        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages, bundleManager, frameList, logger );
+        CommandScheduler scheduler = new SwingScheduler(logger);
+        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages,scheduler, bundleManager, frameList, logger );
         final BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
         final IOInterface t = new DefaultIO(logger);
         Provider<CopyDialog> copyDialogProvider = new Provider<CopyDialog>(){

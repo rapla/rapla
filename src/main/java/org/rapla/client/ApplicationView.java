@@ -4,6 +4,8 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 
+import java.util.function.Function;
+
 public interface ApplicationView<T>
 {
     void close();
@@ -12,7 +14,7 @@ public interface ApplicationView<T>
 
     void removeWindow(ApplicationEvent windowId);
     boolean hasWindow(ApplicationEvent windowId);
-    void openWindow(ApplicationEvent windowId,PopupContext popupContext, RaplaWidget<T> component);
+    void openWindow(ApplicationEvent windowId,PopupContext popupContext, RaplaWidget<T> component, Function<ApplicationEvent,Boolean> windowClosing);
     void requestFocus(ApplicationEvent windowId);
 
     interface Presenter

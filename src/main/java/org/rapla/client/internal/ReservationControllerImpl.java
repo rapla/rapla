@@ -60,7 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class ReservationControllerImpl implements ModificationListener, ReservationController
+public abstract class ReservationControllerImpl implements ReservationController
 {
     /** We store all open ReservationEditWindows with their reservationId
      * in a map, to lookupDeprecated if the reservation is already beeing edited.
@@ -84,7 +84,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         this.calendarModel = calendarModel;
         this.appointmentFormater = appointmentFormater;
         this.clipboard = clipboard;
-        facade.addModificationListener(this);
     }
 
     protected RaplaFacade getFacade()
@@ -731,52 +730,6 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         return num;
     }
 
-    public void dataChanged(ModificationEvent evt) throws RaplaException
-    {
-
-        // FIXME switch to EditTaskPresenter
-        // we need to clone the list, because it could be modified during edit
-        ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
-        for (ReservationEdit edit : clone)
-        {
-            ReservationEdit c = edit;
-            c.updateView(evt);
-            TimeInterval invalidateInterval = evt.getInvalidateInterval();
-            Reservation original = c.getOriginal();
-            if (invalidateInterval != null && original != null)
-            {
-                boolean test = false;
-                for (Appointment app : original.getAppointments())
-                {
-                    if (app.overlaps(invalidateInterval))
-                    {
-                        test = true;
-                    }
-
-                }
-                if (test)
-                {
-                    try
-                    {
-                        Reservation persistant = getFacade().getPersistant(original);
-                        Date version = persistant.getLastChanged();
-                        Date originalVersion = original.getLastChanged();
-                        if (originalVersion != null && version != null && originalVersion.before(version))
-                        {
-                            c.updateReservation(persistant);
-                        }
-                    }
-                    catch (EntityNotFoundException ex)
-                    {
-                        c.deleteReservation();
-                    }
-
-                }
-            }
-
-        }
-    }
-
     private RaplaClipboard getClipboard()
     {
         return clipboard;
@@ -879,7 +832,10 @@ public abstract class ReservationControllerImpl implements ModificationListener,
     {
         return promise.exceptionally(ex->
         {
-            showException((Throwable)ex,context);
+            if (!( ex instanceof CommandAbortedException))
+            {
+                showException((Throwable)ex,context);
+            }
             return Promise.VOID;
         }
         );
@@ -1630,9 +1586,13 @@ public abstract class ReservationControllerImpl implements ModificationListener,
         }
         Promise<Void> result = promise.thenCompose((checkResult) -> {
             if (checkResult)
+            {
                 return facade.dispatch(storeList, removeList, user);
+            }
             else
+            {
                 return new ResolvedPromise<Void>(new CommandAbortedException("Command Aborted"));
+            }
         });
         return result;
     }
