@@ -435,16 +435,16 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	 * fires update event asynchronous.
 	 */
 	protected void fireUpdateEvent(ModificationEvent evt) {
-		if (periodModel != null) {
+		if (periodModel != null && periodModel.isPeriodModified( evt)) {
 			try {
 				periodModel.update();
 			} catch (RaplaException e) {
 				getLogger().error("Can't update Period Model", e);
 			}
 		}
-		if (periodModelHoliday != null) {
+		if (periodModelHoliday != null && periodModel.isPeriodModified(evt)) {
 			try {
-				periodModelHoliday.update();
+				periodModelHoliday.update() ;
 			} catch (RaplaException e) {
 				getLogger().error("Can't update Period Model", e);
 			}
@@ -625,12 +625,12 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		if ( key == null)
 		{
 			if (periodModel == null) {
-				periodModel = new PeriodModelImpl(this, null);
+				periodModel = new PeriodModelImpl(this, new String[] {});
 			}
 			return periodModel;
 		}
 		if (periodModelHoliday == null) {
-			periodModelHoliday = new PeriodModelImpl(this, key);
+			periodModelHoliday = new PeriodModelImpl(this, new String[] {"feiertag","schulferien"});
 		}
 		return periodModelHoliday;
 	}

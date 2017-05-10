@@ -19,7 +19,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.components.util.TimeInterval;
@@ -36,7 +35,6 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,13 +42,19 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -59,16 +63,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Extension(provides = EventCheck.class,id="conflictperiodcheck")
 @Singleton
 public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements EventCheck
 {
     private final DialogUiFactoryInterface dialogUiFactory;
+    private final TreeFactory treeFactory;
     @Inject
-    public ConflictPeriodReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory) {
+    public ConflictPeriodReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            DialogUiFactoryInterface dialogUiFactory, TreeFactory treeFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
+        this.treeFactory = treeFactory;
     }
 
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent) {
@@ -97,7 +105,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
                 for (Period period : periodsFor)
                 {
 
-                    boolean excludeExceptions = false;
+                    boolean excludeExceptions = true;
                     final boolean overlaps = app.overlaps(period.getStart(), period.getEnd(), excludeExceptions);
                     if (overlaps)
                     {
@@ -119,7 +127,9 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         try
         {
             AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-            JComponent content = getConflictPanel(periodConflicts, atomicBoolean);
+            AtomicReference<Set> selectedSetStorage = new AtomicReference<>();
+            selectedSetStorage.set(Collections.emptySet());
+            JComponent content = getConflictPanel(periodConflicts, atomicBoolean, selectedSetStorage);
             DialogInterface dialog = dialogUiFactory.create(sourceComponent, true, content, new String[] { getString("continue"), getString("cancel") });
             dialog.setDefault(1);
             dialog.setIcon("icon.big_folder_conflicts");
@@ -131,6 +141,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
             {
                 if ( atomicBoolean.get())
                 {
+                    final Set selecteSet = selectedSetStorage.get();
                     for (Map.Entry<Appointment,Set<Period>> entry:periodConflicts.entrySet())
                     {
                         final Appointment appointment = entry.getKey();
@@ -138,7 +149,11 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
                         final Repeating repeating = appointment.getRepeating();
                         for ( Period period:periods)
                         {
-                            repeating.addExceptions( period.getInterval());
+
+                            if (selecteSet.contains( period) || !Collections.disjoint(period.getCategories(), selecteSet))
+                            {
+                                repeating.addExceptions( period.getInterval());
+                            }
                         }
                     }
                 }
@@ -154,7 +169,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
 
 
 
-    private JComponent getConflictPanel(Map<Appointment, Set<Period>> conflicts, AtomicBoolean atomicBoolean) throws RaplaException {
+    private JComponent getConflictPanel(Map<Appointment, Set<Period>> conflicts, AtomicBoolean atomicBoolean, AtomicReference<Set> selectedItems) throws RaplaException {
         JPanel panel = new JPanel();
         BorderLayout layout = new BorderLayout();
         panel.setLayout( layout);
@@ -166,25 +181,49 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         }
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
         final Category timetables = getQuery().getSuperCategory().getCategory("timetables");
-        for (Category category:timetables.getCategoryList())
+        Map<Category,List<Period>> list = new LinkedHashMap<>();
+        for ( Category category:timetables.getCategoryList())
         {
-            final Locale locale = getRaplaLocale().getLocale();
-            DefaultMutableTreeNode catNode = new DefaultMutableTreeNode(category.getName(locale));
+            list.put( category, new ArrayList<>());
+        }
+        for ( Period p:allPeriods)
+        {
+            for (Category category:p.getCategories())
+            {
+                final List<Period> periods = list.get(category);
+                if ( periods != null)
+                {
+                    periods.add(p);
+                }
+            }
+        }
+
+        for ( Map.Entry<Category,List<Period>> entry: list.entrySet())
+        {
+            Category category = entry.getKey();
+            final List<Period> value = entry.getValue();
+            if ( value.size() == 0)
+            {
+                continue;
+            }
+            DefaultMutableTreeNode catNode = treeFactory.newNamedNode(category);
             root.add(catNode);
-            for ( Period p:allPeriods)
+            for ( Period p: value)
             {
                 final Set<Category> categories = p.getCategories();
                 if (categories.contains( category))
                 {
-                    DefaultMutableTreeNode pNode = new DefaultMutableTreeNode(p.getName());
+                    DefaultMutableTreeNode pNode = treeFactory.newNamedNode( p);
                     catNode.add( pNode);
                 }
             }
         }
-		TreeModel treeModel =  new DefaultTreeModel(root);
+        TreeModel treeModel =  new DefaultTreeModel(root);
     	RaplaTree treeSelection = new RaplaTree();
     	JTree tree = treeSelection.getTree();
+    	//tree.setCellRenderer( treeF);
     	tree.setRootVisible(false);
+    	treeSelection.setMultiSelect( true);
     	tree.setShowsRootHandles(true);
     	//tree.setCellRenderer(treeFactory.createConflictRenderer());
     	treeSelection.exchangeTreeModel(treeModel);
@@ -194,6 +233,15 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         final JCheckBox ausnahmenCheck = new JCheckBox("Als Ausnahmen hinzufügen");
         ausnahmenCheck.addChangeListener((e)->{
          atomicBoolean.set( ausnahmenCheck.isSelected());
+        });
+        tree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener()
+        {
+            @Override
+            public void valueChanged(TreeSelectionEvent e)
+            {
+                final List<Object> selectedElements = treeSelection.getSelectedElements();
+                selectedItems.set( new HashSet(selectedElements));
+            }
         });
         panel.add(BorderLayout.SOUTH, ausnahmenCheck);
     	return panel;

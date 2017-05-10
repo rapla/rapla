@@ -698,7 +698,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
         // TODO should be replaced with getAllocatables(allocatableFilter.values();
         ClassificationFilter[] filters = allocatableFilter.values().toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
-        for (Allocatable allocatable : operator.getAllocatables(filters))
+
+        for (Allocatable allocatable : operator.getAllocatables(defaultResourceTypes ? null:filters))
         {
             if (canRead(allocatable))
             {

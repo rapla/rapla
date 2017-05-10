@@ -33,13 +33,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -55,11 +58,11 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
                                   );
     RaplaFacade facade;
     Period defaultPeriod;
-    String key;
+    Set<String> keys;
 
-    PeriodModelImpl( RaplaFacade query,String key ) throws RaplaException {
+    PeriodModelImpl( RaplaFacade query,String[] keys) throws RaplaException {
         this.facade = query;
-        this.key = key;
+        this.keys = new HashSet<>(Arrays.asList(keys));
         update();
     }
 
@@ -87,14 +90,14 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 
     private boolean machtesKey(Collection<Category> categories)
     {
-        if ( key == null)
+        if ( keys.size()  == 0)
         {
             return categories.size() == 0;
         }
         for (Category category:categories)
         {
             final String key = category.getKey();
-            if ( key != null  && this.key.equalsIgnoreCase(key))
+            if ( key != null  && keys.contains(key))
             {
                 return true;
             }
@@ -111,7 +114,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     	}
 	}
 
-	protected boolean isPeriodModified(ModificationEvent evt) {
+	public boolean isPeriodModified(ModificationEvent evt) {
 		for (Entity changed:evt.getChanged())
 		{
 			if ( isPeriod( changed))
@@ -142,7 +145,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
     }
 
 
-    private boolean isPeriod(Entity entity) {
+    static private boolean isPeriod(Entity entity) {
     	if  ( entity.getTypeClass() != Allocatable.class)
     	{
     		return false;
