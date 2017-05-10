@@ -96,13 +96,13 @@ public interface PermissionContainer extends Ownable
          */
         static public int getUserEffect(User user,Permission p, Collection<String> groups)
         {
-            User pUser = p.getUser();
+            String pUserId = p.getUserId();
             String pGroup = ((PermissionImpl)p).getGroupId();
-            if ( pUser == null  && pGroup == null ) 
+            if ( pUserId == null  && pGroup == null )
             {
                 return PermissionImpl.ALL_USER_PERMISSION;
             }
-            if ( pUser != null  && user.equals( pUser ) ) 
+            if ( pUserId != null  && user.getId().equals( pUserId ) )
             {
                 return PermissionImpl.USER_PERMISSION;
             } 

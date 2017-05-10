@@ -55,10 +55,16 @@ public class RaplaJNLPPageGenerator
     {
         StringBuffer codebaseBuffer = new StringBuffer();
         String forwardProto = request.getHeader("X-Forwarded-Proto");
+        String forwardPort = request.getHeader( "X-Forwarded-Port");
         boolean secure = (forwardProto != null && forwardProto.toLowerCase().equals("https")) || request.isSecure();
         codebaseBuffer.append(secure ? "https://" : "http://");
         codebaseBuffer.append(request.getServerName());
-        if (request.getServerPort() != (!secure ? 80 : 443))
+        if ( forwardPort != null)
+        {
+            codebaseBuffer.append(':');
+            codebaseBuffer.append(forwardPort);
+        }
+        else if (forwardProto == null && request.getServerPort() != (!secure ? 80 : 443))
         {
             codebaseBuffer.append(':');
             codebaseBuffer.append(request.getServerPort());

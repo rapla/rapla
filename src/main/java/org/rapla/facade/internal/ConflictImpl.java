@@ -392,9 +392,14 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     public boolean isOwner(User user)
     {
-        User owner1 = getOwner1();
-        User owner2 = getOwner2();
-        return !(user != null && !user.equals(owner1) && !user.equals(owner2));
+        if ( user == null)
+        {
+            return true;
+        }
+        String userId = user.getId();
+        String owner1 = getOwner1();
+        String owner2 = getOwner2();
+        return userId.equals(owner1) || userId.equals(owner2);
     }
 
     // public Date getFirstConflictDate(final Date  fromDate, Date toDate) {
@@ -403,14 +408,14 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     // return getFirstConflictDate(fromDate, toDate, a1, a2);
     //}
 
-    public User getOwner1()
+    public String getOwner1()
     {
-        return getEntity("owner1", User.class);
+        return getId("owner1");
     }
 
-    public User getOwner2()
+    public String getOwner2()
     {
-        return getEntity("owner2", User.class);
+        return getId("owner2");
     }
 
     private boolean contains(ReferenceInfo<Appointment> appointmentId)

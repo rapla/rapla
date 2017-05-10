@@ -156,6 +156,8 @@ public interface Permission
     void setUser(User user);
     User getUser();
 
+    String getUserId();
+
     /** sets a group for the permission.
      * If the group ist not null, the user will be set to null.
      */
