@@ -30,7 +30,8 @@ public class ServerStarter
         this.backendContext =  backendContext;
     }
 
-    public RaplaLock.ReadLock getRestartLock() throws RaplaException
+    /** Locks the server, so no restart can't be triggererd unless lock is released */
+    public RaplaLock.ReadLock lockRestart() throws RaplaException
     {
         return restartLock.readLock( 25);
     }
@@ -114,7 +115,7 @@ public class ServerStarter
             }
             catch (RaplaException ex)
             { 
-                logger.error("Can't restart server " + ex.getMessage());
+                logger.error("Can't restart server:" + ex.getMessage());
                 return;
             }
             try

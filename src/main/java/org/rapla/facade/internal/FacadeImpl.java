@@ -625,12 +625,22 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		if ( key == null)
 		{
 			if (periodModel == null) {
-				periodModel = new PeriodModelImpl(this, new String[] {});
+				periodModel = new PeriodModelImpl(this, new Category[] {});
 			}
 			return periodModel;
 		}
 		if (periodModelHoliday == null) {
-			periodModelHoliday = new PeriodModelImpl(this, new String[] {"feiertag","schulferien"});
+			final Category timetablesCategory = getSuperCategory().getCategory("timetables");
+			if ( timetablesCategory == null)
+			{
+				return null;
+			}
+			Category[] timetables = timetablesCategory.getCategories();
+			if ( timetables.length == 0)
+			{
+				return null;
+			}
+			periodModelHoliday = new PeriodModelImpl(this, timetables);
 		}
 		return periodModelHoliday;
 	}

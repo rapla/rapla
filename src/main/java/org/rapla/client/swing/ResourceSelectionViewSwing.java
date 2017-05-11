@@ -15,7 +15,6 @@ package org.rapla.client.swing;
 
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
-import org.rapla.client.EditController;
 import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -89,8 +88,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
 
     protected FilterEditButton filterEdit;
     private final TreeFactory treeFactory;
-    private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
     private final Logger logger;
     private final RaplaResources i18n;
     private final RaplaMenuBarContainer menuBar;
@@ -101,17 +98,15 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     private final MenuFactory menuFactory;
 
     @Inject
-    public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            TreeFactory treeFactory, MenuFactory menuFactory, EditController editController, InfoFactory infoFactory, RaplaImages raplaImages,
-            DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory, EventBus eventBus) throws RaplaInitializationException
+    public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar,  RaplaResources i18n, Logger logger,
+            TreeFactory treeFactory, MenuFactory menuFactory,  InfoFactory infoFactory, RaplaImages raplaImages,
+            DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
 
         this.menuBar = menuBar;
         this.i18n = i18n;
         this.logger = logger;
         this.treeFactory = treeFactory;
-        this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.menuFactory = menuFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;

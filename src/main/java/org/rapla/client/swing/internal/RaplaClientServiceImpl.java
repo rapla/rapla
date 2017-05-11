@@ -150,6 +150,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     public void uncaughtException(Thread t, Throwable e)
                     {
                         logger.error("uncaught exception", e);
+                        if ( e instanceof IllegalMonitorStateException)
+                        {
+                            System.exit(-1);
+                        }
+
                     }
                 });
             }

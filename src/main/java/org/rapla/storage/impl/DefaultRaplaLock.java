@@ -39,7 +39,7 @@ public class DefaultRaplaLock implements RaplaLock
     {
         StackTraceElement[] stackTrace = getStackTrace();
         final long currentTime = System.currentTimeMillis();
-        final Lock lock = lock(this.readWriteLock.readLock(), seconds);
+        final Lock lock = lock(this.readWriteLock.readLock(), seconds, true);
         final ReadLock readLock = new ReadLock(lock, stackTrace, currentTime);
         readLocks.add(readLock);
         return readLock;
@@ -53,7 +53,7 @@ public class DefaultRaplaLock implements RaplaLock
         }
     }
 
-    private Lock lock(Lock lock, int seconds) throws RaplaException
+    private Lock lock(Lock lock, int seconds, boolean isRead) throws RaplaException
     {
         try
         {
@@ -69,10 +69,18 @@ public class DefaultRaplaLock implements RaplaLock
             {
                 if (logger != null)
                 {
-                    logLongLocks(this.writeLocks);
-                    logLongLocks(this.readLocks);
+                    int logThreshholdTime = 0;
+                    logLongLocks(this.writeLocks, logThreshholdTime);
+                    logLongLocks(this.readLocks, logThreshholdTime);
                 };
-                throw new RaplaSynchronizationException("Someone is currently writing. Please try again! Can't acquire lock " + lock);
+                if ( isRead)
+                {
+                    throw new RaplaSynchronizationException("Someone is currently writing. Please try again! Can't acquire read lock.");
+                }
+                else
+                {
+                    throw new RaplaSynchronizationException("Someone is currently reading or writing. Please try again! Can't acquire write lock." + readLocks);
+                }
             }
         }
         catch (InterruptedException ex)
@@ -81,7 +89,7 @@ public class DefaultRaplaLock implements RaplaLock
         }
     }
 
-    private void logLongLocks(Stack<? extends LockInfo> lockCollection)
+    private void logLongLocks(Stack<? extends LockInfo> lockCollection, int logThreshholdTime)
     {
         final long currentTime = System.currentTimeMillis();
         final LockInfo[] locks = lockCollection.toArray(new LockInfo[] {});
@@ -89,7 +97,7 @@ public class DefaultRaplaLock implements RaplaLock
         {
             final LockInfo lock = locks[i];
             final long timeSinceLock = (currentTime - lock.getLockTime())/ 1000;
-            if ( timeSinceLock > 60 )
+            if ( timeSinceLock > logThreshholdTime )
             {
                 final RaplaSynchronizationException ex = new RaplaSynchronizationException(
                         "Current lock [" + i + "] is blocking for " + timeSinceLock + " seconds");
@@ -106,7 +114,7 @@ public class DefaultRaplaLock implements RaplaLock
         final long currentTime = System.currentTimeMillis();
         if (seconds > 0)
         {
-            lock = new WriteLock(lock(this.readWriteLock.writeLock(), seconds), stackTrace, currentTime);
+            lock = new WriteLock(lock(this.readWriteLock.writeLock(), seconds, false), stackTrace, currentTime);
         }
         else
         {

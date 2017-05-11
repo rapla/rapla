@@ -22,51 +22,79 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
-/** Provides AppointmentListener handling.*/
-public class AbstractAppointmentEditor extends RaplaGUIComponent {
-    ArrayList<AppointmentListener> listenerList = new ArrayList<AppointmentListener>();
 
-    public AbstractAppointmentEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+/** Provides AppointmentListener handling.*/
+public class AbstractAppointmentEditor extends RaplaGUIComponent
+{
+    ArrayList<AppointmentListener> listenerList = new ArrayList<AppointmentListener>();
+    private boolean hasChanged;
+
+    public AbstractAppointmentEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    {
         super(facade, i18n, raplaLocale, logger);
     }
-    
-    public void addAppointmentListener(AppointmentListener listener) {
+
+    public void addAppointmentListener(AppointmentListener listener)
+    {
         listenerList.add(listener);
     }
-    
-    public void removeAppointmentListener(AppointmentListener listener) {
+
+    public void removeAppointmentListener(AppointmentListener listener)
+    {
         listenerList.remove(listener);
-    }    
-
-    public AppointmentListener[] getAppointmentListeners() {
-	return listenerList.toArray(new AppointmentListener[]{});
     }
 
-    protected void fireAppointmentAdded(Collection<Appointment> appointment) {
-	AppointmentListener[] listeners = getAppointmentListeners();
-        for (int i = 0;i<listeners.length; i++) {
-	    listeners[i].appointmentAdded(appointment);
-	}
+    public AppointmentListener[] getAppointmentListeners()
+    {
+        return listenerList.toArray(new AppointmentListener[] {});
     }
 
-    protected void fireAppointmentRemoved(Collection<Appointment> appointment) {
-	AppointmentListener[] listeners = getAppointmentListeners();
-        for (int i = 0;i<listeners.length; i++) {
-	    listeners[i].appointmentRemoved(appointment);
-	}
+    protected void fireAppointmentAdded(Collection<Appointment> appointment)
+    {
+        setHasChanged( true);
+        AppointmentListener[] listeners = getAppointmentListeners();
+        for (int i = 0; i < listeners.length; i++)
+        {
+            listeners[i].appointmentAdded(appointment);
+        }
     }
 
-    protected void fireAppointmentChanged(Collection<Appointment> appointment) {
-	AppointmentListener[] listeners = getAppointmentListeners();
-        for (int i = 0;i<listeners.length; i++) {
-	    listeners[i].appointmentChanged(appointment);
-	}
+    protected void fireAppointmentRemoved(Collection<Appointment> appointment)
+    {
+        setHasChanged( true);
+        AppointmentListener[] listeners = getAppointmentListeners();
+        for (int i = 0; i < listeners.length; i++)
+        {
+            listeners[i].appointmentRemoved(appointment);
+        }
     }
-    
-    protected void fireAppointmentSelected(Collection<Appointment> appointment) {
-    	AppointmentListener[] listeners = getAppointmentListeners();
-            for (int i = 0;i<listeners.length; i++) {
-    	    listeners[i].appointmentSelected(appointment);
-   	}
+
+    protected void fireAppointmentChanged(Collection<Appointment> appointment)
+    {
+        setHasChanged( true);
+        AppointmentListener[] listeners = getAppointmentListeners();
+        for (int i = 0; i < listeners.length; i++)
+        {
+            listeners[i].appointmentChanged(appointment);
+        }
+    }
+
+    protected void fireAppointmentSelected(Collection<Appointment> appointment)
+    {
+        AppointmentListener[] listeners = getAppointmentListeners();
+        for (int i = 0; i < listeners.length; i++)
+        {
+            listeners[i].appointmentSelected(appointment);
+        }
+    }
+
+    public void setHasChanged(boolean flag)
+    {
+        hasChanged = flag;
+    }
+
+    public boolean hasChanged()
+    {
+        return hasChanged;
     }
 }

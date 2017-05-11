@@ -52,7 +52,7 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     }
 
     @Override
-    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
+    public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
             throws RaplaException
     {
 
@@ -75,8 +75,24 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
 
     }
 
+    @Override
+    public void fireChange()
+    {
+
+    }
+
     @Override public IsWidget getComponent()
     {
         return null;
+    }
+
+    @Override
+    public boolean hasChanged()
+    {
+        return false;
+    }
+
+    {
+
     }
 }

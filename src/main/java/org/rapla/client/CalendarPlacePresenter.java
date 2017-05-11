@@ -299,7 +299,7 @@ import javax.inject.Singleton;
     }
 
     @Override
-    public Promise<Void> processStop(ApplicationEvent event)
+    public Promise<Void> processStop(ApplicationEvent event, RaplaWidget widget)
     {
         return new ResolvedPromise<Void>(Promise.VOID);
     }

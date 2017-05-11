@@ -53,7 +53,12 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     @Override
     protected PeriodModel getPeriodModel() {
         try {
-            return getQuery().getPeriodModel("feiertag");
+            PeriodModel model = getQuery().getPeriodModel("feiertag");
+            if ( model == null)
+            {
+                return getQuery().getPeriodModel();
+            }
+            return model;
         } catch (RaplaException ex) {
             throw new UnsupportedOperationException("Service not supported in this context: " );
         }

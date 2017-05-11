@@ -1713,8 +1713,9 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
             }
             setString(stmt, 5, repeatingTypeAsString);
             int number = repeating.getNumber();
-            setInt(stmt, 6, number >= 0 ? number : null);
-            setDate(stmt, 7, number >= 0 ? null : repeating.getEnd());
+            final boolean fixedNumber = repeating.isFixedNumber();
+            setInt(stmt, 6, fixedNumber ? number : null);
+            setDate(stmt, 7, fixedNumber ? null : repeating.getEnd());
             setInt(stmt, 8, repeating.getInterval());
         }
         stmt.addBatch();
@@ -1801,7 +1802,14 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
 
     public AllocationStorage(RaplaXMLContext context) throws RaplaException
     {
-        super(context, "ALLOCATION", new String[] { "APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER" });
+        super(context, "ALLOCATION", new String[] { "APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER","IS_RESTRICTION INTEGER" });
+    }
+
+    @Override
+    public void createOrUpdateIfNecessary(Map<String, TableDef> schema) throws SQLException, RaplaException
+    {
+        super.createOrUpdateIfNecessary(schema);
+        checkAndAdd(schema, "IS_RESTRICTION");
     }
 
     @Override
@@ -1814,6 +1822,9 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
             setId(stmt, 1, appointment);
             setId(stmt, 2, allocatable);
             stmt.setObject(3, null);
+            final Appointment[] restriction = event.getRestriction(allocatable);
+            boolean isRestriction = restriction != null && restriction.length > 0;
+            stmt.setInt(4, isRestriction ? 1:0);
             stmt.addBatch();
             count++;
         }
@@ -1830,6 +1841,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
         }
         ReservationImpl event = (ReservationImpl) appointment.getReservation();
         Allocatable allocatable = resolveFromId(rset, 2, Allocatable.class);
+        boolean isRestriction = rset.getInt(4) == 1;
         if (allocatable == null)
         {
             return;
@@ -1842,7 +1854,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
         Appointment[] newAppointments = new Appointment[appointments.length + 1];
         System.arraycopy(appointments, 0, newAppointments, 0, appointments.length);
         newAppointments[appointments.length] = appointment;
-        if (event.getAppointmentList().size() > newAppointments.length)
+        if (event.getAppointmentList().size() > newAppointments.length || isRestriction)
         {
             event.setRestriction(allocatable, newAppointments);
         }

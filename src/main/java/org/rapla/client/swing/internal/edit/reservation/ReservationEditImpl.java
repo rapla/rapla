@@ -83,7 +83,6 @@ import org.rapla.storage.PermissionController;
 @DefaultImplementation(context = InjectionContext.swing, of = ReservationEdit.class)
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
 {
-    ArrayList<ChangeListener> changeListenerList = new ArrayList<ChangeListener>();
     protected Reservation mutableReservation;
     private Reservation original;
 
@@ -128,20 +127,15 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     };
 
     JPanel mainContent = new JPanel();
-    //JPanel split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-
     ReservationInfoEdit reservationInfo;
     AppointmentListEdit appointmentEdit;
     AllocatableSelection allocatableEdit;
 
-    boolean bSaved;
     boolean bNew;
 
     TableLayout tableLayout = new TableLayout(new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } });
 
     private final Listener listener = new Listener();
-
-    List<AppointmentListener> appointmentListeners = new ArrayList<AppointmentListener>();
 
     private final Set<AppointmentStatusFactory> appointmentStatusFactories;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -176,22 +170,10 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         }
         allocatableEdit = allocatableSelectionFactory.create(true, commandHistory);
 
-        //      horizontalSplit.setTopComponent(appointmentEdit.getComponent());
-        //horizontalSplit.setBottomComponent(allocatableEdit.getComponent());
-        /*
-        try {
-            // If run on jdk < 1.3 this will throw a MethodNotFoundException
-            // horizontalSplit.setResizeWeight(0.1);
-            JSplitPane.class.getMethod("setResizeWeight",new Class[] {double.class}).invoke(horizontalSplit,new Object[] {new Double(0.1)});
-        } catch (Exception ex) {
-        }
-        */
-
         mainContent.setLayout(tableLayout);
         mainContent.add(reservationInfo.getComponent(), "0,0");
         mainContent.add(appointmentEdit.getComponent(), "0,1");
         mainContent.add(allocatableEdit.getComponent(), "0,2");
-        //allocatableEdit.getComponent().setVisible(false);
         saveButtonTop.setAction(listener);
         saveButton.setAction(listener);
         toolBar.setFloatable(false);
@@ -199,7 +181,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         deleteButton.setAlignmentY(JButton.CENTER_ALIGNMENT);
         closeButton.setAlignmentY(JButton.CENTER_ALIGNMENT);
         JPanel buttonsPanel = new JPanel();
-        //buttonsPanel.add(deleteButton);
         buttonsPanel.add(saveButton);
         buttonsPanel.add(closeButton);
         toolBar.add(saveButtonTop);
@@ -221,10 +202,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         final KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Y, ActionEvent.CTRL_MASK);
         setAccelerator(vor, redoAction, redoKeyStroke);
 
-        commandHistory.addCommandHistoryChangedListener(new CommandHistoryChangedListener()
-        {
-
-            public void historyChanged()
+        commandHistory.addCommandHistoryChangedListener(()->
             {
                 redoAction.setEnabled(commandHistory.canRedo());
                 boolean canUndo = commandHistory.canUndo();
@@ -235,7 +213,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                 String undoKeyString = modifier + "-Z";
                 redoAction.putValue(Action.SHORT_DESCRIPTION, getString("redo") + ": " + commandHistory.getRedoText() + "  " + redoKeyString);
                 undoAction.putValue(Action.SHORT_DESCRIPTION, getString("undo") + ": " + commandHistory.getUndoText() + "  " + undoKeyString);
-            }
         });
 
         toolBar.add(back);
@@ -243,9 +220,12 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
 
         for (ReservationToolbarExtension extension : reservationToolbarExtensions)
         {
-            for (Component comp : extension.createExtensionButtons(this))
+            for (RaplaWidget comp : extension.createExtensionButtons(this))
             {
-                toolBar.add(comp);
+                if ( comp != null)
+                {
+                    toolBar.add((Component)comp.getComponent());
+                }
             }
         }
         closeButton.addActionListener(listener);
@@ -263,7 +243,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         contentPane.add(mainContent, BorderLayout.CENTER);
 
         Border emptyLineBorder = new EmptyLineBorder();
-        //BorderFactory.createEmptyBorder();
         Border border2 = BorderFactory.createTitledBorder(emptyLineBorder, getString("reservation.appointments"));
         Border border3 = BorderFactory.createTitledBorder(emptyLineBorder, getString("reservation.allocations"));
         appointmentEdit.getComponent().setBorder(border2);
@@ -307,11 +286,12 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         SwingUtilities.replaceUIInputMap(button, JComponent.WHEN_IN_FOCUSED_WINDOW, keyMap);
     }
 
-    protected void setSaved(boolean flag)
+    @Override
+    public void setHasChanged(boolean flag)
     {
-        bSaved = flag;
-        saveButton.setEnabled(!flag);
-        saveButtonTop.setEnabled(!flag);
+        super.setHasChanged(flag);
+        saveButton.setEnabled(flag);
+        saveButtonTop.setEnabled(flag);
     }
 
     public void addAppointment(Date start, Date end) throws RaplaException
@@ -341,35 +321,30 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     }
 
     @Override
-    public void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
+    public void fireChange()
+    {
+        try
+        {
+            setReservation( mutableReservation, appointmentEdit.getAppointmentController().getAppointment());
+        }
+        catch (RaplaException e)
+        {
+            getLogger().error( e.getMessage(),e);
+        }
+        setHasChanged( true);
+    }
+
+    @Override
+    public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
             throws RaplaException
     {
-        RaplaFacade mod = getFacade();
         this.saveCmd = saveCmd;
         this.closeCmd = closeCmd;
         this.deleteCmd = deleteCmd;
-        boolean bNew = false;
-        //        if (reservation.isReadOnly())
-        //        {
-        //            mutableReservation = mod.edit(reservation);
-        //            original = reservation;
-        //        }
-        //        else
-        //        {
-        //            try
-        //            {
-        //                original = mod.getPersistant(reservation);
-        //            }
-        //            catch (EntityNotFoundException ex)
-        //            {
-        //                bNew = true;
-        //                original = null;
-        //            }
-        //            mutableReservation = reservation;
-        //        }
+        boolean bNew = original == null;
+        this.original = original;
         mutableReservation = reservation;
-        setSaved(!bNew);
-        //printBlocks( appointment );
+        setHasChanged(bNew);
         this.bNew = bNew;
         deleteButton.setEnabled(!bNew);
         Appointment appointment = appointmentBlock != null ? appointmentBlock.getAppointment() : null;
@@ -397,27 +372,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
             disableComponentAndAllChildren(appointmentEdit.getComponent());
             disableComponentAndAllChildren(reservationInfo.getComponent());
         }
-    }
-
-    //        frame.place(true, packFrame);
-    //        frame.setVisible(true);
-
-
-
-    /*
-    @Override public void toFront()
-    {
-        frame.requestFocus();
-        frame.toFront();
-    }
-    */
-
-    public void closeWindow()
-    {
-        appointmentEdit.dispose();
-        // FIXME fire Close event
-        //frame.dispose();
-        getLogger().debug("Edit window closed.");
     }
 
     static void disableComponentAndAllChildren(Container component)
@@ -455,7 +409,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         return appointments;
     }
 
-    private void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException
+    public void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException
     {
         commandHistory.clear();
         this.mutableReservation = newReservation;
@@ -499,21 +453,18 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         // Implementation of ReservationListener
         public void appointmentRemoved(Collection<Appointment> appointment)
         {
-            setSaved(false);
             ReservationEditImpl.this.fireAppointmentRemoved(appointment);
             fireReservationChanged(new ChangeEvent(appointmentEdit));
         }
 
         public void appointmentAdded(Collection<Appointment> appointment)
         {
-            setSaved(false);
             ReservationEditImpl.this.fireAppointmentAdded(appointment);
             fireReservationChanged(new ChangeEvent(appointmentEdit));
         }
 
         public void appointmentChanged(Collection<Appointment> appointment)
         {
-            setSaved(false);
             ReservationEditImpl.this.fireAppointmentChanged(appointment);
             fireReservationChanged(new ChangeEvent(appointmentEdit));
         }
@@ -529,12 +480,12 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
             {
                 getLogger().debug("ReservationInfo changed");
                 //        		PermissionContainer.Util.processOldPermissionModify(mutableReservation, original);
-                setSaved(false);
+                setHasChanged(true);
             }
             if (evt.getSource() == allocatableEdit)
             {
                 getLogger().debug("AllocatableEdit changed");
-                setSaved(false);
+                setHasChanged(true);
             }
             fireReservationChanged(evt);
         }
@@ -577,7 +528,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                 closeCmd.run();
             }
         }
-
     }
 
     public CommandHistory getCommandHistory()
@@ -585,28 +535,11 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         return getUpdateModule().getCommandHistory();
     }
 
-    protected ChangeListener[] getReservationInfoListeners()
-    {
-        return changeListenerList.toArray(new ChangeListener[] {});
-    }
 
     protected void fireReservationChanged(ChangeEvent evt)
     {
-        for (ChangeListener listener : getReservationInfoListeners())
-        {
-            listener.stateChanged(evt);
-        }
-    }
-
-    public void addReservationChangeListener(ChangeListener listener)
-    {
-        changeListenerList.add(listener);
-    }
-
-    public void removeReservationChangeListener(ChangeListener listener)
-    {
-        changeListenerList.remove(listener);
-
+        setHasChanged(true);
+        fireReservationChanged(new ChangeEvent(appointmentEdit));
     }
 
 }

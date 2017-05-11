@@ -57,7 +57,6 @@ import java.util.function.Function;
     final private DialogUiFactoryInterface dialogUiFactory;
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
-
     @Inject public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
             AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
             Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
@@ -134,15 +133,14 @@ import java.util.function.Function;
                 if (taskPresenter instanceof  CalendarPlacePresenter)
                 {
                     Runnable runnable = () ->((CalendarPlacePresenter) taskPresenter).start();
-                    scheduler.scheduleSynchronized(this,runnable,100);
-
+                    scheduler.scheduleSynchronized(this,runnable,300);
                 }
             }
             else
             {
                 Function<ApplicationEvent, Boolean> windowClosingFunction = (event) ->
                 {
-                    Promise<Void> promise = taskPresenter.processStop(event).thenRun(() ->
+                    Promise<Void> promise = taskPresenter.processStop(event, widget).thenRun(() ->
                     {
                         event.setStop(true);
                         eventBus.fireEvent(event);

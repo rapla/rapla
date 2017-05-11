@@ -43,8 +43,6 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
 
 public class MainServlet extends HttpServlet
 {
@@ -337,7 +335,12 @@ public class MainServlet extends HttpServlet
             try
             {
                 // we need to get the restart look to avoid serving pages in a restart
-                restartLock = serverStarter.getRestartLock();
+                final String pathInfo = request.getPathInfo();
+                final boolean restartRequest = pathInfo != null && pathInfo.contains("storage/restart");
+                if (!restartRequest)
+                {
+                    restartLock = serverStarter.lockRestart();
+                }
                 for (ServletRequestPreprocessor preprocessor : serverStarter.getServletRequestPreprocessors())
                 {
                     final HttpServletRequest newRequest = preprocessor.handleRequest(getServletContext(), request, response);
@@ -392,7 +395,10 @@ public class MainServlet extends HttpServlet
         {
             try
             {
-                serverStarter.freeRestartLock(restartLock);
+                if ( restartLock != null)
+                {
+                    serverStarter.freeRestartLock(restartLock);
+                }
             }
             catch (IllegalMonitorStateException ex)
             {

@@ -35,7 +35,6 @@ import org.rapla.storage.StorageOperator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
@@ -43,7 +42,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 
@@ -58,11 +56,11 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
                                   );
     RaplaFacade facade;
     Period defaultPeriod;
-    Set<String> keys;
+    Set<Category> categories;
 
-    PeriodModelImpl( RaplaFacade query,String[] keys) throws RaplaException {
+    PeriodModelImpl( RaplaFacade query,Category[] keys) throws RaplaException {
         this.facade = query;
-        this.keys = new HashSet<>(Arrays.asList(keys));
+        this.categories = new HashSet<>(Arrays.asList(keys));
         update();
     }
 
@@ -90,14 +88,13 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 
     private boolean machtesKey(Collection<Category> categories)
     {
-        if ( keys.size()  == 0)
+        if ( this.categories.size()  == 0)
         {
             return categories.size() == 0;
         }
         for (Category category:categories)
         {
-            final String key = category.getKey();
-            if ( key != null  && keys.contains(key))
+            if ( this.categories.contains(category))
             {
                 return true;
             }

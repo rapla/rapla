@@ -384,20 +384,22 @@ public class EditTaskPresenter implements TaskPresenter
                     };
                     Runnable deleteCmd = () -> {
                         this.bDeleting = true;
-                        final Promise<Void> promise = reservationController.deleteReservation((Reservation)origs.get(0), popupContext);
+                        final Reservation original = (Reservation) origs.get(0);
+                        final Promise<Void> promise = reservationController.deleteReservation(original, popupContext);
                         promise.thenRun( () ->closeCmd.run()).whenComplete((t,ex) ->  bDeleting = false);
                     };
                     Runnable closeCmd2 = () ->
                     {
                         ApplicationEvent event = new ApplicationEvent(applicationEvent.getApplicationEventId(), applicationEvent.getInfo(), popupEditContext, null);
-                        Promise<Void> pr = processStop(event).thenRun(() ->
+                        Promise<Void> pr = processStop(event,c).thenRun(() ->
                         {
                             event.setStop(true);
                             eventBus.fireEvent(event);
                         });
                         handleException(pr, popupEditContext);
                     };
-                    c.editReservation((Reservation) testObj, appointmentBlock, reservationSaveCmd, closeCmd2, deleteCmd);
+                    final Reservation original = origs != null ? (Reservation) origs.get(0) : null;
+                    c.editReservation((Reservation) testObj, original,appointmentBlock, reservationSaveCmd, closeCmd2, deleteCmd);
                     //c.addAppointmentListener();
                     return c;
                 }
@@ -409,10 +411,16 @@ public class EditTaskPresenter implements TaskPresenter
     }
 
     @Override
-    public Promise<Void> processStop(ApplicationEvent event)
+    public Promise<Void> processStop(ApplicationEvent event, RaplaWidget widget)
     {
-
         PopupContext popupContext = event.getPopupContext();
+        if ( widget != null && widget instanceof ReservationEdit)
+        {
+            if (!((ReservationEdit) widget).hasChanged())
+            {
+                return new ResolvedPromise<>(Promise.VOID);
+            }
+        }
         return processStop(popupContext);
     }
 

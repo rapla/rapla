@@ -22,9 +22,11 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
    
     Collection<Appointment> getSelectedAppointments();
 
-    void editReservation(Reservation reservation, AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd) throws RaplaException;
+    void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd) throws RaplaException;
 
     Reservation getOriginal();
+
+    boolean hasChanged();
 
     //void updateReservation(Reservation persistant) throws RaplaException;
 
@@ -33,4 +35,6 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
     CommandHistory getCommandHistory();
 
     void updateView(ModificationEvent evt);
+
+    void fireChange();
 }

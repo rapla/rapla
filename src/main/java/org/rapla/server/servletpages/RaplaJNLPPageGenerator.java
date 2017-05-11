@@ -8,8 +8,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -18,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 
@@ -25,14 +31,18 @@ import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.scheduler.Promise;
 import org.rapla.server.ServerServiceContainer;
 
-@Path("raplaclient")
+@Path("raplaclient{ending:(.jnlp)?}")
 @Singleton
 public class RaplaJNLPPageGenerator
 {
@@ -144,7 +154,7 @@ public class RaplaJNLPPageGenerator
 
     @GET
     @Produces()
-    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException
+    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response,@PathParam("ending") String ending) throws IOException
     {
         java.io.PrintWriter out = response.getWriter();
         String webstartRoot = ".";
@@ -199,7 +209,7 @@ public class RaplaJNLPPageGenerator
         out.println("<resources>");
         if (vmXmsSize != null && vmXmsSize > 0)
         {
-            out.println("  <j2se version=\"1.4+\" java-vm-args=\"-Xms" + CLIENT_VM_MIN_SIZE + "m\"/>");
+            out.println("  <j2se version=\"1.4+\" java-vm-args=\"-Xms" + vmXmsSize + "m\"/>");
         }
         else
         {
@@ -229,5 +239,36 @@ public class RaplaJNLPPageGenerator
         out.println("</jnlp>");
         out.close();
     }
+
+    /*
+    @GET
+    @Path("convertending")
+    public void convertEnding()
+    {
+        final Promise<Collection<Reservation>> reservations = facade.getReservations(null, null, null, null);
+        reservations.thenAccept((events) ->
+        {
+            Set<Reservation> newEvents = new HashSet<>();
+            Collection<Reservation> editableEvents = facade.edit(events);
+            for (Reservation event:editableEvents)
+            {
+                for (Appointment app:event.getAppointments())
+                {
+                    final Repeating repeating = app.getRepeating();
+                    if ( repeating != null && repeating.isFixedNumber())
+                    {
+                        final Date end = repeating.getEnd();
+                        if ( end != null)
+                        {
+                            repeating.setEnd( end);
+                            newEvents.add( event);
+                        }
+                    }
+                }
+            }
+            facade.storeAndRemove( newEvents.toArray( Reservation.RESERVATION_ARRAY), Reservation.RESERVATION_ARRAY);
+        });
+    }
+    */
 
 }

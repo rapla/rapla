@@ -4,6 +4,7 @@ import java.util.EventListener;
 
 
 
+@FunctionalInterface
 public interface CommandHistoryChangedListener extends EventListener
 {
 	void historyChanged();
