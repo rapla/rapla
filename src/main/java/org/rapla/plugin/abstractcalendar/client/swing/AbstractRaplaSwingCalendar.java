@@ -39,6 +39,7 @@ import javax.swing.RepaintManager;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -47,6 +48,7 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
+import org.rapla.client.swing.SwingScheduler;
 import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -72,6 +74,7 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.PromiseSynchroniser;
@@ -178,16 +181,22 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     }
 
     public void dateChanged(DateChangeEvent evt) {
-            final Promise<Void> update = update();
-            update.exceptionally( (ex) ->
-            {
-                dialogUiFactory.showException(ex, new SwingPopupContext(view.getComponent(), null));
-                return Promise.VOID;
-            });
-            
+    	 triggerUpdate();
     }
 
-    public Promise<Void> update() {
+	public void triggerUpdate() {
+		PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
+		try {
+			initializeBuilder().thenAccept((builder)->update(builder)).exceptionally( (ex) ->
+			        dialogUiFactory.showException(ex, popupContext)
+			    );
+		} catch (RaplaException ex) {
+			  dialogUiFactory.showException(ex, popupContext);
+		}
+	}
+
+    public void update(RaplaBuilder builder) throws RaplaException{
+    	
     	if ( titleView != null)
         {
             titleView.setText( model.getNonEmptyTitle());
@@ -198,30 +207,22 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         	int minBlockWidth = getCalendarOptions().getMinBlockWidth();
 			view.setMinBlockWidth( minBlockWidth);
         }
-        try
+        view.rebuild( builder );
+        if ( !view.isEditable())
         {
-            configureView( );
+            Dimension size = view.getComponent().getPreferredSize();
+            container.setBounds( 0,0, size.width, size.height + 40);
         }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-        Date startDate = getStartDate() ;
-        Date endDate = getEndDate();
-        ensureViewTimeframeIsInModel(startDate, endDate);
-      
-
-        final Promise<RaplaBuilder> builderPromise = createBuilder();
-        final Promise<Void> voidPromise = builderPromise.thenAccept((builder) -> {
-            view.rebuild( builder );
-            if ( !view.isEditable())
-            {
-                Dimension size = view.getComponent().getPreferredSize();
-                container.setBounds( 0,0, size.width, size.height + 40);
-            }
-        });
-        return voidPromise;
     }
+
+	private Promise<RaplaBuilder> initializeBuilder() throws RaplaException {
+         configureView( );
+         Date startDate = getStartDate() ;
+         Date endDate = getEndDate();
+         ensureViewTimeframeIsInModel(startDate, endDate);
+         final Promise<RaplaBuilder> builderPromise = createBuilder();
+         return builderPromise;
+	}
 
 	protected Date getEndDate() {
 		return view.getEndDate() ;
@@ -294,6 +295,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     /**
      * @see java.awt.print.Printable#print(java.awt.Graphics, java.awt.print.PageFormat, int)
      */
+    @Override
     public int print(Graphics g, PageFormat format, int page) throws PrinterException {
     	
     	/*JFrame frame = new JFrame();
@@ -328,14 +330,16 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 	    	try
 	    	{
 		    	Graphics2D g2 = (Graphics2D) g;
-		    	
+		    	SwingScheduler scheduler = (SwingScheduler)getFacade().getScheduler();
 		    	try 
 		    	{
-		    		final Promise<Void> update = update();
-		    		PromiseSynchroniser.waitForWithRaplaException(update, 10000);
+		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
+		    		RaplaBuilder builder = scheduler.waitFor(builderPromise, 5000);
+		    		update(builder);
 				} 
-				catch (RaplaException e) 
+				catch (Throwable e) 
 				{
+					getLogger().error(e.getMessage(), e);
 					throw new PrinterException(e.getMessage());
 				}
 		   
@@ -350,16 +354,18 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		    	Component component = container;
 		        view.updateSize( (int)newWidth );
 		        container.setBounds( 0,0, (int)newWidth, (int)preferedHeight);
-                try
-                {
-                    final Promise<Void> update = update();
-                    PromiseSynchroniser.waitForWithRaplaException(update, 10000);
-                }
-				catch (RaplaException e) 
+		        try 
+		    	{
+		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
+		    		RaplaBuilder builder = scheduler.waitFor(builderPromise, 5000);
+		    		update(builder);
+				} 
+				catch (Throwable e) 
 				{
+					getLogger().error(e.getMessage(), e);
 					throw new PrinterException(e.getMessage());
 				}
-		    	
+		   
 		        Integer pageStart = pageStartMap.get( currentPrintDate);
 		    	if ( pageStart == null)
 		    	{

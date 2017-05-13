@@ -484,6 +484,8 @@ public class DialogUI extends JDialog
         {
             return images;
         }
+        
+        
 
         /* (non-Javadoc)
          * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, javax.swing.JComponent, java.lang.String[])
@@ -531,21 +533,21 @@ public class DialogUI extends JDialog
          * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showException(java.lang.Throwable, org.rapla.client.PopupContext)
          */
         @Override
-        public void showException(Throwable ex, PopupContext popupContext)
+        public Void showException(Throwable ex, PopupContext popupContext)
         {
-            showException(ex, popupContext, i18n, getImages(), logger);
+            return showException(ex, popupContext, i18n, getImages(), logger);
         }
 
         /* (non-Javadoc)
          * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showError(java.lang.Exception, org.rapla.client.PopupContext)
          */
         @Override
-        public void showError(Exception ex, PopupContext context)
+        public Void showError(Exception ex, PopupContext context)
         {
-            showException(ex, context);
+            return showException(ex, context);
         }
 
-        private void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
+        private Void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
         {
             Component owner = SwingPopupContext.extractParent(popupContext);
             if (ex instanceof RaplaConnectException)
@@ -561,7 +563,7 @@ public class DialogUI extends JDialog
                 logger.warn(message + additionalInfo);
                 if (ex instanceof RaplaRestartingException)
                 {
-                    return;
+                    return Promise.VOID;
                 }
                 try
                 {
@@ -572,7 +574,7 @@ public class DialogUI extends JDialog
                 {
                     logger.error(e.getMessage(), e);
                 }
-                return;
+                return Promise.VOID;
             }
             try
             {
@@ -594,6 +596,7 @@ public class DialogUI extends JDialog
             {
                 logger.error(ex2.getMessage(), ex2);
             }
+            return Promise.VOID;
         }
 
         static private String getHTML(DependencyException ex)
@@ -625,19 +628,28 @@ public class DialogUI extends JDialog
          * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showWarning(java.lang.String, org.rapla.client.PopupContext)
          */
         @Override
-        public void showWarning(String warning, PopupContext popupContext)
+        public Void showWarning(String warning, PopupContext popupContext)
         {
-            showWarning(warning, popupContext, i18n, getImages(), logger);
+            return showWarning(warning, popupContext, i18n, getImages(), logger);
         }
 
         @Override public PopupContext createPopupContext(RaplaWidget widget)
         {
-            final Object componentObj = widget.getComponent();
-            final Component component = (componentObj instanceof Component) ? (Component) componentObj: null;
+        	final Component component;
+        	if ( widget == null)
+        	{
+        		component = frameList.getMainWindow();
+        	}
+        	else
+        	{
+        		final Object componentObj = widget.getComponent();
+        		component = (componentObj instanceof Component) ? (Component) componentObj: null;
+        		
+        	}
             return new SwingPopupContext(component,null);
         }
 
-        private void showWarning(String warning, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
+        private Void showWarning(String warning, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
         {
             try
             {
@@ -649,6 +661,7 @@ public class DialogUI extends JDialog
             {
                 logger.error(ex2.getMessage(), ex2);
             }
+            return Promise.VOID;
         }
 
     }

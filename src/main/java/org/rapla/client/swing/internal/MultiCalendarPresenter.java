@@ -248,7 +248,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
             		currentView = factory.createSwingView( model, editable, false);
             	    currentViewId = viewId; 	
             	    view.setCalendarView(currentView);
-            	    currentView.update();
+            	    currentView.triggerUpdate();
             	}
             	else
             	{
@@ -272,7 +272,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
              	}
              	if ( update )
              	{
-             		currentView.update( );
+             		currentView.triggerUpdate( );
              	}
             }
         }
@@ -286,7 +286,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     {
         if (currentView != null)
         {
-            currentView.update();
+            currentView.triggerUpdate();
         }
     }
 

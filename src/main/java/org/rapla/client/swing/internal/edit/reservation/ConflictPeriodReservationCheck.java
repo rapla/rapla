@@ -306,11 +306,11 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         final Category timetablesCategory = getTimetablesCategory();
         if (timetablesCategory == null)
         {
-            return null;
+            return Collections.emptyList();
         }
         if ( timetablesCategory.getCategories().length == 0)
         {
-            return  null;
+        	return Collections.emptyList();
         }
         final PopupContext popupContext = new SwingPopupContext((Component) edit.getComponent(), null);
         button = new RaplaButton();
@@ -378,7 +378,11 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
 
     private void updateButton(Reservation newReservation)
     {
-        final Map<Appointment, Set<Period>> periodConflicts;
+    	if ( button == null)
+    	{
+    		return;
+    	}
+    	final Map<Appointment, Set<Period>> periodConflicts;
         try
         {
             periodConflicts = getPeriodConflicts(Collections.singletonList(newReservation));

@@ -981,7 +981,12 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
         }
 
-        ClassificationFilter[] reservationFilters = null;
+        ClassificationFilter[] reservationFilters;
+		try {
+			reservationFilters = isDefaultEventTypes() ? null : getReservationFilter();
+		} catch (RaplaException ex) {
+			return new ResolvedPromise<>( ex);
+		}
         final Promise<Map<Allocatable, Collection<Appointment>>> reservationsAsync = operator
                 .queryAppointments(user, allocatables, start, end, reservationFilters, templateId);
         

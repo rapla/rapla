@@ -195,12 +195,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             public void dateChanged(DateChangeEvent evt)
             {
-                final Promise<Void> updatePromise = update();
-                updatePromise.exceptionally((ex) ->
-                {
-                    SwingAppointmentTableView.this.dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-                    return null;
-                });
+                triggerUpdate();
             }
         });
 
@@ -255,14 +250,17 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         return voidPromise;
     }
 
-    public Promise<Void> update()
+    public void triggerUpdate()
     {
         final Promise<Void> voidPromise = update(model);
-        final Promise<Void> returnVoidPromise = voidPromise.thenAccept((a) ->
+        voidPromise.thenAccept((a) ->
         {
             dateChooser.update();
+        }).exceptionally((ex) ->
+        {
+            SwingAppointmentTableView.this.dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+            return null;
         });
-        return returnVoidPromise;
     }
 
     public JComponent getDateSelection()

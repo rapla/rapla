@@ -103,7 +103,8 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             @Override
             public void rebuild(Builder b) {
                 // update week
-                weekTitle.setText(getI18n().calendarweek( getStartDate()));
+                Date startDate = getStartDate();
+				weekTitle.setText(getI18n().calendarweek( startDate));
                 super.rebuild(b);
             }
         };

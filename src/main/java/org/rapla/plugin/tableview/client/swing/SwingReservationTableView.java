@@ -189,11 +189,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         dateChooser.addDateChangeListener( new DateChangeListener() {
             public void dateChanged( DateChangeEvent evt )
             {
-                try {
-                    PromiseSynchroniser.waitForWithRaplaException(update(), 10000);
-                } catch (RaplaException ex ){
-                    SwingReservationTableView.this.dialogUiFactory.showException( ex, new SwingPopupContext(getComponent(), null));
-                }
+                  triggerUpdate();
             }
         });
 
@@ -322,15 +318,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 		}
 	}
     
-    public Promise<Void> update() 
+    public void triggerUpdate() 
     {
         final Promise<Collection<Reservation>> promise = model.queryReservations(model.getTimeIntervall());
-        final Promise<Void> voidPromise = promise.thenAccept((reservations) ->
+        promise.thenAccept((reservations) ->
         {
             reservationTableModel.setReservations(reservations.toArray(new Reservation[] {}));
             dateChooser.update();
-        });
-        return voidPromise;
+        }).exceptionally((ex)-> SwingReservationTableView.this.dialogUiFactory.showException( ex, new SwingPopupContext(getComponent(), null)));
     }
 
     public JComponent getDateSelection()

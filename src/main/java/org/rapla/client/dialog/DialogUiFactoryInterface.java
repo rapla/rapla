@@ -20,13 +20,13 @@ public interface DialogUiFactoryInterface
     /** Creates a new ErrorDialog with the specified owner and displays the exception
     @param ex the exception that should be displayed.
     */
-    void showException(Throwable ex, PopupContext popupContext);
+    Void showException(Throwable ex, PopupContext popupContext);
 
-    void showError(Exception ex, PopupContext context);
+    Void showError(Exception ex, PopupContext context);
 
     /** Creates a new ErrorDialog with the specified owner and displays the waring */
-    void showWarning(String warning, PopupContext popupContext);
-
+    Void showWarning(String warning, PopupContext popupContext);
+    
     class Util
     {
         static public boolean isWarningOnly(Throwable ex)

@@ -25,7 +25,7 @@ import org.rapla.scheduler.Promise;
 public interface SwingCalendarView<T> extends RaplaWidget<T>
 {
     String ID = "org.rapla.client.swing.calendarview";
-    Promise<Void> update();
+    void triggerUpdate();
     /** you can provide a DateSelection component if you want */
     JComponent getDateSelection();
     /** Most times you can only scroll programaticaly if the window is visible and the size of

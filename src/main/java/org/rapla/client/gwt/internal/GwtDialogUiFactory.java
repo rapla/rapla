@@ -284,7 +284,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public void showException(Throwable ex, PopupContext popupContext)
+    public Void showException(Throwable ex, PopupContext popupContext)
     {
         if (ex instanceof RaplaConnectException)
         {
@@ -299,7 +299,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             logger.warn(message + additionalInfo);
             if (ex instanceof RaplaRestartingException)
             {
-                return;
+                return Promise.VOID;
             }
             try
             {
@@ -347,6 +347,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
                 logger.error(ex2.getMessage(), ex2);
             }
         }
+        return Promise.VOID;
     }
 
     private String stacktrace(Throwable ex)
@@ -388,15 +389,15 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public void showError(Exception ex, PopupContext context)
+    public Void showError(Exception ex, PopupContext context)
     {
-        showException(ex, context);
+        return showException(ex, context);
     }
 
     @Override
-    public void showWarning(String warning, PopupContext popupContext)
+    public Void showWarning(String warning, PopupContext popupContext)
     {
-
+    	return Promise.VOID;
     }
 
     @Override public PopupContext createPopupContext(RaplaWidget widget)

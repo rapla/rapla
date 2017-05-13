@@ -539,7 +539,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     protected void fireReservationChanged(ChangeEvent evt)
     {
         setHasChanged(true);
-        fireReservationChanged(new ChangeEvent(appointmentEdit));
+        //fireReservationChanged(new ChangeEvent(appointmentEdit));
     }
 
 }

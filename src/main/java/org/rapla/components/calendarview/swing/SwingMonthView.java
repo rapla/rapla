@@ -312,6 +312,10 @@ public class SwingMonthView extends AbstractSwingCalendar
 
 	@Override
 	public void updateSize(int width) {
+		if ( tableLayout != null)
+		{
+			return;
+		}
 		int columnSize = tableLayout.getNumColumn();
 		int newWidth = Math.max( minBlockWidth , (width - 10 ) /  (Math.max(1,columnSize)));
 		for (SmallDaySlot slot: this.slots)

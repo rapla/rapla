@@ -1,6 +1,5 @@
 package org.rapla.client.swing;
 
-import java.awt.Component;
 import java.util.Collection;
 
 import org.rapla.client.RaplaWidget;

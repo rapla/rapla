@@ -269,7 +269,7 @@ public class CalendarPrintDialog extends DialogUI
         
         savebutton.setVisible(exportServiceList.getServices().length>0);
         //swingCalendar.setPrintView(true);
-        currentView.update();
+        //currentView.update();
         //sizeLabel.setText("Endedatum:");
         titleLabel.setText(i18n.getString("weekview.print.title_textfield")+":");
         setTitle(i18n.getString("weekview.print.dialog_title"));
@@ -342,7 +342,7 @@ public class CalendarPrintDialog extends DialogUI
 					|| ((oldTitle != null && oldTitle.length() > 0 ) && ( newTitle == null || newTitle.length() ==0)) 
 					)
 			{
-				currentView.update(); // BJO performance issue
+				currentView.triggerUpdate(); // BJO performance issue
 			}
 			scrollPane.invalidate();
 			scrollPane.repaint();
@@ -371,7 +371,7 @@ public class CalendarPrintDialog extends DialogUI
                     } catch (Exception ex) {
                         return;
                     }
-                    currentView.update();
+                    currentView.triggerUpdate();
                     scrollPane.invalidate();
                     scrollPane.repaint();
                 }
