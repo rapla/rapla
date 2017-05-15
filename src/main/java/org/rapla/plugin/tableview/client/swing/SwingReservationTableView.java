@@ -308,7 +308,6 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 		try {
 			updateMenu(editMenu,newMenu, p);
 			final User user = getUser();
-            final RaplaFacade raplaFacade = getFacade();
             boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(user);
 			boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
 			newMenu.setEnabled(enableNewMenu);
@@ -325,7 +324,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         {
             reservationTableModel.setReservations(reservations.toArray(new Reservation[] {}));
             dateChooser.update();
-        }).exceptionally((ex)-> SwingReservationTableView.this.dialogUiFactory.showException( ex, new SwingPopupContext(getComponent(), null)));
+        }).exceptionally((ex)-> dialogUiFactory.showException( ex, new SwingPopupContext(getComponent(), null)));
     }
 
     public JComponent getDateSelection()

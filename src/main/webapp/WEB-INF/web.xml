@@ -13,11 +13,6 @@
     <display-name>RaplaServer</display-name>
     <description>Rapla</description>
     <servlet-class>org.rapla.server.MainServlet</servlet-class>
-    <!-- Config file path relative to this file -->
-    <init-param>
-      <param-name>config-file</param-name>
-      <param-value>raplaserver.xconf</param-value>
-    </init-param>
     <load-on-startup>3</load-on-startup>
   </servlet>
   
@@ -52,12 +47,11 @@
      <res-auth>Container</res-auth>
   </resource-ref>
    
-  <resource-ref>
-     <description>Rapla services map</description>
-     <res-ref-name>raplaservices</res-ref-name>
-     <res-type>java.util.HashMap</res-type>
-     <res-auth>Container</res-auth>
-  </resource-ref>
+  <env-entry>
+      <env-entry-name>raplaservices</env-entry-name>
+      <env-entry-value></env-entry-value>
+      <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
 
   <env-entry>
 	  <env-entry-name>raplafile</env-entry-name>

@@ -1445,7 +1445,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
             final TimeInterval timeIntervall = getTimeIntervall();
             final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeIntervall);
-            return appointmentPromise.thenCombine(reservations, (conflictAppointments, allAppointments) -> {
+            return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
 
                 Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);
                 for (Appointment app : allAppointments)

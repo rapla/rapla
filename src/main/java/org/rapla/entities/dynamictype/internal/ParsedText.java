@@ -977,12 +977,12 @@ public class ParsedText implements Serializable
                 end = DateTools.subDay(end);
             }
             StringBuffer buf = new StringBuffer();
-            buf.append(DateTools.formatDate(start, locale));
+            buf.append(DateTools.formatDate(start));
 
             if (end != null && end.after(start))
             {
                 buf.append("-");
-                buf.append(DateTools.formatDate(end, locale));
+                buf.append(DateTools.formatDate(end));
             }
             return buf.toString();
         }

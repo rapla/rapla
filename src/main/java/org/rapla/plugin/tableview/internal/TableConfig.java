@@ -238,7 +238,9 @@ public class TableConfig
     //@XmlAccessorType(XmlAccessType.FIELD)
     static public class TableColumnConfig
     {
-        private String key;
+       
+
+		private String key;
         private String type;
         private String defaultValue;
         private MultiLanguageName name;
@@ -309,6 +311,12 @@ public class TableConfig
         {
             this.name = name;
         }
+        
+        @Override
+		public String toString() {
+			return "TableColumnConfig [key=" + key + ", type=" + type + ", defaultValue=" + defaultValue + ", name="
+					+ name + "]";
+		}
 
     }
 

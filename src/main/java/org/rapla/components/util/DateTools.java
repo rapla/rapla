@@ -1,5 +1,5 @@
  /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 Gereon Fassbender, Christopher Kohlhaas               |
+ | Copyright (C) 2017 Christopher Kohlhaas               |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -12,9 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
- import java.util.Date;
+import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
 /** Tools for manipulating dates.
  * At the moment of writing rapla internaly stores all appointments
@@ -71,15 +70,6 @@ public abstract class DateTools
 		SerializableDateTimeFormat format = new SerializableDateTimeFormat();
         String string = format.formatDate( date);
         return string;
-	}
-	
-	public static String formatDate(Date date, @SuppressWarnings("unused") Locale locale) {
-		// FIXME has to be replaced with locale implementation
-//		DateFormat format = DateFormat.getDateInstance(DateFormat.SHORT,locale);
-//        format.setTimeZone(DateTools.getTimeZone());
-//        String string = format.format( date);
-//        return string;
-		return formatDate(date);
 	}
 	
 	public static String formatTime(Date date)

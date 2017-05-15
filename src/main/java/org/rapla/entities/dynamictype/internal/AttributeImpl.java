@@ -864,7 +864,8 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
         if (value instanceof Date)
         {
-            return DateTools.formatDate((Date) value, locale);
+        	// FIXME has to be replaced with locale implementation
+            return DateTools.formatDate((Date) value);
         }
         if (value instanceof Boolean)
         {

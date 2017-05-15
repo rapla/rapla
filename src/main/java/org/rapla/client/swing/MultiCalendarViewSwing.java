@@ -52,7 +52,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 @DefaultImplementation(context = InjectionContext.swing, of = MultiCalendarView.class)
-public class MultiCalendarViewSwing implements MultiCalendarView<Component>
+public class MultiCalendarViewSwing implements MultiCalendarView
 {
     private final JPanel page = new JPanel();
     private final JPanel header = new JPanel();
@@ -223,7 +223,7 @@ public class MultiCalendarViewSwing implements MultiCalendarView<Component>
     */
 
     @Override
-    public void setCalendarView(SwingCalendarView<Component> calendarView)
+    public void setCalendarView(SwingCalendarView calendarView)
     {
         page.removeAll();
         page.add(header, "0,0,f,f");

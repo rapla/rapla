@@ -95,8 +95,10 @@ import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
         createPanel();
         this.tableConfig = tableConfigLoader.read(preferences, true);
         tablerows.clear();
-        tablerows.addAll(this.tableConfig.getAllColumns());
+        Set<TableColumnConfig> allColumns = this.tableConfig.getAllColumns();
+		tablerows.addAll(allColumns);
         initRows();
+        update();
     }
 
     private void createPanel()

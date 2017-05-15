@@ -72,7 +72,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
                 }
                 else if ( ruleValue == null)
                 {
-                    putId(key,(String)null);
+                    removeId(key);
                 }
                 else
                 {

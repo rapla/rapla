@@ -349,6 +349,27 @@ public class MainServlet extends HttpServlet
                     if (response.isCommitted())
                         return;
                 }
+                String pageParam = request.getParameter("page");
+                // compatibility
+                if (pageParam != null && (pathInfo == null || pathInfo.equals("")) && request.getMethod().equals("GET"))
+                {
+                	StringBuilder redirect = new StringBuilder();
+                	redirect.append(request.getServletPath());
+                	redirect.append("/");
+                	redirect.append(pageParam);
+                	String queryString = request.getQueryString();
+                	if (queryString != null && queryString.length()>0)
+                	{
+                		redirect.append("?");
+                		String newQueryString = queryString.replaceAll("page="+pageParam  , "");
+						if (newQueryString.startsWith("&"))
+						{
+							newQueryString = newQueryString.substring(1);
+						}
+                		redirect.append(newQueryString);
+                	}
+                	response.sendRedirect(redirect.toString());
+                }
             }
             catch (RaplaException e)
             {
@@ -373,6 +394,7 @@ public class MainServlet extends HttpServlet
 
                 return;
             }
+           
             Injector membersInjector = serverStarter.getMembersInjector();
             request.setAttribute(Injector.class.getCanonicalName(), new Injector()
             {

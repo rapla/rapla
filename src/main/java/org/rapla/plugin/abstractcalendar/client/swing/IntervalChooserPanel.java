@@ -238,11 +238,11 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
             }
             else if (e.getSource() == prevEndButton)
             {
-                endDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, -1));
+                endDateSelection.setDate(DateTools.add(endDateSelection.getDate(), incrementSize, -1));
             }
             else if (e.getSource() == nextEndButton)
             {
-                endDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, 1));
+                endDateSelection.setDate(DateTools.add(endDateSelection.getDate(), incrementSize, 1));
             }
             else if (e.getSource() == startTodayButton)
             {

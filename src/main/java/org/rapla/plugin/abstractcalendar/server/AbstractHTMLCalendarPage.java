@@ -214,12 +214,14 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		out.println("<html>");
 		out.println("<head>");
 		out.println("  <title>" + getTitle() + "</title>");
-        final String formAction = getUrl(request,"rapla/calendar");
+        String formAction = getUrl(request,"rapla/calendar");
 
         out.println("  " + getCssLine(request, "calendar.css"));
         out.println("  " + getCssLine(request, "default.css"));
 		out.println("  " + getFavIconLine(request));
-		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetNonUtf() + "\">");
+		String charset = "UTF-8";
+		//String charset = raplaLocale.getCharsetNonUtf();
+		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
 		out.println("</head>");
 		out.println("<body>");
 		if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id")==null)
@@ -238,11 +240,12 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 			if (navigationVisible)
 			{
 				out.println("<div class=\"datechooser\">");
-                out.println("<form action=\"" + formAction + "\" method=\"get\">");
 				String keyParamter = request.getParameter("key");
+                out.println("<form action=\"" + formAction + "\" method=\"get\" accept-charset=\""+ charset + "\">");
+				
 				if (keyParamter != null)
 				{
-					out.println(getHiddenField("key", keyParamter));
+					out.println(getHiddenField("key", keyParamter)) ;
                     final String salt = request.getParameter("salt");
                     if (salt != null)
                     {
@@ -251,7 +254,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
                 }
 				else
 				{
-					out.println(getHiddenField("page", "calendar"));
+					//out.println(getHiddenField("page", "calendar"));
 					out.println(getHiddenField("user", model.getUser().getUsername()));
 					String filename = getFilename( request );
 					if ( filename != null)
@@ -365,9 +368,19 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 
     String getHiddenField( String fieldname, String value) {
         // prevent against css attacks
-        value = Tools.createXssSafeString(value);
+    	value = encodeSafe(value);
         return "<input type=\"hidden\" name=\"" + fieldname + "\" value=\"" + value + "\"/>";
     }
+
+	public String encodeSafe(String value) {
+//		try {
+//			value = URLEncoder.encode(value,"UTF-8");
+//		} catch (UnsupportedEncodingException e) {
+//			throw new IllegalStateException(e);
+//		}
+        value = Tools.createXssSafeString(value);
+		return value;
+	}
 
     String getHiddenField( String fieldname, int value) {
         return getHiddenField( fieldname, String.valueOf(value));

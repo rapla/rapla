@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
@@ -202,7 +203,9 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         List<String> ids = new ArrayList<String>();
         for (ReferenceInfo ref:refs)
         {
-            ids.add( ref.getId());
+            String id = ref.getId();
+            Assert.notNull( id );
+			ids.add( id);
         }
         putIds(key, ids);
     }

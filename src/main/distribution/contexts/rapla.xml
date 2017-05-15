@@ -71,7 +71,7 @@
   <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
       <Arg></Arg>
       <Arg>raplaservices</Arg>
-      <Arg type="java.lang.String">org.rapla.dhbw.interface=false,org.rapla.plugin.notification=false,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
+      <Arg type="java.lang.String">org.rapla.plugin.notification=true,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=true</Arg>
       <Arg type="boolean">true</Arg>
   </New>
 

@@ -145,6 +145,8 @@ public class CalendarPageGenerator
             out.println("<html>");
             out.println("<head>");
             out.println("<title>" + calendarName + "</title>");
+            String charset = raplaLocale.getCharsetNonUtf();//
+    		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
             out.println("</head>");
             out.println("<body>");
 
@@ -224,7 +226,8 @@ public class CalendarPageGenerator
     }
 
     @GET
-    @Produces(MediaType.TEXT_HTML)
+    //@Produces("text/html;charset=ISO-8859-1")
+    @Produces("text/html;UTF-8")
     public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
     {
         try

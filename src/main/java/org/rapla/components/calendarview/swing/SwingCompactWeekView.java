@@ -338,7 +338,10 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
 
 	@Override
 	public void updateSize(int width) {
-		
+		if ( tableLayout == null)
+		{
+			return;
+		}
 		
 		int columnSize = tableLayout.getNumColumn();
 		int realColumns= columnSize;

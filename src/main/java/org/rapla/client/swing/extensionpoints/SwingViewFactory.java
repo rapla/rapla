@@ -26,7 +26,7 @@ import org.rapla.inject.InjectionContext;
 public interface SwingViewFactory
 {
     // instance scope
-    <T>SwingCalendarView<T> createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException;
+    SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException;
     boolean isEnabled();
     String getViewId();
     /** return the key that is responsible for placing the view in the correct position in the drop down selection menu*/

@@ -1,14 +1,15 @@
 package org.rapla.client.internal;
 
+import java.awt.Component;
 import java.util.LinkedHashMap;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.RaplaWidget;
+import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 
-public interface MultiCalendarView<T> extends RaplaWidget<T>
+public interface MultiCalendarView extends RaplaWidget<Component>
 {
 
     public interface Presenter
@@ -24,7 +25,7 @@ public interface MultiCalendarView<T> extends RaplaWidget<T>
     
     String getSelectedViewId();
 
-    void setCalendarView(SwingCalendarView<T> calendarView);
+    void setCalendarView(SwingCalendarView calendarView);
 
     void setSelectableViews(LinkedHashMap<String, String> viewIdToViewName);
 

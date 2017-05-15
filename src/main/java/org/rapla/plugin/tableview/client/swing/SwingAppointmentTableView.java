@@ -26,7 +26,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableColumn;
@@ -48,7 +47,6 @@ import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DisabledGlassPane;
 import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -214,38 +212,33 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 
     protected Promise<Void> update(CalendarModel model) 
     {
-        SwingUtilities.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                final Component glassPane = SwingUtilities.getRootPane(container).getGlassPane();
-                final DisabledGlassPane disabledGlassPane;
-                if (glassPane instanceof DisabledGlassPane)
-                {
-                    disabledGlassPane = (DisabledGlassPane) glassPane;
-                }
-                else
-                {
-                    disabledGlassPane = new DisabledGlassPane();
-                    SwingUtilities.getRootPane(container).setGlassPane(disabledGlassPane);
-                }
-                disabledGlassPane.activate();
-            }
-        });
-        final Promise<List<AppointmentBlock>> blocksPromise = SwingAppointmentTableView.this.model.getBlocks();
+//        SwingUtilities.invokeLater(new Runnable()
+//        {
+//            @Override
+//            public void run()
+//            {
+//                final Component glassPane = SwingUtilities.getRootPane(container).getGlassPane();
+//                final DisabledGlassPane disabledGlassPane;
+//                if (glassPane instanceof DisabledGlassPane)
+//                {
+//                    disabledGlassPane = (DisabledGlassPane) glassPane;
+//                }
+//                else
+//                {
+//                    disabledGlassPane = new DisabledGlassPane();
+//                    SwingUtilities.getRootPane(container).setGlassPane(disabledGlassPane);
+//                }
+//                disabledGlassPane.activate();
+//            }
+//        });
+        final Promise<List<AppointmentBlock>> blocksPromise = model.getBlocks();
         final Promise<Void> voidPromise = blocksPromise.thenAccept((blocks) ->
-        { // TODO take away Swing Thread
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    appointmentTableModel.setAppointments(blocks);
-                    final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
-                    glassPane.deactivate();
-                }
-            });
+        { 
+        	
+              appointmentTableModel.setAppointments(blocks);
+//                    final DisabledGlassPane glassPane = (DisabledGlassPane) SwingUtilities.getRootPane(container).getGlassPane();
+//                    glassPane.deactivate();
+//                }
         });
         return voidPromise;
     }
@@ -256,11 +249,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         voidPromise.thenAccept((a) ->
         {
             dateChooser.update();
-        }).exceptionally((ex) ->
-        {
-            SwingAppointmentTableView.this.dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-            return null;
-        });
+        }).exceptionally((ex) -> dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null)));
     }
 
     public JComponent getDateSelection()
