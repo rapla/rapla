@@ -132,6 +132,11 @@ import javax.inject.Singleton;
 
     }
 
+    public String getTitle(ApplicationEvent event)
+    {
+        return "";
+    }
+
 
     /*
     public void selectDate(Date newDate)

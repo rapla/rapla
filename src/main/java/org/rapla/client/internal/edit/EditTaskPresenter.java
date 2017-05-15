@@ -247,6 +247,32 @@ public class EditTaskPresenter implements TaskPresenter
         return null;
     }
 
+    public String getTitle(ApplicationEvent event)
+    {
+        final String applicationEventId = event.getApplicationEventId();
+        if (applicationEventId.equals(MERGE_RESOURCES_ID))
+        {
+            return i18n.getString("merge");
+        }
+        else if ( applicationEventId.equals( EDIT_EVENTS_ID))
+        {
+            String objectsString = "";
+            String titleI18n = i18n.format("edit_reservation.format", objectsString);
+            return titleI18n;
+        }
+        else if ( applicationEventId.equals( EDIT_RESOURCES_ID))
+        {
+            String objectsString = i18n.getString("resources");
+            String titleI18n = i18n.format("edit.format", objectsString);
+            return titleI18n;
+        }
+        else
+        {
+            String titleI18n = i18n.getString("new_reservation");
+            return  titleI18n;
+        }
+    }
+
     protected Appointment createAppointment() throws RaplaException
     {
 

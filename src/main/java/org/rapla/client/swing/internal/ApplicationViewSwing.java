@@ -293,12 +293,13 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget,
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget,String title,
             Function<ApplicationEvent, Boolean> windowClosing)
     {
         final RaplaFrame dialog = new RaplaFrame(frameControllerList);
         final Container component = (Container) objectRaplaWidget.getComponent();
         dialog.setContentPane(component);
+        dialog.setTitle( title);
         dialog.setIconImage(raplaImages.getIconFromKey("icon.edit_window_small").getImage());
         dialog.setSize(1050, 700);
         childFrames.put(windowId, dialog);

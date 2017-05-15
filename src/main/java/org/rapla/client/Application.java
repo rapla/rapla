@@ -148,7 +148,8 @@ import java.util.function.Function;
                     handleException(promise,popupContext);
                     return false;
                 };
-                mainView.openWindow(activity, popupContext, widget, windowClosingFunction);
+                String title = taskPresenter.getTitle( activity);
+                mainView.openWindow(activity, popupContext, widget,title, windowClosingFunction);
                 openDialogsPresenter.put(activity, taskPresenter);
             }
         });

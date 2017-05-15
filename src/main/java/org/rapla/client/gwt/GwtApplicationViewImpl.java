@@ -201,7 +201,7 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, Function<ApplicationEvent,Boolean> windowClosingFunction)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, String title,Function<ApplicationEvent,Boolean> windowClosingFunction)
     {
 
     }

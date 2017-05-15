@@ -14,7 +14,7 @@ public interface ApplicationView<T>
 
     void removeWindow(ApplicationEvent windowId);
     boolean hasWindow(ApplicationEvent windowId);
-    void openWindow(ApplicationEvent windowId,PopupContext popupContext, RaplaWidget<T> component, Function<ApplicationEvent,Boolean> windowClosing);
+    void openWindow(ApplicationEvent windowId,PopupContext popupContext, RaplaWidget<T> component, String title,Function<ApplicationEvent,Boolean> windowClosing);
     void requestFocus(ApplicationEvent windowId);
 
     interface Presenter
