@@ -87,7 +87,9 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
 		final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
-		return PromiseSynchroniser.waitForWithRaplaException(initBuilder, 1000);
+        final RaplaBuilder raplaBuilder = PromiseSynchroniser.waitForWithRaplaException(initBuilder, 5000);
+
+        return raplaBuilder;
     }
 
     abstract protected AbstractHTMLView createCalendarView() throws RaplaException;

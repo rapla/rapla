@@ -987,6 +987,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 		} catch (RaplaException ex) {
 			return new ResolvedPromise<>( ex);
 		}
+		// FIXME Evalute if its only the owner
+		User user = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> reservationsAsync = operator
                 .queryAppointments(user, allocatables, start, end, reservationFilters, templateId);
         

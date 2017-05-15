@@ -1746,22 +1746,30 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
             final String prefix = "weekly:";
             if (repeatingTypeAsString.startsWith(prefix))
             {
-                Set<Integer> weekdays;
-                repeatingTypeAsString = "weekly";
-                String[] weekdayStrings = repeatingTypeAsString.substring(prefix.length()).split(",");
-                weekdays = new TreeSet<Integer>();
-                for (String weekday : weekdayStrings)
+                try
                 {
-                    try
+                    Set<Integer> weekdays;
+
+                    String[] weekdayStrings = repeatingTypeAsString.substring(prefix.length()).split(",");
+                    weekdays = new TreeSet<Integer>();
+                    for (String weekday : weekdayStrings)
                     {
-                        weekdays.add(Integer.parseInt(weekday));
+                        try
+                        {
+                            weekdays.add(Integer.parseInt(weekday));
+                        }
+                        catch (Exception ex)
+                        {
+                            getLogger().error("Can't parse " + weekday + " for appointment with id " + id);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        throw new RaplaException("Can't parse " + weekday + " for appointment with id " + id);
-                    }
+                    repeating.setWeekdays(weekdays);
                 }
-                repeating.setWeekdays(weekdays);
+                catch (Exception ex)
+                {
+                    getLogger().error("Can't parse " + repeatingTypeAsString  + " for appointment with id " + id);
+                }
+                repeatingTypeAsString = "weekly";
             }
             final RepeatingType repeatingType = RepeatingType.findForString(repeatingTypeAsString);
             if (repeatingType == null)
