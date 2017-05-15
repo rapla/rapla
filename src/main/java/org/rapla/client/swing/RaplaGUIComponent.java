@@ -154,11 +154,11 @@ public class RaplaGUIComponent extends RaplaComponent
         return new SwingPopupContext(parent, p);
     }
 
-    public RaplaCalendar createRaplaCalendar( final DateRenderer dateRenderer, final IOInterface service )
+    static public RaplaCalendar createRaplaCalendar( final DateRenderer dateRenderer, final IOInterface service, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger )
     {
-        final RaplaCalendar cal = new RaplaCalendar(getI18n().getLocale(), IOUtil.getTimeZone());
+        final RaplaCalendar cal = new RaplaCalendar(i18n.getLocale(), IOUtil.getTimeZone());
         cal.setDateRenderer(dateRenderer);
-        addCopyPaste(cal.getDateField(), getI18n(), getRaplaLocale(), service, getLogger());
+        addCopyPaste(cal.getDateField(), i18n, raplaLocale, service, logger);
         return cal;
     }
 

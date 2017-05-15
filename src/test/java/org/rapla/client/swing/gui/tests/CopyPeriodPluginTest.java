@@ -119,7 +119,7 @@ public class CopyPeriodPluginTest {
         final Logger logger = getLogger();
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         final RaplaResources rr = new RaplaResources(bundleManager);
-        final DateRenderer dateRenderer = new RaplaDateRenderer(raplaFacade, rr, getRaplaLocale(), getLogger());
+        final DateRenderer dateRenderer = new RaplaDateRenderer(raplaFacade, getRaplaLocale());
         final RaplaResources raplaResources = rr;
         final RaplaImages raplaImages = new RaplaImages(logger);
         final FrameControllerList frameList = new FrameControllerList(logger);

@@ -639,6 +639,11 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         }
     }
 
+    private RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer, IOInterface ioInterface)
+    {
+        return RaplaGUIComponent.createRaplaCalendar(dateRenderer,ioInterface,getI18n(),getRaplaLocale(), getLogger());
+    }
+
     class RepeatingEditor implements ActionListener, DateChangeListener, ChangeListener, Disposable
     {
         JPanel content = new JPanel();

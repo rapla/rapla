@@ -89,7 +89,7 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 		field.addActionListener(this);
 		panel.setLayout(new BorderLayout());
 		panel.add(field, BorderLayout.WEST);
-		nothingSelected = getString("nothing_selected");
+		nothingSelected = i18n.getString("nothing_selected");
 		field.addFocusListener(this);
 		field.setMaximumRowCount(10);
 	}

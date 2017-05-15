@@ -4,6 +4,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -104,16 +105,16 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
 
-    @Inject public AttributeDefaultConstraints(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+    @Inject public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
             Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer,
             final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
             MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger);
+        super(clientFacade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
-        final RaplaFacade raplaFacade = facade.getRaplaFacade();
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         this.permissionController = raplaFacade.getPermissionController();
-        annotationEdit = new AnnotationEditUI(facade, i18n, raplaLocale, logger, attributeExtensionSet);
+        annotationEdit = new AnnotationEditUI(clientFacade, i18n, raplaLocale, logger, attributeExtensionSet);
         key = textFieldFactory.create();
         name = multiLanguageFieldFactory.create();
         Collection<DynamicType> typeList;
@@ -127,23 +128,23 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         {
             throw new RaplaInitializationException(e);
         }
-        dynamicTypeSelect = new ListField<DynamicType>(facade, i18n, raplaLocale, logger, true);
+        dynamicTypeSelect = new ListField<DynamicType>(clientFacade, i18n, raplaLocale, logger, true);
         dynamicTypeSelect.setVector(typeList);
         final Locale locale = raplaLocale.getLocale();
         dynamicTypeSelect.setRenderer(new NamedListCellRenderer(locale));
 
-        rootCategory = getQuery().getSuperCategory();
+        rootCategory = this.raplaFacade.getSuperCategory();
 
-        categorySelect = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
         defaultSelectText = textFieldFactory.create();
-        addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
+        RaplaGUIComponent.addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
         //addCopyPaste( expectedRows.getNumberField());
         //addCopyPaste( expectedColumns.getNumberField());
 
         defaultSelectBoolean = booleanFieldFactory.create();
-        defaultSelectDate = createRaplaCalendar(dateRenderer, ioInterface);
+        defaultSelectDate = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n, raplaLocale, logger);
         defaultSelectDate.setNullValuePossible(true);
         defaultSelectDate.setDate(null);
         double fill = TableLayout.FILL;
@@ -175,7 +176,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         panel.add("3,13,l,t", tabSelect);
         panel.add("1,15,l,t", specialkeyLabel); // BJO
         panel.add("3,15,l,t", annotationButton);
-        annotationButton.setText(getString("edit"));
+        annotationButton.setText(i18n.getString("edit"));
         annotationButton.addActionListener(new ActionListener()
         {
 
@@ -195,15 +196,15 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
 
         setModel();
 
-        nameLabel.setText(getString("name") + ":");
-        keyLabel.setText(getString("key") + " *" + ":");
-        typeLabel.setText(getString("type") + ":");
-        categoryLabel.setText(getString("root") + ":");
-        dynamicTypeLabel.setText(getString("root") + ":");
-        tabLabel.setText(getString("edit-view") + ":");
+        nameLabel.setText(i18n.getString("name") + ":");
+        keyLabel.setText(i18n.getString("key") + " *" + ":");
+        typeLabel.setText(i18n.getString("type") + ":");
+        categoryLabel.setText(i18n.getString("root") + ":");
+        dynamicTypeLabel.setText(i18n.getString("root") + ":");
+        tabLabel.setText(i18n.getString("edit-view") + ":");
         multiSelectLabel.setText("Multiselect:");
-        defaultLabel.setText(getString("default") + ":");
-        specialkeyLabel.setText(getString("options") + ":");
+        defaultLabel.setText(i18n.getString("default") + ":");
+        specialkeyLabel.setText(i18n.getString("options") + ":");
         categorySelect.addChangeListener(this);
         categorySelect.addChangeListener(new ChangeListener()
                                          {
@@ -242,14 +243,14 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         DefaultComboBoxModel model = new DefaultComboBoxModel();
         for (AttributeType type : types)
         {
-            model.addElement(getString("type." + type));
+            model.addElement(i18n.getString("type." + type));
         }
         classSelect.setModel(model);
 
         model = new DefaultComboBoxModel();
         for (String tab : tabs)
         {
-            model.addElement(getString(tab));
+            model.addElement(i18n.getString(tab));
         }
         tabSelect.setModel(model);
 
@@ -263,7 +264,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         DefaultComboBoxModel model = new DefaultComboBoxModel();
         for (String select : allocatableVisible ? multiSelectOptionsAllocatable : multiSelectOptions)
         {
-            model.addElement(getString(select));
+            model.addElement(i18n.getString(select));
         }
         multiSelect.setModel(model);
     }
@@ -298,7 +299,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
             name.setValue(attribute.getName());
             key.setValue(attribute.getKey());
             final AttributeType attributeType = attribute.getType();
-            classSelect.setSelectedItem(getString("type." + attributeType));
+            classSelect.setSelectedItem(i18n.getString("type." + attributeType));
             if (attributeType.equals(AttributeType.CATEGORY))
             {
                 final Category rootCategory = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
@@ -347,19 +348,19 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
                 final boolean packages = packageBoolean != null ? packageBoolean : Boolean.FALSE;
                 if (belongsTo)
                 {
-                    multiSelect.setSelectedItem(getString("belongsTo"));
+                    multiSelect.setSelectedItem(i18n.getString("belongsTo"));
                 }
                 else if (packages)
                 {
-                    multiSelect.setSelectedItem(getString("package"));
+                    multiSelect.setSelectedItem(i18n.getString("package"));
                 }
                 else
                 {
-                    multiSelect.setSelectedItem(aBoolean ? getString("yes") : getString("no"));
+                    multiSelect.setSelectedItem(aBoolean ? i18n.getString("yes") : i18n.getString("no"));
                 }
             }
             String selectedTab = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
-            tabSelect.setSelectedItem(getString(selectedTab));
+            tabSelect.setSelectedItem(i18n.getString(selectedTab));
             update();
         }
         finally
@@ -417,9 +418,9 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
             }
             else
             {
-                attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, selectedItem.equals(getString("yes")));
-                attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, selectedItem.equals(getString("belongsTo")));
-                attribute.setConstraint(ConstraintIds.KEY_PACKAGE, selectedItem.equals(getString("package")));
+                attribute.setConstraint(ConstraintIds.KEY_MULTI_SELECT, selectedItem.equals(i18n.getString("yes")));
+                attribute.setConstraint(ConstraintIds.KEY_BELONGS_TO, selectedItem.equals(i18n.getString("belongsTo")));
+                attribute.setConstraint(ConstraintIds.KEY_PACKAGE, selectedItem.equals(i18n.getString("package")));
             }
         }
         else
@@ -494,7 +495,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         {
             dialog.close();
         }
-        dialog = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), modal, annotationEdit.getComponent(), new String[] { getString("close") });
+        dialog = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), modal, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
 
         dialog.getAction(0).setRunnable(new Runnable()
         {
@@ -506,7 +507,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
                 dialog.close();
             }
         });
-        dialog.setTitle(getString("select"));
+        dialog.setTitle(i18n.getString("select"));
         dialog.start(true);
     }
 

@@ -24,7 +24,7 @@ import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.internal.rest.RestApplication;
-import org.rapla.server.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.storage.impl.RaplaLock;
 
 import javax.naming.Context;

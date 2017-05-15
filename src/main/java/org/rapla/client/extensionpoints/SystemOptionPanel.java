@@ -8,7 +8,8 @@ import org.rapla.inject.InjectionContext;
  * @see org.rapla.entities.configuration.Preferences
  * @see OptionPanel
  * */
-@ExtensionPoint(context = InjectionContext.swing,id = "org.rapla.SystemOptions")
+@ExtensionPoint(context = InjectionContext.swing,id = SystemOptionPanel.ID)
 public interface SystemOptionPanel extends OptionPanel {
+    String ID = "org.rapla.SystemOptions";
 }
 

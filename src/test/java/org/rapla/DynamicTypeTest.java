@@ -198,7 +198,7 @@ public class DynamicTypeTest  {
 	    	model.queryReservations(model.getTimeIntervall());
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
-	        DateRenderer dateRenderer = new RaplaDateRenderer(facade, i18n, raplaLocale, logger);
+	        DateRenderer dateRenderer = new RaplaDateRenderer(facade, raplaLocale);
             DateFieldFactory dateFieldFactory = new DateFieldFactory(clientFacade, i18n, raplaLocale, logger, dateRenderer, ioInterface);
             BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(clientFacade, i18n, raplaLocale, logger);
             TextFieldFactory textFieldFactory = new TextFieldFactory(clientFacade, i18n, raplaLocale, logger, ioInterface);

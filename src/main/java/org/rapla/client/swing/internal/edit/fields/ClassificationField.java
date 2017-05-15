@@ -57,7 +57,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -178,7 +177,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 				classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE;
 			}
 		}
-		DynamicType[] types = getQuery().getDynamicTypes(classificationType);
+		DynamicType[] types = raplaFacade.getDynamicTypes(classificationType);
 
 		// determine DynamicTypes of Classifications
 		Set<DynamicType> dynamicTypes = new HashSet<DynamicType>();
@@ -194,7 +193,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			dynamicType = null;
 		oldDynamicType = dynamicType;
 
-		RaplaListComboBox jComboBox = new RaplaListComboBox(getRaplaLocale(),types);
+		RaplaListComboBox jComboBox = new RaplaListComboBox(raplaLocale,types);
 		typeSelector = jComboBox;
 		typeSelector.setEnabled( types.length > 1);
 		if (dynamicType != null)
@@ -205,7 +204,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			typeSelector.addItem(multipleValues);
 			typeSelector.setSelectedItem(multipleValues);
 		}
-		typeSelector.setRenderer(new NamedListCellRenderer(getI18n().getLocale()));
+		typeSelector.setRenderer(new NamedListCellRenderer(i18n.getLocale()));
 		typeSelector.addActionListener(this);
 		typeSelector.setEnabled(!canNotWriteOneAttribute(list));
 		
@@ -213,7 +212,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		JPanel header = new JPanel();
 		header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
         final String typeName = classificationType + "_type";
-		header.add( new JLabel(getString(typeName) +":"));
+		header.add( new JLabel(i18n.getString(typeName) +":"));
 		header.add(Box.createHorizontalStrut(20));
 		header.add(typeSelector);
 		header.add(Box.createHorizontalStrut(30));
@@ -239,8 +238,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 
     private boolean canNotWriteOneAttribute(final List<T> list) throws RaplaException
     {
-        final ClientFacade clientFacade = getClientFacade();
-        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         final PermissionController permissionController = raplaFacade.getPermissionController();
         final User user = clientFacade.getUser();
         for (T t : list)
@@ -262,7 +259,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     {
         tabSelector.setText( mainTabSelected ?
                 getInfoButton()
-                :getString("back")
+                :i18n.getString("back")
                 );
         tabSelector.setIcon( mainTabSelected ?
                 null
@@ -271,7 +268,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
     }
 
     private String getInfoButton() {
-        return getString("additional-view") + " / " +getString("permissions");
+        return i18n.getString("additional-view") + " / " +i18n.getString("permissions");
     }
     
     public boolean isMainTabSelected()

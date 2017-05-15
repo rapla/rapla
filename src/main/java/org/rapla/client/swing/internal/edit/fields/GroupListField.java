@@ -80,8 +80,8 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         final JScrollPane jScrollPane = new JScrollPane(list, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPane.setPreferredSize( new Dimension( 300, 150 ) );
         panel.add( jScrollPane, BorderLayout.CENTER );
-        newButton.setText( getString( "group" ) + " " + getString( "add" ) );
-        removeButton.setText( getString( "group" ) + " " + getString( "remove" ) );
+        newButton.setText( i18n.getString( "group" ) + " " + i18n.getString( "add" ) );
+        removeButton.setText( i18n.getString( "group" ) + " " + i18n.getString( "remove" ) );
         newButton.setIcon( raplaImages.getIconFromKey( "icon.new" ) );
         removeButton.setIcon( raplaImages.getIconFromKey( "icon.remove" ) );
         newCategory.addChangeListener( this );
@@ -100,7 +100,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
                 	Category category = (Category) value;
             		if ( value != null ) {
                         value = category.getPath( rootCategory
-                                                  , getI18n().getLocale());
+                                                  , i18n.getLocale());
                     }
                     Component component = super.getListCellRendererComponent(list,value,index,isSelected,cellHasFocus);
                     if (notAllList.contains( category))

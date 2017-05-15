@@ -9,7 +9,8 @@ import org.rapla.inject.InjectionContext;
  * @see org.rapla.entities.configuration.Preferences
  * @see OptionPanel
  * */
-@ExtensionPoint(context = InjectionContext.swing,id = "org.rapla.plugin.Option")
+@ExtensionPoint(context = InjectionContext.swing,id = PluginOptionPanel.ID)
 public interface PluginOptionPanel extends OptionPanel {
+    String ID ="org.rapla.plugin.Option";
 }
 

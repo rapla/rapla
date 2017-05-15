@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
-import org.rapla.server.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.storage.StorageOperator;
 
 public interface ServerServiceContainer extends Disposable

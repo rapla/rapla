@@ -77,8 +77,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
-        super(facade, i18n, raplaLocale, logger);
+	public PermissionField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
+        super(clientFacade, i18n, raplaLocale, logger);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
 
@@ -96,24 +96,24 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
              {pre,5,pre,5,pre}} // Rows
                                           ));
 
-        userSelect = new UserListField( facade, i18n, raplaLocale, logger );
-        userLabel = new JLabel(getString("user") + ":");
+        userSelect = new UserListField( clientFacade, i18n, raplaLocale, logger );
+        userLabel = new JLabel(i18n.getString("user") + ":");
         userPanel.add( userLabel, "0,0,l,f" );
         userPanel.add( userSelect.getComponent(),"2,0,l,f" );
 
-        Category rootCategory =   getQuery().getUserGroupsCategory();
+        Category rootCategory =  raplaFacade.getUserGroupsCategory();
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+                CategorySelectField field= new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {
-                CategoryListField field = new CategoryListField(facade, i18n, raplaLocale, logger, rootCategory);
+                CategoryListField field = new CategoryListField(clientFacade, i18n, raplaLocale, logger, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             }
-            userPanel.add( new JLabel(getString("group") + ":"), "0,2,l,f" );
+            userPanel.add( new JLabel(i18n.getString("group") + ":"), "0,2,l,f" );
             userPanel.add( groupSelect.getComponent(),"2,2,l,f" );
             groupSelect.addChangeListener( this );
            
@@ -122,13 +122,13 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
         reservationPanel = new JPanel();
         panel.add( reservationPanel , "0,2,f,f" );
-        reservationPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), getString("allocatable_in_timeframe") + ":" ));
+        reservationPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), i18n.getString("allocatable_in_timeframe") + ":" ));
         reservationPanel.setLayout( new TableLayout( new double[][]
             {{pre,3, pre, 5, pre, 5},  // Columns
              {pre, 5, pre}} // Rows
                                                      ));
 
-        reservationPanel.add( new JLabel( getString("start_date") + ":" ) , "0,0,l,f" );
+        reservationPanel.add( new JLabel( i18n.getString("start_date") + ":" ) , "0,0,l,f" );
         reservationPanel.add( startSelection , "2,0,l,f" );
         startSelection.setModel( createSelectionModel() );
         startSelection.setSelectedIndex( 0 );
@@ -139,7 +139,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         minAdvance = longFieldFactory.create(new Long(0) );
         reservationPanel.add( minAdvance.getComponent() , "4,0,l,f" );
 
-        reservationPanel.add( new JLabel( getString("end_date") + ":" ), "0,2,l,f" );
+        reservationPanel.add( new JLabel( i18n.getString("end_date") + ":" ), "0,2,l,f" );
         reservationPanel.add( endSelection , "2,2,l,f" );
         endSelection.setModel( createSelectionModel() );
         endSelection.setSelectedIndex( 0 );
@@ -150,8 +150,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         maxAdvance = longFieldFactory.create(new Long(1) );
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
-        userPanel.add( new JLabel(getString("permission.access") + ":"), "0,4,f,f" );
-        accessField = new ListField<Permission.AccessLevel>(facade, i18n, raplaLocale, logger, permissionLevels );
+        userPanel.add( new JLabel(i18n.getString("permission.access") + ":"), "0,4,f,f" );
+        accessField = new ListField<Permission.AccessLevel>(clientFacade, i18n, raplaLocale, logger, permissionLevels );
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
@@ -162,22 +162,22 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                    String key = intValue.name().toLowerCase();
                    if ( key.equalsIgnoreCase(Permission.CREATE.name()))
                    {
-                       String typeName = eventType ? getString("reservation") : getString("resource");
-                       value = getI18n().format("permission." + key, typeName );
+                       String typeName = eventType ? i18n.getString("reservation") : i18n.getString("resource");
+                       value = i18n.format("permission." + key, typeName );
                    }
                    else  if (key.equalsIgnoreCase(Permission.READ_TYPE.name()))
                    {
-                       String typeName = eventType ? getString("reservation_type") : getString("resource_type");
-                       value = getI18n().format("permission." + key, typeName );
+                       String typeName = eventType ? i18n.getString("reservation_type") : i18n.getString("resource_type");
+                       value = i18n.format("permission." + key, typeName );
                    }
                    else  if (key.equalsIgnoreCase(Permission.READ.name()) && permissionLevels.contains(Permission.READ_NO_ALLOCATION))
                    {
-                       value = getI18n().getString("permission.read_allocation"  );
+                       value = i18n.getString("permission.read_allocation"  );
                    }
                         
                    else
                    {
-                       value = getI18n().getString("permission." + key );
+                       value = i18n.getString("permission." + key );
                    }
 
                 }
@@ -216,9 +216,9 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     @SuppressWarnings("unchecked")
 	private DefaultComboBoxModel createSelectionModel() {
         DefaultComboBoxModel model = new DefaultComboBoxModel();
-        model.addElement(getString( "open" ) );
-        model.addElement(getString( "fixed_date") );
-        model.addElement(getString( "x_days_advance") );
+        model.addElement(i18n.getString( "open" ) );
+        model.addElement(i18n.getString( "fixed_date") );
+        model.addElement(i18n.getString( "x_days_advance") );
         return model;
     }
 
@@ -288,7 +288,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 permission.setMinAdvance( null );
             }
             if ( i == 1 ) {
-                Date today = getQuery().today();
+                Date today = raplaFacade.today();
                 permission.setStart( today );
                 startDate.setValue( today);
             } if ( i == 2 ) {
@@ -303,7 +303,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 permission.setMaxAdvance( null );
             }
             if ( i == 1 ) {
-                Date today = getQuery().today();
+                Date today = raplaFacade.today();
                 permission.setEnd( today );
                 endDate.setValue( today);
             } if ( i == 2 ) {
@@ -363,11 +363,11 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
     class UserListField extends ListField<User> {
 
-        public UserListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException{
-            super(facade, i18n, raplaLocale, logger, true);
-            User[] users = getQuery().getUsers();
+        public UserListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException{
+            super(clientFacade, i18n, raplaLocale, logger, true);
+            User[] users = raplaFacade.getUsers();
             List<User> asList = new ArrayList<User>(Arrays.asList(users ));
-            Collections.sort( asList, new NamedComparator<User>( getLocale()));
+            Collections.sort( asList, new NamedComparator<User>( i18n.getLocale()));
             setVector(asList);
         }
     }

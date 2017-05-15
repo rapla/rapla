@@ -75,7 +75,7 @@ public class DateChooserPanel extends RaplaGUIComponent
         nextButton.setSize(30, 20);
         
         periodChooser = new PeriodChooser(i18n, facade,PeriodChooser.START_ONLY);
-        dateSelection = createRaplaCalendar(dateRenderer, ioInterface);
+        dateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale,logger);
 
         //prevButton.setText("<");
         //nextButton.setText(">");

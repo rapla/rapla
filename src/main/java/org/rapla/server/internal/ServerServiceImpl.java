@@ -38,7 +38,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.server.servletpages.ServletRequestPreprocessor;
+import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;

@@ -28,6 +28,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
@@ -86,7 +87,7 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 		panel.setLayout(new BorderLayout());
 		panel.setOpaque(false);
 		field = new RaplaNumber(minimum, minimum, null, minimum == null);
-		addCopyPaste(field.getNumberField(), i18n, raplaLocale, ioInterface, logger);
+		RaplaGUIComponent.addCopyPaste(field.getNumberField(), i18n, raplaLocale, ioInterface, logger);
 		field.setColumns(8);
 		field.addChangeListener(this);
 		panel.add(field, BorderLayout.WEST);

@@ -8,8 +8,9 @@ import org.rapla.inject.InjectionContext;
 /** add your own wizard menus to create events. Use the CalendarSelectionModel service to get access to the current calendar
  * @see CalendarSelectionModel
  **/
-@ExtensionPoint(context = InjectionContext.swing,id="org.rapla.client.swing.gui.ReservationWizardExtension")
+@ExtensionPoint(context = InjectionContext.swing,id = ReservationWizardExtension.ID)
 public interface ReservationWizardExtension extends IdentifiableMenuEntry
 {
+    String ID = "org.rapla.client.swing.gui.ReservationWizardExtension";
     boolean isEnabled();
 }

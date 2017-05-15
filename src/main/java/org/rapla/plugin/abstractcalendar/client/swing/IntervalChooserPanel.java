@@ -95,8 +95,8 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         periodChooser = new PeriodChooser(i18n, facade, PeriodChooser.START_AND_END);
         periodChooser.setWeekOfPeriodVisible(false);
 
-        startDateSelection = createRaplaCalendar(dateRenderer, ioInterface);
-        endDateSelection = createRaplaCalendar(dateRenderer, ioInterface);
+        startDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale, logger);
+        endDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale, logger);
         //prevButton.setText("<");
         //nextButton.setText(">");
         double pre = TableLayout.PREFERRED;

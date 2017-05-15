@@ -225,7 +225,7 @@ public class RaplaComponent
     /** lookupDeprecated PeriodModel from the serviceManager */
     protected PeriodModel getPeriodModel() {
     	try {
-    		return getQuery().getPeriodModel();
+    		return facade.getPeriodModel();
     	} catch (RaplaException ex) {
     		throw new UnsupportedOperationException("Service not supported in this context: " );
     	}
@@ -274,10 +274,6 @@ public class RaplaComponent
 		return false;
 	}
 
-    protected Date getStartDate(CalendarModel model, User user)
-    {
-        return getStartDate( model, facade, user);
-    }
     public static Date getStartDate(CalendarModel model, RaplaFacade raplaFacade, User user) {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
         Date startDate = null;

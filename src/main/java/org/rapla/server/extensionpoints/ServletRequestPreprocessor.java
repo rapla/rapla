@@ -1,4 +1,4 @@
-package org.rapla.server.servletpages;
+package org.rapla.server.extensionpoints;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;

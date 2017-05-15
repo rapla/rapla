@@ -21,7 +21,7 @@ public class EditTaskViewGwt implements EditTaskPresenter.EditTaskView
 
     }
 
-    @Override public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit, String title, Consumer<Collection<T>> save, Runnable close, boolean isMerge)
+    @Override public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit,  Consumer<Collection<T>> save, Runnable close, boolean isMerge)
             throws RaplaException
     {
         return null;

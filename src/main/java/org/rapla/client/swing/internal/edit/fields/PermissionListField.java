@@ -73,10 +73,10 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 		this.permissionField = permissionFieldFactory.create();
 		super.setFieldName(fieldName);
 		jPanel.setLayout(new BorderLayout());
-		listEdit = raplaListEditFactory.create(getI18n(), permissionField.getComponent(), listener);
+		listEdit = raplaListEditFactory.create(i18n, permissionField.getComponent(), listener);
 		jPanel.add(listEdit.getComponent(), BorderLayout.CENTER);
 		
-		jPanel.setBorder(BorderFactory.createTitledBorder(new EmptyLineBorder(), getString("permissions")));
+		jPanel.setBorder(BorderFactory.createTitledBorder(new EmptyLineBorder(), i18n.getString("permissions")));
 		permissionField.addChangeListener(listener);
 	}
 
@@ -188,12 +188,12 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 			    
 			    Permission p = (Permission) value;
 				if (p.getUser() != null) {
-					value = getString("user") + " " + p.getUser().getUsername();
+					value = i18n.getString("user") + " " + p.getUser().getUsername();
 				} else if (p.getGroup() != null) {
-					value = getString("group") + " "
-							+ p.getGroup().getName(getI18n().getLocale());
+					value = i18n.getString("group") + " "
+							+ p.getGroup().getName(i18n.getLocale());
 				} else {
-					value = getString("all_users");
+					value = i18n.getString("all_users");
 				}
 				value = (index + 1) + ") " + value;
 				Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

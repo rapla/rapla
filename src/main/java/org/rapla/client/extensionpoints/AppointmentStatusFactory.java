@@ -10,7 +10,8 @@ import org.rapla.inject.InjectionContext;
  * provide an AppointmentStatusFactory to add your own footer to the appointment edit
  @see AppointmentStatusFactory
   * */
-@ExtensionPoint(context = InjectionContext.swing,id = "appointmentstatus")
+@ExtensionPoint(context = InjectionContext.swing,id = AppointmentStatusFactory.ID)
 public interface AppointmentStatusFactory {
+	String ID = "appointmentstatus";
 	RaplaWidget createStatus(ReservationEdit reservationEdit) throws RaplaException;
 }

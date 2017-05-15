@@ -26,6 +26,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -57,7 +58,7 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
                 field.setEnabled(enabled);
             }
         };
-        field = createRaplaCalendar(dateRenderer, ioInterface);
+        field = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale,logger);
         panel.setLayout(new BorderLayout());
         panel.add(field,BorderLayout.WEST);
         panel.add( multipleValuesLabel, BorderLayout.CENTER);

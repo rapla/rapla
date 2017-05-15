@@ -39,24 +39,27 @@ import org.rapla.inject.InjectionContext;
 
 @Singleton
 @DefaultImplementation(of=DateRenderer.class,context = { InjectionContext.swing,InjectionContext.server})
-public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
+public class RaplaDateRenderer implements DateRenderer {
     protected WeekendHighlightRenderer renderer = new WeekendHighlightRenderer();
     protected Color periodColor = new Color(0xc5,0xda,0xdd);
     protected PeriodModel periodModel;
 
+    private final RaplaLocale raplaLocale;
+    private final RaplaFacade facade;
+
     @Inject
-    public RaplaDateRenderer(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
-        super(facade, i18n, raplaLocale, logger);
+    public RaplaDateRenderer(RaplaFacade facade, RaplaLocale raplaLocale) {
+        this.facade = facade;
+        this.raplaLocale = raplaLocale;
         periodModel = getPeriodModel();
     }
 
-    @Override
     protected PeriodModel getPeriodModel() {
         try {
-            PeriodModel model = getQuery().getPeriodModel("feiertag");
+            PeriodModel model = facade.getPeriodModel("feiertag");
             if ( model == null)
             {
-                return getQuery().getPeriodModel();
+                return facade.getPeriodModel();
             }
             return model;
         } catch (RaplaException ex) {
@@ -67,7 +70,7 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
     
     public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year)
     {
-        final Date date = getRaplaLocale().toRaplaDate(year, month, day);
+        final Date date = raplaLocale.toRaplaDate(year, month, day);
         Period period = periodModel.getPeriodFor(date);
         final RenderingInfo renderingInfo = renderer.getRenderingInfo(dayOfWeek, day, month, year);
         if (period != null)
@@ -95,7 +98,7 @@ public class RaplaDateRenderer extends RaplaComponent implements DateRenderer {
             {
 
             }
-            String tooltipText = "<html>" +  period.getName(getI18n().getLocale()) + "</html>";
+            String tooltipText = "<html>" +  period.getName(raplaLocale.getLocale()) + "</html>";
             return new RenderingInfo(backgroundColor, foregroundColor, tooltipText);
         }
         return renderingInfo;

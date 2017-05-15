@@ -98,8 +98,8 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
         field1.addActionListener(this);
         field2.addActionListener(this);
 
-        field1.setText(getString("yes"));
-        field2.setText(getString("no"));
+        field1.setText(i18n.getString("yes"));
+        field2.setText(i18n.getString("no"));
         field1.addFocusListener(this);
 
     }

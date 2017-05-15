@@ -4,7 +4,8 @@ import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
 
-@ExtensionPoint(context = InjectionContext.swing,id="ViewMenuInsert")
+@ExtensionPoint(context = InjectionContext.swing,id=ViewMenuExtension.ID)
 public interface ViewMenuExtension extends IdentifiableMenuEntry
 {
+    String ID = "ViewMenuInsert";
 }

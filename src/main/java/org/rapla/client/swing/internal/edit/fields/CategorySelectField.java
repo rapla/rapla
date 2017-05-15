@@ -43,7 +43,7 @@ public class CategorySelectField extends AbstractSelectField<Category>
     @Override
 	protected String getNodeName(Category selectedCategory)
 	{
-		return selectedCategory.getPath(rootCategory,getI18n().getLocale());
+		return selectedCategory.getPath(rootCategory,i18n.getLocale());
 	}
 
     @Override

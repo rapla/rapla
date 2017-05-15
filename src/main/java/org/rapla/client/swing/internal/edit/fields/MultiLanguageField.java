@@ -34,8 +34,10 @@ import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
@@ -73,7 +75,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
         textField = textFieldFactory.create("name");
-        availableLanguages = getRaplaLocale().getAvailableLanguages().toArray(new String[0]);
+        availableLanguages = raplaLocale.getAvailableLanguages().toArray(new String[0]);
         panel.setLayout(new BorderLayout());
         panel.add(textField.getComponent(), BorderLayout.CENTER);
         panel.add(button, BorderLayout.EAST);
@@ -96,7 +98,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     {
         if (name != null)
         {
-            name.setName(getI18n().getLang(), textField.getValue());
+            name.setName(i18n.getLang(), textField.getValue());
             fireContentChanged();
         }
     }
@@ -134,7 +136,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     public void setValue(MultiLanguageName object)
     {
         this.name = object;
-        textField.setValue(name.getName(getI18n().getLang()));
+        textField.setValue(name.getName(i18n.getLang()));
     }
 
     public JComponent getComponent()
@@ -167,7 +169,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
             table.setModel(new TranslationTableModel(editorValue));
             table.getColumnModel().getColumn(0).setPreferredWidth(30);
             table.getColumnModel().getColumn(1).setPreferredWidth(200);
-            label.setText(getI18n().format("translation.format", editorValue));
+            label.setText(i18n.format("translation.format", editorValue));
         }
 
         public Object getEditorValue()
@@ -182,8 +184,9 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
         public void show() throws RaplaException
         {
-            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null), true, comp, new String[] { getString("ok"), getString("cancel") });
-            dlg.setTitle(getString("translation"));
+            PopupContext popupContext = dialogUiFactory.createPopupContext( ()->owner);
+            DialogInterface dlg = dialogUiFactory.create(popupContext, true, comp, new String[] { i18n.getString("ok"), i18n.getString("cancel") });
+            dlg.setTitle(i18n.getString("translation"));
             // Workaround for Bug ID  4480264 on developer.java.sun.com
             if (table.getRowCount() > 0)
             {
@@ -204,7 +207,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
                     if (table.getEditingColumn() == 1)
                     {
                         JTextField textField = (JTextField) table.getEditorComponent();
-                        addCopyPaste(textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+                        RaplaGUIComponent.addCopyPaste(textField, i18n, raplaLocale, ioInterface, logger);
                         int row = table.getEditingRow();
                         String value = textField.getText();
                         editorValue.setName(availableLanguages[row], value);
@@ -226,8 +229,8 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         public TranslationTableModel(MultiLanguageName name)
         {
             super();
-            addColumn(getString("language"));
-            addColumn(getString("translation"));
+            addColumn(i18n.getString("language"));
+            addColumn(i18n.getString("translation"));
             Collection<String> trans = name.getAvailableLanguages();
             for (int i = 0; i < availableLanguages.length; i++)
             {

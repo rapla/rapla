@@ -97,7 +97,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         useDefault = defaultValue != null;
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
-        selectButton.setText(getString("select"));
+        selectButton.setText(i18n.getString("select"));
         selectButton.setIcon(raplaImages.getIconFromKey("icon.tree"));
         panel.setLayout( new BoxLayout(panel, BoxLayout.X_AXIS));
         panel.add( selectButton);
@@ -198,7 +198,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         } 
         else 
         {
-            text = getString("nothing_selected");
+            text = i18n.getString("nothing_selected");
         }
         selectText.setText(text);
         multipleValues = false;
@@ -271,7 +271,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         
         if (useDefault)
         {
-            JButton defaultButton = new JButton(getString("defaultselection"));
+            JButton defaultButton = new JButton(i18n.getString("defaultselection"));
             panel.add( defaultButton,  BorderLayout.CENTER);
             defaultButton.setPreferredSize(new Dimension(100, 20));
             defaultButton.addActionListener( new ActionListener() {
@@ -284,7 +284,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         
         if (useNull)
         {
-            JButton emptyButton = new JButton(getString("nothing_selected"));
+            JButton emptyButton = new JButton(i18n.getString("nothing_selected"));
             panel.add( emptyButton, BorderLayout.PAGE_END);
             emptyButton.setPreferredSize(new Dimension(100, 20));
             emptyButton.addActionListener( new ActionListener() {
@@ -300,7 +300,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                 new SwingPopupContext(parent, null)
                                  ,true
                                  ,panel
-                                 ,new String[] { getString("apply"),getString("cancel")});
+                                 ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
 
         final Collection<T> newValues = new LinkedHashSet<T>();
         tree.addMouseListener(new MouseAdapter() {
@@ -322,7 +322,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                 }
             }
         });
-        dialog.setTitle(getString("select"));
+        dialog.setTitle(i18n.getString("select"));
         dialog.start(true);
         tree.requestFocus();
         // we did a double clidk

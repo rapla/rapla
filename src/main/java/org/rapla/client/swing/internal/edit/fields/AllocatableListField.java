@@ -30,15 +30,15 @@ public class AllocatableListField extends ListField<Allocatable>
 {
     DynamicType dynamicTypeConstraint;
 
-    public AllocatableListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DynamicType dynamicTypeConstraint)
+    public AllocatableListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DynamicType dynamicTypeConstraint)
             throws RaplaException
     {
-        super(facade, i18n, raplaLocale, logger, true);
+        super(clientFacade, i18n, raplaLocale, logger, true);
         this.dynamicTypeConstraint = dynamicTypeConstraint;
         ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
         ClassificationFilter[] filters = new ClassificationFilter[] { filter };
-        Allocatable[] allocatables = getQuery().getAllocatables(filters);
-        Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(getLocale()));
+        Allocatable[] allocatables = raplaFacade.getAllocatables(filters);
+        Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(raplaLocale.getLocale()));
         list.addAll(Arrays.asList(allocatables));
         setVector(list);
     }

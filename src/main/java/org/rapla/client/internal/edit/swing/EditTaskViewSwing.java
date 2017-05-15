@@ -46,7 +46,7 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
     }
 
     @Override
-    public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String titleI18n, Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException
+    public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit, Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException
     {
         final EditComponent<T, JComponent> ui;
         {
@@ -104,9 +104,6 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
         buttonsPanel.add(saveButton);
         buttonsPanel.add(cancelButton);
         jPanel.add(buttonsPanel, BorderLayout.SOUTH);
-        JLabel header = new JLabel();
-        jPanel.add(header, BorderLayout.NORTH);
-        header.setText(titleI18n);
         return () -> jPanel;
     }
 

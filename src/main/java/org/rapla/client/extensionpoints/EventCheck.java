@@ -13,9 +13,10 @@ import org.rapla.scheduler.Promise;
 /** performs a check, if the reservation is entered correctly. An example of a reservation check is the conflict checker
  *  you can add an interactive check when the user stores a reservation
  **/
-@ExtensionPoint(id="eventcheck",context = InjectionContext.swing)
+@ExtensionPoint(context = InjectionContext.swing, id = EventCheck.ID)
 public interface EventCheck 
 {
+    String ID="eventcheck";
     /** @param sourceComponent 
      * @return true if the reservation check is successful and false if the save dialog should be aborted*/
     Promise<Boolean> check(Collection<Reservation> reservation, PopupContext sourceComponent);

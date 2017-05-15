@@ -14,8 +14,6 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.client.internal.SaveUndo;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -41,14 +39,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.function.Consumer;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
-import org.rapla.plugin.merge.client.extensionpoints.MergeCheckExtension;
+import org.rapla.client.extensionpoints.MergeCheckExtension;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,7 +88,7 @@ public class EditTaskPresenter implements TaskPresenter
 
     public interface EditTaskView
     {
-        <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String title,Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException;
+        <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException;
     }
 
     @Inject
@@ -123,11 +120,11 @@ public class EditTaskPresenter implements TaskPresenter
             if (taskId.equals(EDIT_RESOURCES_ID) || taskId.equals(EDIT_EVENTS_ID) || isMerge)
             {
                 final ApplicationEventContext context = applicationEvent.getContext();
-                Collection<Entity> entities = new LinkedHashSet<>();
+                Collection<Entity> entities;
                 if (context != null && context instanceof EditApplicationEventContext)
                 {
                     final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
-                    entities.addAll(editApplicationEventContext.getSelectedObjects());
+                    entities=editApplicationEventContext.getSelectedObjects();
                     appointmentBlock = editApplicationEventContext.getAppointmentBlock();
                     if (appointmentBlock != null)
                     {
@@ -137,8 +134,9 @@ public class EditTaskPresenter implements TaskPresenter
                 }
                 else
                 {
-                    String[] ids = ((String) info).split(",");
+                    entities = new LinkedHashSet<>();
                     Class<? extends Entity> clazz = taskId.equals(EDIT_EVENTS_ID) ?  Reservation.class: Allocatable.class;
+                    String[] ids =  info.split(",");
                     for (String id : ids)
                     {
                         Entity<?> resolve;
@@ -148,7 +146,7 @@ public class EditTaskPresenter implements TaskPresenter
                         }
                         catch (EntityNotFoundException e)
                         {
-                            return new ResolvedPromise<RaplaWidget>(e);
+                            return new ResolvedPromise<>(e);
                         }
                         entities.add(resolve);
                     }
@@ -162,9 +160,8 @@ public class EditTaskPresenter implements TaskPresenter
                     }
                 }
 
-                String title = null;
-                RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, applicationEvent);
-                return new ResolvedPromise<RaplaWidget>(edit);
+                RaplaWidget<?> edit = createEditDialog(entities,  popupContext, applicationEvent);
+                return new ResolvedPromise<>(edit);
             }
             else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))
             {
@@ -179,8 +176,8 @@ public class EditTaskPresenter implements TaskPresenter
                 final List<Reservation> singletonList = Collections.singletonList(r);
                 List<Reservation> list = RaplaComponent.addAllocatables(model, singletonList, user);
                 String title = null;
-                final RaplaWidget<?> editDialog = createEditDialog(list, title, popupContext, applicationEvent);
-                return new ResolvedPromise<RaplaWidget>(editDialog);
+                final RaplaWidget<?> editDialog = createEditDialog(list,  popupContext, applicationEvent);
+                return new ResolvedPromise<>(editDialog);
             }
             else if (CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
             {
@@ -218,19 +215,18 @@ public class EditTaskPresenter implements TaskPresenter
                         app.move(app.getStart(), end);
                     }
                     List<Reservation> list = RaplaComponent.addAllocatables(model, newReservations, user);
-                    String title = null;
-                    return createEditDialog(list, title, popupContext, applicationEvent);
+                    return createEditDialog(list, popupContext, applicationEvent);
                 });
                 return widgetPromise;
             }
             else
             {
-                return new ResolvedPromise<RaplaWidget>(new RaplaException("Unknow taskId" + taskId));
+                return new ResolvedPromise<>(new RaplaException("Unknow taskId" + taskId));
             }
         }
         catch (RaplaException e)
         {
-            return new ResolvedPromise<RaplaWidget>(e);
+            return new ResolvedPromise<>(e);
         }
     }
 
@@ -319,7 +315,7 @@ public class EditTaskPresenter implements TaskPresenter
             return null;
     }
 
-    private <T extends Entity> RaplaWidget createEditDialog(Collection<T> list, String title, PopupContext popupContext, ApplicationEvent applicationEvent)
+    private <T extends Entity> RaplaWidget createEditDialog(Collection<T> list,  PopupContext popupContext, ApplicationEvent applicationEvent)
             throws RaplaException
     {
         boolean isMerge = applicationEvent.getApplicationEventId().equals(MERGE_RESOURCES_ID);
@@ -327,11 +323,7 @@ public class EditTaskPresenter implements TaskPresenter
         {
             throw new RaplaException("Empty list not allowed. You must have at least one entity to edit.");
         }
-        if (title == null)
-        {
-            title = guessTitle(list);
 
-        }
         //		checks if all entities are from the same type; otherwise return
         if (getRaplaType(list) == null)
         {
@@ -468,9 +460,7 @@ public class EditTaskPresenter implements TaskPresenter
                     return c;
                 }
             }
-            //getString("merge");
-            String titleI18n = i18n.format("edit.format", title);
-            final RaplaWidget raplaWidget = editTaskView.doSomething(toEdit, titleI18n, saveCmd, closeCmd, isMerge);
+            final RaplaWidget raplaWidget = editTaskView.doSomething(toEdit, saveCmd, closeCmd, isMerge);
             return raplaWidget;
         }
         return null;

@@ -222,7 +222,12 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
             throw new RaplaInitializationException(e1);
         }
     }
-    
+
+    private RaplaCalendar createRaplaCalendar(DateRenderer dateRenderer, IOInterface ioInterface)
+    {
+        return RaplaGUIComponent.createRaplaCalendar(dateRenderer,ioInterface,getI18n(), getRaplaLocale(), getLogger());
+    }
+
     public Date getSourceStart()
     {
     	return sourceBegin.getDate();

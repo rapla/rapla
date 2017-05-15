@@ -53,7 +53,7 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
     @Override
 	protected String getNodeName(Allocatable selectedAllocatable)
 	{
-		return selectedAllocatable.getName(getI18n().getLocale());
+		return selectedAllocatable.getName(i18n.getLocale());
 	}
 
     @Override
@@ -84,11 +84,11 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
         {
 			ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
             ClassificationFilter[] filters = new ClassificationFilter[] {filter};
-            allocatables = getQuery().getAllocatables(filters);
+            allocatables = raplaFacade.getAllocatables(filters);
         }
         else
         {
-            allocatables = getQuery().getAllocatables();
+            allocatables = raplaFacade.getAllocatables();
         }
 		return allocatables;
 	}

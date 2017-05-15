@@ -13,6 +13,9 @@
 
 package org.rapla.client.swing.gui.edit.test;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -46,8 +49,10 @@ import org.rapla.scheduler.CommandScheduler;
 
 import java.util.Collections;
 
+@RunWith(JUnit4.class)
 public final class PermissionEditTest extends GUITestCase
 {
+    @Test
     public void testMain() throws Exception {
         final Logger logger = getLogger();
         final DefaultBundleManager bundleManager = new DefaultBundleManager();
@@ -62,7 +67,7 @@ public final class PermissionEditTest extends GUITestCase
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger );
         InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
         TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), infoFactory, raplaImages);
-        DateRenderer dateRenderer = new RaplaDateRenderer(getFacade().getRaplaFacade(), i18n, getRaplaLocale(), getLogger());
+        DateRenderer dateRenderer = new RaplaDateRenderer(getFacade().getRaplaFacade(),  getRaplaLocale());
         RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages);
         DateFieldFactory dateFieldFactory = new DateFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), dateRenderer, ioInterface);
         LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);

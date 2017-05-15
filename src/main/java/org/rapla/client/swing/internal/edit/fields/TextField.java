@@ -37,6 +37,7 @@ import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.ClientFacade;
@@ -84,7 +85,7 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         {
             field = new JTextField(columns);
         }
-        addCopyPaste(field, i18n, raplaLocale, ioInterface, logger);
+        RaplaGUIComponent.addCopyPaste(field, i18n, raplaLocale, ioInterface, logger);
         field.addFocusListener(this);
         field.addKeyListener(this);
         field.setDisabledTextColor(Color.black);
@@ -116,7 +117,7 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
             ((JTextArea) field).setColumns(7);
         }
         colorPanel.add(colorChooserBtn, BorderLayout.EAST);
-        colorChooserBtn.setText(getString("change"));
+        colorChooserBtn.setText(i18n.getString("change"));
         colorChooserBtn.addActionListener(new ActionListener()
         {
 

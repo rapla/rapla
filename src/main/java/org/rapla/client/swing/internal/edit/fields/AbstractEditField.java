@@ -20,8 +20,8 @@ import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
@@ -30,17 +30,26 @@ import org.rapla.logger.Logger;
     A fieldName "username" will result in a getUsername() and setUsername()
     method.
 */
-public abstract class AbstractEditField extends RaplaGUIComponent
-    implements EditField
+public abstract class AbstractEditField implements EditField
 
 {
     String fieldName;
     ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    protected final ClientFacade clientFacade;
+    protected final RaplaFacade raplaFacade;
+    protected final RaplaResources i18n;
+    protected final RaplaLocale raplaLocale;
+    protected final Logger logger;
 
-    public AbstractEditField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public AbstractEditField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
-        super(facade, i18n, raplaLocale, logger);
+        this.clientFacade = clientFacade;
+        this.raplaFacade = clientFacade.getRaplaFacade();
+        this.i18n = i18n;
+        this.raplaLocale = raplaLocale;
+        this.logger = logger;
     }
+
 
     public void addChangeListener(ChangeListener listener) {
         listenerList.add(listener);

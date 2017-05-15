@@ -32,11 +32,11 @@ import javax.swing.MenuElement;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.edit.EditTaskPresenter;
-import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -61,7 +61,7 @@ import com.google.web.bindery.event.shared.EventBus;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
-@Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard extends RaplaGUIComponent
+@Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard
         implements ReservationWizardExtension, ActionListener, ModificationListener
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
@@ -70,17 +70,27 @@ import com.google.web.bindery.event.shared.EventBus;
     private final RaplaImages raplaImages;
     private final PermissionController permissionController;
     private final EventBus eventBus;
+    protected final ClientFacade clientFacade;
+    protected final RaplaFacade raplaFacade;
+    protected final RaplaLocale raplaLocale;
+    protected final Logger logger;
+    protected final RaplaResources i18n;
+    protected final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-            RaplaImages raplaImages, EventBus eventBus) throws RaplaInitializationException
+            RaplaImages raplaImages, EventBus eventBus, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
-        super(clientFacade, i18n, raplaLocale, logger);
+        this.logger = logger;
+        this.i18n = i18n;
+        this.clientFacade = clientFacade;
+        this.raplaFacade = clientFacade.getRaplaFacade();
+        this.raplaLocale = raplaLocale;
         this.model = model;
         this.raplaImages = raplaImages;
-        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        this.dialogUiFactory = dialogUiFactory;
         this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
-        getUpdateModule().addModificationListener(this);
+        clientFacade.addModificationListener(this);
         try
         {
             templateNames = updateTemplateNames();
@@ -108,7 +118,7 @@ import com.google.web.bindery.event.shared.EventBus;
     {
         try
         {
-            return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+            return raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
         }
         catch (RaplaException e)
         {
@@ -120,13 +130,8 @@ import com.google.web.bindery.event.shared.EventBus;
     {
 
         List<Allocatable> templates = new ArrayList<Allocatable>();
-        User user = getUser();
-        for (Allocatable template : getQuery().getTemplates())
+        for (Allocatable template : raplaFacade.getTemplates())
         {
-            if (user.isAdmin())
-            {
-                template.getPermissionList();
-            }
             templates.add(template);
         }
         return templates;
@@ -155,11 +160,11 @@ import com.google.web.bindery.event.shared.EventBus;
         User user;
         try
         {
-            user = getUser();
+            user = clientFacade.getUser();
         }
         catch (RaplaException e)
         {
-            getLogger().error("Error creating menu element for TemplateWizard: "+e.getMessage(), e);
+            logger.error("Error creating menu element for TemplateWizard: "+e.getMessage(), e);
             return null;
         }
         boolean canCreateReservation = permissionController.canCreateReservation(user);
@@ -168,12 +173,11 @@ import com.google.web.bindery.event.shared.EventBus;
         {
             return null;
         }
-        final RaplaLocale raplaLocale = getRaplaLocale();
         if (templateNames.size() == 1)
         {
             Allocatable template = templateNames.iterator().next();
             RaplaMenuItem item = new TemplateMenuItem(getId(), template);
-            item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
+            item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
             final String templateName = template.getName(getLocale());
             item.setText(getSingleTemplateName(templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
@@ -183,7 +187,7 @@ import com.google.web.bindery.event.shared.EventBus;
         else
         {
             RaplaMenu item = new RaplaMenu(getId());
-            item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
+            item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
             item.setText(getMultipleTemplateName());
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
             @SuppressWarnings("unchecked") Comparator<String> collator = (Comparator<String>) (Comparator) Collator.getInstance(raplaLocale.getLocale());
@@ -251,12 +255,12 @@ import com.google.web.bindery.event.shared.EventBus;
 
     protected String getMultipleTemplateName()
     {
-        return getString("new_reservations_from_template");
+        return i18n.getString("new_reservations_from_template");
     }
 
     protected String getSingleTemplateName(String templateName)
     {
-        return getI18n().format("new_reservation.format", templateName);
+        return i18n.format("new_reservation.format", templateName);
     }
 
     public void addTemplates(RaplaMenu item, Set<String> templateSet, Map<String, Collection<Allocatable>> templateMap)
@@ -341,10 +345,15 @@ import com.google.web.bindery.event.shared.EventBus;
 
     }
 
+    protected Locale getLocale()
+    {
+        return raplaLocale.getLocale();
+    }
+
     protected void createWithTemplate(TemplateMenuItem source, Allocatable template)
     {
         final String id = template.getId();
-        PopupContext popupContext = createPopupContext( source.getComponent(), null);
+        PopupContext popupContext = dialogUiFactory.createPopupContext( ()->source.getComponent());
         ApplicationEventContext context = null;
         eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext, context));
     }

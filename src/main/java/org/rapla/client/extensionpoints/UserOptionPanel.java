@@ -8,9 +8,11 @@ import org.rapla.inject.InjectionContext;
  * @see org.rapla.entities.configuration.Preferences
  * @see OptionPanel
  * */
-@ExtensionPoint(context = InjectionContext.swing,id = "org.rapla.UserOptions")
+@ExtensionPoint(context = InjectionContext.swing,id = UserOptionPanel.ID)
 public interface UserOptionPanel extends OptionPanel {
-    
+
+    String ID = "org.rapla.UserOptions";
+
     boolean isEnabled();
     
 }
