@@ -423,7 +423,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() -> {
             boolean excludeExceptions = false;
-            final HashSet<Reservation> reservationSet = new HashSet<Reservation>();
             final Collection<Allocatable> allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables( null): allocatables;
             Map<Allocatable, Collection<Appointment>> result = new LinkedHashMap<Allocatable, Collection<Appointment>>();
             boolean isResourceTemplate = allocs.size() == 1 && (allocs.iterator().next().getClassification().getType().getKey().equals(RAPLA_TEMPLATE));
@@ -451,16 +450,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     else if (RaplaComponent.isTemplate(reservation) && !isResourceTemplate)
                     {
                         // FIXME this special case should be refactored, so one can get all reservations in one method
-
                         continue;
                     }
                     if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
                     {
                         continue;
-                    }
-                    if (!reservationSet.contains(reservation))
-                    {
-                        reservationSet.add(reservation);
                     }
                     Collection<Appointment> appointmentCollection = result.get(allocatable);
                     if (appointmentCollection == null)

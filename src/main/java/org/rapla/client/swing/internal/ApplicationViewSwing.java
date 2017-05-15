@@ -3,21 +3,21 @@ package org.rapla.client.swing.internal;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
-import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
-import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -27,6 +27,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import java.awt.BorderLayout;
@@ -37,8 +38,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.Window;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
@@ -64,12 +63,15 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     private final RaplaImages raplaImages;
     private final FrameControllerList frameControllerList;
     private final DialogUiFactoryInterface dialogUiFactory;
+    CommandScheduler scheduler;
 
     @Inject
-    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger, RaplaMenuBar raplaMenuBar,
-            RaplaImages raplaImages, FrameControllerList frameControllerList, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+    public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger,
+            RaplaMenuBar raplaMenuBar, CommandScheduler scheduler, RaplaImages raplaImages, FrameControllerList frameControllerList,
+            DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.i18n = i18n;
+        this.scheduler = scheduler;
         this.logger = logger;
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
@@ -110,7 +112,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         {
             if (!presenter.mainClosing())
             {
-                throw new PropertyVetoException("Should not close",evt);
+                throw new PropertyVetoException("Should not close", evt);
             }
         });
         frameControllerList.setMainWindow(frame);
@@ -145,7 +147,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         Color c = label.getForeground();
         while (alpha <= 230)
         {
-            alpha += 25;
+            alpha += 50;
             final Color color = new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha);
             label.setForeground(color);
             label.repaint();
@@ -158,7 +160,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         Color c = label.getForeground();
         while (alpha > 0)
         {
-            alpha -= 25;
+            alpha -= 50;
             final Color color = new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha);
             label.setForeground(color);
             label.repaint();
@@ -168,35 +170,22 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     @Override
     public void setStatusMessage(String message, boolean highlight)
     {
-        fadeOut(statusBar);
-        try
+        SwingUtilities.invokeLater(() ->
         {
-            Thread.sleep(200);
-        }
-        catch (InterruptedException e)
-        {
-            logger.info(e.getMessage());
-        }
-        statusBar.setText(message);
-        final Font boldFont = statusBar.getFont().deriveFont(Font.BOLD);
-        statusBar.setFont(boldFont);
-        if (highlight)
-        {
-            statusBar.setForeground(new Color(220, 30, 30));
-        }
-        else
-        {
-            statusBar.setForeground(new Color(30, 30, 30));
-        }
-        fadeIn(statusBar);
-        try
-        {
-            Thread.sleep(200);
-        }
-        catch (InterruptedException e)
-        {
-            logger.info(e.getMessage());
-        }
+            fadeOut(statusBar);
+            statusBar.setText(message);
+            final Font boldFont = statusBar.getFont().deriveFont(Font.BOLD);
+            statusBar.setFont(boldFont);
+            if (highlight)
+            {
+                statusBar.setForeground(new Color(220, 30, 30));
+            }
+            else
+            {
+                statusBar.setForeground(new Color(30, 30, 30));
+            }
+            SwingUtilities.invokeLater(() -> fadeIn(statusBar));
+        });
     }
 
     @Override
@@ -245,9 +234,9 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         JComponent component = widget.getComponent();
         final JPanel contentPane = getContentPane();
         final Component[] components = contentPane.getComponents();
-        for (Component comp:components)
+        for (Component comp : components)
         {
-            if ( comp == component)
+            if (comp == component)
             {
                 return;
             }
@@ -269,7 +258,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     {
         return (JComponent) frame.getContentPane();
     }
-
 
     public void close()
     {
@@ -305,14 +293,15 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget,Function<ApplicationEvent,Boolean> windowClosing)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget,
+            Function<ApplicationEvent, Boolean> windowClosing)
     {
         final RaplaFrame dialog = new RaplaFrame(frameControllerList);
         final Container component = (Container) objectRaplaWidget.getComponent();
         dialog.setContentPane(component);
         dialog.setIconImage(raplaImages.getIconFromKey("icon.edit_window_small").getImage());
-        dialog.setSize(1050,700);
-        childFrames.put(windowId,dialog);
+        dialog.setSize(1050, 700);
+        childFrames.put(windowId, dialog);
         dialog.addVetoableChangeListener(new VetoableChangeListener()
         {
             @Override
@@ -322,9 +311,9 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
                 final ApplicationEvent applicationEvent = new ApplicationEvent(windowId.getApplicationEventId(), windowId.getInfo(),
                         new SwingPopupContext(component, null), null);
                 logger.debug("Closing");
-                if ( windowClosing.apply( applicationEvent))
+                if (windowClosing.apply(applicationEvent))
                 {
-                     dialog.dispose();
+                    dialog.dispose();
                 }
                 else
                 {
@@ -332,9 +321,8 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
                 }
             }
         });
-        dialog.setVisible( true);
+        dialog.setVisible(true);
     }
-
 
     @Override
     public void requestFocus(ApplicationEvent windowId)

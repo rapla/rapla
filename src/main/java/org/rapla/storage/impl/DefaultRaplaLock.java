@@ -37,7 +37,8 @@ public class DefaultRaplaLock implements RaplaLock
     @Override
     public ReadLock readLock(int seconds) throws RaplaException
     {
-        StackTraceElement[] stackTrace = getStackTrace();
+        // Enabling the stack trace is a huge performance cost
+        StackTraceElement[] stackTrace = new StackTraceElement[] {};//getStackTrace();
         final long currentTime = System.currentTimeMillis();
         final Lock lock = lock(this.readWriteLock.readLock(), seconds, true);
         final ReadLock readLock = new ReadLock(lock, stackTrace, currentTime);

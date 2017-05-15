@@ -15,6 +15,7 @@ import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -40,12 +41,14 @@ import org.rapla.framework.RaplaException;
 import org.rapla.function.Consumer;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
+import org.rapla.plugin.merge.client.extensionpoints.MergeCheckExtension;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,6 +65,7 @@ import java.util.Set;
         @Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class),
         @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class),
         @Extension(id = EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, provides = TaskPresenter.class),
+        @Extension(id = EditTaskPresenter.MERGE_RESOURCES_ID, provides = TaskPresenter.class)
 })
 public class EditTaskPresenter implements TaskPresenter
 {
@@ -75,6 +79,7 @@ public class EditTaskPresenter implements TaskPresenter
 
     public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
     final static public String EDIT_EVENTS_ID = "editEvents";
+    final static public String MERGE_RESOURCES_ID = "mergeResources";
     final static public String EDIT_RESOURCES_ID = "editResources";
     private final Provider<ReservationEdit> reservationEditProvider;
     private final EditTaskView editTaskView;
@@ -82,16 +87,16 @@ public class EditTaskPresenter implements TaskPresenter
     boolean bSaving = false;
     boolean bDeleting = false;
     final ReservationController reservationController;
+    private final Set<MergeCheckExtension> mergeCheckers;
 
     public interface EditTaskView
     {
-        <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String title,Consumer<Collection<T>> save, Runnable close) throws RaplaException;
-        PopupContext createPopupContext(RaplaWidget c);
+        <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,String title,Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException;
     }
 
     @Inject
     public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, EventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
-            ReservationController reservationController)
+            ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers)
     {
         this.editTaskView = editTaskView;
         this.dialogUiFactory = dialogUiFactory;
@@ -102,6 +107,7 @@ public class EditTaskPresenter implements TaskPresenter
         this.reservationEditProvider = reservationEditProvider;
         this.raplaFacade = clientFacade.getRaplaFacade();
         this.reservationController = reservationController;
+        this.mergeCheckers = mergeCheckers;
     }
 
     @Override
@@ -113,7 +119,8 @@ public class EditTaskPresenter implements TaskPresenter
         PopupContext popupContext = applicationEvent.getPopupContext();
         try
         {
-            if (taskId.equals(EDIT_RESOURCES_ID) || taskId.equals(EDIT_EVENTS_ID))
+            final boolean isMerge = taskId.equals(MERGE_RESOURCES_ID);
+            if (taskId.equals(EDIT_RESOURCES_ID) || taskId.equals(EDIT_EVENTS_ID) || isMerge)
             {
                 final ApplicationEventContext context = applicationEvent.getContext();
                 Collection<Entity> entities = new LinkedHashSet<>();
@@ -131,7 +138,7 @@ public class EditTaskPresenter implements TaskPresenter
                 else
                 {
                     String[] ids = ((String) info).split(",");
-                    Class<? extends Entity> clazz = taskId.equals(EDIT_RESOURCES_ID) ? Allocatable.class : Reservation.class;
+                    Class<? extends Entity> clazz = taskId.equals(EDIT_EVENTS_ID) ?  Reservation.class: Allocatable.class;
                     for (String id : ids)
                     {
                         Entity<?> resolve;
@@ -145,7 +152,16 @@ public class EditTaskPresenter implements TaskPresenter
                         }
                         entities.add(resolve);
                     }
+                    if ( clazz.equals( Allocatable.class) && isMerge)
+                    {
+                        for (MergeCheckExtension mergeCheckExtension : mergeCheckers)
+                        {
+                            final Collection allocatableCollection =  entities;
+                            mergeCheckExtension.precheckAllocatableSelection(allocatableCollection);
+                        }
+                    }
                 }
+
                 String title = null;
                 RaplaWidget<?> edit = createEditDialog(entities, title, popupContext, applicationEvent);
                 return new ResolvedPromise<RaplaWidget>(edit);
@@ -280,6 +296,7 @@ public class EditTaskPresenter implements TaskPresenter
     private <T extends Entity> RaplaWidget createEditDialog(Collection<T> list, String title, PopupContext popupContext, ApplicationEvent applicationEvent)
             throws RaplaException
     {
+        boolean isMerge = applicationEvent.getApplicationEventId().equals(MERGE_RESOURCES_ID);
         if (list.size() == 0)
         {
             throw new RaplaException("Empty list not allowed. You must have at least one entity to edit.");
@@ -347,7 +364,28 @@ public class EditTaskPresenter implements TaskPresenter
                         canUndo = false;
                     }
                 }
-                if (canUndo)
+                if ( isMerge)
+                {
+                    final List<Allocatable> allAllocatables = (List<Allocatable>)saveObjects;
+                    final Allocatable selectedAllocatable = allAllocatables.get(0);
+
+                    final Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<>();
+                    for (Allocatable allocatable : allAllocatables)
+                    {
+                        allocatableIds.add(allocatable.getReference());
+                    }
+                    doMerge(selectedAllocatable, allocatableIds);
+                    close( applicationEvent);
+                    try
+                    {
+                        raplaFacade.refresh();
+                    }
+                    catch (RaplaException e)
+                    {
+                        dialogUiFactory.showException(e, null);
+                    }
+                }
+                else if (canUndo)
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" })
                     SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
@@ -373,7 +411,7 @@ public class EditTaskPresenter implements TaskPresenter
                 if (testObj instanceof Reservation)
                 {
                     ReservationEdit<?> c = reservationEditProvider.get();
-                    PopupContext popupEditContext = editTaskView.createPopupContext( c);
+                    PopupContext popupEditContext = dialogUiFactory.createPopupContext( c);
                     Runnable reservationSaveCmd = () -> {
                         this.bSaving = true;
                         boolean firstTime = true;
@@ -404,7 +442,9 @@ public class EditTaskPresenter implements TaskPresenter
                     return c;
                 }
             }
-            final RaplaWidget raplaWidget = editTaskView.doSomething(toEdit, title, saveCmd, closeCmd);
+            //getString("merge");
+            String titleI18n = i18n.format("edit.format", title);
+            final RaplaWidget raplaWidget = editTaskView.doSomething(toEdit, titleI18n, saveCmd, closeCmd, isMerge);
             return raplaWidget;
         }
         return null;
@@ -466,6 +506,19 @@ public class EditTaskPresenter implements TaskPresenter
         );
     }
 
+    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds)
+    {
+        try
+        {
+            allocatableIds.remove(selectedObject.getReference());
+            final User user = clientFacade.getUser();
+            raplaFacade.doMerge(selectedObject, allocatableIds, user);
+        }
+        catch (RaplaException e)
+        {
+            dialogUiFactory.showWarning(e.getMessage(), null);
+        }
+    }
 
     public void close(ApplicationEvent applicationEvent)
     {
@@ -550,6 +603,17 @@ public class EditTaskPresenter implements TaskPresenter
 //        {
 //            dialogUiFactory.showException(ex, new SwingPopupContext(mainContent, null));
 //        }
+//    }
+
+//     if (bSaving || dlg == null || !dlg.isVisible() || ui == null)
+//        return;
+//        if (shouldCancelOnModification(evt))
+//    {
+//        getLogger().warn("Object has been changed outside.");
+//        final Component component = ui.getComponent();
+//        DialogInterface warning = dialogUiFactory.create(new SwingPopupContext(component, null), true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
+//        warning.start(true);
+//        dlg.close();
 //    }
 //
 //    private void setTitle()

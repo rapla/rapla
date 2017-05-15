@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal.edit;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -93,9 +94,23 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
         super.setObjects(Collections.singletonList(o.get(0)));
     }
 
-    public List<Allocatable> getAllAllocatables()
+    @Override
+    public List<Allocatable> getObjects()
     {
-        return allAllocatables;
+        final List<Allocatable> objects = super.getObjects();
+        List<Allocatable> result  = new ArrayList<>();
+
+        result.addAll( objects);
+        for ( Allocatable alloc:allAllocatables)
+        {
+            if ( !result.contains( alloc))
+            {
+                result.add( alloc);
+            }
+        }
+        return result;
     }
+
+
 
 }

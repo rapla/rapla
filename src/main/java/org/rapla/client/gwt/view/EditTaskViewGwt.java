@@ -21,15 +21,11 @@ public class EditTaskViewGwt implements EditTaskPresenter.EditTaskView
 
     }
 
-    @Override public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit, String title, Consumer<Collection<T>> save, Runnable close)
+    @Override public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit, String title, Consumer<Collection<T>> save, Runnable close, boolean isMerge)
             throws RaplaException
     {
         return null;
     }
 
-    @Override
-    public PopupContext createPopupContext(RaplaWidget c)
-    {
-        return  null;
-    }
+
 }
