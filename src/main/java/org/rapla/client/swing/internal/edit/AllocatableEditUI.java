@@ -83,7 +83,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         holdBackConflictPanel.setLayout( new BorderLayout());
         holdBackConflictPanel.add(new JLabel(holdBackConflictsField.getFieldName() + ": "), BorderLayout.WEST);
         holdBackConflictPanel.add(holdBackConflictsField.getComponent(), BorderLayout.CENTER);
-
+        editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
         classificationField.addChangeListener(new ChangeListener()
         {
             

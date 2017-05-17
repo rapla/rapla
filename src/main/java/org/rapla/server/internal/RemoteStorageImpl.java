@@ -103,7 +103,7 @@ import org.rapla.storage.impl.EntityStore;
                         entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
                     }
                 }
-                evt.putStore(entity);
+                evt.addStore(entity);
             }
         }
         evt.setLastValidated(serverTime);
@@ -151,7 +151,7 @@ import org.rapla.storage.impl.EntityStore;
         evt.setLastValidated(repositoryVersion);
         for (Entity entity : completeList)
         {
-            evt.putStore(entity);
+            evt.addStore(entity);
         }
         return evt;
     }

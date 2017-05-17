@@ -147,7 +147,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return toEdit;
     }
 
-    protected Entity editObject(Entity newObj, Entity persistant, User user)
+    protected <T extends Entity> T editObject(T newObj, T persistant, User user)
     {
         final SimpleEntity clone;
         if (persistant != null)
@@ -163,7 +163,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             refEntity.setLastChangedBy(user);
         }
-        return (Entity) refEntity;
+        return (T) refEntity;
     }
 
     @SuppressWarnings("rawtypes")
@@ -187,7 +187,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
             else
             {
-                evt.putStore(obj);
+                evt.addStore(obj);
             }
         }
         for (ReferenceInfo<?> entity : removeObjects)

@@ -437,7 +437,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             }
             else
             {
-                safeResultEvent.putStore(obj);
+                safeResultEvent.addStore(obj);
             }
         }
     }

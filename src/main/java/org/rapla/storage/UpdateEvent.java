@@ -261,8 +261,19 @@ public class UpdateEvent
         return preferencesPatches;
     }
 
-    /** use this method if you want to avoid adding the same Entity twice.*/
-    public void putStore(Entity entity)
+    /** adds an entity and doesnt check if its in the lost*/
+    public void addStore(Entity entity)
+    {
+        putStore( entity, false);
+    }
+
+    /** adds an entity to the store if it is not present */
+    public void addToStoreIfNotExisitant(Entity entity)
+    {
+        putStore( entity, false);
+    }
+
+    private void putStore(Entity entity, boolean checkForDuplicate)
     {
         Class<? extends Entity> class1 = entity.getTypeClass();
         List list = getListMap().get(class1);
@@ -314,8 +325,10 @@ public class UpdateEvent
             }
             listMap.put(class1, list);
         }
-
-        list.add(entity);
+        if ( !checkForDuplicate || !list.contains( entity))
+        {
+            list.add(entity);
+        }
     }
 
     /** use this method if you want to avoid adding the same Entity twice.*/
