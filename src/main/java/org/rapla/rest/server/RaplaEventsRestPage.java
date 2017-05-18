@@ -37,7 +37,6 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.rest.PATCH;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.SecurityManager;
 import org.rapla.storage.PermissionController;
@@ -76,7 +75,7 @@ import org.rapla.storage.StorageOperator;
         final User owner = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator
                 .queryAppointments(owner, allocatables, start, end, filters, annotationQuery);
-        final Map<Allocatable, Collection<Appointment>> appMap = PromiseSynchroniser.waitForWithRaplaException(promise, 20000);
+        final Map<Allocatable, Collection<Appointment>> appMap = facade.waitForWithRaplaException(promise, 20000);
         final List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
         PermissionController permissionController = facade.getPermissionController();

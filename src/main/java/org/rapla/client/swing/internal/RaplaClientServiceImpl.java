@@ -38,6 +38,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.internal.LoginDialog;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.ApplicationViewSwing;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -409,7 +410,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     public void dispose()
     {
-        ((DefaultScheduler) commandScheduler).dispose();
+        ((SwingSchedulerImpl) commandScheduler).cancel();
         stop();
 
         getLogger().debug("RaplaClient disposed");

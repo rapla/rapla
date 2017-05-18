@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
@@ -32,7 +33,7 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class StandaloneConnector implements JsonRemoteConnector
+public class StandaloneConnector  implements JsonRemoteConnector
 {
     private final LocalConnector connector;
     private final Semaphore waitForSemarphore = new Semaphore(0);
@@ -41,10 +42,10 @@ public class StandaloneConnector implements JsonRemoteConnector
     public StandaloneConnector(LocalConnector connector)
     {
         this.connector = connector;
+
         connector.addLifeCycleListener(new AbstractLifeCycle.AbstractLifeCycleListener()
         {
-            @Override
-            public void lifeCycleStarted(LifeCycle event)
+            @Override public void lifeCycleStarted(LifeCycle event)
             {
                 waitForStart.release();
             }
@@ -55,11 +56,48 @@ public class StandaloneConnector implements JsonRemoteConnector
             Map<String, String> additionalHeaders) throws IOException
     {
         final String rawHttpRequest = createRawHttpRequest(requestMethod, methodURL, body, authenticationToken, contentType, additionalHeaders);
-        final String rawResult = doSend(rawHttpRequest);
+        final ByteBuffer rawResult = doSend(rawHttpRequest);
         return parseResult(rawResult);
     }
 
-    protected CallResult parseResult(String rawResult)
+    // Called with reflection. Dont delete
+    public void requestFinished()
+    {
+        waitForSemarphore.release();
+    }
+
+    protected ByteBuffer doSend(String rawHttpRequest)
+    {
+        if (!connector.isRunning() && !connector.isStopped() && !connector.isStopped())
+        {
+            try
+            {
+                waitForStart.tryAcquire(10, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                throw new IllegalStateException("Server did not answer within 60 sec: " + e.getMessage(), e);
+            }
+        }
+        LocalConnector.LocalEndPoint endpoint = connector.executeRequest(rawHttpRequest);
+        try
+        {
+            // Wait max 60 seconds
+            waitForSemarphore.tryAcquire(10, TimeUnit.SECONDS);
+            //endpoint.waitUntilClosed();
+            Thread.sleep(500);
+        }
+        catch (InterruptedException e)
+        {
+            throw new IllegalStateException("Server did not answer within 60 sec: " + e.getMessage(), e);
+        }
+
+        final ByteBuffer byteBuffer = endpoint.takeOutput();
+
+        return byteBuffer;
+    }
+
+    protected CallResult parseResult(ByteBuffer rawResult)
     {
         Integer responseCode;
         String body = "";
@@ -70,7 +108,8 @@ public class StandaloneConnector implements JsonRemoteConnector
             CharsetDecoder charsetDecoder = Charset.forName("UTF-8").newDecoder();
             int minChunkLimit = 0;
             SessionInputBufferImpl inputBuffer = new SessionInputBufferImpl(httpTransportMetrics, 4000, minChunkLimit, constraints, charsetDecoder);
-            inputBuffer.bind(new ByteArrayInputStream(rawResult.getBytes()));
+            final byte[] bytes1 = BufferUtil.toArray(rawResult);
+            inputBuffer.bind(new ByteArrayInputStream(bytes1));
             org.apache.http.impl.io.DefaultHttpResponseParser parser = new org.apache.http.impl.io.DefaultHttpResponseParser(inputBuffer);
             final HttpResponse response = parser.parse();
             responseCode = response.getStatusLine().getStatusCode();
@@ -89,8 +128,7 @@ public class StandaloneConnector implements JsonRemoteConnector
                     inputStream = new ChunkedInputStream(inputBuffer, constraints);
                 }
 
-                final byte[] bytes = readBytes(inputStream);
-                body = new String(bytes);
+                body = readString( inputStream, "UTF-8");
             }
         }
         catch (Exception e)
@@ -101,19 +139,20 @@ public class StandaloneConnector implements JsonRemoteConnector
         return result;
     }
 
-    public static byte[] readBytes(InputStream in) throws IOException
+    public static String readString(InputStream inputStream, String charset) throws IOException
     {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
+        final InputStreamReader in = new InputStreamReader(inputStream, charset);
+        StringBuilder builder = new StringBuilder();
+        char[] buffer = new char[1024];
         int count = 0;
         do {
-            out.write(buffer, 0, count);
+            builder.append(buffer,0, count);
             count = in.read(buffer, 0, buffer.length);
         } while (count != -1);
-        return out.toByteArray();
+        return builder.toString();
     }
 
-    protected String createRawHttpRequest(String requestMethod, URL methodURL, String body, String authenticationToken, String contentType,
+    private String createRawHttpRequest(String requestMethod, URL methodURL, String body, String authenticationToken, String contentType,
             Map<String, String> additionalHeaders)
     {
         final StringWriter out = new StringWriter();
@@ -148,52 +187,6 @@ public class StandaloneConnector implements JsonRemoteConnector
         final String s = out.toString();
         return s;
 
-    }
-
-    // Called with reflection. Dont delete
-    public void requestFinished()
-    {
-        waitForSemarphore.release();
-    }
-
-    // We need to make it synchronized because local connector can't handle two at once
-    synchronized protected String doSend(String rawHttpRequest)
-    {
-        if (!connector.isRunning() && !connector.isStopped() && !connector.isStopped())
-        {
-            try
-            {
-                waitForStart.tryAcquire(60, TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e)
-            {
-                throw new IllegalStateException("Server did not answer within 60 sec: " + e.getMessage(), e);
-            }
-        }
-        //        try
-        //        {
-        //            final String responses = connector.getResponses(rawHttpRequest);
-        //            return responses;
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            throw new IllegalStateException("Server did not answer within 60 sec: " + e.getMessage(), e);
-        //        }
-        waitForSemarphore.drainPermits();
-        LocalEndPoint endpoint = connector.executeRequest(rawHttpRequest);
-        try
-        {
-            // Wait max 60 seconds
-            waitForSemarphore.tryAcquire(60, TimeUnit.SECONDS);
-            //endpoint.waitUntilClosed();
-        }
-        catch (InterruptedException e)
-        {
-            throw new IllegalStateException("Server did not answer within 60 sec: " + e.getMessage(), e);
-        }
-        final ByteBuffer byteBuffer = endpoint.takeOutput();
-        final String s = byteBuffer == null ? null : BufferUtil.toString(byteBuffer, StandardCharsets.UTF_8);
-        return s;
     }
 
 }

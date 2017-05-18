@@ -1,8 +1,5 @@
 package org.rapla;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,7 +13,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.server.PromiseSynchroniser;
+
+import java.util.Collection;
+import java.util.Date;
 
 @RunWith(JUnit4.class)
 public class CommunicatorTest extends AbstractTestWithServer
@@ -42,7 +41,7 @@ public class CommunicatorTest extends AbstractTestWithServer
     
 
     @Test
-    public void testClient() throws Exception
+    public void testClient() throws Throwable
     {
         ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
@@ -71,7 +70,7 @@ public class CommunicatorTest extends AbstractTestWithServer
 
            facade.store( newEvent );
 
-           Collection<Reservation> events = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null), 10000);
+           Collection<Reservation> events = facade.getScheduler().waitFor(facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null), 10000);
            Assert.assertTrue(events.size() > 0);
            
            Reservation r = events.iterator().next();

@@ -324,6 +324,8 @@ public interface RaplaFacade
 
      */
     void refresh() throws RaplaException;
+
+    <T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
 }
 
 

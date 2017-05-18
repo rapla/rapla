@@ -20,7 +20,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.SwingScheduler;
+import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
@@ -191,7 +191,7 @@ public class DynamicTypeTest  {
             IOInterface ioInterface = new DefaultIO(logger);
             final RaplaImages raplaImages = new RaplaImages(logger);
             FrameControllerList frameList = new FrameControllerList(logger);
-			CommandScheduler scheduler = new SwingScheduler(logger);
+			CommandScheduler scheduler = new SwingSchedulerImpl(logger);
             DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger);
             InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory, raplaImages);

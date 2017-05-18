@@ -49,7 +49,6 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.AuthenticationStore;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
@@ -180,7 +179,7 @@ import org.rapla.storage.impl.EntityStore;
         ClassificationFilter[] classificationFilters = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> mapFutureResult = operator
                 .queryAppointments(user, allocatables, start, end, classificationFilters, annotationQuery);
-        Map<Allocatable, Collection<Appointment>> reservations = PromiseSynchroniser.waitForWithRaplaException(mapFutureResult, 50000);
+        Map<Allocatable, Collection<Appointment>> reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
         return list;
@@ -514,7 +513,7 @@ import org.rapla.storage.impl.EntityStore;
         checkAuthentified();
         List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-        Date result = PromiseSynchroniser.waitForWithRaplaException(
+        Date result = operator.waitForWithRaplaException(
                 operator.getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour),
                 50000);
         return result;
@@ -532,7 +531,7 @@ import org.rapla.storage.impl.EntityStore;
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList);
-        Map<Allocatable, Collection<Appointment>> bindings = PromiseSynchroniser.waitForWithRaplaException(promise, 100000);
+        Map<Allocatable, Collection<Appointment>> bindings = operator.waitForWithRaplaException(promise, 100000);
         Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
         for (Allocatable alloc : bindings.keySet())
         {
@@ -579,7 +578,7 @@ import org.rapla.storage.impl.EntityStore;
         List<Appointment> asList = cast(appointments);
         final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> promise = operator
                 .getAllAllocatableBindings(allocatables, asList, ignoreList);
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = PromiseSynchroniser.waitForWithRaplaException(promise, 10000);
+        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.waitForWithRaplaException(promise, 10000);
         for (Allocatable alloc : bindings.keySet())
         {
             Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);

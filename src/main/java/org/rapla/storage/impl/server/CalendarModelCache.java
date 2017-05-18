@@ -24,7 +24,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
-import org.rapla.server.PromiseSynchroniser;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
@@ -39,11 +39,13 @@ public class CalendarModelCache
     final CachableStorageOperator operator;
     final RaplaResources i18n;
     final Logger logger;
+    final CommandScheduler scheduler;
 
-    public CalendarModelCache(CachableStorageOperator operator, RaplaResources i18n, Logger logger)
+    public CalendarModelCache(CachableStorageOperator operator, RaplaResources i18n, Logger logger, final CommandScheduler scheduler)
     {
         this.operator = operator;
         this.i18n = i18n;
+        this.scheduler = scheduler;
         this.logger = logger;
         this.lockManager = new DefaultRaplaLock(logger);
     }
@@ -231,7 +233,16 @@ public class CalendarModelCache
         for (CalendarModelImpl calendarModelImpl : calendarModelList)
         {
             // check if filter or calendar selection changes so that we need to add or remove events from the exchange calendar
-            appointments.addAll(PromiseSynchroniser.waitForWithRaplaException(calendarModelImpl.queryAppointments(syncRange), 10000));
+            final Collection<Appointment> c;
+            try
+            {
+                c = scheduler.waitFor(calendarModelImpl.queryAppointments(syncRange), 10000);
+            }
+            catch (Exception e)
+            {
+                throw new RaplaException( e);
+            }
+            appointments.addAll(c);
         }
         return appointments;
     }

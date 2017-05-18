@@ -19,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -81,6 +82,18 @@ abstract public class IOUtil {
         return out.toByteArray();
     }
 
+    public static String readString(InputStream inputStream, String charset) throws IOException
+    {
+        final InputStreamReader in = new InputStreamReader(inputStream, charset);
+        StringBuilder builder = new StringBuilder();
+        char[] buffer = new char[1024];
+        int count = 0;
+        do {
+            builder.append(buffer,0, count);
+            count = in.read(buffer, 0, buffer.length);
+        } while (count != -1);
+        return builder.toString();
+    }
 
 
     /** same as {@link URLDecoder#decode}.

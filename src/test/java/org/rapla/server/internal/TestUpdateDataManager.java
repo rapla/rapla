@@ -29,7 +29,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
@@ -199,7 +198,7 @@ public class TestUpdateDataManager
             }
             if ( createAndRemoveEvents)
             {
-                final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables, null, null, null), 10000);
+                final Collection<Reservation> reservations = facade.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables, null, null, null), 10000);
                 int i = 0;
                 for (Iterator<Reservation> it = reservations.iterator(); it.hasNext(); )
                 {
@@ -252,7 +251,7 @@ public class TestUpdateDataManager
                     removedIds.add(allocatables[i].getReference());
                 }
             }
-            final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null), 10000);
+            final Collection<Reservation> reservations = facade.waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null), 10000);
             if ( createAndRemoveEvents)
             {
                 for ( Reservation event:reservations)

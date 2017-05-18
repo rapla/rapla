@@ -24,7 +24,6 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
@@ -104,7 +103,7 @@ public class ICalImportTest {
         {
             Date start = null;
             Date end = null;
-            reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null), 10000);
+            reservations = facade.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null), 10000);
         }
         Assert.assertEquals(1, reservations.size());
         Reservation event = reservations.iterator().next();

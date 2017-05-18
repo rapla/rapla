@@ -20,7 +20,7 @@ import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.SwingScheduler;
+import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
@@ -63,7 +63,7 @@ public final class PermissionEditTest extends GUITestCase
         ClientFacade facade = getFacade();
         final RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
-        CommandScheduler scheduler = new SwingScheduler(logger);
+        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger );
         InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
         TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), infoFactory, raplaImages);

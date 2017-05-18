@@ -29,8 +29,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.StorageOperator;
 
 import javax.swing.JDialog;
@@ -41,98 +41,115 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
 
-public final class ReservationControllerTest extends GUITestCase {
-	ClientFacade facade = null;
+public final class ReservationControllerTest extends GUITestCase
+{
+    ClientFacade clientFacade = null;
 
-	public void testMain() throws Exception {
-		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
-		final EditController c = getService(EditController.class);
-		final Reservation reservation = reservations.iterator().next();
-		c.edit(reservation,createPopupContext());
-		getLogger().info("ReservationController started");
-	}
+    public void testMain() throws Exception
+    {
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        Collection<Reservation> reservations = raplaFacade
+                .waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
+        final EditController c = getService(EditController.class);
+        final Reservation reservation = reservations.iterator().next();
+        c.edit(reservation, createPopupContext());
+        getLogger().info("ReservationController started");
+    }
 
-	public void testMove() throws Exception {
-		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
-		final ReservationController c =  getService(ReservationController.class);
-		final Reservation reservation = reservations.iterator().next();
-		Appointment[] appointments = reservation.getAppointments();
-		final Appointment appointment = appointments[0];
-		final Date from = appointment.getStart();
-		final Semaphore mutex = new Semaphore(1);
-		SwingUtilities.invokeLater(new Runnable() {
+    public void testMove() throws Exception
+    {
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        Collection<Reservation> reservations = raplaFacade
+                .waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
+        final ReservationController c = getService(ReservationController.class);
+        final Reservation reservation = reservations.iterator().next();
+        Appointment[] appointments = reservation.getAppointments();
+        final Appointment appointment = appointments[0];
+        final Date from = appointment.getStart();
+        final Semaphore mutex = new Semaphore(1);
+        SwingUtilities.invokeLater(new Runnable()
+        {
 
-			@Override
-			public void run() {
-				boolean keepTime = true;
-				Point p = null;
-				AppointmentBlock appointmentBlock = new AppointmentBlock( appointment);
-				Date newStart = DateTools.addDay(appointment.getStart());
-				try {
-					c.moveAppointment(appointmentBlock, newStart, createPopupContext(),	keepTime);
-					Appointment app = facade.getRaplaFacade().getPersistant(reservation).getAppointments()[0];
-					Assert.assertEquals(DateTools.addDay(from), app.getStart());
-					// Now the test can end
-					mutex.release();
-				} catch (RaplaException e) {
-					e.printStackTrace();
-				}
-			}
+            @Override
+            public void run()
+            {
+                boolean keepTime = true;
+                Point p = null;
+                AppointmentBlock appointmentBlock = new AppointmentBlock(appointment);
+                Date newStart = DateTools.addDay(appointment.getStart());
+                try
+                {
+                    c.moveAppointment(appointmentBlock, newStart, createPopupContext(), keepTime);
+                    Appointment app = raplaFacade.getPersistant(reservation).getAppointments()[0];
+                    Assert.assertEquals(DateTools.addDay(from), app.getStart());
+                    // Now the test can end
+                    mutex.release();
+                }
+                catch (RaplaException e)
+                {
+                    e.printStackTrace();
+                }
+            }
 
-		});
-		// We block a mutex to wait for the move thread to finish
-		mutex.acquire();
-		SwingUtilities.invokeAndWait(new Runnable() {
+        });
+        // We block a mutex to wait for the move thread to finish
+        mutex.acquire();
+        SwingUtilities.invokeAndWait(new Runnable()
+        {
 
-			@Override
-			public void run() {
-				for (Window window : JDialog.getWindows()) {
-					if (window instanceof DialogUI) {
-						RaplaButton button = ((DialogUI) window).getButton(1);
-						button.doClick();
-					}
-				}
-			}
-		});
-		// now wait until move thread is finished
-		mutex.acquire();
-		mutex.release();
-		
-		//Testing undo & redo function
-		facade.getCommandHistory().undo();
-		Assert.assertEquals(from, facade.getRaplaFacade().getPersistant(reservation).getAppointments()[0].getStart());
-		facade.getCommandHistory().redo();
-		Assert.assertEquals(DateTools.addDay(from), facade.getRaplaFacade().getPersistant(reservation).getAppointments()[0].getStart());
-	}
-	
-	
-	public void testPeriodChange() throws Exception {
-		ClientFacade facade = getFacade();
-		ClassificationFilter[] filters = facade.getRaplaFacade().getDynamicType(StorageOperator.PERIOD_TYPE).newClassificationFilter().toArray();
-		Allocatable[] periods = facade.getRaplaFacade().getAllocatables(filters);
-		facade.getRaplaFacade().removeObjects(periods);
-		Thread.sleep(500);
-		Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(facade.getRaplaFacade().getReservationsForAllocatable(null, null, null, null), 10000);
-		EditController c = getService(EditController.class);
-		c.edit(reservations.iterator().next(),createPopupContext());
-		getLogger().info("ReservationController started");
+            @Override
+            public void run()
+            {
+                for (Window window : JDialog.getWindows())
+                {
+                    if (window instanceof DialogUI)
+                    {
+                        RaplaButton button = ((DialogUI) window).getButton(1);
+                        button.doClick();
+                    }
+                }
+            }
+        });
+        // now wait until move thread is finished
+        mutex.acquire();
+        mutex.release();
 
-		ReservationEdit editor = c.getEditWindows()[0];
-		Date startDate = new Date();
-		editor.addAppointment(startDate, new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_DAY));
-		// FIXME 
-		//editor.save();
-		User user = facade.getUser();
-		Allocatable period = facade.getRaplaFacade().newPeriod(user);
-		Classification classification = period.getClassification();
-		classification.setValue("start",startDate);
-		classification.setValue("start",new Date(startDate.getTime() + 3
-				* DateTools.MILLISECONDS_PER_DAY));
-		facade.getRaplaFacade().store(period);
-		Thread.sleep(500);
-	}
+        //Testing undo & redo function
+        clientFacade.getCommandHistory().undo();
+        Assert.assertEquals(from, raplaFacade.getPersistant(reservation).getAppointments()[0].getStart());
+        clientFacade.getCommandHistory().redo();
+        Assert.assertEquals(DateTools.addDay(from), raplaFacade.getPersistant(reservation).getAppointments()[0].getStart());
+    }
 
-	public static void main(String[] args) {
-		new ReservationControllerTest().interactiveTest("testMain");
-	}
+    public void testPeriodChange() throws Exception
+    {
+        ClientFacade facade = getFacade();
+        final RaplaFacade raplaFacade = facade.getRaplaFacade();
+        ClassificationFilter[] filters = raplaFacade.getDynamicType(StorageOperator.PERIOD_TYPE).newClassificationFilter().toArray();
+        Allocatable[] periods = raplaFacade.getAllocatables(filters);
+        raplaFacade.removeObjects(periods);
+        Thread.sleep(500);
+        Collection<Reservation> reservations = raplaFacade.waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
+        EditController c = getService(EditController.class);
+        c.edit(reservations.iterator().next(), createPopupContext());
+        getLogger().info("ReservationController started");
+
+        ReservationEdit editor = c.getEditWindows()[0];
+        Date startDate = new Date();
+        editor.addAppointment(startDate, new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_DAY));
+        // FIXME
+        //editor.save();
+        User user = facade.getUser();
+        Allocatable period = raplaFacade.newPeriod(user);
+        Classification classification = period.getClassification();
+        classification.setValue("start", startDate);
+        classification.setValue("start", new Date(startDate.getTime() + 3 * DateTools.MILLISECONDS_PER_DAY));
+        raplaFacade.store(period);
+        Thread.sleep(500);
+    }
+
+    public static void main(String[] args)
+    {
+        new ReservationControllerTest().interactiveTest("testMain");
+    }
 }

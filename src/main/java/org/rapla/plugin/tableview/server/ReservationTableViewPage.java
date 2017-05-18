@@ -26,13 +26,13 @@ import javax.swing.table.TableColumn;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
@@ -41,13 +41,13 @@ public class ReservationTableViewPage implements HTMLViewPage
     private TableViewPage<Reservation, TableColumn> tableViewPage;
 
     @Inject
-    public ReservationTableViewPage(RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
+    public ReservationTableViewPage(RaplaFacade facade,RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<Reservation, TableColumn>(raplaLocale)
         {
             String getCalendarHTML() throws RaplaException
             {
-                final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
+                final Collection<Reservation> reservations = facade.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
                         10000);
                 final User user = model.getUser();
                 List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns("events", user);

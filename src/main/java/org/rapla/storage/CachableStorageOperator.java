@@ -16,6 +16,7 @@ package org.rapla.storage;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.rapla.components.util.TimeInterval;
@@ -26,6 +27,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 public interface CachableStorageOperator extends StorageOperator {
 
@@ -69,6 +71,8 @@ public interface CachableStorageOperator extends StorageOperator {
     Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment) throws RaplaException;
 
     Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException;
+
+    <T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
 }
 
 

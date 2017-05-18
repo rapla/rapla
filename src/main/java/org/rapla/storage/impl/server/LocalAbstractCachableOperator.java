@@ -200,8 +200,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
         appointmentBindings = new AppointmentMapClass(logger);
-        calendarModelCache = new CalendarModelCache(this, i18n, logger);
+        calendarModelCache = new CalendarModelCache(this, i18n, logger, scheduler);
     }
+
+    public<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws  RaplaException
+    {
+        try
+        {
+            return scheduler.waitFor(promise, millis);
+        }
+        catch (Exception ex)
+        {
+            if ( ex instanceof RaplaException)
+            {
+                throw (RaplaException)ex;
+            }
+            throw new RaplaException(ex);
+        }
+    }
+
 
     public CommandScheduler getScheduler()
     {

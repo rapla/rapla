@@ -48,7 +48,6 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.SwingScheduler;
 import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -74,10 +73,7 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
-import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.server.PromiseSynchroniser;
 
 public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     implements
@@ -330,19 +326,18 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 	    	try
 	    	{
 		    	Graphics2D g2 = (Graphics2D) g;
-		    	SwingScheduler scheduler = (SwingScheduler)getFacade().getScheduler();
-		    	try 
+		    	try
 		    	{
 		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
-		    		RaplaBuilder builder = scheduler.waitFor(builderPromise, 5000);
+		    		RaplaBuilder builder = getFacade().waitForWithRaplaException(builderPromise, 5000);
 		    		update(builder);
-				} 
-				catch (Throwable e) 
+				}
+				catch (RaplaException e)
 				{
 					getLogger().error(e.getMessage(), e);
 					throw new PrinterException(e.getMessage());
 				}
-		   
+
 		    	double preferedHeight = view.getComponent().getPreferredSize().getHeight();
 		    	if ( scaleFactor == null)
 		    	{
@@ -357,10 +352,10 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		        try 
 		    	{
 		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
-		    		RaplaBuilder builder = scheduler.waitFor(builderPromise, 5000);
+                    RaplaBuilder builder = getFacade().waitForWithRaplaException(builderPromise, 5000);
 		    		update(builder);
-				} 
-				catch (Throwable e) 
+				}
+                catch (RaplaException e)
 				{
 					getLogger().error(e.getMessage(), e);
 					throw new PrinterException(e.getMessage());

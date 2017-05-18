@@ -47,7 +47,6 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
@@ -87,7 +86,15 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
 		final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
-        final RaplaBuilder raplaBuilder = PromiseSynchroniser.waitForWithRaplaException(initBuilder, 5000);
+        final RaplaBuilder raplaBuilder;
+        try
+        {
+            raplaBuilder = facade.getScheduler().waitFor(initBuilder, 5000);
+        }
+        catch (Exception e)
+        {
+            throw new RaplaException(e);
+        }
 
         return raplaBuilder;
     }

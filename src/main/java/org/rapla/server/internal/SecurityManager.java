@@ -41,7 +41,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
@@ -405,7 +404,7 @@ import org.rapla.storage.StorageOperator;
                 conflictsAfter = new ArrayList<>();
                 try
                 {
-                    PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r).thenAcceptBoth(facade.getConflicts(original), (beforeConfl, afterConf) ->
+                    facade.waitForWithRaplaException(facade.getConflicts(r).thenAcceptBoth(facade.getConflicts(original), (beforeConfl, afterConf) ->
                     {
                         conflictsBefore.addAll(beforeConfl);
                         conflictsAfter.addAll(afterConf);
@@ -418,7 +417,7 @@ import org.rapla.storage.StorageOperator;
             }
             else
             {
-                conflictsAfter = PromiseSynchroniser.waitForWithRaplaException(facade.getConflicts(r), 10000);
+                conflictsAfter = facade.waitForWithRaplaException(facade.getConflicts(r), 10000);
                 conflictsBefore = new ArrayList<>();
             }
         }

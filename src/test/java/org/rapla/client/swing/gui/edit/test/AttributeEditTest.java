@@ -15,7 +15,7 @@ package org.rapla.client.swing.gui.edit.test;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.SwingScheduler;
+import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
@@ -40,7 +40,7 @@ public final class AttributeEditTest extends GUITestCase
         BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         FrameControllerList frameList = new FrameControllerList(logger);
-        CommandScheduler scheduler = new SwingScheduler(logger);
+        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger);
         AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
         editor.setDynamicType(facade.getDynamicTypes(null)[0]);
@@ -56,7 +56,7 @@ public final class AttributeEditTest extends GUITestCase
         BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         FrameControllerList frameList = new FrameControllerList(logger);
-        CommandScheduler scheduler = new SwingScheduler(logger);
+        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger);
         AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
         DynamicType type =  facade.edit(facade.getDynamicTypes(null)[0]);

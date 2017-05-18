@@ -15,7 +15,7 @@ package org.rapla.client.swing.gui.edit.test;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.SwingScheduler;
+import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.CategoryEditUI;
@@ -46,7 +46,7 @@ public final class CategoryEditTest extends GUITestCase
         ClientFacade facade = getFacade();
         RaplaImages raplaImages = new RaplaImages(logger);
         FrameControllerList frameList = new FrameControllerList(logger);
-        CommandScheduler scheduler = new SwingScheduler(logger);
+        CommandScheduler scheduler = new SwingSchedulerImpl(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger );
         TextFieldFactory textField = new TextFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
         MultiLanguageFieldFactory multiLAnguageFieldFactoy = new MultiLanguageFieldFactory(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, textField, ioInterface);

@@ -626,7 +626,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             root.add(userRoot);
         }
         final Category userGroupsCategory = getQuery().getUserGroupsCategory();
-        if (canAdminUsers || isAdmin)
+        // TODO Comment in to activate
+        if (/*canAdminUsers ||*/ isAdmin)
         {
             NamedNode categoryRoot = createRootNode(Collections.singleton(userGroupsCategory), true);
             root.add(categoryRoot);

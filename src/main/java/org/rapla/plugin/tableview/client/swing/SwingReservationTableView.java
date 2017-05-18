@@ -74,7 +74,6 @@ import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummar
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseSynchroniser;
 import org.rapla.storage.PermissionController;
 
 public class SwingReservationTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval

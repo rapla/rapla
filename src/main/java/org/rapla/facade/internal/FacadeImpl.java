@@ -1780,4 +1780,21 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	    getOperator().doMerge(selectedObject, allocatableIds, user);
 	}
 
+	public<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws  RaplaException
+	{
+		try
+		{
+			return notifyQueue.waitFor(promise, millis);
+		}
+		catch (Exception ex)
+		{
+			if ( ex instanceof RaplaException)
+			{
+				throw (RaplaException)ex;
+			}
+			throw new RaplaException(ex);
+		}
+	}
+
+
 }

@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.inject.Provider;
-
-import org.eclipse.jetty.server.Server;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,13 +27,13 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.logger.Logger;
-import org.rapla.server.PromiseSynchroniser;
-import org.rapla.server.ServerServiceContainer;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
-import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
 
 @RunWith(JUnit4.class)
 public class PermissionTest extends AbstractTestWithServer {
@@ -140,7 +132,7 @@ public class PermissionTest extends AbstractTestWithServer {
         // Uncovers bug 1237332,
         ClassificationFilter filter = testFacade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","R1");
-        final Collection<Reservation> reservationsForAllocatable = PromiseSynchroniser.waitForWithRaplaException(testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
+        final Collection<Reservation> reservationsForAllocatable = testFacade.getScheduler().waitFor(testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
         Assert.assertEquals(1, reservationsForAllocatable.size());
         Reservation evt = reservationsForAllocatable.iterator().next();
         final User owner = testFacade.getOperator().tryResolve(evt.getOwnerRef());

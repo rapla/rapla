@@ -22,7 +22,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseSynchroniser;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -169,7 +168,7 @@ public class Export2iCalServlet
 			}
 
 			Promise<Collection<Appointment>> appointments = calModel.queryAppointments(new TimeInterval(null, null));
-			write(response, PromiseSynchroniser.waitForWithRaplaException(appointments, 10000), filename,user, null);
+			write(response, facade.waitForWithRaplaException(appointments, 10000), filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -281,7 +280,7 @@ public class Export2iCalServlet
 		Date endDate = null;
         Date startDate = facade.today();
         final Promise<Collection<Reservation>> reservationsPromise = calModel.queryReservations(new TimeInterval(startDate, endDate));
-		final Collection<Reservation> reservations = PromiseSynchroniser.waitForWithRaplaException(reservationsPromise, 10000);
+		final Collection<Reservation> reservations = facade.waitForWithRaplaException(reservationsPromise, 10000);
 		// set to minvalue
 		Date maxDate = new Date();
 		maxDate.setTime(0);
