@@ -124,7 +124,7 @@ public class EditTaskPresenter implements TaskPresenter
                 if (context != null && context instanceof EditApplicationEventContext)
                 {
                     final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
-                    entities=editApplicationEventContext.getSelectedObjects();
+                    entities=new LinkedHashSet<>(editApplicationEventContext.getSelectedObjects());
                     appointmentBlock = editApplicationEventContext.getAppointmentBlock();
                     if (appointmentBlock != null)
                     {
