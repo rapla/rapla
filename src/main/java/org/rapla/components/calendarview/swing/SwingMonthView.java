@@ -312,7 +312,7 @@ public class SwingMonthView extends AbstractSwingCalendar
 
 	@Override
 	public void updateSize(int width) {
-		if ( tableLayout != null)
+		if ( tableLayout == null)
 		{
 			return;
 		}
