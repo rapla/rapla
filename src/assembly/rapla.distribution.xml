@@ -109,7 +109,8 @@
 			<directory>${project.basedir}/src/test/resources</directory>
 			<outputDirectory>resources</outputDirectory>
 			<includes>
-				<include>logback*.xml</include>
+				<include>logback.xml</include>
+				<include>logback-access.xml</include>
 			</includes>
 		</fileSet>
 		<fileSet>
