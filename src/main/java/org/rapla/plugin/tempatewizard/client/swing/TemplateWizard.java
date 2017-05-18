@@ -62,7 +62,7 @@ import com.google.web.bindery.event.shared.EventBus;
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
 @Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard
-        implements ReservationWizardExtension, ActionListener, ModificationListener
+        implements ReservationWizardExtension, ModificationListener
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
     Collection<Allocatable> templateNames;
@@ -181,7 +181,7 @@ import com.google.web.bindery.event.shared.EventBus;
             final String templateName = template.getName(getLocale());
             item.setText(getSingleTemplateName(templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            item.addActionListener(this);
+            item.addActionListener((evt)->   createWithTemplate(((TemplateMenuItem)evt.getSource()).getTemplate())) ;
             element = item;
         }
         else
@@ -276,7 +276,7 @@ import com.google.web.bindery.event.shared.EventBus;
                 RaplaMenuItem newItem = new TemplateMenuItem(template.getName(locale), template);
                 newItem.setText(templateName);
                 item.add(newItem);
-                newItem.addActionListener(this);
+                item.addActionListener((evt)->   createWithTemplate(((TemplateMenuItem)evt.getSource()).getTemplate())) ;
             }
         }
     }
@@ -337,23 +337,15 @@ import com.google.web.bindery.event.shared.EventBus;
         return result;
     }
 
-    public void actionPerformed(ActionEvent e)
-    {
-        TemplateMenuItem source = (TemplateMenuItem) e.getSource();
-        Allocatable template = source.getTemplate();
-        createWithTemplate(source, template);
-
-    }
-
     protected Locale getLocale()
     {
         return raplaLocale.getLocale();
     }
 
-    protected void createWithTemplate(TemplateMenuItem source, Allocatable template)
+    protected void createWithTemplate( Allocatable template)
     {
         final String id = template.getId();
-        PopupContext popupContext = dialogUiFactory.createPopupContext( ()->source.getComponent());
+        PopupContext popupContext = dialogUiFactory.createPopupContext( null);
         ApplicationEventContext context = null;
         eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext, context));
     }
