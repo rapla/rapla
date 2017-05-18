@@ -158,13 +158,13 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         try
         {
             Date startDate = model.getStartDate();
-            startDateSelection.setDate(startDate);
+            setStartDate(startDate);
             final PeriodModel periodModel = getPeriodModel();
             periodChooser.setPeriodModel(periodModel);
             periodChooser.setDate(startDate);
             Date endDate = model.getEndDate();
             periodPanel.setVisible(periodModel.getSize() > 0);
-            endDateSelection.setDate(DateTools.subDay(endDate));
+            setEndDate(endDate);
         }
         finally
         {
@@ -216,6 +216,8 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         }
     }
 
+
+
     public JComponent getComponent()
     {
         return panel;
@@ -228,31 +230,32 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
             if (!listenersEnabled)
                 return;
             // BJO 00000042
-            if (e.getSource() == prevStartButton)
+            final Object source = e.getSource();
+            if (source == prevStartButton)
             {
-                startDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, -1));
+                setStartDate(DateTools.add(getStartDate(), incrementSize, -1));
             }
-            else if (e.getSource() == nextStartButton)
+            else if (source == nextStartButton)
             {
-                startDateSelection.setDate(DateTools.add(startDateSelection.getDate(), incrementSize, 1));
+                setStartDate(DateTools.add(getStartDate(), incrementSize, 1));
             }
-            else if (e.getSource() == prevEndButton)
+            else if (source == prevEndButton)
             {
-                endDateSelection.setDate(DateTools.add(endDateSelection.getDate(), incrementSize, -1));
+                setEndDate(DateTools.add(getEndDate(), incrementSize, -1));
             }
-            else if (e.getSource() == nextEndButton)
+            else if (source == nextEndButton)
             {
-                endDateSelection.setDate(DateTools.add(endDateSelection.getDate(), incrementSize, 1));
+                setEndDate(DateTools.add(getEndDate(), incrementSize, 1));
             }
-            else if (e.getSource() == startTodayButton)
+            else if (source == startTodayButton)
             {
-                startDateSelection.setDate(getFacade().today());
+                setStartDate(getFacade().today());
             }
-            else if (e.getSource() == endTodayButton)
+            else if (source == endTodayButton)
             {
-                endDateSelection.setDate(getFacade().today());
+                setEndDate(getFacade().today());
             }
-            else if (e.getSource() == periodChooser)
+            else if (source == periodChooser)
             {
                 Period period = periodChooser.getPeriod();
                 if (period == null)
@@ -274,25 +277,26 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         {
             if (!listenersEnabled)
                 return;
-            if (evt.getSource() == startDateSelection)
+            final Object source = evt.getSource();
+            Date startDate = getStartDate();
+            Date endDate = getEndDate();
+            if (source == startDateSelection)
             {
-                Date newStartDate = startDateSelection.getDate();
-                if (newStartDate.after(endDateSelection.getDate()))
+                if (endDate != null && startDate.after(DateTools.subDay(endDate)))
                 {
-                    Date endDate = DateTools.addDays(newStartDate, 1);
-                    endDateSelection.setDate(endDate);
+                    endDate = DateTools.addDay(startDate );
                 }
             }
-            if (evt.getSource() == endDateSelection)
+            else if (source == endDateSelection)
             {
-                Date newEndDate = endDateSelection.getDate();
-                if (newEndDate.before(startDateSelection.getDate()))
+                endDate = getEndDate();
+                if (endDate.before(startDate))
                 {
-                    Date startDate = DateTools.addDays(newEndDate, -1);
-                    startDateSelection.setDate(startDate);
+                    startDate = DateTools.subDay(endDate);
                 }
             }
-            updateDates(startDateSelection.getDate(), DateTools.addDay(endDateSelection.getDate()));
+            // We need to fill the date to make it a proper end Date
+            updateDates(startDate,endDate);
             fireDateChange(evt.getDate());
         }
 
@@ -305,14 +309,52 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
                 model.setEndDate(end);
                 model.setSelectedDate(start);
                 //               start
-                startDateSelection.setDate(start);
-                endDateSelection.setDate(end);
+                setStartDate( start);
+                setEndDate( end);
+
+
             }
             finally
             {
                 listenersEnabled = true;
             }
 
+        }
+    }
+
+    private void setStartDate(Date date)
+    {
+        startDateSelection.setDate(date);
+    }
+
+    private void setEndDate(Date date)
+    {
+        if (date == null)
+        {
+            endDateSelection.setDate(null);
+        }
+        else
+        {
+
+            endDateSelection.setDate(DateTools.subDay(date));
+        }
+    }
+
+    private Date getStartDate()
+    {
+        return startDateSelection.getDate();
+    }
+
+    private Date getEndDate()
+    {
+        final Date date = endDateSelection.getDate();
+        if ( date == null)
+        {
+            return null;
+        }
+        else
+        {
+            return DateTools.addDay(DateTools.cutDate( date));
         }
     }
 }
