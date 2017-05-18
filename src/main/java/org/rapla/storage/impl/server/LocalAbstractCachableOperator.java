@@ -2223,7 +2223,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Collection<ReferenceInfo> removeIds = new ArrayList<ReferenceInfo>(evt.getRemoveIds());
         for (Entity entity : storeObjects)
         {
-            //evt.putStore(entity);
             Class<? extends Entity> raplaType = entity.getTypeClass();
             if (raplaType == DynamicType.class)
             {

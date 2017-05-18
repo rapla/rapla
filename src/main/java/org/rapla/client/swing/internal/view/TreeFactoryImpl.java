@@ -93,15 +93,16 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
 @Singleton
-@DefaultImplementation(of=TreeFactory.class,context = InjectionContext.swing)
-public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
+@DefaultImplementation(of = TreeFactory.class, context = InjectionContext.swing)
+public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
+{
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
-    
+
     Icon bigFolderUsers;
     Icon bigFolderPeriods;
     Icon bigFolderResourcesFiltered;
-    Icon bigFolderResourcesUnfiltered; 
+    Icon bigFolderResourcesUnfiltered;
     Icon bigFolderEvents;
     Icon bigFolderCategories;
     Icon bigFolderConflicts;
@@ -111,10 +112,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     Icon folderOpenIcon;
     Icon forbiddenIcon;
     Font normalFont = UIManager.getFont("Tree.font");
-    Font bigFont =  normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
-    
+    Font bigFont = normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
+
     @Inject
-    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory, RaplaImages raplaImages) {
+    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory, RaplaImages raplaImages)
+    {
         super(facade, i18n, raplaLocale, logger);
         this.infoFactory = infoFactory;
         this.raplaImages = raplaImages;
@@ -127,116 +129,123 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         bigFolderConflicts = raplaImages.getIconFromKey("icon.big_folder_conflicts");
         defaultIcon = raplaImages.getIconFromKey("icon.tree.default");
         personIcon = raplaImages.getIconFromKey("icon.tree.persons");
-        folderClosedIcon =raplaImages.getIconFromKey("icon.folder");
+        folderClosedIcon = raplaImages.getIconFromKey("icon.folder");
         folderOpenIcon = raplaImages.getIconFromKey("icon.folder");
         forbiddenIcon = raplaImages.getIconFromKey("icon.no_perm");
-        
+
     }
-   
-    class DynamicTypeComperator  implements Comparator<DynamicType>
+
+    class DynamicTypeComperator implements Comparator<DynamicType>
     {
-    	public int compare(DynamicType o1,DynamicType o2)
-    	{
-    		int rang1 = getRang(o1);
-    		int rang2 = getRang(o2);
-    		if ( rang1 < rang2)
-    		{
-    			return -1;
-    		}
-    		if ( rang1 > rang2)
-    		{
-    			return 1;
-    		}
-    		return compareIds((DynamicTypeImpl)o1, (DynamicTypeImpl)o2);
-    	}
+        public int compare(DynamicType o1, DynamicType o2)
+        {
+            int rang1 = getRang(o1);
+            int rang2 = getRang(o2);
+            if (rang1 < rang2)
+            {
+                return -1;
+            }
+            if (rang1 > rang2)
+            {
+                return 1;
+            }
+            return compareIds((DynamicTypeImpl) o1, (DynamicTypeImpl) o2);
+        }
 
-		private int compareIds(DynamicTypeImpl o1, DynamicTypeImpl o2) {
-			return o1.compareTo( o2);
-		}
+        private int compareIds(DynamicTypeImpl o1, DynamicTypeImpl o2)
+        {
+            return o1.compareTo(o2);
+        }
 
-		private int getRang(DynamicType o1) {
-			String t2 = o1.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-			if ( t2 != null && t2.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
-			{
-				return 1;
-			}
-			if ( t2 != null && t2.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
-			{
-				return 2;
-			}
-			else
-			{
-				return 3;
-			}
-		}
+        private int getRang(DynamicType o1)
+        {
+            String t2 = o1.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
+            if (t2 != null && t2.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
+            {
+                return 1;
+            }
+            if (t2 != null && t2.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON))
+            {
+                return 2;
+            }
+            else
+            {
+                return 3;
+            }
+        }
     }
-    
-    public TreeModel createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations) {
+
+    public TreeModel createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations)
+    {
         @SuppressWarnings({ "rawtypes" })
         Comparator<Classifiable> comp = new SortedClassifiableComparator(getLocale());
-        return createClassifiableModel( classifiables, comp, useCategorizations);
+        return createClassifiableModel(classifiables, comp, useCategorizations);
     }
 
-    private TreeModel createClassifiableModel(Classifiable[] classifiables, Comparator<Classifiable> comp,boolean useCategorizations) {
+    private TreeModel createClassifiableModel(Classifiable[] classifiables, Comparator<Classifiable> comp, boolean useCategorizations)
+    {
         Set<DynamicType> typeSet = new LinkedHashSet<DynamicType>();
-    	for (Classifiable classifiable: classifiables)
-    	{
-    		DynamicType type = classifiable.getClassification().getType();
-			typeSet.add( type);
-    	}
-    	List<DynamicType> typeList = new ArrayList<DynamicType>(typeSet);
-    	Collections.sort(typeList, new DynamicTypeComperator());
-        Map<DynamicType,DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType,DefaultMutableTreeNode>();
-        for (DynamicType type: typeList) {
-        	DefaultMutableTreeNode node = new NamedNode(type);
+        for (Classifiable classifiable : classifiables)
+        {
+            DynamicType type = classifiable.getClassification().getType();
+            typeSet.add(type);
+        }
+        List<DynamicType> typeList = new ArrayList<DynamicType>(typeSet);
+        Collections.sort(typeList, new DynamicTypeComperator());
+        Map<DynamicType, DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType, DefaultMutableTreeNode>();
+        for (DynamicType type : typeList)
+        {
+            DefaultMutableTreeNode node = new NamedNode(type);
             nodeMap.put(type, node);
         }
-        
+
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("ROOT");
         Set<Classifiable> sortedClassifiable = new TreeSet<Classifiable>(comp);
         sortedClassifiable.addAll(Arrays.asList(classifiables));
         addClassifiables(nodeMap, sortedClassifiable, useCategorizations);
         int count = 0;
-        for (DynamicType type: typeList) {
-            DefaultMutableTreeNode typeNode =  nodeMap.get(type);
+        for (DynamicType type : typeList)
+        {
+            DefaultMutableTreeNode typeNode = nodeMap.get(type);
             root.insert(typeNode, count++);
         }
         return new DefaultTreeModel(root);
     }
 
-    
-	private Map<Classifiable, Collection<NamedNode>> addClassifiables(Map<DynamicType, DefaultMutableTreeNode > nodeMap,Collection<? extends Classifiable> classifiables,boolean useCategorizations) 
-	{
-		Map<DynamicType,Map<Object,DefaultMutableTreeNode>> categorization = new LinkedHashMap<DynamicType, Map<Object,DefaultMutableTreeNode>>();
+    private Map<Classifiable, Collection<NamedNode>> addClassifiables(Map<DynamicType, DefaultMutableTreeNode> nodeMap,
+            Collection<? extends Classifiable> classifiables, boolean useCategorizations)
+    {
+        Map<DynamicType, Map<Object, DefaultMutableTreeNode>> categorization = new LinkedHashMap<DynamicType, Map<Object, DefaultMutableTreeNode>>();
         Map<Classifiable, Collection<NamedNode>> childMap = new HashMap<Classifiable, Collection<NamedNode>>();
         Map<Classifiable, Collection<Classifiable>> belongsToMap = new HashMap<Classifiable, Collection<Classifiable>>();
         Map<Classifiable, NamedNode> objectToNamedNode = new HashMap<Classifiable, NamedNode>();
-		Map<DynamicType,Collection<NamedNode>> uncategorized = new LinkedHashMap<DynamicType, Collection<NamedNode>>();
-        for ( DynamicType type: nodeMap.keySet())
+        Map<DynamicType, Collection<NamedNode>> uncategorized = new LinkedHashMap<DynamicType, Collection<NamedNode>>();
+        for (DynamicType type : nodeMap.keySet())
         {
-        	categorization.put( type, new LinkedHashMap<Object, DefaultMutableTreeNode>());
-        	uncategorized.put( type, new ArrayList<NamedNode>());
+            categorization.put(type, new LinkedHashMap<Object, DefaultMutableTreeNode>());
+            uncategorized.put(type, new ArrayList<NamedNode>());
         }
-        for (Iterator<? extends Classifiable> it = classifiables.iterator(); it.hasNext();) {
-            Classifiable classifiable =  it.next();
+        for (Iterator<? extends Classifiable> it = classifiables.iterator(); it.hasNext(); )
+        {
+            Classifiable classifiable = it.next();
             Classification classification = classifiable.getClassification();
             Collection<NamedNode> childNodes = new ArrayList<NamedNode>();
-            childMap.put( classifiable, childNodes);
+            childMap.put(classifiable, childNodes);
             DynamicType type = classification.getType();
             Assert.notNull(type);
             DefaultMutableTreeNode typeNode = nodeMap.get(type);
             // type not found, could be because type is not visible
-            if ( typeNode == null)
+            if (typeNode == null)
             {
                 continue;
             }
             Attribute categorizationAtt = getCategorizationAttribute(classification);
-            Attribute belongsAtt = ((DynamicTypeImpl)classification.getType()).getBelongsToAttribute();
-            if(belongsAtt != null && classification.getValue(belongsAtt) != null)
+            Attribute belongsAtt = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
+            if (belongsAtt != null && classification.getValue(belongsAtt) != null)
             {
                 Classifiable parent = (Classifiable) classification.getValue(belongsAtt);
                 Collection<Classifiable> parts = belongsToMap.get(parent);
-                if( parts == null )
+                if (parts == null)
                 {
                     parts = new ArrayList<Classifiable>();
                     belongsToMap.put(parent, parts);
@@ -245,83 +254,82 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             }
             if (useCategorizations && categorizationAtt != null && classification.getValues(categorizationAtt).size() > 0)
             {
-            	Collection<Object> values = classification.getValues(categorizationAtt);
-            	for ( Object value:values)
-            	{
-            		NamedNode childNode = new NamedNode((Named) classifiable);
-                    childNodes.add( childNode);
+                Collection<Object> values = classification.getValues(categorizationAtt);
+                for (Object value : values)
+                {
+                    NamedNode childNode = new NamedNode((Named) classifiable);
+                    childNodes.add(childNode);
                     Map<Object, DefaultMutableTreeNode> map = categorization.get(type);
-                    DefaultMutableTreeNode parentNode = map.get( value);
-            		if ( parentNode == null)
-            		{
-            			String name = getName( value);
-            			parentNode = new DefaultMutableTreeNode(new Categorization(name));
-            			map.put( value, parentNode);
-            		}
-                	parentNode.add(childNode);
-            	}
+                    DefaultMutableTreeNode parentNode = map.get(value);
+                    if (parentNode == null)
+                    {
+                        String name = getName(value);
+                        parentNode = new DefaultMutableTreeNode(new Categorization(name));
+                        map.put(value, parentNode);
+                    }
+                    parentNode.add(childNode);
+                }
             }
             else
-            {	
-            	NamedNode childNode = new NamedNode((Named) classifiable);
-            	objectToNamedNode.put(classifiable, childNode);
-                childNodes.add( childNode);
+            {
+                NamedNode childNode = new NamedNode((Named) classifiable);
+                objectToNamedNode.put(classifiable, childNode);
+                childNodes.add(childNode);
                 Assert.notNull(typeNode);
-                uncategorized.get(type).add( childNode);
-                if(useCategorizations)
+                uncategorized.get(type).add(childNode);
+                if (useCategorizations)
                 {
                     fillPackages(classification, childNode);
                 }
             }
 
         }
-		for ( DynamicType type:categorization.keySet())
-		{
-			DefaultMutableTreeNode parentNode = nodeMap.get( type);
-			//Attribute categorizationAtt = type.getAttribute("categorization");
-            Map<Object, DefaultMutableTreeNode> map = categorization.get( type);
-			Collection<Object> sortedCats = getSortedCategorizations(map.keySet());
-			for ( Object cat: sortedCats)
-			{
-				DefaultMutableTreeNode childNode = map.get(cat);
-				parentNode.add(childNode);
-			}
-		}
-		
-		for ( DynamicType type: uncategorized.keySet())
-		{
-			DefaultMutableTreeNode parentNode = nodeMap.get( type);
-			for (NamedNode node:uncategorized.get( type))
-			{
-				parentNode.add(node);
-			}
-		}
-		if(useCategorizations)
-		{
-		    for (Classifiable classifiable : classifiables)
-		    {
-		        final NamedNode node = objectToNamedNode.get(classifiable);
-		        if(node != null)
-		        {
-		            addBelongsToNodes(belongsToMap, classifiable, node);
-		        }
-		    }
-		}
-		return childMap;
-	}
+        for (DynamicType type : categorization.keySet())
+        {
+            DefaultMutableTreeNode parentNode = nodeMap.get(type);
+            //Attribute categorizationAtt = type.getAttribute("categorization");
+            Map<Object, DefaultMutableTreeNode> map = categorization.get(type);
+            Collection<Object> sortedCats = getSortedCategorizations(map.keySet());
+            for (Object cat : sortedCats)
+            {
+                DefaultMutableTreeNode childNode = map.get(cat);
+                parentNode.add(childNode);
+            }
+        }
 
+        for (DynamicType type : uncategorized.keySet())
+        {
+            DefaultMutableTreeNode parentNode = nodeMap.get(type);
+            for (NamedNode node : uncategorized.get(type))
+            {
+                parentNode.add(node);
+            }
+        }
+        if (useCategorizations)
+        {
+            for (Classifiable classifiable : classifiables)
+            {
+                final NamedNode node = objectToNamedNode.get(classifiable);
+                if (node != null)
+                {
+                    addBelongsToNodes(belongsToMap, classifiable, node);
+                }
+            }
+        }
+        return childMap;
+    }
 
     private void fillPackages(Classification classification, NamedNode node)
     {
-        final Attribute packagesAttribute = ((DynamicTypeImpl)classification.getType()).getPackagesAttribute();
+        final Attribute packagesAttribute = ((DynamicTypeImpl) classification.getType()).getPackagesAttribute();
         if (packagesAttribute != null)
         {
             final Collection<Object> values = classification.getValues(packagesAttribute);
             for (Object target : values)
             {
-                if(target instanceof Classifiable)
+                if (target instanceof Classifiable)
                 {
-                    final Classifiable classifiable = (Classifiable)target;
+                    final Classifiable classifiable = (Classifiable) target;
                     NamedNode childNode = new NamedNode((Named) classifiable);
                     node.add(childNode);
                     final Classification childClassification = classifiable.getClassification();
@@ -334,7 +342,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     private void addBelongsToNodes(Map<Classifiable, Collection<Classifiable>> belongsToMap, Classifiable classifiable, final NamedNode node)
     {
         final Collection<Classifiable> parts = belongsToMap.get(classifiable);
-        if(parts != null)
+        if (parts != null)
         {
             for (Classifiable belongsTo : parts)
             {
@@ -345,11 +353,12 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         }
     }
 
-    protected Attribute getCategorizationAttribute(Classification classification) {
-        for (Attribute attribute: classification.getType().getAttributeIterable())
+    protected Attribute getCategorizationAttribute(Classification classification)
+    {
+        for (Attribute attribute : classification.getType().getAttributeIterable())
         {
             String annotation = attribute.getAnnotation(AttributeAnnotations.KEY_CATEGORIZATION);
-            if  ( annotation != null && annotation.equals("true"))
+            if (annotation != null && annotation.equals("true"))
             {
                 return attribute;
             }
@@ -357,115 +366,131 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         return null;
     }
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Collection<Object> getSortedCategorizations(Collection<Object> unsortedCats) {
-		ArrayList<Comparable> sortableCats = new ArrayList<Comparable>();
-		ArrayList<Object> unsortableCats = new ArrayList<Object>();
-		// All attribute values should implement Comparable but for the doubts we test if value is not comparable
-		for ( Object cat: unsortedCats)
-		{
-			if ( cat instanceof Comparable)
-			{					
-				sortableCats.add( (Comparable<?>) cat);
-			}
-			else
-			{
-				unsortableCats.add( cat);
-			}
-		}
-		Collections.sort( sortableCats);
-		List<Object> allCats = new ArrayList<Object>( sortableCats);
-		allCats.addAll( unsortableCats);
-		return allCats;
-	}
-	
-	class Categorization implements Comparable<Categorization>
-	{
-	    String cat;
-	    public Categorization(String cat) {
-	        this.cat = cat.intern();
-	    }
-	    
-	    public String toString()
-	    {
-	        return cat;
-	    }
-	    
-	    public boolean equals( Object obj)
-	    {
-	        return cat.equals( obj.toString());
-	    }
-
-	    public int hashCode() {
-	        return cat.hashCode();
-	    }
-
-	    public int compareTo(Categorization o) 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private Collection<Object> getSortedCategorizations(Collection<Object> unsortedCats)
+    {
+        ArrayList<Comparable> sortableCats = new ArrayList<Comparable>();
+        ArrayList<Object> unsortableCats = new ArrayList<Object>();
+        // All attribute values should implement Comparable but for the doubts we test if value is not comparable
+        for (Object cat : unsortedCats)
         {
-            return cat.compareTo( o.cat);
+            if (cat instanceof Comparable)
+            {
+                sortableCats.add((Comparable<?>) cat);
+            }
+            else
+            {
+                unsortableCats.add(cat);
+            }
         }
-	    
-	}
+        Collections.sort(sortableCats);
+        List<Object> allCats = new ArrayList<Object>(sortableCats);
+        allCats.addAll(unsortableCats);
+        return allCats;
+    }
 
-    public TreeCellRenderer createConflictRenderer() {
+    class Categorization implements Comparable<Categorization>
+    {
+        String cat;
+
+        public Categorization(String cat)
+        {
+            this.cat = cat.intern();
+        }
+
+        public String toString()
+        {
+            return cat;
+        }
+
+        public boolean equals(Object obj)
+        {
+            return cat.equals(obj.toString());
+        }
+
+        public int hashCode()
+        {
+            return cat.hashCode();
+        }
+
+        public int compareTo(Categorization o)
+        {
+            return cat.compareTo(o.cat);
+        }
+
+    }
+
+    public TreeCellRenderer createConflictRenderer()
+    {
         return new ConflictTreeCellRenderer();
     }
 
-    private boolean isInFilter(ClassificationFilter[] filter, Classifiable classifiable) {
+    private boolean isInFilter(ClassificationFilter[] filter, Classifiable classifiable)
+    {
         if (filter == null)
             return true;
-        for (int i = 0; i < filter.length; i++) {
-            if (filter[i].matches(classifiable.getClassification())) {
+        for (int i = 0; i < filter.length; i++)
+        {
+            if (filter[i].matches(classifiable.getClassification()))
+            {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean isInFilter(ClassificationFilter[] filter, DynamicType type) {
+    private boolean isInFilter(ClassificationFilter[] filter, DynamicType type)
+    {
         if (filter == null)
             return true;
-        for (int i = 0; i < filter.length; i++) {
-            if (filter[i].getType().equals(type)) {
+        for (int i = 0; i < filter.length; i++)
+        {
+            if (filter[i].getType().equals(type))
+            {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean hasRulesFor(ClassificationFilter[] filter, DynamicType type) {
+    private boolean hasRulesFor(ClassificationFilter[] filter, DynamicType type)
+    {
         if (filter == null)
             return false;
-        for (int i = 0; i < filter.length; i++) {
-            if (filter[i].getType().equals(type) && filter[i].ruleSize() > 0) {
+        for (int i = 0; i < filter.length; i++)
+        {
+            if (filter[i].getType().equals(type) && filter[i].ruleSize() > 0)
+            {
                 return true;
             }
         }
         return false;
     }
-
-  
 
     /**
      * Returns the Resources root
-     * 
+     *
      * @param filter
      * @return
      * @throws RaplaException
      */
-    public TypeNode createResourcesModel(ClassificationFilter[] filter) throws RaplaException {
+    public TypeNode createResourcesModel(ClassificationFilter[] filter) throws RaplaException
+    {
         TypeNode treeNode = new TypeNode(Allocatable.class, CalendarModelImpl.ALLOCATABLES_ROOT, getString("resources"));
-        Map<DynamicType,DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType, DefaultMutableTreeNode>();
+        Map<DynamicType, DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType, DefaultMutableTreeNode>();
 
         boolean resourcesFiltered = false;
 
         DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < types.length; i++)
+        {
             DynamicType type = types[i];
-            if (hasRulesFor(filter, type)) {
+            if (hasRulesFor(filter, type))
+            {
                 resourcesFiltered = true;
             }
-            if (!isInFilter(filter, type)) {
+            if (!isInFilter(filter, type))
+            {
                 resourcesFiltered = true;
                 continue;
             }
@@ -477,12 +502,15 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
         // creates typ folders
         types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < types.length; i++)
+        {
             DynamicType type = types[i];
-            if (hasRulesFor(filter, type)) {
+            if (hasRulesFor(filter, type))
+            {
                 resourcesFiltered = true;
             }
-            if (!isInFilter(filter, type)) {
+            if (!isInFilter(filter, type))
+            {
                 resourcesFiltered = true;
                 continue;
             }
@@ -496,38 +524,38 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
         // adds elements to typ folders
         Allocatable[] filtered = getQuery().getAllocatables(filter);
-//        Collection<Allocatable> filtered = new ArrayList<Allocatable>();
-//        for (Allocatable classifiable: allocatables) {
-//            if (!isInFilter(filter, classifiable)) {
-//                continue;
-//            }
-//            filtered.add( classifiable);
-//        }
+        //        Collection<Allocatable> filtered = new ArrayList<Allocatable>();
+        //        for (Allocatable classifiable: allocatables) {
+        //            if (!isInFilter(filter, classifiable)) {
+        //                continue;
+        //            }
+        //            filtered.add( classifiable);
+        //        }
         Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));
-		addClassifiables(nodeMap, sorted, true);
+        addClassifiables(nodeMap, sorted, true);
 
-// CK we disable the feature that we dont show empty resource nodes. Resource nodes visibility can be regulated by types
-//        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
-//        {
-//            DynamicType key = entry.getKey();
-//        	MutableTreeNode value = entry.getValue();
-//        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer(key)))
-//        	{
-//        		treeNode.remove( value);
-//        	}
-//        }
+        // CK we disable the feature that we dont show empty resource nodes. Resource nodes visibility can be regulated by types
+        //        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
+        //        {
+        //            DynamicType key = entry.getKey();
+        //        	MutableTreeNode value = entry.getValue();
+        //        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer(key)))
+        //        	{
+        //        		treeNode.remove( value);
+        //        	}
+        //        }
         return treeNode;
     }
 
+    private Collection<Allocatable> sorted(Allocatable[] allocatables, Comparator<Classifiable> comp)
+    {
 
-    private Collection<Allocatable> sorted(Allocatable[] allocatables, Comparator<Classifiable> comp) {
-
-        Map<String,Set<Allocatable>> typeSet = new LinkedHashMap<>();
-        for ( Allocatable alloc:allocatables)
+        Map<String, Set<Allocatable>> typeSet = new LinkedHashMap<>();
+        for (Allocatable alloc : allocatables)
         {
             final String key = alloc.getClassification().getType().getKey();
             Set<Allocatable> sortedSet = typeSet.get(key);
-            if ( sortedSet == null)
+            if (sortedSet == null)
             {
                 sortedSet = new TreeSet<>(comp);
                 typeSet.put(key, sortedSet);
@@ -535,23 +563,23 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             sortedSet.add(alloc);
         }
         LinkedHashSet<Allocatable> sortedList = new LinkedHashSet<>();
-        for ( Set<Allocatable> sortedSubset: typeSet.values())
+        for (Set<Allocatable> sortedSubset : typeSet.values())
         {
-            sortedList.addAll( sortedSubset);
+            sortedList.addAll(sortedSubset);
         }
         return sortedList;
     }
-    
 
-    public TypeNode createReservationsModel() throws RaplaException {
+    public TypeNode createReservationsModel() throws RaplaException
+    {
         TypeNode treeNode = new TypeNode(Reservation.class, getString("reservation_type"));
 
         // creates typ folders
         DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < types.length; i++)
+        {
             DynamicType type = types[i];
-            
-            
+
             NamedNode node = new NamedNode(type);
             treeNode.add(node);
         }
@@ -560,7 +588,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
     }
 
     @SuppressWarnings("deprecation")
-	public DefaultTreeModel createModel(ClassificationFilter[] filter) throws RaplaException 
+    public DefaultTreeModel createModel(ClassificationFilter[] filter) throws RaplaException
     {
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("ROOT");
 
@@ -597,33 +625,32 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             }
             root.add(userRoot);
         }
+        final Category userGroupsCategory = getQuery().getUserGroupsCategory();
+        if (canAdminUsers || isAdmin)
+        {
+            NamedNode categoryRoot = createRootNode(Collections.singleton(userGroupsCategory), true);
+            root.add(categoryRoot);
+        }
         if (isAdmin)
         {
             TypeNode reservationsRoot = createReservationsModel();
             root.add(reservationsRoot);
-        }
-
-        if ( isAdmin)
-        {
             NamedNode categoryRoot = createRootNode(Collections.singleton(getQuery().getSuperCategory()), true);
             root.add(categoryRoot);
+            final int indexOfGroupsCategory = categoryRoot.getIndexOfUserObject(userGroupsCategory);
+            if (indexOfGroupsCategory >= 0)
+            {
+                categoryRoot.remove(indexOfGroupsCategory);
+            }
 
             // set category root name
             MultiLanguageName multiLanguageName = getQuery().getSuperCategory().getName();
             // TODO try to replace hack
             multiLanguageName.setNameWithoutReadCheck(getI18n().getLang(), getString("categories"));
-        }
-        else if ( canAdminUsers )
-        {
-            NamedNode categoryRoot = createRootNode(Collections.singleton(getQuery().getUserGroupsCategory()), true);
-            root.add(categoryRoot);
-        }
-        if (isAdmin)
-        {
             // Add the periods    
             DefaultMutableTreeNode periodRoot = new TypeNode(Period.class, getString("periods"));
             DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
-            
+
             Allocatable[] periodList = getQuery().getAllocatables(periodType.newClassificationFilter().toArray());
             Comparator<Classifiable> comp = new Comparator<Classifiable>()
             {
@@ -632,19 +659,20 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 {
                     final Object start1 = o1.getClassification().getValue("start");
                     final Object start2 = o2.getClassification().getValue("start");
-                    if ( start1 != null && start2 != null && start1 instanceof  Comparable)
+                    if (start1 != null && start2 != null && start1 instanceof Comparable)
                     {
-                        int result = ((Comparable)start1).compareTo( start2);
-                        if ( result != 0)
+                        int result = ((Comparable) start1).compareTo(start2);
+                        if (result != 0)
                         {
-                            return  result;
+                            return result;
                         }
                     }
 
-                    return ((Entity) o1).getId().compareTo(((Entity)o2).getId());
+                    return ((Entity) o1).getId().compareTo(((Entity) o2).getId());
                 }
             };
-            for (final Allocatable period: sorted(periodList, comp)) {
+            for (final Allocatable period : sorted(periodList, comp))
+            {
                 NamedNode node = new NamedNode(period);
                 periodRoot.add(node);
             }
@@ -652,31 +680,32 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         }
         return new DefaultTreeModel(root);
     }
-    
+
     private class ConflictRoot
     {
         final String text;
         int conflictNumber = 0;
-        
 
         ConflictRoot(String text)
         {
             this.text = text;
         }
 
-        public void setConflictNumber(int conflictNumber) {
+        public void setConflictNumber(int conflictNumber)
+        {
             this.conflictNumber = conflictNumber;
         }
 
-        
         @Override
-        public String toString() {
-            String result =getI18n().format(text, conflictNumber);
+        public String toString()
+        {
+            String result = getI18n().format(text, conflictNumber);
             return result;
         }
 
         @Override
-        public int hashCode() {
+        public int hashCode()
+        {
             final int prime = 31;
             int result = 1;
             result = prime * result + ((text == null) ? 0 : text.hashCode());
@@ -684,7 +713,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(Object obj)
+        {
             if (this == obj)
                 return true;
             if (obj == null)
@@ -692,61 +722,68 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             if (getClass() != obj.getClass())
                 return false;
             ConflictRoot other = (ConflictRoot) obj;
-//            if (conflictNumber != other.conflictNumber)
-//                return false;
-            if (text == null) {
+            //            if (conflictNumber != other.conflictNumber)
+            //                return false;
+            if (text == null)
+            {
                 if (other.text != null)
                     return false;
-            } else if (!text.equals(other.text))
+            }
+            else if (!text.equals(other.text))
                 return false;
             return true;
         }
 
-       
-        
     }
-    public DefaultTreeModel createConflictModel(Collection<Conflict> conflicts ) throws RaplaException {
-	    DefaultMutableTreeNode rootNode = new TypeNode(Conflict.class, "root");
-	    ConflictRoot conflictRootObj = new ConflictRoot("conflictUC");
-		DefaultMutableTreeNode treeNode = new TypeNode(Conflict.class, conflictRootObj);
-		rootNode.add( treeNode );
-        if ( conflicts != null )
+
+    public DefaultTreeModel createConflictModel(Collection<Conflict> conflicts) throws RaplaException
+    {
+        DefaultMutableTreeNode rootNode = new TypeNode(Conflict.class, "root");
+        ConflictRoot conflictRootObj = new ConflictRoot("conflictUC");
+        DefaultMutableTreeNode treeNode = new TypeNode(Conflict.class, conflictRootObj);
+        rootNode.add(treeNode);
+        if (conflicts != null)
         {
             {
                 Iterable<Conflict> filteredConflicts = filter(conflicts, true);
                 int conflict_number = addConflicts(filteredConflicts, treeNode);
-                conflictRootObj.setConflictNumber( conflict_number);
+                conflictRootObj.setConflictNumber(conflict_number);
             }
             {
                 Iterable<Conflict> filteredConflicts = filter(conflicts, false);
                 ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC");
                 DefaultMutableTreeNode treeNode2 = new TypeNode(Conflict.class, conflictDisabledRootObj);
                 int conflict_number = addConflicts(filteredConflicts, treeNode2);
-                if ( conflict_number > 0 )
+                if (conflict_number > 0)
                 {
                     conflictDisabledRootObj.setConflictNumber(conflict_number);
-                    rootNode.add( treeNode2);
+                    rootNode.add(treeNode2);
                 }
-            } 
+            }
         }
         return new DefaultTreeModel(rootNode);
     }
 
-    private Iterable<Conflict> filter(Iterable<Conflict> conflicts, final boolean enabledState) {
-        return new FilterIterable<Conflict>( conflicts) {
-            protected boolean isInIterator(Object obj) {
-                boolean inIterator = ((Conflict)obj).checkEnabled() == enabledState;
+    private Iterable<Conflict> filter(Iterable<Conflict> conflicts, final boolean enabledState)
+    {
+        return new FilterIterable<Conflict>(conflicts)
+        {
+            protected boolean isInIterator(Object obj)
+            {
+                boolean inIterator = ((Conflict) obj).checkEnabled() == enabledState;
                 return inIterator;
-//                return true;
+                //                return true;
             }
         };
     }
 
-    private int addConflicts(Iterable<Conflict> conflicts, DefaultMutableTreeNode treeNode) throws RaplaException {
+    private int addConflicts(Iterable<Conflict> conflicts, DefaultMutableTreeNode treeNode) throws RaplaException
+    {
         int conflictsAdded = 0;
-        Map<DynamicType,DefaultMutableTreeNode> nodeMap = new LinkedHashMap<DynamicType, DefaultMutableTreeNode>();
+        Map<DynamicType, DefaultMutableTreeNode> nodeMap = new LinkedHashMap<DynamicType, DefaultMutableTreeNode>();
         DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < types.length; i++)
+        {
             DynamicType type = types[i];
             NamedNode node = new NamedNode(type);
             treeNode.add(node);
@@ -755,125 +792,140 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
 
         // creates typ folders
         types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0; i < types.length; i++)
+        {
             DynamicType type = types[i];
             NamedNode node = new NamedNode(type);
             treeNode.add(node);
             nodeMap.put(type, node);
         }
         Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
-        for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
+        for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext(); )
+        {
             Conflict conflict = it.next();
             Allocatable allocatable = conflict.getAllocatable();
-            allocatables.add( allocatable );
+            allocatables.add(allocatable);
         }
         Collection<Allocatable> sorted = sorted(allocatables.toArray(new Allocatable[] {}), new SortedClassifiableComparator(getLocale()));
         Map<Classifiable, Collection<NamedNode>> childMap = addClassifiables(nodeMap, sorted, true);
-        for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext();) {
+        for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext(); )
+        {
             Conflict conflict = it.next();
             conflictsAdded++;
             Allocatable allocatable = conflict.getAllocatable();
-            for(NamedNode allocatableNode : childMap.get( allocatable))
+            for (NamedNode allocatableNode : childMap.get(allocatable))
             {
-                allocatableNode.add(new NamedNode( conflict));
+                allocatableNode.add(new NamedNode(conflict));
             }
         }
-        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
+        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry : nodeMap.entrySet())
         {
             MutableTreeNode value = entry.getValue();
-            if  (value.getChildCount() == 0 )
+            if (value.getChildCount() == 0)
             {
-                treeNode.remove( value);
+                treeNode.remove(value);
             }
         }
         return conflictsAdded;
     }
 
-    class TypeNode extends DefaultMutableTreeNode {
+    class TypeNode extends DefaultMutableTreeNode
+    {
         private static final long serialVersionUID = 1L;
 
         boolean filtered;
         Class<? extends RaplaObject> type;
         String title;
 
-        TypeNode(Class<? extends RaplaObject> type, Object userObject, String title) {
+        TypeNode(Class<? extends RaplaObject> type, Object userObject, String title)
+        {
             this.type = type;
             this.title = title;
             setUserObject(userObject);
         }
 
-        TypeNode(Class<? extends RaplaObject> type, Object userObject) {
+        TypeNode(Class<? extends RaplaObject> type, Object userObject)
+        {
             this(type, userObject, null);
         }
 
-        public Class<? extends RaplaObject> getType() {
+        public Class<? extends RaplaObject> getType()
+        {
             return type;
         }
 
-        public boolean isFiltered() {
+        public boolean isFiltered()
+        {
             return filtered;
         }
 
-        public void setFiltered(boolean filtered) {
+        public void setFiltered(boolean filtered)
+        {
             this.filtered = filtered;
         }
 
-        public Object getTitle() {
-            if (title != null) {
+        public Object getTitle()
+        {
+            if (title != null)
+            {
                 return title;
-            } else {
+            }
+            else
+            {
                 return userObject.toString();
             }
         }
 
     }
 
-    public DefaultMutableTreeNode newNamedNode(Named element) {
+    public DefaultMutableTreeNode newNamedNode(Named element)
+    {
         return new NamedNode(element);
     }
 
-    public TreeModel createModel(Category category) {
-        return createModel(Collections.singleton(category), true );
-    }
-    
-    public TreeModel createModel(Collection<Category> categories, boolean includeChildren)
+    public TreeModel createModel(Category category)
     {
-    	DefaultMutableTreeNode rootNode = createRootNode(categories,includeChildren);
-		return new DefaultTreeModel( rootNode);
+        return createModel(Collections.singleton(category), true);
     }
 
-	protected NamedNode createRootNode(
-			Collection<Category> categories, boolean includeChildren) {
-		Map<Category,NamedNode> nodeMap = new HashMap<Category, NamedNode>();
-    	Category superCategory = null;
-    	{
-	    	Category persistantSuperCategory = getQuery().getSuperCategory();
-	    	for ( Category cat:categories)
-	    	{
-	    		if ( persistantSuperCategory.equals( cat))
-	    		{
-	    			superCategory = cat;
-	    		}
-	    	}
-	    	if (superCategory == null)
-	    	{
-	    		superCategory = persistantSuperCategory;
-	    	}
-    	}
-    	nodeMap.put( superCategory, new NamedNode(superCategory));
-    	LinkedHashSet<Category> uniqueCategegories = new LinkedHashSet<Category>( );
-    	for ( Category cat:categories)
-    	{
-    		if ( includeChildren)
-    		{
-    	  		for( Category child:getAllChildren( cat))
-        		{
-        			uniqueCategegories.add( child);
-        		}
-    		}
-    		uniqueCategegories.add( cat);
-    	}
-        for (Category cat:uniqueCategegories)
+    public TreeModel createModel(Collection<Category> categories, boolean includeChildren)
+    {
+        DefaultMutableTreeNode rootNode = createRootNode(categories, includeChildren);
+        return new DefaultTreeModel(rootNode);
+    }
+
+    protected NamedNode createRootNode(Collection<Category> categories, boolean includeChildren)
+    {
+        Map<Category, NamedNode> nodeMap = new HashMap<Category, NamedNode>();
+        Category superCategory = null;
+        {
+            Category persistantSuperCategory = getQuery().getSuperCategory();
+            for (Category cat : categories)
+            {
+                if (persistantSuperCategory.equals(cat))
+                {
+                    superCategory = cat;
+                }
+            }
+            if (superCategory == null)
+            {
+                superCategory = persistantSuperCategory;
+            }
+        }
+        nodeMap.put(superCategory, new NamedNode(superCategory));
+        LinkedHashSet<Category> uniqueCategegories = new LinkedHashSet<Category>();
+        for (Category cat : categories)
+        {
+            if (includeChildren)
+            {
+                for (Category child : getAllChildren(cat))
+                {
+                    uniqueCategegories.add(child);
+                }
+            }
+            uniqueCategegories.add(cat);
+        }
+        for (Category cat : uniqueCategegories)
         {
             NamedNode node = nodeMap.get(cat);
             if (node == null)
@@ -883,212 +935,256 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             }
         }
 
-    	LinkedList<Category> list = new LinkedList<Category>();
-		list.addAll( uniqueCategegories);
-		while ( !list.isEmpty())
-		{
-			Category cat = list.pop();
-			NamedNode node = nodeMap.get( cat);
-			if (node == null)
-			{
-				node = new NamedNode( cat);
-				nodeMap.put( cat , node);
-			}
-			Category parent = cat.getParent();
-			if ( parent != null)
-			{
-				NamedNode parentNode = nodeMap.get( parent);
-				if ( parentNode == null)
-				{
-					parentNode = new NamedNode( parent);
-					nodeMap.put( parent , parentNode);
-					list.push( parent);
-				}
-				parentNode.add( node);
-			}
-		}
-		NamedNode rootNode = nodeMap.get( superCategory);
-		while ( true)
-		{
-			int childCount = rootNode.getChildCount();
-			if ( childCount <= 0 || childCount >1)
-			{
-				break;
-			}
-			Category cat = (Category) rootNode.getUserObject();
-			if ( categories.contains( cat))
-			{
-				break;
-			}
-			NamedNode firstChild = (NamedNode)rootNode.getFirstChild();
-			rootNode.remove( firstChild);
-			rootNode = firstChild;
-		
-		}
-		return rootNode;
-	}
+        LinkedList<Category> list = new LinkedList<Category>();
+        list.addAll(uniqueCategegories);
+        while (!list.isEmpty())
+        {
+            Category cat = list.pop();
+            NamedNode node = nodeMap.get(cat);
+            if (node == null)
+            {
+                node = new NamedNode(cat);
+                nodeMap.put(cat, node);
+            }
+            Category parent = cat.getParent();
+            if (parent != null)
+            {
+                NamedNode parentNode = nodeMap.get(parent);
+                if (parentNode == null)
+                {
+                    parentNode = new NamedNode(parent);
+                    nodeMap.put(parent, parentNode);
+                    list.push(parent);
+                }
+                parentNode.add(node);
+            }
+        }
+        NamedNode rootNode = nodeMap.get(superCategory);
+        while (true)
+        {
+            int childCount = rootNode.getChildCount();
+            if (childCount <= 0 || childCount > 1)
+            {
+                break;
+            }
+            Category cat = (Category) rootNode.getUserObject();
+            if (categories.contains(cat))
+            {
+                break;
+            }
+            NamedNode firstChild = (NamedNode) rootNode.getFirstChild();
+            rootNode.remove(firstChild);
+            rootNode = firstChild;
 
-    private Collection<Category> getAllChildren(Category cat) {
-    	ArrayList<Category> result = new ArrayList<Category>();
-    	for ( Category child:  cat.getCategories())
-    	{
-    		result.add( child);
-    		Collection<Category> childsOfChild = getAllChildren( child);
-			result.addAll(childsOfChild);
-    	}
-    	return result;
-	}
+        }
+        return rootNode;
+    }
 
-	public TreeModel createModelFlat(Named[] element) {
+    private Collection<Category> getAllChildren(Category cat)
+    {
+        ArrayList<Category> result = new ArrayList<Category>();
+        for (Category child : cat.getCategories())
+        {
+            result.add(child);
+            Collection<Category> childsOfChild = getAllChildren(child);
+            result.addAll(childsOfChild);
+        }
+        return result;
+    }
+
+    public TreeModel createModelFlat(Named[] element)
+    {
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
-        for (int i = 0; i < element.length; i++) {
+        for (int i = 0; i < element.length; i++)
+        {
             root.add(new NamedNode(element[i]));
         }
         return new DefaultTreeModel(root);
     }
 
-    public TreeToolTipRenderer createTreeToolTipRenderer() {
+    public TreeToolTipRenderer createTreeToolTipRenderer()
+    {
         return new RaplaTreeToolTipRenderer();
     }
 
-    public TreeCellRenderer createRenderer() {
+    public TreeCellRenderer createRenderer()
+    {
         return new ComplexTreeCellRenderer();
     }
 
-    public class NamedNode extends DefaultMutableTreeNode {
+    public class NamedNode extends DefaultMutableTreeNode
+    {
         private static final long serialVersionUID = 1L;
 
-        NamedNode(Named obj) {
+        NamedNode(Named obj)
+        {
             super(obj);
         }
-        
-        public String toString() {
+
+        public String toString()
+        {
             Named obj = (Named) getUserObject();
-            if (obj != null) {
+            if (obj != null)
+            {
                 Locale locale = getI18n().getLocale();
-            	if ( obj instanceof Classifiable)
-            	{
-            		Classification classification = ((Classifiable)obj).getClassification();
-					if ( classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
-					{
-						return classification.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
-					}
-            	}
-				String name = obj.getName(locale);
-				return name;
-            } else {
+                if (obj instanceof Classifiable)
+                {
+                    Classification classification = ((Classifiable) obj).getClassification();
+                    if (classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
+                    {
+                        return classification.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
+                    }
+                }
+                String name = obj.getName(locale);
+                return name;
+            }
+            else
+            {
                 return super.toString();
             }
         }
-		
-        public int getIndexOfUserObject(Object object) {
-        	if (children == null)
-        	{
-        		return -1;
-        	}
-	        for (int i=0;i<children.size();i++) {
-	            if (((DefaultMutableTreeNode)children.get(i)).getUserObject().equals(object))
-	                return i;
-	        }
-	        return -1;
-	    }
-		    
-	    public TreeNode findNodeFor( Object obj ) {
-	       return findNodeFor( this, obj);
-	    }
-	    
-	    private TreeNode findNodeFor( DefaultMutableTreeNode node,Object obj ) {
-	        Object userObject = node.getUserObject();
-	        if ( userObject != null && userObject.equals( obj ) )
-	            return node;
-	        @SuppressWarnings("rawtypes")
-			Enumeration e = node.children();
-	        while (e.hasMoreElements())
-	        {
-				TreeNode result = findNodeFor((DefaultMutableTreeNode) e.nextElement(), obj );
-	            if ( result != null ) {
-	                return result;
-	            }
-	        }
-	        return null;
-	    }
-		
+
+        public int getIndexOfUserObject(Object object)
+        {
+            if (children == null)
+            {
+                return -1;
+            }
+            for (int i = 0; i < children.size(); i++)
+            {
+                if (((DefaultMutableTreeNode) children.get(i)).getUserObject().equals(object))
+                    return i;
+            }
+            return -1;
+        }
+
+        public TreeNode findNodeFor(Object obj)
+        {
+            return findNodeFor(this, obj);
+        }
+
+        private TreeNode findNodeFor(DefaultMutableTreeNode node, Object obj)
+        {
+            Object userObject = node.getUserObject();
+            if (userObject != null && userObject.equals(obj))
+                return node;
+            @SuppressWarnings("rawtypes")
+            Enumeration e = node.children();
+            while (e.hasMoreElements())
+            {
+                TreeNode result = findNodeFor((DefaultMutableTreeNode) e.nextElement(), obj);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
+        }
+
     }
-    
-    class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
+
+    class ComplexTreeCellRenderer extends DefaultTreeCellRenderer
+    {
         private static final long serialVersionUID = 1L;
-        
+
         Border nonIconBorder = BorderFactory.createEmptyBorder(1, 0, 1, 0);
         Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
 
-        public ComplexTreeCellRenderer() {
+        public ComplexTreeCellRenderer()
+        {
             setLeafIcon(defaultIcon);
         }
 
-        private void setIcon(Object object, boolean leaf) {
+        private void setIcon(Object object, boolean leaf)
+        {
             Icon icon = null;
             boolean isAllocatable = false;
-            if (object instanceof Allocatable) {
+            if (object instanceof Allocatable)
+            {
                 isAllocatable = true;
                 Allocatable allocatable = (Allocatable) object;
-                try {
-    				User user = getUser();
+                try
+                {
+                    User user = getUser();
                     Date today = getQuery().today();
-                    if ( !getFacade().getPermissionController().canAllocate(allocatable, user, today))
-    				{
-    					icon = forbiddenIcon;
-    				}
-    				else
-    				{
-    					 if (allocatable.isPerson()) {
-    						 icon = personIcon;
-    					 } else {
-    						 icon = defaultIcon;
-    					 }
-    				}
-                } catch (RaplaException ex) {
+                    if (!getFacade().getPermissionController().canAllocate(allocatable, user, today))
+                    {
+                        icon = forbiddenIcon;
+                    }
+                    else
+                    {
+                        if (allocatable.isPerson())
+                        {
+                            icon = personIcon;
+                        }
+                        else
+                        {
+                            icon = defaultIcon;
+                        }
+                    }
                 }
-               
-            } else if (object instanceof DynamicType) {
+                catch (RaplaException ex)
+                {
+                }
+
+            }
+            else if (object instanceof DynamicType)
+            {
                 DynamicType type = (DynamicType) object;
                 String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-                if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(classificationType)) {
+                if (DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION.equals(classificationType))
+                {
                     setBorder(conflictBorder);
-                } else {
+                }
+                else
+                {
                     icon = folderClosedIcon;
                 }
             }
-            if (icon == null) {
+            if (icon == null)
+            {
                 setBorder(nonIconBorder);
             }
-            if ( leaf)
+            if (leaf)
             {
                 setLeafIcon(icon);
             }
             else if (isAllocatable)
             {
-                setOpenIcon( icon);
-                setClosedIcon( icon);
-                setIcon( icon);
+                setOpenIcon(icon);
+                setClosedIcon(icon);
+                setIcon(icon);
             }
         }
-        
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus)
+        {
             setBorder(null);
             setFont(normalFont);
-            if (value != null && value instanceof TypeNode) {
+            if (value != null && value instanceof TypeNode)
+            {
                 TypeNode typeNode = (TypeNode) value;
                 Icon bigFolderIcon;
-                if (typeNode.getType() ==User.class) {
+                if (typeNode.getType() == User.class)
+                {
                     bigFolderIcon = bigFolderUsers;
-                } else if (typeNode.getType()==Period.class) {
+                }
+                else if (typeNode.getType() == Period.class)
+                {
                     bigFolderIcon = bigFolderPeriods;
-                } else if (typeNode.getType() == Reservation.class) {
+                }
+                else if (typeNode.getType() == Reservation.class)
+                {
                     bigFolderIcon = bigFolderEvents;
-                } else {
-                    if (typeNode.isFiltered()) {
+                }
+                else
+                {
+                    if (typeNode.isFiltered())
+                    {
                         bigFolderIcon = bigFolderResourcesFiltered;
-                    } else {
+                    }
+                    else
+                    {
                         bigFolderIcon = bigFolderResourcesUnfiltered;
                     }
                 }
@@ -1097,104 +1193,111 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 setLeafIcon(bigFolderIcon);
                 setFont(bigFont);
                 value = typeNode.getTitle();
-            } else {
+            }
+            else
+            {
                 Object nodeInfo = getUserObject(value);
                 final boolean topCategoryNode;
                 if (nodeInfo instanceof Category)
                 {
                     final Category category = (Category) nodeInfo;
                     final Category parent = category.getParent();
-                    Category userGroupsCategory = null;
-                    try
+                    if (parent == null)
                     {
-                        userGroupsCategory = getFacade().getUserGroupsCategory();
+                        topCategoryNode = true;
                     }
-                    catch (RaplaException e)
+                    else
                     {
-                        getLogger().error("Could not resolve user group category: " + e.getMessage(), e);
+                        boolean flag;
+                        try
+                        {
+                            Category userGroupsCategory = getFacade().getUserGroupsCategory();
+                            User user = getClientFacade().getUser();
+                            flag = userGroupsCategory.equals(category) && (user.isAdmin() || PermissionController.getAdminGroups(user).size() > 0);
+                        }
+                        catch (RaplaException e)
+                        {
+                            getLogger().error("Could not resolve user or usergroups: " + e.getMessage(), e);
+                            flag = false;
+                        }
+                        topCategoryNode = flag;
                     }
-                    User user = null;
-                    try
-                    {
-                        user = getClientFacade().getUser();
-                    }
-                    catch (RaplaException e)
-                    {
-                        getLogger().error("Coudl not resolve user: " + e.getMessage(), e);
-                    }
-                    topCategoryNode = parent == null || (  userGroupsCategory != null  && userGroupsCategory.equals( category) && !user.isAdmin() && PermissionController.getAdminGroups(user).size() > 0);
                 }
                 else
                 {
                     topCategoryNode = false;
                 }
 
-                if (topCategoryNode) {
+                if (topCategoryNode)
+                {
                     setClosedIcon(bigFolderCategories);
                     setOpenIcon(bigFolderCategories);
                     setFont(bigFont);
                 }
                 else
                 {
-	                setClosedIcon(folderClosedIcon);
-	                setOpenIcon(folderOpenIcon);
-	                //if (leaf) {
-	                    setIcon(nodeInfo,leaf);
-	                //}
+                    setClosedIcon(folderClosedIcon);
+                    setOpenIcon(folderOpenIcon);
+                    //if (leaf) {
+                    setIcon(nodeInfo, leaf);
+                    //}
                 }
-            }
-            Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+            } Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
             return result;
         }
 
     }
-    
-    class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
+
+    class ConflictTreeCellRenderer extends DefaultTreeCellRenderer
+    {
         private static final long serialVersionUID = 1L;
         Border nonIconBorder = BorderFactory.createEmptyBorder(1, 0, 1, 0);
         Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
-        public ConflictTreeCellRenderer() {
+
+        public ConflictTreeCellRenderer()
+        {
             setFont(normalFont);
             setLeafIcon(null);
             setBorder(conflictBorder);
         }
 
-        protected String getText( Conflict conflict) {
+        protected String getText(Conflict conflict)
+        {
             StringBuffer buf = new StringBuffer();
             buf.append("<html>");
             Date startDate = conflict.getStartDate();
             RaplaLocale raplaLocale = getRaplaLocale();
-            buf.append( raplaLocale.formatDate(startDate) );
+            buf.append(raplaLocale.formatDate(startDate));
             if (!DateTools.cutDate(startDate).equals(startDate))
             {
                 buf.append(' ');
-                buf.append( raplaLocale.formatTime(startDate) );
+                buf.append(raplaLocale.formatTime(startDate));
             }
-//            buf.append( getAppointmentFormater().getSummary(conflict.getAppointment1()));
-            buf.append( "<br>" );
-            buf.append( conflict.getReservation1Name() );
-            if ( conflict.getRepeatingType1() != null)
+            //            buf.append( getAppointmentFormater().getSummary(conflict.getAppointment1()));
+            buf.append("<br>");
+            buf.append(conflict.getReservation1Name());
+            if (conflict.getRepeatingType1() != null)
             {
                 buf.append(getRepeatingType(conflict.getRepeatingType1()));
             }
-            buf.append( ' ' );
-            buf.append( getString("with"));
-            buf.append( '\n' );
-            buf.append( "<br>" );
-            buf.append( conflict.getReservation2Name() );
-            if ( conflict.getRepeatingType2() != null)
+            buf.append(' ');
+            buf.append(getString("with"));
+            buf.append('\n');
+            buf.append("<br>");
+            buf.append(conflict.getReservation2Name());
+            if (conflict.getRepeatingType2() != null)
             {
                 buf.append(getRepeatingType(conflict.getRepeatingType2()));
             }
             // TOD add the rest of conflict
-//            buf.append( ": " );
-//            buf.append( " " );
-//            buf.append( getRaplaLocale().formatTime(conflict.getAppointment1().getStart()));
-////            buf.append( " - ");
-////            buf.append( getRaplaLocale().formatTime(conflict.getAppointment1().getEnd()));
-//            buf.append( "<br>" );
-//            buf.append( getString("reservation.owner") + " ");
-//            buf.append( conflict.getUser2().getUsername());
+            //            buf.append( ": " );
+            //            buf.append( " " );
+            //            buf.append( getRaplaLocale().formatTime(conflict.getAppointment1().getStart()));
+            ////            buf.append( " - ");
+            ////            buf.append( getRaplaLocale().formatTime(conflict.getAppointment1().getEnd()));
+            //            buf.append( "<br>" );
+            //            buf.append( getString("reservation.owner") + " ");
+            //            buf.append( conflict.getUser2().getUsername());
             buf.append("</html>");
             String result = buf.toString();
             return result;
@@ -1207,8 +1310,10 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             return " [" + reslt + "]";
         }
 
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-            if (value != null && value instanceof TypeNode) {
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus)
+        {
+            if (value != null && value instanceof TypeNode)
+            {
                 TypeNode typeNode = (TypeNode) value;
                 setFont(bigFont);
                 value = typeNode.getTitle();
@@ -1216,46 +1321,53 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
                 setClosedIcon(bigFolderConflicts);
                 setOpenIcon(bigFolderConflicts);
                 leaf = false;
-            } else {
+            }
+            else
+            {
                 setClosedIcon(folderClosedIcon);
                 setOpenIcon(folderOpenIcon);
                 Object nodeInfo = getUserObject(value);
                 setFont(normalFont);
-                if (nodeInfo instanceof Conflict) {
+                if (nodeInfo instanceof Conflict)
+                {
                     Conflict conflict = (Conflict) nodeInfo;
                     String text = getText(conflict);
                     value = text;
                 }
-                else if (nodeInfo instanceof Allocatable) {
+                else if (nodeInfo instanceof Allocatable)
+                {
                     Allocatable allocatable = (Allocatable) nodeInfo;
                     Icon icon;
-                    if (allocatable.isPerson()) {
+                    if (allocatable.isPerson())
+                    {
                         icon = personIcon;
-                    } else {
+                    }
+                    else
+                    {
                         icon = defaultIcon;
                     }
                     setClosedIcon(icon);
                     setOpenIcon(icon);
                     // can't be null because nodeInfo is not null
                     @SuppressWarnings("null")
-                    String text = value.toString() ;
-                    if ( value instanceof TreeNode)
+                    String text = value.toString();
+                    if (value instanceof TreeNode)
                     {
-                        text+= " (" + getRecursiveChildCount(((TreeNode) value)) +")";
+                        text += " (" + getRecursiveChildCount(((TreeNode) value)) + ")";
                     }
                     value = text;
                 }
                 else
                 {
-                    String text = TreeFactoryImpl.this.getName( nodeInfo);
-                    if ( value instanceof TreeNode)
+                    String text = TreeFactoryImpl.this.getName(nodeInfo);
+                    if (value instanceof TreeNode)
                     {
                         //text+= " (" + getRecursiveChildCount(((TreeNode) value)) +")";
-                        text+= " (" + getRecursiveList(((TreeNode) value)).size() +")";
-                        
+                        text += " (" + getRecursiveList(((TreeNode) value)).size() + ")";
+
                     }
                     value = text;
-                                           
+
                 }
             }
             Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
@@ -1265,45 +1377,45 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         private int getRecursiveChildCount(TreeNode treeNode)
         {
             int count = 0;
-            int children= treeNode.getChildCount();
-            if ( children == 0)
+            int children = treeNode.getChildCount();
+            if (children == 0)
             {
                 return 1;
             }
-            for ( int i=0;i<children;i++)
+            for (int i = 0; i < children; i++)
             {
                 TreeNode child = treeNode.getChildAt(i);
-                count+= getRecursiveChildCount( child);
+                count += getRecursiveChildCount(child);
             }
             return count;
         }
-        
+
         private Set<Conflict> getRecursiveList(TreeNode treeNode)
         {
-            int children= treeNode.getChildCount();
-            if ( children == 0)
+            int children = treeNode.getChildCount();
+            if (children == 0)
             {
                 return Collections.emptySet();
             }
             HashSet<Conflict> set = new HashSet<Conflict>();
-            for ( int i=0;i<children;i++)
+            for (int i = 0; i < children; i++)
             {
                 TreeNode child = treeNode.getChildAt(i);
-                Object userObject = ((DefaultMutableTreeNode)child).getUserObject();
-                if ( userObject != null && userObject instanceof Conflict)
+                Object userObject = ((DefaultMutableTreeNode) child).getUserObject();
+                if (userObject != null && userObject instanceof Conflict)
                 {
-                	set.add((Conflict)userObject);
+                    set.add((Conflict) userObject);
                 }
                 else
                 {
-                	set.addAll(getRecursiveList( child));
+                    set.addAll(getRecursiveList(child));
                 }
             }
             return set;
         }
 
     }
-    
+
     public TreeSelectionModel createComplexTreeSelectionModel()
     {
         return new DelegatingTreeSelectionModel()
@@ -1313,26 +1425,27 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             boolean isSelectable(TreePath treePath)
             {
                 Object lastPathComponent = treePath.getLastPathComponent();
-                Object object = getUserObject( lastPathComponent);
+                Object object = getUserObject(lastPathComponent);
                 return !(object instanceof Categorization);
             }
         };
     }
-    
+
     public TreeSelectionModel createConflictTreeSelectionModel()
     {
         return new DelegatingTreeSelectionModel()
         {
             private static final long serialVersionUID = 1L;
+
             boolean isSelectable(TreePath treePath)
             {
                 Object lastPathComponent = treePath.getLastPathComponent();
-                Object object = getUserObject( lastPathComponent);
-                if ( object instanceof Conflict)
+                Object object = getUserObject(lastPathComponent);
+                if (object instanceof Conflict)
                 {
                     return true;
                 }
-                if ( object instanceof Allocatable)
+                if (object instanceof Allocatable)
                 {
                     return true;
                 }
@@ -1340,16 +1453,20 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
             }
         };
     }
-    
-    
-    private abstract class DelegatingTreeSelectionModel extends DefaultTreeSelectionModel {
+
+    private abstract class DelegatingTreeSelectionModel extends DefaultTreeSelectionModel
+    {
         abstract boolean isSelectable(TreePath treePath);
+
         private static final long serialVersionUID = 1L;
 
-        private TreePath[] getSelectablePaths(TreePath[] pathList) {
+        private TreePath[] getSelectablePaths(TreePath[] pathList)
+        {
             List<TreePath> result = new ArrayList<TreePath>(pathList.length);
-            for (TreePath treePath : pathList) {
-                if (isSelectable(treePath)) {
+            for (TreePath treePath : pathList)
+            {
+                if (isSelectable(treePath))
+                {
                     result.add(treePath);
                 }
             }
@@ -1357,44 +1474,54 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory {
         }
 
         @Override
-        public void setSelectionPath(TreePath path) {
-            if (isSelectable(path)) {
+        public void setSelectionPath(TreePath path)
+        {
+            if (isSelectable(path))
+            {
                 super.setSelectionPath(path);
             }
         }
 
         @Override
-        public void setSelectionPaths(TreePath[] paths) {
+        public void setSelectionPaths(TreePath[] paths)
+        {
             paths = getSelectablePaths(paths);
             super.setSelectionPaths(paths);
         }
 
         @Override
-        public void addSelectionPath(TreePath path) {
-            if (isSelectable(path)) {
+        public void addSelectionPath(TreePath path)
+        {
+            if (isSelectable(path))
+            {
                 super.addSelectionPath(path);
             }
         }
 
         @Override
-        public void addSelectionPaths(TreePath[] paths) {
+        public void addSelectionPaths(TreePath[] paths)
+        {
             paths = getSelectablePaths(paths);
             super.addSelectionPaths(paths);
         }
 
     }
 
-    private static Object getUserObject(Object node) {
+    private static Object getUserObject(Object node)
+    {
         if (node instanceof DefaultMutableTreeNode)
             return ((DefaultMutableTreeNode) node).getUserObject();
         return node;
     }
 
-    class RaplaTreeToolTipRenderer implements TreeToolTipRenderer {
-        public String getToolTipText(JTree tree, int row) {
+    class RaplaTreeToolTipRenderer implements TreeToolTipRenderer
+    {
+        public String getToolTipText(JTree tree, int row)
+        {
             Object node = tree.getPathForRow(row).getLastPathComponent();
             Object value = getUserObject(node);
-            if (value instanceof Conflict) {
+            if (value instanceof Conflict)
+            {
                 return null;
             }
             return infoFactory.getToolTip(value);

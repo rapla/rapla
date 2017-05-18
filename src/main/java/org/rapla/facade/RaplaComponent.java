@@ -132,11 +132,6 @@ public class RaplaComponent
         }
         try {
             Category userGroupsCategory = getQuery().getUserGroupsCategory();
-            if ( userGroupsCategory == null)
-            {
-                return false;
-            }
-            
             Category firstGroup = userGroupsCategory.getCategory(group);
             if ( firstGroup == null ) {
                 Category secondGroup = userGroupsCategory.getCategory(alternativeGroup);
