@@ -1067,7 +1067,7 @@ public class ParsedText implements Serializable
         else if (object instanceof MultiLanguageNamed)
         {
             MultiLanguageNamed raplaObject = (MultiLanguageNamed) object;
-            final String format = raplaObject.getName().getName(DateTools.getLang(locale));
+            final String format = raplaObject.getName().getName(locale);
             return format;
         }
         else if (object instanceof Named)

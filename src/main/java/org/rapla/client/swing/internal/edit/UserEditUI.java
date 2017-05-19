@@ -115,6 +115,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             try
             {
                 this.user = facade.getUser();
+                setEditable( user.isAdmin());
             }
             catch (RaplaException e)
             {
@@ -143,6 +144,10 @@ public class UserEditUI  extends AbstractEditUI<User> {
 		}
 		
 		private Boolean isOneAdmin() throws RaplaException {
+            if ( !user.isAdmin())
+            {
+                return true;
+            }
 	        User[] userList = getQuery().getUsers();
 	        if (objectList.size() != 1)
 	        {

@@ -52,6 +52,12 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
         setFieldName( fieldName );
     }
 
+    public void setEditable(boolean flag)
+    {
+        field1.setEnabled(flag);
+        field2.setEnabled(flag);
+    }
+
     public BooleanField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
         super(facade, i18n, raplaLocale, logger);
