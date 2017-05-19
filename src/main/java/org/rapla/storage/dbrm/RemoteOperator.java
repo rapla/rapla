@@ -961,7 +961,7 @@ import java.util.Vector;
                 return filtered;
             });
         });
-        return scheduler.synchronizeTo(result);
+        return result;
     }
 
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
@@ -1023,8 +1023,7 @@ import java.util.Vector;
             return;
         }
         UpdateResult result = null;
-        testResolve(evt.getStoreObjects());
-        setResolver(evt.getStoreObjects());
+
         // we don't test the references of the removed objects
         //setResolver(evt.getRemoveObjects());
         Date since = getLastRefreshed();
@@ -1032,6 +1031,9 @@ import java.util.Vector;
         if (bSessionActive && !evt.isEmpty())
         {
             getLogger().debug("Objects updated!");
+            // TODO User informieren, dass sich daten evtl geaendert haben
+            testResolve(evt.getStoreObjects());
+            setResolver(evt.getStoreObjects());
             RaplaLock.WriteLock writeLock = writeLockIfLoaded();
             try
             {

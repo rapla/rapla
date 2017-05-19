@@ -36,6 +36,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.RepaintManager;
+import javax.swing.SwingUtilities;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
@@ -183,7 +184,17 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 	public void triggerUpdate() {
 		PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
 		try {
-			initializeBuilder().thenAccept((builder)->update(builder)).exceptionally( (ex) ->
+			initializeBuilder().thenAccept((builder)->
+                    SwingUtilities.invokeLater(()->{
+                        try
+                        {
+                            update(builder);
+                        }
+                        catch (RaplaException e)
+                        {
+                            dialogUiFactory.showException( e, popupContext);
+                        }
+                    })).exceptionally( (ex) ->
 			        dialogUiFactory.showException(ex, popupContext)
 			    );
 		} catch (RaplaException ex) {
@@ -328,6 +339,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 		    	Graphics2D g2 = (Graphics2D) g;
 		    	try
 		    	{
+		    	    // get all reservations
 		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
 		    		RaplaBuilder builder = getFacade().waitForWithRaplaException(builderPromise, 5000);
 		    		update(builder);

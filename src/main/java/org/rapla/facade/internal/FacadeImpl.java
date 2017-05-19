@@ -514,7 +514,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
             final Collection<Reservation> allReservations = CalendarModelImpl.getAllReservations(appointments);
             return allReservations;
         });
-        return scheduler.synchronizeTo(promise);
+        return promise;
 	}
 
 	public Allocatable[] getAllocatables() throws RaplaException {

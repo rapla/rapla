@@ -307,7 +307,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
         adminMenu.setEnabled(adminMenu.getMenuComponentCount() != 0);
         exportMenu.setEnabled(exportMenu.getMenuComponentCount() != 0);
         importMenu.setEnabled(importMenu.getMenuComponentCount() != 0);
-        getUpdateModule().addModificationListener(listener);
     }
 
     public void updateView(ModificationEvent evt)
@@ -316,7 +315,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         boolean isSelected = model.isOnlyCurrentUserSelected();
         ownReservationsMenu.setIcon(isSelected ? raplaImages.getIconFromKey("icon.checked") : raplaImages.getIconFromKey("icon.unchecked"));
         ownReservationsMenu.setSelected(isSelected);
-
+        updateTemplateText();
     }
 
     public CommandHistory getCommandHistory()
@@ -361,7 +360,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     }
 
 
-    class Listener implements ActionListener, CommandHistoryChangedListener, ModificationListener
+    class Listener implements ActionListener, CommandHistoryChangedListener
     {
 
         public void historyChanged()
@@ -424,10 +423,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             }
         }
 
-        public void dataChanged(ModificationEvent evt) throws RaplaException
-        {
-            updateTemplateText();
-        }
+
 
     }
 
