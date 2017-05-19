@@ -298,7 +298,9 @@ public class ServerTest
         filter.addRule("name", new Object[][] { { "contains", name } });
         Collection<Reservation> reservations = facade
                 .waitForWithRaplaException(facade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
-        Assert.assertEquals("Only one Reservation should be found by name as otherwise the choose done by iterator.next can not guarantee the correct choosen one", 1, reservations.size()); 
+        Assert.assertEquals(
+                "Only one Reservation should be found by name as otherwise the choose done by iterator.next can not guarantee the correct choosen one", 1,
+                reservations.size());
         if (!reservations.isEmpty())
             return reservations.iterator().next();
         else
@@ -480,7 +482,7 @@ public class ServerTest
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
         {
-            final Collection<Reservation> reservations =raplaFacade1
+            final Collection<Reservation> reservations = raplaFacade1
                     .waitForWithRaplaException(raplaFacade1.getReservationsForAllocatable(null, null, null, null), 10000);
             raplaFacade1.removeObjects(reservations.toArray(Reservation.RESERVATION_ARRAY));
         }

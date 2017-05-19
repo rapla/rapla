@@ -137,23 +137,6 @@ import com.google.web.bindery.event.shared.EventBus;
         return templates;
     }
 
-    public class TemplateMenuItem extends RaplaMenuItem
-    {
-        private static final long serialVersionUID = 1L;
-        Allocatable template;
-
-        public TemplateMenuItem(String id, Allocatable template)
-        {
-            super(id);
-            this.template = template;
-        }
-
-        public Allocatable getTemplate()
-        {
-            return template;
-        }
-    }
-
     public MenuElement getMenuElement()
     {
         //final RaplaFacade clientFacade = getClientFacade();
@@ -176,12 +159,12 @@ import com.google.web.bindery.event.shared.EventBus;
         if (templateNames.size() == 1)
         {
             Allocatable template = templateNames.iterator().next();
-            RaplaMenuItem item = new TemplateMenuItem(getId(), template);
+            RaplaMenuItem item = new RaplaMenuItem(getId());
             item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
             final String templateName = template.getName(getLocale());
             item.setText(getSingleTemplateName(templateName));
             item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            item.addActionListener((evt)->   createWithTemplate(((TemplateMenuItem)evt.getSource()).getTemplate())) ;
+            item.addActionListener((evt)->   createWithTemplate(template)) ;
             element = item;
         }
         else
@@ -271,12 +254,13 @@ import com.google.web.bindery.event.shared.EventBus;
         {
             Collection<Allocatable> collection = templateMap.get(templateName);
             // there could be multiple templates with the same name
-            for (Allocatable template : collection)
+            for (final Allocatable template : collection)
             {
-                RaplaMenuItem newItem = new TemplateMenuItem(template.getName(locale), template);
+                RaplaMenuItem newItem = new RaplaMenuItem(template.getName(locale));
                 newItem.setText(templateName);
+                newItem.addActionListener((evt)->createWithTemplate(template));
                 item.add(newItem);
-                item.addActionListener((evt)->   createWithTemplate(((TemplateMenuItem)evt.getSource()).getTemplate())) ;
+
             }
         }
     }

@@ -38,7 +38,7 @@ public class DefaultRaplaLock implements RaplaLock
     public ReadLock readLock(int seconds) throws RaplaException
     {
         // Enabling the stack trace is a huge performance cost
-        StackTraceElement[] stackTrace = new StackTraceElement[] {};//getStackTrace();
+        StackTraceElement[] stackTrace = logger.isTraceEnabled() ? getStackTrace() : new StackTraceElement[] {};
         final long currentTime = System.currentTimeMillis();
         final Lock lock = lock(this.readWriteLock.readLock(), seconds, true);
         final ReadLock readLock = new ReadLock(lock, stackTrace, currentTime);
@@ -111,7 +111,7 @@ public class DefaultRaplaLock implements RaplaLock
     public WriteLock writeLock(int seconds) throws RaplaException
     {
         final WriteLock lock;
-        StackTraceElement[] stackTrace = getStackTrace();
+        StackTraceElement[] stackTrace = logger.isDebugEnabled() ? getStackTrace() : new StackTraceElement[] {};
         final long currentTime = System.currentTimeMillis();
         if (seconds > 0)
         {
