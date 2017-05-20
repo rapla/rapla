@@ -40,7 +40,7 @@ public class PreferencesTest  {
 
     @Test
     public void testLoad() throws Exception {
-        Preferences preferences = raplaFacade.getPreferences();
+        Preferences preferences = raplaFacade.getPreferences(clientFacade.getUser());
         TypedComponentRole<RaplaConfiguration> SESSION_TEST = new TypedComponentRole<RaplaConfiguration>("org.rapla.SessionTest");
         Configuration config = preferences.getEntry(SESSION_TEST);
         Assert.assertEquals("testvalue", config.getAttribute("test"));
@@ -48,7 +48,7 @@ public class PreferencesTest  {
 
     @Test
     public void testStore() throws Exception {
-        Preferences preferences = raplaFacade.getPreferences();
+        Preferences preferences = raplaFacade.getPreferences(clientFacade.getUser());
         Preferences clone  = raplaFacade.edit(preferences);
         //Allocatable allocatable = queryMod.getAllocatables()[0];
         //Configuration config = queryMod.createReference((RaplaType)allocatable);

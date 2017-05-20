@@ -233,15 +233,7 @@ public class CalendarModelCache
         for (CalendarModelImpl calendarModelImpl : calendarModelList)
         {
             // check if filter or calendar selection changes so that we need to add or remove events from the exchange calendar
-            final Collection<Appointment> c;
-            try
-            {
-                c = scheduler.waitFor(calendarModelImpl.queryAppointments(syncRange), 10000);
-            }
-            catch (Exception e)
-            {
-                throw new RaplaException( e);
-            }
+            final Collection<Appointment> c = operator.waitForWithRaplaException(calendarModelImpl.queryAppointments(syncRange), 10000);
             appointments.addAll(c);
         }
         return appointments;

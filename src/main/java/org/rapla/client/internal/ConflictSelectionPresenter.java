@@ -218,15 +218,6 @@ public class ConflictSelectionPresenter implements Presenter
                     conflictOrig.add(conflict);
                 }
             }
-            User user;
-            try
-            {
-                user = facade.getUser();
-            }
-            catch (RaplaException e1)
-            {
-                return new ResolvedPromise<>(e1);
-            }
             ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
             for (Conflict conflict : conflictOrig)
             {
@@ -245,7 +236,7 @@ public class ConflictSelectionPresenter implements Presenter
             {
                 setEnabled(((ConflictImpl) conflict), newFlag);
             }
-            final Promise<Void> store = store(conflicts, user);
+            final Promise<Void> store = store(conflicts);
             final Promise<Void> prom = store.thenAccept((a) ->
             {
                 updateTree();
@@ -255,9 +246,9 @@ public class ConflictSelectionPresenter implements Presenter
 
     }
 
-    private Promise<Void> store(Collection<Conflict> conflicts, User user)
+    private Promise<Void> store(Collection<Conflict> conflicts)
     {
-        return raplaFacade.dispatch(conflicts, Collections.emptyList(), user);
+        return raplaFacade.dispatch(conflicts, Collections.emptyList());
     }
 
     private void setEnabled(ConflictImpl conflictImpl, boolean enabled)

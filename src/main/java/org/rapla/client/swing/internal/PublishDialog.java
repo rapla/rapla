@@ -28,6 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
@@ -92,7 +93,7 @@ public class PublishDialog extends RaplaGUIComponent
         }
     }
 
-    public void export(final CalendarSelectionModel model,final Component parentComponent,final String filename) throws RaplaException
+    public void export(final CalendarSelectionModel model,final PopupContext popupContext,final String filename) throws RaplaException
     {
         JPanel panel = new JPanel();
   
@@ -140,7 +141,7 @@ public class PublishDialog extends RaplaGUIComponent
         updateAddress(filename, extensions);
         
         final DialogInterface dlg = dialogUiFactory.create(
-                                        new SwingPopupContext(parentComponent, null),false,panel,
+                                        popupContext,false,panel,
                                        new String[] {
                                            getString("save")
                                            ,getString("cancel")
@@ -163,7 +164,7 @@ public class PublishDialog extends RaplaGUIComponent
                 } 
                 catch (RaplaException ex) 
                 {
-                    dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
+                    dialogUiFactory.showException( ex, popupContext);
                 }
             }
         });

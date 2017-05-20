@@ -514,7 +514,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Assert.assertEquals(newUser.getId(), next.getId());
             }
             {// Delete of a category
-                final Category category = writeFacade.getOperator().tryResolve(categoryId, Category.class);
+                final Category category = facade.tryResolve(new ReferenceInfo<Category>(categoryId, Category.class));
                 final Category parentCategory = writeFacade.edit(category.getParent());
                 parentCategory.removeCategory( writeFacade.edit(category));
                 writeFacade.storeAndRemove(new Entity[]{parentCategory},Entity.ENTITY_ARRAY, user);
@@ -860,7 +860,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     		Assert.assertEquals(newAppStart, unresolvedReservation.getAppointments()[0].getStart());
     	}
     	{// User
-    		final User editUser = facade.edit(facade.getOperator().tryResolve(userId));
+    		final User editUser = facade.edit(facade.tryResolve(userId));
     		final String newValue = "changedValue";
     		editUser.setName(newValue);
     		facade.storeAndRemove(new Entity[]{editUser}, Entity.ENTITY_ARRAY, user);
@@ -895,7 +895,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     	}
     	// start deletion
     	{// resource
-    		final Entity entity = facade.getOperator().tryResolve(resourceId);
+    		final Entity entity = facade.tryResolve(resourceId);
     		facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{entity}, user);
     		operator.refresh();
     		final UpdateResult updates = operator.getUpdateResult(startDate);
@@ -906,7 +906,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             Assert.assertTrue(updates.getIds(UpdateResult.Remove.class).contains(resourceId));
     	}
     	{// Reservation
-    		final Entity entity = facade.getOperator().tryResolve(reservationId);
+    		final Entity entity = facade.tryResolve(reservationId);
     		facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{entity}, user);
     		operator.refresh();
     		final UpdateResult updateResult = operator.getUpdateResult(startDate);
@@ -917,7 +917,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             Assert.assertTrue(updateResult.getIds(UpdateResult.Remove.class).contains(reservationId));
     	}
     	{// User
-    		final Entity entity = facade.getOperator().tryResolve(userId);
+    		final Entity entity = facade.tryResolve(userId);
     		facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{entity}, user);
     		operator.refresh();
     		final UpdateResult updates = operator.getUpdateResult(startDate);

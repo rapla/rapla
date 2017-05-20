@@ -15,6 +15,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.PromiseWait;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
@@ -36,10 +37,10 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     final Map<String, FunctionFactory> functionFactoryMap;
     final Set<PermissionExtension> permissionExtensions;
     ImportExportManager manager;
+    final PromiseWait promiseWait;
 
-    @Inject public ServerStorageSelector(ServerContainerContext containerContext, Logger logger,
-            RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
-            Set<PermissionExtension> permissionExtensions)
+    @Inject public ServerStorageSelector(ServerContainerContext containerContext, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+            Set<PermissionExtension> permissionExtensions, PromiseWait promiseWait)
     {
 
         this.containerContext = containerContext;
@@ -49,13 +50,14 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
         this.scheduler = scheduler;
         this.functionFactoryMap = functionFactoryMap;
         this.permissionExtensions = permissionExtensions;
+        this.promiseWait = promiseWait;
     }
 
     @NotNull private FileOperator createFileOperator()
     {
         final String raplafile = containerContext.getMainFilesource();
         final String fileDatasource = raplafile != null ? raplafile : "data/data.xml";
-        return new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
+        return new FileOperator(logger, promiseWait,i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
     }
 
     synchronized private ImportExportManager getImportExport()
@@ -82,7 +84,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     {
         Provider<ImportExportManager> importExportMananger = getImportExportManager();
         final DataSource dbDatasource = containerContext.getMainDbDatasource();
-        return new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
+        return new DBOperator(logger, promiseWait,i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
     }
 
 

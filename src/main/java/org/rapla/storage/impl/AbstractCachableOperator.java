@@ -25,6 +25,8 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -39,6 +41,8 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -52,6 +56,7 @@ import org.rapla.storage.UpdateEvent;
 import org.rapla.storage.UpdateResult;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -201,6 +206,55 @@ public abstract class AbstractCachableOperator implements StorageOperator
             evt.putRemoveId(entity);
         }
         dispatch(evt);
+    }
+
+    public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
+    {
+        Date today = today();
+        if (RaplaComponent.isTemplate(reservation))
+        {
+            return new ResolvedPromise<Collection<Conflict>>(Collections.emptyList());
+        }
+        final Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
+        final Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
+        final Collection<Reservation> ignoreList = Collections.singleton(reservation);
+        final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindingsPromise = getAllAllocatableBindings(allocatables,
+                appointments, ignoreList);
+        final Promise<Collection<Conflict>> promise = allAllocatableBindingsPromise.thenApply((map) ->
+        {
+            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
+            for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
+            {
+                Allocatable allocatable = entry.getKey();
+                String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
+                boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
+                if (holdBackConflicts)
+                {
+                    continue;
+                }
+                Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
+                for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry : appointmentMap.entrySet())
+                {
+                    Appointment appointment = appointmentEntry.getKey();
+                    if (reservation.hasAllocated(allocatable, appointment))
+                    {
+                        Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
+                        if (conflictionAppointments != null)
+                        {
+                            for (Appointment conflictingAppointment : conflictionAppointments)
+                            {
+
+                                Appointment appointment1 = appointment;
+                                Appointment appointment2 = conflictingAppointment;
+                                ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment1, appointment2, today);
+                            }
+                        }
+                    }
+                }
+            }
+            return conflictList;
+        });
+        return promise;
     }
 
     public Collection<Allocatable> getDependent(Collection<Allocatable> allocatables)

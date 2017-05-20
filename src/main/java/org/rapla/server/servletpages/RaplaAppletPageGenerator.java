@@ -45,6 +45,7 @@ public class RaplaAppletPageGenerator
           {
         	  first = false;
           }
+          buf.append("../");
           buf.append(file);
        }
        return buf.toString();
@@ -64,8 +65,10 @@ public class RaplaAppletPageGenerator
         out.println("  <link REL=\"stylesheet\" href=\""+linkPrefix+"default.css\" type=\"text/css\">");
         out.println("</head>");
         out.println("<body>");
-        out.println("   <applet code=\"org.rapla.client.MainApplet\" codebase=\".\" align=\"baseline\"");
-        out.println("        width=\"300\" height=\"300\" archive=\""+getLibsApplet(context)+"\" codebase_lookup=\"false\"");
+        out.println("   <object type=\"application/x-java-applet\" codebase=\"../.\" align=\"baseline\"");
+        //out.println("   <applet code=\"org.rapla.client.MainApplet\" codebase=\".\" align=\"baseline\"");
+        out.println("        width=\"300\" height=\"300\" " );
+        //out.println(" archive=\""+getLibsApplet(context)+"\" codebase_lookup=\"false\"");
         out.println("   >");
         out.println("     <param name=\"archive\" value=\""+getLibsApplet(context) +"\"/>");
         out.println("     <param name=\"java_code\" value=\"org.rapla.client.MainApplet\"/>");
@@ -81,7 +84,8 @@ public class RaplaAppletPageGenerator
         }
         out.println("  <param name=\"org.rapla.moduleId\" value=\""+moduleId + "\"/>");
         out.println("      No Java support for APPLET tags please install java plugin for your browser!!");
-        out.println("   </applet>");
+        //out.println("   </applet>");
+        out.println("   </object>");
         out.println("</body>");
         out.println("</html>");
         out.close();

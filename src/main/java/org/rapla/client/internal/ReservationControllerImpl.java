@@ -353,7 +353,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                 {
                     removeArray.add(reservation.getReference());
                 }
-                return facade.dispatch(updateArray, removeArray, user);
+                return facade.dispatch(updateArray, removeArray);
             }
             catch (RaplaException ex)
             {
@@ -405,7 +405,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                         }
                     }
                 }
-                final Promise<Void> dispatch = facade.dispatch(toUpdate.values(), Collections.emptyList(), user);
+                final Promise<Void> dispatch = facade.dispatch(toUpdate.values(), Collections.emptyList());
                 return dispatch;
             });
         }
@@ -1591,16 +1591,6 @@ public abstract class ReservationControllerImpl implements ReservationController
     {
         final RaplaFacade facade = getFacade();
         Promise<Boolean> promise;
-        User user;
-        try
-        {
-            user = getClientFacade().getUser();
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<Void>(e);
-        }
-
         if (firstTime)
         {
             promise = checkEvents(storeList, sourceComponent);
@@ -1620,7 +1610,7 @@ public abstract class ReservationControllerImpl implements ReservationController
         Promise<Void> result = promise.thenCompose((checkResult) -> {
             if (checkResult)
             {
-                return facade.dispatch(storeList, removeList, user);
+                return facade.dispatch(storeList, removeList);
             }
             else
             {
@@ -1680,7 +1670,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                 {
                     removeList.add(clone.getReference());
                 }
-                Promise result = getFacade().dispatch(Collections.emptyList(), removeList, user);
+                Promise result = getFacade().dispatch(Collections.emptyList(), removeList);
                 return result;
             }
             catch (RaplaException ex)

@@ -107,9 +107,9 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
-    @Inject public CalendarModelImpl(RaplaFacade facade, ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
+    @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
-        this(locale.getLocale(), getUser(clientFacade), facade.getOperator(), ((FacadeImpl) facade).getLogger());
+        this(locale.getLocale(), getUser(clientFacade), ((FacadeImpl)clientFacade).getOperator(), ((FacadeImpl) clientFacade).getLogger());
         try
         {
             load(null);

@@ -85,7 +85,8 @@ public class SynchronisationManager implements ServerExtension
     private final I18nBundle i18n;
     private final Logger logger;
     private final RaplaKeyStorage keyStorage;
-    private final CachableStorageOperator operator;
+    private final CachableStorageOperator cachableStorageOperator ;
+
     private final TimeZoneConverter converter;
     private final String exchangeUrl;
     private final String exchangeTimezoneId;
@@ -109,7 +110,7 @@ public class SynchronisationManager implements ServerExtension
         this.facade = facade;
         this.configExtensions = configExtensions;
         this.mailToUserInterface = mailToUserInterface;
-        this.operator = (CachableStorageOperator) facade.getOperator();
+        this.cachableStorageOperator = (CachableStorageOperator) facade.getOperator();
         this.i18n = new CompoundI18n(i18nRapla, i18nExchange);
         this.appointmentFormater = appointmentFormater;
         this.keyStorage = keyStorage;
@@ -135,7 +136,6 @@ public class SynchronisationManager implements ServerExtension
 
         scheduler.schedule(() ->
             {
-                final CachableStorageOperator cachableStorageOperator = (CachableStorageOperator) SynchronisationManager.this.facade.getOperator();
                 Date lastUpdated = null;
                 Date updatedUntil = null;
                 try
@@ -168,7 +168,7 @@ public class SynchronisationManager implements ServerExtension
         {
             try
             {
-                operator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
                 Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();
@@ -192,7 +192,7 @@ public class SynchronisationManager implements ServerExtension
                 }
                 firstExecution = false;
                 SynchronisationManager.this.execute(includedTasks);
-                operator.releaseLock(EXCHANGE_LOCK_ID, null);
+                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, null);
             }
             catch (Exception ex)
             {
@@ -251,7 +251,7 @@ public class SynchronisationManager implements ServerExtension
         {
             Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment.getReference());
             result.addAll(taskList);
-            Collection<ReferenceInfo<User>> matchingUserIds = operator.findUsersThatExport(appointment);
+            Collection<ReferenceInfo<User>> matchingUserIds = cachableStorageOperator.findUsersThatExport(appointment);
             // delete all appointments that are no longer covered
             for (SynchronizationTask task : taskList)
             {
@@ -368,7 +368,7 @@ public class SynchronisationManager implements ServerExtension
                             task.resetRetries();
                         }
                         tasks.addAll(existingTasks);
-                        final User resolvedUser = operator.tryResolve(preferences.getOwnerRef());
+                        final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
                         if(resolvedUser != null)
                         {
                             resynchronizeUsers.add(resolvedUser);
@@ -377,12 +377,12 @@ public class SynchronisationManager implements ServerExtension
                     }
                     if (preferences.getEntryAsBoolean(RESYNC_USER, false))
                     {
-                        final User user = operator.tryResolve(preferences.getOwnerRef());
+                        final User user = facade.tryResolve(preferences.getOwnerRef());
                         if (user != null)
                         {
                             removeAllAppointmentsFromExchangeAndAppointmentStore(user);
                         }
-                        final User resolvedUser = operator.tryResolve(preferences.getOwnerRef());
+                        final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
                         if(resolvedUser != null)
                         {
                             resynchronizeUsers.add(resolvedUser);
@@ -391,7 +391,7 @@ public class SynchronisationManager implements ServerExtension
                     }
                     if (savePreferences)
                     {
-                        final Preferences resolve = operator.resolve(preferences.getReference());
+                        final Preferences resolve = facade.resolve(preferences.getReference());
                         final Preferences editPreferences = facade.edit(resolve);
                         editPreferences.putEntry(RESYNC_USER, false);
                         editPreferences.putEntry(RETRY_USER, false);
@@ -407,7 +407,7 @@ public class SynchronisationManager implements ServerExtension
                     ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                     if (ownerId != null)
                     {
-                        User owner = facade.getOperator().resolve(ownerId);
+                        User owner = facade.resolve(ownerId);
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
                         tasks.addAll(result);
                     }
@@ -422,7 +422,7 @@ public class SynchronisationManager implements ServerExtension
                 }
                 else if (operation instanceof UpdateResult.Change)
                 {
-                    User owner = facade.getOperator().tryResolve(userId);
+                    User owner = facade.tryResolve(userId);
                     if (owner != null)
                     {
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
@@ -439,10 +439,10 @@ public class SynchronisationManager implements ServerExtension
                     final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                     if (!isInternal)
                     {
-                        final Collection<ReferenceInfo<User>> users = operator.findUsersThatExport(allocatable);
+                        final Collection<ReferenceInfo<User>> users = cachableStorageOperator.findUsersThatExport(allocatable);
                         for (ReferenceInfo<User> userId : users)
                         {
-                            User owner = facade.getOperator().tryResolve(userId);
+                            User owner = facade.tryResolve(userId);
                             if (owner != null)
                             {
                                 Collection<SynchronizationTask> result = updateTasksForUser(owner);
@@ -508,7 +508,7 @@ public class SynchronisationManager implements ServerExtension
         final ReferenceInfo<User> userId = user.getReference();
         TimeInterval syncRange = getSyncRange();
 
-        Collection<Appointment> appointments = operator.getAppointmentsFromUserCalendarModels(userId, syncRange);
+        Collection<Appointment> appointments = cachableStorageOperator.getAppointmentsFromUserCalendarModels(userId, syncRange);
         final Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
         Set<String> appointmentsFound = new HashSet<String>();
         Collection<SynchronizationTask> newTasksFromCalendar = new HashSet<SynchronizationTask>();
@@ -580,8 +580,7 @@ public class SynchronisationManager implements ServerExtension
             appointmentMessage.append(" ");
         }
         // we don't resolve the appointment if we delete
-        EntityResolver resolver = facade.getOperator();
-        Appointment appointment = isDeleteTask ? null : resolver.tryResolve(appointmentId, Appointment.class);
+        Appointment appointment = isDeleteTask ? null : facade.tryResolve(new ReferenceInfo<Appointment>(appointmentId, Appointment.class));
         if (appointment != null)
         {
             Reservation reservation = appointment.getReservation();
@@ -638,19 +637,18 @@ public class SynchronisationManager implements ServerExtension
         final Collection<SynchronizationTask> toRemove = new HashSet<SynchronizationTask>();
 
         final SynchronizeResult result = new SynchronizeResult();
-        final EntityResolver resolver = facade.getOperator();
         for (SynchronizationTask task : tasks)
         {
-            final String userId = task.getUserId();
-            final String appointmentId = task.getAppointmentId();
+            final ReferenceInfo<User> userId = new ReferenceInfo<>(task.getUserId(), User.class);
+            final ReferenceInfo<Appointment> appointmentId = new ReferenceInfo<>(task.getAppointmentId(), Appointment.class);
             final Appointment appointment;
             final User user;
             final SyncStatus beforeStatus = task.getStatus();
             try
             {
                 // we don't resolve the appointment if we delete
-                appointment = beforeStatus != SyncStatus.toDelete ? resolver.tryResolve(appointmentId, Appointment.class) : null;
-                user = resolver.resolve(userId, User.class);
+                appointment = beforeStatus != SyncStatus.toDelete ? facade.tryResolve(appointmentId) : null;
+                user = facade.resolve(userId);
             }
             catch (EntityNotFoundException e)
             {

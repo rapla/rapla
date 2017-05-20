@@ -22,7 +22,7 @@ public class  CommandHistory {
 		}
 	}
 	
-	 public <T extends Exception> Promise storeAndExecute(CommandUndo<T> cmd) throws T {
+	 public <T extends Exception> Promise<Void> storeAndExecute(CommandUndo<T> cmd) throws T {
 		while (!history.isEmpty() && (current < history.size() - 1)) {
 			history.remove(history.size() - 1);
 		}

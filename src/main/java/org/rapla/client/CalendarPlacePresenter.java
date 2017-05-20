@@ -107,7 +107,7 @@ import javax.inject.Singleton;
         eventBus.addHandler(OwnReservationsEvent.TYPE, (evt) -> {
             try
             {
-                Entity preferences = facade.getPreferences();
+                Entity preferences = facade.getPreferences(clientFacade.getUser());
                 ModificationEventImpl modificationEvt = new ModificationEventImpl();
                 modificationEvt.addChanged(preferences);
                 resourceSelectionPresenter.dataChanged(modificationEvt);
@@ -265,16 +265,14 @@ import javax.inject.Singleton;
         closeFilter();
         try
         {
-            TypedComponentRole<Boolean> configEntry = CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY;
             User user = clientFacade.getUser();
-            Preferences prefs = facade.edit( facade.getPreferences(user));
-            final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
-            boolean newSelected = !oldEntry;
-            prefs.putEntry(configEntry, newSelected);
-            facade.store(prefs);
-            // show Tooltip only when selection pane is visible.
-            // note christopher Disabled is this correct?
-            //javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
+            TypedComponentRole<Boolean> configEntry = CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY;
+            facade.update(facade.getPreferences(user),(prefs)->
+                    {
+                        final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
+                        boolean newSelected = !oldEntry;
+                        prefs.putEntry(configEntry, newSelected);
+                    }).exceptionally(ex->dialogUiFactory.showException( ex, null));
         }
         catch (RaplaException e)
         {

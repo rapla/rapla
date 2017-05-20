@@ -211,6 +211,10 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
      * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.ServerComponent)
      */
     public DialogInterface createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
+        if ( popupContext == null)
+        {
+            popupContext = dialogUiFactory.createPopupContext( null);
+        }
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
         DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade(), getLogger());
         DialogInterface dlg = dialogUiFactory.create(popupContext

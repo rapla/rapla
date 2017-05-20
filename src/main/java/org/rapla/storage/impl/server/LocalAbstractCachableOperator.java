@@ -90,6 +90,7 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -132,7 +133,10 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -189,13 +193,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
+    private final PromiseWait promiseWait;
 
-
-    public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+    public LocalAbstractCachableOperator(Logger logger,PromiseWait promiseWait, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
         super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions, new DefaultRaplaLock(logger));
         this.scheduler = scheduler;
+        this.promiseWait = promiseWait;
         disconnectLock = new DefaultRaplaLock(logger);
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
@@ -203,22 +208,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         calendarModelCache = new CalendarModelCache(this, i18n, logger, scheduler);
     }
 
-    public<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws  RaplaException
+    @Override
+    public <T> T waitForWithRaplaException(Promise<T> promise, int timeoutInMillis) throws RaplaException
     {
-        try
-        {
-            return scheduler.waitFor(promise, millis);
-        }
-        catch (Exception ex)
-        {
-            if ( ex instanceof RaplaException)
-            {
-                throw (RaplaException)ex;
-            }
-            throw new RaplaException(ex);
-        }
+        return promiseWait.waitForWithRaplaException(promise,timeoutInMillis);
     }
-
 
     public CommandScheduler getScheduler()
     {
@@ -3830,7 +3824,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /*
      * Dependencies for belongsTo and package
      */
-
     @Override public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded();

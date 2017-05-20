@@ -30,6 +30,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
+import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Collection;
 import java.util.Date;
@@ -132,10 +133,10 @@ public class PermissionTest extends AbstractTestWithServer {
         // Uncovers bug 1237332,
         ClassificationFilter filter = testFacade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","R1");
-        final Collection<Reservation> reservationsForAllocatable = testFacade.getScheduler().waitFor(testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
+        final Collection<Reservation> reservationsForAllocatable = RaplaTestCase.waitForWithRaplaException(testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
         Assert.assertEquals(1, reservationsForAllocatable.size());
         Reservation evt = reservationsForAllocatable.iterator().next();
-        final User owner = testFacade.getOperator().tryResolve(evt.getOwnerRef());
+        final User owner = testFacade.tryResolve(evt.getOwnerRef());
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         evt =  testFacade.edit( evt );

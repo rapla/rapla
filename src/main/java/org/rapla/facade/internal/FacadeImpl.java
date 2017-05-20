@@ -85,6 +85,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
+import org.rapla.function.Consumer;
 import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
@@ -543,10 +544,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return false;
 	}
 
-	public Preferences getPreferences() throws RaplaException {
-		return getPreferences(getUser());
-	}
-
 	public Preferences getSystemPreferences() throws RaplaException
 	{
         return operator.getPreferences(null, true);
@@ -698,51 +695,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
     public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
     {
-        Date today = operator.today();
-        if (RaplaComponent.isTemplate(reservation))
-        {
-            return getScheduler().supply(() -> Collections.emptyList());
-        }
-        final Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
-        final Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
-        final Collection<Reservation> ignoreList = Collections.singleton(reservation);
-        final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindingsPromise = operator.getAllAllocatableBindings(allocatables,
-                appointments, ignoreList);
-        final Promise<Collection<Conflict>> promise = allAllocatableBindingsPromise.thenApply((map) ->
-        {
-            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
-            for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
-            {
-                Allocatable allocatable = entry.getKey();
-                String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
-                boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
-                if (holdBackConflicts)
-                {
-                    continue;
-                }
-                Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
-                for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry : appointmentMap.entrySet())
-                {
-                    Appointment appointment = appointmentEntry.getKey();
-                    if (reservation.hasAllocated(allocatable, appointment))
-                    {
-                        Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
-                        if (conflictionAppointments != null)
-                        {
-                            for (Appointment conflictingAppointment : conflictionAppointments)
-                            {
-
-                                Appointment appointment1 = appointment;
-                                Appointment appointment2 = conflictingAppointment;
-                                ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment1, appointment2, today);
-                            }
-                        }
-                    }
-                }
-            }
-            return conflictList;
-        });
-        return promise;
+        return operator.getConflicts(reservation);
     }
 
 	public Collection<Conflict> getConflicts() throws RaplaException {
@@ -1347,6 +1300,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		ReservationImpl.checkReservation(i18n, reservation, operator);
 	}
 
+	@Override
 	public <T extends Entity> T edit(T obj) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't edit null objects");
@@ -1355,7 +1309,23 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		T result = edit.iterator().next();
 		return result;
 	}
-	
+
+	@Override
+	public <T extends Entity> Promise<Void> update(T obj, Consumer<T> updateFunction)
+	{
+		Promise<Void> updatePromise = getScheduler().supply(()-> edit( obj)).thenApply((editableObject)-> {updateFunction.accept(editableObject);return editableObject;}
+		).thenAccept((editableObject)->dispatch(Collections.singleton( editableObject), Collections.emptyList()));
+		return updatePromise;
+	}
+
+	@Override
+	public <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction) throws RaplaException
+	{
+		Promise<Void> updatePromise = getScheduler().supply(()-> edit( list)).thenApply((editableObject)->{updateFunction.accept(editableObject); return editableObject;}
+		).thenAccept((editableObject)->dispatch(editableObject, Collections.emptyList()));
+		return updatePromise;
+	}
+
 	public <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException
 	{
 		List<Entity> castedList = new ArrayList<Entity>();
@@ -1513,16 +1483,10 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		Class<T> raplaType = obj.getTypeClass();
 		if (raplaType == Appointment.class ){
 			T _clone = _clone(obj);
-			// Hack for 1.6 compiler compatibility
-			Object temp = _clone;
-			((AppointmentImpl) temp).setParent(null);
+			((AppointmentImpl) _clone).setParent(null);
 			result = _clone;
-		// Hack for 1.6 compiler compatibility
 		} else if (raplaType == Reservation.class) {
-			// Hack for 1.6 compiler compatibility
-			Object temp = obj;
-			Reservation clonedReservation = cloneReservation((Reservation) temp);
-			// Hack for 1.6 compiler compatibility
+			Reservation clonedReservation = cloneReservation((Reservation) obj);
 			Reservation r = clonedReservation;
 			if ( user != null)
 			{
@@ -1543,9 +1507,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 				}
 				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
 			}
-			// Hack for 1.6 compiler compatibility
-			Object r2 =  r;
-			result = (T)r2;
+			result = (T)r;
 			
 		}
 		else
@@ -1640,26 +1602,27 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	@Override
 	public <T extends Entity> void storeObjects(T[] obj) throws RaplaException {
-		storeAndRemove(obj, Entity.ENTITY_ARRAY);
+		User user = getWorkingUser();
+		storeAndRemove(obj, Entity.ENTITY_ARRAY, user);
 	}
 
 	@Override
 	public <T extends Entity> void removeObjects(T[] obj) throws RaplaException {
-		storeAndRemove(Entity.ENTITY_ARRAY, obj);
+		User user = getWorkingUser();
+		storeAndRemove(Entity.ENTITY_ARRAY, obj, user);
 	}
 
 	@Override
-	public <T extends Entity, S extends Entity> void storeAndRemove(T[] storeObjects, S[] removedObjects) throws RaplaException {
-        User workingUser = getWorkingUser();
-        storeAndRemove(storeObjects, removedObjects, workingUser);
-	}
-
-	@Override
-	public <T extends Entity,S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user)
+	public <T extends Entity,S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList)
 	{
 		long time = System.currentTimeMillis();
 		try
 		{
+			User user = null;
+			if ( workingUserId != null)
+			{
+				user = getWorkingUser();
+			}
 			dispatchSynchronized(storeList, removeList, user);
 			if (getLogger().isDebugEnabled())
 				getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
@@ -1766,35 +1729,20 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	public <T extends Entity> T tryResolve( ReferenceInfo<T> info)
 	{
-		return getOperator().tryResolve( info);
+		return operator.tryResolve( info);
 	}
 
     public  <T extends Entity> T resolve( ReferenceInfo<T> info) throws EntityNotFoundException
 	{
-		return getOperator().resolve(info);
+		return operator.resolve(info);
 	}
 	
 	@Override
 	public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
 	{
-	    getOperator().doMerge(selectedObject, allocatableIds, user);
+	    operator.doMerge(selectedObject, allocatableIds, user);
 	}
 
-	public<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws  RaplaException
-	{
-		try
-		{
-			return notifyQueue.waitFor(promise, millis);
-		}
-		catch (Exception ex)
-		{
-			if ( ex instanceof RaplaException)
-			{
-				throw (RaplaException)ex;
-			}
-			throw new RaplaException(ex);
-		}
-	}
 
 
 }

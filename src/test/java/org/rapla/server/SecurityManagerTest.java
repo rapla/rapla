@@ -1,8 +1,6 @@
 package org.rapla.server;
 
 import junit.framework.TestCase;
-import org.eclipse.jetty.server.Server;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,12 +18,9 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.logger.Logger;
-import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.RaplaTestCase;
 
-import javax.inject.Provider;
 import java.util.Date;
 import java.util.Locale;
 
@@ -112,7 +107,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			ClassificationFilter eventFilter = eventType.newClassificationFilter();
 			eventFilter.addEqualsRule("name", "conflicting event");
 			
-			Reservation event = facade1.waitForWithRaplaException(facade1.getReservationsForAllocatable( null, null, null, eventFilter.toArray()), 10000).iterator().next();
+			Reservation event = RaplaTestCase.waitForWithRaplaException(facade1.getReservationsForAllocatable( null, null, null, eventFilter.toArray()), 10000).iterator().next();
 				// But moving back the appointment to today should fail
 			event = facade1.edit( event );
 			Date startPlus1 = new Date( start.getTime() + DateTools.MILLISECONDS_PER_HOUR) ;

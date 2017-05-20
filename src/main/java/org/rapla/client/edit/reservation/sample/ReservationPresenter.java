@@ -30,7 +30,7 @@ import org.rapla.storage.PermissionController;
 
 import com.google.web.bindery.event.shared.EventBus;
 
-public class ReservationPresenter implements ReservationController, Presenter
+public class ReservationPresenter implements Presenter
 {
     public static final String EDIT_ACTIVITY_ID = "editevent";
 
@@ -59,13 +59,12 @@ public class ReservationPresenter implements ReservationController, Presenter
         view.setPresenter(this);
     }
 
-    @Override
     public boolean isVisible()
     {
         return view.isVisible();
     }
 
-    @Override public void edit(final Reservation event, boolean isNew)
+     public void edit(final Reservation event, boolean isNew)
     {
         try
         {
@@ -80,7 +79,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         }
     }
 
-    @Override public void onSaveButtonClicked()
+    public void onSaveButtonClicked()
     {
         logger.info("save clicked");
         try
@@ -94,7 +93,7 @@ public class ReservationPresenter implements ReservationController, Presenter
         fireEventAndCloseView();
     }
 
-    @Override public void onDeleteButtonClicked()
+    public void onDeleteButtonClicked()
     {
         logger.info("delete clicked");
         try

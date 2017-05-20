@@ -6,8 +6,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -37,8 +35,10 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.rest.PATCH;
 import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.SecurityManager;
+import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -49,6 +49,8 @@ import org.rapla.storage.StorageOperator;
     @Inject RemoteSession session;
     @Inject SecurityManager securityManager;
     private final HttpServletRequest request;
+    @Inject CachableStorageOperator operator;
+    @Inject PromiseWait promiseWait;
 
     @Inject public RaplaEventsRestPage(@Context HttpServletRequest request)
     {
@@ -62,7 +64,6 @@ import org.rapla.storage.StorageOperator;
             @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         final User user = session.getUser(request);
-        final StorageOperator operator = facade.getOperator();
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id : resources)
         {
@@ -75,7 +76,7 @@ import org.rapla.storage.StorageOperator;
         final User owner = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator
                 .queryAppointments(owner, allocatables, start, end, filters, annotationQuery);
-        final Map<Allocatable, Collection<Appointment>> appMap = facade.waitForWithRaplaException(promise, 20000);
+        final Map<Allocatable, Collection<Appointment>> appMap = promiseWait.waitForWithRaplaException(promise, 20000);
         final List<ReservationImpl> result = new ArrayList<ReservationImpl>();
         final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
         PermissionController permissionController = facade.getPermissionController();
@@ -102,19 +103,23 @@ import org.rapla.storage.StorageOperator;
     @PATCH @Path("{id}") @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl patch(@PathParam("id") String id,ReservationImpl event) throws RaplaException
     {
         final User user = session.getUser(request);
-        final StorageOperator operator = facade.getOperator();
-        event.setResolver(operator);
+        setResolver(event);
         securityManager.checkWritePermissions(user, event);
         facade.store(event);
         ReservationImpl result = facade.getPersistant(event);
         return result;
     }
 
+    protected void setResolver(ReservationImpl event)
+    {
+        final StorageOperator operator = facade.getOperator();
+        event.setResolver(operator);
+    }
+
     @PUT @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl update(ReservationImpl event) throws RaplaException
     {
         final User user = session.getUser(request);
-        final StorageOperator operator = facade.getOperator();
-        event.setResolver(operator);
+        setResolver(event);
         securityManager.checkWritePermissions(user, event);
         facade.store(event);
         ReservationImpl result = facade.getPersistant(event);
@@ -124,8 +129,7 @@ import org.rapla.storage.StorageOperator;
     @DELETE @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public boolean delete(@PathParam("id") String id) throws RaplaException
     {
         final User user = session.getUser(request);
-        final StorageOperator operator = facade.getOperator();
-        final Reservation event = operator.tryResolve(id, Reservation.class);
+        final Reservation event = facade.tryResolve(new ReferenceInfo<Reservation>(id, Reservation.class));
         if ( event == null)
         {
             return false;
@@ -138,8 +142,7 @@ import org.rapla.storage.StorageOperator;
     @POST @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl create(ReservationImpl event) throws RaplaException
     {
         final User user = session.getUser(request);
-        final StorageOperator operator = facade.getOperator();
-        event.setResolver(operator);
+        setResolver( event);
         if (!facade.getPermissionController().canCreate(event.getClassification().getType(), user))
         {
             throw new RaplaSecurityException("User " + user + " can't modify event " + event);

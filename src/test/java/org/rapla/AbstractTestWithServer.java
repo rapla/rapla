@@ -10,8 +10,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
@@ -47,6 +54,24 @@ public abstract class AbstractTestWithServer
             RaplaTestCase.dispose(clientFacade.getRaplaFacade());
         }
         server.stop();
+    }
+
+    protected Reservation newReservation(ClientFacade  clientFacade) throws RaplaException
+    {
+        RaplaFacade facade = clientFacade.getRaplaFacade();
+        User user = clientFacade.getUser();
+        final DynamicType[] eventTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+        Classification classification = eventTypes[0].newClassification();
+        return facade.newReservation(classification, user);
+    }
+
+    protected Allocatable newResource(ClientFacade  clientFacade) throws RaplaException
+    {
+        RaplaFacade facade = clientFacade.getRaplaFacade();
+        User user = clientFacade.getUser();
+        final DynamicType[] eventTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        Classification classification = eventTypes[0].newClassification();
+        return facade.newAllocatable(classification, user);
     }
 
     protected RaplaFacade getServerRaplaFacade()

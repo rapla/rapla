@@ -32,6 +32,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
+import org.rapla.test.util.RaplaTestCase;
 
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
@@ -48,7 +49,7 @@ public final class ReservationControllerTest extends GUITestCase
     public void testMain() throws Exception
     {
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
-        Collection<Reservation> reservations = raplaFacade
+        Collection<Reservation> reservations = RaplaTestCase
                 .waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
         final EditController c = getService(EditController.class);
         final Reservation reservation = reservations.iterator().next();
@@ -59,7 +60,7 @@ public final class ReservationControllerTest extends GUITestCase
     public void testMove() throws Exception
     {
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
-        Collection<Reservation> reservations = raplaFacade
+        Collection<Reservation> reservations = RaplaTestCase
                 .waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
         final ReservationController c = getService(ReservationController.class);
         final Reservation reservation = reservations.iterator().next();
@@ -129,7 +130,7 @@ public final class ReservationControllerTest extends GUITestCase
         Allocatable[] periods = raplaFacade.getAllocatables(filters);
         raplaFacade.removeObjects(periods);
         Thread.sleep(500);
-        Collection<Reservation> reservations = raplaFacade.waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
+        Collection<Reservation> reservations = RaplaTestCase.waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);
         EditController c = getService(EditController.class);
         c.edit(reservations.iterator().next(), createPopupContext());
         getLogger().info("ReservationController started");

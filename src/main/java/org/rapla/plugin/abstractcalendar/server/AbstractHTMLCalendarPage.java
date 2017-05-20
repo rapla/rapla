@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,6 +48,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
@@ -60,6 +62,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     final protected RaplaFacade facade;
     final protected Logger logger;
     final protected AppointmentFormater appointmentFormater;
+    @Inject
+    protected PromiseWait promiseWait;
 
     public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
         this.raplaResources = raplaResources;
@@ -86,16 +90,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
 		final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
-        final RaplaBuilder raplaBuilder;
-        try
-        {
-            raplaBuilder = facade.getScheduler().waitFor(initBuilder, 5000);
-        }
-        catch (Exception e)
-        {
-            throw new RaplaException(e);
-        }
-
+        final RaplaBuilder raplaBuilder = promiseWait.waitForWithRaplaException(initBuilder, 5000);
         return raplaBuilder;
     }
 

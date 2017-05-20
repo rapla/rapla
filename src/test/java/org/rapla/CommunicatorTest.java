@@ -4,15 +4,20 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Collection;
 import java.util.Date;
@@ -27,7 +32,7 @@ public class CommunicatorTest extends AbstractTestWithServer
         ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
         clientFacade.login("homer","duffs".toCharArray());
-        Allocatable alloc = facade.newResource();
+        Allocatable alloc = newResource(clientFacade);
         StringBuffer buf = new StringBuffer();
         int stringsize = 100000;
         for (int i=0;i< stringsize;i++)
@@ -62,7 +67,7 @@ public class CommunicatorTest extends AbstractTestWithServer
            Allocatable[] allocatables = facade.getAllocatables();
            Assert.assertTrue(allocatables.length > 0);
 
-           Reservation newEvent = facade.newReservation();
+           Reservation newEvent = newReservation(clientFacade);
            Appointment newApp = facade.newAppointment( new Date(), new Date());
            newEvent.addAppointment( newApp );
            newEvent.getClassification().setValue("name","Test Reservation");
@@ -70,7 +75,7 @@ public class CommunicatorTest extends AbstractTestWithServer
 
            facade.store( newEvent );
 
-           Collection<Reservation> events = facade.getScheduler().waitFor(facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null), 10000);
+           Collection<Reservation> events = RaplaTestCase.waitForWithRaplaException(facade.getReservationsForAllocatable(new Allocatable[] { allocatables[0] }, null,null,null), 10000);
            Assert.assertTrue(events.size() > 0);
            
            Reservation r = events.iterator().next();
@@ -91,7 +96,7 @@ public class CommunicatorTest extends AbstractTestWithServer
         ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
         clientFacade.login("homer","duffs".toCharArray());
-        Allocatable alloc = facade.newResource();
+        Allocatable alloc = newResource(clientFacade);
         String typeName = alloc.getClassification().getType().getKey();
         // AE = \u00C4
         // OE = \u00D6

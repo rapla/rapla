@@ -1,6 +1,7 @@
 package org.rapla.client.internal.edit.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.edit.EditTaskPresenter;
@@ -77,6 +78,8 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
         JPanel buttonsPanel = new JPanel();
         final String confirmText = isMerge ? i18n.getString("merge"): i18n.getString("save");
         RaplaButton saveButton = new RaplaButton(confirmText, RaplaButton.DEFAULT);
+        final RaplaWidget raplaWidget = () -> jPanel;
+        final PopupContext popupContext = dialogUiFactory.createPopupContext(raplaWidget);
         saveButton.addActionListener((evt) ->
         {
             try
@@ -87,11 +90,11 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
             }
             catch (IllegalAnnotationException ex)
             {
-                dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext((Component) jPanel, null));
+                dialogUiFactory.showWarning(ex.getMessage(), popupContext);
             }
             catch (Exception ex)
             {
-                dialogUiFactory.showException(ex, new SwingPopupContext((Component) jPanel, null));
+                dialogUiFactory.showException(ex, popupContext);
             }
         });
         RaplaButton cancelButton = new RaplaButton(i18n.getString("cancel"), RaplaButton.DEFAULT);
@@ -104,7 +107,7 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
         buttonsPanel.add(saveButton);
         buttonsPanel.add(cancelButton);
         jPanel.add(buttonsPanel, BorderLayout.SOUTH);
-        return () -> jPanel;
+        return raplaWidget;
     }
 
 }

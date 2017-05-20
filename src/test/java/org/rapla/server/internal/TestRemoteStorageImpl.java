@@ -9,10 +9,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.inject.Provider;
-
-import org.eclipse.jetty.server.Server;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +34,7 @@ import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 
 import junit.framework.TestCase;
+import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)
 public class TestRemoteStorageImpl extends AbstractTestWithServer
@@ -227,7 +224,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Collection<Conflict> conflicts = facade.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
     
@@ -251,7 +248,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Collection<Conflict> conflicts = facade.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
 

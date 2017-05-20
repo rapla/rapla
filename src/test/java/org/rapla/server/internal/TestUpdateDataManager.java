@@ -58,7 +58,7 @@ public class TestUpdateDataManager
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
-        SecurityManager securityManager = new SecurityManager(logger, i18n, appointmentFormater, facade);
+        SecurityManager securityManager = new SecurityManager(logger, i18n, appointmentFormater, operator);
         updateManager = new UpdateDataManagerImpl(logger, operator, securityManager);
     }
 
@@ -198,7 +198,8 @@ public class TestUpdateDataManager
             }
             if ( createAndRemoveEvents)
             {
-                final Collection<Reservation> reservations = facade.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables, null, null, null), 10000);
+                final Collection<Reservation> reservations = RaplaTestCase
+                        .waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables, null, null, null), 10000);
                 int i = 0;
                 for (Iterator<Reservation> it = reservations.iterator(); it.hasNext(); )
                 {
@@ -251,7 +252,8 @@ public class TestUpdateDataManager
                     removedIds.add(allocatables[i].getReference());
                 }
             }
-            final Collection<Reservation> reservations = facade.waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null), 10000);
+            final Collection<Reservation> reservations = RaplaTestCase
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null), 10000);
             if ( createAndRemoveEvents)
             {
                 for ( Reservation event:reservations)

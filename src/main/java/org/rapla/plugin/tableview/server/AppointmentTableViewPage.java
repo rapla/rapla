@@ -32,15 +32,16 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-import org.rapla.storage.StorageOperator;
+import org.rapla.storage.CachableStorageOperator;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
         implements HTMLViewPage
 {
     private TableViewPage<AppointmentBlock, TableColumn> tableViewPage; 
 
-    @Inject public AppointmentTableViewPage(RaplaFacade facade,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
+    @Inject public AppointmentTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<AppointmentBlock, TableColumn>(raplaLocale) {
 
@@ -49,7 +50,7 @@ import org.rapla.storage.StorageOperator;
             {
                 User user = model.getUser();
                 List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments", user);
-                final List<AppointmentBlock> blocks = facade.waitForWithRaplaException(model.getBlocks(), 10000);
+                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.getBlocks(), 10000);
                 return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
             }
 

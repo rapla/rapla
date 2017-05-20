@@ -1,4 +1,3 @@
-
 /*--------------------------------------------------------------------------*
  | Copyright (C) 2006  Christopher Kohlhaas                                 |
  |                                                                          |
@@ -29,6 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Provider;
 import javax.swing.BorderFactory;
@@ -44,6 +46,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
+import org.rapla.client.gwt.Rapla;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
@@ -77,11 +80,7 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.scheduler.Promise;
 
 public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
-    implements
-    SwingCalendarView,
-    DateChangeListener, MultiCalendarPrint,
-    VisibleTimeInterval,
-    Printable
+        implements SwingCalendarView, DateChangeListener, MultiCalendarPrint, VisibleTimeInterval, Printable
 {
     protected final CalendarModel model;
     protected final AbstractSwingCalendar view;
@@ -105,8 +104,8 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
-            IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
+            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
+            AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
@@ -124,155 +123,171 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         this.editController = editController;
 
         boolean printable = isPrintContext();
-        view = createView( !printable);
+        view = createView(!printable);
         view.setEditable(editable);
-        view.setLocale( getRaplaLocale() );
-        if ( editable )
+        view.setLocale(getRaplaLocale());
+        if (editable)
         {
-            view.addCalendarViewListener( createListener() );
+            view.addCalendarViewListener(createListener());
         }
-      
-        if ( !printable )
+
+        if (!printable)
         {
             container = view.getComponent();
         }
         else
         {
             container = new JPanel();
-            container.setLayout( new BorderLayout());
-            container.setOpaque( false );
-            view.getComponent().setOpaque( false);
+            container.setLayout(new BorderLayout());
+            container.setOpaque(false);
+            view.getComponent().setOpaque(false);
             titleView = new JLabel();
             titleView.setFont(new Font("SansSerif", Font.BOLD, 14));
             titleView.setOpaque(false);
             titleView.setForeground(Color.black);
             //titleView.setHorizontalAlignment(JLabel.CENTER);
-            titleView.setBorder(BorderFactory.createEmptyBorder(0,11,12,11));
+            titleView.setBorder(BorderFactory.createEmptyBorder(0, 11, 12, 11));
 
-            container.add( titleView, BorderLayout.NORTH);
-            container.add( view.getComponent(), BorderLayout.CENTER);
+            container.add(titleView, BorderLayout.NORTH);
+            container.add(view.getComponent(), BorderLayout.CENTER);
         }
 
         dateChooser = new DateChooserPanel(facade, i18n, raplaLocale, logger, model, dateRenderer, ioInterface);
         dateChooser.addDateChangeListener(this);
-        dateChooser.setIncrementSize( getIncrementSize() );
+        dateChooser.setIncrementSize(getIncrementSize());
     }
 
-	protected boolean isPrintContext() {
+    protected boolean isPrintContext()
+    {
         return printing;
-	}
+    }
 
     abstract protected AbstractSwingCalendar createView(boolean showScrollPane) throws RaplaException;
+
     abstract protected void configureView() throws RaplaException;
+
     abstract public DateTools.IncrementSize getIncrementSize();
 
     /**
-     * @throws RaplaException  
+     * @throws RaplaException
      */
-    protected ViewListener createListener() throws RaplaException {
-        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController);
+    protected ViewListener createListener() throws RaplaException
+    {
+        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories,
+                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController);
     }
 
-    public JComponent getDateSelection()   {
+    public JComponent getDateSelection()
+    {
         return dateChooser.getComponent();
     }
 
-    public void dateChanged(DateChangeEvent evt) {
-    	 triggerUpdate();
+    public void dateChanged(DateChangeEvent evt)
+    {
+        triggerUpdate();
     }
 
-	public void triggerUpdate() {
-		PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
-		try {
-			initializeBuilder().thenAccept((builder)->
-                    SwingUtilities.invokeLater(()->{
-                        try
-                        {
-                            update(builder);
-                        }
-                        catch (RaplaException e)
-                        {
-                            dialogUiFactory.showException( e, popupContext);
-                        }
-                    })).exceptionally( (ex) ->
-			        dialogUiFactory.showException(ex, popupContext)
-			    );
-		} catch (RaplaException ex) {
-			  dialogUiFactory.showException(ex, popupContext);
-		}
-	}
-
-    public void update(RaplaBuilder builder) throws RaplaException{
-    	
-    	if ( titleView != null)
+    public void triggerUpdate()
+    {
+        PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
+        try
         {
-            titleView.setText( model.getNonEmptyTitle());
+            initializeBuilder().thenAccept((builder) -> SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    update(builder);
+                }
+                catch (RaplaException e)
+                {
+                    dialogUiFactory.showException(e, popupContext);
+                }
+            })).exceptionally((ex) -> dialogUiFactory.showException(ex, popupContext));
+        }
+        catch (RaplaException ex)
+        {
+            dialogUiFactory.showException(ex, popupContext);
+        }
+    }
+
+    public void update(RaplaBuilder builder) throws RaplaException
+    {
+
+        if (titleView != null)
+        {
+            titleView.setText(model.getNonEmptyTitle());
         }
         dateChooser.update();
         if (!isPrintContext())
         {
-        	int minBlockWidth = getCalendarOptions().getMinBlockWidth();
-			view.setMinBlockWidth( minBlockWidth);
+            int minBlockWidth = getCalendarOptions().getMinBlockWidth();
+            view.setMinBlockWidth(minBlockWidth);
         }
-        view.rebuild( builder );
-        if ( !view.isEditable())
+        view.rebuild(builder);
+        if (!view.isEditable())
         {
             Dimension size = view.getComponent().getPreferredSize();
-            container.setBounds( 0,0, size.width, size.height + 40);
+            container.setBounds(0, 0, size.width, size.height + 40);
         }
     }
 
-	private Promise<RaplaBuilder> initializeBuilder() throws RaplaException {
-         configureView( );
-         Date startDate = getStartDate() ;
-         Date endDate = getEndDate();
-         ensureViewTimeframeIsInModel(startDate, endDate);
-         final Promise<RaplaBuilder> builderPromise = createBuilder();
-         return builderPromise;
-	}
+    private Promise<RaplaBuilder> initializeBuilder() throws RaplaException
+    {
+        configureView();
+        Date startDate = getStartDate();
+        Date endDate = getEndDate();
+        ensureViewTimeframeIsInModel(startDate, endDate);
+        final Promise<RaplaBuilder> builderPromise = createBuilder();
+        return builderPromise;
+    }
 
-	protected Date getEndDate() {
-		return view.getEndDate() ;
-	}
+    protected Date getEndDate()
+    {
+        return view.getEndDate();
+    }
 
-	protected Date getStartDate() {
-		return view.getStartDate();
-	}
-	
-	public TimeInterval getVisibleTimeInterval()
-	{
-		return new TimeInterval( getStartDate(),getEndDate());
-	}
+    protected Date getStartDate()
+    {
+        return view.getStartDate();
+    }
 
-    protected void ensureViewTimeframeIsInModel( Date startDate, Date endDate) {
+    public TimeInterval getVisibleTimeInterval()
+    {
+        return new TimeInterval(getStartDate(), getEndDate());
+    }
+
+    protected void ensureViewTimeframeIsInModel(Date startDate, Date endDate)
+    {
         //      Update start- and enddate of the model
         Date modelStart = model.getStartDate();
         Date modelEnd = model.getEndDate();
-        if ( modelStart == null || modelStart.after( startDate)) {
-            model.setStartDate( startDate);
+        if (modelStart == null || modelStart.after(startDate))
+        {
+            model.setStartDate(startDate);
         }
-        if ( modelEnd == null || modelEnd.before( endDate)) {
-            model.setEndDate( endDate);
+        if (modelEnd == null || modelEnd.before(endDate))
+        {
+            model.setEndDate(endDate);
         }
     }
 
-   
-    protected Promise<RaplaBuilder> createBuilder() 
+    protected Promise<RaplaBuilder> createBuilder()
     {
         RaplaBuilder builder = new SwingRaplaBuilder(getFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater, raplaImages);
         Date startDate = getStartDate();
-		Date endDate = getEndDate();
-		final Promise<RaplaBuilder> builderPromise = builder.initFromModel( model, startDate, endDate );
-		final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((initializedBuilder) -> {
-		    initializedBuilder.setRepeatingVisible( view.isEditable());
-		    GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
-		    boolean compactColumns = getCalendarOptions().isCompactColumns() ||  initializedBuilder.getAllocatables().size() ==0 ;
-		    strategy.setFixedSlotsEnabled( !compactColumns);
-		    strategy.setResolveConflictsEnabled( true );
-		    initializedBuilder.setBuildStrategy( strategy );
-		    return initializedBuilder;
-		});
-		return nextBuilderPromise;
+        Date endDate = getEndDate();
+        final Promise<RaplaBuilder> builderPromise = builder.initFromModel(model, startDate, endDate);
+        final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((initializedBuilder) ->
+        {
+            initializedBuilder.setRepeatingVisible(view.isEditable());
+            GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale());
+            boolean compactColumns = getCalendarOptions().isCompactColumns() || initializedBuilder.getAllocatables().size() == 0;
+            strategy.setFixedSlotsEnabled(!compactColumns);
+            strategy.setResolveConflictsEnabled(true);
+            initializedBuilder.setBuildStrategy(strategy);
+            return initializedBuilder;
+        });
+        return nextBuilderPromise;
     }
 
     public JComponent getComponent()
@@ -282,170 +297,213 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     public List<Allocatable> getSortedAllocatables() throws RaplaException
     {
-    	List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
+        List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
         return sortedAllocatables;
     }
-    
+
     public void scrollToStart()
     {
     }
 
-    public CalendarView getCalendarView() {
+    public CalendarView getCalendarView()
+    {
         return view;
     }
-    
-    
+
     //DateTools.addDays(new Date(), 100);
     Date currentPrintDate;
-    Map<Date,Integer> pageStartMap = new HashMap<Date,Integer>();
+    Map<Date, Integer> pageStartMap = new HashMap<Date, Integer>();
     Double scaleFactor = null;
+
     /**
      * @see java.awt.print.Printable#print(java.awt.Graphics, java.awt.print.PageFormat, int)
      */
     @Override
-    public int print(Graphics g, PageFormat format, int page) throws PrinterException {
-    	
+    public int print(Graphics g, PageFormat format, int page) throws PrinterException
+    {
+
     	/*JFrame frame = new JFrame();
         frame.setSize(300,300);
         frame.getContentPane().add( container);
         frame.pack();
         frame.setVisible(false);*/
-    	final Date startDate = model.getStartDate();
-    	final Date endDate = model.getEndDate();
+        final Date startDate = model.getStartDate();
+        final Date endDate = model.getEndDate();
         final Date selectedDate = model.getSelectedDate();
-        
+
         int pages = getUnits();
-    	Date targetDate;
+        Date targetDate;
 
         {
-        	targetDate = DateTools.add( selectedDate, getIncrementSize(), pages - 1);
+            targetDate = DateTools.add(selectedDate, getIncrementSize(), pages - 1);
         }
 
-        if ( page <= 0 )
+        if (page <= 0)
         {
-        	currentPrintDate = selectedDate;
-        	pageStartMap.clear();
-        	scaleFactor = null;
-        	pageStartMap.put(currentPrintDate,page);
+            currentPrintDate = selectedDate;
+            pageStartMap.clear();
+            scaleFactor = null;
+            pageStartMap.put(currentPrintDate, page);
         }
         while (true)
         {
-        	int printOffset = (int)DateTools.countDays(selectedDate, currentPrintDate);
-			model.setStartDate(DateTools.addDays(startDate, printOffset));
-			model.setEndDate(DateTools.addDays(endDate, printOffset));
-	    	model.setSelectedDate( DateTools.addDays(selectedDate, printOffset));
-	    	try
-	    	{
-		    	Graphics2D g2 = (Graphics2D) g;
-		    	try
-		    	{
-		    	    // get all reservations
-		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
-		    		RaplaBuilder builder = getFacade().waitForWithRaplaException(builderPromise, 5000);
-		    		update(builder);
-				}
-				catch (RaplaException e)
-				{
-					getLogger().error(e.getMessage(), e);
-					throw new PrinterException(e.getMessage());
-				}
-
-		    	double preferedHeight = view.getComponent().getPreferredSize().getHeight();
-		    	if ( scaleFactor == null)
-		    	{
-		    		scaleFactor =  Math.min(1, 1/ Math.min(2.5,preferedHeight / format.getImageableHeight()));
-		    	}
-		    	double newWidth =  format.getImageableWidth() / scaleFactor  ;
-		    	double scaledPreferedHeigth =preferedHeight * scaleFactor;
-		        
-		    	Component component = container;
-		        view.updateSize( (int)newWidth );
-		        container.setBounds( 0,0, (int)newWidth, (int)preferedHeight);
-		        try 
-		    	{
-		    		final Promise<RaplaBuilder> builderPromise = initializeBuilder();
-                    RaplaBuilder builder = getFacade().waitForWithRaplaException(builderPromise, 5000);
-		    		update(builder);
-				}
+            int printOffset = (int) DateTools.countDays(selectedDate, currentPrintDate);
+            model.setStartDate(DateTools.addDays(startDate, printOffset));
+            model.setEndDate(DateTools.addDays(endDate, printOffset));
+            model.setSelectedDate(DateTools.addDays(selectedDate, printOffset));
+            try
+            {
+                Graphics2D g2 = (Graphics2D) g;
+                try
+                {
+                    // get all reservations
+                    final Promise<RaplaBuilder> builderPromise = initializeBuilder();
+                    RaplaBuilder builder = waitForWithRaplaException(builderPromise, 5000);
+                    update(builder);
+                }
                 catch (RaplaException e)
-				{
-					getLogger().error(e.getMessage(), e);
-					throw new PrinterException(e.getMessage());
-				}
-		   
-		        Integer pageStart = pageStartMap.get( currentPrintDate);
-		    	if ( pageStart == null)
-		    	{
-		    		return NO_SUCH_PAGE;
-		    	}
-		        int translatey = (int)((page-pageStart )* format.getImageableHeight());
-		    	if ( translatey > scaledPreferedHeigth-20)
-		    	{
-		    		if ( targetDate != null && currentPrintDate.before( targetDate))
-		    		{
-                        currentPrintDate = DateTools.add( currentPrintDate, getIncrementSize(),  1);
-		    			pageStartMap.put(currentPrintDate,page);
-		    			continue;
-		    		}
-		    		else
-		    		{
-		    	  		return NO_SUCH_PAGE;
-		    		}
-		    	}
-		    	if ( translatey <0 && targetDate!= null)
-		    	{
-                    currentPrintDate = DateTools.add( currentPrintDate, getIncrementSize(),  - 1);
-		    		continue;
-		    	}
-		    	if ( targetDate != null && currentPrintDate.after( targetDate))
-		    	{
-		    		return NO_SUCH_PAGE;
-		    	}
-		    	
-		    	g2.translate(format.getImageableX(), format.getImageableY() - translatey  );
-		    	g2.clipRect(0, translatey , (int)(format.getImageableWidth() ), (int)(format.getImageableHeight()));
-		    	g2.scale(scaleFactor, scaleFactor);
-		
-		    	RepaintManager rm = RepaintManager.currentManager(component);
-		        boolean db= rm.isDoubleBufferingEnabled();
-		        try {
-		            rm.setDoubleBufferingEnabled(false);
-		            component.printAll(g);
-		            return Printable.PAGE_EXISTS;
-		        } 
-		        finally 
-		        {
-		            rm.setDoubleBufferingEnabled(db);
-		        }
-	    	}
-	    	finally 
-	    	{
-	        	model.setStartDate(startDate);
-	        	model.setEndDate(endDate);
-	        	model.setSelectedDate( selectedDate);
-	        }
+                {
+                    getLogger().error(e.getMessage(), e);
+                    throw new PrinterException(e.getMessage());
+                }
+
+                double preferedHeight = view.getComponent().getPreferredSize().getHeight();
+                if (scaleFactor == null)
+                {
+                    scaleFactor = Math.min(1, 1 / Math.min(2.5, preferedHeight / format.getImageableHeight()));
+                }
+                double newWidth = format.getImageableWidth() / scaleFactor;
+                double scaledPreferedHeigth = preferedHeight * scaleFactor;
+
+                Component component = container;
+                view.updateSize((int) newWidth);
+                container.setBounds(0, 0, (int) newWidth, (int) preferedHeight);
+                try
+                {
+                    final Promise<RaplaBuilder> builderPromise = initializeBuilder();
+                    RaplaBuilder builder = waitForWithRaplaException(builderPromise, 5000);
+                    update(builder);
+                }
+                catch (RaplaException e)
+                {
+                    getLogger().error(e.getMessage(), e);
+                    throw new PrinterException(e.getMessage());
+                }
+
+                Integer pageStart = pageStartMap.get(currentPrintDate);
+                if (pageStart == null)
+                {
+                    return NO_SUCH_PAGE;
+                }
+                int translatey = (int) ((page - pageStart) * format.getImageableHeight());
+                if (translatey > scaledPreferedHeigth - 20)
+                {
+                    if (targetDate != null && currentPrintDate.before(targetDate))
+                    {
+                        currentPrintDate = DateTools.add(currentPrintDate, getIncrementSize(), 1);
+                        pageStartMap.put(currentPrintDate, page);
+                        continue;
+                    }
+                    else
+                    {
+                        return NO_SUCH_PAGE;
+                    }
+                }
+                if (translatey < 0 && targetDate != null)
+                {
+                    currentPrintDate = DateTools.add(currentPrintDate, getIncrementSize(), -1);
+                    continue;
+                }
+                if (targetDate != null && currentPrintDate.after(targetDate))
+                {
+                    return NO_SUCH_PAGE;
+                }
+
+                g2.translate(format.getImageableX(), format.getImageableY() - translatey);
+                g2.clipRect(0, translatey, (int) (format.getImageableWidth()), (int) (format.getImageableHeight()));
+                g2.scale(scaleFactor, scaleFactor);
+
+                RepaintManager rm = RepaintManager.currentManager(component);
+                boolean db = rm.isDoubleBufferingEnabled();
+                try
+                {
+                    rm.setDoubleBufferingEnabled(false);
+                    component.printAll(g);
+                    return Printable.PAGE_EXISTS;
+                }
+                finally
+                {
+                    rm.setDoubleBufferingEnabled(db);
+                }
+            }
+            finally
+            {
+                model.setStartDate(startDate);
+                model.setEndDate(endDate);
+                model.setSelectedDate(selectedDate);
+            }
+        }
+    }
+
+    // This should be the only place on the client where we want to wait for Promises
+    private <T> T waitForWithRaplaException(Promise<T> promise, int timeoutMillis) throws RaplaException
+    {
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        promise.whenComplete((t, ex) ->
+        {
+            if (ex != null)
+            {
+                future.completeExceptionally(ex);
+            }
+            else
+            {
+                future.complete(t);
+            }
+        });
+        try
+        {
+            T t = future.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            return t;
+        }
+        catch (Exception ex)
+        {
+            final Throwable cause = ex.getCause();
+            if (cause instanceof RaplaException)
+            {
+                throw (RaplaException) cause;
+            }
+            if (cause instanceof Error)
+            {
+                throw (Error) cause;
+            }
+            throw new RaplaException(cause);
         }
     }
 
     public String getCalendarUnit()
     {
-    	DateTools.IncrementSize incrementSize = getIncrementSize();
-        switch ( incrementSize)
+        DateTools.IncrementSize incrementSize = getIncrementSize();
+        switch (incrementSize)
         {
-            case DAY_OF_YEAR:return getString("days");
-            case WEEK_OF_YEAR:return getString("weeks");
-            case MONTH:return getString("months");
-            default: return "";
+            case DAY_OF_YEAR:
+                return getString("days");
+            case WEEK_OF_YEAR:
+                return getString("weeks");
+            case MONTH:
+                return getString("months");
+            default:
+                return "";
         }
     }
-    
-    public int getUnits() {
-		return units;
-	}
 
-	public void setUnits(int units) {
-		this.units = units;
-	}
+    public int getUnits()
+    {
+        return units;
+    }
 
+    public void setUnits(int units)
+    {
+        this.units = units;
+    }
 
 }

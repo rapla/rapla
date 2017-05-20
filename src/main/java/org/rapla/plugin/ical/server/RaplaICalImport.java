@@ -39,6 +39,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
@@ -71,9 +72,13 @@ public class RaplaICalImport implements ICalImport {
 	RaplaFacade facade;
 	@Inject
 	Logger logger;
+    @Inject
+    PromiseWait promiseWait;
+
     private final HttpServletRequest request;
 
-	@Inject
+
+    @Inject
 	public RaplaICalImport(@Context HttpServletRequest request ) {
         this.request = request;
 	}
@@ -105,7 +110,7 @@ public class RaplaICalImport implements ICalImport {
             }
             User user = session.getUser(request);
             final Promise<Integer[]> count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-            return facade.waitForWithRaplaException( count, 10000);
+            return promiseWait.waitForWithRaplaException( count, 10000);
 
 	}
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException

@@ -32,6 +32,7 @@ public class DataUpdateTest  {
     RaplaFacade facade;
     Exception error;
     CalendarSelectionModel model;
+    User user;
 
     protected void setUp() throws Exception {
     }
@@ -52,6 +53,7 @@ public class DataUpdateTest  {
     boolean fail;
     
     public void testCalenderModel() throws Exception{
+
        	DynamicType dynamicType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
     	{
 			DynamicType mutableType = facade.edit(dynamicType);
@@ -61,7 +63,7 @@ public class DataUpdateTest  {
     		facade.store( mutableType );
     	}
 
-    	Allocatable newResource = facade.newResource();
+    	Allocatable newResource = facade.newAllocatable( dynamicType.newClassification(), user);
     	newResource.setClassification( dynamicType.newClassification());
     	newResource.getClassification().setValue("name", "testdelete");
     	newResource.getClassification().setValue("newkey", "filter");
@@ -83,7 +85,7 @@ public class DataUpdateTest  {
     	{
 			DynamicType mutableType = facade.edit(dynamicType);
     		mutableType.removeAttribute( mutableType.getAttribute( "newkey"));
-    		facade.storeAndRemove( new Entity[] {mutableType}, new Entity[]{ newResource});
+            facade.storeAndRemove( new Entity[] {mutableType}, new Entity[]{ newResource}, user);
     	}
 
         Assert.assertFalse(model.isDefaultResourceTypes());

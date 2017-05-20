@@ -46,6 +46,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
@@ -271,7 +272,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
             @Override
             public void drop(DropTargetDropEvent dtde)
             {
-                try
                 {
                     TreePath selectionPath = tree.getSelectionPath();
                     TreePath sourcePath = selectionPath.getParentPath();
@@ -283,9 +283,17 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                         DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
                         final Category categoryToMove = (Category) selectedNode.getUserObject();
                         final Category targetCategory = (Category) targetParentNode.getUserObject();
-                        boolean successful = getPresenter().moveCategory(categoryToMove, targetCategory);
-                        dtde.dropComplete(successful);
-                        updateTree(filter, selectedObjects);
+                        getPresenter().moveCategory(categoryToMove, targetCategory).thenRun(() ->{
+                            dtde.dropComplete(true);
+                            updateTree(filter, selectedObjects);
+                        }).exceptionally( (ex)->
+                        {
+                            dtde.rejectDrop();
+                            dialogUiFactory.showException(ex, null);
+                            dtde.dropComplete(false);
+                            logger.error("Error performing drag and drop operation: "+ex.getMessage(), ex);
+                            return Promise.VOID;
+                        });
                     }
                     else
                     {
@@ -293,12 +301,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                         dtde.dropComplete(false);
                     }
                 }
-                catch(RaplaException e)
-                {
-                    dtde.rejectDrop();
-                    dtde.dropComplete(false);
-                    logger.error("Error performing drag and drop operation: "+e.getMessage(), e);
-                }
+
             }
 
             private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)

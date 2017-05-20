@@ -29,6 +29,7 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.CachableStorageOperator;
+import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Date;
 
@@ -70,7 +71,8 @@ public abstract class AbstractOperatorTest  {
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","myTest"}});
-	        Reservation reservation = facade.waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
+	        Reservation reservation = RaplaTestCase
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
 	        Assert.assertEquals(2, apps.length);
@@ -169,7 +171,8 @@ public abstract class AbstractOperatorTest  {
 	        String defaultReservation = "event";
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","myTest"}});
-	        Reservation reservation = facade.waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
+	        Reservation reservation = RaplaTestCase
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
 			Assert.assertEquals("test-att-value", reservation.getClassification().getValue("test-att"));

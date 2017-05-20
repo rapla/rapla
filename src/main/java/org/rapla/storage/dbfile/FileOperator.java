@@ -69,6 +69,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.ServerService;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PreferencePatch;
@@ -156,11 +157,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     private final Map<ImportExportMapKey, Collection<ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
 
-    public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+    public FileOperator(Logger logger, PromiseWait promiseWait,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
             Set<PermissionExtension> permissionExtensions) throws RaplaInitializationException
     {
-        super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);
+        super(logger,promiseWait, i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);
         try
         {
             storageURL = new File(resolvedPath).getCanonicalFile().toURI();

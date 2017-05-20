@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.inject.Provider;
@@ -66,8 +69,11 @@ import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.rest.client.CustomConnector;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.dagger.DaggerServerCreator;
+import org.rapla.server.internal.PromiseWaitImpl;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.rest.RestApplication;
@@ -91,6 +97,44 @@ public abstract class RaplaTestCase
     {
         System.setProperty("jetty.home", "target/test");
         return RaplaBootstrapLogger.createRaplaLogger();
+    }
+
+    public static <T> T  waitForWithRaplaException(Promise<T> promise, int timeout) throws RaplaException
+    {
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        promise.whenComplete((t, ex) ->
+        {
+            if (ex != null)
+            {
+                future.completeExceptionally(ex);
+            }
+            else
+            {
+                future.complete(t);
+            }
+        });
+        try
+        {
+            T t = future.get(timeout, TimeUnit.MILLISECONDS);
+            return t;
+        }
+        catch (Exception ex)
+        {
+            final Throwable cause = ex.getCause();
+            if ( cause instanceof RaplaException)
+            {
+                throw (RaplaException)cause;
+            }
+            if ( cause instanceof RuntimeException)
+            {
+                throw (RuntimeException)cause;
+            }
+            if ( cause instanceof Error)
+            {
+                throw (Error)cause;
+            }
+            throw new RaplaException(ex);
+        }
     }
 
     public static class ServerContext
@@ -258,7 +302,8 @@ public abstract class RaplaTestCase
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
+        PromiseWait promiseWait = new PromiseWaitImpl(logger);
+        FileOperator operator = new FileOperator(logger, promiseWait,i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
                 permissionExtensions);
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facadeReference.set( facade);
@@ -344,12 +389,13 @@ public abstract class RaplaTestCase
         permissionExtensions.add(defaultPermission);
 
         MyImportExportManagerProvider importExportManager = new MyImportExportManagerProvider();
-        DBOperator operator = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,dataSource,
+        PromiseWait promiseWait = new PromiseWaitImpl(logger);
+        DBOperator operator = new DBOperator(logger, promiseWait,i18n, raplaLocale, scheduler, functionFactoryMap, importExportManager,dataSource,
                 DefaultPermissionControllerSupport.getPermissionExtensions());
         if ( xmlFile != null)
         {
             String resolvedPath = getTestDataFile(xmlFile);
-            FileOperator fileOperator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
+            FileOperator fileOperator = new FileOperator(logger, promiseWait, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
                     DefaultPermissionControllerSupport.getPermissionExtensions());
             fileOperator.setFileIO(new VoidFileIO());
             importExportManager.setManager( new ImportExportManagerImpl(logger,fileOperator,operator));

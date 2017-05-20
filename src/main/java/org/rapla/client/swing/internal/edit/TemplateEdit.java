@@ -180,15 +180,15 @@ public class TemplateEdit extends RaplaGUIComponent
 
     Map<ReferenceInfo<User>, String> usernameMap = new HashMap<ReferenceInfo<User>, String>();
 
-    private String getUsername(ReferenceInfo<User> user)
+    private String getUsername(ReferenceInfo<User> userId)
     {
-        String username = usernameMap.get(user);
+        String username = usernameMap.get(userId);
         if (username == null)
         {
             try
             {
-                username = getFacade().getOperator().getUsername(user);
-                usernameMap.put(user, username);
+                username = getClientFacade().getUsername(userId);
+                usernameMap.put(userId, username);
             }
             catch (RaplaException e)
             {
@@ -263,7 +263,6 @@ public class TemplateEdit extends RaplaGUIComponent
         final Component parentComponent = getMainComponent();
         try
         {
-
             Collection<Allocatable> originals = getQuery().getTemplates();
             List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
             for (Allocatable template : originals)
@@ -275,13 +274,13 @@ public class TemplateEdit extends RaplaGUIComponent
             }
             Collection<Allocatable> copies = getFacade().edit(editableTemplates);
             fillModel(copies);
-
             Collection<String> options = new ArrayList<String>();
             options.add(getString("apply"));
             options.add(getString("cancel"));
             final DialogInterface dlg = dialogUiFactory
                     .create(new SwingPopupContext(parentComponent, null), true, templateList.getComponent(), options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
+            dlg.setSize(1000,800);
             dlg.getAction(options.size() - 1).setIcon("icon.cancel");
 
             final Runnable action = new Runnable()
@@ -315,7 +314,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
                     p = p.thenCompose((a) ->
                     {
-                        final Promise<Void> dispatch = getFacade().dispatch(toStoreObj, toRemoveObj, getUser());
+                        final Promise<Void> dispatch = getFacade().dispatch(toStoreObj, toRemoveObj);
                         return dispatch;
                     });
 

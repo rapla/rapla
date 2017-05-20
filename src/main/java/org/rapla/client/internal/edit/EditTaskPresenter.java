@@ -403,21 +403,24 @@ public class EditTaskPresenter implements TaskPresenter
                         dialogUiFactory.showException(e, null);
                     }
                 }
-                else if (canUndo)
+                else
                 {
-                    @SuppressWarnings({ "unchecked", "rawtypes" })
-                    SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
-                    CommandHistory commandHistory = clientFacade.getCommandHistory();
-                    Promise promise = commandHistory.storeAndExecute(saveCommand);
+                    Promise<Void> promise;
+                    if (canUndo)
+                    {
+                        @SuppressWarnings({ "unchecked", "rawtypes" })
+                        SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
+                        CommandHistory commandHistory = clientFacade.getCommandHistory();
+                        promise = commandHistory.storeAndExecute(saveCommand);
+                    }
+                    else
+                    {
+                        promise = raplaFacade.dispatch(saveObjects, Collections.emptyList());
+                    }
                     handleException(promise.thenRun(() ->
                     {
                         close(applicationEvent);
                     }), popupContext);
-                }
-                else
-                {
-                    raplaFacade.storeObjects(saveObjects.toArray(new Entity[] {}));
-                    close(applicationEvent);
                 }
             };
 

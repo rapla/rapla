@@ -105,7 +105,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
             {
                 return true;
             }
-            boolean showWarning = getQuery().getPreferences().getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
+            boolean showWarning = getFacade().getPreferences( getClientFacade().getUser()).getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
             User user = getUser();
             if (!showWarning && canCreateConflicts(conflictList, user))
             {

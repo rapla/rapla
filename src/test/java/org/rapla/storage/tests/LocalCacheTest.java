@@ -56,6 +56,8 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.server.PromiseWait;
+import org.rapla.server.internal.PromiseWaitImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.LocalCache;
@@ -119,7 +121,8 @@ public class LocalCacheTest  {
         RaplaDefaultPermissionImpl defaultPermission = new RaplaDefaultPermissionImpl();
         Set<PermissionExtension> permissionExtensions = new LinkedHashSet<>();
         permissionExtensions.add(defaultPermission);
-        FileOperator operator = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
+        PromiseWait promiseWait = new PromiseWaitImpl(logger);
+        FileOperator operator = new FileOperator(logger, promiseWait,i18n, raplaLocale, scheduler, functionFactoryMap, resolvedPath,
                 permissionExtensions);
         final PermissionController controller = DefaultPermissionControllerSupport.getController(operator);
         LocalCache cache = new LocalCache(controller);

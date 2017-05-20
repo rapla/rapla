@@ -14,6 +14,7 @@ import javax.swing.JWindow;
 import javax.swing.event.ChangeListener;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
@@ -45,6 +46,7 @@ public class FilterEditButton extends RaplaGUIComponent
         filterButton = new RaplaArrowButton('v');
         filterButton.setText(getString("filter"));
         filterButton.setSize(80,18);
+        final PopupContext popupContext = dialogUiFactory.createPopupContext(null);
         filterButton.addActionListener( new ActionListener()
         {
             public void actionPerformed(ActionEvent e) {
@@ -90,7 +92,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     popup.setVisible(true);
                     filterButton.setChar('^');
                 } catch (Exception ex) {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showException(ex, popupContext);
                 }
             }
             

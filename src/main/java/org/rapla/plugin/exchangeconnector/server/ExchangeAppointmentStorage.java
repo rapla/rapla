@@ -361,7 +361,7 @@ public class ExchangeAppointmentStorage
             if (hash == null || !newHash.equals(hash))
             {
                 Preferences edit = facade.edit(userPreferences);
-                String timestampOfFailure = new SerializableDateTimeFormat().formatTimestamp(facade.getOperator().getCurrentTimestamp());
+                String timestampOfFailure = new SerializableDateTimeFormat().formatTimestamp(operator.getCurrentTimestamp());
                 edit.putEntry(ExchangeConnectorRemote.LAST_SYNC_ERROR_CHANGE, timestampOfFailure);
                 // store hash of errors to check changes in with future errors
                 edit.putEntry(LAST_SYNC_ERROR_CHANGE_HASH, newHash);

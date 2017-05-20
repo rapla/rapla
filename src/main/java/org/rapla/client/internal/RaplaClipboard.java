@@ -19,6 +19,7 @@ import java.util.Collections;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.swing.SwingUtilities;
 
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;

@@ -21,6 +21,7 @@ import org.rapla.client.ReservationEdit;
 import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.test.util.RaplaTestCase;
 
 public final class ReservationEditTest extends GUITestCase{
 
@@ -32,7 +33,7 @@ public final class ReservationEditTest extends GUITestCase{
 	
     public void setUp() throws Exception{
         final RaplaFacade raplaFacade = getFacade().getRaplaFacade();
-        reservations = raplaFacade.waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null,null,null,null), 10000);
+        reservations = RaplaTestCase.waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null,null,null,null), 10000);
         c = null;//clientService.getContext().lookup(ReservationController.class);
         // FIXME
 //        window = c.edit(reservations.iterator().next());

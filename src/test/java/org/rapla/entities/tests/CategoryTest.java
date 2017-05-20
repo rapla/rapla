@@ -20,6 +20,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
@@ -76,7 +77,8 @@ import java.util.Map;
     {
         Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
         superCategory.addCategory(areas);
-        raplaFacade.storeAndRemove(new Entity[]{superCategory}, new Entity[] {});
+        User user = clientFacade.getUser();
+        raplaFacade.storeAndRemove(new Entity[]{superCategory}, new Entity[] {}, user);
         Assert.assertTrue(areas.getId() != null);
         raplaFacade.refresh();
         Category[] categories = raplaFacade.getSuperCategory().getCategories();

@@ -3,6 +3,7 @@ package org.rapla.client.swing.internal;
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlacePresenter;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
@@ -109,18 +110,18 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             try 
             {   
 				FileEntry filename = getSelectedFile();
-                Component parentComponent = getMainComponent();
+                final PopupContext popupContext = dialogUiFactory.createPopupContext(null);
                 if ( filename.isDefault)
                 {
-                  	publishDialog.export(model, parentComponent, null);
+                  	publishDialog.export(model, popupContext, null);
                 }
                 else
                 {
-                	publishDialog.export(model, parentComponent, filename.name);
+                	publishDialog.export(model, popupContext, filename.name);
                 }
             }
             catch (RaplaException ex) {
-                dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
+                dialogUiFactory.showException( ex, null);
             }
         }
         
@@ -148,14 +149,14 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             try 
             {
                 String[] objects = new String[] { getSelectedFile().name};
-                DialogInterface dlg = infoFactory.createDeleteDialog( objects, createPopupContext(getMainComponent(), null));
+                DialogInterface dlg = infoFactory.createDeleteDialog( objects , null);
                 dlg.start(true);
                 if (dlg.getSelectedIndex() != 0)
                     return;
                 delete();
             }
             catch (RaplaException ex) {
-                dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
+                dialogUiFactory.showException( ex, null);
             }
         }
     }
@@ -313,7 +314,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         	changeSelection();
         }
         catch (RaplaException ex) {
-            dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
+            PopupContext popupContext = dialogUiFactory.createPopupContext( null);
+            dialogUiFactory.showException( ex, popupContext);
         }
     }
     
@@ -363,7 +365,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 	@SuppressWarnings("unchecked")
 	protected DefaultComboBoxModel updateModel() throws RaplaException
     {
-		final Preferences preferences = getQuery().getPreferences();
+        final User user = getClientFacade().getUser();
+        final Preferences preferences = getFacade().getPreferences(user);
 		Map<String, CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
 		filenames.clear();
          
@@ -418,6 +421,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     	}
         final User user = getUser();
         final RaplaFacade facade = getFacade();
+
         final Preferences preferences = facade.edit(facade.getPreferences(user));
         Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
         Map<String,CalendarModelConfiguration> newMap = new TreeMap<String,CalendarModelConfiguration>();
@@ -429,20 +433,26 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             }
         }
         preferences.putEntry(AutoExportPlugin.PLUGIN_ENTRY, facade.newRaplaMap(newMap));
-
-        facade.store(preferences);
         // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
-//        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
-//        Collection<Preferences> newList = Collections.singletonList(preferences);
-//        String commandoName = getString("delete")+ " " + getString("calendar") + " " +  selectedFile.name;
-//        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
-//        getModification().getCommandHistory().storeAndExecute( cmd);
-        final int defaultIndex = getDefaultIndex();
-        if (defaultIndex != -1)
-            selectionBox.setSelectedIndex(defaultIndex);
-        else
-        	selectionBox.setSelectedIndex(0);
+        //        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
+        //        Collection<Preferences> newList = Collections.singletonList(preferences);
+        //        String commandoName = getString("delete")+ " " + getString("calendar") + " " +  selectedFile.name;
+        //        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
+        //        getModification().getCommandHistory().storeAndExecute( cmd);
+
         //changeSelection();
+        facade.dispatch(Collections.singleton(preferences),Collections.emptyList()).thenRun(()
+        ->
+                {
+                    final int defaultIndex = getDefaultIndex();
+                    if (defaultIndex != -1)
+                        selectionBox.setSelectedIndex(defaultIndex);
+                    else
+                        selectionBox.setSelectedIndex(0);
+                }
+        ).exceptionally((ex)->dialogUiFactory.showException(ex, null));
+
+
     }
 
 	private int getDefaultIndex() {
@@ -512,7 +522,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                         if( entry != null)
                         	saveSelectedDateField.setSelected(entry.equals("true"));
                     } catch (RaplaException ex) {
-                        dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
+                        dialogUiFactory.showException( ex, dialogUiFactory.createPopupContext( null));
                     }
                 }
               

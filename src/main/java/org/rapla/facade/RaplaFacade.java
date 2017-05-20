@@ -36,6 +36,8 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+import org.rapla.function.Consumer;
+import org.rapla.function.Function;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
@@ -148,11 +150,6 @@ public interface RaplaFacade
     /** returns the preferences for the passed user, must be admin todo this.*/
     Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException;
 
-    /** returns the preferences for the login user
-     * @Deprecated use getPreferences(getWorkingUser()) on client and getSystemPreferences on server*/
-    @Deprecated
-    Preferences getPreferences() throws RaplaException;
-
     Preferences getSystemPreferences() throws RaplaException;
 
     /** returns if the user is allowed to exchange the allocatables of this reservation. A user can do it if he has
@@ -238,6 +235,9 @@ public interface RaplaFacade
 
     <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException;
 
+    <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction) throws RaplaException;
+    <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction) throws RaplaException;
+
     /** checks if the user that is logged into the facade is the user that last changed the entites
      *
      * @param entities
@@ -274,11 +274,9 @@ public interface RaplaFacade
 
     /** stores and removes objects in the one transaction
      * @throws RaplaException */
-    <T extends Entity, S extends Entity> void  storeAndRemove( T[] storedObjects, S[] removedObjects) throws RaplaException;
-
     <T extends Entity, S extends Entity> void storeAndRemove( T[] storedObjects, S[] removedObjects, User user) throws RaplaException;
 
-    <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user);
+    <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
     /**
      * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then 
      * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the
@@ -325,7 +323,7 @@ public interface RaplaFacade
      */
     void refresh() throws RaplaException;
 
-    <T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
+    //<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
 }
 
 

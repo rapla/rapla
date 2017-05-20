@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -51,6 +52,7 @@ public class ClassificationFilterTest  {
     @Test
     public void testStore() throws Exception {
         // select from event where (name contains 'planting' or name contains 'owl') or (description contains 'friends');
+        User user = clientFacade.getUser();
         DynamicType dynamicType = raplaFacade.getDynamicType("event");
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
         classificationFilter.setRule(0, dynamicType.getAttribute("name"), new Object[][] { { "contains", "planting" }, { "contains", "owl" } });
@@ -70,7 +72,7 @@ public class ClassificationFilterTest  {
         calendar.setSelectedDate( raplaFacade.today());
         calendar.setReservationFilter(filter);
         CalendarModelConfiguration conf = ((CalendarModelImpl)calendar).createConfiguration();
-        Preferences prefs =  raplaFacade.edit( raplaFacade.getPreferences());
+        Preferences prefs =  raplaFacade.edit( raplaFacade.getPreferences(user));
         TypedComponentRole<CalendarModelConfiguration> testConf = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.TestConf");
         prefs.putEntry(testConf, conf);
         raplaFacade.store(prefs);
@@ -79,7 +81,7 @@ public class ClassificationFilterTest  {
         newDynamicType.removeAttribute(newDynamicType.getAttribute("description"));
         raplaFacade.store(newDynamicType);
 
-        CalendarModelConfiguration configuration = raplaFacade.getPreferences().getEntry(testConf);
+        CalendarModelConfiguration configuration = raplaFacade.getPreferences(user).getEntry(testConf);
         filter =  configuration.getFilter();
         Iterator<? extends ClassificationFilterRule> it = filter[0].ruleIterator();
         it.next();

@@ -33,12 +33,15 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 
 public class ResourceSelectionPresenter implements Presenter
@@ -52,12 +55,12 @@ public class ResourceSelectionPresenter implements Presenter
     private final ClientFacade facade;
     private final Logger logger;
     private PresenterChangeCallback callback;
+    private CommandScheduler scheduler;
 
     @Inject
-    public ResourceSelectionPresenter( ClientFacade facade, Logger logger,
-            CalendarSelectionModel model, EditController editController, DialogUiFactoryInterface dialogUiFactory,
-            EventBus eventBus, ResourceSelectionView view)
-                    throws RaplaInitializationException
+    public ResourceSelectionPresenter(ClientFacade facade, Logger logger, CalendarSelectionModel model, EditController editController,
+            DialogUiFactoryInterface dialogUiFactory, EventBus eventBus, ResourceSelectionView view, CommandScheduler scheduler)
+            throws RaplaInitializationException
     {
         this.facade = facade;
         this.logger = logger;
@@ -66,6 +69,7 @@ public class ResourceSelectionPresenter implements Presenter
         this.eventBus = eventBus;
         this.editController = editController;
         this.dialogUiFactory = dialogUiFactory;
+        this.scheduler = scheduler;
         view.setPresenter(this);
 
         try
@@ -80,7 +84,7 @@ public class ResourceSelectionPresenter implements Presenter
             throw new RaplaInitializationException(e);
         }
     }
-    
+
     @Override
     public void updateFilters(ClassificationFilter[] filters) throws RaplaException
     {
@@ -90,37 +94,39 @@ public class ResourceSelectionPresenter implements Presenter
         view.update(filter, model, selectedObjects);
         applyFilter();
     }
-    
+
     public void setCallback(PresenterChangeCallback callback)
     {
         this.callback = callback;
     }
-    
+
     private RaplaFacade getRaplaFacade()
     {
         return facade.getRaplaFacade();
     }
-    
+
     @Override
-    public boolean moveCategory(Category categoryToMove, Category targetCategory)
+    public Promise<Void> moveCategory(Category categoryToMove, Category targetCategory)
     {
-        try
+        final RaplaFacade raplaFacade = getRaplaFacade();
+        final Promise<Void> result = scheduler.supply(() ->
         {
             final Collection<Category> categoriesToStore = new ArrayList<>();
-            final Category categoryToMoveEdit = getRaplaFacade().edit(categoryToMove);
-            final Category targetParentCategoryEdit = getRaplaFacade().edit(targetCategory.getParent());
+            final Category categoryToMoveEdit = raplaFacade.edit(categoryToMove);
+            final Category targetParentCategoryEdit = raplaFacade.edit(targetCategory.getParent());
             if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
             {
                 // remove from old parent
-                final Category moveCategoryParent = getRaplaFacade().edit(categoryToMove.getParent());
+                final Category moveCategoryParent = raplaFacade.edit(categoryToMove.getParent());
                 moveCategoryParent.removeCategory(categoryToMoveEdit);
                 categoriesToStore.add(moveCategoryParent);
             }
-            final Collection<Category> categories = getRaplaFacade().edit(Arrays.asList(targetParentCategoryEdit.getCategories()));
+            final Collection<Category> categories = raplaFacade.edit(Arrays.asList(targetParentCategoryEdit.getCategories()));
             for (Category category : categories)
             {
                 targetParentCategoryEdit.removeCategory(category);
             }
+
             for (Category category : categories)
             {
                 if (category.equals(targetCategory))
@@ -135,17 +141,12 @@ public class ResourceSelectionPresenter implements Presenter
             }
             categoriesToStore.add(targetParentCategoryEdit);
             categoriesToStore.add(categoryToMoveEdit);
-            getRaplaFacade().storeObjects(categoriesToStore.toArray(Entity.ENTITY_ARRAY));
-            return true;
-        }
-        catch (Exception e)
-        {
-            dialogUiFactory.showError(e, null);
-            return false;
-        }
+            return categoriesToStore;
+        }).thenCompose((categoriesToStore) -> raplaFacade.dispatch(categoriesToStore, Collections.emptyList()));
+        return result.exceptionally((ex) -> dialogUiFactory.showException(ex, null));
+
     }
 
-    
     @Override
     public void mouseOverResourceSelection()
     {
@@ -159,7 +160,7 @@ public class ResourceSelectionPresenter implements Presenter
         }
         catch (Exception ex)
         {
-            PopupContext popupContext =  dialogUiFactory.createPopupContext( view );
+            PopupContext popupContext = dialogUiFactory.createPopupContext(view);
             dialogUiFactory.showException(ex, popupContext);
         }
     }
@@ -175,7 +176,7 @@ public class ResourceSelectionPresenter implements Presenter
         {
             Entity entity = (Entity) focusedObject;
 
-            PopupContext popupContext =  dialogUiFactory.createPopupContext( view );
+            PopupContext popupContext = dialogUiFactory.createPopupContext(view);
             PermissionController permissionController = getRaplaFacade().getPermissionController();
             try
             {
@@ -187,11 +188,11 @@ public class ResourceSelectionPresenter implements Presenter
             }
             catch (RaplaException e)
             {
-                logger.error("Error getting user in resource selection: "+e.getMessage(), e);
+                logger.error("Error getting user in resource selection: " + e.getMessage(), e);
             }
         }
     }
-    
+
     public CalendarSelectionModel getModel()
     {
         return model;
@@ -210,7 +211,7 @@ public class ResourceSelectionPresenter implements Presenter
     }
 
     boolean treeListenersEnabled = true;
-    
+
     @Override
     public void updateSelectedObjects(Collection<Object> elements)
     {
@@ -221,9 +222,9 @@ public class ResourceSelectionPresenter implements Presenter
             updateMenu();
             applyFilter();
         }
-        catch(RaplaException ex)
+        catch (RaplaException ex)
         {
-            PopupContext popupContext = dialogUiFactory.createPopupContext( view);
+            PopupContext popupContext = dialogUiFactory.createPopupContext(view);
             dialogUiFactory.showException(ex, popupContext);
         }
     }
@@ -245,12 +246,11 @@ public class ResourceSelectionPresenter implements Presenter
         view.updateMenu(list, focusedObject);
     }
 
-
     public RaplaWidget provideContent()
     {
         return view;
     }
-    
+
     @Override
     public void treeSelectionChanged()
     {
@@ -261,6 +261,5 @@ public class ResourceSelectionPresenter implements Presenter
     {
         view.closeFilterButton();
     }
-
 
 }

@@ -25,6 +25,7 @@ import javax.inject.Provider;
 import javax.swing.JMenuItem;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EditMenuExtension;
@@ -95,10 +96,12 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 //    }
     
     public void actionPerformed(ActionEvent evt) {
-        try {
+		PopupContext popupContext = dialogUiFactory.createPopupContext( null);
+
+		try {
             final CopyDialog useCase = copyDialogProvider.get();
             String[] buttons = new String[]{getString("abort"), getString("copy") };
-            final DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getMainComponent(), null),true, useCase.getComponent(), buttons);
+			final DialogInterface dialog = dialogUiFactory.create( popupContext,true, useCase.getComponent(), buttons);
             dialog.setTitle( label);
             dialog.setSize( 600, 500);
             dialog.getAction( 0).setIcon( "icon.abort");
@@ -121,12 +124,12 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
                     copy(reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments);
                 }).exceptionally((ex) ->
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showException(ex, popupContext);
                     return null;
                 });
             }
          } catch (Exception ex) {
-             dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null) );
+             dialogUiFactory.showException( ex, popupContext );
         }
     }
     

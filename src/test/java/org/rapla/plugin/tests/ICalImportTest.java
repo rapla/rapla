@@ -103,7 +103,8 @@ public class ICalImportTest {
         {
             Date start = null;
             Date end = null;
-            reservations = facade.waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null), 10000);
+            reservations = RaplaTestCase
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), start, end, null), 10000);
         }
         Assert.assertEquals(1, reservations.size());
         Reservation event = reservations.iterator().next();

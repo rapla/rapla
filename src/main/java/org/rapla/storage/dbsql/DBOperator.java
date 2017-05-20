@@ -56,6 +56,7 @@ import org.rapla.framework.internal.ConfigTools;
 import org.rapla.logger.Logger;
 import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.PromiseWait;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;
@@ -87,10 +88,10 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
     private String connectionName;
     Provider<ImportExportManager> importExportManager;
 
-    public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+    public DBOperator(Logger logger, PromiseWait promiseWait,RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Provider<ImportExportManager> importExportManager, DataSource dataSource, Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
+        super(logger, promiseWait,i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
         this.importExportManager = importExportManager;
         //        String backupFile = config.getChild("backup").getValue("");

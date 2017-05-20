@@ -33,7 +33,9 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
+import org.rapla.storage.CachableStorageOperator;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage implements HTMLViewPage
@@ -41,13 +43,13 @@ public class ReservationTableViewPage implements HTMLViewPage
     private TableViewPage<Reservation, TableColumn> tableViewPage;
 
     @Inject
-    public ReservationTableViewPage(RaplaFacade facade,RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
+    public ReservationTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<Reservation, TableColumn>(raplaLocale)
         {
             String getCalendarHTML() throws RaplaException
             {
-                final Collection<Reservation> reservations = facade.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
+                final Collection<Reservation> reservations = waiter.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
                         10000);
                 final User user = model.getUser();
                 List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns("events", user);

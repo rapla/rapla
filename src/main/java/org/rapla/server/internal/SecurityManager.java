@@ -15,7 +15,6 @@ package org.rapla.server.internal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +40,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
+import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
@@ -51,19 +51,17 @@ import org.rapla.storage.StorageOperator;
 {
     final RaplaResources i18n;
     final AppointmentFormater appointmentFormater;
-    final StorageOperator operator;
+    final CachableStorageOperator operator;
     final Logger logger;
-    final RaplaFacade facade;
     private final PermissionController permissionController;
 
-    @Inject public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, RaplaFacade facade)
+    @Inject public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator)
     {
         this.logger = logger;
         this.i18n = i18n;
         this.appointmentFormater = appointmentFormater;
-        this.facade = facade;
-        operator = facade.getOperator();
-        permissionController = facade.getPermissionController();
+        this.operator = operator;
+        permissionController = operator.getPermissionController();
     }
 
     public void checkDeletePermissions(User user, Entity entity) throws RaplaSecurityException
@@ -87,7 +85,7 @@ import org.rapla.storage.StorageOperator;
 
         boolean permitted = false;
         @SuppressWarnings("unchecked") Class<Entity> typeClass = entity.getTypeClass();
-        Entity original = facade.tryResolve(entity.getReference());
+        Entity original = operator.tryResolve(entity.getReference());
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
 
@@ -404,7 +402,7 @@ import org.rapla.storage.StorageOperator;
                 conflictsAfter = new ArrayList<>();
                 try
                 {
-                    facade.waitForWithRaplaException(facade.getConflicts(r).thenAcceptBoth(facade.getConflicts(original), (beforeConfl, afterConf) ->
+                    operator.waitForWithRaplaException(operator.getConflicts(r).thenAcceptBoth(operator.getConflicts(original), (beforeConfl, afterConf) ->
                     {
                         conflictsBefore.addAll(beforeConfl);
                         conflictsAfter.addAll(afterConf);
@@ -417,7 +415,7 @@ import org.rapla.storage.StorageOperator;
             }
             else
             {
-                conflictsAfter = facade.waitForWithRaplaException(facade.getConflicts(r), 10000);
+                conflictsAfter = operator.waitForWithRaplaException(operator.getConflicts(r), 10000);
                 conflictsBefore = new ArrayList<>();
             }
         }
