@@ -9,7 +9,6 @@ import javax.inject.Inject;
 
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
-import org.rapla.client.edit.reservation.ReservationController;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
