@@ -234,9 +234,10 @@ public interface RaplaFacade
     <T extends Entity> T edit(T obj) throws RaplaException;
 
     <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException;
-
-    <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction) throws RaplaException;
-    <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction) throws RaplaException;
+    <T extends Entity> Promise<Collection<T>> editAsync(Collection<T> obj);
+    <T extends Entity> Promise<T> editAsync(T obj);
+    <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction);
+    <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction);
 
     /** checks if the user that is logged into the facade is the user that last changed the entites
      *

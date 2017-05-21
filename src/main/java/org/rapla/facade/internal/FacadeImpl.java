@@ -1311,20 +1311,19 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	@Override
-	public <T extends Entity> Promise<Void> update(T obj, Consumer<T> updateFunction)
-	{
-		Promise<Void> updatePromise = getScheduler().supply(()-> edit( obj)).thenApply((editableObject)-> {updateFunction.accept(editableObject);return editableObject;}
-		).thenAccept((editableObject)->dispatch(Collections.singleton( editableObject), Collections.emptyList()));
-		return updatePromise;
+	public <T extends Entity> Promise<T> editAsync(T obj) {
+		if (obj == null)
+			throw new NullPointerException("Can't edit null objects");
+		return getScheduler().supply(()-> edit( obj));
 	}
 
 	@Override
-	public <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction) throws RaplaException
-	{
-		Promise<Void> updatePromise = getScheduler().supply(()-> edit( list)).thenApply((editableObject)->{updateFunction.accept(editableObject); return editableObject;}
-		).thenAccept((editableObject)->dispatch(editableObject, Collections.emptyList()));
-		return updatePromise;
+	public <T extends Entity> Promise<Collection<T>> editAsync(Collection<T> list) {
+		if (list == null)
+			throw new NullPointerException("Can't edit null objects");
+		return getScheduler().supply(()-> edit( list));
 	}
+
 
 	public <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException
 	{
@@ -1344,6 +1343,24 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		}
 		return castedResult;
 	}
+
+	@Override
+	public <T extends Entity> Promise<Void> update(T obj, Consumer<T> updateFunction)
+	{
+		Promise<Void> updatePromise = editAsync( obj).thenApply((editableObject)-> {updateFunction.accept(editableObject);return editableObject;}
+		).thenAccept((editableObject)->dispatch(Collections.singleton( editableObject), Collections.emptyList()));
+		return updatePromise;
+	}
+
+	@Override
+	public <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction)
+	{
+		Promise<Void> updatePromise = getScheduler().supply(()-> edit( list)).thenApply((editableObject)->{updateFunction.accept(editableObject); return editableObject;}
+		).thenAccept((editableObject)->dispatch(editableObject, Collections.emptyList()));
+		return updatePromise;
+	}
+
+
 
 	public <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException
 	{

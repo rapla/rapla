@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -105,7 +106,7 @@ public class ConflictSelectionPresenter implements Presenter
             dialogUiFactory.showException(ex, null);
         }
     }
-    
+
     private List<Conflict> getConflicts(boolean enabled)
     {
         Collection<?> list = view.getSelectedElements(true);
@@ -123,7 +124,7 @@ public class ConflictSelectionPresenter implements Presenter
         }
         return result;
     }
-    
+
     @Override
     public void enableConflicts(PopupContext context)
     {
@@ -133,14 +134,14 @@ public class ConflictSelectionPresenter implements Presenter
             CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
             CommandHistory commanHistory = getCommandHistory();
             final Promise promise = commanHistory.storeAndExecute(command);
-            handleException( promise,context);
+            handleException(promise, context);
         }
         catch (RaplaException ex)
         {
             dialogUiFactory.showException(ex, context);
         }
     }
-    
+
     @Override
     public void disableConflicts(PopupContext context)
     {
@@ -150,23 +151,22 @@ public class ConflictSelectionPresenter implements Presenter
             CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
             CommandHistory commanHistory = getCommandHistory();
             final Promise promise = commanHistory.storeAndExecute(command);
-            handleException( promise,context);
+            handleException(promise, context);
         }
         catch (RaplaException ex)
         {
             dialogUiFactory.showException(ex, context);
         }
-        
+
     }
 
     protected Promise handleException(Promise promise, PopupContext context)
     {
-        return promise.exceptionally(ex->
-                {
-                    dialogUiFactory.showException((Throwable)ex, context);
-                    return Promise.VOID;
-                }
-        );
+        return promise.exceptionally(ex ->
+        {
+            dialogUiFactory.showException((Throwable) ex, context);
+            return Promise.VOID;
+        });
     }
 
     public CommandHistory getCommandHistory()
@@ -210,45 +210,12 @@ public class ConflictSelectionPresenter implements Presenter
 
         private Promise<Void> store_(boolean newFlag)
         {
-            Collection<Conflict> conflictOrig = new ArrayList<Conflict>();
-            for (Conflict conflict : ConflictSelectionPresenter.this.conflicts)
-            {
-                if (conflictStrings.contains(conflict.getId()))
-                {
-                    conflictOrig.add(conflict);
-                }
-            }
-            ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
-            for (Conflict conflict : conflictOrig)
-            {
-                Conflict clone;
-                try
-                {
-                    clone = raplaFacade.edit(conflict);
-                }
-                catch (RaplaException e)
-                {
-                    return new ResolvedPromise<>(e);
-                }
-                conflicts.add(clone);
-            }
-            for (Conflict conflict : conflicts)
-            {
-                setEnabled(((ConflictImpl) conflict), newFlag);
-            }
-            final Promise<Void> store = store(conflicts);
-            final Promise<Void> prom = store.thenAccept((a) ->
-            {
-                updateTree();
-            });
-            return prom;
+            Collection<Conflict> conflictOrig = ConflictSelectionPresenter.this.conflicts.stream()
+                    .filter((conflict) -> conflictStrings.contains(conflict.getId())).collect(Collectors.toList());
+            return raplaFacade.update(conflictOrig,
+                    (editableConflicts) -> editableConflicts.stream().forEach((conflict) -> setEnabled(((ConflictImpl) conflict), newFlag)))
+                    .thenRun(() -> updateTree());
         }
-
-    }
-
-    private Promise<Void> store(Collection<Conflict> conflicts)
-    {
-        return raplaFacade.dispatch(conflicts, Collections.emptyList());
     }
 
     private void setEnabled(ConflictImpl conflictImpl, boolean enabled)
@@ -338,7 +305,7 @@ public class ConflictSelectionPresenter implements Presenter
     private void showConflicts(Collection<Conflict> selectedConflicts)
     {
         ArrayList<RaplaObject> arrayList = new ArrayList<RaplaObject>(model.getSelectedObjects());
-        for (Iterator<RaplaObject> it = arrayList.iterator(); it.hasNext();)
+        for (Iterator<RaplaObject> it = arrayList.iterator(); it.hasNext(); )
         {
             RaplaObject obj = it.next();
             if (obj.getTypeClass() == Conflict.class)
