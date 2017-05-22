@@ -28,6 +28,7 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
 
     boolean hasChanged();
 
+    void setReservation(Reservation reservation, Appointment appointment) throws RaplaException;
     //void updateReservation(Reservation persistant) throws RaplaException;
 
     //void deleteReservation() throws RaplaException;
@@ -37,4 +38,6 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
     void updateView(ModificationEvent evt);
 
     void fireChange();
+
+    boolean isNew();
 }

@@ -493,7 +493,7 @@ public class DialogUI extends JDialog
          * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, javax.swing.JComponent, java.lang.String[])
          */
         @Override
-        public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options) throws RaplaException
+        public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options)
         {
             DialogUI dlg;
             Component parent = SwingPopupContext.extractParent(popupContext);
@@ -555,6 +555,10 @@ public class DialogUI extends JDialog
 
         private Void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)
         {
+            if ( ex instanceof CommandAbortedException)
+            {
+                return null;
+            }
             final Runnable runnable = () ->
             {
                 Component owner = SwingPopupContext.extractParent(popupContext);
@@ -607,7 +611,14 @@ public class DialogUI extends JDialog
             };
             try
             {
-                SwingUtilities.invokeAndWait(runnable);
+                if ( SwingUtilities.isEventDispatchThread())
+                {
+                    runnable.run();
+                }
+                else
+                {
+                    SwingUtilities.invokeAndWait(runnable);
+                }
             }
             catch (Exception e)
             {
@@ -658,7 +669,14 @@ public class DialogUI extends JDialog
             };
             try
             {
-                SwingUtilities.invokeAndWait(runnable);
+                if ( SwingUtilities.isEventDispatchThread())
+                {
+                    runnable.run();
+                }
+                else
+                {
+                    SwingUtilities.invokeAndWait(runnable);
+                }
             }
             catch (Exception e)
             {

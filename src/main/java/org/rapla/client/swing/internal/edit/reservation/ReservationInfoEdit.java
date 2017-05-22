@@ -173,6 +173,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         header.setLayout( null );
         header.add( typeSelector );
         header.add( tabSelector );
+        typeSelector.removeActionListener( this);
+        tabSelector.removeActionListener( this);
   //      header.add( permissionButton );
         
         header.setBorder(  BorderFactory.createTitledBorder( new EmptyLineBorder(), getString("reservation_type") +":"));

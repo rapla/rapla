@@ -409,6 +409,12 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         return appointments;
     }
 
+    @Override
+    public boolean isNew()
+    {
+        return bNew;
+    }
+
     public void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException
     {
         commandHistory.clear();

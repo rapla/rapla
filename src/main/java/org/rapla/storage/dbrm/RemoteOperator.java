@@ -581,8 +581,9 @@ import java.util.Vector;
         RemoteStorage serv = getRemoteStorage();
         try
         {
+            getLogger().debug("Loading Data from server");
             UpdateEvent evt = serv.getResources();
-            getLogger().debug("Getting Data..");
+            getLogger().debug("Data loaded");
             return loadData(evt);
         }
         catch (RaplaException ex)
@@ -1032,22 +1033,28 @@ import java.util.Vector;
         {
             getLogger().debug("Objects updated!");
             // TODO User informieren, dass sich daten evtl geaendert haben
-            testResolve(evt.getStoreObjects());
-            setResolver(evt.getStoreObjects());
-            RaplaLock.WriteLock writeLock = writeLockIfLoaded();
-            try
+            final Collection<Entity> storeObjects = evt.getStoreObjects();
+            Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
+            if ( !(storeObjects.isEmpty() &&removedIds.isEmpty()))
             {
-                final Collection<Entity> storeObjects1 = evt.getStoreObjects();
-                Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
-                Collection<ReferenceInfo> removedIds = evt.getRemoveIds();
-                result = update(since, until, storeObjects1, preferencePatches, removedIds);
+                testResolve(storeObjects);
+                setResolver(storeObjects);
+                RaplaLock.WriteLock writeLock = writeLockIfLoaded();
+                try
+                {
+                    Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
+                    result = update(since, until, storeObjects, preferencePatches, removedIds);
+                }
+                finally
+                {
+                    lockManager.unlock(writeLock);
+                }
             }
-            finally
+            else
             {
-                lockManager.unlock(writeLock);
+                result = createUpdateResult(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList(),since,until );
             }
         }
-
         if (result != null)
         {
             fireStorageUpdated(result, evt.getInvalidateInterval());
@@ -1062,7 +1069,7 @@ import java.util.Vector;
         try
         {
             User user = cache.resolve(userId, User.class);
-            oldEntities = cache.getVisibleEntities(user);
+            oldEntities = new HashSet(cache.getVisibleEntities(user));
         }
         finally
         {
@@ -1083,7 +1090,7 @@ import java.util.Vector;
         try
         {
             User user = cache.resolve(userId, User.class);
-            newEntities = cache.getVisibleEntities(user);
+            newEntities = new HashSet<>(cache.getVisibleEntities(user));
         }
         finally
         {

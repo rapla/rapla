@@ -66,6 +66,10 @@ public class EditController
         boolean first = true;
         for (T t : obj)
         {
+            if ( t instanceof Reservation)
+            {
+                applicationEventId = EditTaskPresenter.EDIT_EVENTS_ID;
+            }
             if (first)
             {
                 first = false;

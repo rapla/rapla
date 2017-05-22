@@ -81,6 +81,12 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
 
     }
 
+    @Override
+    public boolean isNew()
+    {
+        return false;
+    }
+
     @Override public IsWidget getComponent()
     {
         return null;
@@ -90,6 +96,12 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     public boolean hasChanged()
     {
         return false;
+    }
+
+    @Override
+    public void setReservation(Reservation reservation, Appointment appointment)
+    {
+
     }
 
     {
