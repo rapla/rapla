@@ -724,7 +724,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return annotation != null ? annotation : defaultValue;
     }
 
-    public void setAnnotation(String key,String annotation) throws IllegalAnnotationException {
+    public void setAnnotation(String key,String annotation)  {
         checkWritable();
         if ( annotations == null)
         {

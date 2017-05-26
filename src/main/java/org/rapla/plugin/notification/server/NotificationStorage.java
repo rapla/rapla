@@ -27,7 +27,7 @@ public class NotificationStorage
     private final CachableStorageOperator operator;
     private final RaplaFacade facade;
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
-    private final Map<String, ImportExportEntity> exportMails = new LinkedHashMap<>();
+    private  Map<String, ImportExportEntity> exportMails = new LinkedHashMap<>();
     private final Map<AllocationMail, String> mailToRaplaId = new LinkedHashMap<>();
 
     public static class NotificationContext
@@ -48,14 +48,13 @@ public class NotificationStorage
         exportMails.clear();
         mailToRaplaId.clear();
         final ArrayList<AllocationMail> result = new ArrayList<>();
-        final Collection<ImportExportEntity> exportMailsDb = operator.getImportExportEntities(NotificationService.NOTIFICATION_LOCK_ID,
+        exportMails = operator.getImportExportEntities(NotificationService.NOTIFICATION_LOCK_ID,
                 ImportExportDirections.EXPORT);
         final long currentTimeMillis = System.currentTimeMillis();
-        for (ImportExportEntity exportMailDb : exportMailsDb)
+        for (ImportExportEntity exportMailDb : exportMails.values())
         {
             final AllocationMail mail = gson.fromJson(exportMailDb.getData(), AllocationMail.class);
             final String id = exportMailDb.getId();
-            exportMails.put(id, exportMailDb);
             mailToRaplaId.put(mail, id);
             final NotificationContext context = gson.fromJson(exportMailDb.getContext(), NotificationContext.class);
             final long nextTime = context.insertTimestamp + (context.retryCount + 1) * DateTools.MILLISECONDS_PER_MINUTE * 10;

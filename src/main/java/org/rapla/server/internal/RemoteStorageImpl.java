@@ -49,6 +49,7 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.AuthenticationStore;
+import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.PermissionController;
@@ -67,6 +68,7 @@ import org.rapla.storage.impl.EntityStore;
     @Inject CachableStorageOperator operator;
     @Inject SecurityManager security;
     @Inject ShutdownService shutdownService;
+    @Inject Set<PrePostDispatchProcessor> prePostDispatchProcessors;
 
     @Inject Set<AuthenticationStore> authenticationStore;
 
@@ -206,24 +208,6 @@ import org.rapla.storage.impl.EntityStore;
         }
     }
 
-    protected boolean isAllocatablesVisible(User sessionUser, Reservation res)
-    {
-        ReferenceInfo<User> ownerId = res.getOwnerRef();
-        if (sessionUser.isAdmin() || ownerId == null || ownerId.equals(sessionUser.getId()))
-        {
-            return true;
-        }
-        PermissionController permissionController = operator.getPermissionController();
-        for (Allocatable allocatable : res.getAllocatables())
-        {
-            if (permissionController.canRead(allocatable, sessionUser))
-            {
-                return true;
-            }
-        }
-        return true;
-    }
-
     public void restartServer() throws RaplaException
     {
         checkAuthentified();
@@ -260,6 +244,10 @@ import org.rapla.storage.impl.EntityStore;
         getLogger().info("Change for user " + sessionUser + " dispatched.");
 
         UpdateEvent result = updateDataManager.createUpdateEvent(sessionUser, lastSynced);
+        for ( PrePostDispatchProcessor processor:prePostDispatchProcessors)
+        {
+            processor.postProcess(sessionUser, result);
+        }
         return result;
     }
 
@@ -448,8 +436,16 @@ import org.rapla.storage.impl.EntityStore;
                     security.checkDeletePermissions(user, entity);
                 }
             }
+
+            if (this.getLogger().isDebugEnabled())
+                this.getLogger().debug("Processing plugin-update processors " );
+            for (PrePostDispatchProcessor processor:prePostDispatchProcessors)
+            {
+                processor.preProcess(user, evt);
+            }
             if (this.getLogger().isDebugEnabled())
                 this.getLogger().debug("Dispatching changes to " + operator.getClass());
+
 
             operator.dispatch(evt);
             if (this.getLogger().isDebugEnabled())

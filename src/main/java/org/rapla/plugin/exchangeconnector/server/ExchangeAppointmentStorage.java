@@ -51,7 +51,7 @@ public class ExchangeAppointmentStorage
 {
     private static final String EXCHANGE_ID = "exchange";
     private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<String, Set<SynchronizationTask>>();
-    private final Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<String, ImportExportEntity>();
+    private Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<>();
     //CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
@@ -391,10 +391,9 @@ public class ExchangeAppointmentStorage
 
     public void refresh() throws RaplaException
     {
-        final Collection<ImportExportEntity> exportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
+        importExportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
         tasks.clear();
-        importExportEntities.clear();
-        for (ImportExportEntity persistant : exportEntities)
+        for (ImportExportEntity persistant : importExportEntities.values())
         {
             SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
             if (synchronizationTask.getUserId() == null)
@@ -425,7 +424,6 @@ public class ExchangeAppointmentStorage
                 tasks.put(appointmentId, taskList);
             }
             taskList.add(synchronizationTask);
-            importExportEntities.put(persistant.getId(), persistant);
         }
     }
 }

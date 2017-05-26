@@ -386,7 +386,7 @@ class RaplaSQL
         }
     }
 
-    public Collection<ImportExportEntity> getImportExportEntities(String id, int importExportDirection, Connection con) throws RaplaException
+    public Map<String,ImportExportEntity> getImportExportEntities(String id, int importExportDirection, Connection con) throws RaplaException
     {
         try
         {
@@ -2612,7 +2612,12 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 stmt.addBatch();
             }
             final int[] executeBatch = stmt.executeBatch();
-            logger.info("Deleted " + Arrays.toString(executeBatch) + " history entries");
+            int sum =0;
+            for ( int i:executeBatch)
+            {
+                sum +=i;
+            }
+            logger.info("Deleted " + sum + " history entries");
         }
     }
 
@@ -2872,7 +2877,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
         sqlLoadByExternalSystemAndDirection = selectSql + " WHERE EXTERNAL_SYSTEM = ? AND DIRECTION = ?";
     }
 
-    public Collection<ImportExportEntity> load(String externalSystemId, int direction) throws SQLException
+    public Map<String,ImportExportEntity> load(String externalSystemId, int direction) throws SQLException
     {
         try (PreparedStatement stmt = con.prepareStatement(sqlLoadByExternalSystemAndDirection))
         {
@@ -2881,9 +2886,9 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
             final ResultSet rs = stmt.executeQuery();
             if (rs == null)
             {
-                return Collections.emptyList();
+                return Collections.emptyMap();
             }
-            Collection<ImportExportEntity> result = new ArrayList<ImportExportEntity>();
+            Map<String,ImportExportEntity> result = new LinkedHashMap<>();
             while (rs.next())
             {
                 final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
@@ -2893,7 +2898,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
                 importExportEntityImpl.setDirection(rs.getInt(4));
                 importExportEntityImpl.setData(getText(rs, 5));
                 importExportEntityImpl.setContext(getText(rs, 6));
-                result.add(importExportEntityImpl);
+                result.put(importExportEntityImpl.getId(), importExportEntityImpl);
             }
             return result;
         }

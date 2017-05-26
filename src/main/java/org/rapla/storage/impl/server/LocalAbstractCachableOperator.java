@@ -3695,13 +3695,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    protected void convertTemplates()
-    {
-        //        for (Reservation reservations : cache.getReservations())
-        //            ;
-
-    }
-
     public ReferenceInfo tryResolveExternalId(String externalId)
     {
         final ReferenceInfo referenceInfo = externalIds.get(externalId);

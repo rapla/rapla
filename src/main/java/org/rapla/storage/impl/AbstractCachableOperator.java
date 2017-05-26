@@ -81,9 +81,7 @@ import java.util.Set;
 
 public abstract class AbstractCachableOperator implements StorageOperator
 {
-
     final protected RaplaLocale raplaLocale;
-
     final protected LocalCache cache;
     final protected RaplaResources i18n;
     final protected Logger logger;

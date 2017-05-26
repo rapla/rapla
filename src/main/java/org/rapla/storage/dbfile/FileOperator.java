@@ -155,7 +155,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     }
 
-    private final Map<ImportExportMapKey, Collection<ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
+    private final Map<ImportExportMapKey, Map<String,ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
 
     public FileOperator(Logger logger, PromiseWait promiseWait,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
@@ -524,20 +524,20 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private void insertIntoImportExportCache(ImportExportEntity cast)
     {
         final ImportExportMapKey systemAndDirection = new ImportExportMapKey(cast.getExternalSystem(),cast.getDirection());
-        Collection<ImportExportEntity> collection = importExportEntities.get(systemAndDirection);
+        Map<String,ImportExportEntity> collection = importExportEntities.get(systemAndDirection);
         if(collection == null)
         {
-            collection = new LinkedHashSet<ImportExportEntity>();
+            collection = new LinkedHashMap<>();
             importExportEntities.put(systemAndDirection, collection);
         }
-        collection.add(cast);
+        collection.put(cast.getId(),cast);
     }
 
     private void removeFromImportExportCache(Set<ReferenceInfo<ImportExportEntity>> removedImports)
     {
-        for(Collection<ImportExportEntity> list:importExportEntities.values())
+        for(Map<String,ImportExportEntity> list:importExportEntities.values())
         {
-            Iterator<ImportExportEntity> iterator = list.iterator();
+            Iterator<ImportExportEntity> iterator = list.values().iterator();
             while ( iterator.hasNext())
             {
                 ImportExportEntity entry = iterator.next();
@@ -658,9 +658,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
         final ArrayList<ImportExportEntity> importExportEntityList = new ArrayList<>();
-        for (Collection<ImportExportEntity> importExportEntitiyCollection : importExportEntities.values())
+        for (Map<String,ImportExportEntity> importExportEntitiyCollection : importExportEntities.values())
         {
-            importExportEntityList.addAll(importExportEntitiyCollection);
+            importExportEntityList.addAll(importExportEntitiyCollection.values());
         }
         RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, importExportEntityList);
         writer.setEncoding("utf-8");
@@ -740,12 +740,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
     
     @Override
-    public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
+    public Map<String, ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         final RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
-            final Collection<ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));
+            final Map<String,ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));
             if(collection != null)
             {
                 return collection;
@@ -755,7 +755,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             lockManager.unlock(lock);
         }
-        return Collections.emptyList();
+        return Collections.emptyMap();
     }
 
 }

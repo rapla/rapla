@@ -128,7 +128,7 @@ public class FileOperatorTest extends AbstractOperatorTest {
         facade.store(importExportEntity);
         final CachableStorageOperator operator = getOperator();
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(1, importExportEntities.size());
             final ImportExportEntity next = importExportEntities.iterator().next();
             Assert.assertEquals(data, next.getData());
@@ -141,7 +141,7 @@ public class FileOperatorTest extends AbstractOperatorTest {
         operator.disconnect();
         operator.connect();
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(1, importExportEntities.size());
             final ImportExportEntity next = importExportEntities.iterator().next();
             Assert.assertEquals(data, next.getData());
@@ -153,14 +153,14 @@ public class FileOperatorTest extends AbstractOperatorTest {
         }
         facade.remove(importExportEntity);
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(0, importExportEntities.size());
         }
         operator.disconnect();
         operator.connect();
         facade.remove(importExportEntity);
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT);
+            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(0, importExportEntities.size());
         }
     }

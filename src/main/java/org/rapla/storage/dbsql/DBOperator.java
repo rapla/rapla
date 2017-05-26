@@ -342,9 +342,9 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
             return;
         }
         final Collection<ReferenceInfo> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
+        List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
         Collection<Entity> toStore = new LinkedHashSet<Entity>();
         Set<ReferenceInfo> toRemove = new HashSet<>();
-        List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
         for (ReferenceInfo id : allIds)
         {
             final HistoryEntry before = history.getLatest(id);//LastChangedUntil(id, connectionTime);
@@ -1036,18 +1036,18 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
     }
 
-    @Override public Collection<ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
+    @Override public Map<String, ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         try (Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            final Collection<ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(systemId, importExportDirection, con);
+            final Map<String,ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(systemId, importExportDirection, con);
             return importExportEntities;
         }
         catch (SQLException e)
         {
-            throw new RaplaException("Error connecting to database");
+            throw new RaplaException("Error connecting to database reading importExport", e);
         }
     }
 
