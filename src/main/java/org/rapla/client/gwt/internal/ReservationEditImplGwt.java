@@ -87,6 +87,12 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
         return false;
     }
 
+    @Override
+    public void setHasChanged(boolean b)
+    {
+
+    }
+
     @Override public IsWidget getComponent()
     {
         return null;

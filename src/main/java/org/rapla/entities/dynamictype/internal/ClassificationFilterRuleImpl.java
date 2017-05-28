@@ -38,6 +38,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     
     String[] operators;
     String[] ruleValues;
+    String attributeKey;
     String attributeId;
     
     ClassificationFilterRuleImpl()
@@ -47,6 +48,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     
     ClassificationFilterRuleImpl(Attribute attribute, String[] operators,Object[] ruleValues) {
 		attributeId = attribute.getId();
+		this.attributeKey = attribute.getKey();
 		DynamicType type = attribute.getDynamicType();
 		if ( type== null)
 		{
@@ -105,7 +107,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     }
 
     /** find the attribute of the given type that matches the id */
-    private Attribute findAttribute(DynamicType type,Object id) {
+    private Attribute findAttributeById(DynamicType type,Object id) {
         Attribute[] typeAttributes = type.getAttributes();
         for (int i=0; i<typeAttributes.length; i++) {
             if (typeAttributes[i].getId().equals(id)) {
@@ -114,9 +116,33 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
         }
         return null;
     }
+
+    private Attribute findAttributeByKey(DynamicType type,String key) {
+        Attribute[] typeAttributes = type.getAttributes();
+        for (int i=0; i<typeAttributes.length; i++) {
+            if (typeAttributes[i].getKey().equals(key)) {
+                return typeAttributes[i];
+            }
+        }
+        return null;
+    }
+
     public Attribute getAttribute() {
         DynamicType dynamicType = getDynamicType();
-		return findAttribute(dynamicType, attributeId);
+        Attribute attribute;
+        if ( attributeId != null)
+        {
+            attribute = findAttributeById(dynamicType, attributeId);
+        }
+        if ( attributeKey != null)
+        {
+            attribute = findAttributeByKey( dynamicType, attributeKey);
+        }
+        else
+        {
+            throw new IllegalStateException("neither attribute Key nor Attribute Id is set in filter rule "+ toString());
+        }
+		return attribute;
     }
     
     public DynamicType getDynamicType() {
@@ -377,7 +403,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
 	public String toString()
     {
     	StringBuilder buf = new StringBuilder();
-    	buf.append(getAttribute().getKey());
+        buf.append(attributeKey);
     	Object[] values = getValues();
     	String[] operators = getOperators();
     	for ( int i=0;i<values.length;i++)

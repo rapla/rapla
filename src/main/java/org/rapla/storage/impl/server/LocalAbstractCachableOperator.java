@@ -75,6 +75,7 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -1294,7 +1295,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final String oldExternalId = referenceInfoStringBidiMap.get(id);
         if (op instanceof Remove)
         {
-            externalIds.remove(id);
+            externalIds.remove(oldExternalId);
         }
         else
         {
@@ -2349,6 +2350,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (User.class == raplaType)
             {
                 addRemovedUserDependant(evt, store, (User) entity);
+            }
+            if ( entity instanceof Annotatable)
+            {
+                final String externalID = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
+                // also remove import export enitities
+                if ( externalID != null)
+                {
+                    final ReferenceInfo ref = new ReferenceInfo(externalID,ImportExportEntity.class);
+                    evt.putRemoveId(ref);
+                }
             }
             if (Category.class == raplaType)
             {

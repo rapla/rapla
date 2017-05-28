@@ -507,6 +507,33 @@ import java.util.Vector;
         super.testResolve(entities);
     }
 
+    protected <T extends Entity> T tryResolve(EntityResolver resolver, String id, Class<T> entityClass)
+    {
+        Assert.notNull(id);
+        T entity = resolver.tryResolve(id, entityClass);
+        if (entity != null)
+        {
+            return entity;
+        }
+        if (entityClass != null && isAllocatableClass(entityClass))
+        {
+            AllocatableImpl unresolved = new AllocatableImpl(null, null);
+            unresolved.setId(id);
+            DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
+            if (dynamicType == null)
+            {
+                //throw new IllegalStateException("Unresolved resource type not found");
+                return null;
+            }
+            getLogger().debug("ResourceReference with ID " + id + " not loaded ");
+            Classification newClassification = dynamicType.newClassification();
+            unresolved.setClassification(newClassification);
+            @SuppressWarnings("unchecked") T casted = (T) unresolved;
+            return casted;
+        }
+        return null;
+    }
+
     // problem of resolving the bootstrap loading of unreadable resources before resource type is referencable
     protected void testResolveInitial(Collection<? extends Entity> entities) throws EntityNotFoundException
     {
@@ -894,37 +921,6 @@ import java.util.Vector;
             throw new RaplaException(ex);
         }
         return result;
-    }
-
-    @Override protected <T extends Entity> T tryResolve(EntityResolver resolver, String id, Class<T> entityClass)
-    {
-        Assert.notNull(id);
-        T entity = super.tryResolve(resolver, id, entityClass);
-        if (entity != null)
-        {
-            return entity;
-        }
-        if (entityClass != null && isAllocatableClass(entityClass))
-        {
-            AllocatableImpl unresolved = new AllocatableImpl(null, null);
-            unresolved.setId(id);
-            DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
-            if (dynamicType == null)
-            {
-                //throw new IllegalStateException("Unresolved resource type not found");
-                return null;
-            }
-            Classification newClassification = dynamicType.newClassification();
-            unresolved.setClassification(newClassification);
-            @SuppressWarnings("unchecked") T casted = (T) unresolved;
-            return casted;
-        }
-        return null;
-    }
-
-    private <T extends Entity> boolean isAllocatableClass(Class<T> entityClass)
-    {
-        return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
     }
 
     public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,

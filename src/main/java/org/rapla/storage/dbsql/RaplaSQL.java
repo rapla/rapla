@@ -2501,7 +2501,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict>
 
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;
-        Date timestamp = getTimestamp(rset, 6);
+        Date timestamp = getTimestamp(rset, 6, true);
         Date today = getConnectionTimestamp();
         String id = ConflictImpl.createId(allocatableId, appointment1Id, appointment2Id);
         ConflictImpl conflict = new ConflictImpl(id, today, timestamp);
@@ -2779,7 +2779,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 }
                 load(rset);
                 // the select is ordered desc by last_changed, so if we get to early in time, we do not need to load it
-                final Date timestamp = getTimestamp(rset, 5);
+                final Date timestamp = getTimestamp(rset, 5, false);
                 if (supportTimestamp != null && timestamp != null && timestamp.getTime() < supportTimestamp.getTime())
                 {
                     finishedIdsToLoad.add(id);

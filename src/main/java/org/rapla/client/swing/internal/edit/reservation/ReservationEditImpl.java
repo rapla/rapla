@@ -418,6 +418,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     public void setReservation(Reservation newReservation, Appointment mutableAppointment) throws RaplaException
     {
         commandHistory.clear();
+
         this.mutableReservation = newReservation;
         appointmentEdit.setReservation(mutableReservation, mutableAppointment);
         Collection<Reservation> emptySet = Collections.emptySet();

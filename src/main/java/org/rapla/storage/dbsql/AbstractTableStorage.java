@@ -441,7 +441,7 @@ public class AbstractTableStorage implements TableStorage
 		{
 		    if ( date.after( currentTimestamp))
 		    {
-		        getLogger().error("Timestamp in table " + getTableName() + " in the future. Ignoring.");
+		        getLogger().error("Timestamp in table " + getTableName() + " in the future. " + date+ " > "+ currentTimestamp +" Ignoring.");
 		    }
 		    else
 		    {
@@ -451,7 +451,7 @@ public class AbstractTableStorage implements TableStorage
         return currentTimestamp;
 	}
 
-	protected Date getTimestamp(ResultSet rset, int column) throws SQLException {
+	protected Date getTimestamp(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
         Date currentTimestamp = getConnectionTimestamp();
         java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
         if (rset.wasNull() || timestamp == null)
@@ -461,7 +461,7 @@ public class AbstractTableStorage implements TableStorage
         Date date = new Date( timestamp.getTime());
         if ( date != null)
         {
-            if ( date.after( currentTimestamp))
+            if ( date.after( currentTimestamp) && checkCurrent)
             {
                 getLogger().error("Timestamp in table " + getTableName() + " in the future. Something went wrong");
             }

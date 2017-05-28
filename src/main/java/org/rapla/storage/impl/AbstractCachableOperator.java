@@ -27,9 +27,11 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -759,7 +761,34 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     protected <T extends Entity> T tryResolve(EntityResolver resolver, String id, Class<T> entityClass)
     {
-        return resolver.tryResolve(id, entityClass);
+        Assert.notNull(id);
+        T entity = resolver.tryResolve(id, entityClass);
+        if (entity != null)
+        {
+            return entity;
+        }
+//        if (entityClass != null && isAllocatableClass(entityClass))
+//        {
+//            AllocatableImpl unresolved = new AllocatableImpl(null, null);
+//            unresolved.setId(id);
+//            DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
+//            if (dynamicType == null)
+//            {
+//                //throw new IllegalStateException("Unresolved resource type not found");
+//                return null;
+//            }
+//            getLogger().warn("ResourceReference with ID " + id + " obsolete ");
+//            Classification newClassification = dynamicType.newClassification();
+//            unresolved.setClassification(newClassification);
+//            @SuppressWarnings("unchecked") T casted = (T) unresolved;
+//            return casted;
+//        }
+        return null;
+    }
+
+    protected  <T extends Entity> boolean isAllocatableClass(Class<T> entityClass)
+    {
+        return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
     }
 
     final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,

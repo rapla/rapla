@@ -40,4 +40,6 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
     void fireChange();
 
     boolean isNew();
+
+    void setHasChanged(boolean b);
 }
