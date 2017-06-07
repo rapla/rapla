@@ -48,6 +48,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
@@ -82,6 +83,7 @@ import org.rapla.storage.impl.EntityStore;
         this.request = request;
     }
 
+    @Override
     public UpdateEvent getResources() throws RaplaException
     {
         checkAuthentified();
@@ -111,6 +113,21 @@ import org.rapla.storage.impl.EntityStore;
         return evt;
     }
 
+    @Override
+    public Promise<UpdateEvent> getResourcesAsync()
+    {
+        try
+        {
+            final UpdateEvent resources = getResources();
+            return new ResolvedPromise<UpdateEvent>(resources);
+        }
+        catch (Exception ex)
+        {
+            return new ResolvedPromise<UpdateEvent>(ex);
+        }
+    }
+
+    @Override
     public UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
     {
         checkAuthentified();
@@ -157,7 +174,7 @@ import org.rapla.storage.impl.EntityStore;
         return evt;
     }
 
-    @Override public AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException
+    @Override public Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException
     {
         String[] allocatableIds = job.getResources();
         Date start = job.getStart();
@@ -184,7 +201,7 @@ import org.rapla.storage.impl.EntityStore;
         Map<Allocatable, Collection<Appointment>> reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
-        return list;
+        return new ResolvedPromise<AppointmentMap>(list);
     }
 
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)
@@ -379,6 +396,18 @@ import org.rapla.storage.impl.EntityStore;
         }
     }
 
+    public Promise<UpdateEvent> refreshAsync(String lastSyncedTime)
+    {
+        try
+        {
+            return new ResolvedPromise<>(refresh(lastSyncedTime));
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<UpdateEvent>(e);
+        }
+    }
+
     public Logger getLogger()
     {
         return session.getLogger();
@@ -497,7 +526,7 @@ import org.rapla.storage.impl.EntityStore;
         return result;
     }
 
-    @Override public Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
+    @Override public Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job)
     {
         String[] allocatableIds = job.getAllocatableIds();
         AppointmentImpl appointment = job.getAppointment();
@@ -506,50 +535,66 @@ import org.rapla.storage.impl.EntityStore;
         Integer worktimeendMinutes = job.getWorktimeEndMinutes();
         Integer[] excludedDays = job.getExcludedDays();
         Integer rowsPerHour = job.getRowsPerHour();
-        checkAuthentified();
-        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+        List<Allocatable> allocatables;
+        try
+        {
+            checkAuthentified();
+            allocatables = resolveAllocatables(allocatableIds);
+        }
+        catch ( RaplaException ex)
+        {
+            return  new ResolvedPromise<Date>(ex);
+        }
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-        Date result = operator.waitForWithRaplaException(
-                operator.getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour),
-                50000);
-        return result;
+        final Promise<Date> nextAllocatableDate = operator
+                .getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
+        return nextAllocatableDate;
 
     }
 
-    @Override public BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
+    @Override public Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job)
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
         String[] reservationIds = job.getReservationIds();
-        checkAuthentified();
-        //Integer[][] result = new Integer[allocatableIds.length][];
-        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+        List<Allocatable> allocatables;
+        try
+        {
+            checkAuthentified();
+            //Integer[][] result = new Integer[allocatableIds.length][];
+           allocatables = resolveAllocatables(allocatableIds);
+        } catch ( RaplaException ex)
+        {
+            return new ResolvedPromise<BindingMap>(ex);
+        }
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
-        final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList);
-        Map<Allocatable, Collection<Appointment>> bindings = operator.waitForWithRaplaException(promise, 100000);
-        Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
-        for (Allocatable alloc : bindings.keySet())
+        Promise<BindingMap> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
         {
-            Collection<Appointment> apps = bindings.get(alloc);
-            if (apps == null)
+            Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
+            for (Allocatable alloc : bindings.keySet())
             {
-                apps = Collections.emptyList();
-            }
-            ArrayList<String> indexArray = new ArrayList<String>(apps.size());
-            for (Appointment app : apps)
-            {
-                for (Appointment app2 : appointments)
+                Collection<Appointment> apps = bindings.get(alloc);
+                if (apps == null)
                 {
-                    if (app2.equals(app))
+                    apps = Collections.emptyList();
+                }
+                ArrayList<String> indexArray = new ArrayList<String>(apps.size());
+                for (Appointment app : apps)
+                {
+                    for (Appointment app2 : appointments)
                     {
-                        indexArray.add(app.getId());
+                        if (app2.equals(app))
+                        {
+                            indexArray.add(app.getId());
+                        }
                     }
                 }
+                result.put(alloc.getId(), indexArray);
             }
-            result.put(alloc.getId(), indexArray);
-        }
-        return new BindingMap(result);
+            return new BindingMap(result);
+        });
+        return promise;
     }
 
     private List<Appointment> cast(List<AppointmentImpl> appointments)
@@ -562,39 +607,50 @@ import org.rapla.storage.impl.EntityStore;
         return result;
     }
 
-    public List<ReservationImpl> getAllAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
+    @Override
+    public Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job)
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
         String[] reservationIds = job.getReservationIds();
-        checkAuthentified();
-        Set<ReservationImpl> result = new HashSet<ReservationImpl>();
-        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
+        List<Allocatable> allocatables;
+        try
+        {
+            checkAuthentified();
+            //Integer[][] result = new Integer[allocatableIds.length][];
+            allocatables = resolveAllocatables(allocatableIds);
+        } catch ( RaplaException ex)
+        {
+            return new ResolvedPromise<>(ex);
+        }
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
-        final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> promise = operator
-                .getAllAllocatableBindings(allocatables, asList, ignoreList);
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> bindings = operator.waitForWithRaplaException(promise, 10000);
-        for (Allocatable alloc : bindings.keySet())
+
+        Promise<List<ReservationImpl>> promise = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
         {
-            Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
-            for (Appointment app : appointmentBindings.keySet())
+            Set<ReservationImpl> result = new HashSet<ReservationImpl>();
+            for (Allocatable alloc : bindings.keySet())
             {
-                Collection<Appointment> bound = appointmentBindings.get(app);
-                if (bound != null)
+                Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
+                for (Appointment app : appointmentBindings.keySet())
                 {
-                    for (Appointment appointment : bound)
+                    Collection<Appointment> bound = appointmentBindings.get(app);
+                    if (bound != null)
                     {
-                        ReservationImpl reservation = (ReservationImpl) appointment.getReservation();
-                        if (reservation != null)
+                        for (Appointment appointment : bound)
                         {
-                            result.add(reservation);
+                            ReservationImpl reservation = (ReservationImpl) appointment.getReservation();
+                            if (reservation != null)
+                            {
+                                result.add(reservation);
+                            }
                         }
                     }
                 }
             }
-        }
-        return new ArrayList<ReservationImpl>(result);
+            return new ArrayList<ReservationImpl>(result);
+        });
+        return promise;
     }
 
     private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, RaplaSecurityException

@@ -189,7 +189,7 @@ import java.util.Vector;
     public Promise<User> connectAsync()
     {
         RemoteStorage serv = getRemoteStorage();
-        Promise<User> userPromise = getScheduler().supplyProxy(() -> serv.getResources()).thenApply((evt) -> {
+        Promise<User> userPromise = serv.getResourcesAsync().thenApply((evt) -> {
             RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
             try
             {
@@ -383,7 +383,7 @@ import java.util.Vector;
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
         refreshInProgress = true;
-        final Promise<UpdateEvent> updateEventPromise = getScheduler().supplyProxy(() -> serv.refresh(clientRepoVersion));
+        final Promise<UpdateEvent> updateEventPromise = serv.refreshAsync(clientRepoVersion);
         updateEventPromise.thenAccept((evt) -> {
             refreshInProgress = false;
             try
@@ -943,7 +943,7 @@ import java.util.Vector;
             }
         }).thenCompose((refreshed) -> {
             String[] allocatableId = getIdList(allocatables);
-            return scheduler.supplyProxy(() -> serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery))).thenApply(list -> {
+            return serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery)).thenApply(list -> {
                 Map<Allocatable, Collection<Appointment>> filtered;
                 {
                     long time = System.currentTimeMillis();
@@ -1175,8 +1175,7 @@ import java.util.Vector;
             appointmentList.add((AppointmentImpl) app);
             appointmentMap.put(app.getId(), app);
         }
-        final Promise<BindingMap> bindingMapPromise = getScheduler()
-                .supplyProxy(() -> serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)));
+        final Promise<BindingMap> bindingMapPromise = serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds));
 
         Promise<Map<Allocatable, Collection<Appointment>>> resultPromise = bindingMapPromise.thenApply((bindingMap) -> {
             Map<String, List<String>> resultMap = bindingMap.get();
@@ -1210,8 +1209,7 @@ import java.util.Vector;
         final String[] allocatableIds = getIdList(allocatables);
         final List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray(new AppointmentImpl[] {}));
         final String[] reservationIds = getIdList(ignoreList);
-        final Promise<List<ReservationImpl>> listPromise = getScheduler()
-                .supplyProxy(() -> serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)));
+        final Promise<List<ReservationImpl>> listPromise = serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds));
         return listPromise.thenApply((serverResult) -> getMap(allocatables, appointments, ignoreList, serverResult));
     }
 
@@ -1261,9 +1259,9 @@ import java.util.Vector;
         RemoteStorage serv = getRemoteStorage();
         String[] allocatableIds = getIdList(allocatables);
         String[] reservationIds = getIdList(ignoreList);
-        Promise<Date> nextAllocatableDate = getScheduler().supplyProxy(() -> serv.getNextAllocatableDate(
+        Promise<Date> nextAllocatableDate = serv.getNextAllocatableDate(
                 new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes,
-                        excludedDays, rowsPerHour)));
+                        excludedDays, rowsPerHour));
         return nextAllocatableDate;
     }
 

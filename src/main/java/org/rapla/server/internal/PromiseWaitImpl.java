@@ -5,7 +5,9 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.server.PromiseWait;
+import sun.rmi.runtime.Log;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
@@ -27,7 +29,7 @@ public class PromiseWaitImpl implements PromiseWait
     {
         try
         {
-            return waitFor(promise, millis);
+            return SynchronizedCompletablePromise.waitFor(promise, millis, logger);
         }
         catch (Exception ex)
         {
@@ -39,55 +41,5 @@ public class PromiseWaitImpl implements PromiseWait
         }
     }
 
-    public <T> T waitFor(Promise<T> promise, int timeout) throws Exception
-    {
-        long index = System.currentTimeMillis();
-        final CompletableFuture<T> future = new CompletableFuture<>();
-        promise.whenComplete((t, ex) ->
-        {
-            if ( logger.isDebugEnabled())
-            {
-                logger.debug("promise complete " + index);
-            }
-            if (ex != null)
-            {
-                future.completeExceptionally(ex);
-            }
-            else
-            {
-                future.complete(t);
-            }
-            if ( logger.isDebugEnabled())
-            {
-                logger.debug("Release lock  " + index);
-            }
-        });
-        try
-        {
-            if ( logger.isDebugEnabled())
-            {
-                logger.debug("Aquire lock " + index);
-            }
-            T t = future.get(timeout, TimeUnit.MILLISECONDS);
-            if ( logger.isDebugEnabled())
-            {
-                logger.debug("SwingUtilities waitFor " + index);
-            }
-            return t;
 
-        }
-        catch (ExecutionException ex)
-        {
-            final Throwable cause = ex.getCause();
-            if ( cause instanceof Exception)
-            {
-                throw (Exception)cause;
-            }
-            if ( cause instanceof Error)
-            {
-                throw (Error)cause;
-            }
-            throw ex;
-        }
-    }
 }

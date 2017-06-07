@@ -32,6 +32,7 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.UpdateEvent;
 
 @Path("storage")
@@ -99,11 +100,16 @@ public interface RemoteStorage
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     UpdateEvent getResources() throws RaplaException;
 
+    @POST
+    @Path("resources")
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    Promise<UpdateEvent> getResourcesAsync();
+
     /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
     @POST
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException;
+    Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException;
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
@@ -160,6 +166,11 @@ public interface RemoteStorage
     UpdateEvent refresh(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
 
     @POST
+    @Path("refreshAsync")
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    Promise<UpdateEvent> refreshAsync(@QueryParam("lastSynched") String lastSyncedTime);
+
+    @POST
     @Path("restart")
     void restartServer() throws RaplaException;
 
@@ -185,7 +196,7 @@ public interface RemoteStorage
     @Path("allocatable/bindings/first")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException;
+    Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
 
     public static class AllocatableBindingsRequest
     {
@@ -225,13 +236,13 @@ public interface RemoteStorage
     @Path("allocatable/bindings/all")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    List<ReservationImpl> getAllAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException;
+    Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job);
 
     @POST
     @Path("allocatable/date/next")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException;
+    Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job);
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)

@@ -6,5 +6,4 @@ import org.rapla.scheduler.Promise;
 public interface PromiseWait
 {
     <T> T  waitForWithRaplaException(Promise<T> promise, int timeoutInMillis) throws RaplaException;
-    <T> T waitFor(Promise<T> promise, int timeout) throws Exception;
 }

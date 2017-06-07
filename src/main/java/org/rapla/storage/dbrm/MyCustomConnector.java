@@ -10,6 +10,8 @@ import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.AuthenticationException;
 import org.rapla.rest.client.CustomConnector;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.CompletablePromise;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -80,6 +82,17 @@ public class MyCustomConnector implements CustomConnector
     }
 
 
+    @Override
+    public <T> CompletablePromise<T> createCompletable()
+    {
+        return commandQueue.createCompletable();
+    }
+
+    @Override
+    public <T> Promise<T> call(CommandScheduler.Callable<T> callable)
+    {
+        return commandQueue.supply( callable);
+    }
     /*
     public Exception getConnectError(IOException ex)
     {
@@ -105,4 +118,6 @@ public class MyCustomConnector implements CustomConnector
     {
         return logger;
     }
+
+
 }

@@ -156,22 +156,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Connected
     }
 
-    @Override final public boolean isConnected()
-    {
-        return connectStatus == InitStatus.Connected;
-    }
-
-    @Override public boolean isLoaded()
-    {
-        return connectStatus.ordinal() >= InitStatus.Loaded.ordinal();
-    }
-
-    protected void changeStatus(InitStatus status)
-    {
-        connectStatus = status;
-        getLogger().debug("Initstatus " + status);
-    }
-
     /**
      * The duration which the history must support, only one older Entry than the specified time are needed.
      */
@@ -207,6 +191,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         this.history = new EntityHistory();
         appointmentBindings = new AppointmentMapClass(logger);
         calendarModelCache = new CalendarModelCache(this, i18n, logger, scheduler);
+    }
+
+    @Override final public boolean isConnected()
+    {
+        return connectStatus == InitStatus.Connected;
+    }
+
+    @Override public boolean isLoaded()
+    {
+        return connectStatus.ordinal() >= InitStatus.Loaded.ordinal();
+    }
+
+    protected void changeStatus(InitStatus status)
+    {
+        connectStatus = status;
+        getLogger().debug("Initstatus " + status);
     }
 
     @Override
@@ -481,12 +481,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         });
         return promise;
     }
-    CompletionStage<Map<String,Integer>> filter(Map<String,Integer> map)
-    {
-        return null;
-    }
-
-    Void VOID = null;
 
     public boolean match(Reservation reservation, Map<String, String> annotationQuery)
     {
@@ -2148,7 +2142,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private Set<ReferenceInfo<Conflict>> getConflictsToDelete(Collection<UpdateOperation> operations)
     {
-        Set<ReferenceInfo<Conflict>> conflicts = new HashSet<ReferenceInfo<Conflict>>();
+        Set<ReferenceInfo<Conflict>> conflicts = new HashSet<>();
         for (UpdateOperation op : operations)
         {
             final ReferenceInfo ref = op.getReference();
@@ -2231,8 +2225,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             user = resolve(cache, evt.getUserId(), User.class);
         }
-        Collection<Entity> storeObjects = new ArrayList<Entity>(evt.getStoreObjects());
-        Collection<ReferenceInfo> removeIds = new ArrayList<ReferenceInfo>(evt.getRemoveIds());
+        Collection<Entity> storeObjects = new ArrayList<>(evt.getStoreObjects());
+        Collection<ReferenceInfo> removeIds = new ArrayList<>(evt.getRemoveIds());
         for (Entity entity : storeObjects)
         {
             Class<? extends Entity> raplaType = entity.getTypeClass();
@@ -2424,7 +2418,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             throw new IllegalStateException("Category Cycle detected while removing");
         }
-        final ReferenceInfo<Category> ref = new ReferenceInfo(categoryId, Category.class);
+        final ReferenceInfo<Category> ref = new ReferenceInfo<>(categoryId, Category.class);
         if (!categoriesToStore.contains(ref.getId()))
         {
             evt.putRemoveId(ref);
@@ -2586,8 +2580,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * returns all entities that depend one the passed entities. In most cases
      * one object depends on an other object if it has a reference to it.
-     *
-     * @param entity
      */
     final protected Set<Entity> getDependencies(Entity entity, EntityStore store)
     {
@@ -2595,7 +2587,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Collection<Entity> referencingEntities;
         if (Category.class == type || DynamicType.class == type || Allocatable.class == type || User.class == type)
         {
-            HashSet<Entity> dependencyList = new HashSet<Entity>();
+            HashSet<Entity> dependencyList = new HashSet<>();
             referencingEntities = getReferencingEntities(entity, store);
             dependencyList.addAll(referencingEntities);
             return dependencyList;
@@ -3371,7 +3363,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     continue;
                 }
-                map.put(allocatable, new HashMap<Appointment, Collection<Appointment>>());
+                map.put(allocatable, new HashMap<>());
                 for (Appointment appointment : appointments)
                 {
                     Set<Appointment> conflictingAppointments = AppointmentImpl
@@ -3381,7 +3373,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         Map<Appointment, Collection<Appointment>> appMap = map.get(allocatable);
                         if (appMap == null)
                         {
-                            appMap = new HashMap<Appointment, Collection<Appointment>>();
+                            appMap = new HashMap<>();
                             map.put(allocatable, appMap);
                         }
                         appMap.put(appointment, conflictingAppointments);
