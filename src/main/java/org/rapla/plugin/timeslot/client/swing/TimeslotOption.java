@@ -12,24 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot.client.swing;
 
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.DefaultPluginOption;
+import org.rapla.client.swing.OptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaTime;
@@ -39,25 +25,44 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
+import javax.inject.Inject;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
 @Extension(provides = PluginOptionPanel.class,id = TimeslotPlugin.PLUGIN_ID)
-public class TimeslotOption extends DefaultPluginOption
+public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPanel
 {
+	protected JComponent container;
 	JPanel list = new JPanel();
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
     private final RaplaImages raplaImages;
     private final IOInterface ioInterface;
+    private Preferences preferences;
 	
     class TimeslotRow
     {
@@ -97,12 +102,17 @@ public class TimeslotOption extends DefaultPluginOption
         this.ioInterface = ioInterface;
     }
 
-    List<TimeslotRow> rows = new ArrayList<TimeslotOption.TimeslotRow>();
-    JPanel main;
-    protected JPanel createPanel() throws RaplaException 
+
+	@Override
+	public void setPreferences(Preferences preferences)
+	{
+		this.preferences = preferences;
+	}
+
+	List<TimeslotRow> rows = new ArrayList<TimeslotOption.TimeslotRow>();
+    protected JPanel createPanel() throws RaplaException
     {
-    	main = super.createPanel();
-        
+
     	JScrollPane jScrollPane = new JScrollPane(list);
         JPanel container = new JPanel();
         container.setLayout( new BorderLayout());
@@ -115,7 +125,8 @@ public class TimeslotOption extends DefaultPluginOption
 		RaplaButton newButton = new RaplaButton(RaplaButton.SMALL);
 		newButton.setIcon(raplaImages.getIconFromKey("icon.new"));
 		newButton.setText(getString("new"));
-		
+
+
 		header.add( newButton);
 		header.add( resetButton );
 		newButton.addActionListener( new ActionListener() {
@@ -139,10 +150,14 @@ public class TimeslotOption extends DefaultPluginOption
 		});
         container.add(header,BorderLayout.NORTH);
         
-        main.add( container, BorderLayout.CENTER);
-		return main;
+		return container;
     }
 
+	@Override
+	public JComponent getComponent()
+	{
+		return container;
+	}
 
 	protected void initRows()  {
 		rows.clear();
@@ -183,19 +198,13 @@ public class TimeslotOption extends DefaultPluginOption
     	}
     	list.validate();
     	list.repaint();
-    	main.validate();
-    	main.repaint();
+    	container.validate();
+    	container.repaint();
 	}
 
     
     protected void addChildren( DefaultConfiguration newConfig) 
     {
-    	if (!activate.isSelected())
-    	{
-    		return;
-    	}
-      
-      	
       	for ( Timeslot slot: timeslots)
     	{
     		DefaultConfiguration conf = new DefaultConfiguration("timeslot");
@@ -250,13 +259,18 @@ public class TimeslotOption extends DefaultPluginOption
     	update();
     }
 
-    public void show() throws RaplaException  {
-        super.show();
-    }
-  
+	public void show() throws RaplaException
+	{
+		container = createPanel();
+		Configuration config = preferences.getEntry( TimeslotPlugin.CONFIG, null);
+		readConfig( config );
+	}
+
     public void commit() throws RaplaException {
     	timeslots = mapToTimeslots();
-    	super.commit();
+		RaplaConfiguration newConfig = new RaplaConfiguration("config" );
+		addChildren( newConfig );
+		preferences.putEntry( TimeslotPlugin.CONFIG,newConfig);
     }
 
     public String getName(Locale locale) {

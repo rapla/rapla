@@ -16,6 +16,7 @@ public interface ResourceAnnotations
 {
     String KEY_CONFLICT_CREATION = "conflictCreation";
 	String VALUE_CONFLICT_CREATION_IGNORE = "ignore";
+    String FIXEDTIMEANDDURATION = "fixedtimeandduration";
 }
 
 

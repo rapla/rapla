@@ -113,18 +113,6 @@ public abstract class ReservationControllerImpl implements ReservationController
         return i18n;
     }
 
-    Collection<ReservationEdit> editWindowList = new ArrayList<ReservationEdit>();
-
-    public void addReservationEdit(ReservationEdit editWindow)
-    {
-        editWindowList.add(editWindow);
-    }
-
-    public void removeReservationEdit(ReservationEdit editWindow)
-    {
-        editWindowList.remove(editWindow);
-    }
-
     @Override
     public Promise<Void> deleteReservation(Reservation reservation, PopupContext context)
     {

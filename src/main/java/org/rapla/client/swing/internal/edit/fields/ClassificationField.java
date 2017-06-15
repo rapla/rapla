@@ -100,7 +100,12 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		setFieldName("type");
 		content.setBorder(BorderFactory.createEmptyBorder(3, 2, 3, 2));
 	}
-	
+
+	public void setReadOnly(boolean readonly)
+	{
+		editUI.setReadOnly( readonly);
+	}
+
 	@Override
 	public EditFieldLayout getLayout() {
 	    EditFieldLayout layout = new EditFieldLayout();

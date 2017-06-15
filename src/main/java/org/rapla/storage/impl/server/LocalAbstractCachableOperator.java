@@ -134,10 +134,6 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -321,8 +317,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
             addAttributeWithInternalId(type, "name", AttributeType.STRING);
             {
-                Attribute att = addAttributeWithInternalId(type, "fixedtimeandduration", AttributeType.BOOLEAN);
-                att.setDefaultValue(Boolean.TRUE);
+                Attribute att = addAttributeWithInternalId(type, ResourceAnnotations.FIXEDTIMEANDDURATION, AttributeType.BOOLEAN);
+                att.setDefaultValue(Boolean.FALSE);
             }
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{name}");
             type.setResolver(this);

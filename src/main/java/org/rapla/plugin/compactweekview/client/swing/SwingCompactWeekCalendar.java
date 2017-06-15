@@ -177,6 +177,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 				 
 				 try 
 				 {
+                     newStart = DateTools.toDateTime(newStart, (block.getStart()));
 					 final List<Allocatable> selectedAllocatables = getSortedAllocatables();
 					 Allocatable newAlloc = selectedAllocatables.get(index);
 					 AbstractRaplaBlock raplaBlock = (AbstractRaplaBlock)block;

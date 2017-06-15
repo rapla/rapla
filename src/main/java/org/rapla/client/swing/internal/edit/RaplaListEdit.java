@@ -48,6 +48,7 @@ import org.rapla.components.calendar.NavButton;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.domain.Allocatable;
 
 final public class RaplaListEdit<T> implements
         RaplaWidget
@@ -70,7 +71,13 @@ final public class RaplaListEdit<T> implements
 
     Color selectionBackground = UIManager.getColor("List.selectionBackground");
     Color background = UIManager.getColor("List.background");
-    
+
+    public void resort()
+    {
+        final Collection selectedValues = getSelectedValues();
+        updateSort(selectedValues);
+    }
+
     interface NameProvider<T>
     {
         String getName(T object);
@@ -133,6 +140,7 @@ final public class RaplaListEdit<T> implements
 
     public RaplaButton createNewButton = new RaplaButton();
     public RaplaButton removeButton = new RaplaButton();
+    public RaplaButton copyButton = new RaplaButton();
 
     CardLayout cardLayout = new CardLayout();
     private Listener listener = new Listener();
@@ -141,12 +149,14 @@ final public class RaplaListEdit<T> implements
     JPanel toolbar = new JPanel();
     
     
-    public RaplaListEdit(I18nBundle i18n, RaplaImages images,JComponent detailContent,ActionListener callback) 
+    public RaplaListEdit(I18nBundle i18n, RaplaImages images,JComponent detailContent,ActionListener callback, boolean hasCopy)
     {
         this.callback = callback;
         toolbar.setLayout( new BoxLayout( toolbar, BoxLayout.X_AXIS));
         toolbar.add(createNewButton);
         toolbar.add(removeButton);
+        toolbar.add(Box.createHorizontalStrut(5));
+        toolbar.add(copyButton);
         toolbar.add(Box.createHorizontalStrut(5));
         toolbar.add(moveUpButton);
         toolbar.add(moveDownButton);
@@ -186,6 +196,7 @@ final public class RaplaListEdit<T> implements
         prev.addActionListener(listener);
         removeButton.addActionListener(listener);
         createNewButton.addActionListener(listener);
+        copyButton.addActionListener(listener);
         moveUpButton.addActionListener(listener);
         moveDownButton.addActionListener(listener);
 
@@ -199,8 +210,13 @@ final public class RaplaListEdit<T> implements
 
         createNewButton.setText(i18n.getString("new"));
         createNewButton.setIcon(images.getIconFromKey("icon.new"));
+
         removeButton.setIcon(images.getIconFromKey("icon.delete"));
         removeButton.setText(i18n.getString("delete"));
+
+        copyButton.setText(i18n.getString("copy"));
+        copyButton.setIcon(images.getIconFromKey("icon.copy"));
+
         nothingSelectedLabel.setHorizontalAlignment(JLabel.CENTER);
         nothingSelectedLabel.setText(i18n.getString("nothing_selected"));
 
@@ -340,8 +356,9 @@ final public class RaplaListEdit<T> implements
         return coloredBackground;
     }
 
-    private void modelUpdate() {
+    protected void modelUpdate() {
         removeButton.setEnabled(list.getMinSelectionIndex() >=0);
+        copyButton.setEnabled(list.getMinSelectionIndex() >=0);
         moveUpButton.setEnabled(list.getMinSelectionIndex() > 0);
         moveDownButton.setEnabled(list.getMinSelectionIndex() >= 0 &&
                                   list.getMaxSelectionIndex() < (list.getModel().getSize() -1) );
@@ -392,7 +409,7 @@ final public class RaplaListEdit<T> implements
     }
     
     private boolean disableListSelection;
-    public void updateSort(List<Object> selectedValues) {
+    public void updateSort(Collection<Object> selectedValues) {
 		ListModel model2 = list.getModel();
 		int[] index = new int[selectedValues.size()];
 		int j = 0;
@@ -430,6 +447,12 @@ final public class RaplaListEdit<T> implements
                                                          ,"new"
                                                          )
                                          );
+            } else if (evt.getSource() == copyButton) {
+                callback.actionPerformed(new ActionEvent(RaplaListEdit.this
+                                ,ActionEvent.ACTION_PERFORMED
+                                ,"copy"
+                        )
+                );
             } else if (evt.getSource() == moveUpButton) {
                 callback.actionPerformed(new ActionEvent(RaplaListEdit.this
                                                          ,ActionEvent.ACTION_PERFORMED
@@ -501,9 +524,9 @@ final public class RaplaListEdit<T> implements
             this.images = images;
         }
 
-        public RaplaListEdit create(I18nBundle i18n, JComponent detailContent, ActionListener callback)
+        public RaplaListEdit create(I18nBundle i18n, JComponent detailContent, ActionListener callback, boolean hasCopy)
         {
-            return new RaplaListEdit(i18n, images, detailContent, callback);
+            return new RaplaListEdit(i18n, images, detailContent, callback, hasCopy);
         }
     }
 	

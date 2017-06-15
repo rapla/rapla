@@ -53,7 +53,7 @@ import org.rapla.storage.PermissionController;
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Allocatable")
 public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
-    ClassificationField<Allocatable> classificationField;
+    protected ClassificationField<Allocatable> classificationField;
     PermissionListField permissionListField;
     BooleanField holdBackConflictsField;
     final JComponent holdBackConflictPanel;
@@ -91,7 +91,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             public void stateChanged(ChangeEvent e)
             {
                 final boolean mainTabSelected = classificationField.isMainTabSelected();
-                permissionPanel.setVisible( !mainTabSelected);
+                permissionPanel.setVisible( !mainTabSelected && canAdmin());
                 if ( !mainTabSelected && !editPanel.isAncestorOf( permissionPanel) )
                 {
                     editPanel.remove( holdBackConflictPanel);
@@ -140,6 +140,26 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         return annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
     }
 
+    private boolean canAdmin()
+    {
+        final User user;
+        try
+        {
+            user = getUser();
+        }
+        catch (RaplaException e)
+        {
+            return false;
+        }
+        for ( Allocatable alloc:objectList)
+        {
+            if ( !permissionController.canAdmin( alloc, user))
+            {
+                return false;
+            }
+        }
+        return  true;
+    }
     protected void mapFromObjects() throws RaplaException {
         classificationField.mapFrom( objectList);
         permissionListField.mapFrom( objectList);

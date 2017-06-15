@@ -13,6 +13,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -83,6 +84,15 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
     public boolean stopAction(ApplicationEvent activity)
     {
+        final Allocatable template = clientFacade.getTemplate();
+        if ( template != null)
+        {
+            final Boolean annotation =  (Boolean)template.getClassification().getValue(ResourceAnnotations.FIXEDTIMEANDDURATION);
+            if (annotation != null && !annotation)
+            {
+                clientFacade.setTemplate( null);
+            }
+        }
         mainView.removeWindow(activity);
         openDialogsPresenter.remove(activity);
         return true;

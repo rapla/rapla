@@ -274,7 +274,6 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     }
   
     public void commit() throws RaplaException {
-        writePluginConfig(false);
         TypedComponentRole<RaplaConfiguration> configEntry = JNDIPlugin.JNDISERVER_CONFIG;
         RaplaConfiguration newConfig = new RaplaConfiguration("config" );
         addChildren( newConfig );

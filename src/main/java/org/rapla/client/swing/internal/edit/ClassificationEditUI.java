@@ -64,6 +64,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     private final TextFieldFactory textFieldFactory;
     private final LongFieldFactory longFieldFactory;
     private final PermissionController permissionController;
+    private boolean readOnly;
 	
     public String getSelectedView()
     {
@@ -267,6 +268,10 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
                 break;
             }
         }
+        if ( isReadOnly())
+        {
+            canWrite = false;
+        }
         final JComponent component = field.getComponent();
         component.setVisible(canRead);
         if ( field instanceof TextField)
@@ -416,9 +421,15 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
             mapFrom( f);
         }
     }
-    
-    
-    
 
+    public boolean isReadOnly()
+    {
+        return readOnly;
+    }
+
+    public void setReadOnly(boolean readOnly)
+    {
+        this.readOnly = readOnly;
+    }
 }
 

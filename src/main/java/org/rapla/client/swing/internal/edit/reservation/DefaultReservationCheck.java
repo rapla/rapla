@@ -35,6 +35,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.ClientFacade;
@@ -87,8 +88,18 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
 
                 final I18nBundle i18n = getI18n();
                 Locale locale = i18n.getLocale();
+                final String templateAnnotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+                Allocatable template;
+                if ( templateAnnotation != null)
+                {
+                    template = getFacade().tryResolve( new ReferenceInfo<Allocatable>(templateAnnotation, Allocatable.class ));
+                }
+                else
+                {
+                    template = null;
+                }
                 String name = reservation.getName(locale);
-                if (name.trim().length() == 0) {
+                if (name.trim().length() == 0 && template == null) {
                     final String warning = getI18n().getString("error.no_reservation_name");
                     JLabel warningLabel = new JLabel();
                     warningLabel.setForeground(java.awt.Color.red);
@@ -126,16 +137,7 @@ public class DefaultReservationCheck extends RaplaGUIComponent implements EventC
                     warningPanel.add( warningLabel);
                 }
 
-                final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
-                Allocatable template;
-                if ( annotation != null)
-                {
-                    template = getFacade().tryResolve( new ReferenceInfo<Allocatable>(annotation, Allocatable.class ));
-                }
-                else
-                {
-                    template = null;
-                }
+
                 if (reservation.getAllocatables().length == 0 && template == null)
                 {
                     JLabel warningLabel = new JLabel();

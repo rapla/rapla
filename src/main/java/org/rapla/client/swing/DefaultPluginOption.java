@@ -41,7 +41,7 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
     protected JCheckBox activate = new JCheckBox("Aktivieren");
     protected Configuration config;
     protected Preferences preferences;
-    JComponent container;
+    protected JComponent container;
 
     private Class getPluginClass()
     {
@@ -70,31 +70,8 @@ abstract public class DefaultPluginOption extends RaplaGUIComponent implements P
      * @see OptionPanel#commit()
      */
     public void commit() throws RaplaException {
-        writePluginConfig(true);
     }
 
-    protected void writePluginConfig(boolean addChildren) {
-        if ( true)
-            return;
-//        RaplaConfiguration config =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
-//        if ( config  == null)
-//	    {
-//	    	config = new RaplaConfiguration("org.rapla.plugin");
-//	    }
-//        String className = getPluginClass().getName();
-//        //getDescritorClassName()
-//
-//        RaplaConfiguration newChild = new RaplaConfiguration("plugin" );
-//        newChild.setAttribute( "enabled", activate.isSelected());
-//        newChild.setAttribute( "class", className);
-//        if ( addChildren)
-//        {
-//            addChildren( newChild );
-//        }
-//        RaplaConfiguration newConfig = config.replace(config.find("class", className), newChild);
-//        preferences.putEntry(RaplaComponent.PLUGIN_CONFIG, newConfig);
-    }
-    
     /**
      * 
      * @param newConfig

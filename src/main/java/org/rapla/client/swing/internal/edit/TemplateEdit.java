@@ -24,10 +24,15 @@ import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
+import com.google.gwt.logging.client.DefaultLevel;
 import org.rapla.RaplaResources;
+import org.rapla.client.EditController;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.gwt.Rapla;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -38,11 +43,14 @@ import org.rapla.client.swing.internal.edit.fields.ClassificationField.Classific
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
 import org.rapla.entities.Entity;
+import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -61,23 +69,26 @@ public class TemplateEdit extends RaplaGUIComponent
     RaplaListEdit<Allocatable> templateList;
     DefaultListModel model = new DefaultListModel();
     AllocatableEditUI allocatableEdit;
-    Collection<Allocatable> toStore = new LinkedHashSet<Allocatable>();
+    Collection<Entity> toStore = new LinkedHashSet<Entity>();
     Collection<Allocatable> toRemove = new LinkedHashSet<Allocatable>();
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
+    private final EditController editController;
+    private DialogInterface.DialogAction editAction;
 
     private TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
             RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory,
-            PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory)
-            throws RaplaException
+            PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory,
+            EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.calendarSelectionModel = calendarSelectionModel;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
+        this.editController = editController;
         allocatableEdit = new AllocatableEditUI(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory)
         {
             protected void mapFromObjects() throws RaplaException
@@ -85,6 +96,12 @@ public class TemplateEdit extends RaplaGUIComponent
                 super.mapFromObjects();
                 permissionListField.setPermissionLevels(Permission.READ, Permission.EDIT);
                 classificationField.setScrollingAlwaysEnabled(false);
+                for (Allocatable allocatable:objectList)
+                {
+                    final User user = getUser();
+                    final boolean canEdit = permissionController.canModify(allocatable, user);
+                    classificationField.setReadOnly(!canEdit);
+                }
             }
 
             @Override
@@ -94,6 +111,8 @@ public class TemplateEdit extends RaplaGUIComponent
                 {
                     allocatableEdit.mapToObjects();
                     List<Allocatable> objects = allocatableEdit.getObjects();
+                    templateList.resort();
+
                     toStore.addAll(objects);
                 }
                 catch (RaplaException e)
@@ -115,6 +134,15 @@ public class TemplateEdit extends RaplaGUIComponent
                     if (evt.getActionCommand().equals("remove"))
                     {
                         removeTemplate();
+                    }
+                    else if (evt.getActionCommand().equals("copy"))
+                    {
+                        Allocatable template = templateList.getSelectedValue();
+                        if ( template != null)
+                        {
+                            copyTemplate( template);
+                        }
+                        //if ( template)
                     }
                     else if (evt.getActionCommand().equals("new"))
                     {
@@ -144,14 +172,32 @@ public class TemplateEdit extends RaplaGUIComponent
             }
         };
         final ReferenceInfo<User> userReference = getUser().getReference();
-        templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback);
+        templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback, true);
         templateList.setNameProvider(new NameProvider<Allocatable>()
         {
-
             @Override
             public String getName(Allocatable object)
             {
                 return object.getName(getLocale());
+            }
+        });
+        templateList.getList().addListSelectionListener(new ListSelectionListener()
+        {
+            @Override
+            public void valueChanged(ListSelectionEvent e)
+            {
+                final Allocatable selectedValue = templateList.getSelectedValue();
+                User user = null;
+                try
+                {
+                    user = getUser();
+                    editAction.setEnabled( selectedValue != null && permissionController.canModify( selectedValue, user));
+                }
+                catch (RaplaException e1)
+                {
+                    logger.error( e1.getMessage(), e1);
+                }
+
             }
         });
         templateList.getList().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -174,6 +220,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             }
         });
+
         templateList.setMoveButtonVisible(false);
         templateList.getComponent().setPreferredSize(new Dimension(1000, 500));
     }
@@ -237,6 +284,34 @@ public class TemplateEdit extends RaplaGUIComponent
         }
     }
 
+    private void copyTemplate(Allocatable originalTemplate) throws RaplaException
+    {
+        final User user = getUser();
+        final Allocatable templateCopy = getFacade().clone(originalTemplate, user);
+        final String name = (String)templateCopy.getClassification().getValue("name");
+        String newName = name != null ? (name + " (Kopie)") :getNewTemplateName();
+        templateCopy.getClassification().setValue("name", newName);
+        toStore.add(templateCopy);
+         getQuery().getTemplateReservations(originalTemplate).
+        thenAccept(( reservations ->
+        {
+
+            for ( Reservation reservation:reservations)
+            {
+                final Reservation clone = getFacade().clone(reservation, user);
+                clone.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateCopy.getId());
+                toStore.add( clone);
+            }
+            model.addElement(templateCopy);
+            boolean shouldScroll = true;
+            templateList.getList().clearSelection();
+            templateList.getList().setSelectedValue(templateCopy, shouldScroll);
+        }));
+
+
+
+    }
+
     @SuppressWarnings("unchecked")
     private void createTemplate() throws RaplaException
     {
@@ -265,22 +340,30 @@ public class TemplateEdit extends RaplaGUIComponent
         {
             Collection<Allocatable> originals = getQuery().getTemplates();
             List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
+            List<Allocatable> nonEditables = new ArrayList<Allocatable>();
+            final User user = getUser();
+
             for (Allocatable template : originals)
             {
-                if (permissionController.canModify(template, getUser()))
+                if ( permissionController.canModify( template, user))
                 {
                     editableTemplates.add(template);
                 }
+                else
+                {
+                    nonEditables.add( template);
+                }
             }
             Collection<Allocatable> copies = getFacade().edit(editableTemplates);
-            fillModel(copies);
+            fillModel(nonEditables,copies);
             Collection<String> options = new ArrayList<String>();
             options.add(getString("apply"));
             options.add(getString("cancel"));
+
             final DialogInterface dlg = dialogUiFactory
-                    .create(new SwingPopupContext(parentComponent, null), true, templateList.getComponent(), options.toArray(new String[] {}));
+                    .create(new SwingPopupContext(parentComponent, null), false, templateList.getComponent(), options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
-            dlg.setSize(1000,800);
+            dlg.setSize(1000, 800);
             dlg.getAction(options.size() - 1).setIcon("icon.cancel");
 
             final Runnable action = new Runnable()
@@ -307,6 +390,19 @@ public class TemplateEdit extends RaplaGUIComponent
                                 toRemoveObj.add(((Entity) reservation).getReference());
                             }
                         });
+
+                        for ( Entity entity:toStoreObj)
+                        {
+                            if ( entity.getTypeClass() == Reservation.class)
+                            {
+                                String templateId = ((Reservation)entity).getAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE);
+                                if ( templateId != null && templateId.equals( template.getId()))
+                                {
+                                    toStoreObj.remove( entity);
+                                }
+                            }
+                        }
+
                         p = p.thenCombine(voidPromise, (a, b) ->
                         {
                             return null;
@@ -331,17 +427,30 @@ public class TemplateEdit extends RaplaGUIComponent
                         Date start = null;
                         if (selectedTemplate != null)
                         {
-                            for (Reservation r : reservations)
+                            final Boolean annotation = (Boolean)selectedTemplate.getClassification().getValue(ResourceAnnotations.FIXEDTIMEANDDURATION);
+                            boolean isOnlySingle = annotation != null && annotation;
+                            final int size = reservations.size();
+                            if ( !isOnlySingle)
                             {
-                                Date firstDate = r.getFirstDate();
-                                if (start == null || firstDate.before(start))
+                                if (size == 1)
                                 {
-                                    start = firstDate;
+                                    final Reservation next = reservations.iterator().next();
+                                    editController.edit( next, null);
                                 }
                             }
-                            if (start != null)
                             {
-                                calendarSelectionModel.setSelectedDate(start);
+                                for (Reservation r : reservations)
+                                {
+                                    Date firstDate = r.getFirstDate();
+                                    if (start == null || firstDate.before(start))
+                                    {
+                                        start = firstDate;
+                                    }
+                                }
+                                if (start != null)
+                                {
+                                    calendarSelectionModel.setSelectedDate(start);
+                                }
                             }
                         }
                         getUpdateModule().setTemplate(selectedTemplate);
@@ -366,8 +475,10 @@ public class TemplateEdit extends RaplaGUIComponent
                     }
                 }
             });
-            dlg.getAction(0).setRunnable(action);
-            dlg.getAction(0).setIcon("icon.confirm");
+            editAction = dlg.getAction(0);
+            editAction.setRunnable(action);
+            editAction.setIcon("icon.confirm");
+            editAction.setEnabled( false);
             dlg.start(true);
         }
         catch (RaplaException ex)
@@ -377,13 +488,51 @@ public class TemplateEdit extends RaplaGUIComponent
     }
 
     @SuppressWarnings("unchecked")
-    public void fillModel(Collection<Allocatable> templates)
+    public void fillModel(Collection<Allocatable> originals,Collection<Allocatable> templates) throws RaplaException
     {
+        for (Allocatable template : originals)
+        {
+            model.addElement(template);
+        }
         for (Allocatable template : templates)
         {
             model.addElement(template);
         }
-        Comparator comp = new NamedComparator(getLocale());
+        User user = getUser();
+        Comparator comp = new NamedComparator(getLocale())
+        {
+            Permission.AccessLevel getLevel( Allocatable allocatable)
+            {
+                if ( allocatable == null)
+                {
+                    return Permission.AccessLevel.DENIED;
+                }
+                if ( permissionController.canAdmin( allocatable, user))
+                {
+                    return Permission.AccessLevel.ADMIN;
+                }
+                else if (permissionController.canModify( allocatable, user))
+                {
+                    return Permission.AccessLevel.EDIT;
+                }
+                else
+                {
+                    return Permission.AccessLevel.READ;
+                }
+            }
+            @Override
+            public int compare(Named o1, Named o2)
+            {
+                Permission.AccessLevel accessLevel = getLevel((Allocatable) o1);
+                Permission.AccessLevel accessLevel2 = getLevel((Allocatable) o2);
+                final int compare = accessLevel.compareTo(accessLevel2);
+                if ( compare != 0)
+                {
+                    return compare;
+                }
+                return super.compare(o1, o2);
+            }
+        };
         SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING, comp);
         templateList.getList().setModel(sortedModel);
     }
@@ -403,12 +552,13 @@ public class TemplateEdit extends RaplaGUIComponent
         private final RaplaListEditFactory raplaListEditFactory;
         private final BooleanFieldFactory booleanFieldFactory;
         private final PermissionController permissionController;
+        private final EditController editController;
 
         @Inject
         public TemplateEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
                 ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-                RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory)
+                RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, EditController editController)
         {
             this.facade = facade;
             this.i18n = i18n;
@@ -422,12 +572,13 @@ public class TemplateEdit extends RaplaGUIComponent
             this.raplaListEditFactory = raplaListEditFactory;
             this.booleanFieldFactory = booleanFieldFactory;
             this.permissionController = facade.getRaplaFacade().getPermissionController();
+            this.editController = editController;
         }
 
         public TemplateEdit create() throws RaplaException
         {
             return new TemplateEdit(facade, i18n, raplaLocale, logger, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory,
-                    permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory);
+                    permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory, editController);
         }
     }
 

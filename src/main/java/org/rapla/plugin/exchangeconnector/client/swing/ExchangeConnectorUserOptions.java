@@ -366,9 +366,10 @@ public class ExchangeConnectorUserOptions extends DefaultPluginOption implements
                     {TableLayout.PREFERRED, 5,TableLayout.PREFERRED}
             };
             setLayout( new TableLayout( sizes));
+            usernameTextField.setNextFocusableComponent(passwordTextField);
             add( usernameLabel, "1,0");
-            add( usernameTextField, "3,0");
             add( passwordLabel, "1,2");
+            add( usernameTextField, "3,0");
             add( passwordTextField, "3,2");
         }
         

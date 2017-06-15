@@ -1,24 +1,7 @@
 package org.rapla.plugin.export2ical.client.swing;
 
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.ButtonGroup;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.SpinnerNumberModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -29,26 +12,40 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
 
+import javax.inject.Inject;
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Locale;
+
 /*******************************************************************************
  * This is the admin-option panel
- * 
- * @author Twardon
- * 
+ *
  */
 @Extension(provides = PluginOptionPanel.class,id= Export2iCalPlugin.PLUGIN_ID)
-public class Export2iCalAdminOption extends DefaultPluginOption implements ActionListener {
+public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginOptionPanel,ActionListener {
 
 	private JSpinner spiDaysBefore;
 	private JSpinner spiDaysAfter;
 	private JRadioButton optGlobalInterval;
 	private JRadioButton optUserInterval;
-
+	protected JComponent container;
+	protected JCheckBox activate = new JCheckBox("Aktivieren");
 	private JLabel lblLastModifiedInterval;
 	private JSpinner spiLastModifiedInterval;
 	private JCheckBox chkUseLastModifiedIntervall;
@@ -57,6 +54,7 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
     private JComboBox cbDefaultParticipationsStatusRessourceAttribute;
     private ICalConfigService configService;
     private final IOInterface ioInterface;
+	protected Preferences preferences;
 
 	@Inject
     public Export2iCalAdminOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalConfigService configService, IOInterface ioInterface){
@@ -93,7 +91,9 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 		ButtonGroup group = new ButtonGroup();
 		group.add(optGlobalInterval);
 		group.add(optUserInterval);
-		JPanel panel = super.createPanel();
+		JPanel panel = new JPanel();
+		panel.setLayout( new BorderLayout());
+		panel.add( activate, BorderLayout.NORTH );
 		JPanel content = new JPanel();
 		double[][] sizes = new double[][] {
 				{       5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5 },
@@ -139,16 +139,14 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
 	@Override
 	public void setPreferences(Preferences preferences) 
 	{
-	    super.setPreferences(preferences);
+	    this.preferences = preferences;
 	}
 	
     @Override
     public void commit() throws RaplaException {
-        writePluginConfig(false);
-        TypedComponentRole<RaplaConfiguration> configEntry = Export2iCalPlugin.ICAL_CONFIG;
         RaplaConfiguration newConfig = new RaplaConfiguration("config" );
         addChildren( newConfig );
-        preferences.putEntry( configEntry,newConfig);
+        preferences.putEntry( Export2iCalPlugin.ICAL_CONFIG,newConfig);
     }
     
 	protected void addChildren(DefaultConfiguration newConfig) {
@@ -165,15 +163,45 @@ public class Export2iCalAdminOption extends DefaultPluginOption implements Actio
         newConfig.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS, true).setValue(cbDefaultParticipationsStatusRessourceAttribute.getSelectedItem().toString());
 
 	}
-	
+
 	@Override
-	protected Configuration getConfig() throws RaplaException {
-	    Configuration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG, null);
-	    if ( config == null )
-	    {
-	        config =  configService.getConfig();
-        } 
-	    return config;
+	public JComponent getComponent()
+	{
+		return container;
+	}
+
+	@Override
+	public void show() throws RaplaException
+	{
+		activate.setText( getString("selected"));
+		container = createPanel();
+		//	    Class pluginClass = getPluginClass();
+		//        boolean defaultSelection = false;
+		//		try {
+		//			defaultSelection = ((Boolean )pluginClass.getField("ENABLE_BY_DEFAULT").get( null));
+		//		} catch (Throwable e) {
+		//		}
+		//
+		Configuration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG, null);
+		if ( config == null )
+		{
+			config =  configService.getConfig();
+		}
+
+		//		String className = getPluginClass().getName();
+		//		RaplaConfiguration pluginConfig =  preferences.getEntry(RaplaComponent.PLUGIN_CONFIG);
+		//        Configuration pluginClassConfig = null;
+		//		if ( pluginConfig != null)
+		//		{
+		//		    pluginClassConfig = pluginConfig.find("class", className);
+		//		}
+		//        if ( pluginClassConfig == null )
+		//        {
+		//            // use old config for compatibilty
+		//            pluginClassConfig = config;
+		//        }
+		//activate.setSelected( defaultSelection);
+		readConfig( config );
 	}
 
 	protected void readConfig(Configuration config) {

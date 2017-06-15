@@ -70,8 +70,8 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
             if (rootKey == null || rootPublicKey == null)
             {
                 generateRootKeyStorage();
-                cryptoHandler = new CryptoHandler(rootKey);
             }
+            cryptoHandler = new CryptoHandler(rootKey);
         }
         catch (Exception e)
         {

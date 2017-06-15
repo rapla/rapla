@@ -258,18 +258,18 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                     int rowIndex = index / columns;
                     Timeslot timeslot = timeslots.get(rowIndex);
                     int time = timeslot.getMinuteOfDay();
-                    int lastMinuteOfDay;
+                    int minuteOfDayBefore;
                     final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
-                    lastMinuteOfDay = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
+                    minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
                     boolean sameTimeSlot = true;
-                    if (lastMinuteOfDay < time)
+                    if (minuteOfDayBefore != time)
                     {
                         sameTimeSlot = false;
                     }
                     if (rowIndex + 1 < timeslots.size())
                     {
                         Timeslot nextTimeslot = timeslots.get(rowIndex + 1);
-                        if (lastMinuteOfDay >= nextTimeslot.getMinuteOfDay())
+                        if (minuteOfDayBefore >= nextTimeslot.getMinuteOfDay())
                         {
                             sameTimeSlot = false;
                         }
@@ -277,7 +277,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 
                     if (sameTimeSlot)
                     {
-                        time = lastMinuteOfDay;
+                        time = minuteOfDayBefore;
                     }
                     final long l = DateTools.toTime(time / 60, time % 60, 0);
                     newStart = DateTools.toDateTime(newStart, new Date(l));

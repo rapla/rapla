@@ -73,7 +73,7 @@ public class AttributeEdit extends RaplaGUIComponent
 
         this.constraintPanel = constraintPanel;
         this.dialogUiFactory = dialogUiFactory;
-        listEdit = raplaListEditFactory.create( getI18n(), constraintPanel.getComponent(), listener );
+        listEdit = raplaListEditFactory.create( getI18n(), constraintPanel.getComponent(), listener, false );
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
         constraintPanel.addChangeListener( listener );
