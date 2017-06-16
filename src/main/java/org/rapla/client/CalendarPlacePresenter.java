@@ -13,7 +13,6 @@ import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
@@ -213,26 +212,15 @@ import java.util.Date;
                 info = null;
             }
 
+            // remember current selected date if model is switched
             final Date tmpDate = model.getSelectedDate();
             // keep in mind if current model had saved date
-
-            String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
-            if(tmpModelHasStoredCalenderDate == null)
-                tmpModelHasStoredCalenderDate = "false";
-
+            boolean tmpModelHasStoredCalenderDate = hasStoredDate(model);
             model.load(info);
-            String newModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
-            if(newModelHasStoredCalenderDate == null)
-                newModelHasStoredCalenderDate = "false";
-            if ("false".equals(newModelHasStoredCalenderDate)) {
+            boolean newModelHasStoredCalenderDate = hasStoredDate(model);
+            if (!newModelHasStoredCalenderDate && !tmpModelHasStoredCalenderDate) {
 
-                if ("false".equals(tmpModelHasStoredCalenderDate))
-                // if we are switching from a model with saved date to a model without date we reset to current date
-                {
-                    model.setSelectedDate(tmpDate);
-                } else {
-                    model.setSelectedDate(new Date());
-                }
+                model.setSelectedDate(tmpDate);
             }
             updateView( null);
         }
@@ -242,6 +230,15 @@ import java.util.Date;
         }
         final ResolvedPromise<RaplaWidget> raplaWidgetResolvedPromise = new ResolvedPromise<>(view);
         return raplaWidgetResolvedPromise;
+    }
+
+    private boolean hasStoredDate(CalendarModel model)
+    {
+        String selectedDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+        if(selectedDate == null)
+            return false;
+        final boolean storedDate = selectedDate.equals("true");
+        return storedDate;
     }
 
     public void updateView(ModificationEvent evt)

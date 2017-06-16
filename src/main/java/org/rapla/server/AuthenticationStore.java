@@ -20,6 +20,7 @@ import org.rapla.inject.InjectionContext;
 
 @ExtensionPoint(id="org.rapla.Authentication",context = InjectionContext.server)
 public interface AuthenticationStore {
+    boolean isEnabled();
     /** returns, if the user can be authenticated. */
     boolean authenticate(String username, String password) throws RaplaException;
     /** Initializes a user entity with the values provided by the authentication store.

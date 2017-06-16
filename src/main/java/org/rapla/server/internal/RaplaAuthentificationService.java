@@ -119,6 +119,10 @@ public class RaplaAuthentificationService
             logger.info("Checking external authentifiction for user " + username);
             try
             {
+                if ( !authenticationStore.isEnabled())
+                {
+                    continue;
+                }
                 boolean authenticateExternal = authenticationStore.authenticate(username, password);
                 if (authenticateExternal)
                 {
