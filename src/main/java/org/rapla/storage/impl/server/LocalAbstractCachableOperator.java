@@ -155,7 +155,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * The duration which the history must support, only one older Entry than the specified time are needed.
      */
-    public static final long HISTORY_DURATION = DateTools.MILLISECONDS_PER_HOUR;
+    public static final long HISTORY_DURATION = DateTools.MILLISECONDS_PER_WEEK;
 
     /**
      * set encryption if you want to enable password encryption. Possible values
