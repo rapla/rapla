@@ -247,6 +247,11 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         setUserBase( config.getAttribute( USER_BASE) );
     */
     }
+
+    public boolean isEnabled()
+    {
+        return false;
+    }
     
     public void initWithConfig(Configuration config) throws RaplaException
     {
