@@ -1,41 +1,40 @@
 package org.rapla.plugin.exchangeconnector.client.swing;
 
-import java.awt.BorderLayout;
-import java.util.List;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.DefaultPluginOption;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 
+import javax.inject.Inject;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.BorderLayout;
+import java.util.List;
+import java.util.Locale;
+
 
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=PluginOptionPanel.class)
-public class ExchangeConnectorAdminOptions extends DefaultPluginOption implements PluginOptionPanel{
+public class ExchangeConnectorAdminOptions implements PluginOptionPanel{
 
     //private JCheckBox enableSynchronisationBox;// = new JCheckBox();
     private JTextField exchangeWebServiceFQDNTextField;//= new JTextField();
@@ -65,11 +64,18 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
     ExchangeConnectorConfigRemote configService;
     private final ExchangeConnectorResources exchangeConnectorResources;
     private final DialogUiFactoryInterface dialogUiFactory;
+    protected Preferences preferences;
+
+    protected JCheckBox activate;
+    protected JComponent container;
+    Logger logger;
+    RaplaResources i18n;
 
     @Inject
-    public ExchangeConnectorAdminOptions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ExchangeConnectorConfigRemote configService, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    public ExchangeConnectorAdminOptions(RaplaResources i18n,Logger logger,ExchangeConnectorConfigRemote configService, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
         this.configService = configService;
+        this.i18n = i18n;
+        this.logger = logger;
         this.exchangeConnectorResources = exchangeConnectorResources;
         this.dialogUiFactory = dialogUiFactory;
         initJComponents();
@@ -100,7 +106,7 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
 //        this.cbRoomTypes = new JComboBox();
 
 //        this.raplaEventTitleAttributeLabel = new JLabel(getString("event.title.attr"));
-//        this.cbEventTitleAttribute = new JComboBox();
+//        this.cbEventTitleAttribute = new JComboBox();fa
 
 //        this.raplaRessourceEmailAttributeLabel = new JLabel(getString("resource.mail.attr"));
 //        this.cbRaplaRessourceEmailAttribute = new JTextField();
@@ -115,7 +121,10 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
      * @see org.rapla.gui.DefaultPluginOption#createPanel()
      */
     protected JPanel createPanel() throws RaplaException {
-        JPanel parentPanel = super.createPanel();
+        JPanel parentPanel = new JPanel();
+        activate = new JCheckBox("Aktivieren");
+        parentPanel.setLayout( new BorderLayout());
+        parentPanel.add( activate, BorderLayout.NORTH );
         JPanel content = new JPanel();
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.FILL, 5}
@@ -160,30 +169,43 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
         return parentPanel;
     }
 
-    protected void addChildren(DefaultConfiguration newConfig, DefaultConfiguration clientConfig) {
-
-    	set(clientConfig, ExchangeConnectorConfig.ENABLED_BY_ADMIN, activate.isSelected());
-		set(newConfig, ExchangeConnectorConfig.EXCHANGE_WS_FQDN, exchangeWebServiceFQDNTextField.getText());
-		set(newConfig, ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY, categoryForRaplaAppointmentsOnExchangeTextField.getText());
-		set(newConfig, ExchangeConnectorConfig.SYNCING_PERIOD_PAST, syncIntervalPast.getNumber().intValue());
-		//set(newConfig,SYNCING_PERIOD_FUTURE, syncIntervalFuture.getNumber().intValue());
-		set(newConfig, ExchangeConnectorConfig.EXCHANGE_TIMEZONE, (String)cbEventTypes.getSelectedItem()); 
-        //ExchangeConnectorPlugin.PULL_FREQUENCY, pullFrequency.getNumber().intValue();
-		//ExchangeConnectorPlugin.IMPORT_EVENT_TYPE, cbEventTypes.getSelectedItem()).forObject.getElementKey();
-		//set(newConfig,ROOM_TYPE, ((StringWrapper<DynamicType>) cbRoomTypes.getSelectedItem()).forObject.getElementKey());
-		//set(newConfig,RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL, cbRaplaRessourceEmailAttribute.getText());
-        //ExchangeConnectorPlugin.RAPLA_EVENT_TYPE_ATTRIBUTE_TITLE = cbEventTitleAttribute.getSelectedItem() instanceof  Attribute?((Attribute) cbEventTitleAttribute.getSelectedItem()).getKey() : ExchangeConnectorPlugin.DEFAULT_RAPLA_EVENT_TYPE_ATTRIBUTE_TITLE;
-        //ExchangeConnectorPlugin.EXCHANGE_ALWAYS_PRIVATE = chkAlwaysPrivate.isSelected() ;
-
-
+    @Override
+    public JComponent getComponent()
+    {
+        return container;
     }
-    
+
+    @Override
+    public void show() throws RaplaException
+    {
+        activate.setText( i18n.getString("selected"));
+        container = createPanel();
+        Configuration config = preferences.getEntry( ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, null);
+        if ( config == null )
+        {
+            config =  configService.getConfig();
+        }
+        readConfig( config);
+    }
+
     @Override
     public void commit() throws RaplaException {
         TypedComponentRole<RaplaConfiguration> configEntry = ExchangeConnectorConfig.EXCHANGESERVER_CONFIG;
         RaplaConfiguration newConfig = new RaplaConfiguration("config" );
         final RaplaConfiguration clientConfig = new RaplaConfiguration("clientConfig");
-        addChildren( newConfig, clientConfig );
+
+        set(clientConfig, ExchangeConnectorConfig.ENABLED_BY_ADMIN, activate.isSelected());
+        set(newConfig, ExchangeConnectorConfig.EXCHANGE_WS_FQDN, exchangeWebServiceFQDNTextField.getText());
+        set(newConfig, ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY, categoryForRaplaAppointmentsOnExchangeTextField.getText());
+        set(newConfig, ExchangeConnectorConfig.SYNCING_PERIOD_PAST, syncIntervalPast.getNumber().intValue());
+        //set(newConfig,SYNCING_PERIOD_FUTURE, syncIntervalFuture.getNumber().intValue());
+        set(newConfig, ExchangeConnectorConfig.EXCHANGE_TIMEZONE, (String)cbEventTypes.getSelectedItem());
+        //ExchangeConnectorPlugin.PULL_FREQUENCY, pullFrequency.getNumber().intValue();
+        //ExchangeConnectorPlugin.IMPORT_EVENT_TYPE, cbEventTypes.getSelectedItem()).forObject.getElementKey();
+        //set(newConfig,ROOM_TYPE, ((StringWrapper<DynamicType>) cbRoomTypes.getSelectedItem()).forObject.getElementKey());
+        //set(newConfig,RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL, cbRaplaRessourceEmailAttribute.getText());
+        //ExchangeConnectorPlugin.RAPLA_EVENT_TYPE_ATTRIBUTE_TITLE = cbEventTitleAttribute.getSelectedItem() instanceof  Attribute?((Attribute) cbEventTitleAttribute.getSelectedItem()).getKey() : ExchangeConnectorPlugin.DEFAULT_RAPLA_EVENT_TYPE_ATTRIBUTE_TITLE;
+        //ExchangeConnectorPlugin.EXCHANGE_ALWAYS_PRIVATE = chkAlwaysPrivate.isSelected() ;
         preferences.putEntry( configEntry,newConfig);
         preferences.putEntry(ExchangeConnectorConfig.EXCHANGE_CLIENT_CONFIG, clientConfig);
     }
@@ -201,13 +223,10 @@ public class ExchangeConnectorAdminOptions extends DefaultPluginOption implement
 		newConfig.getMutableChild(key.getId(), true).setValue(value);
 	}
 
-    protected Configuration getConfig() throws RaplaException {
-        Configuration config = preferences.getEntry( ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, null);
-        if ( config == null )
-        {
-            config =  configService.getConfig();
-        } 
-        return config;
+	@Override
+	public void setPreferences(Preferences preferences)
+    {
+        this.preferences = preferences;
     }
 
 

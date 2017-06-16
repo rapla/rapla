@@ -15,7 +15,7 @@ import org.rapla.framework.TypedComponentRole;
 
 public interface ExchangeConnectorConfig 
 {
-    TypedComponentRole<RaplaConfiguration> EXCHANGE_CLIENT_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.config");
+    TypedComponentRole<RaplaConfiguration> 	EXCHANGE_CLIENT_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.config");
     TypedComponentRole<RaplaConfiguration> EXCHANGESERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.server.Config");
     
 	TypedComponentRole<String> EXCHANGE_WS_FQDN = new TypedComponentRole<String>("ews_fqdn");

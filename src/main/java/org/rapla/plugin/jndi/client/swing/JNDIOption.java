@@ -12,6 +12,44 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.jndi.client.swing;
 
+import org.rapla.RaplaResources;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.edit.fields.GroupListField;
+import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.Category;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.Configuration;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
+import org.rapla.plugin.jndi.JNDIPlugin;
+import org.rapla.plugin.jndi.internal.JNDIConf;
+import org.rapla.plugin.jndi.internal.JNDIConfig;
+import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
+import org.rapla.storage.RaplaSecurityException;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,49 +61,14 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.DefaultPluginOption;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.edit.fields.GroupListField;
-import org.rapla.components.iolayer.IOInterface;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.Category;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.Configuration;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.jndi.JNDIPlugin;
-import org.rapla.plugin.jndi.internal.JNDIConf;
-import org.rapla.plugin.jndi.internal.JNDIConfig;
-import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
-import org.rapla.storage.RaplaSecurityException;
-
 
 @Extension(provides = PluginOptionPanel.class,id= JNDIPlugin.PLUGIN_ID)
-public class JNDIOption extends DefaultPluginOption implements JNDIConf
+public class JNDIOption implements JNDIConf, PluginOptionPanel
 {
 	TableLayout tableLayout;
 	JPanel content;
-    
+
+    protected JCheckBox activate ;
 	JTextField digest;
 	JTextField connectionName;
 	JPasswordField connectionPassword;
@@ -83,10 +86,22 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     private final Provider<GroupListField> groupListFieldProvider;
     private final RaplaResources raplaResources;
     private final IOInterface ioInterface;
+    JComponent container;
+    Logger logger;
+    RaplaResources i18n;
+    RaplaLocale raplaLocale;
+    Preferences preferences;
+    private Configuration config;
+    RaplaFacade facade;
+    ClientFacade clientFacade;
 
     @Inject
-    public JNDIOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
-        super(facade, i18n, raplaLocale, logger);
+    public JNDIOption(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
+        this.i18n = i18n;
+        this.raplaLocale = raplaLocale;
+        this.facade = clientFacade.getRaplaFacade();
+        this.clientFacade = clientFacade;
+        this.logger = logger;
         this.raplaResources = raplaResources;
         this.configService = config;
         this.dialogUiFactory = dialogUiFactory;
@@ -95,6 +110,11 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     }
 
     protected JPanel createPanel() throws RaplaException {
+        JPanel panel = new JPanel();
+        activate = new JCheckBox("Aktivieren");
+        panel.setLayout( new BorderLayout());
+        panel.add( activate, BorderLayout.NORTH );
+        activate.setText( i18n.getString("selected"));
     	digest = newTextField();
     	connectionName = newTextField();
     	connectionPassword = new JPasswordField();
@@ -112,7 +132,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 			}
 		});
 		
-		addCopyPaste( connectionPassword, getI18n(), getRaplaLocale(), ioInterface, getLogger() );
+		RaplaGUIComponent.addCopyPaste( connectionPassword, i18n, raplaLocale, ioInterface, logger );
     	connectionURL = newTextField();
     	contextFactory= newTextField();
     	userPassword = newTextField();
@@ -121,7 +141,6 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     	userSearch = newTextField();
     	userBase = newTextField();
 
-    	JPanel panel = super.createPanel();
         content = new JPanel();
         tableLayout = new TableLayout();
         tableLayout.insertColumn( 0, TableLayout.PREFERRED);
@@ -143,7 +162,8 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     	addRow(USER_BASE, userBase );
     	JButton testButton = new JButton("Test access");
     	addRow("TestAccess", testButton );
-    	groupField.mapFrom( Collections.singletonList(getUser()));
+        final User user = clientFacade.getUser();
+        groupField.mapFrom( Collections.singletonList(user));
     	addRow("Default Groups", groupField.getComponent() );
     	
     	testButton.addActionListener( new ActionListener() 
@@ -192,7 +212,7 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
 
     private JTextField newTextField() {
         final JTextField jTextField = new JTextField();
-        addCopyPaste( jTextField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+        RaplaGUIComponent.addCopyPaste( jTextField, i18n, raplaLocale, ioInterface, logger);
         return jTextField;
     }
 
@@ -233,33 +253,27 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
     	text.setText(config.getAttribute(attributeName, defaultValue));
     }
     
-    @Override
-    protected void readConfig( Configuration config)   {
-        try
-        {
-            this.config = configService.getConfig();
-        } 
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-            this.config = config;
-        }
-    	readAttribute("digest", digest);
-    	readAttribute("connectionName", connectionName, "uid=admin,ou=system" );
-    	readAttribute("connectionPassword", connectionPassword, "secret" );
-    	readAttribute("connectionURL", connectionURL,  "ldap://localhost:10389");
-    	readAttribute("contextFactory", contextFactory, "com.sun.jndi.ldap.LdapCtxFactory");
-    	readAttribute("userPassword", userPassword,"" );
-    	readAttribute("userMail", userMail,"mail" );
-    	readAttribute("userCn", userCn,"cn" );
-    	readAttribute("userSearch", userSearch,"(uid={0})" );
-    	//uid={0}, ou=Users, dc=example,dc=com
-    	readAttribute("userBase", userBase,"dc=example,dc=com" );
-    }
 
     public void show() throws RaplaException  {
-        super.show();
+        container = createPanel();
+        config = preferences.getEntry(JNDIPlugin.JNDISERVER_CONFIG);
+        if ( config == null)
+        {
+            this.config = configService.getConfig();
+        }
+        readAttribute("digest", digest);
+        readAttribute("connectionName", connectionName, "uid=admin,ou=system" );
+        readAttribute("connectionPassword", connectionPassword, "secret" );
+        readAttribute("connectionURL", connectionURL,  "ldap://localhost:10389");
+        readAttribute("contextFactory", contextFactory, "com.sun.jndi.ldap.LdapCtxFactory");
+        readAttribute("userPassword", userPassword,"" );
+        readAttribute("userMail", userMail,"mail" );
+        readAttribute("userCn", userCn,"cn" );
+        readAttribute("userSearch", userSearch,"(uid={0})" );
+        //uid={0}, ou=Users, dc=example,dc=com
+        readAttribute("userBase", userBase,"dc=example,dc=com" );
         RaplaMap<Category> groupList = preferences.getEntry(JNDIPlugin.USERGROUP_CONFIG);
+
         Collection<Category> groups;
         if (groupList == null)
         {
@@ -272,15 +286,22 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
         this.groupField.mapFromList( groups);
         
     }
-  
+
+    @Override
+    public void setPreferences(Preferences preferences)
+    {
+        this.preferences = preferences;
+    }
+
     public void commit() throws RaplaException {
         TypedComponentRole<RaplaConfiguration> configEntry = JNDIPlugin.JNDISERVER_CONFIG;
         RaplaConfiguration newConfig = new RaplaConfiguration("config" );
         addChildren( newConfig );
+        this.config = newConfig;
         preferences.putEntry( configEntry,newConfig);
         Set<Category> set = new LinkedHashSet<Category>();
     	this.groupField.mapToList( set);
-    	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, getFacade().newRaplaMap( set) );
+    	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, facade.newRaplaMap( set) );
     }
 
 
@@ -289,4 +310,9 @@ public class JNDIOption extends DefaultPluginOption implements JNDIConf
         return JNDIPlugin.PLUGIN_NAME;
     }
 
+    @Override
+    public JComponent getComponent()
+    {
+        return container;
+    }
 }
