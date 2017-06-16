@@ -12,8 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tests;
 
+import java.util.Locale;
+
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -24,9 +27,8 @@ import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.util.Locale;
-
 /** listens for allocation changes */
+@Ignore
 @RunWith(JUnit4.class)
 public class MailPluginTest {
     ServerServiceImpl raplaServer;

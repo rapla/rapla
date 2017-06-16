@@ -2,6 +2,7 @@ package org.rapla;
 
 import java.util.Date;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -11,7 +12,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
 
-
+@Ignore
 @RunWith(JUnit4.class)
 public class HugeDataFileTest
 {

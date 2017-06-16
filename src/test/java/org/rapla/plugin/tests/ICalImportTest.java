@@ -11,6 +11,7 @@ import java.util.TimeZone;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -66,6 +67,7 @@ public class ICalImportTest {
         importer.importCalendar(content, isUrl, allocatables, user, eventTypeKey, "name");
     }
 
+    @Ignore
     @Test
 	public void testICalImport2() throws Exception{
         TimeZone timezone = TimeZone.getTimeZone("GMT+1");

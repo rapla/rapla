@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -67,6 +68,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
         raplaFacade.storeAndRemove(toStore.toArray(new Entity[0]), Entity.ENTITY_ARRAY, clientFacade.getUser());
     }
 
+    @Ignore
     @Test
     public void testDeleteCategoryWithParentSend() throws Exception
     {

@@ -12,8 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tests;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,12 +40,8 @@ import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 /** listens for allocation changes */
+@Ignore
 @RunWith(JUnit4.class)
 public class NotificationPluginTest
 {

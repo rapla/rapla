@@ -20,6 +20,7 @@ import java.io.StringReader;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.facade.RaplaFacade;
@@ -101,6 +102,7 @@ public class FileOperatorDiffTest
         operator = (CachableStorageOperator) facade.getOperator();
     }
 
+    @Ignore
     @org.junit.Test
     public void testSave() throws RaplaException, IOException
     {

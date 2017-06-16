@@ -4,6 +4,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,6 +35,7 @@ public class RestAPITest extends AbstractTestWithServer {
         TestCase.assertEquals( map, deserialized);
     }
 
+    @Ignore
     @Test
     public void testRestApi() throws Exception
     {

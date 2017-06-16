@@ -13,13 +13,14 @@
 
 package org.rapla.client.swing.gui.tests;
 
+import java.util.Date;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.rapla.client.swing.internal.CalendarPlaceViewSwing;
 import org.rapla.facade.CalendarSelectionModel;
 
-import java.util.Date;
-
-
+@Ignore
 public final class CalendarEditorTest extends GUITestCase
 {
     @Test

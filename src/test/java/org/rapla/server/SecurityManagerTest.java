@@ -3,6 +3,7 @@ package org.rapla.server;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -24,6 +25,7 @@ import org.rapla.test.util.RaplaTestCase;
 import java.util.Date;
 import java.util.Locale;
 
+@Ignore
 @RunWith(JUnit4.class)
 public class SecurityManagerTest extends AbstractTestWithServer {
 

@@ -31,8 +31,9 @@ public class MailTest extends TestCase
         //MockMailServer mailServer = new MockMailServer();
         //mailServer.setPort( 5023);
         //mailServer.startMailer( true);
-        String sender = "info@erdkante.de";
-        String recipient = "info@erdkante.de";
+        // https://www.mailinator.com/
+        String sender = "rapla@mailinator.com";
+        String recipient = "rapla@mailinator.com";
         client.sendMail(sender,recipient,"HALLO", "Test body");
         //assertEquals( sender.trim().toLowerCase(), mailServer.getSenderMail().trim().toLowerCase());
         //assertEquals( recipient.trim().toLowerCase(), mailServer.getRecipient().trim().toLowerCase());

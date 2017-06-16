@@ -16,6 +16,7 @@ import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -327,6 +328,7 @@ public class ServerTest
             return null;
     }
 
+    @Ignore
     @Test
     public void testChangeDynamicType2() throws Exception
     {
@@ -376,6 +378,7 @@ public class ServerTest
         clientFacade2.logout();
     }
 
+    @Ignore
     @Test
     public void testRemoveCategoryBug5() throws Exception
     {
@@ -419,6 +422,7 @@ public class ServerTest
         return false;
     }
 
+    @Ignore
     @Test
     public void testStoreFilter() throws Exception
     {

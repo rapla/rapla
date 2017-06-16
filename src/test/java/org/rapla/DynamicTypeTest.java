@@ -15,6 +15,7 @@ package org.rapla;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -103,6 +104,7 @@ public class DynamicTypeTest  {
     	
     }
 
+    @Ignore
 	@Test
 	public void testAttributeChange() throws Exception
     {

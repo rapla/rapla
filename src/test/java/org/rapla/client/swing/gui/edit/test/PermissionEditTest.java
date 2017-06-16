@@ -13,6 +13,7 @@
 
 package org.rapla.client.swing.gui.edit.test;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -50,6 +51,7 @@ import org.rapla.scheduler.CommandScheduler;
 import java.util.Collections;
 
 @RunWith(JUnit4.class)
+@Ignore
 public final class PermissionEditTest extends GUITestCase
 {
     @Test

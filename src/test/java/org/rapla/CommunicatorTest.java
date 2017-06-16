@@ -1,26 +1,23 @@
 package org.rapla;
 
+import java.util.Collection;
+import java.util.Date;
+
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.Collection;
-import java.util.Date;
 
 @RunWith(JUnit4.class)
 public class CommunicatorTest extends AbstractTestWithServer
@@ -90,6 +87,7 @@ public class CommunicatorTest extends AbstractTestWithServer
        }
     }
 
+    @Ignore
     @Test
     public void testUmlaute() throws Exception
     {

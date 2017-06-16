@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -66,6 +67,7 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
+@Ignore
 @RunWith(JUnit4.class)
 public class LocalCacheTest  {
     Locale locale;

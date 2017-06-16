@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -265,6 +266,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
 
 
     @Test
+    @Ignore
     public void testUpdateFromDB() throws Exception
     {
         RaplaFacade readFacade = this.facade;
@@ -700,6 +702,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{reservation} , user);
     }
     @Test
+    @Ignore
     public void testChangesAddChangeDelete() throws Exception
     {
     	CachableStorageOperator operator = getOperator();

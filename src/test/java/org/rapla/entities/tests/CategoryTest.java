@@ -12,8 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -25,9 +29,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
-
-import java.util.Collections;
-import java.util.Map;
 
 @RunWith(JUnit4.class) public class CategoryTest
 {
@@ -61,6 +62,7 @@ import java.util.Map;
         areas.addCategory(area51);
     }
 
+    @Ignore
     @Test public void testStore2() throws Exception
     {
         Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
@@ -73,6 +75,7 @@ import java.util.Map;
         Assert.assertTrue("reference to subcategory has changed", areas == superCategory.getCategory("areas"));
     }
 
+    @Ignore
     @Test public void testStore() throws Exception
     {
         Category superCategory = raplaFacade.edit(raplaFacade.getSuperCategory());
