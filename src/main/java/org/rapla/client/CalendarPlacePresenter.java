@@ -14,6 +14,7 @@ import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.ModificationEvent;
@@ -30,6 +31,7 @@ import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Date;
 
 @Singleton
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
@@ -210,7 +212,28 @@ import javax.inject.Singleton;
             {
                 info = null;
             }
+
+            final Date tmpDate = model.getSelectedDate();
+            // keep in mind if current model had saved date
+
+            String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+            if(tmpModelHasStoredCalenderDate == null)
+                tmpModelHasStoredCalenderDate = "false";
+
             model.load(info);
+            String newModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
+            if(newModelHasStoredCalenderDate == null)
+                newModelHasStoredCalenderDate = "false";
+            if ("false".equals(newModelHasStoredCalenderDate)) {
+
+                if ("false".equals(tmpModelHasStoredCalenderDate))
+                // if we are switching from a model with saved date to a model without date we reset to current date
+                {
+                    model.setSelectedDate(tmpDate);
+                } else {
+                    model.setSelectedDate(new Date());
+                }
+            }
             updateView( null);
         }
         catch (RaplaException e)
