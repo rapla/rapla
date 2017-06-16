@@ -3706,7 +3706,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Date historyValidStart = getHistoryValidStart();
         if (since.before(historyValidStart))
         {
-            return new UpdateResult(null, historyValidStart, null, null);
+            return new UpdateResult(null, new Date(historyValidStart.getTime() + DateTools.MILLISECONDS_PER_MINUTE * 10), null, null);
         }
         Date until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
