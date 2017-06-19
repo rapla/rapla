@@ -57,8 +57,8 @@ public class LocalCache implements EntityResolver
     Map<String, Entity> entities;
 
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
-    Set<String> disabledConflictApp1 = new HashSet<String>();
-    Set<String> disabledConflictApp2 = new HashSet<String>();
+    Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = new HashMap<>();
+    Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = new HashMap<>();
     Map<String, Date> conflictLastChanged = new HashMap<String, Date>();
 
     Map<String, DynamicTypeImpl> dynamicTypes;
@@ -222,7 +222,7 @@ public class LocalCache implements EntityResolver
             }
             else
             {
-                disabledConflictApp1.add(entityId);
+                disabledConflictApp1.put(entityId, conflict.getAppointment1());
             }
             if (conflict.isAppointment2Enabled())
             {
@@ -230,7 +230,7 @@ public class LocalCache implements EntityResolver
             }
             else
             {
-                disabledConflictApp2.add(entityId);
+                disabledConflictApp2.put(entityId, conflict.getAppointment2());
             }
             final Date lastChanged = conflict.getLastChanged();
             conflictLastChanged.put(entityId, lastChanged);
@@ -457,8 +457,8 @@ public class LocalCache implements EntityResolver
     {
         ConflictImpl conflict = (ConflictImpl) orig.clone();
         String id = conflict.getId();
-        conflict.setAppointment1Enabled(!disabledConflictApp1.contains(id));
-        conflict.setAppointment2Enabled(!disabledConflictApp2.contains(id));
+        conflict.setAppointment1Enabled(!disabledConflictApp1.containsKey(id));
+        conflict.setAppointment2Enabled(!disabledConflictApp2.containsKey(id));
         Date lastChangedInCache = conflictLastChanged.get(id);
         Date origLastChanged = conflict.getLastChanged();
 
@@ -488,10 +488,10 @@ public class LocalCache implements EntityResolver
         return conflict;
     }
 
-    @SuppressWarnings("unchecked") public Collection<String> getConflictIds()
+    @SuppressWarnings("unchecked") public Collection<String> getDisabledConflictIds()
     {
-        final HashSet result = new HashSet(disabledConflictApp1);
-        result.addAll(disabledConflictApp2);
+        final HashSet result = new HashSet(disabledConflictApp1.keySet());
+        result.addAll(disabledConflictApp2.keySet());
         return result;
     }
 
@@ -513,7 +513,7 @@ public class LocalCache implements EntityResolver
     public Collection<Conflict> getDisabledConflicts()
     {
         List<Conflict> disabled = new ArrayList<Conflict>();
-        for (String conflictId : getConflictIds())
+        for (String conflictId : getDisabledConflictIds())
         {
             Date lastChanged = conflictLastChanged.get(conflictId);
             if (lastChanged == null)

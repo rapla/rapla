@@ -143,7 +143,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     AppointmentMapClass appointmentBindings;
     private BidiMap<String, ReferenceInfo> externalIds;
 
-
     protected enum InitStatus
     {
         Disconnected,
@@ -176,7 +175,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private final DefaultRaplaLock disconnectLock;
     private final PromiseWait promiseWait;
 
-    public LocalAbstractCachableOperator(Logger logger,PromiseWait promiseWait, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+    public LocalAbstractCachableOperator(Logger logger, PromiseWait promiseWait, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
         super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions, new DefaultRaplaLock(logger));
@@ -189,12 +188,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         calendarModelCache = new CalendarModelCache(this, i18n, logger, scheduler);
     }
 
-    @Override final public boolean isConnected()
+    @Override
+    final public boolean isConnected()
     {
         return connectStatus == InitStatus.Connected;
     }
 
-    @Override public boolean isLoaded()
+    @Override
+    public boolean isLoaded()
     {
         return connectStatus.ordinal() >= InitStatus.Loaded.ordinal();
     }
@@ -208,7 +209,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override
     public <T> T waitForWithRaplaException(Promise<T> promise, int timeoutInMillis) throws RaplaException
     {
-        return promiseWait.waitForWithRaplaException(promise,timeoutInMillis);
+        return promiseWait.waitForWithRaplaException(promise, timeoutInMillis);
     }
 
     public CommandScheduler getScheduler()
@@ -292,7 +293,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addAttributeWithInternalId(type, "start", AttributeType.DATE);
             addAttributeWithInternalId(type, "end", AttributeType.DATE);
             final Attribute categoryAtt = addAttributeWithInternalId(type, "category", AttributeType.CATEGORY);
-            categoryAtt.setConstraint( ConstraintIds.KEY_MULTI_SELECT,Boolean.TRUE);
+            categoryAtt.setConstraint(ConstraintIds.KEY_MULTI_SELECT, Boolean.TRUE);
             //categoryAtt.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, cache.getSuperCategory());
             type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{name}");
             type.setResolver(this);
@@ -337,7 +338,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    @Override public String getUsername(ReferenceInfo<User> userId)
+    @Override
+    public String getUsername(ReferenceInfo<User> userId)
     {
         User user = tryResolve(userId);
         if (user == null)
@@ -349,7 +351,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return name;
     }
 
-    @Override public Date getConnectStart()
+    @Override
+    public Date getConnectStart()
     {
         return connectStart;
     }
@@ -424,14 +427,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * @param user the owner of the reservation or null for reservations from all users
      */
-    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(final User user, final Collection<Allocatable> allocatables,
-            final Date start, final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery)
+    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Date start,
+            final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery)
     {
 
-
-        final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() -> {
+        final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() ->
+        {
             boolean excludeExceptions = false;
-            final Collection<Allocatable> allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables( null): allocatables;
+            final Collection<Allocatable> allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables(null) : allocatables;
             Map<Allocatable, Collection<Appointment>> result = new LinkedHashMap<Allocatable, Collection<Appointment>>();
             boolean isResourceTemplate = allocs.size() == 1 && (allocs.iterator().next().getClassification().getType().getKey().equals(RAPLA_TEMPLATE));
             for (Allocatable allocatable : allocs)
@@ -505,7 +508,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return true;
     }
 
-    @Override public String createId(Class<? extends Entity> raplaType) throws RaplaException
+    @Override
+    public String createId(Class<? extends Entity> raplaType) throws RaplaException
     {
         String string = UUID.randomUUID().toString();
         String result = replaceFirst(raplaType, string);
@@ -520,7 +524,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
-    @Override public String createId(Class<? extends Entity> raplaType, String seed) throws RaplaException
+    @Override
+    public String createId(Class<? extends Entity> raplaType, String seed) throws RaplaException
     {
 
         byte[] data = new byte[16];
@@ -888,14 +893,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-
     final protected void scheduleConnectedTasks(final Command command, long delay, long period)
     {
         //        if (true)
         //            return;
         final Command wrapper = new Command()
         {
-            @Override public void execute() throws Exception
+            @Override
+            public void execute() throws Exception
             {
                 final RaplaLock.ReadLock lock = disconnectLock.readLock(3);
                 try
@@ -912,7 +917,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         };
         final Cancelable schedule = scheduler.schedule(wrapper, delay, period);
-        scheduledTasks.add( schedule);
+        scheduledTasks.add(schedule);
     }
 
     protected void forceDisconnect()
@@ -987,7 +992,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 return LocalAbstractCachableOperator.this.getAppointments(allocatable);
             }
 
-            @SuppressWarnings("unchecked") public Collection<Allocatable> getAllocatables()
+            @SuppressWarnings("unchecked")
+            public Collection<Allocatable> getAllocatables()
             {
                 return (Collection) cache.getAllocatables();
             }
@@ -1000,13 +1006,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         Command cleanUpConflicts = new Command()
         {
-            @Override public void execute() throws Exception
+            @Override
+            public void execute() throws RaplaException
             {
                 removeOldConflicts();
                 removeOldHistory();
             }
         };
-
+        //removeOldConflicts();
+        //removeOldHistory();
         for (ReferenceInfo id : history.getAllIds())
         {
             EntityHistory.HistoryEntry entry = history.getLatest(id);
@@ -1041,7 +1049,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final int refreshPeriod = 1000 * 9;
         scheduleConnectedTasks(new Command()
         {
-            @Override public void execute() throws Exception
+            @Override
+            public void execute() throws Exception
             {
                 try
                 {
@@ -1067,7 +1076,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
-    @Override public void refresh() throws RaplaException
+    @Override
+    public void refresh() throws RaplaException
     {
         final RaplaLock.WriteLock lock = writeLockIfLoaded();
         try
@@ -1082,7 +1092,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     abstract protected void refreshWithoutLock();
 
-    @Override synchronized public void disconnect() throws RaplaException
+    @Override
+    synchronized public void disconnect() throws RaplaException
     {
         if (!isConnected())
             return;
@@ -1126,7 +1137,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            this.disconnectLock.unlock( disconnectWrite);
+            this.disconnectLock.unlock(disconnectWrite);
         }
     }
 
@@ -1483,9 +1494,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         deleteUpdateSet.put(entry.getId(), entry);
     }
 
-    private void addPermissions(DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation1)
+    private void addPermissions(DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation)
     {
-        Reservation event = tryResolve(reservation1);
+        Reservation event = tryResolve(reservation);
         if (event != null)
         {
             entry.addPermissions(event, Permission.EDIT);
@@ -1551,7 +1562,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             this.reference = reference;
         }
 
-        @Override public int compareTo(DeleteUpdateEntry o)
+        @Override
+        public int compareTo(DeleteUpdateEntry o)
         {
             if (o == this)
             {
@@ -1610,18 +1622,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             return reference.getId();
         }
 
-        @Override public boolean equals(Object o)
+        @Override
+        public boolean equals(Object o)
         {
             boolean equals = getId().equals(((DeleteUpdateEntry) o).getId());
             return equals;
         }
 
-        @Override public int hashCode()
+        @Override
+        public int hashCode()
         {
             return getId().hashCode();
         }
 
-        @Override public String toString()
+        @Override
+        public String toString()
         {
             return reference + (isDelete ? " removed on " : "changed on ") + timestamp;
         }
@@ -2090,7 +2105,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 conflictsToDelete = new HashSet<ReferenceInfo<Conflict>>();
                 conflictsToDelete.addAll(conflictFinder.removeOldConflicts(today));
-                conflictsToDelete.retainAll(cache.getConflictIds());
+                conflictsToDelete.retainAll(cache.getDisabledConflictIds());
             }
             finally
             {
@@ -2144,7 +2159,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final ReferenceInfo ref = op.getReference();
             if (op instanceof Remove)
             {
-                if (cache.getConflictIds().contains(ref.getId()))
+                if (cache.getDisabledConflictIds().contains(ref.getId()))
                 {
                     conflicts.add(ref);
                 }
@@ -2229,7 +2244,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (raplaType == DynamicType.class)
             {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
-                addChangedDynamicTypeDependant(evt,user, store, dynamicType, false);
+                addChangedDynamicTypeDependant(evt, user, store, dynamicType, false);
             }
             if (entity instanceof Classifiable)
             {
@@ -2254,14 +2269,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     if (classification.needsChange(dynamicType))
                     {
-                        addChangedDependencies(evt, user,store, dynamicType, entity, false);
+                        addChangedDependencies(evt, user, store, dynamicType, entity, false);
                     }
                 }
             }
             if (entity instanceof Category)
             {
                 final CategoryImpl category = (CategoryImpl) entity;
-                addReferers(cache.getDynamicTypes(),category, dynamicTypesToStore);
+                addReferers(cache.getDynamicTypes(), category, dynamicTypesToStore);
                 final ReferenceInfo<Category> reference = entity.getReference();
                 ReferenceInfo<Category> parentReference = category.getParentRef();
                 categoriesToStore.add(reference.getId());
@@ -2294,7 +2309,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         Category editableParent = (Category) evt.findEntity(exisitingParent);
                         if (editableParent == null)
                         {
-                            editableParent = editObject(null, exisitingParent,user);
+                            editableParent = editObject(null, exisitingParent, user);
                             evt.addToStoreIfNotExisitant(editableParent);
                             categoriesToStore.add(exisitingParent.getReference().getId());
                         }
@@ -2316,13 +2331,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             //			    }
             //			}
         }
-        for (Entity dynamicType:dynamicTypesToStore)
+        for (Entity dynamicType : dynamicTypesToStore)
         {
             final Entity clone = editObject(dynamicType, null, user);
             evt.addToStoreIfNotExisitant(clone);
         }
         categoriesToRemove.removeAll(categoriesToStore);
-
         for (ReferenceInfo removeId : removeIds)
         {
             final Class<? extends Entity> raplaType = removeId.getType();
@@ -2334,22 +2348,26 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (DynamicType.class == raplaType)
             {
                 DynamicTypeImpl dynamicType = (DynamicTypeImpl) entity;
-                addChangedDynamicTypeDependant(evt, user,store, dynamicType, true);
+                addChangedDynamicTypeDependant(evt, user, store, dynamicType, true);
             }
             // If entity is a user, remove the preference object
             if (User.class == raplaType)
             {
                 addRemovedUserDependant(evt, store, (User) entity);
             }
-            if ( entity instanceof Annotatable)
+            if (entity instanceof Annotatable)
             {
                 final String externalID = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
                 // also remove import export enitities
-                if ( externalID != null)
+                if (externalID != null)
                 {
-                    final ReferenceInfo ref = new ReferenceInfo(externalID,ImportExportEntity.class);
+                    final ReferenceInfo ref = new ReferenceInfo(externalID, ImportExportEntity.class);
                     evt.putRemoveId(ref);
                 }
+            }
+            if (Appointment.class == raplaType)
+            {
+
             }
             if (Category.class == raplaType)
             {
@@ -2382,7 +2400,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addCategoryToRemove(evt, categoriesToStore, categoryId, 0);
         }
     }
-
 
     private boolean isInDeleted(Category exisitingParent, Set<String> categoriesToRemove, int depth)
     {
@@ -2430,14 +2447,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    @SuppressWarnings("deprecation") private void processOldPermssionModify(@SuppressWarnings("unused") EntityStore store, Entity entity)
+    @SuppressWarnings("deprecation")
+    private void processOldPermssionModify(@SuppressWarnings("unused") EntityStore store, Entity entity)
     {
         Class<? extends Entity> clazz = (entity instanceof Reservation) ? Reservation.class : Allocatable.class;
         Classifiable persistant = (Classifiable) tryResolve(entity.getId(), clazz);
         Util.processOldPermissionModify((Classifiable) entity, persistant);
     }
 
-    protected void addChangedDynamicTypeDependant(UpdateEvent evt,User user, EntityStore store, DynamicTypeImpl type, boolean toRemove) throws RaplaException
+    protected void addChangedDynamicTypeDependant(UpdateEvent evt, User user, EntityStore store, DynamicTypeImpl type, boolean toRemove) throws RaplaException
     {
         List<Entity> referencingEntities = getReferencingEntities(type, store);
         Iterator<Entity> it = referencingEntities.iterator();
@@ -2455,11 +2473,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Classifiable " + entity + " needs change!");
             // Classifiables are allready on the store list
-            addChangedDependencies(evt, user,store, type, entity, toRemove);
+            addChangedDependencies(evt, user, store, type, entity, toRemove);
         }
     }
 
-    private void addChangedDependencies(UpdateEvent evt, User user,EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove) throws RaplaException
+    private void addChangedDependencies(UpdateEvent evt, User user, EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove)
+            throws RaplaException
     {
         DynamicTypeDependant dependant = (DynamicTypeDependant) evt.findEntity(entity);
         if (dependant == null)
@@ -2550,7 +2569,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
                 else
                 {
-                    @SuppressWarnings("unchecked") Class<? extends Entity> typeClass = entity.getTypeClass();
+                    @SuppressWarnings("unchecked")
+                    Class<? extends Entity> typeClass = entity.getTypeClass();
                     Entity persistant = cache.tryResolve(entity.getId(), typeClass);
                     Entity dependant = editObject(entity, persistant, user);
                     ((SimpleEntity) dependant).setLastChangedBy(null);
@@ -2796,12 +2816,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             catch (RaplaException | IllegalStateException e)
             {
-                if (entity instanceof Reservation)
+                if (entity instanceof Conflict && e instanceof EntityNotFoundException)
+                {
+                    getLogger().info("Not loading disabled conflict with id: " + entity.getId() + " appointment not found, so conflict is probably removed.");
+                }
+                else
                 {
                     getLogger().error("Not loading entity with id: " + entity.getId(), e);
-                    cache.remove(entity);
-                    iterator.remove();
                 }
+                cache.remove(entity);
+                iterator.remove();
             }
         }
     }
@@ -2887,6 +2911,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Reservation reservation = (Reservation) entity;
             ReservationImpl.checkReservation(i18n, reservation, store);
         }
+        else if (Conflict.class == raplaType)
+        {
+            Conflict conflict = (Conflict) entity;
+            final ReferenceInfo<Appointment> appointment1 = conflict.getAppointment1();
+            store.resolve(appointment1);
+            final ReferenceInfo<Appointment> appointment2 = conflict.getAppointment2();
+            store.resolve(appointment2);
+        }
         else if (DynamicType.class == raplaType)
         {
             DynamicType type = (DynamicType) entity;
@@ -2963,7 +2995,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    private void checkBelongsTo(final Object entity, final int depth) throws  RaplaException
+    private void checkBelongsTo(final Object entity, final int depth) throws RaplaException
     {
         if (depth > 20)
         {
@@ -3081,7 +3113,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // Than we add the dependencies from the cache. It is important that
             // we don't add the dependencies from the stored object list here,
             // because a dependency could be removed in a stored object
-            Set<Entity> dependencies =  getDependencies(entity, store);
+            Set<Entity> dependencies = getDependencies(entity, store);
             for (Entity dependency : dependencies)
             {
                 if (!storeObjects.contains(dependency) && !removeEntities.contains(dependency))
@@ -3291,10 +3323,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return false;
     }
 
-    @Override public Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables,
+    @Override
+    public Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
-        final Promise<Map<Allocatable, Collection<Appointment>>> prom = scheduler.supply(() -> getFirstAllocatableBindingsMap(allocatables, appointments, ignoreList));
+        final Promise<Map<Allocatable, Collection<Appointment>>> prom = scheduler
+                .supply(() -> getFirstAllocatableBindingsMap(allocatables, appointments, ignoreList));
         return prom;
     }
 
@@ -3321,7 +3355,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return map;
     }
 
-    @Override public Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables,
+    @Override
+    public Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
         return scheduler.supply(() ->
@@ -3380,10 +3415,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return map;
     }
 
-    @Override public Promise<Date> getNextAllocatableDate(final Collection<Allocatable> allocatables, final Appointment appointment,
-            final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays, final Integer rowsPerHour)
+    @Override
+    public Promise<Date> getNextAllocatableDate(final Collection<Allocatable> allocatables, final Appointment appointment,
+            final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays,
+            final Integer rowsPerHour)
     {
-        Promise<Date> promise = scheduler.supply( () -> {
+        Promise<Date> promise = scheduler.supply(() ->
+        {
             RaplaLock.ReadLock readLock = lockManager.readLock();
             try
             {
@@ -3392,7 +3430,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 boolean startDateExcluded = isExcluded(excludedDays, firstStart);
                 boolean wholeDay = appointment.isWholeDaysSet();
                 boolean inWorktime = inWorktime(appointment, worktimeStartMinutes, worktimeEndMinutes);
-                final int rowsPerHourInt = (rowsPerHour == null || rowsPerHour <= 1) ? 1: rowsPerHour;
+                final int rowsPerHourInt = (rowsPerHour == null || rowsPerHour <= 1) ? 1 : rowsPerHour;
                 for (int i = 0; i < 366 * 24 * rowsPerHourInt; i++)
                 {
                     newState = ((AppointmentImpl) newState).clone();
@@ -3452,7 +3490,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean isAllocated(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList) throws Exception
     {
-        Map<Allocatable, Collection<Appointment>> firstAllocatableBindings = getFirstAllocatableBindingsMap(allocatables, Collections.singleton(appointment), ignoreList);
+        Map<Allocatable, Collection<Appointment>> firstAllocatableBindings = getFirstAllocatableBindingsMap(allocatables, Collections.singleton(appointment),
+                ignoreList);
         for (Map.Entry<Allocatable, Collection<Appointment>> entry : firstAllocatableBindings.entrySet())
         {
             if (entry.getValue().size() > 0)
@@ -3477,7 +3516,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    @SuppressWarnings("deprecation") private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups)
+    @SuppressWarnings("deprecation")
+    private void addDefaultEventPermissions(DynamicTypeImpl dynamicType, Category userGroups)
     {
         {
             Permission permission = dynamicType.newPermission();
@@ -3513,8 +3553,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         newPref.setReadOnly();
         store.put(newPref);
 
-        @SuppressWarnings("deprecation") String[] userGroups = new String[] { Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,
-                Permission.GROUP_CAN_CREATE_EVENTS };
+        @SuppressWarnings("deprecation")
+        String[] userGroups = new String[] { Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS };
 
         CategoryImpl groupsCategory = new CategoryImpl(now, now);
         groupsCategory.setKey("user-groups");
@@ -3795,24 +3835,28 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return updateResult;
     }
 
-    @Override public UpdateResult getUpdateResult(Date since) throws RaplaException
+    @Override
+    public UpdateResult getUpdateResult(Date since) throws RaplaException
     {
         return getUpdateResult(since, null);
     }
 
-    @Override public Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException
+    @Override
+    public Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException
     {
         checkConnected();
         return calendarModelCache.getAppointments(userId, syncRange);
     }
 
-    @Override public Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException
+    @Override
+    public Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException
     {
         checkConnected();
         return calendarModelCache.findMatchingUsers(allocatable);
     }
 
-    @Override public Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment) throws RaplaException
+    @Override
+    public Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment) throws RaplaException
     {
         checkConnected();
         return calendarModelCache.findMatchingUser(appointment);
@@ -3821,7 +3865,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /*
      * Dependencies for belongsTo and package
      */
-    @Override public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+    @Override
+    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try

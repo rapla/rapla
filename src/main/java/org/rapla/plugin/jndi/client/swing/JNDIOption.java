@@ -104,6 +104,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         this.logger = logger;
         this.raplaResources = raplaResources;
         this.configService = config;
+
         this.dialogUiFactory = dialogUiFactory;
         this.groupListFieldProvider = groupListFieldProvider;
         this.ioInterface = ioInterface;

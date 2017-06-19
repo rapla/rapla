@@ -369,14 +369,16 @@ public class RaplaObjectAction extends RaplaAction {
 	    }
 	    @SuppressWarnings({ "rawtypes", "unchecked" })
         DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getFacade(),getI18n(), entities, getUser());
+        final Promise<Void> promise;
 	    if ( undoable)
 	    {
-	    	handleException(getUpdateModule().getCommandHistory().storeAndExecute(deleteCommand));
+            promise = getUpdateModule().getCommandHistory().storeAndExecute(deleteCommand);
 	    }
 	    else
 	    {
-	    	deleteCommand.execute();
-	    }	
+	    	promise = deleteCommand.execute();
+	    }
+        handleException(promise);
 	}
 
     protected Promise handleException(Promise promise)

@@ -50,13 +50,7 @@ public class RaplaExceptionDeserializer implements ExceptionDeserializer {
             }
             else if ( classname.equals( DependencyException.class.getName()))
             {
-                final List<String> params = exeInfo.getMessages();
-                if ( params != null)
-                {
-                	return new DependencyException( message,params);
-                }
-                //Collection<String> depList = Collections.emptyList();
-                return new DependencyException( message, new String[] {});
+                return new DependencyException( message);
             }
             else
             {

@@ -366,7 +366,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     static private String getHTML(DependencyException ex)
     {
         StringBuffer buf = new StringBuffer();
-        buf.append(ex.getMessage() + ":");
+        buf.append(ex.getMessageText() + ":");
         buf.append("<br><br>");
         Iterator<String> it = ex.getDependencies().iterator();
         int i = 0;

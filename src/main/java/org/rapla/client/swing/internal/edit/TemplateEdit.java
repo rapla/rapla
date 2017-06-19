@@ -191,7 +191,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 try
                 {
                     user = getUser();
-                    editAction.setEnabled( selectedValue != null && permissionController.canModify( selectedValue, user));
+                    editAction.setEnabled( selectedValue == null || permissionController.canModify( selectedValue, user));
                 }
                 catch (RaplaException e1)
                 {
