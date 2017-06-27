@@ -17,11 +17,14 @@ import javax.ws.rs.core.MediaType;
 
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
+import org.rapla.server.internal.RaplaStatusEntry;
+import org.rapla.server.internal.ServerContainerContext;
 
 @Singleton
 @Path("server")
 public class RaplaStatusPageGenerator  {
     @Inject RaplaSystemInfo m_i18n;
+    @Inject ServerContainerContext serverContainerContext;
     @Inject
     public RaplaStatusPageGenerator()
     {
@@ -30,10 +33,17 @@ public class RaplaStatusPageGenerator  {
     @GET
     @Produces(MediaType.TEXT_HTML)
     public void generatePage( @Context HttpServletRequest request, @Context HttpServletResponse response ) throws IOException {
+        java.io.PrintWriter out = response.getWriter();
         response.setContentType("text/html; charset=ISO-8859-1");
+        if ( !serverContainerContext.isServiceEnabled( RaplaStatusEntry.ID))
+        {
+            out.println("Server Status disabled");
+            response.setStatus( 404);
+            out.close();
+            return;
+        }
         String linkPrefix = request.getPathTranslated() != null ? "../": "";
 		
-        java.io.PrintWriter out = response.getWriter();
         out.println( "<html>" );
         out.println( "<head>" );
         out.println("  <link REL=\"stylesheet\" href=\"" + linkPrefix + "default.css\" type=\"text/css\">");

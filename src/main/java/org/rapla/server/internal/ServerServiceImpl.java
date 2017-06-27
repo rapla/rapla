@@ -58,7 +58,6 @@ public class ServerServiceImpl implements ServerServiceContainer
     final protected RaplaFacade facade;
     final Logger logger;
 
-    private boolean passwordCheckDisabled;
     private final RaplaLocale raplaLocale;
     private final CommandScheduler scheduler;
 
@@ -186,11 +185,6 @@ public class ServerServiceImpl implements ServerServiceContainer
     public RaplaFacade getFacade()
     {
         return facade;
-    }
-
-    public void setPasswordCheckDisabled(boolean passwordCheckDisabled)
-    {
-        this.passwordCheckDisabled = passwordCheckDisabled;
     }
 
     public String getFirstAdmin() throws RaplaException

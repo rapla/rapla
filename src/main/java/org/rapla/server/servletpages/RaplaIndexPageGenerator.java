@@ -10,6 +10,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
+import org.rapla.server.internal.ServerContainerContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,6 +43,9 @@ public class RaplaIndexPageGenerator
 
     @Inject
     RaplaFacade facade;
+
+    @Inject
+    ServerContainerContext serverContainerContext;
 
     @Inject
     public RaplaIndexPageGenerator()
@@ -92,22 +96,21 @@ public class RaplaIndexPageGenerator
 
     public void generateMenu(HttpServletRequest request, PrintWriter out)
     {
-        if (entries.size() == 0)
-        {
-            return;
-        }
-        //        out.println("<ul>");
-
         // there is an ArraList of entries that wants to be part of the HTML
         // menu we go through this ArraList,
-        Collection<HtmlMainMenu> list= new TreeMap<>(entries).values();
-        for (RaplaMenuGenerator entry :list )
+        for (Map.Entry<String,HtmlMainMenu> entry :new TreeMap<>(entries).entrySet() )
         {
+            final String key = entry.getKey();
+            final RaplaMenuGenerator value = entry.getValue();
+            if ( !serverContainerContext.isServiceEnabled(key) || !value.isEnabled())
+            {
+                continue;
+            }
             out.println("<div class=\"menuEntry\">");
-            entry.generatePage(request, out);
+
+            value.generatePage(request, out);
             out.println("</div>");
         }
-        //        out.println("</ul>");
     }
 
 }

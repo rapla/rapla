@@ -245,7 +245,18 @@ public class CalendarPageGenerator
                 {
                     users = facade.getUsers();
                 }
-                generatePageList(users, request, response);
+                final Boolean entryAsBoolean = facade.getSystemPreferences().getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, true);
+                if ( entryAsBoolean)
+                {
+                    generatePageList(users, request, response);
+                }
+                else
+                {
+                    java.io.PrintWriter out = response.getWriter();
+                    response.setStatus( 404);
+                    out.println("Calender menu disabled. You used the wrong url.");
+                    out.close();
+                }
                 return;
             }
             String filename = request.getParameter("file");

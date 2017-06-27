@@ -40,4 +40,9 @@ public class DefaultHTMLMenuEntry  implements RaplaMenuGenerator
 		out.println("<span class=\"button\"><a href=\"" + AbstractHTMLCalendarPage.getUrl(request,getLinkName()) + "\">" + getName() + "</a></span>");
     }
 
+    public boolean isEnabled()
+	{
+		return true;
+	}
+
 }
