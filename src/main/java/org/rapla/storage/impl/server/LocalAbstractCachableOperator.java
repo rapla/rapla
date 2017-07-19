@@ -267,6 +267,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             DynamicTypeImpl type = new DynamicTypeImpl();
             String key = DEFAULT_USER_TYPE;
+            type.getName().setName("en","user");
             type.setKey(key);
             type.setId(key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
@@ -287,6 +288,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             DynamicTypeImpl type = new DynamicTypeImpl();
             String key = PERIOD_TYPE;
             type.setKey(key);
+            type.getName().setName("en","period");
             type.setId(key);
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
             addAttributeWithInternalId(type, "name", AttributeType.STRING);
