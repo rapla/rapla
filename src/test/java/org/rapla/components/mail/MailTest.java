@@ -24,10 +24,7 @@ public class MailTest extends TestCase
         //client.setPort( 25);
         client.setPort(587);
         //client.setProtocol(MailapiClient.SecurityProtocol.STARTTLS);
-        client.setProtocol(MailapiClient.SecurityProtocol.MAILJET);
-        client.setUsername("f859b8cbffde422b22b36c3e69e5cab2");
-        client.setPassword("daa763739a8cf72436d5922681bcdf57");
-       
+
         //MockMailServer mailServer = new MockMailServer();
         //mailServer.setPort( 5023);
         //mailServer.startMailer( true);
