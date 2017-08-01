@@ -13,12 +13,12 @@
 
 package org.rapla;
 
-import java.net.URL;
-
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.ConsoleLogger;
 import org.rapla.logger.Logger;
+
+import java.net.URL;
 
 final public class RaplaStartupEnvironment implements StartupEnvironment
 {

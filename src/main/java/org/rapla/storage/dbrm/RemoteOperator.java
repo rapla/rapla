@@ -13,6 +13,7 @@
 
 package org.rapla.storage.dbrm;
 
+import io.reactivex.functions.Action;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -46,7 +47,6 @@ import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.function.Command;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
@@ -271,9 +271,9 @@ import java.util.Vector;
 
     public final void initRefresh()
     {
-        Command refreshTask = new Command()
+        Action refreshTask = new Action()
         {
-            public void execute()
+            public void run()
             {
                 // test if the remote operator is writable
                 // if not we skip until the next update cycle

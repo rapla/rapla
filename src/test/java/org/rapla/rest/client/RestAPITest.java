@@ -1,20 +1,15 @@
 package org.rapla.rest.client;
 
 import junit.framework.TestCase;
-import org.eclipse.jetty.server.Server;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.AbstractTestWithServer;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.rest.client.swing.HTTPConnector;
 import org.rapla.rest.client.swing.JsonRemoteConnector;
-import org.rapla.test.util.RaplaTestCase;
 
 import java.net.URL;
 import java.util.HashMap;

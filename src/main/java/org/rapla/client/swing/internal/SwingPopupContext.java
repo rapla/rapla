@@ -1,9 +1,9 @@
 package org.rapla.client.swing.internal;
 
+import org.rapla.client.PopupContext;
+
 import java.awt.Component;
 import java.awt.Point;
-
-import org.rapla.client.PopupContext;
 
 public class SwingPopupContext implements PopupContext
 {

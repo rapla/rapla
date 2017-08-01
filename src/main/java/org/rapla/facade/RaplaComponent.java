@@ -33,7 +33,6 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 
@@ -42,8 +41,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 
 /**
     Base class for most components. Eases

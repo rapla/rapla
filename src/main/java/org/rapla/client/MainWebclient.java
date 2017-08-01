@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
-import java.net.URL;
-import java.net.URLDecoder;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
@@ -22,6 +19,9 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+
+import java.net.URL;
+import java.net.URLDecoder;
 
 
 public class MainWebclient  

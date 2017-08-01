@@ -13,8 +13,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.Iterator;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.User;
@@ -23,6 +21,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.StorageOperator;
+
+import java.util.Iterator;
 
 class DependencyInfoUI extends HTMLInfo<DependencyException> {
     public DependencyInfoUI(RaplaResources i18n, RaplaLocale raplaLocale, RaplaFacade facade, Logger logger){

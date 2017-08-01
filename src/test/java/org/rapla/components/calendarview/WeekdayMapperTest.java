@@ -24,7 +24,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 
 import java.util.Calendar;
-import java.util.Locale;
 
 @RunWith(JUnit4.class)
 public class WeekdayMapperTest   {

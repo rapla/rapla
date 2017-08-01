@@ -13,6 +13,10 @@
 
 package org.rapla.components.calendar;
 
+import org.rapla.components.calendar.DateRenderer.RenderingInfo;
+
+import javax.swing.JComponent;
+import javax.swing.UIManager;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -26,11 +30,6 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
-
-import javax.swing.JComponent;
-import javax.swing.UIManager;
-
-import org.rapla.components.calendar.DateRenderer.RenderingInfo;
 /** The graphical date-selection field
  *  @author Christopher Kohlhaas
  */

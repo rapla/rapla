@@ -14,7 +14,6 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.InfoFactory;
@@ -22,6 +21,7 @@ import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
+import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
@@ -42,8 +42,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;

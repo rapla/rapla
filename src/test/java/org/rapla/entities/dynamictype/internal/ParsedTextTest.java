@@ -5,8 +5,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.User;
@@ -14,15 +12,10 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.DurationFunctions;
-import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
-import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.storage.LocalCache;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
@@ -30,14 +23,11 @@ import org.rapla.storage.dbfile.tests.FileOperatorTest.MyFileIO;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
 import org.rapla.test.util.RaplaTestCase;
 
-import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 @RunWith(JUnit4.class)
 public class ParsedTextTest 

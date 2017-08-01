@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Stack;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
@@ -22,10 +20,11 @@ import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.User;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+
+import java.util.Stack;
 
 public class CategoryReader extends RaplaXMLReader
 {

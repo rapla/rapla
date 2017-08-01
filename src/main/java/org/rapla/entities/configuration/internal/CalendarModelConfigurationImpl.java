@@ -12,14 +12,6 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -33,6 +25,14 @@ import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter implements CalendarModelConfiguration

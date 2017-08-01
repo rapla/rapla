@@ -1,16 +1,16 @@
 package org.rapla.client.gwt;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import io.reactivex.functions.Action;
 import org.rapla.framework.Disposable;
-import org.rapla.function.Command;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.client.gwt.SchedulerImpl;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @DefaultImplementation( of = CommandScheduler.class, context = InjectionContext.gwt)
 @Singleton
@@ -38,7 +38,7 @@ public final class GwtCommandScheduler extends org.rapla.scheduler.client.gwt.Gw
 
 
     @Override
-    public Cancelable schedule(Command command, long delay)
+    public Cancelable schedule(Action command, long delay)
     {
         SchedulerImpl.ScheduledCommand entry = new SchedulerImpl.ScheduledCommand()
         {
@@ -49,7 +49,7 @@ public final class GwtCommandScheduler extends org.rapla.scheduler.client.gwt.Gw
                 try
                 {
                     //gwtLogger.info("Refreshing client without period ");
-                    command.execute();
+                    command.run();
                 }
                 catch (Exception e)
                 {

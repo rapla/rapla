@@ -12,19 +12,18 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
-import java.awt.Color;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.net.URL;
+import org.rapla.framework.StartupEnvironment;
 
 import javax.swing.BorderFactory;
 import javax.swing.JApplet;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-
-import org.rapla.framework.StartupEnvironment;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.net.URL;
 
 /** The applet-encapsulation of the Main.class reads the configuration
  *  from the document-base of the applet and displays

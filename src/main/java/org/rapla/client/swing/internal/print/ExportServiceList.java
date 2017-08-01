@@ -12,21 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.print;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.util.Collection;
-import java.util.HashMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.ListSelectionModel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -37,6 +22,20 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.ListSelectionModel;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.util.Collection;
+import java.util.HashMap;
 
 
 @Singleton

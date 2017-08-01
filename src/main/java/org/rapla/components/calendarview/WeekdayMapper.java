@@ -14,7 +14,6 @@ package org.rapla.components.calendarview;
 
 import org.rapla.framework.RaplaLocale;
 
-import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

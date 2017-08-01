@@ -1,12 +1,12 @@
 package org.rapla.server.internal;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.inject.Extension;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Extension(provides = HtmlMainMenu.class,id=RaplaStatusEntry.ID)
 @Singleton

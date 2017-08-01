@@ -1,8 +1,11 @@
 package org.rapla.client.gwt;
 
-import javax.inject.Inject;
-
-import com.google.gwt.user.client.DOM;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
 import org.gwtbootstrap3.client.ui.AnchorListItem;
 import org.gwtbootstrap3.client.ui.Navbar;
@@ -21,22 +24,16 @@ import org.gwtbootstrap3.client.ui.html.Text;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.gwt.view.RaplaPopups;
-import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.RootPanel;
-
+import javax.inject.Inject;
 import java.util.function.Function;
 
 @DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)

@@ -1,8 +1,5 @@
 package org.rapla;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,6 +15,9 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Collection;
+import java.util.Date;
 
 @RunWith(JUnit4.class)
 public class CommunicatorTest extends AbstractTestWithServer

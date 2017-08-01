@@ -12,12 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.weekview.server;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
@@ -28,13 +22,18 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
+
+import javax.inject.Inject;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Extension(provides = HTMLViewPage.class,id= WeekviewPlugin.WEEK_VIEW)
 public class HTMLWeekViewPage extends AbstractHTMLCalendarPage

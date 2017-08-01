@@ -14,18 +14,6 @@
 
 package org.rapla.plugin.compactweekview.client.swing;
 
-import java.awt.Font;
-import java.awt.Point;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Provider;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -63,6 +51,17 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.scheduler.Promise;
+
+import javax.inject.Provider;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import java.awt.Font;
+import java.awt.Point;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar

@@ -1,12 +1,12 @@
 package org.rapla.server.extensionpoints;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /** you can add servlet pre processer to manipulate request and response before standard processing is
  * done by rapla

@@ -18,11 +18,9 @@ import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
-import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
 public class AllocatableReader extends RaplaXMLReader

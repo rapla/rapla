@@ -12,6 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
+import org.rapla.components.util.Assert;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.SimpleEntity;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,17 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import org.rapla.components.util.Assert;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.internal.SimpleEntity;
 
 final public class CategoryImpl extends SimpleEntity implements Category, ModifiableTimestamp
 {

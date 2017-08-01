@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Category;
@@ -27,6 +23,10 @@ import org.rapla.entities.dynamictype.ClassificationFilterRule;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 
 public final class ClassificationFilterRuleImpl extends ReferenceHandler
     implements

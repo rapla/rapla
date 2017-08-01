@@ -1,15 +1,14 @@
 package org.rapla.client;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
-import org.rapla.function.Consumer;
+
+import java.util.Collection;
+import java.util.Date;
 
 public interface ReservationEdit<T> extends RaplaWidget<T>
 {

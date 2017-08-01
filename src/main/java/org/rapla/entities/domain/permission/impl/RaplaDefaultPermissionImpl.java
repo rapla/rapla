@@ -1,10 +1,5 @@
 package org.rapla.entities.domain.permission.impl;
 
-import java.util.Collection;
-import java.util.Date;
-
-import javax.inject.Inject;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -19,6 +14,10 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
+
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Date;
 
 @Extension(id = "org.rapla.entities.domain.permission.RaplaDefault", provides = PermissionExtension.class)
 public class RaplaDefaultPermissionImpl implements PermissionExtension

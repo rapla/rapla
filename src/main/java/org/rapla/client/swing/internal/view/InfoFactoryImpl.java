@@ -12,16 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -56,9 +46,18 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.util.HashMap;
+import java.util.Map;
 
 /** The factory can creatres an information-panel or dialog for
 the entities of rapla.

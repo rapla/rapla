@@ -1,11 +1,6 @@
 package org.rapla.plugin.tableview.client;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-
-import javax.inject.Inject;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
@@ -15,12 +10,15 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 import org.rapla.scheduler.Promise;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 
 @Extension(provides = CalendarPlugin.class, id = CalendarTableViewPresenter.TABLE_VIEW)
 public class CalendarTableViewPresenter implements Presenter, CalendarPlugin

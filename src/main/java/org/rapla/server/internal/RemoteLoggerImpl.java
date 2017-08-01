@@ -1,12 +1,12 @@
 package org.rapla.server.internal;
 
-import javax.inject.Inject;
-
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.rest.RemoteLogger;
+
+import javax.inject.Inject;
 
 @DefaultImplementation(context = InjectionContext.server, of = RemoteLogger.class)
 public class RemoteLoggerImpl implements RemoteLogger

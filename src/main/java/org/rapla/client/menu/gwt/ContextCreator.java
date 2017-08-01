@@ -1,15 +1,14 @@
 package org.rapla.client.menu.gwt;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.event.dom.client.DomEvent;
+import com.google.gwt.user.client.Window;
 import org.rapla.client.PopupContext;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.menu.data.Point;
 
-import com.google.gwt.dom.client.NativeEvent;
-import com.google.gwt.event.dom.client.DomEvent;
-import com.google.gwt.user.client.Window;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class ContextCreator

@@ -1,8 +1,5 @@
 package org.rapla.client;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -10,6 +7,9 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
+
+import java.util.Collection;
+import java.util.Date;
 
 /** Use the ReservationController to modify or create a {@link Reservation}.
     This class handles all interactions with the user. Examples:

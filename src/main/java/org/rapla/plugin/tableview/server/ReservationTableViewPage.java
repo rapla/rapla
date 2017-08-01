@@ -12,21 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.swing.table.TableColumn;
-
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -35,7 +23,16 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
-import org.rapla.storage.CachableStorageOperator;
+
+import javax.inject.Inject;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.swing.table.TableColumn;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage implements HTMLViewPage

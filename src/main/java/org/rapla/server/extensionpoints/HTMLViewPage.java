@@ -14,16 +14,15 @@
 
 package org.rapla.server.extensionpoints;
 
-import java.io.IOException;
+import org.rapla.facade.CalendarModel;
+import org.rapla.inject.ExtensionPoint;
+import org.rapla.inject.InjectionContext;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.facade.CalendarModel;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
+import java.io.IOException;
 
 @ExtensionPoint(context = InjectionContext.server,id ="htmlexport")
 public interface HTMLViewPage

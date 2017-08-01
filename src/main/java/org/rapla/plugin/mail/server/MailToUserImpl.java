@@ -1,13 +1,13 @@
 package org.rapla.plugin.mail.server;
 
-import javax.inject.Inject;
-
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
+
+import javax.inject.Inject;
 
 public class MailToUserImpl
 {

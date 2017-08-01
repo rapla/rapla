@@ -1,7 +1,6 @@
 package org.rapla.client.gwt;
 
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.http.client.URL;
 import com.google.gwt.user.client.Cookies;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.Window;

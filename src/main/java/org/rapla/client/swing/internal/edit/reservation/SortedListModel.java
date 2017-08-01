@@ -1,5 +1,9 @@
 package org.rapla.client.swing.internal.edit.reservation;
 
+import javax.swing.AbstractListModel;
+import javax.swing.ListModel;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,11 +19,6 @@ import java.util.List;
  * found at http://developers.sun.com/berkeley_license.html .
  *
  */
-
-import javax.swing.AbstractListModel;
-import javax.swing.ListModel;
-import javax.swing.event.ListDataEvent;
-import javax.swing.event.ListDataListener;
 
 /**
  * SortedListModel decorates an unsorted ListModel to provide

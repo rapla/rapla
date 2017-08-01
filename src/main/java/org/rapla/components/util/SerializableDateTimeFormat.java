@@ -1,9 +1,9 @@
 package org.rapla.components.util;
 
+import org.rapla.components.util.DateTools.TimeWithoutTimezone;
+
 import java.util.Date;
 import java.util.NoSuchElementException;
-
-import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 
 
 /**

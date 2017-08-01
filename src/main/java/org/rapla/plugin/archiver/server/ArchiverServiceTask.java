@@ -1,19 +1,19 @@
 package org.rapla.plugin.archiver.server;
 
-import javax.inject.Inject;
-
+import io.reactivex.functions.Action;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
-import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.ImportExportManager;
+
+import javax.inject.Inject;
 
 @Extension(provides = ServerExtension.class,id="org.rapla.plugin.archiver.server")
 public class ArchiverServiceTask  implements ServerExtension
@@ -49,28 +49,26 @@ public class ArchiverServiceTask  implements ServerExtension
         final boolean export = config.getChild( ArchiverService.EXPORT).getValueAsBoolean(false);
         if ( days != -20 || export)
         {
-            Command removeTask = new Command() {
-                public void execute() throws RaplaException {
-
-
-                    try
-                    {
-                        if ( export && ArchiverServiceImpl.isExportEnabled(facade))
-                        {
-                            importExportManager.doExport();
-                        }
-                        if ( days != -20 )
-                        {
-                            ArchiverServiceImpl.delete(days,facade,logger);
-                        }
-                    }
-                    catch (RaplaException e) {
-                        logger.error("Could not execute archiver task ", e);
-                    }
-                }
-            };
             // Call it each hour
-            timer.schedule(removeTask, 0, DateTools.MILLISECONDS_PER_HOUR);
+            timer.schedule(()->doArchive(export,days), 0, DateTools.MILLISECONDS_PER_HOUR);
+        }
+    }
+
+    private void doArchive(boolean export, int days)
+    {
+        try
+        {
+            if ( export && ArchiverServiceImpl.isExportEnabled(facade))
+            {
+                importExportManager.doExport();
+            }
+            if ( days != -20 )
+            {
+                ArchiverServiceImpl.delete(days,facade,logger);
+            }
+        }
+        catch (RaplaException e) {
+            logger.error("Could not execute archiver task ", e);
         }
     }
 }

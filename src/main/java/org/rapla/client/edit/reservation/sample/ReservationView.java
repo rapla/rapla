@@ -1,13 +1,13 @@
 package org.rapla.client.edit.reservation.sample;
 
-import java.util.Collection;
-import java.util.Date;
-
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
+
+import java.util.Collection;
+import java.util.Date;
 
 public interface ReservationView {
 

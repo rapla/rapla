@@ -1,9 +1,9 @@
 package org.rapla.plugin.urlencryption;
 
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-
-import org.rapla.framework.RaplaException;
 
 /**
  * This Interface is used to provide the encryption functionality to the RAPLA Clients.

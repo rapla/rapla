@@ -13,12 +13,6 @@
 
 package org.rapla.entities.domain.internal;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -28,6 +22,12 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 
 public final class PermissionImpl extends ReferenceHandler implements Permission,EntityReferencer
 {

@@ -1,6 +1,5 @@
 package org.rapla.storage.impl;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.framework.RaplaException;
 
 public interface RaplaLock

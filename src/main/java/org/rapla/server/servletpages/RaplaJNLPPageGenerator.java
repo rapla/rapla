@@ -3,18 +3,16 @@
  */
 package org.rapla.server.servletpages;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.IOUtil;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.rapla.inject.dagger.DaggerReflectionStarter;
+import org.rapla.server.ServerServiceContainer;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -26,21 +24,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.IOUtil;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.dagger.DaggerReflectionStarter;
-import org.rapla.scheduler.Promise;
-import org.rapla.server.ServerServiceContainer;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @Path("raplaclient{ending:(.jnlp)?}")
 @Singleton

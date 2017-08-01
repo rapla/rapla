@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
+import org.rapla.entities.domain.Appointment;
+
 import java.util.Collection;
 import java.util.EventListener;
-
-import org.rapla.entities.domain.Appointment;
 
 public interface AppointmentListener extends EventListener {
     void appointmentAdded(Collection<Appointment> appointment);

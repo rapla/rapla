@@ -1,19 +1,19 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.RemoteSession;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 
 @DefaultImplementation(context=InjectionContext.server, of=ExchangeConnectorRemote.class)
 public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRemote

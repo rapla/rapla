@@ -14,13 +14,12 @@
 
 package org.rapla.client.swing;
 
-import java.awt.Component;
-
-import javax.swing.JComponent;
-
 import org.rapla.client.RaplaWidget;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
+
+import javax.swing.JComponent;
+import java.awt.Component;
 
 @ExtensionPoint(context = InjectionContext.swing, id=SwingCalendarView.ID)
 public interface SwingCalendarView extends RaplaWidget<Component>

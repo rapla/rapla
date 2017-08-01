@@ -13,8 +13,6 @@
 
 package org.rapla.client.swing.internal.edit.reservation;
 
-import java.util.Collection;
-
 import org.junit.Assert;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
@@ -22,6 +20,8 @@ import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Collection;
 
 public final class ReservationEditTest extends GUITestCase{
 

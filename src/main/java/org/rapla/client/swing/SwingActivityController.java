@@ -1,17 +1,16 @@
 package org.rapla.client.swing;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 
-import com.google.web.bindery.event.shared.EventBus;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 @DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)

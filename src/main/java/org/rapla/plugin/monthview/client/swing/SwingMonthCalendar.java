@@ -14,13 +14,6 @@
 
 package org.rapla.plugin.monthview.client.swing;
 
-import java.awt.Color;
-import java.util.Date;
-import java.util.Set;
-
-import javax.inject.Provider;
-import javax.swing.JComponent;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
@@ -53,6 +46,12 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 import org.rapla.scheduler.Promise;
+
+import javax.inject.Provider;
+import javax.swing.JComponent;
+import java.awt.Color;
+import java.util.Date;
+import java.util.Set;
 
 
 public class SwingMonthCalendar extends AbstractRaplaSwingCalendar

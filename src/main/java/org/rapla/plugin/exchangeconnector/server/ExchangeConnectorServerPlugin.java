@@ -1,13 +1,13 @@
 package org.rapla.plugin.exchangeconnector.server;
 
+import org.rapla.framework.TypedComponentRole;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.rapla.framework.TypedComponentRole;
 
 
 public class ExchangeConnectorServerPlugin {//implements PluginDescriptor<ServerServiceContainer> {

@@ -1,9 +1,8 @@
 package org.rapla.client.gwt;
 
-import org.rapla.client.gwt.view.RaplaPopups;
-
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
+import org.rapla.client.gwt.view.RaplaPopups;
 
 public class Rapla implements EntryPoint
 {

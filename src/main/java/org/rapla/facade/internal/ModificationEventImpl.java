@@ -1,10 +1,5 @@
 package org.rapla.facade.internal;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -13,6 +8,11 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ModificationEventImpl implements ModificationEvent
 {

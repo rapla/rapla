@@ -20,8 +20,8 @@ public class MailTest extends TestCase
             }
         };
         MailapiClient client = new MailapiClient(null,provider);
-        client.setSmtpHost("https://api.mailjet.com/v3/send");
-        //client.setPort( 25);
+        //client.setSmtpHost("https://api.mailjet.com/v3/send");
+        client.setPort( 25);
         client.setPort(587);
         //client.setProtocol(MailapiClient.SecurityProtocol.STARTTLS);
 

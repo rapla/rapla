@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action.user;
 
-import java.awt.Component;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -28,6 +26,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
+
+import java.awt.Component;
 
 
 public class PasswordChangeAction extends RaplaAction {

@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -29,8 +21,15 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.util.Locale;
 
 @Extension(provides = UserOptionPanel.class,id="warningOption")
 public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel

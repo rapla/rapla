@@ -13,14 +13,14 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.framework.RaplaException;
+
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 
     
 public class RaplaMapWriter extends RaplaXMLWriter {

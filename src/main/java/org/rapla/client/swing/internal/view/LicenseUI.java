@@ -12,13 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.Point;
-import java.io.IOException;
-import java.net.URL;
+import org.rapla.client.RaplaWidget;
+import org.rapla.components.util.IOUtil;
+import org.rapla.framework.internal.ConfigTools;
 
 import javax.inject.Inject;
 import javax.swing.JComponent;
@@ -27,10 +23,13 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
-
-import org.rapla.client.RaplaWidget;
-import org.rapla.components.util.IOUtil;
-import org.rapla.framework.internal.ConfigTools;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.Point;
+import java.io.IOException;
+import java.net.URL;
 
 public class LicenseUI 
     implements

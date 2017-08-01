@@ -11,14 +11,6 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -35,6 +27,14 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.LocalCache;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class RaplaMainWriter extends RaplaXMLWriter

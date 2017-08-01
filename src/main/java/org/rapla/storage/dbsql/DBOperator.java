@@ -12,29 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -54,7 +31,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.logger.Logger;
-import org.rapla.function.Command;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.PromiseWait;
 import org.rapla.storage.CachableStorageOperator;
@@ -71,6 +47,28 @@ import org.rapla.storage.impl.server.EntityHistory.HistoryEntry;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
+
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
@@ -122,10 +120,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
         {
             final int delay = 30000;
             final int period = 15000;
-            scheduleConnectedTasks(new Command()
-            {
-                @Override
-                public void execute() throws Exception
+            scheduleConnectedTasks(()->
                 {
                     try (final Connection connection = createConnection())
                     {
@@ -139,7 +134,7 @@ import org.rapla.storage.xml.RaplaDefaultXMLContext;
                         DBOperator.this.logger.info("Could not release old locks");
                     }
                 }
-            }, delay, period);
+            , delay, period);
         }
         {
             long delay = 100;//DateTools.MILLISECONDS_PER_DAY;

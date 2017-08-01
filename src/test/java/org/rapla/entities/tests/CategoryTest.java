@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -29,6 +26,9 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Collections;
+import java.util.Map;
 
 @RunWith(JUnit4.class) public class CategoryTest
 {

@@ -7,12 +7,8 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.server.PromiseWait;
-import sun.rmi.runtime.Log;
 
 import javax.inject.Inject;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 @DefaultImplementation(of = PromiseWait.class,context = InjectionContext.server)
 public class PromiseWaitImpl implements PromiseWait

@@ -1,7 +1,8 @@
 package org.rapla.client.gwt.view;
 
-import java.util.Date;
-
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.ui.IsWidget;
 import org.gwtbootstrap3.client.ui.Button;
 import org.gwtbootstrap3.client.ui.Column;
 import org.gwtbootstrap3.client.ui.Container;
@@ -14,9 +15,7 @@ import org.rapla.client.gwt.components.DateComponent.DateValueChanged;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.ui.IsWidget;
+import java.util.Date;
 
 public class NavigatorView extends Container
 {

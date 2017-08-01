@@ -1,10 +1,5 @@
 package org.rapla;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.inject.Provider;
-
 import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
@@ -22,6 +17,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
+
+import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.List;
 
 @RunWith(JUnit4.class)
 public abstract class AbstractTestWithServer

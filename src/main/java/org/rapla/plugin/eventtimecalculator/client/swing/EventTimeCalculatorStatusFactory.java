@@ -1,19 +1,19 @@
 package org.rapla.plugin.eventtimecalculator.client.swing;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
-import org.rapla.client.RaplaWidget;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Extension(provides = AppointmentStatusFactory.class, id="eventtimecalculator")
 @Singleton

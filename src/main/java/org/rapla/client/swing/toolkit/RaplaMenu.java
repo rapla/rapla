@@ -12,15 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import java.awt.Component;
-import java.util.HashMap;
-import java.util.Map;
+import org.rapla.client.swing.RaplaAction;
 
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-
-import org.rapla.client.swing.RaplaAction;
+import java.awt.Component;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInterface {
     private static final long serialVersionUID = 1L;

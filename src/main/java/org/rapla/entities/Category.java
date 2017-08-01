@@ -11,9 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
-import java.util.Locale;
 
 import org.rapla.entities.storage.ReferenceInfo;
+
+import java.util.Locale;
 
 /** Hierarchical categorization of information.
  * Categories can be used as attribute values.

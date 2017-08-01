@@ -13,10 +13,10 @@
 
 package org.rapla.entities.domain;
 
-import java.util.Date;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
+
+import java.util.Date;
 
 /** New feature to restrict the access to allocatables on a per user/group basis.
  * Specify absolute and relative booking-timeframes for each resource

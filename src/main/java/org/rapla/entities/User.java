@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import java.util.Collection;
-import java.util.Comparator;
-
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Comparator;
 
 
 /**

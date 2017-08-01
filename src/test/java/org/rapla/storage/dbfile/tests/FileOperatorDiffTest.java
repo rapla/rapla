@@ -12,12 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile.tests;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
-
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -31,8 +27,11 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbfile.tests.FileOperatorTest.MyFileIO;
 import org.rapla.test.util.RaplaTestCase;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StringReader;
 
 @RunWith(JUnit4.class)
 public class FileOperatorDiffTest

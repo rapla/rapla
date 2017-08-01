@@ -12,10 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import javax.swing.JEditorPane;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
-
-import javax.swing.JEditorPane;
 
 /** #BUGFIX
  * This is a workaround for a bug in the Sun JDK

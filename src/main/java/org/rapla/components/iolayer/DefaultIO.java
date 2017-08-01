@@ -12,6 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.iolayer;
 
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.print.Doc;
+import javax.print.DocFlavor;
+import javax.print.PrintException;
+import javax.print.SimpleDoc;
+import javax.print.StreamPrintService;
+import javax.print.StreamPrintServiceFactory;
+import javax.print.attribute.HashPrintRequestAttributeSet;
+import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.Size2DSyntax;
+import javax.print.attribute.standard.MediaName;
+import javax.print.attribute.standard.MediaPrintableArea;
+import javax.print.attribute.standard.OrientationRequested;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileFilter;
 import java.awt.Component;
 import java.awt.FileDialog;
 import java.awt.Frame;
@@ -30,25 +48,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.print.Doc;
-import javax.print.DocFlavor;
-import javax.print.PrintException;
-import javax.print.SimpleDoc;
-import javax.print.StreamPrintService;
-import javax.print.StreamPrintServiceFactory;
-import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.print.attribute.PrintRequestAttributeSet;
-import javax.print.attribute.Size2DSyntax;
-import javax.print.attribute.standard.MediaName;
-import javax.print.attribute.standard.MediaPrintableArea;
-import javax.print.attribute.standard.OrientationRequested;
-import javax.swing.JFileChooser;
-import javax.swing.filechooser.FileFilter;
-
-import org.rapla.logger.Logger;
 
 @Singleton
 public class DefaultIO  implements IOInterface{

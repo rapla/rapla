@@ -1,14 +1,14 @@
 package org.rapla.plugin.eventtimecalculator;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.Configuration;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
 /**
  * Created with IntelliJ IDEA.

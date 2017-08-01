@@ -12,13 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.util.Date;
-import java.util.Set;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
+
+import java.util.Date;
+import java.util.Set;
 /**
 Most universities and schools are planning for fixed periods/terms
 rather than arbitrary dates. Rapla provides support for this periods.

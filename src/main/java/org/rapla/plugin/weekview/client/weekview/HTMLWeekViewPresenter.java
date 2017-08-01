@@ -1,5 +1,13 @@
 package org.rapla.plugin.weekview.client.weekview;
 
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.Builder;
+import org.rapla.components.calendarview.Builder.PreperationResult;
+import org.rapla.components.calendarview.html.AbstractHTMLView;
+import org.rapla.components.util.DateTools;
+import org.rapla.logger.Logger;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,14 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.Builder.PreperationResult;
-import org.rapla.components.calendarview.html.AbstractHTMLView;
-import org.rapla.components.util.DateTools;
-import org.rapla.logger.Logger;
-import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 
 public class HTMLWeekViewPresenter extends AbstractHTMLView
 {

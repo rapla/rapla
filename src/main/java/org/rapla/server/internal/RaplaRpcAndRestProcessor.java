@@ -1,12 +1,11 @@
 package org.rapla.server.internal;
 
-import java.io.IOException;
+import org.rapla.logger.Logger;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.logger.Logger;
+import java.io.IOException;
 
 public class RaplaRpcAndRestProcessor
 {

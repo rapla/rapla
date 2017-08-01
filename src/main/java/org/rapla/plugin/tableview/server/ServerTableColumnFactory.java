@@ -1,7 +1,5 @@
 package org.rapla.plugin.tableview.server;
 
-import javax.inject.Inject;
-
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
@@ -10,6 +8,8 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+
+import javax.inject.Inject;
 
 @DefaultImplementation(context = { InjectionContext.server }, of = RaplaTableColumnFactory.class)
 public class ServerTableColumnFactory implements RaplaTableColumnFactory

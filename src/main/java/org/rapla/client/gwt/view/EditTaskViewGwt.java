@@ -1,11 +1,10 @@
 package org.rapla.client.gwt.view;
 
-import org.rapla.client.PopupContext;
+import io.reactivex.functions.Consumer;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
-import org.rapla.function.Consumer;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 

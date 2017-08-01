@@ -2,7 +2,6 @@ package org.rapla.plugin.mail.server;
 
 import org.rapla.rest.client.swing.JsonRemoteConnector;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

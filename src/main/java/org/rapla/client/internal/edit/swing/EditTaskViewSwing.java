@@ -1,28 +1,25 @@
 package org.rapla.client.internal.edit.swing;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.framework.RaplaException;
-import org.rapla.function.Consumer;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

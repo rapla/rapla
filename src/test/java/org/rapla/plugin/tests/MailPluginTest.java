@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tests;
 
-import java.util.Locale;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -26,6 +24,8 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.util.Locale;
 
 /** listens for allocation changes */
 @Ignore

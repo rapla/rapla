@@ -13,7 +13,6 @@
 
 package org.rapla.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
@@ -39,10 +38,8 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClassifiableFilter;
-import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
@@ -54,7 +51,6 @@ import javax.swing.DropMode;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
-import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;

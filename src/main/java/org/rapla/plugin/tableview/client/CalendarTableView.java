@@ -1,9 +1,9 @@
 package org.rapla.plugin.tableview.client;
 
-import java.util.Collection;
-
 import org.rapla.client.PopupContext;
 import org.rapla.entities.domain.Reservation;
+
+import java.util.Collection;
 
 public interface CalendarTableView<W>  {
 

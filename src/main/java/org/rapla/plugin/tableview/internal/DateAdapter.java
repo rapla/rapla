@@ -1,10 +1,9 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.util.Date;
+import org.rapla.components.util.SerializableDateTimeFormat;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
-
-import org.rapla.components.util.SerializableDateTimeFormat;
+import java.util.Date;
 
 public class DateAdapter extends XmlAdapter<String, Date>{
 

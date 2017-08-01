@@ -13,6 +13,7 @@
 
 package org.rapla.storage.impl.server;
 
+import io.reactivex.functions.Action;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
@@ -85,7 +86,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.function.Command;
 import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.Cancelable;
@@ -895,28 +895,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    final protected void scheduleConnectedTasks(final Command command, long delay, long period)
+    final protected void scheduleConnectedTasks(final Action command, long delay, long period)
     {
         //        if (true)
         //            return;
-        final Command wrapper = new Command()
+        final Action wrapper = ()->
         {
-            @Override
-            public void execute() throws Exception
-            {
                 final RaplaLock.ReadLock lock = disconnectLock.readLock(3);
                 try
                 {
                     if (isConnected())
                     {
-                        command.execute();
+                        command.run();
                     }
                 }
                 finally
                 {
                     disconnectLock.unlock(lock);
                 }
-            }
         };
         final Cancelable schedule = scheduler.schedule(wrapper, delay, period);
         scheduledTasks.add(schedule);
@@ -1006,15 +1002,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         // if a client request changes before the start date return refresh conflict flag
         final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
-        Command cleanUpConflicts = new Command()
-        {
-            @Override
-            public void execute() throws RaplaException
+        Action cleanUpConflicts = ()->
             {
                 removeOldConflicts();
                 removeOldHistory();
-            }
-        };
+            };
         //removeOldConflicts();
         //removeOldHistory();
         for (ReferenceInfo id : history.getAllIds())
@@ -1049,10 +1041,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         calendarModelCache.initCalendarMap();
         scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 9;
-        scheduleConnectedTasks(new Command()
-        {
-            @Override
-            public void execute() throws Exception
+        scheduleConnectedTasks(()->
             {
                 try
                 {
@@ -1073,7 +1062,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     getLogger().info("Could not refresh data");
                 }
-            }
         }, delay, refreshPeriod);
 
     }

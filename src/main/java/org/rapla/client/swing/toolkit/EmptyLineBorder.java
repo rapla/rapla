@@ -3,12 +3,11 @@
  */
 package org.rapla.client.swing.toolkit;
 
+import javax.swing.border.Border;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Insets;
-
-import javax.swing.border.Border;
 
 public class EmptyLineBorder implements Border {
     Insets insets = new Insets(0,0,0,0);

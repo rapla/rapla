@@ -1,17 +1,15 @@
 package org.rapla.plugin.urlencryption.server;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
-import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.urlencryption.UrlEncryption;
-import org.rapla.server.RemoteSession;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 
 /**
  * This class provides functionality to encrypt URL parameters to secure the resource export.

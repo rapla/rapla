@@ -12,16 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing;
 
+import org.rapla.client.MenuContext;
+import org.rapla.client.PopupContext;
+
+import javax.swing.JComponent;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-
-import javax.swing.JComponent;
-
-import org.rapla.client.MenuContext;
-import org.rapla.client.PopupContext;
 
 public class SwingMenuContext implements MenuContext
 {

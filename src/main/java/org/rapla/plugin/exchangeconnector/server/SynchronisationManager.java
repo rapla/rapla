@@ -1,7 +1,52 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
+import io.reactivex.functions.Action;
+import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
+import org.rapla.components.xmlbundle.CompoundI18n;
+import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
+import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
+import org.rapla.plugin.exchangeconnector.SyncError;
+import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
+import org.rapla.plugin.exchangeconnector.SynchronizeResult;
+import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint;
+import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
+import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
+import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
+import org.rapla.plugin.mail.server.MailToUserImpl;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.RaplaKeyStorage;
+import org.rapla.server.RaplaKeyStorage.LoginInfo;
+import org.rapla.server.TimeZoneConverter;
+import org.rapla.server.extensionpoints.ServerExtension;
+import org.rapla.storage.CachableStorageOperator;
+import org.rapla.storage.UpdateOperation;
+import org.rapla.storage.UpdateResult;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -18,55 +63,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.rapla.RaplaResources;
-import org.rapla.components.util.DateTools;
-import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.CompoundI18n;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.User;
-import org.rapla.entities.configuration.CalendarModelConfiguration;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Classifiable;
-import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
-import org.rapla.plugin.exchangeconnector.SyncError;
-import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
-import org.rapla.plugin.exchangeconnector.SynchronizeResult;
-import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint;
-import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
-import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
-import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
-import org.rapla.plugin.mail.server.MailToUserImpl;
-import org.rapla.function.Command;
-import org.rapla.scheduler.CommandScheduler;
-import org.rapla.server.RaplaKeyStorage;
-import org.rapla.server.RaplaKeyStorage.LoginInfo;
-import org.rapla.server.TimeZoneConverter;
-import org.rapla.server.extensionpoints.ServerExtension;
-import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.UpdateOperation;
-import org.rapla.storage.UpdateResult;
-
-import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 @Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = ServerExtension.class)
 @Singleton
@@ -160,11 +157,11 @@ public class SynchronisationManager implements ServerExtension
         }, delay, 20000);
     }
 
-    class RetryCommand implements Command
+    class RetryCommand implements Action
     {
         boolean firstExecution = true;
 
-        public void execute()
+        public void run()
         {
             try
             {

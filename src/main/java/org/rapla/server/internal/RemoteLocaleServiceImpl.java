@@ -1,13 +1,5 @@
 package org.rapla.server.internal;
 
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
@@ -17,12 +9,19 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 @DefaultImplementation(context = InjectionContext.server, of = RemoteLocaleService.class)
 public class RemoteLocaleServiceImpl implements RemoteLocaleService

@@ -12,9 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
@@ -26,6 +23,9 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
     final private ClientFacade clientFacade;

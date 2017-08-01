@@ -13,9 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.EntityNotFoundException;
@@ -27,6 +24,9 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 class ClassificationFilterReader extends RaplaXMLReader {
     

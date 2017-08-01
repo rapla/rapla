@@ -1,10 +1,10 @@
 package org.rapla.entities.dynamictype.internal;
 
-import java.util.List;
-import java.util.Locale;
-
 import org.rapla.entities.User;
 import org.rapla.storage.PermissionController;
+
+import java.util.List;
+import java.util.Locale;
 
 
 final public class EvalContext

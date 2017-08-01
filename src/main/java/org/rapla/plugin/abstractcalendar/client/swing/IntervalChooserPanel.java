@@ -13,26 +13,11 @@
 
 package org.rapla.plugin.abstractcalendar.client.swing;
 
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-
-import javax.inject.Inject;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.border.TitledBorder;
-
 import org.rapla.RaplaResources;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.internal.common.PeriodChooser;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.RaplaWidget;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -48,6 +33,20 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.border.TitledBorder;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
 public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidget
 {

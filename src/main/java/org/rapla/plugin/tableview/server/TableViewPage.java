@@ -1,5 +1,16 @@
 package org.rapla.plugin.tableview.server;
 
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.CalendarModel;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
+import org.rapla.plugin.tableview.RaplaTableColumn;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,18 +18,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.StringTokenizer;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.CalendarModel;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
-import org.rapla.plugin.tableview.RaplaTableColumn;
 
 abstract public class TableViewPage<T, C> 
 {

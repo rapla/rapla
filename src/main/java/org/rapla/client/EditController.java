@@ -1,14 +1,9 @@
 package org.rapla.client;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.internal.edit.EditTaskPresenter;
-import org.rapla.client.swing.SwingActivityController;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -16,6 +11,8 @@ import org.rapla.facade.RaplaFacade;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collections;
+import java.util.List;
 
 @Singleton
 public class EditController

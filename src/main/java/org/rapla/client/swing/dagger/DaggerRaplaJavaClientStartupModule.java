@@ -1,10 +1,7 @@
 package org.rapla.client.swing.dagger;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
-import com.google.web.bindery.event.shared.EventBus;
-import com.google.web.bindery.event.shared.SimpleEventBus;
+import dagger.Module;
+import dagger.Provides;
 import org.rapla.client.UserClientService;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
@@ -12,8 +9,8 @@ import org.rapla.components.iolayer.WebstartIO;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.Logger;
 
-import dagger.Module;
-import dagger.Provides;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 
 @Module public class DaggerRaplaJavaClientStartupModule
 {

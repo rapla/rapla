@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.tests;
 
-import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,10 +24,7 @@ import org.rapla.entities.User;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
-import org.rapla.test.util.RaplaTestCase;
 
-import javax.inject.Provider;
 import java.util.Locale;
 
 @RunWith(JUnit4.class)

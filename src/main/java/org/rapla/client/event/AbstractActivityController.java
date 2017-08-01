@@ -1,15 +1,14 @@
 package org.rapla.client.event;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
+import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.Application;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
-import com.google.web.bindery.event.shared.EventBus;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public abstract class AbstractActivityController implements ApplicationEvent.ApplicationEventHandler
 {

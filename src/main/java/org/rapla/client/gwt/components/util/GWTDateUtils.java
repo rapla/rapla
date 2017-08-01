@@ -1,12 +1,11 @@
 package org.rapla.client.gwt.components.util;
 
-import java.util.Date;
-
+import com.google.gwt.i18n.client.DateTimeFormat;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
-import com.google.gwt.i18n.client.DateTimeFormat;
+import java.util.Date;
 
 public class GWTDateUtils
 {

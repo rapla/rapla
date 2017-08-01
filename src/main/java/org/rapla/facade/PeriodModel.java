@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Date;
-import java.util.List;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Period;
+
+import java.util.Date;
+import java.util.List;
 
 /** ListModel that contains all periods. Updates the list automatically if a period is added, changed or deleted.
  * */

@@ -1,19 +1,6 @@
 package org.rapla.plugin.mail.server;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Properties;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.rapla.entities.configuration.Preferences;
@@ -25,9 +12,18 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
-import org.rapla.rest.client.swing.HTTPConnector;
-import org.rapla.rest.client.swing.HTTPWithJsonConnector;
 import org.rapla.server.ServerService;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Properties;
 
 @DefaultImplementation(of=MailInterface.class,context= InjectionContext.server)
 public class MailapiClient implements MailInterface

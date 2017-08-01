@@ -12,15 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
- import java.io.IOException;
-import java.io.Reader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
- import java.util.TimeZone;
-
  import org.rapla.rest.GwtIncompatible;
+
+ import java.io.IOException;
+ import java.io.Reader;
+ import java.util.ArrayList;
+ import java.util.List;
 
 /** miscellaneous util methods.*/
 public abstract class Tools

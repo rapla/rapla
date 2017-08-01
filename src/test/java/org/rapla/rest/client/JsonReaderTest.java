@@ -8,7 +8,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.IOUtil;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 
 @RunWith(JUnit4.class)

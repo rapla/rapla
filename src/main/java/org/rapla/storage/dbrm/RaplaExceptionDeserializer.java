@@ -9,8 +9,6 @@ import org.rapla.rest.client.ExceptionDeserializer;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 
-import java.util.List;
-
 public class RaplaExceptionDeserializer implements ExceptionDeserializer {
 	public RaplaException deserializeException(SerializableExceptionInformation exeInfo, int statusCode)
     {

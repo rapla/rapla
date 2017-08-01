@@ -1,12 +1,11 @@
 package org.rapla.client.gwt.components;
 
-import org.gwtbootstrap3.client.ui.InputGroup;
-import org.gwtbootstrap3.client.ui.InputGroupAddon;
-import org.gwtbootstrap3.client.ui.TextBox;
-
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.user.client.ui.FlowPanel;
+import org.gwtbootstrap3.client.ui.InputGroup;
+import org.gwtbootstrap3.client.ui.InputGroupAddon;
+import org.gwtbootstrap3.client.ui.TextBox;
 
 public class TextInputField extends FlowPanel
 {

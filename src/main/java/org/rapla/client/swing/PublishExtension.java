@@ -1,9 +1,9 @@
 package org.rapla.client.swing;
 
+import org.rapla.plugin.autoexport.AutoExportPlugin;
+
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-
-import org.rapla.plugin.autoexport.AutoExportPlugin;
 
 public interface PublishExtension
 {

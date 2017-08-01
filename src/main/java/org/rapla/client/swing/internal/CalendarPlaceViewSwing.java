@@ -15,9 +15,9 @@ package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.RaplaWidget;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 

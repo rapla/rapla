@@ -12,18 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.periodcopy.client.swing;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.swing.JMenuItem;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -32,7 +20,6 @@ import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
@@ -44,10 +31,21 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.swing.JMenuItem;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 @Extension(provides = EditMenuExtension.class,id="org.rapla.plugin.periodcopy")
 public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtension, ActionListener

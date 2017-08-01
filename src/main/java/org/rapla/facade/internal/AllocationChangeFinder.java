@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -36,6 +28,14 @@ import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.logger.Logger;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /** Converts updateResults into AllocationChangeEvents */
 public class AllocationChangeFinder 

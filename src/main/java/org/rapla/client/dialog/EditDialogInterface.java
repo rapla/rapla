@@ -1,11 +1,10 @@
 package org.rapla.client.dialog;
 
-import java.util.Collection;
-import java.util.List;
-
-import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.List;
 
 public interface EditDialogInterface<T>
 {

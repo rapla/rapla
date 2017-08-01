@@ -18,13 +18,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
 import org.rapla.server.internal.console.ClientStarter;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.server.internal.console.StandaloneStarter;
 import org.rapla.server.internal.rest.RestApplication;
-import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.storage.impl.RaplaLock;
 
 import javax.naming.Context;

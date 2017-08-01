@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;

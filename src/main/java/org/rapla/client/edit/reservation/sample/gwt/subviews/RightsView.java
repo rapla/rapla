@@ -1,7 +1,6 @@
 package org.rapla.client.edit.reservation.sample.gwt.subviews;
 
-import javax.inject.Inject;
-
+import com.google.gwt.user.client.ui.IsWidget;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.RaplaResources;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
@@ -10,7 +9,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 
-import com.google.gwt.user.client.ui.IsWidget;
+import javax.inject.Inject;
 
 public class RightsView implements ReservationViewPart
 {

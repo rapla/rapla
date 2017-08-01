@@ -13,13 +13,13 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.framework.RaplaException;
+
+import java.io.IOException;
 
 
 public class AllocatableWriter extends ClassifiableWriter {

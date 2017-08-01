@@ -12,18 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.fields;
 
-import java.util.ArrayList;
-
-import javax.swing.JComponent;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditField;
 import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+
+import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.util.ArrayList;
 
 /** Base class for most rapla edit fields. Provides some mapping
     functionality such as reflection invocation of getters/setters.

@@ -12,11 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -26,6 +21,11 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
 
 public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 {

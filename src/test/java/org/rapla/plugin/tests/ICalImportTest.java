@@ -1,14 +1,5 @@
 package org.rapla.plugin.tests;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -29,6 +20,15 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.RemoteSessionImpl;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.test.util.RaplaTestCase;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
 
 @RunWith(JUnit4.class)
 public class ICalImportTest {

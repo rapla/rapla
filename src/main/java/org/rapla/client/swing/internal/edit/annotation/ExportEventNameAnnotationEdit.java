@@ -1,10 +1,5 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
-import java.util.Collection;
-import java.util.Collections;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;
 import org.rapla.client.swing.EditField;
@@ -18,8 +13,12 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import java.util.Collection;
+import java.util.Collections;
 
 
 @Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT)
@@ -45,7 +44,7 @@ public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements 
         }
         DynamicType dynamicType = (DynamicType)annotatable;
         String classificationType = dynamicType.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-        if ( classificationType == null || !(classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION) ))
+        if ( classificationType == null )
         {
             return Collections.emptyList();
         }

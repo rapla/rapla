@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.internal;
 
-import java.awt.Component;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.client.RaplaWidget;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.logger.Logger;
+import org.rapla.storage.RemoteLocaleService;
 
 import javax.inject.Inject;
 import javax.swing.Action;
@@ -25,13 +25,12 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.RaplaWidget;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
-import org.rapla.storage.RemoteLocaleService;
+import java.awt.Component;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 final public class CountryChooser implements RaplaWidget
 {

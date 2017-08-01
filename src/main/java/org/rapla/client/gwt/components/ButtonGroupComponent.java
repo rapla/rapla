@@ -1,17 +1,16 @@
 package org.rapla.client.gwt.components;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.gwtbootstrap3.client.ui.ButtonGroup;
-import org.gwtbootstrap3.client.ui.RadioButton;
-import org.gwtbootstrap3.client.ui.constants.Toggle;
-
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Event;
+import org.gwtbootstrap3.client.ui.ButtonGroup;
+import org.gwtbootstrap3.client.ui.RadioButton;
+import org.gwtbootstrap3.client.ui.constants.Toggle;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ButtonGroupComponent extends ButtonGroup
 {

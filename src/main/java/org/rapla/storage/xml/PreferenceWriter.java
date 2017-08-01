@@ -13,14 +13,14 @@
 
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+
+import java.io.IOException;
+import java.util.Map;
 
     
 public class PreferenceWriter extends RaplaXMLWriter {

@@ -13,15 +13,15 @@
 
 package org.rapla.entities.domain;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.Classifiable;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Locale;
 
 /** The <code>Reservation</code> interface is the central interface of
  *  Rapla.  Objects implementing this interface are the courses or

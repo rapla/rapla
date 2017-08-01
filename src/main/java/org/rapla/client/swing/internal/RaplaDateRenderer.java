@@ -13,15 +13,6 @@
 
 package org.rapla.client.swing.internal;
 
-import java.awt.Color;
-import java.util.Date;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.internal.RaplaColors;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
@@ -29,13 +20,17 @@ import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.PeriodModel;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.awt.Color;
+import java.util.Date;
+import java.util.Set;
 
 @Singleton
 @DefaultImplementation(of=DateRenderer.class,context = { InjectionContext.swing,InjectionContext.server})

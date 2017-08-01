@@ -13,6 +13,20 @@
 
 package org.rapla.plugin.abstractcalendar.client.swing;
 
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
+import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.swing.SwingBlock;
+import org.rapla.entities.Named;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
+
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.event.MouseInputListener;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -32,22 +46,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JComponent;
-import javax.swing.event.MouseInputListener;
-
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.swing.SwingBlock;
-import org.rapla.entities.Named;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 
 public class SwingRaplaBlock extends AbstractRaplaBlock implements SwingBlock
 {

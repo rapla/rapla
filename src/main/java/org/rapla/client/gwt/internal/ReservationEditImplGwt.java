@@ -3,7 +3,6 @@ package org.rapla.client.gwt.internal;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
-import org.rapla.client.event.ApplicationEvent;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;

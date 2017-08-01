@@ -21,6 +21,7 @@
 		<logback.version>1.2.3</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>2.0.0</ical4j.version>
+		<rxjava.version>2.1.0</rxjava.version>
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<!--
 		<jetty.version>9.3.7.v20160115</jetty.version>
@@ -232,6 +233,9 @@
 					</execution>
 				</executions>
 				<configuration>
+					<sourcesArtifacts>
+						<artifact>io.reactivex.rxjava2:rxjava</artifact>
+					</sourcesArtifacts>
 					<moduleName>org.rapla.Rapla</moduleName>
 					<sourceLevel>1.8</sourceLevel>
 					<logLevel>INFO</logLevel>
@@ -344,6 +348,18 @@
 			<version>${scannotation.version}</version>
 		</dependency>
 		-->
+		<dependency>
+			<groupId>io.reactivex.rxjava2</groupId>
+			<artifactId>rxjava</artifactId>
+			<version>${rxjava.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.reactivex.rxjava2</groupId>
+			<artifactId>rxjava</artifactId>
+			<classifier>sources</classifier>
+			<scope>provided</scope>
+			<version>${rxjava.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>javax.validation</groupId>
 			<artifactId>validation-api</artifactId>

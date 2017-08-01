@@ -1,11 +1,14 @@
 package org.rapla.plugin.urlencryption;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLEncoder;
+import org.rapla.client.extensionpoints.PublishExtensionFactory;
+import org.rapla.client.swing.PublishExtension;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ClientFacade;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.StartupEnvironment;
+import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
 import javax.swing.JCheckBox;
@@ -14,16 +17,12 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
-import org.rapla.client.extensionpoints.PublishExtensionFactory;
-import org.rapla.client.swing.PublishExtension;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.StartupEnvironment;
-import org.rapla.logger.Logger;
-import org.rapla.inject.Extension;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 
 @Extension(provides = PublishExtensionFactory.class, id = "urlencryption")
 public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFactory

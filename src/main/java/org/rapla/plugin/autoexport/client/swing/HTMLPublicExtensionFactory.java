@@ -1,9 +1,5 @@
 package org.rapla.plugin.autoexport.client.swing;
 
-import java.beans.PropertyChangeListener;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
@@ -13,9 +9,12 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportResources;
+
+import javax.inject.Inject;
+import java.beans.PropertyChangeListener;
 
 @Extension(provides=PublishExtensionFactory.class,id="html")
 public class HTMLPublicExtensionFactory implements PublishExtensionFactory

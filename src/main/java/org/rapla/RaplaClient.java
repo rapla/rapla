@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import java.net.URL;
-
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -23,6 +21,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+
+import java.net.URL;
 
 /**
 The Rapla Main Container class for the basic container for Rapla specific services and the rapla plugin architecture.

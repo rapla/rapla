@@ -12,15 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
@@ -53,6 +44,14 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import javax.swing.JComponent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;

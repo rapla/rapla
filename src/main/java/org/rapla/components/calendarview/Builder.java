@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
+import org.rapla.entities.domain.AppointmentBlock;
+
 import java.util.Collection;
 import java.util.Date;
-
-import org.rapla.entities.domain.AppointmentBlock;
 
 public interface Builder {
    /** Calculate the blocks that should be displayed in the weekview.

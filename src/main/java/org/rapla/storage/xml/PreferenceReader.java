@@ -13,8 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Map;
-
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.RaplaObject;
@@ -24,6 +22,8 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+
+import java.util.Map;
 
 public class PreferenceReader extends RaplaXMLReader {
     public static final TypedComponentRole<Map<String,Class<? extends  RaplaObject>>> LOCALNAMEMAPENTRY = new TypedComponentRole<Map<String,Class<? extends  RaplaObject>>>("org.rapla.storage.xml.localnameMap");

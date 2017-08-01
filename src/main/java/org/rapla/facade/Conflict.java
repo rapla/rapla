@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashSet;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.Timestamp;
@@ -25,6 +21,10 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashSet;
 
 /**
  * A conflict is the allocation of the same resource at the same time by different

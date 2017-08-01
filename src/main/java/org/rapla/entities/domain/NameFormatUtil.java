@@ -1,10 +1,10 @@
 package org.rapla.entities.domain;
 
-import java.util.Locale;
-
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+
+import java.util.Locale;
 
 public class NameFormatUtil
 {

@@ -13,9 +13,6 @@
 
 package org.rapla.storage.xml;
 
-import java.util.Date;
-import java.util.Map;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -40,6 +37,9 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
+
+import java.util.Date;
+import java.util.Map;
 
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {

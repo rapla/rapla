@@ -12,19 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.Timestamp;
@@ -40,6 +27,19 @@ import org.rapla.storage.LocalCache;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.server.EntityHistory;
 import org.rapla.storage.xml.RaplaXMLContext;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage implements Storage<T> {
 	//String searchForIdSql;

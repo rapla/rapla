@@ -1,10 +1,10 @@
 package org.rapla.client.internal;
 
-import java.util.Collection;
-
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.facade.Conflict;
+
+import java.util.Collection;
 
 public interface ConflictSelectionView<T> extends RaplaWidget<T>
 {

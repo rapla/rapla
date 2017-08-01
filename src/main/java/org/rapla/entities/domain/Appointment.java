@@ -12,15 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 /** The basic building blocks of reservations.
     @see Reservation
     @see Repeating*/

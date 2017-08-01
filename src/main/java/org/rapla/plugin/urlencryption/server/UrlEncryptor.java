@@ -1,15 +1,6 @@
 package org.rapla.plugin.urlencryption.server;
 
-import java.security.*;
-
-import javax.crypto.*;
-import javax.crypto.spec.SecretKeySpec;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpRequest;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
@@ -19,6 +10,19 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.servlet.http.HttpServletRequest;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyException;
+import java.security.NoSuchAlgorithmException;
 
 @Singleton
 public class UrlEncryptor

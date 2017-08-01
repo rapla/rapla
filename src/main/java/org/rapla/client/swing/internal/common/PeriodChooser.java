@@ -12,15 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.common;
 
-import java.awt.Component;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComboBox;
-import javax.swing.JList;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
@@ -30,6 +21,14 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JList;
+import java.awt.Component;
+import java.util.Date;
+import java.util.Locale;
 
 public class PeriodChooser extends JComboBox implements Disposable
  {

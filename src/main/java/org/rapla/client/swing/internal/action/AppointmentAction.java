@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.action;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -36,6 +32,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
 
 public class AppointmentAction extends RaplaAction {
     public final static int DELETE = 1;

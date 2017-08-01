@@ -12,9 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import java.util.Date;
-
 import org.rapla.components.util.DateTools;
+
+import java.util.Date;
 
 
 

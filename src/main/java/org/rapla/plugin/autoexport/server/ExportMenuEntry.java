@@ -1,9 +1,6 @@
 package org.rapla.plugin.autoexport.server;
 
-import javax.inject.Inject;
-
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.facade.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
@@ -11,6 +8,8 @@ import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
+
+import javax.inject.Inject;
 
 @Extension(provides = HtmlMainMenu.class,id="exportedcalendars")
 public class ExportMenuEntry extends DefaultHTMLMenuEntry implements  HtmlMainMenu

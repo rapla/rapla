@@ -1,10 +1,10 @@
 package org.rapla.client;
 
-import java.util.List;
-
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
+
+import java.util.List;
 
 public class EditApplicationEventContext<T extends Entity<T>> implements ApplicationEventContext
 {

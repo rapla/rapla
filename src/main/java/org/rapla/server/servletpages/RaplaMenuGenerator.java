@@ -1,8 +1,7 @@
 package org.rapla.server.servletpages;
 
-import java.io.PrintWriter;
-
 import javax.servlet.http.HttpServletRequest;
+import java.io.PrintWriter;
 
 public interface RaplaMenuGenerator
 {

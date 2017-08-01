@@ -1,22 +1,9 @@
 package org.rapla.plugin.copyurl;
 
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.net.URL;
-import java.security.AccessControlException;
-import java.util.Collection;
-import java.util.HashSet;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
@@ -35,8 +22,19 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.security.AccessControlException;
+import java.util.Collection;
+import java.util.HashSet;
 
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="copyurl")

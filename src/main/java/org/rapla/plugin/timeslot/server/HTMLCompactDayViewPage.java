@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.timeslot.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.GroupStartTimesStrategy;
@@ -33,14 +25,21 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.server.extensionpoints.HTMLViewPage;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Extension(provides = HTMLViewPage.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage

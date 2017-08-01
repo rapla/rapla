@@ -14,7 +14,6 @@ package org.rapla.plugin.timeslot.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.OptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;

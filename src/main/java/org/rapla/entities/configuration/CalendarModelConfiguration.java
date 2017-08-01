@@ -12,14 +12,14 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.TypedComponentRole;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
 
 /**
  *

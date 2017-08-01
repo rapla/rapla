@@ -1,8 +1,8 @@
 package org.rapla.storage.xml;
 
-import java.util.HashMap;
-
 import org.rapla.framework.TypedComponentRole;
+
+import java.util.HashMap;
 
 
 

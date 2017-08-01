@@ -1,15 +1,15 @@
 package org.rapla.plugin.tableview.client.swing;
 
+import org.rapla.RaplaResources;
+import org.rapla.inject.Extension;
+import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
+
 import javax.inject.Inject;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import org.rapla.RaplaResources;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 
 @Extension(provides = ReservationSummaryExtension.class,id = "eventcounter")
 public final class EventCounter implements ReservationSummaryExtension

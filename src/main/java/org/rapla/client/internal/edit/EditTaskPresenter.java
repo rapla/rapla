@@ -1,6 +1,7 @@
 package org.rapla.client.internal.edit;
 
 import com.google.web.bindery.event.shared.EventBus;
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
@@ -12,6 +13,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.extensionpoints.MergeCheckExtension;
 import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.components.util.DateTools;
@@ -36,10 +38,8 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.function.Consumer;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
-import org.rapla.client.extensionpoints.MergeCheckExtension;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
@@ -370,7 +370,7 @@ public class EditTaskPresenter implements TaskPresenter
         final List<T> origs = originals;
         if (toEdit.size() > 0)
         {
-            org.rapla.function.Consumer<Collection<T>> saveCmd =  (saveObjects) ->
+            Consumer<Collection<T>> saveCmd =  (saveObjects) ->
             {
                 Collection<T> entities = new ArrayList<T>();
                 entities.addAll(saveObjects);

@@ -13,19 +13,6 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.net.URL;
-import java.util.Vector;
-import java.util.concurrent.Semaphore;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.SwingUtilities;
-
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
@@ -40,8 +27,6 @@ import org.rapla.client.internal.LoginDialog;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.ApplicationViewSwing;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
@@ -54,15 +39,24 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.framework.internal.DefaultScheduler;
-import org.rapla.logger.Logger;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.function.Command;
+import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
-import org.rapla.storage.dbrm.RemoteOperator;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.net.URL;
+import java.util.Vector;
+import java.util.concurrent.Semaphore;
 
 /** Implementation of the UserClientService.
 */
@@ -418,14 +412,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void startLogin() throws Exception
     {
-        Command comnmand = new Command()
-        {
-            public void execute() throws Exception
-            {
-                startLoginInThread();
-            }
-        };
-        commandScheduler.schedule(comnmand, 0);
+        commandScheduler.schedule(()->startLoginInThread(), 0);
     }
 
     private void startLoginInThread()

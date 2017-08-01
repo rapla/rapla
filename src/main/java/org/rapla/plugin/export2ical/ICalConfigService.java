@@ -1,10 +1,10 @@
 package org.rapla.plugin.export2ical;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 
 @Path("ical/config")
 public interface ICalConfigService

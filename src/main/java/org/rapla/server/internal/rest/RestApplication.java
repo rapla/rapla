@@ -2,7 +2,6 @@ package org.rapla.server.internal.rest;
 
 import org.rapla.inject.scanning.RestEasyLoadingFilter;
 import org.rapla.inject.scanning.ScanningClassLoader;
-import org.rapla.inject.scanning.ScannotationLoader;
 import org.rapla.inject.scanning.ServiceInfLoader;
 
 import javax.servlet.ServletContext;

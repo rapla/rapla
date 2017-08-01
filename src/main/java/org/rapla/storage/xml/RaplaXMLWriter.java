@@ -12,14 +12,6 @@
   *--------------------------------------------------------------------------*/
 package org.rapla.storage.xml;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Provider;
-
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.Annotatable;
@@ -42,6 +34,13 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
+
+import javax.inject.Provider;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 abstract public class RaplaXMLWriter extends XMLWriter

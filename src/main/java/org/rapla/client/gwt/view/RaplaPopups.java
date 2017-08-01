@@ -1,8 +1,5 @@
 package org.rapla.client.gwt.view;
 
-import org.gwtbootstrap3.client.ui.ProgressBar;
-import org.gwtbootstrap3.client.ui.html.Div;
-
 import com.google.gwt.dom.client.BodyElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
@@ -18,6 +15,8 @@ import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import org.gwtbootstrap3.client.ui.ProgressBar;
+import org.gwtbootstrap3.client.ui.html.Div;
 
 public class RaplaPopups
 {

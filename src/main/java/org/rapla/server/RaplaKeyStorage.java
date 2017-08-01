@@ -1,10 +1,10 @@
 package org.rapla.server;
 
-import java.util.Collection;
-
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+
+import java.util.Collection;
 
 public interface RaplaKeyStorage {
     String getRootKeyBase64();

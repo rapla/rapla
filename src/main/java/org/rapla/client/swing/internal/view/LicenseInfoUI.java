@@ -12,8 +12,16 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.view;
 
-import java.awt.Component;
-import java.awt.Dimension;
+import org.rapla.RaplaResources;
+import org.rapla.RaplaSystemInfo;
+import org.rapla.client.RaplaWidget;
+import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.HTMLView;
+import org.rapla.components.xmlbundle.LocaleChangeEvent;
+import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.framework.RaplaInitializationException;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -21,17 +29,8 @@ import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-
-import org.rapla.RaplaResources;
-import org.rapla.RaplaSystemInfo;
-import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.HTMLView;
-import org.rapla.client.RaplaWidget;
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
-import org.rapla.framework.RaplaInitializationException;
+import java.awt.Component;
+import java.awt.Dimension;
 
 final public class LicenseInfoUI
    implements

@@ -1,15 +1,23 @@
 package org.rapla.plugin.tableview.internal;
 
-import java.awt.BorderLayout;
-import java.awt.LayoutManager;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map.Entry;
-import java.util.Set;
+import org.rapla.RaplaResources;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
+import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
+import org.rapla.components.calendar.RaplaArrowButton;
+import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.DefaultConfiguration;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.TypedComponentRole;
+import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
+import org.rapla.plugin.tableview.TableViewPlugin;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
 import javax.inject.Inject;
 import javax.swing.BoxLayout;
@@ -24,25 +32,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
-import org.rapla.RaplaResources;
-import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
-import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
-import org.rapla.components.calendar.RaplaArrowButton;
-import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.DefaultConfiguration;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.TypedComponentRole;
-import org.rapla.logger.Logger;
-import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.TableViewPlugin;
-import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
-import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
+import java.awt.BorderLayout;
+import java.awt.LayoutManager;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  *

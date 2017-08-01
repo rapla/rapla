@@ -1,11 +1,11 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import java.io.Serializable;
-import java.util.Date;
-
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ReferenceInfo;
+
+import java.io.Serializable;
+import java.util.Date;
 
 public class SynchronizationTask implements Serializable
 {

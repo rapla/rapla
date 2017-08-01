@@ -14,13 +14,13 @@
 
 package org.rapla.client.swing.extensionpoints;
 
-import javax.swing.Icon;
-
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
 import org.rapla.inject.InjectionContext;
+
+import javax.swing.Icon;
 
 @ExtensionPoint(context = InjectionContext.swing, id="week")
 public interface SwingViewFactory

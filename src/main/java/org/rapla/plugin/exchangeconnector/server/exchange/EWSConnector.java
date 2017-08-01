@@ -1,11 +1,5 @@
 package org.rapla.plugin.exchangeconnector.server.exchange;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import org.rapla.framework.RaplaException;
-import org.rapla.logger.Logger;
-
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion;
 import microsoft.exchange.webservices.data.core.enumeration.misc.TraceFlags;
@@ -13,6 +7,11 @@ import microsoft.exchange.webservices.data.core.enumeration.search.ResolveNameSe
 import microsoft.exchange.webservices.data.credential.WebCredentials;
 import microsoft.exchange.webservices.data.misc.ITraceListener;
 import microsoft.exchange.webservices.data.misc.NameResolutionCollection;
+import org.rapla.framework.RaplaException;
+import org.rapla.logger.Logger;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * This class is obliged with the task to provide a connection to a specific Exchange Server-instance

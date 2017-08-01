@@ -12,14 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -32,6 +24,14 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Base-class for all Rapla Entity-Implementations. Provides services
  * for deep cloning and serialization of references. {@link ReferenceHandler}

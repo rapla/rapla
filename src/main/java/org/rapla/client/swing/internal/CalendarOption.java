@@ -12,22 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-
-import javax.inject.Inject;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.extensionpoints.UserOptionPanel;
@@ -48,9 +32,23 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
 import org.rapla.inject.ExtensionRepeatable;
+import org.rapla.logger.Logger;
+
+import javax.inject.Inject;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.util.Date;
+import java.util.Locale;
 
 @ExtensionRepeatable({
 @Extension(provides = UserOptionPanel.class,id="calendarOption"),

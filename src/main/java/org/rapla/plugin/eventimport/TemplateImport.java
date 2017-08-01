@@ -1,10 +1,9 @@
 package org.rapla.plugin.eventimport;
 
-import javax.ws.rs.GET;
+import org.rapla.framework.RaplaException;
+
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-
-import org.rapla.framework.RaplaException;
 
 @Path( "templateimport" )
 public interface TemplateImport

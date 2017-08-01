@@ -12,13 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.compactweekview.client.swing;
 
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.Icon;
-
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
@@ -41,9 +34,15 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.logger.Logger;
 import org.rapla.inject.Extension;
+import org.rapla.logger.Logger;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.Icon;
+import java.util.Set;
 
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
